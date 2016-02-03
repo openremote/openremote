@@ -1,0 +1,13 @@
+build/
+.gradle
+.vertx
+
+bin/
+.settings/
+.classpath
+.project
+
+*.iml
+*.ipr
+*.iws
+.idea/

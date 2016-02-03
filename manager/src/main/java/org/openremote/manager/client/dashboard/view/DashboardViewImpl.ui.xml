@@ -1,0 +1,98 @@
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+             xmlns:g="urn:import:com.google.gwt.user.client.ui">
+
+    <g:ScrollPanel>
+        <g:HTMLPanel>
+
+            <hr/>
+            <g:Button ui:field="helloButton" text="Get Hello from Server"/>
+            <g:Label ui:field="helloLabel"/>
+            <hr/>
+
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+            <h1>Hello Dashboard!</h1>
+        </g:HTMLPanel>
+    </g:ScrollPanel>
+
+</ui:UiBinder>

@@ -1,0 +1,77 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath "de.richsource.gradle.plugins:gwt-gradle-plugin:$gwtGradlePluginVersion"
+    }
+}
+
+apply plugin: "java"
+apply plugin: "gwt-compiler"
+
+sourceCompatibility = '1.8'
+
+dependencies {
+
+    compile "org.slf4j:slf4j-api:$slf4jVersion"
+    compile "org.slf4j:slf4j-jdk14:$slf4jVersion"
+    /* TODO Activate if we have dependencies on commons logging or log4j
+    compile "org.slf4j:log4j-over-slf4j:$slf4jVersion"
+    compile "org.slf4j:jcl-over-slf4j:$slf4jVersion"
+    */
+
+    compile "io.vertx:vertx-web:$vertxVersion"
+
+    compile "com.google.gwt:gwt-user:$gwtVersion"
+    compile "com.google.gwt:gwt-elemental:$gwtVersion"
+    compile ("com.google.gwt.inject:gin:$ginVersion") {
+        exclude group: "asm"
+    }
+    compile "org.fusesource.restygwt:restygwt:$restygwtVersion"
+    
+    testCompile "junit:junit:$junitVersion"
+    testCompile "io.vertx:vertx-unit:$vertxVersion"
+
+}
+
+gwt {
+    gwtVersion = project.properties.gwtVersion
+
+    sourceLevel = JavaVersion.VERSION_1_8
+    maxHeapSize = "1024M"
+
+    modules("org.openremote.manager.Manager")
+
+    test {
+        hasGwtTests = false
+    }
+
+    compiler {
+        style = "PRETTY"
+    }
+
+    superDev {
+
+        // Generate minimal JS launcher in the webapp source folder (you might commit this or not, doesn't matter)
+        launcherDir = file("src/main/webapp/gwt")
+
+        // Careful, this binds to all interfaces on your machine!
+        bindAddress = "0.0.0.0"
+    }
+}
+
+// TODO Why is this not configurable?
+tasks.withType(de.richsource.gradle.plugins.gwt.AbstractGwtActionTask) {
+
+    doFirst {
+        mkdir file("src/main/webapp/gwt")
+    }
+
+    //args "-logLevel", "TRACE"
+    args "-generateJsInteropExports"
+    args "-noincremental" // TODO Yep, incremental compile is apparently broken right now in 2.8.0
+
+    // I've had various problems with this cache and GWT snapshot updates, so it's a good idea to make it easily cleanable
+    jvmArgs("-Dgwt.persistentunitcachedir=$project.buildDir/gwt/cache")
+}

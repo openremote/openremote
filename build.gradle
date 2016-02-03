@@ -1,0 +1,10 @@
+allprojects {
+
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        jcenter()
+    }
+
+    version = projectVersion
+}
