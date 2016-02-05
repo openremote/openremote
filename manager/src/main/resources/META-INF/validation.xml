@@ -1,0 +1,10 @@
+<validation-config
+        xmlns="http://jboss.org/xml/ns/javax/validation/configuration"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://jboss.org/xml/ns/javax/validation/configuration http://jboss.org/xml/ns/javax/validation/configuration"
+        version="1.1">
+    <!-- This assumes that the Bean Validation implementation on the classpath is Hibernate Validator -->
+<!-- TODO Old HV version?
+    <message-interpolator>org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator</message-interpolator>
+-->
+</validation-config>

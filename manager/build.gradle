@@ -1,13 +1,18 @@
 buildscript {
     repositories {
         jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
     }
     dependencies {
         classpath "de.richsource.gradle.plugins:gwt-gradle-plugin:$gwtGradlePluginVersion"
+        classpath "net.ltgt.gradle:gradle-apt-plugin:$aptGradlePluginVersion"
     }
 }
 
 apply plugin: "java"
+apply plugin: "net.ltgt.apt"
 apply plugin: "gwt-compiler"
 
 sourceCompatibility = '1.8'
@@ -16,12 +21,18 @@ dependencies {
 
     compile "org.slf4j:slf4j-api:$slf4jVersion"
     compile "org.slf4j:slf4j-jdk14:$slf4jVersion"
-    /* TODO Activate if we have dependencies on commons logging or log4j
-    compile "org.slf4j:log4j-over-slf4j:$slf4jVersion"
     compile "org.slf4j:jcl-over-slf4j:$slf4jVersion"
-    */
+    compile "org.slf4j:log4j-over-slf4j:$slf4jVersion"
 
     compile "io.vertx:vertx-web:$vertxVersion"
+    compile "com.yahoo.elide:elide-core:1.0.0.20"
+    compile "com.yahoo.elide:elide-datastore-hibernate5:1.0.0.20"
+
+    compile "com.h2database:h2:$h2Version"
+    compile "com.zaxxer:HikariCP:$hikaricpVersion"
+    compile "org.hibernate:hibernate-entitymanager:$hibernateVersion"
+    compile "org.hibernate:hibernate-java8:$hibernateVersion"
+    compile "org.hibernate:hibernate-validator:$hibernateValidatorVersion"
 
     compile "com.google.gwt:gwt-user:$gwtVersion"
     compile "com.google.gwt:gwt-elemental:$gwtVersion"
@@ -29,7 +40,9 @@ dependencies {
         exclude group: "asm"
     }
     compile "org.fusesource.restygwt:restygwt:$restygwtVersion"
-    
+
+    apt "org.hibernate:hibernate-jpamodelgen:$hibernateVersion"
+
     testCompile "junit:junit:$junitVersion"
     testCompile "io.vertx:vertx-unit:$vertxVersion"
 
