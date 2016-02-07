@@ -3,6 +3,7 @@ package org.openremote.manager.server;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.manager.server.util.EnvironmentUtil.getEnvironment;
@@ -22,8 +23,13 @@ public class Server {
         vertx.deployVerticle(
             ServerVerticle.class.getName(),
             options,
-            event -> {
-                LOG.info("Server startup complete");
+            result -> {
+                if (result.succeeded()) {
+                    LOG.info("Server startup complete");
+                } else {
+                    LOG.log(Level.SEVERE, "Server startup failed", result.cause());
+                    System.exit(1);
+                }
             }
         );
     }

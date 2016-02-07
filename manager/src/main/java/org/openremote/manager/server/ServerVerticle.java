@@ -6,7 +6,9 @@ import com.yahoo.elide.audit.Slf4jLogger;
 import com.yahoo.elide.core.DataStore;
 import com.yahoo.elide.datastores.hibernate5.HibernateStore;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerResponse;
@@ -17,6 +19,9 @@ import org.hibernate.SessionFactory;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.logging.Logger;
 
 import static org.openremote.manager.server.Constants.DEV_MODE;
@@ -29,6 +34,9 @@ public class ServerVerticle extends AbstractVerticle {
     public static final String WEB_SERVER_PORT = "WEB_SERVER_PORT";
     public static final int WEB_SEVER_PORT_DEFAULT = 8080;
 
+    public static final String WEB_SERVER_DOCROOT = "WEB_SERVER_DOCROOT";
+    public static final String WEB_SERVER_DOCROOT_DEFAULT = "manager/src/main/webapp";
+
     protected boolean devMode;
 
     protected PersistenceService persistenceService;
@@ -38,10 +46,44 @@ public class ServerVerticle extends AbstractVerticle {
     protected Elide elide;
 
     @Override
-    public void start(Future<Void> future) {
+    public void start(Future<Void> startFuture) {
 
         devMode = config().getBoolean(DEV_MODE, DEV_MODE_DEFAULT);
 
+        vertx.executeBlocking(
+            blocking -> {
+                startPersistenceService();
+                startWebServer(event -> {
+                    if (event.succeeded()) {
+                        blocking.complete();
+                    } else {
+                        blocking.fail(event.cause());
+                    }
+                });
+            },
+            result -> {
+                if (result.succeeded()) {
+                    startFuture.complete();
+                } else {
+                    startFuture.fail(result.cause());
+                }
+            }
+        );
+    }
+
+    @Override
+    public void stop(Future<Void> stopFuture) throws Exception {
+        try {
+            if (devMode && sampleData != null)
+                sampleData.drop(persistenceService);
+            persistenceService.stop();
+            stopFuture.complete();
+        } catch (Exception ex) {
+            stopFuture.fail(ex);
+        }
+    }
+
+    protected void startPersistenceService() {
         persistenceService = new PersistenceService();
         persistenceService.start(config());
 
@@ -55,6 +97,9 @@ public class ServerVerticle extends AbstractVerticle {
         DataStore dataStore = new HibernateStore(sessionFactory);
         com.yahoo.elide.audit.Logger auditLogger = new Slf4jLogger();
         elide = new Elide(auditLogger, dataStore);
+    }
+
+    protected void startWebServer(Handler<AsyncResult<HttpServer>> completionHandler) {
 
         HttpServerOptions options = new HttpServerOptions();
         HttpServer server = vertx.createHttpServer(options);
@@ -93,30 +138,23 @@ public class ServerVerticle extends AbstractVerticle {
             );
         });
 
-        router.route("/*").handler(StaticHandler.create("manager/src/main/webapp").setCachingEnabled(false));
+        Path docRoot = Paths.get(config().getString(WEB_SERVER_DOCROOT, WEB_SERVER_DOCROOT_DEFAULT));
+        if (!Files.exists(docRoot)) {
+            throw new IllegalStateException(
+                "Static web document root doesn't exist: " + docRoot.toAbsolutePath()
+            );
+        }
+        LOG.info("Configuring static document root path: " + docRoot.toAbsolutePath());
+        router.route("/*").handler(
+            StaticHandler.create(
+                docRoot.toString()
+            ).setCachingEnabled(false)
+        );
 
         int webserverPort = config().getInteger(WEB_SERVER_PORT, WEB_SEVER_PORT_DEFAULT);
         LOG.info("Starting web server on port: " + webserverPort);
         server
             .requestHandler(router::accept)
-            .listen(webserverPort, result -> {
-                if (result.succeeded()) {
-                    future.complete();
-                } else {
-                    future.fail(result.cause());
-                }
-            });
-    }
-
-    @Override
-    public void stop(Future<Void> stopFuture) throws Exception {
-        try {
-            if (devMode && sampleData != null)
-                sampleData.drop(persistenceService);
-            persistenceService.stop();
-            stopFuture.complete();
-        } catch (Exception ex) {
-            stopFuture.fail(ex);
-        }
+            .listen(webserverPort, completionHandler);
     }
 }

@@ -7,4 +7,13 @@ allprojects {
     }
 
     version = projectVersion
+
+    tasks.withType(JavaCompile) {
+        sourceCompatibility = "1.8"
+        options.warnings = false
+    }
+
+    ext.dockerImageName = "$rootProject.name/$project.name".toString()
+    ext.dockerContainerName = "$rootProject.name-$project.name".toString()
+
 }

@@ -8,14 +8,17 @@ buildscript {
     dependencies {
         classpath "de.richsource.gradle.plugins:gwt-gradle-plugin:$gwtGradlePluginVersion"
         classpath "net.ltgt.gradle:gradle-apt-plugin:$aptGradlePluginVersion"
+        classpath "com.bmuschko:gradle-docker-plugin:$dockerGradlePluginVersion"
     }
 }
 
 apply plugin: "java"
+apply plugin: "application"
 apply plugin: "net.ltgt.apt"
 apply plugin: "gwt-compiler"
+apply plugin: "com.bmuschko.docker-remote-api"
 
-sourceCompatibility = '1.8'
+mainClassName = "org.openremote.manager.server.Server"
 
 dependencies {
 
@@ -87,4 +90,67 @@ tasks.withType(de.richsource.gradle.plugins.gwt.AbstractGwtActionTask) {
 
     // I've had various problems with this cache and GWT snapshot updates, so it's a good idea to make it easily cleanable
     jvmArgs("-Dgwt.persistentunitcachedir=$project.buildDir/gwt/cache")
+}
+
+distributions {
+    main {
+        contents {
+            from("src/main/webapp") {
+                into "webapp"
+                exclude "gwt"
+            }
+            from(compileGwt.outputs) {
+                into "webapp/gwt"
+                exclude "WEB-INF"
+            }
+        }
+    }
+}
+
+import com.bmuschko.gradle.docker.tasks.image.*
+import com.bmuschko.gradle.docker.tasks.container.*
+
+docker {
+    url = "$System.env.DOCKER_HOST".replace("tcp:", "https:")
+    certPath = new File("$System.env.DOCKER_CERT_PATH")
+}
+
+task createDockerfile(type: Dockerfile) {
+    destFile = project.file("build/install/Dockerfile")
+    from "java:8"
+    environmentVariable "WEB_SERVER_DOCROOT", "webapp"
+    addFile project.name, "/opt/app"
+    exposePort 8080
+    workingDir "/opt/app"
+    entryPoint "/opt/app/bin/$project.name"
+}
+
+task buildImage(type: DockerBuildImage) {
+    dependsOn installDist, createDockerfile
+    inputDir = createDockerfile.destFile.parentFile
+    tag = dockerImageName
+}
+
+task createContainer(type: DockerCreateContainer) {
+    dependsOn buildImage
+    targetImageId { dockerImageName }
+    portBindings = ['8080:8080']
+    containerName = dockerContainerName
+}
+
+task startContainer(type: DockerStartContainer) {
+    dependsOn createContainer
+    targetContainerId { dockerContainerName }
+}
+
+task stopContainer(type: DockerStopContainer) {
+    targetContainerId { dockerContainerName }
+}
+
+task removeContainer(type: DockerRemoveContainer) {
+    targetContainerId { dockerContainerName }
+}
+
+task removeImage(type: DockerRemoveImage) {
+    imageId = dockerImageName
 }
