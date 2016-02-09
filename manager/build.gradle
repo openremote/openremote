@@ -28,6 +28,10 @@ dependencies {
     compile "org.slf4j:log4j-over-slf4j:$slf4jVersion"
 
     compile "io.vertx:vertx-web:$vertxVersion"
+    compile "io.vertx:vertx-rx-java:$vertxVersion"
+    compile "com.hubrick.vertx:vertx-rest-client:$vertxRestClientVersion"
+
+    // TODO are we using this or not?
     compile "com.yahoo.elide:elide-core:1.0.0.20"
     compile "com.yahoo.elide:elide-datastore-hibernate5:1.0.0.20"
 
@@ -134,8 +138,8 @@ task buildImage(type: DockerBuildImage) {
 task createContainer(type: DockerCreateContainer) {
     dependsOn buildImage
     targetImageId { dockerImageName }
-    portBindings = ['8080:8080']
     containerName = dockerContainerName
+    portBindings = ['8080:8080']
 }
 
 task startContainer(type: DockerStartContainer) {

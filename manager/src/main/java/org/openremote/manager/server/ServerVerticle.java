@@ -35,7 +35,7 @@ public class ServerVerticle extends AbstractVerticle {
     public static final int WEB_SEVER_PORT_DEFAULT = 8080;
 
     public static final String WEB_SERVER_DOCROOT = "WEB_SERVER_DOCROOT";
-    public static final String WEB_SERVER_DOCROOT_DEFAULT = "manager/src/main/webapp";
+    public static final String WEB_SERVER_DOCROOT_DEFAULT = "src/main/webapp";
 
     protected boolean devMode;
 

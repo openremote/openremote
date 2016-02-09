@@ -1,0 +1,14 @@
+version: '2'
+
+services:
+  # Context Broker
+  mongo:
+    image: mongo:2.6
+    command: --smallfiles
+  orion:
+    image: fiware/orion:latest
+    links:
+      - mongo
+    ports:
+      - "1026:1026"
+    command: -dbhost mongo
