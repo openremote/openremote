@@ -17,8 +17,9 @@ public class KeyValueAttribute extends AbstractAttribute {
     }
 
     @Override
-    public void setValue(JsonValue value) {
+    public KeyValueAttribute setValue(JsonValue value) {
         this.value = value;
+        return this;
     }
 
     @Override

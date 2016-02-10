@@ -16,5 +16,5 @@ public abstract class AbstractAttribute {
 
     public abstract JsonValue getValue();
 
-    public abstract void setValue(JsonValue value);
+    public abstract AbstractAttribute setValue(JsonValue value);
 }

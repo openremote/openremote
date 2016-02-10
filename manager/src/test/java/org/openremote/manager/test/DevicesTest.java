@@ -18,7 +18,7 @@ public class DevicesTest extends ServerTest {
     public void retrieveDevices(TestContext context) {
         final Async async = context.async();
 
-        vertx.createHttpClient().getNow(ephemeralPort, "localhost", "/device",
+        httpClient.getNow(ephemeralPort, "localhost", "/device",
             response -> {
                 response.handler(body -> {
                     try {

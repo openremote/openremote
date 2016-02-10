@@ -22,24 +22,27 @@ public class Attribute extends AbstractAttribute {
     }
 
     @Override
-    public void setValue(JsonValue value) {
+    public Attribute setValue(JsonValue value) {
         jsonObject.put("value", value);
+        return this;
     }
 
     public String getType() {
         return jsonObject.hasKey("type") ? jsonObject.getString("type") : null;
     }
 
-    public void setType(String type) {
+    public Attribute setType(String type) {
         jsonObject.put("type", type);
+        return this;
     }
 
     public Metadata getMetadata() {
         return jsonObject.hasKey("metadata") ? new Metadata(jsonObject.getObject("metadata")) : null;
     }
 
-    public void setMetadata(Metadata metadata) {
+    public Attribute setMetadata(Metadata metadata) {
         jsonObject.put("metadata", metadata.getJsonObject());
+        return this;
     }
 
     @Override

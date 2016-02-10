@@ -25,16 +25,18 @@ public class MetadataElement {
         return jsonObject.hasKey("value") ? jsonObject.get("value") : null;
     }
 
-    public void setValue(JsonValue value) {
+    public MetadataElement setValue(JsonValue value) {
         jsonObject.put("value", value);
+        return this;
     }
 
     public String getType() {
         return jsonObject.hasKey("type") ? jsonObject.getString("type") : null;
     }
 
-    public void setType(String type) {
+    public MetadataElement setType(String type) {
         jsonObject.put("type", type);
+        return this;
     }
 
     @Override

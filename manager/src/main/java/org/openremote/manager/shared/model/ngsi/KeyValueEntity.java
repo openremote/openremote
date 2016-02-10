@@ -14,21 +14,33 @@ public class KeyValueEntity extends AbstractEntity<KeyValueAttribute> {
     @Override
     public KeyValueAttribute[] getAttributes() {
         Set<KeyValueAttribute> attributes = new LinkedHashSet<>();
-
         String[] keys = jsonObject.keys();
         for (String key : keys) {
-            if (key.equals("id") || key.equals("type"))
-                continue;
-            KeyValueAttribute attribute = new KeyValueAttribute(key, jsonObject.get(key));
-            attributes.add(attribute);
+            if (hasAttribute(key)) {
+                KeyValueAttribute attribute = new KeyValueAttribute(key, jsonObject.get(key));
+                attributes.add(attribute);
+            }
         }
-
         return attributes.toArray(new KeyValueAttribute[attributes.size()]);
     }
 
     @Override
     public KeyValueAttribute getAttribute(String name) {
         return hasAttribute(name) ? new KeyValueAttribute(name, jsonObject.get(name)) : null;
+    }
+
+    @Override
+    public KeyValueEntity addAttribute(KeyValueAttribute attribute) {
+        jsonObject.put(attribute.getName(), attribute.getValue());
+        return this;
+    }
+
+    @Override
+    public KeyValueEntity removeAttribute(String name) {
+        if (hasAttribute(name)) {
+            jsonObject.remove(name);
+        }
+        return this;
     }
 
     @Override

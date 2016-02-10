@@ -14,21 +14,33 @@ public class Entity extends AbstractEntity<Attribute> {
     @Override
     public Attribute[] getAttributes() {
         Set<Attribute> attributes = new LinkedHashSet<>();
-
         String[] keys = jsonObject.keys();
         for (String key : keys) {
-            if (key.equals("id") || key.equals("type"))
-                continue;
-            Attribute attribute = new Attribute(key, jsonObject.getObject(key));
-            attributes.add(attribute);
+            if (hasAttribute(key)) {
+                Attribute attribute = new Attribute(key, jsonObject.getObject(key));
+                attributes.add(attribute);
+            }
         }
-
         return attributes.toArray(new Attribute[attributes.size()]);
     }
 
     @Override
     public Attribute getAttribute(String name) {
         return hasAttribute(name) ? new Attribute(name, jsonObject.getObject(name)) : null;
+    }
+
+    @Override
+    public Entity addAttribute(Attribute attribute) {
+        jsonObject.put(attribute.getName(), attribute.getJsonObject());
+        return this;
+    }
+
+    @Override
+    public Entity removeAttribute(String name) {
+        if (hasAttribute(name)) {
+            jsonObject.remove(name);
+        }
+        return this;
     }
 
     @Override

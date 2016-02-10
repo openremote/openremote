@@ -1,6 +1,7 @@
 package org.openremote.manager.server.ngsi;
 
 import com.google.common.collect.ImmutableList;
+import com.hubrick.vertx.rest.MediaType;
 import com.hubrick.vertx.rest.RestClientOptions;
 import com.hubrick.vertx.rest.RestClientRequest;
 import com.hubrick.vertx.rest.RestClientResponse;
@@ -45,5 +46,13 @@ public class NgsiClient {
     public Observable<RestClientResponse<Entity[]>> listEntities(EntryPoint entryPoint,
                                                                  Action1<RestClientRequest> requestBuilder) {
         return client.get(entryPoint.getEntitiesLocation(), Entity[].class, requestBuilder);
+    }
+
+    public Observable<RestClientResponse<Void>> createEntity(EntryPoint entryPoint,
+                                                             Action1<RestClientRequest> requestBuilder) {
+        return client.post(entryPoint.getEntitiesLocation(), restClientRequest -> {
+            restClientRequest.setContentType(MediaType.APPLICATION_JSON);
+            requestBuilder.call(restClientRequest);
+        });
     }
 }

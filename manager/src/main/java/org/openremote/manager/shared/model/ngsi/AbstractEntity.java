@@ -21,16 +21,18 @@ public abstract class AbstractEntity<A extends AbstractAttribute> {
         return jsonObject.hasKey("id") ? jsonObject.getString("id") : null;
     }
 
-    public void setId(String id) {
+    public AbstractEntity<A> setId(String id) {
         jsonObject.put("id", id);
+        return this;
     }
 
     public String getType() {
         return jsonObject.hasKey("type") ? jsonObject.getString("type") : null;
     }
 
-    public void setType(String type) {
+    public AbstractEntity<A> setType(String type) {
         jsonObject.put("type", type);
+        return this;
     }
 
     public boolean hasAttribute(String name) {
@@ -54,6 +56,10 @@ public abstract class AbstractEntity<A extends AbstractAttribute> {
     public abstract A[] getAttributes();
 
     public abstract A getAttribute(String name);
+
+    public abstract AbstractEntity<A> addAttribute(A attribute);
+
+    public abstract AbstractEntity<A> removeAttribute(String name);
 
     protected abstract void validateAttributes(Set<ModelValidationError> errors);
 
