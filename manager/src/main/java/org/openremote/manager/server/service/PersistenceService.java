@@ -1,6 +1,7 @@
-package org.openremote.manager.server;
+package org.openremote.manager.server.service;
 
 import io.vertx.core.json.JsonObject;
+import org.openremote.manager.server.jpa.Database;
 
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;

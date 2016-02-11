@@ -10,6 +10,7 @@ import elemental.json.Json;
 import elemental.json.JsonArray;
 import elemental.json.JsonObject;
 import elemental.json.impl.JsonUtil;
+import io.vertx.core.MultiMap;
 import org.openremote.manager.shared.model.ngsi.AbstractEntity;
 import org.openremote.manager.shared.model.ngsi.Entity;
 import org.openremote.manager.shared.model.ngsi.KeyValueEntity;
@@ -19,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class NgsiEntityHttpMessageConverter extends AbstractHttpMessageConverter<Object> {
+
+    public static final String OPERATION_IS_UPDATE = "OPERATION_IS_UPDATE";
 
     public NgsiEntityHttpMessageConverter() {
         super(
@@ -71,19 +74,39 @@ public class NgsiEntityHttpMessageConverter extends AbstractHttpMessageConverter
     @Override
     protected void writeInternal(Object object, HttpOutputMessage output) throws HttpMessageConverterException {
         try {
+
             if (object instanceof AbstractEntity) {
                 AbstractEntity entity = (AbstractEntity) object;
-                output.write(entity.getJsonObject().toJson().getBytes("utf-8"));
+                output.write(getJsonObject(entity, output.getHeaders()).toJson().getBytes("utf-8"));
             } else if (object instanceof AbstractEntity[]) {
                 AbstractEntity[] abstractEntities = (AbstractEntity[]) object;
                 JsonArray jsonArray = Json.createArray();
                 for (int i = 0; i < abstractEntities.length; i++) {
-                    jsonArray.set(i, abstractEntities[i].getJsonObject());
+                    JsonObject jsonObject = getJsonObject(abstractEntities[i], output.getHeaders());
+                    jsonArray.set(i, jsonObject);
                 }
                 output.write(jsonArray.toJson().getBytes("utf-8"));
             }
         } catch (Exception ex) {
             throw new HttpMessageConverterException("Error converting to JSON", ex);
         }
+    }
+
+    protected JsonObject getJsonObject(AbstractEntity entity, MultiMap headers) {
+        // Need to strip out id and type attributes of an entity if it's a PATCH or POST. Since we
+        // don't know if it's a PATCH or POST here, we look for a temporary header flag and then
+        // remove it. Why doesn't the NGSI server just ignore those fields? FU, that's why.
+        String isUpdate = headers.get(OPERATION_IS_UPDATE);
+        if (isUpdate != null) {
+            headers.remove(OPERATION_IS_UPDATE);
+            JsonObject original = entity.getJsonObject();
+            JsonObject copy = Json.parse(original.toJson());
+            if (copy.hasKey("id"))
+                copy.remove("id");
+            if (copy.hasKey("type"))
+                copy.remove("type");
+            return copy;
+        }
+        return entity.getJsonObject();
     }
 }

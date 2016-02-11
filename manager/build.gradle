@@ -31,10 +31,6 @@ dependencies {
     compile "io.vertx:vertx-rx-java:$vertxVersion"
     compile "com.hubrick.vertx:vertx-rest-client:$vertxRestClientVersion"
 
-    // TODO are we using this or not?
-    compile "com.yahoo.elide:elide-core:1.0.0.20"
-    compile "com.yahoo.elide:elide-datastore-hibernate5:1.0.0.20"
-
     compile "com.h2database:h2:$h2Version"
     compile "com.zaxxer:HikariCP:$hikaricpVersion"
     compile "org.hibernate:hibernate-entitymanager:$hibernateVersion"

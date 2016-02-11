@@ -17,12 +17,16 @@ public abstract class AbstractEntity<A extends AbstractAttribute> {
         return jsonObject;
     }
 
+
     public String getId() {
         return jsonObject.hasKey("id") ? jsonObject.getString("id") : null;
     }
 
     public AbstractEntity<A> setId(String id) {
-        jsonObject.put("id", id);
+        if (id == null)
+            jsonObject.remove("id");
+        else
+            jsonObject.put("id", id);
         return this;
     }
 
@@ -31,7 +35,10 @@ public abstract class AbstractEntity<A extends AbstractAttribute> {
     }
 
     public AbstractEntity<A> setType(String type) {
-        jsonObject.put("type", type);
+        if (type == null)
+            jsonObject.remove("type");
+        else
+            jsonObject.put("type", type);
         return this;
     }
 
