@@ -1,18 +1,13 @@
-package org.openremote.manager.client.dashboard.view;
+package org.openremote.manager.client.view;
 
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.user.client.ui.IsWidget;
 
-public interface DashboardView extends IsWidget {
+public interface MapView extends IsWidget {
 
     interface Presenter {
         void goTo(Place place);
-
-        void getHelloText();
     }
 
     void setPresenter(Presenter presenter);
-
-    void setHelloText(String text);
-
 }

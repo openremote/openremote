@@ -1,4 +1,4 @@
-package org.openremote.manager.client.dashboard.view;
+package org.openremote.manager.client.view;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
@@ -12,38 +12,22 @@ import com.google.gwt.user.client.ui.ScrollPanel;
 
 import javax.inject.Inject;
 
-public class DashboardViewImpl extends Composite implements DashboardView {
+public class AssetsViewImpl extends Composite implements AssetsView {
 
-    interface UI extends UiBinder<ScrollPanel, DashboardViewImpl> {
+    interface UI extends UiBinder<ScrollPanel, AssetsViewImpl> {
     }
 
     private UI ui = GWT.create(UI.class);
 
     Presenter presenter;
 
-    @UiField
-    Button helloButton;
-
-    @UiField
-    Label helloLabel;
-
     @Inject
-    public DashboardViewImpl() {
+    public AssetsViewImpl() {
         initWidget(ui.createAndBindUi(this));
     }
 
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
-    }
-
-    @Override
-    public void setHelloText(String text) {
-        helloLabel.setText(text);
-    }
-
-    @UiHandler("helloButton")
-    public void handleHelloButton(ClickEvent event) {
-        presenter.getHelloText();
     }
 }

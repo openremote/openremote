@@ -1,4 +1,4 @@
-package org.openremote.manager.client.main.view;
+package org.openremote.manager.client.view;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.uibinder.client.UiBinder;
@@ -13,6 +13,7 @@ public class MainViewImpl extends Composite implements MainView {
     }
 
     private UI ui = GWT.create(UI.class);
+    private MainMenuView mainMenuView;
 
     @UiField
     SimpleLayoutPanel headerPanel;
@@ -25,8 +26,6 @@ public class MainViewImpl extends Composite implements MainView {
     @Inject
     public MainViewImpl() {
         initWidget(ui.createAndBindUi(this));
-
-        headerPanel.add(new Label("THIS IS THE HEADER PANEL IN THE MAIN VIEW"));
     }
 
     @Override
@@ -35,7 +34,14 @@ public class MainViewImpl extends Composite implements MainView {
     }
 
     @Override
-    public AcceptsOneWidget getContentPanel() {
+    public void setMenu(MainMenuView mainMenuView) {
+        this.mainMenuView = mainMenuView;
+        headerPanel.add(mainMenuView);
+    }
+
+
+    @Override
+    public AcceptsOneWidget getMainContentPanel() {
         return contentPanel;
     }
 

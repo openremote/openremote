@@ -1,6 +1,5 @@
-package org.openremote.manager.client.dashboard;
+package org.openremote.manager.client.presenter;
 
-import com.google.gwt.activity.shared.AbstractActivity;
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.Window;
@@ -9,30 +8,30 @@ import com.google.web.bindery.event.shared.EventBus;
 import org.fusesource.restygwt.client.Method;
 import org.fusesource.restygwt.client.Resource;
 import org.fusesource.restygwt.client.TextCallback;
-import org.openremote.manager.client.dashboard.view.DashboardView;
+import org.openremote.manager.client.view.AssetsView;
 
 import javax.inject.Inject;
 
-public class DashboardActivity
-    extends AbstractActivity
-    implements DashboardView.Presenter {
+public class AssetsActivity
+    extends AbstractActivity<AssetsPlace>
+    implements AssetsView.Presenter {
 
-    final DashboardView view;
+    final AssetsView view;
     final PlaceController placeController;
     final EventBus bus;
 
     @Inject
-    public DashboardActivity(DashboardView view,
-                             PlaceController placeController,
-                             EventBus bus) {
+    public AssetsActivity(AssetsView view,
+                          PlaceController placeController,
+                          EventBus bus) {
         this.view = view;
         this.placeController = placeController;
         this.bus = bus;
     }
 
-    public DashboardActivity init(DashboardPlace place) {
-        view.setHelloText("Activity has been initialized.");
-        return this;
+    @Override
+    protected void init(AssetsPlace place) {
+
     }
 
     @Override
@@ -48,17 +47,17 @@ public class DashboardActivity
 
     @Override
     public void getHelloText() {
-        resource("hello").get().send(new TextCallback() {
-            @Override
-            public void onSuccess(Method method, String response) {
-                view.setHelloText(response);
-            }
-
-            @Override
-            public void onFailure(Method method, Throwable exception) {
-                view.setHelloText("Request failed!");
-            }
-        });
+//        resource("hello").get().send(new TextCallback() {
+//            @Override
+//            public void onSuccess(Method method, String response) {
+//                view.setHelloText(response);
+//            }
+//
+//            @Override
+//            public void onFailure(Method method, Throwable exception) {
+//                view.setHelloText("Request failed!");
+//            }
+//        });
     }
 
     protected static String hostname() {
@@ -79,5 +78,4 @@ public class DashboardActivity
         }
         return new Resource(sb.toString());
     }
-
 }
