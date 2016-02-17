@@ -3,6 +3,7 @@ package org.openremote.manager.server;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import org.openremote.manager.server.service.ContextBrokerService;
+import org.openremote.manager.server.service.MapService;
 import org.openremote.manager.server.service.PersistenceService;
 import org.openremote.manager.server.service.WebService;
 
@@ -19,6 +20,7 @@ public class ServerVerticle extends AbstractVerticle {
     protected SampleData sampleData;
 
     protected ContextBrokerService contextBrokerService;
+    protected MapService mapService;
     protected PersistenceService persistenceService;
     protected WebService webService;
 
@@ -33,6 +35,9 @@ public class ServerVerticle extends AbstractVerticle {
                 contextBrokerService = new ContextBrokerService();
                 contextBrokerService.start(vertx, config());
 
+                mapService = new MapService();
+                mapService.start(vertx, config());
+
                 persistenceService = new PersistenceService();
                 persistenceService.start(config());
 
@@ -41,7 +46,12 @@ public class ServerVerticle extends AbstractVerticle {
                     sampleData.create(contextBrokerService, persistenceService);
                 }
 
-                webService = new WebService(contextBrokerService, persistenceService);
+                webService = new WebService(
+                    contextBrokerService,
+                    mapService,
+                    persistenceService
+                );
+
                 webService.start(vertx, config(), event -> {
                     if (event.succeeded()) {
                         blocking.complete();
@@ -69,6 +79,8 @@ public class ServerVerticle extends AbstractVerticle {
                 webService.stop();
             if (persistenceService != null)
                 persistenceService.stop();
+            if (mapService != null)
+                mapService.stop();
             if (contextBrokerService != null)
                 contextBrokerService.stop();
             stopFuture.complete();

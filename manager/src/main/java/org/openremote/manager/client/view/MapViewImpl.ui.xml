@@ -1,8 +1,21 @@
 <ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
              xmlns:g="urn:import:com.google.gwt.user.client.ui">
 
-    <g:ScrollPanel>
-        <g:Label>MAP</g:Label>
-    </g:ScrollPanel>
+    <ui:style>
+        .mapContainer {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+            background-color: white;
+        }
+    </ui:style>
+
+
+    <g:HTMLPanel>
+
+        <g:HTMLPanel ui:field="mapContainer" addStyleNames="{style.mapContainer}"/>
+
+    </g:HTMLPanel>
 
 </ui:UiBinder>
