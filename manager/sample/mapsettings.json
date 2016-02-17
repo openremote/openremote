@@ -1,6 +1,6 @@
 {
   "center": [5.4774, 51.4370],
-  "maxBounds": [5.3547,51.3757,5.586,51.5364],
+  "maxBounds": [5.3547, 51.3757, 5.586, 51.5364],
   "zoom": 12,
   "maxZoom": 18,
   "style": {
@@ -13,11 +13,31 @@
         }
       },
       {
+        "id": "landuse_industrial",
+        "type": "fill",
+        "source": "vector_tiles",
+        "source-layer": "landuse",
+        "filter": ["all", ["==", "class", "industrial"], ["==", "$type", "Polygon"]],
+        "paint": {
+          "fill-color": "#cfcfcf"
+        }
+      },
+      {
+        "id": "landuse_cemetery",
+        "type": "fill",
+        "source": "vector_tiles",
+        "source-layer": "landuse",
+        "filter": ["all", ["==", "class", "cemetery"], ["==", "$type", "Polygon"]],
+        "paint": {
+          "fill-color": "#C9E3A8"
+        }
+      },
+      {
         "id": "landuse_wood",
         "type": "fill",
         "source": "vector_tiles",
         "source-layer": "landuse",
-        "filter": ["in", "class", "park", "wood"],
+        "filter": ["all", ["in", "class", "park", "wood", "forest"], ["==", "$type", "Polygon"]],
         "paint": {
           "fill-color": "#d2edae"
         }
@@ -96,7 +116,7 @@
         "filter": ["all", ["==", "$type", "LineString"], ["==", "type", "runway"]],
         "minzoom": 11,
         "paint": {
-          "line-color": "#666",
+          "line-color": "#888",
           "line-width": {
             "base": 5,
             "stops": [[11, 4], [20, 10]]
@@ -146,7 +166,7 @@
           ["in", "class", "motorway_link", "street", "street_limited", "service", "driveway", "path"]
         ],
         "paint": {
-          "line-color": "#888",
+          "line-color": "#666",
           "line-width": {
             "base": 1.55,
             "stops": [[4, 0.25], [20, 30]]
@@ -186,7 +206,7 @@
           "line-color": "#bbb",
           "line-width": {
             "base": 1.8,
-            "stops": [[4, 0.25], [20, 30]]
+            "stops": [[4, 1], [20, 30]]
           }
         }
       },
@@ -209,6 +229,36 @@
         }
       },
       {
+        "id": "road_major_rail",
+        "type": "line",
+        "source": "vector_tiles",
+        "source-layer": "road",
+        "filter": ["all", ["==", "$type", "LineString"], ["in", "class", "major_rail"]],
+        "layout": {
+          "line-cap": "round",
+          "line-join": "round"
+        },
+        "paint": {
+          "line-color": "#ccc",
+          "line-width": {
+            "base": 1.4,
+            "stops": [[6, 0.5], [20, 10]]
+          }
+        }
+      },
+      {
+        "id": "road_major_rail_hatching",
+        "ref": "road_major_rail",
+        "paint": {
+          "line-color": "#888",
+          "line-width": {
+            "base": 1.4,
+            "stops": [[6, 0.5], [20, 10]]
+          },
+          "line-dasharray": [3, 3]
+        }
+      },
+      {
         "id": "bridge_minor_case",
         "type": "line",
         "source": "vector_tiles",
@@ -225,7 +275,7 @@
           },
           "line-gap-width": {
             "base": 1.55,
-            "stops": [[4, 0.25], [20, 30]]
+            "stops": [[4, 0.25], [20, 15]]
           }
         }
       },
@@ -234,7 +284,7 @@
         "type": "line",
         "source": "vector_tiles",
         "source-layer": "bridge",
-        "filter": ["all", ["==", "$type", "LineString"], ["in", "class", "motorway", "main"]],
+        "filter": ["all", ["==", "$type", "LineString"], ["in", "class", "motorway", "main", "major_rail"]],
         "paint": {
           "line-color": "#bbc",
           "line-width": {
@@ -243,7 +293,7 @@
           },
           "line-gap-width": {
             "base": 1.4,
-            "stops": [[6, 0.5], [20, 30]]
+            "stops": [[6, 0.5], [20, 20]]
           }
         }
       },
@@ -261,10 +311,10 @@
           "line-join": "round"
         },
         "paint": {
-          "line-color": "#aab",
+          "line-color": "#889",
           "line-width": {
             "base": 1.55,
-            "stops": [[4, 0.25], [20, 30]]
+            "stops": [[4, 0.25], [20, 15]]
           }
         }
       },
@@ -273,16 +323,16 @@
         "type": "line",
         "source": "vector_tiles",
         "source-layer": "bridge",
-        "filter": ["all", ["==", "$type", "LineString"], ["in", "class", "motorway", "main"]],
+        "filter": ["all", ["==", "$type", "LineString"], ["in", "class", "motorway", "main", "major_rail"]],
         "layout": {
           "line-cap": "round",
           "line-join": "round"
         },
         "paint": {
-          "line-color": "#aab",
+          "line-color": "#889",
           "line-width": {
             "base": 1.4,
-            "stops": [[6, 0.5], [20, 30]]
+            "stops": [[6, 0.5], [20, 20]]
           }
         }
       },

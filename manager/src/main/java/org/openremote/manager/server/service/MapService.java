@@ -13,6 +13,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import static org.openremote.manager.server.Constants.DEV_MODE;
+import static org.openremote.manager.server.Constants.DEV_MODE_DEFAULT;
+
 public class MapService {
 
     private static final Logger LOG = Logger.getLogger(MapService.class.getName());
@@ -25,9 +28,14 @@ public class MapService {
     // Shared SQL connection is fine concurrently in SQLite
     protected Connection connection;
 
-    protected elemental.json.JsonObject mapSettings;
+    protected Vertx vertx;
+    protected boolean devMode;
+    protected Path mapSettingsPath;
+    protected JsonObject mapSettings;
 
     public void start(Vertx vertx, io.vertx.core.json.JsonObject config) {
+        this.vertx = vertx;
+        this.devMode = config.getBoolean(DEV_MODE, DEV_MODE_DEFAULT);
 
         Path mapTilesPath = Paths.get(config.getString(MAP_TILES_PATH, MAP_TILES_PATH_DEFAULT));
         if (!Files.isRegularFile(mapTilesPath)) {
@@ -36,7 +44,7 @@ public class MapService {
             );
         }
 
-        Path mapSettingsPath = Paths.get(config.getString(MAP_SETTINGS_PATH, MAP_SETTINGS_PATH_DEFAULT));
+        mapSettingsPath = Paths.get(config.getString(MAP_SETTINGS_PATH, MAP_SETTINGS_PATH_DEFAULT));
         if (!Files.isRegularFile(mapSettingsPath)) {
             throw new IllegalStateException(
                 "Map settings file not found: " + mapSettingsPath.toAbsolutePath()
@@ -51,11 +59,7 @@ public class MapService {
             throw new IllegalStateException(ex);
         }
 
-        mapSettings = Json.parse(
-            vertx.fileSystem().readFileBlocking(mapSettingsPath.toAbsolutePath().toString()).toString()
-        );
-
-        adjustMapSettings();
+        readMapSettings();
     }
 
     public void stop() {
@@ -70,6 +74,12 @@ public class MapService {
     }
 
     public JsonObject getMapSettings(String mapTileBaseUrl) {
+
+        // Refresh map settings for every request in dev mode, cache it in production
+        if (devMode) {
+            readMapSettings();
+        }
+
         // TODO: Maybe we should complete the URL on the client
         JsonObject settingsCopy = Json.parse(mapSettings.toJson());
         JsonArray tilesArray = Json.createArray();
@@ -103,8 +113,16 @@ public class MapService {
         }
     }
 
-    protected void adjustMapSettings() {
+    protected void readMapSettings() {
+
         // Mix settings from file with database metadata, and some hardcoded magic
+        try {
+            mapSettings = Json.parse(
+                vertx.fileSystem().readFileBlocking(mapSettingsPath.toAbsolutePath().toString()).toString()
+            );
+        } catch (Exception ex) {
+            throw new RuntimeException("Error parsing map settings: " + mapSettingsPath.toAbsolutePath(), ex);
+        }
 
         JsonObject style = mapSettings.getObject("style");
 
