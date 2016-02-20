@@ -29,7 +29,10 @@ dependencies {
 
     compile "io.vertx:vertx-web:$vertxVersion"
     compile "io.vertx:vertx-rx-java:$vertxVersion"
+    compile "io.vertx:vertx-auth-oauth2:$vertxVersion"
     compile "com.hubrick.vertx:vertx-rest-client:$vertxRestClientVersion"
+
+    compile "io.mikael:urlbuilder:$urlbuilderVersion"
 
     compile "org.xerial:sqlite-jdbc:$sqliteVersion"
     compile "com.h2database:h2:$h2Version"

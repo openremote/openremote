@@ -15,6 +15,7 @@ import java.util.logging.Logger;
 
 import static org.openremote.manager.server.Constants.DEV_MODE;
 import static org.openremote.manager.server.Constants.DEV_MODE_DEFAULT;
+import static org.openremote.manager.server.Constants.STATIC_PATH;
 
 public class MapService {
 
@@ -73,17 +74,16 @@ public class MapService {
         }
     }
 
-    public JsonObject getMapSettings(String mapTileBaseUrl) {
+    public JsonObject getMapSettings(String tileUrl) {
 
         // Refresh map settings for every request in dev mode, cache it in production
         if (devMode) {
             readMapSettings();
         }
 
-        // TODO: Maybe we should complete the URL on the client
         JsonObject settingsCopy = Json.parse(mapSettings.toJson());
         JsonArray tilesArray = Json.createArray();
-        tilesArray.set(0, mapTileBaseUrl + "/{z}/{x}/{y}");
+        tilesArray.set(0, tileUrl);
         settingsCopy.getObject("style").getObject("sources").getObject("vector_tiles").put("tiles", tilesArray);
         return settingsCopy;
     }
@@ -128,7 +128,7 @@ public class MapService {
 
         style.put("version", 8);
 
-        style.put("glyphs", "/fonts/{fontstack}/{range}.pbf");
+        style.put("glyphs", STATIC_PATH + "/fonts/{fontstack}/{range}.pbf");
 
         JsonObject sources = Json.createObject();
         style.put("sources", sources);

@@ -71,12 +71,19 @@ public class MapActivity
         return Window.Location.getPort();
     }
 
+    protected static String realmPath() {
+        return Window.Location.getPath();
+    }
+
     protected Resource resource(String... pathElement) {
         StringBuilder sb = new StringBuilder();
         sb.append("http://").append(hostname()).append(":").append(port());
+        sb.append(realmPath());
         if (pathElement != null) {
             for (String pe : pathElement) {
-                sb.append("/").append(pe);
+                if (!pe.startsWith("/"))
+                    sb.append("/");
+                sb.append(pe);
             }
         }
         return new Resource(sb.toString());
