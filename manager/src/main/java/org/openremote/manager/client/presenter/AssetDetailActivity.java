@@ -5,25 +5,26 @@ import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.web.bindery.event.shared.EventBus;
-import org.fusesource.restygwt.client.Method;
 import org.fusesource.restygwt.client.Resource;
-import org.fusesource.restygwt.client.TextCallback;
-import org.openremote.manager.client.view.AssetsView;
+import org.openremote.manager.client.view.AssetDetailView;
 
 import javax.inject.Inject;
 
-public class AssetsActivity
-    extends AbstractActivity<AssetsPlace>
-    implements AssetsView.Presenter {
+/**
+ * Activity for Asset Manager
+ */
+public class AssetDetailActivity
+        extends AbstractActivity<AssetsPlace>
+        implements AssetDetailView.Presenter {
 
-    final AssetsView view;
+    final AssetDetailView view;
     final PlaceController placeController;
     final EventBus bus;
 
     @Inject
-    public AssetsActivity(AssetsView view,
-                          PlaceController placeController,
-                          EventBus bus) {
+    public AssetDetailActivity(AssetDetailView view,
+                               PlaceController placeController,
+                               EventBus bus) {
         this.view = view;
         this.placeController = placeController;
         this.bus = bus;

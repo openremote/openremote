@@ -7,4 +7,6 @@ public interface CookieService {
     String getCookie(String name);
 
     void setCookie(String name, String value);
+
+    void removeCookie(String name);
 }

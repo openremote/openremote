@@ -4,6 +4,9 @@ buildscript {
         maven {
             url "https://plugins.gradle.org/m2/"
         }
+        maven {
+            url "https://ibaca.github.io/rxjava-gwt/"
+        }
     }
     dependencies {
         classpath "de.richsource.gradle.plugins:gwt-gradle-plugin:$gwtGradlePluginVersion"
@@ -42,13 +45,22 @@ dependencies {
     compile ("com.google.gwt.inject:gin:$ginVersion") {
         exclude group: "asm"
     }
+    
+    // REST SERVICES
     compile "org.fusesource.restygwt:restygwt:$restygwtVersion"
+    compile "javax.ws.rs:javax.ws.rs-api:2.0.1"
 
     apt "org.hibernate:hibernate-jpamodelgen:$hibernateVersion"
 
     testCompile "junit:junit:$junitVersion"
     testCompile "io.vertx:vertx-unit:$vertxVersion"
-
+        
+    // GWT Bootstrap support
+    compile "org.gwtbootstrap3:gwtbootstrap3:0.9.2"
+    compile "org.gwtbootstrap3:gwtbootstrap3-extras:0.9.2"
+    
+    // GWT Material Design
+    //compile 'com.github.gwtmaterialdesign:gwt-material:1.4.1'
 }
 
 gwt {
@@ -63,6 +75,10 @@ gwt {
         hasGwtTests = false
     }
 
+    dependencies {
+      compile files('libs/jscore-1.0.jar')
+    }
+    
     compiler {
         style = "PRETTY"
     }

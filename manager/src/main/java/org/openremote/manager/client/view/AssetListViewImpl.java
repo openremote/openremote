@@ -1,20 +1,15 @@
 package org.openremote.manager.client.view;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.uibinder.client.UiBinder;
-import com.google.gwt.uibinder.client.UiField;
-import com.google.gwt.uibinder.client.UiHandler;
-import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
-import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.ScrollPanel;
 
 import javax.inject.Inject;
 
-public class AssetsViewImpl extends Composite implements AssetsView {
+public class AssetListViewImpl extends Composite implements AssetListView {
 
-    interface UI extends UiBinder<ScrollPanel, AssetsViewImpl> {
+    interface UI extends UiBinder<ScrollPanel, AssetListViewImpl> {
     }
 
     private UI ui = GWT.create(UI.class);
@@ -22,7 +17,7 @@ public class AssetsViewImpl extends Composite implements AssetsView {
     Presenter presenter;
 
     @Inject
-    public AssetsViewImpl() {
+    public AssetListViewImpl() {
         initWidget(ui.createAndBindUi(this));
     }
 

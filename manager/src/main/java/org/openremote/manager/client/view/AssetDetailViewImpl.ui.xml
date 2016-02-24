@@ -2,7 +2,7 @@
              xmlns:g="urn:import:com.google.gwt.user.client.ui">
 
     <g:ScrollPanel>
-        <g:Label>ASSET MANAGER</g:Label>
+        <g:Label>ASSET DETAILS</g:Label>
     </g:ScrollPanel>
 
 </ui:UiBinder>

@@ -13,6 +13,9 @@
     <inherits name="com.google.gwt.place.Place"/>
     <inherits name="com.google.gwt.inject.Inject"/>
     <inherits name="org.fusesource.restygwt.RestyGWT"/>
+    <inherits name="org.gwtbootstrap3.GwtBootstrap3" />
+    <inherits name="com.google.gwt.i18n.I18N"/>
+    <inherits name="com.workingflows.js.jscore.JSCore" />
 
     <!-- ##################################################################### -->
 
@@ -23,6 +26,8 @@
     <!-- TODO Make this switchable in Gradle build -->
     <set-property name="gwt.logging.logLevel" value="FINEST"/>
     <set-property name="gwt.logging.enabled" value="TRUE"/>
+
+    <extend-property name="locale" values="en"/>
 
     <!-- ##################################################################### -->
 

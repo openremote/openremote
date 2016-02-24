@@ -1,7 +1,6 @@
 package org.openremote.manager.client;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.user.client.ui.RootLayoutPanel;
 
 public class ManagerEntryPoint implements com.google.gwt.core.client.EntryPoint {
 

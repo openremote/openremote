@@ -18,7 +18,7 @@ package org.openremote.manager.client.util;
 /**
  * A utility to decode and encode byte arrays as Strings, using only "safe"
  * characters.
- *
+ * <p>
  * RT: This is a quick alternative to using JSNI code; copied from gwt-user.jar
  */
 public class Base64Utils {
@@ -28,7 +28,7 @@ public class Base64Utils {
      * represent them. Note that this is not identical to the set of characters
      * used by MIME-Base64.
      */
-    private static final char[] base64Chars = new char[] {
+    private static final char[] base64Chars = new char[]{
             'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
             'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b',
             'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',

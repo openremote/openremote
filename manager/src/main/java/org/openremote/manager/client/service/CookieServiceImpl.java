@@ -15,4 +15,9 @@ public class CookieServiceImpl implements CookieService {
     public void setCookie(String name, String value) {
         Cookies.setCookie(name, value);
     }
+
+    @Override
+    public void removeCookie(String name) {
+        Cookies.removeCookie(name);
+    }
 }

@@ -13,4 +13,8 @@ public interface SecurityService {
     boolean hasToken();
 
     Date getTokenExpirationDate();
+
+    String getXsrfToken();
+
+    void logout();
 }

@@ -1,8 +1,10 @@
 package org.openremote.manager.client.service;
 
 import com.google.inject.Inject;
+import com.google.web.bindery.event.shared.EventBus;
 import elemental.json.Json;
 import elemental.json.JsonObject;
+import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.util.Base64Utils;
 
 import java.util.Date;
@@ -15,11 +17,14 @@ import java.util.logging.Logger;
 public class SecurityServiceImpl implements SecurityService {
     private static Logger logger = Logger.getLogger("");
 
-    protected CookieService cookieService;
+    private CookieService cookieService;
+    private EventBus eventBus;
 
     @Inject
-    protected SecurityServiceImpl(CookieService cookieService) {
+    public SecurityServiceImpl(CookieService cookieService,
+                               EventBus eventBus) {
         this.cookieService = cookieService;
+        this.eventBus = eventBus;
     }
 
     private String getToken() {
@@ -31,7 +36,7 @@ public class SecurityServiceImpl implements SecurityService {
 
         String token = getToken();
         if (token != null) {
-            String[] parts = token.split(".");
+            String[] parts = token.split("\\.");
 
             if (parts.length == 3) {
                 try {
@@ -50,7 +55,8 @@ public class SecurityServiceImpl implements SecurityService {
     @Override
     public String getUsername() {
         JsonObject decoded = decodeToken();
-        String name = "";
+        String name = null;
+
         if (decoded.hasKey("name")) {
             name = decoded.getString("name");
         }
@@ -81,11 +87,24 @@ public class SecurityServiceImpl implements SecurityService {
         if (decoded.hasKey("exp")) {
             // This is seconds since the EPOCH
             String expiryDateStr = decoded.getString("exp");
-            expiryDate = new Date(0);
+            expiryDate = new Date();
             // Can't use calendar on client side
             expiryDate.setSeconds(Integer.parseInt(expiryDateStr));
         }
 
         return expiryDate;
+    }
+
+    @Override
+    public String getXsrfToken() {
+        return cookieService.getCookie("XSRF-TOKEN");
+    }
+
+    @Override
+    public void logout() {
+        // Destroy the token and XSRF cookies
+        cookieService.removeCookie("access_token");
+        cookieService.removeCookie("XSRF-TOKEN");
+        eventBus.fireEvent(new UserChangeEvent(null));
     }
 }

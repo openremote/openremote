@@ -1,0 +1,32 @@
+<ui:UiBinder xmlns:ui='urn:ui:com.google.gwt.uibinder'
+             xmlns:b="urn:import:org.gwtbootstrap3.client.ui">
+
+    <ui:style>
+        .pad-right {
+            padding-right: 5px;
+        }
+    </ui:style>
+
+    <ui:with field="constants" type="org.openremote.manager.client.i18n.ManagerConstants"/>
+
+    <b:Navbar position="STATIC_TOP">
+        <b:Container width="100%">
+            <b:NavbarHeader>
+                <b:NavbarBrand>OpenRemote</b:NavbarBrand>
+                <b:NavbarCollapseButton dataTarget="#navbar-collapse"/>
+            </b:NavbarHeader>
+
+            <b:NavbarCollapse b:id="navbar-collapse">
+                <b:NavbarNav height="100%">
+                    <b:AnchorListItem ui:field="btnMap" text="{constants.overviewMap}"></b:AnchorListItem>
+                    <b:AnchorListItem ui:field="btnAssets" text="{constants.assetManager}"></b:AnchorListItem>
+                </b:NavbarNav>
+
+                <b:NavbarText pull="RIGHT" ui:field="signinText" visible="false" addStyleNames="{style.pad-right}">
+                    <b:html.Span ui:field="lblSignedIn" addStyleNames="{style.pad-right}"/>
+                    <b:NavbarLink ui:field="btnLogout" text="({constants.logout})"/>
+                </b:NavbarText>
+            </b:NavbarCollapse>
+        </b:Container>
+    </b:Navbar>
+</ui:UiBinder>

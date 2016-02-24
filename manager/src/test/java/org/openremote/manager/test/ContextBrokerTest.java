@@ -32,12 +32,12 @@ public class ContextBrokerTest extends ServerTest {
         int port = 1026;
 
         RestClientOptions clientOptions = new RestClientOptions()
-            .setConnectTimeout(2000)
-            .setGlobalRequestTimeout(2000)
-            .setDefaultHost(host)
-            .setDefaultPort(port)
-            .setKeepAlive(false)
-            .setMaxPoolSize(10);
+                .setConnectTimeout(2000)
+                .setGlobalRequestTimeout(2000)
+                .setDefaultHost(host)
+                .setDefaultPort(port)
+                .setKeepAlive(false)
+                .setMaxPoolSize(10);
 
         ngsiClient = new NgsiClient(vertx, clientOptions);
         deleteAllEntities(testContext);
@@ -68,35 +68,35 @@ public class ContextBrokerTest extends ServerTest {
         room.setId("Room123");
         room.setType("Room");
         room.addAttribute(
-            new Attribute("temperature", Json.createObject())
-                .setType("float")
-                .setValue(Json.create(21.3))
+                new Attribute("temperature", Json.createObject())
+                        .setType("float")
+                        .setValue(Json.create(21.3))
         );
 
         ngsiClient.postEntity(room)
-            .flatMap(location -> ngsiClient.getEntity(location))
-            .map(entity -> {
-                Attribute temperature = entity.getAttribute("temperature");
-                testContext.assertEquals(21.3, temperature.getValue().asNumber());
-                temperature.setValue(Json.create(22.5));
-                return entity;
-            })
-            .flatMap(entity -> ngsiClient.putEntity(entity))
-            .flatMap(updateLocation -> ngsiClient.getEntity(updateLocation))
-            .finallyDo(async::complete)
-            .doOnError(testContext::fail)
-            .subscribe(resultEntity -> {
-                Attribute temperature = resultEntity.getAttribute("temperature");
-                testContext.assertEquals(22.5, temperature.getValue().asNumber());
-            });
+                .flatMap(location -> ngsiClient.getEntity(location))
+                .map(entity -> {
+                    Attribute temperature = entity.getAttribute("temperature");
+                    testContext.assertEquals(21.3, temperature.getValue().asNumber());
+                    temperature.setValue(Json.create(22.5));
+                    return entity;
+                })
+                .flatMap(entity -> ngsiClient.putEntity(entity))
+                .flatMap(updateLocation -> ngsiClient.getEntity(updateLocation))
+                .finallyDo(async::complete)
+                .doOnError(testContext::fail)
+                .subscribe(resultEntity -> {
+                    Attribute temperature = resultEntity.getAttribute("temperature");
+                    testContext.assertEquals(22.5, temperature.getValue().asNumber());
+                });
     }
 
     protected void deleteAllEntities(TestContext testContext) {
         List<Integer> statusCodes = ngsiClient.listEntities()
-            .flatMap(Observable::from)
-            .flatMap(entity -> ngsiClient.deleteEntity(entity))
-            .doOnError(testContext::fail)
-            .toList().toBlocking().single();
+                .flatMap(Observable::from)
+                .flatMap(entity -> ngsiClient.deleteEntity(entity))
+                .doOnError(testContext::fail)
+                .toList().toBlocking().single();
         for (Integer statusCode : statusCodes) {
             testContext.assertEquals(statusCode, 204);
         }

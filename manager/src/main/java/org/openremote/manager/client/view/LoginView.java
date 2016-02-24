@@ -1,8 +1,8 @@
 package org.openremote.manager.client.view;
 
 import com.google.gwt.place.shared.Place;
-import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.gwt.user.client.ui.IsWidget;
+import org.gwtbootstrap3.client.ui.constants.AlertType;
 
 public interface LoginView extends IsWidget {
 
@@ -10,9 +10,21 @@ public interface LoginView extends IsWidget {
         LoginView getView();
 
         void goTo(Place place);
+
+        void doLogin();
     }
 
     void setPresenter(Presenter presenter);
 
-    AcceptsOneWidget getContentPanel();
+    void setLoginInProgress(boolean loginInProgress);
+
+    String getUsername();
+
+    String getPassword();
+
+    void show();
+
+    void hide();
+
+    void showAlert(AlertType alertType, String alert);
 }

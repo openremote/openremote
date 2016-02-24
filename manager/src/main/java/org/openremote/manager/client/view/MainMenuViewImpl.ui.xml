@@ -1,9 +1,0 @@
-<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
-             xmlns:g="urn:import:com.google.gwt.user.client.ui"
-             xmlns:w="urn:import:org.seamless.gwt.component.client.widget">
-
-    <g:FlowPanel>
-        <g:Button ui:field="mapButton" text="Map"/>
-        <g:Button ui:field="assetsButton" text="Assets"/>
-    </g:FlowPanel>
-</ui:UiBinder>
