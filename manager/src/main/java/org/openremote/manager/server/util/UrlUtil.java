@@ -5,20 +5,20 @@ import io.vertx.ext.web.RoutingContext;
 
 public class UrlUtil {
 
-    public static UrlBuilder url(RoutingContext routingContext, String realm, String... pathSegments) {
+    public static UrlBuilder url(RoutingContext routingContext, String context, String... pathSegments) {
         return UrlBuilder.fromString(routingContext.request().absoluteURI())
-            .withPath(getPath(realm, pathSegments));
+            .withPath(getPath(context, pathSegments));
     }
 
-    public static UrlBuilder url(String realm, String... pathSegments) {
+    public static UrlBuilder url(String context, String... pathSegments) {
         return UrlBuilder.empty()
-            .withPath(getPath(realm, pathSegments));
+            .withPath(getPath(context, pathSegments));
     }
 
 
-    public static UrlBuilder url(String baseUrl, String realm, String... pathSegments) {
+    public static UrlBuilder url(String baseUrl, String context, String... pathSegments) {
         return UrlBuilder.fromString(baseUrl)
-            .withPath(getPath(realm, pathSegments));
+            .withPath(getPath(context, pathSegments));
     }
 
     public static UrlBuilder url(String scheme, String host) {
@@ -27,22 +27,22 @@ public class UrlUtil {
             .withHost(host);
     }
 
-    public static UrlBuilder url(String scheme, String host, Integer port, String realm, String... pathSegments) {
+    public static UrlBuilder url(String scheme, String host, Integer port, String context, String... pathSegments) {
         return UrlBuilder.empty()
             .withScheme(scheme)
             .withHost(host)
             .withPort(port)
-            .withPath(getPath(realm, pathSegments));
+            .withPath(getPath(context, pathSegments));
     }
 
-    protected static String getPath(String realm, String... pathSegments) {
+    public static String getPath(String context, String... pathSegments) {
         StringBuilder path = new StringBuilder();
-        path.append("/").append(realm);
+        if (context != null) {
+            path.append(!context.startsWith("/") ? "/" : "").append(context);
+        }
         if (pathSegments != null) {
             for (String pathSegment : pathSegments) {
-                path
-                    .append(pathSegment.startsWith("/") ? "" : "/")
-                    .append(pathSegment);
+                path.append(!pathSegment.startsWith("/") ? "/" : "").append(pathSegment);
             }
         }
         return path.toString();

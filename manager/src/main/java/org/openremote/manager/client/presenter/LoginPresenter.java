@@ -97,15 +97,11 @@ public class LoginPresenter extends com.google.gwt.activity.shared.AbstractActiv
             view.setLoginInProgress(false);
             return null;
         }).catchException(obj -> {
-            try {
-                LoginResult result = (LoginResult) obj;
-                if (result.getHttpResponse() == 404) {
-                    view.showAlert(AlertType.DANGER, messages.serverUnavailable());
-                } else {
-                    view.showAlert(AlertType.DANGER, messages.serverError(result.getHttpResponse()));
-                }
-            } catch (Exception e) {
-
+            LoginResult result = (LoginResult) obj;
+            if (result.getHttpResponse() == 404) {
+                view.showAlert(AlertType.DANGER, messages.serverUnavailable());
+            } else {
+                view.showAlert(AlertType.DANGER, messages.serverError(result.getHttpResponse()));
             }
 
             view.setLoginInProgress(false);
@@ -113,7 +109,7 @@ public class LoginPresenter extends com.google.gwt.activity.shared.AbstractActiv
         });
     }
 
-    public void redirectTo(Place redirectTo) {
+    public void setRedirectTo(Place redirectTo) {
         this.redirectTo = redirectTo;
     }
 }

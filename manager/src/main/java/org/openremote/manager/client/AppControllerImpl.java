@@ -89,7 +89,7 @@ public class AppControllerImpl implements AppController, AppLayout.Presenter {
         eventBus.addHandler(LoginRequestEvent.TYPE, event -> {
             Place place = event.getRedirectPlace();
             LoginPresenter loginPresenter = loginPresenterProvider.get();
-            loginPresenter.redirectTo(place);
+            loginPresenter.setRedirectTo(place);
             appLayout.showLogin();
         });
 

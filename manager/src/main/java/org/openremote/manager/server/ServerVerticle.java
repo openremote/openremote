@@ -2,10 +2,13 @@ package org.openremote.manager.server;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
-import org.openremote.manager.server.service.ContextBrokerService;
-import org.openremote.manager.server.service.MapService;
-import org.openremote.manager.server.service.PersistenceService;
-import org.openremote.manager.server.service.WebService;
+import io.vertx.core.json.Json;
+import org.openremote.manager.server.identity.IdentityService;
+import org.openremote.manager.server.persistence.PersistenceService;
+import org.openremote.manager.server.map.MapService;
+import org.openremote.manager.server.contextbroker.*;
+import org.openremote.manager.server.util.JsonUtil;
+import org.openremote.manager.server.web.WebService;
 
 import java.util.logging.Logger;
 
@@ -16,9 +19,15 @@ public class ServerVerticle extends AbstractVerticle {
 
     private static final Logger LOG = Logger.getLogger(ServerVerticle.class.getName());
 
+    static {
+        // One-time static configuration goes here
+        JsonUtil.configure(Json.mapper);
+    }
+
     protected boolean devMode;
     protected SampleData sampleData;
 
+    protected IdentityService identityService;
     protected ContextBrokerService contextBrokerService;
     protected MapService mapService;
     protected PersistenceService persistenceService;
@@ -32,6 +41,9 @@ public class ServerVerticle extends AbstractVerticle {
         vertx.executeBlocking(
             blocking -> {
 
+                identityService = new IdentityService();
+                identityService.start(vertx, config());
+
                 contextBrokerService = new ContextBrokerService();
                 contextBrokerService.start(vertx, config());
 
@@ -43,10 +55,15 @@ public class ServerVerticle extends AbstractVerticle {
 
                 if (devMode) {
                     sampleData = new SampleData();
-                    sampleData.create(contextBrokerService, persistenceService);
+                    sampleData.create(
+                        identityService,
+                        contextBrokerService,
+                        persistenceService
+                    );
                 }
 
                 webService = new WebService(
+                    identityService,
                     contextBrokerService,
                     mapService,
                     persistenceService
@@ -73,8 +90,6 @@ public class ServerVerticle extends AbstractVerticle {
     @Override
     public void stop(Future<Void> stopFuture) throws Exception {
         try {
-            if (devMode && sampleData != null)
-                sampleData.drop(contextBrokerService, persistenceService);
             if (webService != null)
                 webService.stop();
             if (persistenceService != null)
@@ -83,6 +98,8 @@ public class ServerVerticle extends AbstractVerticle {
                 mapService.stop();
             if (contextBrokerService != null)
                 contextBrokerService.stop();
+            if (identityService != null)
+                identityService.stop();
             stopFuture.complete();
         } catch (Exception ex) {
             stopFuture.fail(ex);

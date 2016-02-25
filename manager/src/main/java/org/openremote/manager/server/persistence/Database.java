@@ -1,4 +1,4 @@
-package org.openremote.manager.server.jpa;
+package org.openremote.manager.server.persistence;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;

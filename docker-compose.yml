@@ -1,6 +1,15 @@
 version: '2'
 
 services:
+  # Identity Provider
+  keycloak:
+    image: jboss/keycloak:1.9.0.CR1
+    environment:
+      KEYCLOAK_USER: 'admin'
+      KEYCLOAK_PASSWORD: 'admin'
+      KEYCLOAK_LOGLEVEL: 'DEBUG'
+    ports:
+      - "8081:8080"
   # Context Broker
   mongo:
     image: mongo:2.6
@@ -10,5 +19,5 @@ services:
     links:
       - mongo
     ports:
-      - "1026:1026"
+      - "8082:1026"
     command: -dbhost mongo

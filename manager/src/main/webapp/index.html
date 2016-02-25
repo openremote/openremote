@@ -6,10 +6,24 @@
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
+    <script src="/static/3rdparty/keycloak/1.9.0.CR1/keycloak.js"></script>
+
     <script src="/static/gwt/Manager/Manager.nocache.js"></script>
 
     <script src="/static/3rdparty/mapbox-gl-js/0.14.1/mapbox-gl.js"></script>
     <link href="/static/3rdparty/mapbox-gl-js/0.14.1/mapbox-gl.css" rel="stylesheet"/>
+
+    <script>
+        var keycloak = Keycloak("/master/identity/install/or-manager");
+        keycloak.init({
+            onLoad: 'login-required'
+        }).success(function (authenticated) {
+            // TODO maybe we should manually load GWT app and other resources here, after authentication...
+            alert(authenticated ? 'authenticated' : 'not authenticated');
+        }).error(function () {
+            alert('failed to initialize');
+        });
+    </script>
 
 </head>
 <body>

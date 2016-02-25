@@ -1,9 +1,14 @@
-package org.openremote.manager.server.service;
+package org.openremote.manager.server.map;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import org.keycloak.representations.AccessToken;
+import org.openremote.manager.server.Constants;
+import org.openremote.manager.server.identity.ClientInstall;
+import org.openremote.manager.server.identity.IdentityService;
+import org.openremote.manager.server.web.HttpRouter;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;

@@ -1,4 +1,4 @@
-package org.openremote.manager.server.service;
+package org.openremote.manager.server.map;
 
 import elemental.json.Json;
 import elemental.json.JsonArray;

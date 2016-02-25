@@ -7,10 +7,12 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
-// Use this _everywhere_ so we consume/produce the same JSON
+/**
+ * Unified configuration for all JSON object mappers.
+ */
 public class JsonUtil {
 
-    public static ObjectMapper configure(ObjectMapper objectMapper) {
+    public static void configure(ObjectMapper objectMapper) {
         objectMapper
             .setSerializationInclusion(JsonInclude.Include.NON_NULL)
             .configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false)
@@ -21,13 +23,6 @@ public class JsonUtil {
             .setVisibility(PropertyAccessor.SETTER, JsonAutoDetect.Visibility.NONE)
             .setVisibility(PropertyAccessor.IS_GETTER, JsonAutoDetect.Visibility.NONE)
             .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.NONE);
-
-        // Debugging
-        // objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-
-        return objectMapper;
     }
-
-    public static final ObjectMapper JSON = configure(new ObjectMapper());
 
 }

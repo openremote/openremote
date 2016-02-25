@@ -1,4 +1,4 @@
-package org.openremote.manager.server.ngsi;
+package org.openremote.manager.server.contextbroker;
 
 public class NgsiException extends RuntimeException {
 

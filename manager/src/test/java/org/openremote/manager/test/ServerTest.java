@@ -4,10 +4,11 @@ import io.vertx.core.DeploymentOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.TestContext;
 import org.openremote.manager.server.ServerVerticle;
-import org.openremote.manager.server.service.WebService;
 
 import java.net.Inet4Address;
 import java.net.ServerSocket;
+
+import static org.openremote.manager.server.Constants.NETWORK_WEBSERVER_PORT;
 
 public abstract class ServerTest extends IntegrationTest {
 
@@ -20,7 +21,7 @@ public abstract class ServerTest extends IntegrationTest {
         this.ephemeralPort = findEphemeralPort();
 
         DeploymentOptions options = new DeploymentOptions().setConfig(
-            new JsonObject().put(WebService.WEB_SERVER_PORT, ephemeralPort)
+            new JsonObject().put(NETWORK_WEBSERVER_PORT, ephemeralPort)
         );
 
         vertx.deployVerticle(

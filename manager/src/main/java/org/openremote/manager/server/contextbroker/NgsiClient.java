@@ -1,4 +1,4 @@
-package org.openremote.manager.server.ngsi;
+package org.openremote.manager.server.contextbroker;
 
 import com.google.common.collect.ImmutableList;
 import com.hubrick.vertx.rest.MediaType;

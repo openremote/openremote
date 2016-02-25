@@ -1,4 +1,4 @@
-package org.openremote.manager.server.ngsi;
+package org.openremote.manager.server.contextbroker;
 
 import com.google.common.base.Charsets;
 import com.hubrick.vertx.rest.HttpInputMessage;

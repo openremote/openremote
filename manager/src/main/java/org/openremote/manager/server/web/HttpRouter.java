@@ -1,12 +1,12 @@
-package org.openremote.manager.server.service;
+package org.openremote.manager.server.web;
 
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.impl.RouterImpl;
 
-import static org.openremote.manager.server.Constants.CONTEXT_PARAM_REALM;
-
 public class HttpRouter extends RouterImpl {
+
+    public static final String CONTEXT_PARAM_REALM = HttpRouter.class.getName() + ".CONTEXT_PARAM_REALM";
 
     public HttpRouter(Vertx vertx) {
         super(vertx);

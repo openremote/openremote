@@ -6,7 +6,7 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.openremote.manager.server.ngsi.NgsiClient;
+import org.openremote.manager.server.contextbroker.NgsiClient;
 import org.openremote.manager.shared.model.ngsi.Attribute;
 import org.openremote.manager.shared.model.ngsi.Entity;
 import rx.Observable;
@@ -29,7 +29,7 @@ public class ContextBrokerTest extends ServerTest {
 
         // TODO
         String host = "192.168.99.100";
-        int port = 1026;
+        int port = 8081;
 
         RestClientOptions clientOptions = new RestClientOptions()
                 .setConnectTimeout(2000)

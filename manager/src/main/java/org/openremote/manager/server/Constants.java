@@ -5,10 +5,18 @@ public interface Constants {
     String DEV_MODE = "DEV_MODE";
     boolean DEV_MODE_DEFAULT = true;
 
-    String CONTEXT_PARAM_REALM = Constants.class.getName() + ".CONTEXT_PARAM_REALM";
-    String DEFAULT_REALM = "master";
+    String NETWORK_SECURE = "NETWORK_SECURE";
+    boolean NETWORK_SECURE_DEFAULT = false;
+
+    String NETWORK_HOST = "NETWORK_HOSTNAME";
+    String NETWORK_HOST_DEFAULT = "localhost";
+
+    String NETWORK_WEBSERVER_PORT = "NETWORK_WEBSERVER_PORT";
+    int NETWORK_WEBSERVER_PORT_DEFAULT = 8080;
 
     String API_PATH = "/api";
     String STATIC_PATH = "/static";
 
+    String MANAGER_CLIENT_ID = "or-manager";
+    String MASTER_REALM = "master";
 }
