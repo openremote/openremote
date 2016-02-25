@@ -12,5 +12,7 @@ public interface MapView extends IsWidget {
 
     void setPresenter(Presenter presenter);
 
-    void showMap(JsonObject mapSettings);
+    void initialiseMap(JsonObject mapSettings);
+
+    boolean isMapInitialised();
 }

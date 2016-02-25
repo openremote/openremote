@@ -7,6 +7,7 @@ import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import elemental.json.JsonObject;
+import org.openremote.manager.client.ui.Map;
 
 import javax.inject.Inject;
 
@@ -20,7 +21,7 @@ public class MapViewImpl extends Composite implements MapView {
     Presenter presenter;
 
     @UiField
-    HTMLPanel mapContainer;
+    Map map;
 
     @Inject
     public MapViewImpl() {
@@ -33,14 +34,12 @@ public class MapViewImpl extends Composite implements MapView {
     }
 
     @Override
-    public void showMap(JsonObject mapSettings) {
-        showMap(mapSettings, mapContainer.getElement());
+    public void initialiseMap(JsonObject mapSettings) {
+        map.setOptions(mapSettings);
     }
 
-    public native void showMap(JsonObject mapSettings, Element mapContainer) /*-{
-        mapSettings.container = mapContainer;
-        var map = new $wnd.mapboxgl.Map(mapSettings);
-        map.addControl(new $wnd.mapboxgl.Navigation());
-    }-*/;
-
+    @Override
+    public boolean isMapInitialised() {
+        return map.isInitialised();
+    }
 }
