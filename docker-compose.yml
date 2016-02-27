@@ -3,7 +3,7 @@ version: '2'
 services:
   # Identity Provider
   keycloak:
-    image: jboss/keycloak:1.9.0.CR1
+    image: jboss/keycloak:1.9.0.Final
     environment:
       KEYCLOAK_USER: 'admin'
       KEYCLOAK_PASSWORD: 'admin'

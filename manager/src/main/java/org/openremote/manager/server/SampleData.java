@@ -4,6 +4,9 @@ import elemental.json.Json;
 import org.apache.log4j.Logger;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.ClientRepresentation;
+import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.openremote.manager.server.identity.KeycloakClient;
 import org.openremote.manager.server.contextbroker.ContextBrokerService;
 import org.openremote.manager.server.identity.IdentityService;
@@ -33,7 +36,9 @@ public class SampleData {
                        PersistenceService persistenceService) {
         LOG.info("--- CREATING SAMPLE DATA ---");
 
-        registerClientApplications(identityService);
+        String accessToken = getAccessToken(identityService);
+        registerClientApplications(identityService, accessToken);
+        addRolesAndTestUsers(identityService, accessToken);
 
         createSampleRooms(contextBrokerService);
 
@@ -85,15 +90,18 @@ public class SampleData {
         contextBrokerService.getClient().postEntity(room2).toBlocking().first();
     }
 
-    protected void registerClientApplications(IdentityService identityService) {
+    protected String getAccessToken(IdentityService identityService) {
         KeycloakClient keycloakClient = identityService.getKeycloakClient();
-
         // Authorize as superuser
         AccessTokenResponse accessTokenResponse =
             keycloakClient.authenticateDirectly(MASTER_REALM, ADMIN_CLI_CLIENT, ADMIN_USERNAME, ADMIN_PASSWORD)
                 .toBlocking().single();
-        String accessToken = accessTokenResponse.getToken();
         // Usually we would validate this token before using it, but I guess we are fine here...
+        return accessTokenResponse.getToken();
+    }
+
+    protected void registerClientApplications(IdentityService identityService, String accessToken) {
+        KeycloakClient keycloakClient = identityService.getKeycloakClient();
 
         // Find out if there is a client already present for this application, if so, delete it
         keycloakClient.getClientApplications(MASTER_REALM, accessToken)
@@ -126,6 +134,70 @@ public class SampleData {
             keycloakClient.registerClientApplication(MASTER_REALM, managerClient)
                 .toBlocking().single();
 
-        LOG.info("Registered '" + MANAGER_CLIENT_ID + "' with identity provider: " + clientResourceLocation);
+        LOG.info("Registered client application '" + MANAGER_CLIENT_ID + "' with identity provider: " + clientResourceLocation);
+    }
+
+    protected void addRolesAndTestUsers(IdentityService identityService, String accessToken) {
+        KeycloakClient keycloakClient = identityService.getKeycloakClient();
+
+        String clientObjectId = keycloakClient.getClientApplications(MASTER_REALM, accessToken)
+            .filter(clientRepresentation -> clientRepresentation.getClientId().equals(MANAGER_CLIENT_ID))
+            .map(ClientRepresentation::getId)
+            .toBlocking().singleOrDefault(null);
+
+        // Register some roles
+        RoleRepresentation readRole =
+            keycloakClient.createRoleForClientApplication(
+                MASTER_REALM, accessToken, clientObjectId, new RoleRepresentation("read", "Read all data", false)
+            ).flatMap(location ->
+                keycloakClient.getRoleOfClientApplicationByLocation(
+                    MASTER_REALM, accessToken, location
+                )
+            ).toBlocking().single();
+        LOG.info("Added role '" + readRole.getName() + "'");
+
+        RoleRepresentation readMapRole =
+            keycloakClient.createRoleForClientApplication(
+                MASTER_REALM, accessToken, clientObjectId, new RoleRepresentation("read:map", "View map", false)
+            ).flatMap(location ->
+                keycloakClient.getRoleOfClientApplicationByLocation(
+                    MASTER_REALM, accessToken, location
+                )
+            ).toBlocking().single();
+
+        keycloakClient.addCompositesToRoleForClientApplication(
+            MASTER_REALM, accessToken, clientObjectId, readRole.getName(), new RoleRepresentation[]{readMapRole}
+        ).toBlocking().single();
+        LOG.info("Added role '" + readMapRole.getName() + "'");
+
+        // Find out if there is a 'test' user already present
+        keycloakClient.getUsers(MASTER_REALM, accessToken)
+            .filter(userRepresentation -> userRepresentation.getUsername().equals("test"))
+            .flatMap(userRepresentation -> keycloakClient.deleteUser(MASTER_REALM, accessToken, userRepresentation.getId()))
+            .toBlocking().singleOrDefault(404);
+
+        // Create a new 'test' user with 'read' role
+        UserRepresentation testUser = new UserRepresentation();
+        testUser.setUsername("test");
+        testUser.setFirstName("Testuserfirst");
+        testUser.setLastName("Testuserlast");
+        testUser.setEnabled(true);
+        testUser = keycloakClient.createUser(MASTER_REALM, accessToken, testUser)
+            .flatMap(location -> keycloakClient.getUserByLocation(MASTER_REALM, accessToken, location))
+            .toBlocking().single();
+
+        CredentialRepresentation testUserCredential = new CredentialRepresentation();
+        testUserCredential.setType("password");
+        testUserCredential.setValue("test");
+        testUserCredential.setTemporary(false);
+        keycloakClient.resetPassword(MASTER_REALM, accessToken, testUser.getId(), testUserCredential)
+            .toBlocking().single();
+
+        LOG.info("Added user '" + testUser.getUsername() + "' with password '" + testUserCredential.getValue() + "'");
+
+        // Add mapping for client role 'read' to user 'test'
+        keycloakClient.addUserClientRoleMapping(MASTER_REALM, accessToken, testUser.getId(), clientObjectId, new RoleRepresentation[]{readRole})
+            .toBlocking().single();
+
     }
 }

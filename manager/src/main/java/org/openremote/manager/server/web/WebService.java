@@ -24,6 +24,7 @@ import org.openremote.manager.server.contextbroker.ContextBrokerService;
 import org.openremote.manager.server.persistence.PersistenceService;
 import org.openremote.manager.shared.model.Credentials;
 import org.openremote.manager.shared.model.LoginResult;
+import rx.exceptions.Exceptions;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,6 +32,8 @@ import java.nio.file.Paths;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static com.hubrick.vertx.rest.MediaType.TEXT_PLAIN_VALUE;
+import static io.vertx.core.http.HttpHeaders.CONTENT_TYPE;
 import static io.vertx.core.http.HttpHeaders.LOCATION;
 import static org.openremote.manager.server.Constants.*;
 import static org.openremote.manager.server.util.UrlUtil.url;
@@ -78,11 +81,8 @@ public class WebService {
             );
         }
         LOG.info("Configuring static document root path: " + docRoot.toAbsolutePath());
-        StaticHandler staticHandler = StaticHandler.create(
-            docRoot.toString()
-        ).setCachingEnabled(false);
 
-        Router router = createRouter(vertx, staticHandler);
+        Router router = createRouter(vertx, docRoot);
 
         server.requestHandler(router::accept).listen(completionHandler);
     }
@@ -94,44 +94,46 @@ public class WebService {
         }
     }
 
-    protected Router createRouter(Vertx vertx, StaticHandler staticHandler) {
+    protected Router createRouter(Vertx vertx, Path docRoot) {
 
         Router router = Router.router(vertx);
 
-        //router.route().failureHandler(createFailureHandler(vertx));
+        StaticHandler staticHandler = StaticHandler.create(
+            docRoot.toString()
+        ).setCachingEnabled(false); // TODO Should cache in production
 
         // The order of the following routes is important and tricky
+
+        // Handle failures
+        router.route().failureHandler(createFailureHandler(vertx));
 
         // Add cookie support
         router.route().handler(createCookieHandler(vertx));
 
-        // Security
-        enableSecurity(vertx, router);
-
         // Serve static resources with path /static/*
-        router.route(STATIC_PATH + "/*").handler(context -> {
-                HttpServerRequest request = context.request();
-                HttpServerResponse response = context.response();
+        router.route(STATIC_PATH + "/*").handler(
+            rc -> {
+                HttpServerRequest request = rc.request();
+                HttpServerResponse response = rc.response();
 
                 // Special handling for compression of pbf static files (they are already compressed...)
                 if (request.path().endsWith(".pbf")) {
-                    response.putHeader(HttpHeaders.CONTENT_TYPE, "application/x-protobuf");
+                    response.putHeader(CONTENT_TYPE, "application/x-protobuf");
                     response.putHeader(HttpHeaders.CONTENT_ENCODING, "gzip");
                 }
 
-                staticHandler.handle(context);
+                staticHandler.handle(rc);
             }
         );
 
         // Serve API resources with path /api/* and fail if there is no realm context parameter
         router.route(API_PATH + "/*").handler(
-            context -> {
-                String realm = context.get(HttpRouter.CONTEXT_PARAM_REALM);
+            rc -> {
+                String realm = rc.get(HttpRouter.CONTEXT_PARAM_REALM);
                 if (realm == null) {
-                    context.response().setStatusCode(400);
-                    context.response().end("Missing realm as first path element");
+                    rc.fail(new ResponseException(400, "Missing realm"));
                 } else {
-                    context.next();
+                    rc.next();
                 }
             });
 
@@ -140,85 +142,99 @@ public class WebService {
 
         // If none of the /api/* sub-routers ended the request, end it here so we don't loop
         router.route(API_PATH + "/*").handler(
-            context -> {
-                if (!context.response().ended()) {
-                    context.response().setStatusCode(404);
-                    context.response().end("API not found");
+            rc -> {
+                if (!rc.response().ended()) {
+                    rc.fail(new ResponseException(404, "API not available"));
                 }
             });
 
         // Redirect root request to default /<realm> so browser has the realm in Window.Location for API calls
         router.route("/")
-            .handler(context -> {
-                context.response().putHeader(LOCATION, url(context, MASTER_REALM).toString());
-                context.response().setStatusCode(302);
-                context.response().end();
+            .handler(rc -> {
+                rc.response().putHeader(LOCATION, url(rc, MASTER_REALM).toString());
+                rc.response().setStatusCode(302);
+                rc.response().end();
             });
 
         // Reroute /<realm> to /<realm>/
         router.routeWithRegex("\\/([a-z]+)")
-            .handler(context -> {
-                String realm = context.request().getParam("param0");
-                context.reroute("/" + realm + "/");
+            .handler(rc -> {
+                String realm = rc.request().getParam("param0");
+                rc.reroute("/" + realm + "/");
             });
 
         // Serve static index.html for /<realm>/
         router.routeWithRegex("\\/([a-z]+)\\/")
-            .handler(context -> context.reroute(STATIC_PATH + "/index.html"));
+            .handler(rc -> rc.reroute(STATIC_PATH + "/index.html"));
 
         // Reroute /<realm>/* to /<API PATH>/* and extract the realm as a context parameter
         router.routeWithRegex("\\/([a-z]+)\\/(.*)")
-            .handler(context -> {
-                String realm = context.request().getParam("param0");
-                String remainingPath = "/" + context.request().getParam("param1");
-                context.put(HttpRouter.CONTEXT_PARAM_REALM, realm);
-                context.reroute(API_PATH + remainingPath);
+            .handler(rc -> {
+                String realm = rc.request().getParam("param0");
+                String remainingPath = "/" + rc.request().getParam("param1");
+                rc.put(HttpRouter.CONTEXT_PARAM_REALM, realm);
+                rc.reroute(API_PATH + remainingPath);
             });
 
         return router;
     }
 
     protected Handler<RoutingContext> createFailureHandler(Vertx vertx) {
-        // TODO broken
-        return context -> {
-            if (context.failure() != null) {
-                LOG.log(
-                    Level.WARNING,
-                    "Request processing failed: " + context.request().method() + " " + context.request().absoluteURI(),
-                    context.failure()
-                );
-            }
-            int statusCode = context.response().getStatusCode();
-            context.response().setStatusCode(statusCode > 0 ? statusCode : 500);
-            switch (statusCode) {
-                /* TODO
-                case HttpConstants.FORBIDDEN:
-                    context.response().sendFile("static/error403.html");
-                    break;
-                case HttpConstants.UNAUTHORIZED:
-                    context.response().sendFile("static/error401.html");
-                    break;
-                case 500:
-                    context.response().sendFile("static/error500.html");
-                    break;
-                */
-                default:
-                    context.response().end();
-            }
-        };
-    }
+        return rc -> {
 
-    protected SessionHandler createSessionHandler(Vertx vertx) {
-        SessionStore sessionStore = LocalSessionStore.create(vertx);
-        return SessionHandler.create(sessionStore);
+            Throwable failure = rc.failure();
+            int responseStatusCode = rc.statusCode() > 0 ? rc.statusCode() : 500;
+            String responseText = null;
+
+            if (failure != null) {
+                if (failure instanceof ResponseException) {
+                    ResponseException exception = (ResponseException) failure;
+                    responseStatusCode = exception.getStatusCode();
+                    responseText  = exception.getMessage();
+                    LOG.log(
+                        Level.WARNING,
+                        "Response exception handling " + rc.request().method() + " " + rc.request().absoluteURI() + ": " +
+                            responseStatusCode + " " + responseText,
+                        failure
+                    );
+                } else {
+                    LOG.log(
+                        Level.SEVERE,
+                        "Exception handling " + rc.request().method() + " " + rc.request().absoluteURI(),
+                        failure
+                    );
+                }
+            }
+            if (!rc.response().ended()) {
+                if (responseText == null) {
+                    switch (responseStatusCode) {
+                        case 500:
+                            responseText = "Internal Server Error - Please contact your system administrator";
+                            break;
+                        case 401:
+                            responseText = "Unauthorized";
+                            break;
+                        case 403:
+                            responseText = "Forbidden";
+                            break;
+                        case 404:
+                            responseText = "Not Found";
+                            break;
+                        default:
+                            responseText = "";
+                            break;
+                    }
+                }
+
+                rc.response().setStatusCode(responseStatusCode);
+                rc.response().headers().add(CONTENT_TYPE, TEXT_PLAIN_VALUE);
+                rc.response().end(responseText);
+            }
+       };
     }
 
     protected CookieHandler createCookieHandler(Vertx vertx) {
         return CookieHandler.create();
-    }
-
-    protected void enableSecurity(Vertx vertx, Router router) {
-        // TODO
     }
 
     protected void addSubRouters(Vertx vertx, Router router, String apiPath) {
@@ -248,7 +264,7 @@ public class WebService {
                             routingContext.addCookie(tokenCookie);
                         }
                         if (xsrfCookie == null) {
-                            xsrfCookie = Cookie.cookie("XSRF-TOKEN","");
+                            xsrfCookie = Cookie.cookie("XSRF-TOKEN", "");
                             routingContext.addCookie(xsrfCookie);
                         }
                         String xsrfValue = "d9b9714c-7ac0-42e0-8696-2dae95dbc33e";
@@ -285,6 +301,6 @@ public class WebService {
 
         router.mountSubRouter(apiPath + "/identity", new IdentityRouter(vertx, identityService));
 
-        router.mountSubRouter(apiPath + "/map", new MapRouter(vertx, mapService));
+        router.mountSubRouter(apiPath + "/map", new MapRouter(vertx, identityService, mapService));
     }
 }

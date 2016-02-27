@@ -1,6 +1,9 @@
 package org.openremote.manager.server.identity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.security.PublicKey;
 
 public class ClientInstall {
 
@@ -10,7 +13,7 @@ public class ClientInstall {
     protected String clientId;
 
     @JsonProperty("realm-public-key")
-    protected String realmPublicKey;
+    protected String publicKeyPEM;
 
     @JsonProperty("auth-server-url")
     protected String authServerUrl;
@@ -20,6 +23,12 @@ public class ClientInstall {
 
     @JsonProperty("public-client")
     protected boolean publicClient;
+
+    @JsonIgnore
+    protected PublicKey publicKey;
+
+    @JsonIgnore
+    protected String realmInfoUrl;
 
     public ClientInstall() {
     }
@@ -40,12 +49,12 @@ public class ClientInstall {
         this.clientId = clientId;
     }
 
-    public String getRealmPublicKey() {
-        return realmPublicKey;
+    public String getPublicKeyPEM() {
+        return publicKeyPEM;
     }
 
-    public void setRealmPublicKey(String realmPublicKey) {
-        this.realmPublicKey = realmPublicKey;
+    public void setPublicKeyPEM(String publicKeyPEM) {
+        this.publicKeyPEM = publicKeyPEM;
     }
 
     public String getAuthServerUrl() {
@@ -70,5 +79,21 @@ public class ClientInstall {
 
     public void setPublicClient(boolean publicClient) {
         this.publicClient = publicClient;
+    }
+
+    public PublicKey getPublicKey() {
+        return publicKey;
+    }
+
+    public void setPublicKey(PublicKey publicKey) {
+        this.publicKey = publicKey;
+    }
+
+    public String getRealmInfoUrl() {
+        return realmInfoUrl;
+    }
+
+    public void setRealmInfoUrl(String realmInfoUrl) {
+        this.realmInfoUrl = realmInfoUrl;
     }
 }

@@ -12,8 +12,12 @@ import com.hubrick.vertx.rest.rx.impl.DefaultRxRestClient;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.Json;
+import org.keycloak.common.util.PemUtils;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.ClientRepresentation;
+import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.openremote.manager.server.util.UrlUtil;
 import rx.Observable;
 
@@ -27,6 +31,8 @@ import static com.hubrick.vertx.rest.MediaType.APPLICATION_FORM_URLENCODED_VALUE
 import static com.hubrick.vertx.rest.MediaType.APPLICATION_JSON_VALUE;
 import static io.vertx.core.http.HttpHeaders.ACCEPT;
 import static io.vertx.core.http.HttpHeaders.CONTENT_TYPE;
+import static io.vertx.core.http.HttpHeaders.LOCATION;
+import static org.openremote.manager.server.util.UrlUtil.url;
 
 public class KeycloakClient implements AutoCloseable {
 
@@ -81,7 +87,7 @@ public class KeycloakClient implements AutoCloseable {
                 request.putHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE);
                 request.end(clientRepresentation);
             }
-        ).flatMap(response -> Observable.just(response.headers().get(HttpHeaders.LOCATION)));
+        ).flatMap(response -> Observable.just(response.headers().get(LOCATION)));
     }
 
     public Observable<ClientRepresentation> getClientApplications(String realm, String accessToken) {
@@ -130,13 +136,61 @@ public class KeycloakClient implements AutoCloseable {
         ).flatMap(response -> Observable.just(response.statusCode()));
     }
 
+    public Observable<String> createRoleForClientApplication(String realm, String accessToken, String clientObjectId, RoleRepresentation roleRepresentation) {
+        return client.post(
+            UrlUtil.getPath(CONTEXT_PATH, "admin", "realms", realm, "clients", clientObjectId, "roles"),
+            request -> {
+                addBearerAuthorization(request, accessToken);
+                request.putHeader(ACCEPT, APPLICATION_JSON_VALUE);
+                request.putHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE);
+                request.end(roleRepresentation);
+            }
+        ).flatMap(response -> Observable.just(response.headers().get(LOCATION)));
+    }
+
+    public Observable<RoleRepresentation> getRoleOfClientApplication(String realm, String accessToken, String clientObjectId, String role) {
+        return client.get(
+            UrlUtil.getPath(CONTEXT_PATH, "admin", "realms", realm, "clients", clientObjectId, "roles", role),
+            RoleRepresentation.class,
+            request -> {
+                addBearerAuthorization(request, accessToken);
+                request.putHeader(ACCEPT, APPLICATION_JSON_VALUE);
+                request.end();
+            }
+        ).flatMap(response -> Observable.just(response.getBody()));
+    }
+
+    public Observable<RoleRepresentation> getRoleOfClientApplicationByLocation(String realm, String accessToken, String location) {
+        return client.get(
+            location,
+            RoleRepresentation.class,
+            request -> {
+                addBearerAuthorization(request, accessToken);
+                request.putHeader(ACCEPT, APPLICATION_JSON_VALUE);
+                request.end();
+            }
+        ).flatMap(response -> Observable.just(response.getBody()));
+    }
+
+    public Observable<Integer> addCompositesToRoleForClientApplication(String realm, String accessToken, String clientObjectId, String role, RoleRepresentation[] roleRepresentations) {
+        return client.post(
+            UrlUtil.getPath(CONTEXT_PATH, "admin", "realms", realm, "clients", clientObjectId, "roles", role, "composites"),
+            request -> {
+                addBearerAuthorization(request, accessToken);
+                request.putHeader(ACCEPT, APPLICATION_JSON_VALUE);
+                request.putHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE);
+                request.end(roleRepresentations);
+            }
+        ).flatMap(response -> Observable.just(response.statusCode()));
+    }
+
     public Observable<ClientInstall> getClientInstall(String realm, String clientId) {
         return getClientInstall(realm, clientId, null);
     }
 
     public Observable<ClientInstall> getClientInstall(String realm, String clientId, String clientSecret) {
         return client.get(
-            UrlUtil.getPath(CONTEXT_PATH, "realms", realm, "clients", "install", clientId),
+            UrlUtil.getPath(CONTEXT_PATH, "realms", realm, "clients-registrations", "install", clientId),
             ClientInstall.class,
             request -> {
                 if (clientSecret != null) {
@@ -145,9 +199,89 @@ public class KeycloakClient implements AutoCloseable {
                 request.putHeader(ACCEPT, APPLICATION_JSON_VALUE);
                 request.end();
             }
+        ).flatMap(response -> {
+            ClientInstall clientInstall = response.getBody();
+            try {
+                clientInstall.setPublicKey(PemUtils.decodePublicKey(clientInstall.getPublicKeyPEM()));
+            } catch (Exception ex) {
+                throw new RuntimeException("Error decoding public key PEM for realm: " + clientInstall.getRealm(), ex);
+            }
+            clientInstall.setRealmInfoUrl(
+                url(clientInstall.getAuthServerUrl(), "realms", clientInstall.getRealm()).toString()
+            );
+            return Observable.just(clientInstall);
+        });
+    }
+
+    public Observable<UserRepresentation> getUsers(String realm, String accessToken) {
+        return client.get(
+            UrlUtil.getPath(CONTEXT_PATH, "admin", "realms", realm, "users"),
+            UserRepresentation[].class,
+            request -> {
+                addBearerAuthorization(request, accessToken);
+                request.putHeader(ACCEPT, APPLICATION_JSON_VALUE);
+                request.end();
+            }
+        ).flatMap(response -> Observable.from(response.getBody()));
+    }
+
+    public Observable<Integer> deleteUser(String realm, String accessToken, String userId) {
+        return client.delete(
+            UrlUtil.getPath(CONTEXT_PATH, "admin", "realms", realm, "users", userId),
+            request -> {
+                addBearerAuthorization(request, accessToken);
+                request.end();
+            }
+        ).flatMap(response -> Observable.just(response.statusCode()));
+    }
+
+    public Observable<String> createUser(String realm, String accessToken, UserRepresentation userRepresentation) {
+        return client.post(
+            UrlUtil.getPath(CONTEXT_PATH, "admin", "realms", realm, "users"),
+            request -> {
+                addBearerAuthorization(request, accessToken);
+                request.putHeader(ACCEPT, APPLICATION_JSON_VALUE);
+                request.putHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE);
+                request.end(userRepresentation);
+            }
+        ).flatMap(response -> Observable.just(response.headers().get(LOCATION)));
+    }
+
+    public Observable<UserRepresentation> getUserByLocation(String realm, String accessToken, String location) {
+        return client.get(
+            location,
+            UserRepresentation.class,
+            request -> {
+                addBearerAuthorization(request, accessToken);
+                request.putHeader(ACCEPT, APPLICATION_JSON_VALUE);
+                request.end();
+            }
         ).flatMap(response -> Observable.just(response.getBody()));
     }
 
+    public Observable<Integer> resetPassword(String realm, String accessToken, String userId, CredentialRepresentation credentialRepresentation) {
+        return client.put(
+            UrlUtil.getPath(CONTEXT_PATH, "admin", "realms", realm, "users", userId, "reset-password"),
+            request -> {
+                addBearerAuthorization(request, accessToken);
+                request.putHeader(ACCEPT, APPLICATION_JSON_VALUE);
+                request.putHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE);
+                request.end(credentialRepresentation);
+            }
+        ).flatMap(response -> Observable.just(response.statusCode()));
+    }
+
+    public Observable<Integer> addUserClientRoleMapping(String realm, String accessToken, String userId, String clientObjectId, RoleRepresentation[] roleRepresentations) {
+        return client.post(
+            UrlUtil.getPath(CONTEXT_PATH, "admin", "realms", realm, "users", userId, "role-mappings", "clients", clientObjectId),
+            request -> {
+                addBearerAuthorization(request, accessToken);
+                request.putHeader(ACCEPT, APPLICATION_JSON_VALUE);
+                request.putHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE);
+                request.end(roleRepresentations);
+            }
+        ).flatMap(response -> Observable.just(response.statusCode()));
+    }
 
     protected void addBearerAuthorization(RestClientRequest request, String accessToken) {
         String authorization = "Bearer " + accessToken;
