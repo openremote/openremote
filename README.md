@@ -45,3 +45,7 @@ You can extract smaller tilesets with the following procedure:
     http://tools.geofabrik.de/calc/#tab=1 
 1. Extract the region with: 
     `tilelive-copy --minzoom=0 --maxzoom=14 --bounds="BOUNDARY BOX COORDINATES" theworld.mbtiles myextract.mbtiles`
+
+## Updating Keycloak
+
+If you change any of the profile configuration `keycloak/profiles/` you must rebuild the Keycloak image with `docker-compose build`.

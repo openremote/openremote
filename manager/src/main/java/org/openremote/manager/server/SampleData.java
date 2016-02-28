@@ -3,10 +3,7 @@ package org.openremote.manager.server;
 import elemental.json.Json;
 import org.apache.log4j.Logger;
 import org.keycloak.representations.AccessTokenResponse;
-import org.keycloak.representations.idm.ClientRepresentation;
-import org.keycloak.representations.idm.CredentialRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.representations.idm.*;
 import org.openremote.manager.server.identity.KeycloakClient;
 import org.openremote.manager.server.contextbroker.ContextBrokerService;
 import org.openremote.manager.server.identity.IdentityService;
@@ -37,6 +34,7 @@ public class SampleData {
         LOG.info("--- CREATING SAMPLE DATA ---");
 
         String accessToken = getAccessToken(identityService);
+        configureMasterRealm(identityService, accessToken);
         registerClientApplications(identityService, accessToken);
         addRolesAndTestUsers(identityService, accessToken);
 
@@ -98,6 +96,19 @@ public class SampleData {
                 .toBlocking().single();
         // Usually we would validate this token before using it, but I guess we are fine here...
         return accessTokenResponse.getToken();
+    }
+
+    protected void configureMasterRealm(IdentityService identityService, String accessToken) {
+        KeycloakClient keycloakClient = identityService.getKeycloakClient();
+
+        RealmRepresentation masterRealm =
+            keycloakClient.getRealm(MASTER_REALM, accessToken).toBlocking().single();
+
+        masterRealm.setDisplayNameHtml("<div class=\"kc-logo-text\"><span>OpenRemote</span></div>");
+
+        masterRealm.setLoginTheme("openremote");
+
+        keycloakClient.putRealm(MASTER_REALM, accessToken, masterRealm).toBlocking().single();
     }
 
     protected void registerClientApplications(IdentityService identityService, String accessToken) {

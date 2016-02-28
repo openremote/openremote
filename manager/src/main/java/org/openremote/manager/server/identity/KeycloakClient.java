@@ -14,10 +14,7 @@ import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.Json;
 import org.keycloak.common.util.PemUtils;
 import org.keycloak.representations.AccessTokenResponse;
-import org.keycloak.representations.idm.ClientRepresentation;
-import org.keycloak.representations.idm.CredentialRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.representations.idm.*;
 import org.openremote.manager.server.util.UrlUtil;
 import rx.Observable;
 
@@ -73,6 +70,30 @@ public class KeycloakClient implements AutoCloseable {
                 );
             }
         ).flatMap(response -> Observable.just(response.getBody()));
+    }
+
+    public Observable<RealmRepresentation> getRealm(String realm, String accessToken) {
+        return client.get(
+            UrlUtil.getPath(CONTEXT_PATH, "admin", "realms", realm),
+            RealmRepresentation.class,
+            request -> {
+                addBearerAuthorization(request, accessToken);
+                request.putHeader(ACCEPT, APPLICATION_JSON_VALUE);
+                request.end();
+            }
+        ).flatMap(response -> Observable.just(response.getBody()));
+    }
+
+    public Observable<Integer> putRealm(String realm, String accessToken, RealmRepresentation realmRepresentation) {
+        return client.put(
+            UrlUtil.getPath(CONTEXT_PATH, "admin", "realms", realm),
+            request -> {
+                addBearerAuthorization(request, accessToken);
+                request.putHeader(ACCEPT, APPLICATION_JSON_VALUE);
+                request.putHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE);
+                request.end(realmRepresentation);
+            }
+        ).flatMap(response -> Observable.just(response.statusCode()));
     }
 
     public Observable<String> registerClientApplication(String realm, ClientRepresentation clientRepresentation) {

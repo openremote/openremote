@@ -3,7 +3,12 @@ version: '2'
 services:
   # Identity Provider
   keycloak:
-    image: jboss/keycloak:1.9.0.Final
+    build:
+      context: ./keycloak
+      args:
+        - profile=dev
+    volumes:
+      - ./keycloak/theme:/opt/jboss/keycloak/themes/openremote
     environment:
       KEYCLOAK_USER: 'admin'
       KEYCLOAK_PASSWORD: 'admin'
