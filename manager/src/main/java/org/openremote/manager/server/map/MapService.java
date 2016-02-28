@@ -1,9 +1,8 @@
 package org.openremote.manager.server.map;
 
-import elemental.json.Json;
-import elemental.json.JsonArray;
-import elemental.json.JsonObject;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,9 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import static org.openremote.manager.server.Constants.DEV_MODE;
-import static org.openremote.manager.server.Constants.DEV_MODE_DEFAULT;
-import static org.openremote.manager.server.Constants.STATIC_PATH;
+import static org.openremote.manager.server.Constants.*;
 
 public class MapService {
 
@@ -34,7 +31,7 @@ public class MapService {
     protected Path mapSettingsPath;
     protected JsonObject mapSettings;
 
-    public void start(Vertx vertx, io.vertx.core.json.JsonObject config) {
+    public void start(Vertx vertx, JsonObject config) {
         this.vertx = vertx;
         this.devMode = config.getBoolean(DEV_MODE, DEV_MODE_DEFAULT);
 
@@ -81,10 +78,10 @@ public class MapService {
             readMapSettings();
         }
 
-        JsonObject settingsCopy = Json.parse(mapSettings.toJson());
-        JsonArray tilesArray = Json.createArray();
-        tilesArray.set(0, tileUrl);
-        settingsCopy.getObject("style").getObject("sources").getObject("vector_tiles").put("tiles", tilesArray);
+        JsonObject settingsCopy = mapSettings.copy();
+        JsonArray tilesArray = new JsonArray();
+        tilesArray.add(tileUrl);
+        settingsCopy.getJsonObject("style").getJsonObject("sources").getJsonObject("vector_tiles").put("tiles", tilesArray);
         return settingsCopy;
     }
 
@@ -117,23 +114,22 @@ public class MapService {
 
         // Mix settings from file with database metadata, and some hardcoded magic
         try {
-            mapSettings = Json.parse(
-                vertx.fileSystem().readFileBlocking(mapSettingsPath.toAbsolutePath().toString()).toString()
-            );
+            String mapSettingsJson = vertx.fileSystem().readFileBlocking(mapSettingsPath.toAbsolutePath().toString()).toString();
+            mapSettings = new JsonObject(mapSettingsJson);
         } catch (Exception ex) {
             throw new RuntimeException("Error parsing map settings: " + mapSettingsPath.toAbsolutePath(), ex);
         }
 
-        JsonObject style = mapSettings.getObject("style");
+        JsonObject style = mapSettings.getJsonObject("style");
 
         style.put("version", 8);
 
         style.put("glyphs", STATIC_PATH + "/fonts/{fontstack}/{range}.pbf");
 
-        JsonObject sources = Json.createObject();
+        JsonObject sources = new JsonObject();
         style.put("sources", sources);
 
-        JsonObject vectorTiles = Json.createObject();
+        JsonObject vectorTiles = new JsonObject();
         sources.put("vector_tiles", vectorTiles);
 
         vectorTiles.put("type", "vector");
@@ -153,8 +149,8 @@ public class MapService {
                 throw new RuntimeException("Missing JSON metadata in map database");
             }
 
-            JsonObject metadataJson = Json.parse(resultMap.get("json"));
-            vectorTiles.put("vector_layers", metadataJson.getArray("vector_layers"));
+            JsonObject metadataJson = new JsonObject(resultMap.get("json"));
+            vectorTiles.put("vector_layers", metadataJson.getJsonArray("vector_layers"));
 
             vectorTiles.put("maxzoom", Integer.valueOf(resultMap.get("maxzoom")));
             vectorTiles.put("minzoom", Integer.valueOf(resultMap.get("minzoom")));

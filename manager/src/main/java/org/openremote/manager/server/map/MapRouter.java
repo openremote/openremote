@@ -30,7 +30,7 @@ public class MapRouter extends HttpRouter {
             HttpServerResponse response = rc.response();
             String tileUrl = url(rc, getRealm(rc), "map", "tile").toString() + "/{z}/{x}/{y}";
             response.putHeader(CONTENT_TYPE, "application/json");
-            response.end(mapService.getMapSettings(tileUrl).toJson());
+            response.end(mapService.getMapSettings(tileUrl).encode());
         });
 
         route(GET, "/tile/:zoom/:column/:row").blockingHandler(rc -> { // Blocking!
