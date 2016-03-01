@@ -2,12 +2,10 @@ package org.openremote.manager.server;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
-import io.vertx.core.json.Json;
+import org.openremote.manager.server.contextbroker.ContextBrokerService;
 import org.openremote.manager.server.identity.IdentityService;
-import org.openremote.manager.server.persistence.PersistenceService;
 import org.openremote.manager.server.map.MapService;
-import org.openremote.manager.server.contextbroker.*;
-import org.openremote.manager.server.util.JsonUtil;
+import org.openremote.manager.server.persistence.PersistenceService;
 import org.openremote.manager.server.web.WebService;
 
 import java.util.logging.Logger;
@@ -18,11 +16,6 @@ import static org.openremote.manager.server.Constants.DEV_MODE_DEFAULT;
 public class ServerVerticle extends AbstractVerticle {
 
     private static final Logger LOG = Logger.getLogger(ServerVerticle.class.getName());
-
-    static {
-        // One-time static configuration goes here
-        JsonUtil.configure(Json.mapper);
-    }
 
     protected boolean devMode;
     protected SampleData sampleData;
