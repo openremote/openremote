@@ -13,11 +13,31 @@
         }
       },
       {
+        "id": "landuse_agriculture",
+        "type": "fill",
+        "source": "vector_tiles",
+        "source-layer": "landuse",
+        "filter": ["all", ["==", "class", "agriculture"], ["==", "$type", "Polygon"]],
+        "paint": {
+          "fill-color": "#F9F4DC"
+        }
+      },
+      {
+        "id": "landuse_glacier",
+        "type": "fill",
+        "source": "vector_tiles",
+        "source-layer": "landuse",
+        "filter": ["all", ["==", "class", "glacier"], ["==", "$type", "Polygon"]],
+        "paint": {
+          "fill-color": "#C7E3E5"
+        }
+      },
+      {
         "id": "landuse_industrial",
         "type": "fill",
         "source": "vector_tiles",
         "source-layer": "landuse",
-        "filter": ["all", ["==", "class", "industrial"], ["==", "$type", "Polygon"]],
+        "filter": ["all", ["in", "class", "industrial", "hospital"], ["==", "$type", "Polygon"]],
         "paint": {
           "fill-color": "#cfcfcf"
         }
@@ -33,27 +53,42 @@
         }
       },
       {
-        "id": "landuse_wood",
+        "id": "landuse_grass",
         "type": "fill",
         "source": "vector_tiles",
         "source-layer": "landuse",
-        "filter": ["all", ["in", "class", "park", "wood", "forest"], ["==", "$type", "Polygon"]],
+        "filter": ["all", ["in", "class", "park", "grass"], ["==", "$type", "Polygon"]],
         "paint": {
           "fill-color": "#d2edae"
         }
       },
       {
-        "id": "waterway",
-        "type": "line",
+        "id": "landuse_wood",
+        "type": "fill",
         "source": "vector_tiles",
-        "source-layer": "waterway",
-        "filter": ["all", ["==", "$type", "LineString"], ["in", "class", "stream", "river", "canal"]],
+        "source-layer": "landuse",
+        "filter": ["all", ["in", "class", "wood", "scrub"], ["==", "$type", "Polygon"]],
         "paint": {
-          "line-color": "#a0cfdf",
-          "line-width": {
-            "base": 1.4,
-            "stops": [[8, 4], [20, 15]]
-          }
+          "fill-color": "#CAE5A9"
+        }
+      },
+      {
+        "id": "landuse_sand",
+        "type": "fill",
+        "source": "vector_tiles",
+        "source-layer": "landuse",
+        "filter": ["all", ["in", "class", "sand", "pitch"], ["==", "$type", "Polygon"]],
+        "paint": {
+          "fill-color": "#E5E1AD"
+        }
+      },
+      {
+        "id": "landuse_overlay",
+        "type": "fill",
+        "source": "vector_tiles",
+        "source-layer": "landuse_overlay",
+        "paint": {
+          "fill-color": "#B5BBC3"
         }
       },
       {
@@ -75,11 +110,23 @@
         }
       },
       {
+        "id": "waterway",
+        "type": "line",
+        "source": "vector_tiles",
+        "source-layer": "waterway",
+        "paint": {
+          "line-color": "#a0cfdf",
+          "line-width": {
+            "base": 1.4,
+            "stops": [[8, 4], [20, 15]]
+          }
+        }
+      },
+      {
         "id": "waterway_label",
         "type": "symbol",
         "source": "vector_tiles",
         "source-layer": "waterway_label",
-        "filter": ["all", ["==", "$type", "LineString"], ["in", "class", "stream", "river", "canal"]],
         "layout": {
           "symbol-placement": "line",
           "text-field": "{name_en}",
@@ -94,6 +141,20 @@
           "text-color": "#3B7BE7",
           "text-halo-color": "rgba(255,255,255,0.2)",
           "text-halo-width": 2
+        }
+      },
+      {
+        "id": "barrier_line",
+        "type": "line",
+        "source": "vector_tiles",
+        "source-layer": "barrier_line",
+        "minzoom": 11,
+        "paint": {
+          "line-color": "#D3ABB1",
+          "line-width": {
+            "base": 3,
+            "stops": [[11, 2], [20, 5]]
+          }
         }
       },
       {
@@ -355,11 +416,10 @@
         }
       },
       {
-        "id": "road_major_label",
+        "id": "road_label",
         "type": "symbol",
         "source": "vector_tiles",
         "source-layer": "road_label",
-        "filter": ["all", ["==", "$type", "LineString"], ["in", "class", "motorway", "main"]],
         "layout": {
           "symbol-placement": "line",
           "text-field": "{name_en}",
@@ -378,6 +438,47 @@
         }
       },
       {
+        "id": "housenum_label",
+        "type": "symbol",
+        "source": "vector_tiles",
+        "source-layer": "housenum_label",
+        "minzoom": 17,
+        "layout": {
+          "text-field": "{house_num}",
+          "text-font": ["Open Sans Semibold"],
+          "text-transform": "uppercase",
+          "text-letter-spacing": 0.1,
+          "text-size": {
+            "base": 2.4,
+            "stops": [[10, 8], [20, 15]]
+          }
+        },
+        "paint": {
+          "text-color": "#bbbbbb"
+        }
+      },
+      {
+        "id": "poi_label",
+        "type": "symbol",
+        "source": "vector_tiles",
+        "source-layer": "poi_label",
+        "minzoom": 15,
+        "layout": {
+          "text-field": "{name_en}",
+          "text-font": ["Open Sans Italic"],
+          "text-transform": "uppercase",
+          "text-letter-spacing": 0.1,
+          "text-size": {
+            "base": 2.4,
+            "stops": [[10, 10], [20, 20]]
+          }
+        },
+        "paint": {
+          "text-color": "#666",
+          "text-halo-color": "rgba(255,255,255,0.6)",
+          "text-halo-width": 5
+        }
+      },      {
         "id": "place_label_other",
         "type": "symbol",
         "source": "vector_tiles",
