@@ -45,11 +45,13 @@ public class AppControllerImpl implements AppController, AppLayout.Presenter {
 
         @Override
         public void goTo(Place newPlace) {
+            /* TODO Use keycloak
             if (this.securityService.isTokenExpired()) {
                 // Show the login view
                 eventBus.fireEvent(new LoginRequestEvent(newPlace));
                 return;
             }
+            */
 
             super.goTo(newPlace);
         }

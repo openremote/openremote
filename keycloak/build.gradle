@@ -1,0 +1,22 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath "com.bmuschko:gradle-docker-plugin:$dockerGradlePluginVersion"
+    }
+}
+
+
+import com.bmuschko.gradle.docker.tasks.image.*
+
+task buildImage(type: DockerBuildImage) {
+    inputDir = projectDir
+    dockerFile = file("$projectDir/Dockerfile-demo")
+    tag = dockerImageName
+}
+
+task pushImage(type: DockerPushImage) {
+    dependsOn buildImage
+    imageName = dockerImageName
+}

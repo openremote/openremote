@@ -2,6 +2,8 @@ package org.openremote.manager.server;
 
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.Json;
+import org.openremote.manager.server.util.JsonUtil;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -11,6 +13,11 @@ import static org.openremote.manager.server.util.EnvironmentUtil.getEnvironment;
 public class Server {
 
     private static final Logger LOG = Logger.getLogger(Server.class.getName());
+
+    static {
+        // One-time static configuration goes here
+        JsonUtil.configure(Json.mapper);
+    }
 
     public static void main(String[] args) {
         Vertx vertx = Vertx.vertx();

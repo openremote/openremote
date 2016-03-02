@@ -1,3 +1,12 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath "com.bmuschko:gradle-docker-plugin:$dockerGradlePluginVersion"
+    }
+}
+
 allprojects {
 
     repositories {
@@ -13,7 +22,17 @@ allprojects {
         options.warnings = false
     }
 
-    ext.dockerImageName = "$rootProject.name/$project.name".toString()
-    ext.dockerContainerName = "$rootProject.name-$project.name".toString()
+    apply plugin: "com.bmuschko.docker-remote-api"
+
+    docker {
+        url = "$System.env.DOCKER_HOST".replace("tcp:", "https:")
+        certPath = new File("$System.env.DOCKER_CERT_PATH")
+        registryCredentials {
+            username = project.properties.dockerHubUsername
+            password = project.properties.dockerHubPassword
+        }
+    }
+
+    ext.dockerImageName = "$dockerRepository/$project.name:$imageVersion".toString()
 
 }

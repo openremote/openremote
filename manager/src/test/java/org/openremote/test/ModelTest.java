@@ -1,4 +1,4 @@
-package org.openremote.manager.test;
+package org.openremote.test;
 
 import elemental.json.Json;
 import elemental.json.JsonObject;
