@@ -3,6 +3,7 @@ package org.openremote.manager.client.view;
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.user.client.ui.IsWidget;
 import elemental.json.JsonObject;
+import org.openremote.manager.client.interop.mapbox.MapOptions;
 
 public interface MapView extends IsWidget {
 
@@ -12,7 +13,7 @@ public interface MapView extends IsWidget {
 
     void setPresenter(Presenter presenter);
 
-    void initialiseMap(JsonObject mapSettings);
+    void initialiseMap(JsonObject mapOptions);
 
     boolean isMapInitialised();
 }

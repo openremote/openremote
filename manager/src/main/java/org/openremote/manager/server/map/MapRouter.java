@@ -52,7 +52,7 @@ public class MapRouter extends HttpRouter {
                     response.putHeader(CONTENT_ENCODING, "gzip");
                     response.end(Buffer.buffer(tile));
                 } else {
-                    LOG.fine("Map tile not found: " + request.absoluteURI());
+                    LOG.fine("MapWidget tile not found: " + request.absoluteURI());
                     response.setStatusCode(404);
                 }
             } catch (Exception ex) {

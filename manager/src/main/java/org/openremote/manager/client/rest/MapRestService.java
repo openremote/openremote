@@ -1,6 +1,5 @@
 package org.openremote.manager.client.rest;
 
-import org.fusesource.restygwt.client.MethodCallback;
 import org.fusesource.restygwt.client.RestService;
 import org.fusesource.restygwt.client.TextCallback;
 
@@ -14,6 +13,6 @@ public interface MapRestService extends RestService {
 
     @GET
     @Path("/map")
-    void getOptions(TextCallback getOptionsCallback);
+    void getOptions(TextCallback optionsCallback);
 
 }

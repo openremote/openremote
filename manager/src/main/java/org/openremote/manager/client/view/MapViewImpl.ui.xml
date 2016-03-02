@@ -12,10 +12,6 @@
         }
     </ui:style>
 
-    <g:HTMLPanel>
-
-        <o:Map ui:field="map" addStyleNames="{style.mapContainer}"></o:Map>
-
-    </g:HTMLPanel>
+    <o:MapWidget ui:field="mapWidget" addStyleNames="{style.mapContainer}"></o:MapWidget>
 
 </ui:UiBinder>

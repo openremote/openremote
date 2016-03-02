@@ -5,11 +5,11 @@ import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.web.bindery.event.shared.EventBus;
 import com.workingflows.js.jscore.client.api.promise.Promise;
-import elemental.json.Json;
+import elemental.js.util.Json;
 import elemental.json.JsonObject;
 import org.fusesource.restygwt.client.Method;
-import org.fusesource.restygwt.client.MethodCallback;
 import org.fusesource.restygwt.client.TextCallback;
+import org.openremote.manager.client.interop.mapbox.MapOptions;
 import org.openremote.manager.client.rest.MapRestService;
 import org.openremote.manager.client.view.MapView;
 
@@ -67,8 +67,8 @@ public class MapActivity
             });
 
             p.then(obj -> {
-                JsonObject settings = Json.parse((String) obj);
-                view.initialiseMap(settings);
+                JsonObject mapOptions = Json.parse((String) obj);
+                view.initialiseMap(mapOptions);
                 return null;
             }).catchException(obj -> {
                 return null;

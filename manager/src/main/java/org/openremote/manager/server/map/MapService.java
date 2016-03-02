@@ -41,14 +41,14 @@ public class MapService {
         Path mapTilesPath = Paths.get(config.getString(MAP_TILES_PATH, MAP_TILES_PATH_DEFAULT));
         if (!Files.isRegularFile(mapTilesPath)) {
             throw new IllegalStateException(
-                "Map tiles data file not found: " + mapTilesPath.toAbsolutePath()
+                "MapWidget tiles data file not found: " + mapTilesPath.toAbsolutePath()
             );
         }
 
         mapSettingsPath = Paths.get(config.getString(MAP_SETTINGS_PATH, MAP_SETTINGS_PATH_DEFAULT));
         if (!Files.isRegularFile(mapSettingsPath)) {
             throw new IllegalStateException(
-                "Map settings file not found: " + mapSettingsPath.toAbsolutePath()
+                "MapWidget settings file not found: " + mapSettingsPath.toAbsolutePath()
             );
         }
 
