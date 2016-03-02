@@ -20,7 +20,7 @@ public class PersistenceService {
     public static final String DATABASE_PRODUCT = "DATABASE_PRODUCT";
     public static final String DATABASE_PRODUCT_DEFAULT = "H2";
     public static final String DATABASE_CONNECTION_URL = "DATABASE_CONNECTION_URL";
-    public static final String DATABASE_CONNECTION_URL_DEFAULT = "jdbc:h2:file:./or-manager-database";
+    public static final String DATABASE_CONNECTION_URL_DEFAULT = "jdbc:h2:file:/data/or-manager-database";
     public static final String DATABASE_CONNECTION_URL_DEV_MODE = "jdbc:h2:mem:test";
     public static final String DATABASE_USERNAME = "DATABASE_USERNAME";
     public static final String DATABASE_USERNAME_DEFAULT = "sa";

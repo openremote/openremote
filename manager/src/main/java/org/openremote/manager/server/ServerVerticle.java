@@ -12,6 +12,8 @@ import java.util.logging.Logger;
 
 import static org.openremote.manager.server.Constants.DEV_MODE;
 import static org.openremote.manager.server.Constants.DEV_MODE_DEFAULT;
+import static org.openremote.manager.server.SampleData.IMPORT_SAMPLE_DATA;
+import static org.openremote.manager.server.SampleData.IMPORT_SAMPLE_DATA_DEFAULT;
 
 public class ServerVerticle extends AbstractVerticle {
 
@@ -30,6 +32,7 @@ public class ServerVerticle extends AbstractVerticle {
     public void start(Future<Void> startFuture) {
 
         devMode = config().getBoolean(DEV_MODE, DEV_MODE_DEFAULT);
+        boolean importSampleData = config().getBoolean(IMPORT_SAMPLE_DATA, IMPORT_SAMPLE_DATA_DEFAULT);
 
         vertx.executeBlocking(
             blocking -> {
@@ -46,7 +49,7 @@ public class ServerVerticle extends AbstractVerticle {
                 persistenceService = new PersistenceService();
                 persistenceService.start(config());
 
-                if (devMode) {
+                if (devMode || importSampleData) {
                     sampleData = new SampleData();
                     sampleData.create(
                         identityService,

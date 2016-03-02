@@ -38,7 +38,7 @@ public class UrlUtil {
 
     public static UrlBuilder url(String scheme, String host, Integer port, String... pathSegments) {
         return url(scheme, host)
-            .withPort(port)
+            .withPort(port == null || port == 80 || port == 443 ? null : port)
             .withPath(getPath(pathSegments));
     }
 

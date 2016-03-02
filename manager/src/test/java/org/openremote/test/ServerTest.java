@@ -1,4 +1,4 @@
-package org.openremote.manager.test;
+package org.openremote.test;
 
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.json.JsonObject;

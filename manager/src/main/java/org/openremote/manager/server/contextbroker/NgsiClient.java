@@ -11,6 +11,7 @@ import com.hubrick.vertx.rest.rx.RxRestClient;
 import com.hubrick.vertx.rest.rx.impl.DefaultRxRestClient;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
+import org.openremote.manager.server.observable.RetryWithDelay;
 import org.openremote.manager.shared.model.ngsi.Entity;
 import org.openremote.manager.shared.model.ngsi.EntryPoint;
 import rx.Observable;
@@ -49,9 +50,28 @@ public class NgsiClient implements AutoCloseable {
         client = new DefaultRxRestClient(defaultClient);
         ngsiServerInfo = "(" + restClientOptions.getDefaultHost() + ":" + restClientOptions.getDefaultPort() + ")";
 
+        // TODO Not a great way to block startup while we wait for other services (Hystrix?)
+        Observable.create(subscriber -> defaultClient.get(BASE_PATH,
+            response -> {
+                int statusCode = response.statusCode();
+                if (statusCode >= 200 && statusCode < 400) {
+                    subscriber.onCompleted();
+                } else {
+                    subscriber.onError(
+                        new IllegalStateException(
+                            "Invalid response status " + statusCode + " from NGSI server " + ngsiServerInfo
+                        )
+                    );
+                }
+            }
+            ).exceptionHandler(subscriber::onError).end()
+        ).retryWhen(
+            new RetryWithDelay("Connecting to NGSI server " + ngsiServerInfo, 10, 3000)
+        ).toBlocking().singleOrDefault(null);
+
         entryPoint = client.get(BASE_PATH, EntryPoint.class,
             request -> {
-                LOG.fine(ngsiServerInfo + " GET entry point");
+                LOG.fine("NGSI server " + ngsiServerInfo + " GET entry point");
                 request.end();
             })
             .doOnError(throwable -> {

@@ -25,6 +25,9 @@ public class SampleData {
 
     private static final Logger LOG = Logger.getLogger(SampleData.class.getName());
 
+    public static final String IMPORT_SAMPLE_DATA = "IMPORT_SAMPLE_DATA";
+    public static final boolean IMPORT_SAMPLE_DATA_DEFAULT = false;
+
     public static final String ADMIN_USERNAME = "admin";
     public static final String ADMIN_PASSWORD = "admin";
 

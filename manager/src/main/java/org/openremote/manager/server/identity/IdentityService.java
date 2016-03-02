@@ -6,19 +6,24 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.hubrick.vertx.rest.RestClientOptions;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.json.JsonObject;
+import org.openremote.manager.server.Constants;
+import org.openremote.manager.server.util.UrlUtil;
 
+import javax.ws.rs.client.Client;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.openremote.manager.server.Constants.*;
+import static org.openremote.manager.server.util.UrlUtil.url;
 
 public class IdentityService {
 
     private static final Logger LOG = Logger.getLogger(IdentityService.class.getName());
 
-    public static final String DISABLE_API_SECURITY  = "DISABLE_API_SECURITY";
+    public static final String DISABLE_API_SECURITY = "DISABLE_API_SECURITY";
     public static final boolean DISABLE_API_SECURITY_DEFAULT = false;
     public static final String IDENTITY_PROVIDER_HOST = "IDENTITY_PROVIDER_HOST";
     public static final String IDENTITY_PROVIDER_HOST_DEFAULT = "192.168.99.100";
@@ -64,6 +69,7 @@ public class IdentityService {
     protected boolean configNetworkSecure;
     protected String configNetworkHost;
     protected int configNetworkWebserverPort;
+    protected String externalAuthServerUrl;
     protected KeycloakClient keycloakClient;
     protected LoadingCache<ClientInstallKey, ClientInstall> clientInstallCache;
 
@@ -72,6 +78,15 @@ public class IdentityService {
         this.configNetworkSecure = config.getBoolean(NETWORK_SECURE, NETWORK_SECURE_DEFAULT);
         this.configNetworkHost = config.getString(NETWORK_HOST, NETWORK_HOST_DEFAULT);
         this.configNetworkWebserverPort = config.getInteger(NETWORK_WEBSERVER_PORT, NETWORK_WEBSERVER_PORT_DEFAULT);
+
+        externalAuthServerUrl = UrlUtil.url(
+            this.configNetworkSecure  ? "https" : "http",
+            this.configNetworkHost,
+            this.configNetworkWebserverPort,
+            Constants.AUTH_PATH
+        ).toString();
+
+        LOG.info("External auth server URL is: " + externalAuthServerUrl);
 
         String host = config.getString(IDENTITY_PROVIDER_HOST, IDENTITY_PROVIDER_HOST_DEFAULT);
         int port = config.getInteger(IDENTITY_PROVIDER_PORT, IDENTITY_PROVIDER_PORT_DEFAULT);
@@ -134,10 +149,23 @@ public class IdentityService {
         CacheLoader<ClientInstallKey, ClientInstall> loader =
             new CacheLoader<ClientInstallKey, ClientInstall>() {
                 public ClientInstall load(ClientInstallKey key) {
-                    LOG.fine("Loading client '" + key.clientId + "' install details for realm '" + key.realm+ "'");
-                    return keycloakClient
+                    LOG.fine("Loading client '" + key.clientId + "' install details for realm '" + key.realm + "'");
+
+                    ClientInstall clientInstall = keycloakClient
                         .getClientInstall(key.realm, key.clientId)
                         .toBlocking().single();
+
+                    // Must rewrite the auth-server URL to our external host and port, which
+                    // we'll later reverse-proxy back to Keycloak
+                    clientInstall.setAuthServerUrl(externalAuthServerUrl);
+
+                    // Also correct the realm info URL at this time, this URL will be written by Keycloak
+                    // as the issue into each token and we need to verify it
+                    clientInstall.setRealmInfoUrl(
+                        url(clientInstall.getAuthServerUrl(), "realms", clientInstall.getRealm()).toString()
+                    );
+
+                    return clientInstall;
                 }
             };
 

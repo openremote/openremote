@@ -45,6 +45,9 @@ public class WebService {
     public static final String WEB_SERVER_DOCROOT = "WEB_SERVER_DOCROOT";
     public static final String WEB_SERVER_DOCROOT_DEFAULT = "src/main/webapp";
 
+    public static final String WEB_SERVER_LISTEN_PORT = "WEB_SERVER_LISTEN_PORT";
+    public static final int WEB_SERVER_LISTEN_PORT_DEFAULT = 8080;
+
     final protected IdentityService identityService;
     final protected ContextBrokerService contextBrokerService;
     final protected MapService mapService;
@@ -63,7 +66,7 @@ public class WebService {
     }
 
     public void start(Vertx vertx, JsonObject config, Handler<AsyncResult<HttpServer>> completionHandler) {
-        int webserverPort = config.getInteger(NETWORK_WEBSERVER_PORT, NETWORK_WEBSERVER_PORT_DEFAULT);
+        int webserverPort = config.getInteger(WEB_SERVER_LISTEN_PORT, WEB_SERVER_LISTEN_PORT_DEFAULT);
         LOG.info("Starting web server on port: " + webserverPort);
 
         HttpServerOptions options = new HttpServerOptions();
@@ -103,6 +106,13 @@ public class WebService {
         ).setCachingEnabled(false); // TODO Should cache in production
 
         // The order of the following routes is important and tricky
+
+        // Reverse-proxy for Keycloak, re-route all requests starting with /auth
+        router.route(AUTH_PATH + "*").handler(rc -> {
+            HttpServerRequest request = rc.request();
+            LOG.fine("Forwarding authentication request: " + request.path());
+            identityService.getKeycloakClient().handleProxyRequest(request);
+        });
 
         // Handle failures
         router.route().failureHandler(createFailureHandler(vertx));

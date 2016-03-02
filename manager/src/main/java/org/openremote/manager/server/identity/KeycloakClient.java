@@ -10,11 +10,15 @@ import com.hubrick.vertx.rest.impl.DefaultRestClient;
 import com.hubrick.vertx.rest.rx.RxRestClient;
 import com.hubrick.vertx.rest.rx.impl.DefaultRxRestClient;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.Json;
 import org.keycloak.common.util.PemUtils;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.*;
+import org.openremote.manager.server.observable.RetryWithDelay;
 import org.openremote.manager.server.util.UrlUtil;
 import rx.Observable;
 
@@ -26,10 +30,7 @@ import java.util.logging.Logger;
 import static com.google.common.net.UrlEscapers.urlFormParameterEscaper;
 import static com.hubrick.vertx.rest.MediaType.APPLICATION_FORM_URLENCODED_VALUE;
 import static com.hubrick.vertx.rest.MediaType.APPLICATION_JSON_VALUE;
-import static io.vertx.core.http.HttpHeaders.ACCEPT;
-import static io.vertx.core.http.HttpHeaders.CONTENT_TYPE;
-import static io.vertx.core.http.HttpHeaders.LOCATION;
-import static org.openremote.manager.server.util.UrlUtil.url;
+import static io.vertx.core.http.HttpHeaders.*;
 
 public class KeycloakClient implements AutoCloseable {
 
@@ -43,18 +44,63 @@ public class KeycloakClient implements AutoCloseable {
         new JacksonJsonHttpMessageConverter<>(Json.mapper)
     );
 
+    final protected HttpClient proxyClient;
     final protected DefaultRestClient defaultClient;
     final protected RxRestClient client;
 
     public KeycloakClient(Vertx vertx, RestClientOptions restClientOptions) {
+        proxyClient = vertx.createHttpClient(restClientOptions);
+        // TODO Now we have two HttpClients, I really don't like this "REST" wrapper...
         defaultClient = new DefaultRestClient(vertx, restClientOptions, messageConverters);
         client = new DefaultRxRestClient(defaultClient);
+
+        // TODO Not a great way to block startup while we wait for other services (Hystrix?)
+        String keycloakServerInfo = restClientOptions.getDefaultHost() + ":" + restClientOptions.getDefaultPort();
+        Observable.create(subscriber -> defaultClient.get(UrlUtil.getPath(CONTEXT_PATH),
+            response -> {
+                int statusCode = response.statusCode();
+                if (statusCode >= 200 && statusCode < 400) {
+                    subscriber.onCompleted();
+                } else {
+                    subscriber.onError(
+                        new IllegalStateException(
+                            "Invalid response status " + statusCode + " from Keycloak server " + keycloakServerInfo
+                        )
+                    );
+                }
+            }
+            ).exceptionHandler(subscriber::onError).end()
+        ).retryWhen(
+            new RetryWithDelay("Connecting to Keycloak server " + keycloakServerInfo, 10, 3000)
+        ).toBlocking().singleOrDefault(null);
     }
 
     @Override
     public void close() {
         defaultClient.close();
+        proxyClient.close();
     }
+
+    public void handleProxyRequest(HttpServerRequest serverRequest) {
+        String requestUri = UrlUtil.url(serverRequest.path()).withQuery(serverRequest.query()).toString();
+        HttpClientRequest proxyRequest =
+            proxyClient.request(
+                serverRequest.method(),
+                requestUri,
+                keycloakResponse -> {
+                    serverRequest.response().setChunked(true);
+                    serverRequest.response().setStatusCode(keycloakResponse.statusCode());
+                    serverRequest.response().headers().setAll(keycloakResponse.headers());
+                    keycloakResponse.handler(data -> serverRequest.response().write(data));
+                    keycloakResponse.endHandler((v) -> serverRequest.response().end());
+                }
+            );
+        proxyRequest.setChunked(true);
+        proxyRequest.headers().setAll(serverRequest.headers());
+        serverRequest.handler(proxyRequest::write);
+        serverRequest.endHandler((v) -> proxyRequest.end());
+    }
+
 
     public Observable<AccessTokenResponse> authenticateDirectly(String realm, String clientId, String username, String password) {
         return client.post(
@@ -227,9 +273,6 @@ public class KeycloakClient implements AutoCloseable {
             } catch (Exception ex) {
                 throw new RuntimeException("Error decoding public key PEM for realm: " + clientInstall.getRealm(), ex);
             }
-            clientInstall.setRealmInfoUrl(
-                url(clientInstall.getAuthServerUrl(), "realms", clientInstall.getRealm()).toString()
-            );
             return Observable.just(clientInstall);
         });
     }

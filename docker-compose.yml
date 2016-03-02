@@ -1,21 +1,18 @@
 version: '2'
 
 services:
-  # Identity Provider
   keycloak:
     build:
       context: ./keycloak
-      args:
-        - profile=dev
+      dockerfile: Dockerfile-dev
     volumes:
       - ./keycloak/theme:/opt/jboss/keycloak/themes/openremote
     environment:
-      KEYCLOAK_USER: 'admin'
-      KEYCLOAK_PASSWORD: 'admin'
-      KEYCLOAK_LOGLEVEL: 'DEBUG'
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+      KEYCLOAK_LOGLEVEL: DEBUG
     ports:
       - "8081:8080"
-  # Context Broker
   mongo:
     image: mongo:2.6
     command: --smallfiles

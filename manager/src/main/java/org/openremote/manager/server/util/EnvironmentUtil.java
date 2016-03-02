@@ -4,13 +4,18 @@ import io.vertx.core.json.JsonObject;
 
 import java.util.Locale;
 import java.util.Map;
+import java.util.logging.Logger;
 
 public class EnvironmentUtil {
+
+    private static final Logger LOG = Logger.getLogger(EnvironmentUtil.class.getName());
 
     public static JsonObject getEnvironment() {
         JsonObject env = new JsonObject();
         Map<String, String> environment = System.getenv();
         for (Map.Entry<String, String> entry : environment.entrySet()) {
+
+            LOG.info(entry.getKey() + " => " + entry.getValue());
 
             // Integer
             try {

@@ -1,0 +1,5 @@
+FROM jboss/keycloak:1.9.0.Final
+
+ADD keycloak-server-json-dev.jq /opt/jboss/keycloak/config.jq
+
+RUN INPUT=`cat /opt/jboss/keycloak/standalone/configuration/keycloak-server.json` && echo $INPUT | jq -f /opt/jboss/keycloak/config.jq > /opt/jboss/keycloak/standalone/configuration/keycloak-server.json
