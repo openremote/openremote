@@ -1,8 +1,7 @@
-package org.openremote.manager.server.util;
+package org.openremote.container.util;
 
 import io.mikael.urlbuilder.UrlBuilder;
 import io.undertow.server.HttpServerExchange;
-import io.vertx.ext.web.RoutingContext;
 
 public class UrlUtil {
 
@@ -11,14 +10,6 @@ public class UrlUtil {
      */
     public static UrlBuilder url(HttpServerExchange exchange, String context, String... pathSegments) {
         return UrlBuilder.fromString(exchange.getRequestURL())
-            .withPath(getPath(UrlBuilder.empty().withPath(context), pathSegments));
-    }
-
-    /**
-     * Resets the path on the absolute request URL, starting with the context base path followed by the segments.
-     */
-    public static UrlBuilder url(RoutingContext routingContext, String context, String... pathSegments) {
-        return UrlBuilder.fromString(routingContext.request().absoluteURI())
             .withPath(getPath(UrlBuilder.empty().withPath(context), pathSegments));
     }
 

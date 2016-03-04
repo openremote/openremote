@@ -1,0 +1,25 @@
+apply plugin: "java"
+
+dependencies {
+
+    compile "org.slf4j:slf4j-api:$slf4jVersion"
+    compile "org.slf4j:slf4j-jdk14:$slf4jVersion"
+    compile "org.slf4j:jcl-over-slf4j:$slf4jVersion"
+    compile "org.slf4j:log4j-over-slf4j:$slf4jVersion"
+
+    compile 'io.undertow:undertow-servlet:1.3.18.Final'
+    compile 'io.undertow:undertow-websockets-jsr:1.3.18.Final'
+
+    compile 'org.jboss.resteasy:resteasy-jaxrs:3.0.16.Final'
+    compile 'org.jboss.resteasy:resteasy-client:3.0.16.Final'
+    compile 'org.jboss.resteasy:resteasy-jackson2-provider:3.0.16.Final'
+    compile 'org.jboss.resteasy:resteasy-multipart-provider:3.0.16.Final'
+    compile 'org.jboss.resteasy:resteasy-cache-core:3.0.16.Final'
+    compile 'org.jboss.resteasy:async-http-servlet-3.0:3.0.16.Final'
+
+    compile "io.mikael:urlbuilder:$urlbuilderVersion"
+
+    compile "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
+    compile "org.keycloak:keycloak-adapter-core:$keycloakVersion"
+
+}

@@ -20,6 +20,8 @@ mainClassName = "org.openremote.manager.server.Server"
 
 dependencies {
 
+    compile project(":container")
+
     compile "org.slf4j:slf4j-api:$slf4jVersion"
     compile "org.slf4j:slf4j-jdk14:$slf4jVersion"
     compile "org.slf4j:jcl-over-slf4j:$slf4jVersion"
@@ -46,7 +48,7 @@ dependencies {
     compile ("com.google.gwt.inject:gin:$ginVersion") {
         exclude group: "asm"
     }
-    
+
     // REST SERVICES
     compile "org.fusesource.restygwt:restygwt:$restygwtVersion"
     compile "javax.ws.rs:javax.ws.rs-api:2.0.1"
