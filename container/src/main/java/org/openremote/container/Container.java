@@ -68,9 +68,11 @@ public class Container {
             @Override
             public void run() {
                 for (ContainerService service : getServices()) {
+                    LOG.fine("Preparing service: " + service);
                     service.prepare(Container.this);
                 }
                 for (ContainerService service : getServices()) {
+                    LOG.fine("Starting service: " + service);
                     service.start(Container.this);
                 }
                 LOG.info("Runtime container startup complete");
@@ -81,6 +83,7 @@ public class Container {
     synchronized public void stop() {
         LOG.info("Stopping runtime container...");
         for (ContainerService service : getServices()) {
+            LOG.fine("Stopping service: " + service);
             service.stop(this);
         }
     }

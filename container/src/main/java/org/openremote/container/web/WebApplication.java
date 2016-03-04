@@ -18,8 +18,8 @@ public class WebApplication extends Application {
 
     public WebApplication(Container container, Collection<Class<?>> apiClasses, Collection<Object> apiSingletons) {
         this.container = container;
-        this.classes = apiClasses!= null ? new HashSet<>(apiClasses) : null;
-        this.singletons = apiSingletons!= null ? new HashSet<>(apiSingletons) : null;
+        this.classes = apiClasses != null ? new HashSet<>(apiClasses) : null;
+        this.singletons = apiSingletons != null ? new HashSet<>(apiSingletons) : null;
     }
 
     @Override

@@ -7,6 +7,8 @@ dependencies {
     compile "org.slf4j:jcl-over-slf4j:$slf4jVersion"
     compile "org.slf4j:log4j-over-slf4j:$slf4jVersion"
 
+    compile 'io.reactivex:rxjava:1.1.1'
+
     compile 'io.undertow:undertow-servlet:1.3.18.Final'
     compile 'io.undertow:undertow-websockets-jsr:1.3.18.Final'
 

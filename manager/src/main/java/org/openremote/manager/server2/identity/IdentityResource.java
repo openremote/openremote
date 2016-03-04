@@ -5,44 +5,23 @@ import org.openremote.manager.server.identity.ClientInstall;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.util.logging.Logger;
 
 @Path("identity")
 public class IdentityResource extends WebResource {
 
-    private static final Logger LOG = Logger.getLogger(IdentityResource.class.getName());
+    final protected IdentityService identityService;
 
-    @Context
-    javax.ws.rs.core.UriInfo uriInfo;
-
-    final protected KeycloakClient keycloakClient;
-
-    public IdentityResource(KeycloakClient keycloakClient) {
-        this.keycloakClient = keycloakClient;
+    public IdentityResource(IdentityService identityService) {
+        this.identityService = identityService;
     }
 
     @GET
-    @Path("install/or-manager")
-    @Produces(MediaType.TEXT_PLAIN)
-    public String get(@QueryParam("realm") String realm, @QueryParam("foo") String foo) {
-        LOG.info("### ---------------------- " + uriInfo.getRequestUri());
-        LOG.info("### ---------------------- " + uriInfo.getQueryParameters());
-        LOG.info("### REALM: " + realm);
-        LOG.info("### APPLICATION: " + getApplication().getContainer());
-        LOG.info("### FOO: " + foo);
-        LOG.info("### KEYCLOAK: " + keycloakClient);
-        return "OK";
-    }
-
-    @GET
-    @Path("foo")
+    @Path("install/{clientId}")
     @Produces(MediaType.APPLICATION_JSON)
-    public ClientInstall getJson() {
-        return new ClientInstall();
+    public ClientInstall getClientInstall(@PathParam("clientId") String clientId) {
+        return identityService.getClientInstall(getRealm(), clientId);
     }
-
 }

@@ -3,7 +3,6 @@ package org.openremote.container.web;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
-import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.RedirectHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.resource.FileResourceManager;
@@ -26,6 +25,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -52,8 +53,8 @@ public abstract class WebService implements ContainerService {
 
     protected String host;
     protected int port;
-    protected PathHandler pathHandler;
     protected Undertow undertow;
+    protected Map<String, HttpHandler> prefixRoutes = new LinkedHashMap<>();
     protected Collection<Class<?>> apiClasses = new HashSet<>();
     protected Collection<Object> apiSingletons = new HashSet<>();
 
@@ -61,19 +62,18 @@ public abstract class WebService implements ContainerService {
     public void prepare(Container container) {
         host = container.getConfig(WEB_SERVER_LISTEN_HOST, WEB_SERVER_LISTEN_HOST_DEFAULT);
         port = container.getConfigInteger(WEB_SERVER_LISTEN_PORT, WEB_SERVER_LISTEN_PORT_DEFAULT);
-
-        pathHandler = Handlers.path();
-
-        undertow = prepare(
-            container,
-            Undertow.builder()
-                .addHttpListener(port, host)
-        ).build();
     }
 
     @Override
     public void start(Container container) {
-        if (undertow != null) {
+        if (undertow == null) {
+
+            undertow = build(
+                container,
+                Undertow.builder()
+                    .addHttpListener(port, host)
+            ).build();
+
             LOG.info("Starting webserver on http://" + host + ":" + port);
             undertow.start();
         }
@@ -87,7 +87,7 @@ public abstract class WebService implements ContainerService {
         }
     }
 
-    protected Undertow.Builder prepare(Container container, Undertow.Builder builder) {
+    protected Undertow.Builder build(Container container, Undertow.Builder builder) {
 
         Path docRoot = getStaticResourceDocRoot(container);
         HttpHandler staticResourceHandler = docRoot != null ? createStaticResourceHandler(container, docRoot) : null;
@@ -97,6 +97,19 @@ public abstract class WebService implements ContainerService {
         HttpHandler handler = exchange -> {
             String requestPath = exchange.getRequestPath();
             LOG.fine("Handling request: " + exchange.getRequestURL());
+
+            // Other services can register routes here with a prefix patch match
+            boolean handled = false;
+            for (Map.Entry<String, HttpHandler> entry : getPrefixRoutes().entrySet()) {
+                if (requestPath.startsWith(entry.getKey())) {
+                    LOG.fine("Handling with '" + entry.getValue().getClass().getName() + "' path prefix: " + entry.getKey());;
+                    entry.getValue().handleRequest(exchange);
+                    handled = true;
+                    break;
+                }
+            }
+            if (handled)
+                return;
 
             // Redirect / to default realm
             if (requestPath.equals("/")) {
@@ -228,6 +241,13 @@ public abstract class WebService implements ContainerService {
             return new WebApplication(container, getApiClasses(), getApiSingletons());
         }
         return null;
+    }
+
+    /**
+     * Simple path prefix routing.
+     */
+    public Map<String, HttpHandler> getPrefixRoutes() {
+        return prefixRoutes;
     }
 
     /**
