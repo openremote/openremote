@@ -12,7 +12,7 @@ import java.io.InputStream;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
-public class Runtime {
+public class ContainerRuntime {
 
     public static final String DEV_MODE = "DEV_MODE";
     public static final boolean DEV_MODE_DEFAULT = true;
@@ -31,7 +31,7 @@ public class Runtime {
             }
         }
 
-        LOG = Logger.getLogger(Runtime.class.getName());
+        LOG = Logger.getLogger(ContainerRuntime.class.getName());
         LOG.info("Starting runtime container...");
 
         JSON = new ObjectMapper();

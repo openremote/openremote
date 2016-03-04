@@ -10,7 +10,7 @@ import java.util.stream.StreamSupport;
 
 public class Container {
 
-    private static final Logger LOG = Runtime.LOG;
+    private static final Logger LOG = ContainerRuntime.LOG;
 
     public final ObjectNode CONFIG;
 
@@ -35,11 +35,11 @@ public class Container {
 
     @SafeVarargs
     public Container(Map<String, String> config, Stream<ContainerService>... serviceStreams) {
-        CONFIG = Runtime.JSON.createObjectNode();
+        CONFIG = ContainerRuntime.JSON.createObjectNode();
         for (Map.Entry<String, String> entry : config.entrySet()) {
             CONFIG.put(entry.getKey(), entry.getValue());
         }
-        Runtime.configure(this);
+        ContainerRuntime.configure(this);
 
         if (serviceStreams != null) {
             for (Stream<ContainerService> serviceStream : serviceStreams) {
@@ -47,7 +47,7 @@ public class Container {
             }
         }
 
-        Runtime.addShutdownHook(this::stop);
+        ContainerRuntime.addShutdownHook(this::stop);
     }
 
     public String getConfig(String variable, String defaultValue) {

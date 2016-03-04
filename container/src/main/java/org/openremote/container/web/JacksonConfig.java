@@ -1,7 +1,7 @@
 package org.openremote.container.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.openremote.container.Runtime;
+import org.openremote.container.ContainerRuntime;
 
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
@@ -14,6 +14,6 @@ public class JacksonConfig implements ContextResolver<ObjectMapper> {
 
     @Override
     public ObjectMapper getContext(Class<?> type) {
-        return Runtime.JSON;
+        return ContainerRuntime.JSON;
     }
 }

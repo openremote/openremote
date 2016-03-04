@@ -15,7 +15,7 @@ public class WebResource {
     protected Application application;
 
     @Context
-    UriInfo uriInfo;
+    protected UriInfo uriInfo;
 
     public WebApplication getApplication() {
         return (WebApplication) application;

@@ -208,6 +208,7 @@ public abstract class WebService implements ContainerService {
 
         // Custom providers (these only apply to server applications, not client calls)
         resteasyDeployment.getActualProviderClasses().add(JacksonConfig.class);
+        resteasyDeployment.getActualProviderClasses().add(GZIPPEDEncodingInterceptor.class);
 
         ServletInfo restServlet = Servlets.servlet("RESTEasy Servlet", HttpServlet30Dispatcher.class)
             .setAsyncSupported(true)
