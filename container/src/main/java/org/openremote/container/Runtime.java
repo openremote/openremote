@@ -46,6 +46,12 @@ public class Runtime {
             .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.NONE);
     }
 
+    public static void configure(Container container) {
+        if (container.getConfigBoolean(DEV_MODE, DEV_MODE_DEFAULT)) {
+            JSON.enable(SerializationFeature.INDENT_OUTPUT);
+        }
+    }
+
     public static void addShutdownHook(Runnable runnable) {
         java.lang.Runtime.getRuntime().addShutdownHook(new Thread(runnable));
     }

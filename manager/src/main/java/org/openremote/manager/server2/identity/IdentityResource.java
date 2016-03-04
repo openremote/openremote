@@ -1,6 +1,7 @@
 package org.openremote.manager.server2.identity;
 
 import org.openremote.container.web.WebResource;
+import org.openremote.manager.server.identity.ClientInstall;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -36,4 +37,12 @@ public class IdentityResource extends WebResource {
         LOG.info("### KEYCLOAK: " + keycloakClient);
         return "OK";
     }
+
+    @GET
+    @Path("foo")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ClientInstall getJson() {
+        return new ClientInstall();
+    }
+
 }

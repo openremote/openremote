@@ -15,7 +15,6 @@ public class Container {
     public final ObjectNode CONFIG;
 
     protected final Map<Class<? extends ContainerService>, ContainerService> services = new ConcurrentHashMap<>();
-    protected boolean running;
 
     public Container() {
         this(
@@ -40,6 +39,7 @@ public class Container {
         for (Map.Entry<String, String> entry : config.entrySet()) {
             CONFIG.put(entry.getKey(), entry.getValue());
         }
+        Runtime.configure(this);
 
         if (serviceStreams != null) {
             for (Stream<ContainerService> serviceStream : serviceStreams) {
@@ -69,6 +69,8 @@ public class Container {
             public void run() {
                 for (ContainerService service : getServices()) {
                     service.prepare(Container.this);
+                }
+                for (ContainerService service : getServices()) {
                     service.start(Container.this);
                 }
                 LOG.info("Runtime container startup complete");

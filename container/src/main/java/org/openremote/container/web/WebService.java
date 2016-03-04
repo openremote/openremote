@@ -1,6 +1,5 @@
 package org.openremote.container.web;
 
-import io.mikael.urlbuilder.UrlBuilder;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
@@ -22,7 +21,6 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 
 import javax.ws.rs.core.Application;
-import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -195,6 +193,9 @@ public abstract class WebService implements ContainerService {
         ResteasyDeployment resteasyDeployment = new ResteasyDeployment();
         resteasyDeployment.setApplication(restApplication);
 
+        // Custom providers (these only apply to server applications, not client calls)
+        resteasyDeployment.getActualProviderClasses().add(JacksonConfig.class);
+
         ServletInfo restServlet = Servlets.servlet("RESTEasy Servlet", HttpServlet30Dispatcher.class)
             .setAsyncSupported(true)
             .setLoadOnStartup(1)
@@ -222,20 +223,23 @@ public abstract class WebService implements ContainerService {
         return null;
     }
 
-    /**
-     * Override this to register a JAX-RS application served on the /api/* path.
-     */
     protected WebApplication getRestApplication(Container container) {
-        if (getApiClasses()!= null || getApiSingletons() != null) {
+        if (getApiClasses() != null || getApiSingletons() != null) {
             return new WebApplication(container, getApiClasses(), getApiSingletons());
         }
         return null;
     }
 
+    /**
+     * Add resource/provider/etc. classes to enable REST API.
+     */
     public Collection<Class<?>> getApiClasses() {
         return apiClasses;
     }
 
+    /**
+     * Add resource/provider/etc. singletons to enable REST API.
+     */
     public Collection<Object> getApiSingletons() {
         return apiSingletons;
     }

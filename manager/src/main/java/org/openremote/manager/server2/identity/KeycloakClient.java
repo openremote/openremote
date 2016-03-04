@@ -4,22 +4,27 @@ import org.jboss.resteasy.annotations.Form;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.keycloak.representations.AccessTokenResponse;
-import org.openremote.container.Container;
+import org.keycloak.representations.idm.ClientRepresentation;
+import org.keycloak.representations.idm.RealmRepresentation;
+import org.openremote.container.web.JacksonConfig;
 import org.openremote.manager.server.observable.RetryWithDelay;
 import rx.Observable;
 
 import javax.ws.rs.*;
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.client.ClientRequestContext;
+import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
+import java.io.IOException;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.MediaType.TEXT_HTML;
-import static javax.ws.rs.core.Response.Status.Family.*;
+import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
+import static javax.ws.rs.core.HttpHeaders.LOCATION;
+import static javax.ws.rs.core.MediaType.*;
+import static javax.ws.rs.core.Response.Status.Family.REDIRECTION;
+import static javax.ws.rs.core.Response.Status.Family.SUCCESSFUL;
 
 public class KeycloakClient implements AutoCloseable {
 
@@ -27,6 +32,17 @@ public class KeycloakClient implements AutoCloseable {
 
     public static final String ADMIN_CLI_CLIENT = "admin-cli";
     public static final String CONTEXT_PATH = "auth";
+
+    public class BearerAuthClientRequestFilter implements ClientRequestFilter {
+        @Override
+        public void filter(ClientRequestContext requestContext) throws IOException {
+            String accessToken = (String) requestContext.getConfiguration().getProperty("accessToken");
+            if (accessToken != null) {
+                String authorization = "Bearer " + accessToken;
+                requestContext.getHeaders().add(AUTHORIZATION, authorization);
+            }
+        }
+    }
 
     public static class AuthForm {
 
@@ -66,6 +82,27 @@ public class KeycloakClient implements AutoCloseable {
         @Produces(APPLICATION_JSON)
         AccessTokenResponse getAccessToken(@PathParam("realm") String realm, @Form AuthForm authForm);
 
+        @GET
+        @Path("admin/realms/{realm}")
+        @Produces(APPLICATION_JSON)
+        RealmRepresentation getRealm(@PathParam("realm") String realm);
+
+        @PUT
+        @Path("admin/realms/{realm}")
+        @Consumes(APPLICATION_JSON)
+        Response putRealm(@PathParam("realm") String realm, RealmRepresentation realmRepresentation);
+
+        @POST
+        @Path("admin/realms/{realm}/clients")
+        @Consumes(APPLICATION_JSON)
+        Response registerClientApplication(@PathParam("realm") String realm, ClientRepresentation clientRepresentation);
+
+        @GET
+        @Path("admin/realms/{realm}/clients")
+        @Produces(APPLICATION_JSON)
+        ClientRepresentation[] getClientApplications(@PathParam("realm") String realm);
+
+
     }
 
     final protected UriBuilder serverUri;
@@ -73,15 +110,46 @@ public class KeycloakClient implements AutoCloseable {
 
     public KeycloakClient(UriBuilder serverUri, ResteasyClientBuilder clientBuilder) {
         this.serverUri = serverUri.replacePath(CONTEXT_PATH);
-        this.client = clientBuilder.build();
+        this.client = clientBuilder
+            .register(JacksonConfig.class)
+            .register(new BearerAuthClientRequestFilter())
+            .build();
+    }
 
-        // TODO Not a great way to block startup while we wait for other services (Hystrix?)
+    @Override
+    public void close() {
+        if (client != null)
+            client.close();
+    }
+
+    protected ResteasyWebTarget getTarget() {
+        return getTarget(serverUri, null);
+    }
+
+    protected ResteasyWebTarget getTarget(UriBuilder uri, String accessToken) {
+        ResteasyWebTarget target = ((ResteasyWebTarget) client.target(uri));
+        if (accessToken != null) {
+            target.property("accessToken", accessToken);
+        }
+        return target;
+    }
+
+    protected Keycloak getKeycloak() {
+        return getKeycloak(null);
+    }
+
+    protected Keycloak getKeycloak(String accessToken) {
+        return getTarget(serverUri, accessToken).proxy(Keycloak.class);
+    }
+
+    public void pingKeycloak() {
         Observable.create(subscriber -> {
             Response response = null;
             try {
                 response = getKeycloak().getWelcomePage();
                 if (response != null &&
-                    (response.getStatusInfo().getFamily() == SUCCESSFUL || response.getStatusInfo().getFamily() == REDIRECTION)) {
+                    (response.getStatusInfo().getFamily() == SUCCESSFUL
+                        || response.getStatusInfo().getFamily() == REDIRECTION)) {
                     subscriber.onCompleted();
                 } else {
                     if (response != null) {
@@ -99,7 +167,6 @@ public class KeycloakClient implements AutoCloseable {
         }).retryWhen(
             new RetryWithDelay("Connecting to Keycloak server " + serverUri.build(), 10, 3000)
         ).toBlocking().singleOrDefault(null);
-
     }
 
     public Observable<AccessTokenResponse> authenticateDirectly(String realm, String clientId, String username, String password) {
@@ -114,6 +181,95 @@ public class KeycloakClient implements AutoCloseable {
                 } else {
                     subscriber.onError(new WebApplicationException("No response"));
                 }
+            } catch (Exception ex) {
+                subscriber.onError(ex);
+            }
+        });
+    }
+
+    public Observable<RealmRepresentation> getRealm(String realm, String accessToken) {
+        return Observable.create(subscriber -> {
+            try {
+                RealmRepresentation realmRepresentation = getKeycloak(accessToken).getRealm(realm);
+                if (realmRepresentation != null) {
+                    subscriber.onNext(realmRepresentation);
+                    subscriber.onCompleted();
+                } else {
+                    subscriber.onError(new WebApplicationException("No response"));
+                }
+            } catch (Exception ex) {
+                subscriber.onError(ex);
+            }
+        });
+    }
+
+    public Observable<Integer> putRealm(String realm, String accessToken, RealmRepresentation realmRepresentation) {
+        return Observable.create(subscriber -> {
+            try {
+                Response response = getKeycloak(accessToken).putRealm(realm, realmRepresentation);
+                if (response != null) {
+                    subscriber.onNext(response.getStatus());
+                    subscriber.onCompleted();
+                } else {
+                    subscriber.onError(new WebApplicationException("No response"));
+                }
+
+            } catch (Exception ex) {
+                subscriber.onError(ex);
+            }
+        });
+    }
+
+    public Observable<String> registerClientApplication(String realm, ClientRepresentation clientRepresentation) {
+        return Observable.create(subscriber -> {
+            try {
+                if (clientRepresentation.getRegistrationAccessToken() == null) {
+                    throw new IllegalStateException("Missing registration access token on client representation");
+                }
+                Response response = getKeycloak(clientRepresentation.getRegistrationAccessToken())
+                    .registerClientApplication(realm, clientRepresentation);
+                if (response != null) {
+                    subscriber.onNext(response.getHeaderString(LOCATION));
+                    subscriber.onCompleted();
+                } else {
+                    subscriber.onError(new WebApplicationException("No response"));
+                }
+
+            } catch (Exception ex) {
+                subscriber.onError(ex);
+            }
+        });
+    }
+
+    public Observable<ClientRepresentation> getClientApplications(String realm, String accessToken) {
+        return Observable.create(subscriber -> {
+            try {
+                ClientRepresentation[] representations = getKeycloak(accessToken).getClientApplications(realm);
+                if (representations != null) {
+                    Stream.of(representations).forEach(subscriber::onNext);
+                    subscriber.onCompleted();
+                } else {
+                    subscriber.onError(new WebApplicationException("No response"));
+                }
+
+            } catch (Exception ex) {
+                subscriber.onError(ex);
+            }
+        });
+    }
+
+    public Observable<ClientRepresentation> getClientApplicationByLocation(String realm, String accessToken, String location) {
+        return Observable.create(subscriber -> {
+            try {
+                Response response =
+                    getTarget(UriBuilder.fromUri(location), accessToken).request(APPLICATION_JSON).buildGet().invoke();
+                if (response != null) {
+                    subscriber.onNext(response.readEntity(ClientRepresentation.class));
+                    subscriber.onCompleted();
+                } else {
+                    subscriber.onError(new WebApplicationException("No response"));
+                }
+
             } catch (Exception ex) {
                 subscriber.onError(ex);
             }
@@ -142,70 +298,6 @@ public class KeycloakClient implements AutoCloseable {
         serverRequest.endHandler((v) -> proxyRequest.end());
     }
 
-
-
-    public Observable<RealmRepresentation> getRealm(String realm, String accessToken) {
-        return client.get(
-            UrlUtil.getPath(CONTEXT_PATH, "admin", "realms", realm),
-            RealmRepresentation.class,
-            request -> {
-                addBearerAuthorization(request, accessToken);
-                request.putHeader(ACCEPT, APPLICATION_JSON_VALUE);
-                request.end();
-            }
-        ).flatMap(response -> Observable.just(response.getBody()));
-    }
-
-    public Observable<Integer> putRealm(String realm, String accessToken, RealmRepresentation realmRepresentation) {
-        return client.put(
-            UrlUtil.getPath(CONTEXT_PATH, "admin", "realms", realm),
-            request -> {
-                addBearerAuthorization(request, accessToken);
-                request.putHeader(ACCEPT, APPLICATION_JSON_VALUE);
-                request.putHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE);
-                request.end(realmRepresentation);
-            }
-        ).flatMap(response -> Observable.just(response.statusCode()));
-    }
-
-    public Observable<String> registerClientApplication(String realm, ClientRepresentation clientRepresentation) {
-        return client.post(
-            UrlUtil.getPath(CONTEXT_PATH, "admin", "realms", realm, "clients"),
-            request -> {
-                if (clientRepresentation.getRegistrationAccessToken() == null) {
-                    throw new IllegalStateException("Missing registration access token on client representation");
-                }
-                addBearerAuthorization(request, clientRepresentation.getRegistrationAccessToken());
-                request.putHeader(ACCEPT, APPLICATION_JSON_VALUE);
-                request.putHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE);
-                request.end(clientRepresentation);
-            }
-        ).flatMap(response -> Observable.just(response.headers().get(LOCATION)));
-    }
-
-    public Observable<ClientRepresentation> getClientApplications(String realm, String accessToken) {
-        return client.get(
-            UrlUtil.getPath(CONTEXT_PATH, "admin", "realms", realm, "clients"),
-            ClientRepresentation[].class,
-            request -> {
-                addBearerAuthorization(request, accessToken);
-                request.putHeader(ACCEPT, APPLICATION_JSON_VALUE);
-                request.end();
-            }
-        ).flatMap(response -> Observable.from(response.getBody()));
-    }
-
-    public Observable<ClientRepresentation> getClientApplicationByLocation(String realm, String accessToken, String location) {
-        return client.get(
-            location,
-            ClientRepresentation.class,
-            request -> {
-                addBearerAuthorization(request, accessToken);
-                request.putHeader(ACCEPT, APPLICATION_JSON_VALUE);
-                request.end();
-            }
-        ).flatMap(response -> Observable.just(response.getBody()));
-    }
 
     public Observable<ClientRepresentation> getClientApplication(String realm, String accessToken, String clientId) {
         return client.get(
@@ -389,15 +481,4 @@ public class KeycloakClient implements AutoCloseable {
         }
     }
     */
-
-    @Override
-    public void close() {
-        if (client != null)
-            client.close();
-    }
-
-    protected Keycloak getKeycloak() {
-        return ((ResteasyWebTarget) client.target(serverUri)).proxy(Keycloak.class);
-    }
-
 }

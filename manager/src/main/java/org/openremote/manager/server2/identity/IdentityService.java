@@ -62,7 +62,15 @@ public class IdentityService implements ContainerService {
 
     @Override
     public void start(Container container) {
+        // TODO Not a great way to block startup while we wait for other services (Hystrix?)
+        keycloakClient.pingKeycloak();
 
+        /* TODO testing
+        RealmRepresentation master = keycloakClient.authenticateDirectly("master", KeycloakClient.ADMIN_CLI_CLIENT, "admin", "admin")
+            .flatMap(accessTokenResponse -> keycloakClient.getRealm("master", accessTokenResponse.getToken()))
+            .toBlocking().singleOrDefault(null);
+        LOG.info("### GOT : " + master);
+        */
     }
 
     @Override
