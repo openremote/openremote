@@ -1,11 +1,9 @@
 package org.openremote.manager.server2.identity;
 
 import org.jboss.resteasy.annotations.Form;
-import org.keycloak.common.util.PemUtils;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.*;
 import org.openremote.manager.server.identity.ClientInstall;
-import rx.Observable;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
@@ -24,6 +22,11 @@ public interface Keycloak {
     @Consumes(APPLICATION_FORM_URLENCODED)
     @Produces(APPLICATION_JSON)
     AccessTokenResponse getAccessToken(@PathParam("realm") String realm, @Form AuthForm authForm);
+
+    @GET
+    @Path("realms/{realm}/clients-registrations/install/{clientId}")
+    @Produces(APPLICATION_JSON)
+    ClientInstall getClientInstall(@PathParam("realm") String realm, @PathParam("clientId") String clientId);
 
     @GET
     @Path("admin/realms/{realm}")
@@ -92,10 +95,4 @@ public interface Keycloak {
     @Path("admin/realms/{realm}/users/{userId}/role-mappings/clients/{clientObjectId}")
     @Consumes(APPLICATION_JSON)
     Response addUserClientRoleMapping(@PathParam("realm") String realm, @PathParam("userId") String userId, @PathParam("clientObjectId") String clientObjectId, RoleRepresentation[] roleRepresentations);
-
-    @GET
-    @Path("admin/realms/{realm}/clients-registrations/install/{clientId}")
-    @Produces(APPLICATION_JSON)
-    ClientInstall getClientInstall(@PathParam("realm") String realm, @PathParam("clientId") String clientId);
-
 }
