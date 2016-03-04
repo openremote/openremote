@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import static org.openremote.container.ContainerRuntime.JSON;
+import static org.openremote.container.Container.JSON;
 import static org.openremote.manager.server.Constants.*;
 
 public class MapService implements ContainerService {
@@ -36,7 +36,7 @@ public class MapService implements ContainerService {
 
     @Override
     public void prepare(Container container) {
-        this.devMode = container.getConfigBoolean(DEV_MODE, DEV_MODE_DEFAULT);
+        this.devMode = container.isDevMode();
 
         mapTilesPath = Paths.get(container.getConfig(MAP_TILES_PATH, MAP_TILES_PATH_DEFAULT));
         if (!Files.isRegularFile(mapTilesPath)) {

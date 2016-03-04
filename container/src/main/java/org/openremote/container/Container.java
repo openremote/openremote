@@ -1,21 +1,66 @@
 package org.openremote.container;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class Container {
 
-    private static final Logger LOG = ContainerRuntime.LOG;
+    public static final Logger LOG;
+    public static final ObjectMapper JSON;
 
-    public final ObjectNode CONFIG;
+    static {
+        if (System.getProperty("java.util.logging.config.file") == null) {
+            try (InputStream is = Container.class.getClassLoader().getResourceAsStream("logging.properties")) {
+                if (is != null) {
+                    LogManager.getLogManager().readConfiguration(is);
+                }
+            } catch (IOException ignore) {
+                // Ignore
+            }
+        }
+
+        LOG = Logger.getLogger(Container.class.getName());
+        LOG.info("Starting runtime container...");
+
+        JSON = new ObjectMapper();
+        JSON.setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false)
+            .configure(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS, false)
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+            .setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE)
+            .setVisibility(PropertyAccessor.SETTER, JsonAutoDetect.Visibility.NONE)
+            .setVisibility(PropertyAccessor.IS_GETTER, JsonAutoDetect.Visibility.NONE)
+            .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.NONE);
+    }
+
+    public static final String DEV_MODE = "DEV_MODE";
+    public static final boolean DEV_MODE_DEFAULT = true;
+
+    protected final ObjectNode config;
+    protected final boolean devMode;
 
     protected final Map<Class<? extends ContainerService>, ContainerService> services = new ConcurrentHashMap<>();
 
+    public static void configure(Container container) {
+        if (container.getConfigBoolean(DEV_MODE, DEV_MODE_DEFAULT)) {
+            JSON.enable(SerializationFeature.INDENT_OUTPUT);
+        }
+    }
     public Container() {
         this(
             System.getenv(),
@@ -35,11 +80,12 @@ public class Container {
 
     @SafeVarargs
     public Container(Map<String, String> config, Stream<ContainerService>... serviceStreams) {
-        CONFIG = ContainerRuntime.JSON.createObjectNode();
+        this.config = JSON.createObjectNode();
         for (Map.Entry<String, String> entry : config.entrySet()) {
-            CONFIG.put(entry.getKey(), entry.getValue());
+            this.config.put(entry.getKey(), entry.getValue());
         }
-        ContainerRuntime.configure(this);
+
+        this.devMode = getConfigBoolean(DEV_MODE, DEV_MODE_DEFAULT);
 
         if (serviceStreams != null) {
             for (Stream<ContainerService> serviceStream : serviceStreams) {
@@ -47,19 +93,27 @@ public class Container {
             }
         }
 
-        ContainerRuntime.addShutdownHook(this::stop);
+        Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
+    }
+
+    public ObjectNode getConfig() {
+        return config;
     }
 
     public String getConfig(String variable, String defaultValue) {
-        return CONFIG.has(variable) ? CONFIG.get(variable).asText() : defaultValue;
+        return config.has(variable) ? config.get(variable).asText() : defaultValue;
     }
 
     public boolean getConfigBoolean(String variable, boolean defaultValue) {
-        return CONFIG.has(variable) ? CONFIG.get(variable).asBoolean() : defaultValue;
+        return config.has(variable) ? config.get(variable).asBoolean() : defaultValue;
     }
 
     public int getConfigInteger(String variable, int defaultValue) {
-        return CONFIG.has(variable) ? CONFIG.get(variable).asInt() : defaultValue;
+        return config.has(variable) ? config.get(variable).asInt() : defaultValue;
+    }
+
+    public boolean isDevMode() {
+        return devMode;
     }
 
     synchronized public void start() {

@@ -5,7 +5,9 @@ import org.openremote.container.Container;
 public class Server {
 
     public static void main(String[] args) {
-        Container container = new Container();
+
+        Container container = new Container(new SampleDataService());
+
         container.start();
     }
 }

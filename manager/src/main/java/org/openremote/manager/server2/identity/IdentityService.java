@@ -28,6 +28,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -219,11 +220,11 @@ public class IdentityService implements ContainerService {
         return configNetworkWebserverPort;
     }
 
-    protected ResteasyWebTarget getTarget() {
-        return getTarget(keycloakServiceUri, null);
+    public ResteasyWebTarget getTarget() {
+        return getTarget(keycloakServiceUri.build(), null);
     }
 
-    protected ResteasyWebTarget getTarget(UriBuilder uri, String accessToken) {
+    public ResteasyWebTarget getTarget(URI uri, String accessToken) {
         ResteasyWebTarget target = ((ResteasyWebTarget) client.target(uri));
         if (accessToken != null) {
             target.property("accessToken", accessToken);
@@ -231,7 +232,7 @@ public class IdentityService implements ContainerService {
         return target;
     }
 
-    protected ResteasyWebTarget getTarget(UriBuilder uri, String clientId, String clientSecret) {
+    public ResteasyWebTarget getTarget(URI uri, String clientId, String clientSecret) {
         ResteasyWebTarget target = getTarget(uri, null);
         if (clientId != null) {
             target.property("clientId", clientId);
@@ -242,19 +243,19 @@ public class IdentityService implements ContainerService {
         return target;
     }
 
-    protected Keycloak getKeycloak() {
-        return getKeycloak(getTarget(keycloakServiceUri, null));
+    public Keycloak getKeycloak() {
+        return getKeycloak(getTarget(keycloakServiceUri.build(), null));
     }
 
-    protected Keycloak getKeycloak(String accessToken) {
-        return getKeycloak(getTarget(keycloakServiceUri, accessToken));
+    public Keycloak getKeycloak(String accessToken) {
+        return getKeycloak(getTarget(keycloakServiceUri.build(), accessToken));
     }
 
-    protected Keycloak getKeycloak(ResteasyWebTarget target) {
+    public Keycloak getKeycloak(ResteasyWebTarget target) {
         return target.proxy(Keycloak.class);
     }
 
-    protected void pingKeycloak() {
+    public void pingKeycloak() {
         Observable.fromCallable(() -> {
             Response response = getKeycloak().getWelcomePage();
             try {

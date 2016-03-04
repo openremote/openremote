@@ -19,6 +19,10 @@ public class AuthForm {
     public AuthForm() {
     }
 
+    public AuthForm(String clientId, String username, String password) {
+        this(clientId, username, password, "password");
+    }
+
     public AuthForm(String clientId, String username, String password, String grantType) {
         this.clientId = clientId;
         this.username = username;
