@@ -9,6 +9,8 @@ You'll need a Docker host to work on this project.
 
 All Docker and Gradle commands should be executed in the project root directory.
 
+NOTE: For docker volume mapping to work correctly on Windows and OS X ensure that your working directory is located somewhere under your home directory
+
 ## Development
 
 We are using the [Orion Context Broker](https://fiware-orion.readthedocs.org/en/develop/) with a MongoDB backend. For development, this is an instance with a non-persistent data store.
