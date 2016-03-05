@@ -1,15 +1,14 @@
 package org.openremote.manager.server2.map;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import elemental.json.JsonObject;
 import org.openremote.container.web.WebResource;
+import org.openremote.manager.shared.rest.MapRestService;
 
 import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.logging.Logger;
 
-@Path("map")
-public class MapResource extends WebResource {
+public class MapResource extends WebResource implements MapRestService {
 
     private static final Logger LOG = Logger.getLogger(MapResource.class.getName());
 
@@ -19,17 +18,12 @@ public class MapResource extends WebResource {
         this.mapService = mapService;
     }
 
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    public ObjectNode getMapSettings() {
+    public JsonObject getOptions() {
         String tileUrl = uriInfo.getBaseUriBuilder().clone()
             .replacePath(getRealm()).path("map/tile").build().toString() + "/{z}/{x}/{y}";
         return mapService.getMapSettings(tileUrl);
     }
 
-    @GET
-    @Path("/tile/{zoom}/{column}/{row}")
-    @Produces("application/vnd.mapbox-vector-tile")
     public Response getTile(@PathParam("zoom") int zoom, @PathParam("column") int column, @PathParam("row") int row) {
         try {
             byte[] tile = mapService.getMapTile(zoom, column, row);

@@ -19,7 +19,6 @@ import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.presenter.*;
 import org.openremote.manager.client.rest.AssetRestService;
 import org.openremote.manager.client.rest.LoginRestService;
-import org.openremote.manager.client.rest.MapRestService;
 import org.openremote.manager.client.service.*;
 import org.openremote.manager.client.view.*;
 
@@ -88,14 +87,14 @@ public class MainModule extends AbstractGinModule {
         return loginService;
     }
 
-    @Provides
-    @Singleton
-    public MapRestService getMapRestService() {
-        String baseUrl = GWT.getHostPageBaseURL() + Window.Location.getPath().substring(1);
-        MapRestService mapRestService = GWT.create(MapRestService.class);
-        ((RestServiceProxy) mapRestService).setResource(new Resource(baseUrl));
-        return mapRestService;
-    }
+//    @Provides
+//    @Singleton
+//    public MapRestService getMapRestService() {
+//        String baseUrl = GWT.getHostPageBaseURL() + Window.Location.getPath().substring(1);
+//        MapRestService mapRestService = GWT.create(MapRestService.class);
+//        ((RestServiceProxy) mapRestService).setResource(new Resource(baseUrl));
+//        return mapRestService;
+//    }
 
     @Provides
     @Singleton

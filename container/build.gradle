@@ -24,4 +24,5 @@ dependencies {
     compile "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
     compile "org.keycloak:keycloak-adapter-core:$keycloakVersion"
 
+    compile "com.google.gwt:gwt-elemental:$gwtVersion"
 }

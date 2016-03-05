@@ -2,6 +2,9 @@ package org.openremote.manager.server2.map;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import elemental.json.Json;
+import elemental.json.JsonArray;
+import elemental.json.JsonObject;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.manager.server2.ManagerWebService;
@@ -32,7 +35,7 @@ public class MapService implements ContainerService {
     protected boolean devMode;
     protected Path mapTilesPath;
     protected Path mapSettingsPath;
-    protected ObjectNode mapSettings;
+    protected JsonObject mapSettings;
 
     @Override
     public void prepare(Container container) {
@@ -82,17 +85,17 @@ public class MapService implements ContainerService {
         }
     }
 
-    public ObjectNode getMapSettings(String tileUrl) {
+    public JsonObject getMapSettings(String tileUrl) {
 
         // Refresh map settings for every request in dev mode, cache it in production
         if (devMode) {
             readMapSettings();
         }
 
-        ObjectNode settingsCopy = mapSettings.deepCopy();
-        ArrayNode tilesArray = JSON.createArrayNode();
-        tilesArray.add(tileUrl);
-        settingsCopy.with("style").with("sources").with("vector_tiles").set("tiles", tilesArray);
+        JsonObject settingsCopy = Json.parse(mapSettings.toJson());
+        JsonArray tilesArray =  Json.createArray();
+        tilesArray.set(0, tileUrl);
+        settingsCopy.getObject("style").getObject("sources").getObject("vector_tiles").put("tiles", tilesArray);
         return settingsCopy;
     }
 
@@ -129,22 +132,22 @@ public class MapService implements ContainerService {
         // Mix settings from file with database metadata, and some hardcoded magic
         try {
             String mapSettingsJson = new String(Files.readAllBytes(mapSettingsPath), "utf-8");
-            mapSettings = JSON.readValue(mapSettingsJson, ObjectNode.class);
+            mapSettings = Json.parse(mapSettingsJson);
         } catch (Exception ex) {
             throw new RuntimeException("Error parsing map settings: " + mapSettingsPath.toAbsolutePath(), ex);
         }
 
-        ObjectNode style = mapSettings.with("style");
+        JsonObject style = mapSettings.getObject("style");
 
         style.put("version", 8);
 
         style.put("glyphs", STATIC_PATH + "/fonts/{fontstack}/{range}.pbf");
 
-        ObjectNode sources = JSON.createObjectNode();
-        style.set("sources", sources);
+        JsonObject sources = Json.createObject();
+        style.put("sources", sources);
 
-        ObjectNode vectorTiles = JSON.createObjectNode();
-        sources.set("vector_tiles", vectorTiles);
+        JsonObject vectorTiles = Json.createObject();
+        sources.put("vector_tiles", vectorTiles);
 
         vectorTiles.put("type", "vector");
 
@@ -163,12 +166,11 @@ public class MapService implements ContainerService {
                 throw new RuntimeException("Missing JSON metadata in map database");
             }
 
-            ObjectNode metadataJson = JSON.readValue(resultMap.get("json"), ObjectNode.class);
-            vectorTiles.set("vector_layers", metadataJson.get("vector_layers"));
+            JsonObject metadataJson = Json.parse(resultMap.get("json"));
+            vectorTiles.put("vector_layers", metadataJson.getArray("vector_layers"));
             vectorTiles.put("maxzoom", Integer.valueOf(resultMap.get("maxzoom")));
             vectorTiles.put("minzoom", Integer.valueOf(resultMap.get("minzoom")));
             vectorTiles.put("attribution", resultMap.get("attribution"));
-
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         } finally {
