@@ -3,6 +3,7 @@ package org.openremote.manager.server2.map;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.container.web.WebResource;
 
+import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -21,6 +22,7 @@ public class MapResource extends WebResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"admin", "map:read"})
     public ObjectNode getMapSettings() {
         String tileUrl = uriInfo.getBaseUriBuilder().clone()
             .replacePath(getRealm()).path("map/tile").build().toString() + "/{z}/{x}/{y}";

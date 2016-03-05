@@ -6,12 +6,10 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.hubrick.vertx.rest.RestClientOptions;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.json.JsonObject;
 import org.openremote.manager.server.Constants;
 import org.openremote.manager.server.util.UrlUtil;
 
-import javax.ws.rs.client.Client;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -161,7 +159,7 @@ public class IdentityService {
 
                     // Also correct the realm info URL at this time, this URL will be written by Keycloak
                     // as the issue into each token and we need to verify it
-                    clientInstall.setRealmInfoUrl(
+                    clientInstall.setAuthServerUrlForBackendRequests(
                         url(clientInstall.getAuthServerUrl(), "realms", clientInstall.getRealm()).toString()
                     );
 

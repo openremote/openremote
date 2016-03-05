@@ -8,13 +8,12 @@ import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.resource.FileResourceManager;
 import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.servlet.Servlets;
-import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.servlet.api.DeploymentManager;
-import io.undertow.servlet.api.ServletInfo;
+import io.undertow.servlet.api.*;
 import io.undertow.util.HttpString;
 import io.undertow.util.MimeMappings;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.spi.ResteasyDeployment;
+import org.keycloak.adapters.KeycloakConfigResolver;
 import org.openremote.container.ConfigurationException;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
@@ -57,6 +56,7 @@ public abstract class WebService implements ContainerService {
     protected Map<String, HttpHandler> prefixRoutes = new LinkedHashMap<>();
     protected Collection<Class<?>> apiClasses = new HashSet<>();
     protected Collection<Object> apiSingletons = new HashSet<>();
+    protected KeycloakConfigResolver keycloakConfigResolver;
 
     @Override
     public void prepare(Container container) {
@@ -221,6 +221,13 @@ public abstract class WebService implements ContainerService {
             .addServlet(restServlet).setDeploymentName("RESTEasy Deployment")
             .setClassLoader(restApplication.getClass().getClassLoader());
 
+        if (getKeycloakConfigResolver() != null) {
+            resteasyDeployment.setSecurityEnabled(true);
+            LoginConfig loginConfig = new LoginConfig(SimpleKeycloakServletExtension.AUTH_MECHANISM, "OpenRemote");
+            deploymentInfo.setLoginConfig(loginConfig);
+            deploymentInfo.addServletExtension(new SimpleKeycloakServletExtension(getKeycloakConfigResolver()));
+        }
+
         try {
             DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
             manager.deploy();
@@ -263,6 +270,17 @@ public abstract class WebService implements ContainerService {
      */
     public Collection<Object> getApiSingletons() {
         return apiSingletons;
+    }
+
+    /**
+     * Must be not-null to enable Keycloak extension.
+     */
+    public KeycloakConfigResolver getKeycloakConfigResolver() {
+        return keycloakConfigResolver;
+    }
+
+    public void setKeycloakConfigResolver(KeycloakConfigResolver keycloakConfigResolver) {
+        this.keycloakConfigResolver = keycloakConfigResolver;
     }
 
     protected abstract String getDefaultRealm();
