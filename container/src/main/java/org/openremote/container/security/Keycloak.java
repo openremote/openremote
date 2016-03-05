@@ -1,9 +1,8 @@
-package org.openremote.manager.server.identity;
+package org.openremote.container.security;
 
 import org.jboss.resteasy.annotations.Form;
 import org.keycloak.representations.AccessTokenResponse;
 import org.keycloak.representations.idm.*;
-import org.openremote.manager.server.identity.ClientInstall;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
@@ -11,6 +10,8 @@ import javax.ws.rs.core.Response;
 import static javax.ws.rs.core.MediaType.*;
 
 public interface Keycloak {
+
+    String KEYCLOAK_CONTEXT_PATH = "auth";
 
     @GET
     @Path("/")

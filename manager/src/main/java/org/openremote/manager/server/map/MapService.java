@@ -5,6 +5,7 @@ import elemental.json.JsonArray;
 import elemental.json.JsonObject;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.web.WebService;
 import org.openremote.manager.server.web.ManagerWebService;
 
 import java.nio.file.Files;
@@ -15,7 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import static org.openremote.manager.server.Constants.STATIC_PATH;
+import static org.openremote.container.web.WebService.STATIC_PATH;
 
 public class MapService implements ContainerService {
 

@@ -8,7 +8,10 @@ import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.resource.FileResourceManager;
 import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.servlet.Servlets;
-import io.undertow.servlet.api.*;
+import io.undertow.servlet.api.DeploymentInfo;
+import io.undertow.servlet.api.DeploymentManager;
+import io.undertow.servlet.api.LoginConfig;
+import io.undertow.servlet.api.ServletInfo;
 import io.undertow.util.HttpString;
 import io.undertow.util.MimeMappings;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
@@ -17,6 +20,7 @@ import org.keycloak.adapters.KeycloakConfigResolver;
 import org.openremote.container.ConfigurationException;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.security.SimpleKeycloakServletExtension;
 
 import javax.ws.rs.core.Application;
 import java.net.URI;
@@ -37,15 +41,13 @@ public abstract class WebService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(WebService.class.getName());
 
-    public static final String AUTH_PATH = "/auth";
-    public static final String API_PATH = "/api";
-    public static final String STATIC_PATH = "/static";
-
     public static final String WEB_SERVER_LISTEN_HOST = "WEB_SERVER_LISTEN_HOST";
     public static final String WEB_SERVER_LISTEN_HOST_DEFAULT = "localhost";
     public static final String WEB_SERVER_LISTEN_PORT = "WEB_SERVER_LISTEN_PORT";
     public static final int WEB_SERVER_LISTEN_PORT_DEFAULT = 8080;
 
+    public static final String API_PATH = "/api";
+    public static final String STATIC_PATH = "/static";
     protected final Pattern PATTERN_STATIC = Pattern.compile(Pattern.quote(STATIC_PATH) + "(\\/.*)?");
     protected final Pattern PATTERN_REALM_ROOT = Pattern.compile("\\/([a-z]+)\\/?");
     protected final Pattern PATTERN_REALM_SUB = Pattern.compile("\\/([a-z]+)\\/(.*)");
@@ -102,7 +104,8 @@ public abstract class WebService implements ContainerService {
             boolean handled = false;
             for (Map.Entry<String, HttpHandler> entry : getPrefixRoutes().entrySet()) {
                 if (requestPath.startsWith(entry.getKey())) {
-                    LOG.fine("Handling with '" + entry.getValue().getClass().getName() + "' path prefix: " + entry.getKey());;
+                    LOG.fine("Handling with '" + entry.getValue().getClass().getName() + "' path prefix: " + entry.getKey());
+                    ;
                     entry.getValue().handleRequest(exchange);
                     handled = true;
                     break;

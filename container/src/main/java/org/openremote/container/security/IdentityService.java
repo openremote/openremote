@@ -1,4 +1,4 @@
-package org.openremote.manager.server.identity;
+package org.openremote.container.security;
 
 
 import com.google.common.cache.CacheBuilder;
@@ -13,36 +13,30 @@ import org.keycloak.adapters.KeycloakDeployment;
 import org.keycloak.common.enums.SslRequired;
 import org.keycloak.common.util.PemUtils;
 import org.keycloak.representations.adapters.config.AdapterConfig;
+import org.openremote.container.Constants;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.observable.RetryWithDelay;
 import org.openremote.container.web.JacksonConfig;
-import org.openremote.manager.server.Constants;
-import org.openremote.manager.server.observable.RetryWithDelay;
-import org.openremote.manager.server.web.ManagerWebService;
+import org.openremote.container.web.WebService;
 import rx.Observable;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.util.Base64;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static javax.ws.rs.core.Response.Status.Family.REDIRECTION;
 import static javax.ws.rs.core.Response.Status.Family.SUCCESSFUL;
-import static org.openremote.manager.server.Constants.*;
+import static org.openremote.container.Constants.*;
 
-public class IdentityService implements ContainerService {
+public abstract class IdentityService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(IdentityService.class.getName());
 
@@ -59,66 +53,7 @@ public class IdentityService implements ContainerService {
     public static final String KEYCLOAK_CLIENT_POOL_SIZE = "KEYCLOAK_CLIENT_POOL_SIZE";
     public static final int KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT = 20;
 
-    public static final String ADMIN_CLI_CLIENT = "admin-cli";
-    protected static final String KEYCLOAK_CONTEXT_PATH = "auth";
-
-    public class BearerAuthClientRequestFilter implements ClientRequestFilter {
-        @Override
-        public void filter(ClientRequestContext requestContext) throws IOException {
-            String accessToken = (String) requestContext.getConfiguration().getProperty("accessToken");
-            if (accessToken != null) {
-                String authorization = "Bearer " + accessToken;
-                requestContext.getHeaders().add(AUTHORIZATION, authorization);
-            }
-        }
-    }
-
-    public class ClientSecretRequestFilter implements ClientRequestFilter {
-        @Override
-        public void filter(ClientRequestContext requestContext) throws IOException {
-            String clientId = (String) requestContext.getConfiguration().getProperty("clientId");
-            String clientSecret = (String) requestContext.getConfiguration().getProperty("clientSecret");
-            if (clientSecret != null) {
-                try {
-                    String authorization = "Basic " + Base64.getEncoder().encodeToString(
-                        (clientId + ":" + clientSecret).getBytes("utf-8")
-                    );
-                    requestContext.getHeaders().add(AUTHORIZATION, authorization);
-                } catch (UnsupportedEncodingException ex) {
-                    throw new RuntimeException(ex);
-                }
-            }
-        }
-    }
-
-    protected class ClientInstallKey {
-        public final String realm;
-        public final String clientId;
-
-        public ClientInstallKey(String realm, String clientId) {
-            this.realm = realm;
-            this.clientId = clientId;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            ClientInstallKey that = (ClientInstallKey) o;
-
-            if (!realm.equals(that.realm)) return false;
-            return clientId.equals(that.clientId);
-
-        }
-
-        @Override
-        public int hashCode() {
-            int result = realm.hashCode();
-            result = 31 * result + clientId.hashCode();
-            return result;
-        }
-    }
+    public static final String AUTH_PATH = "/auth";
 
     protected boolean disableAPISecurity;
     protected boolean configNetworkSecure;
@@ -128,7 +63,7 @@ public class IdentityService implements ContainerService {
     protected UriBuilder keycloakHostUri;
     protected UriBuilder keycloakServiceUri;
     protected Client client;
-    protected LoadingCache<ClientInstallKey, ClientInstall> clientInstallCache;
+    protected LoadingCache<SecuredClientApplication.Key, SecuredClientApplication> clientApplicationCache;
 
     @Override
     public void prepare(Container container) {
@@ -142,7 +77,7 @@ public class IdentityService implements ContainerService {
             .scheme(this.configNetworkSecure ? "https" : "http")
             .host(this.configNetworkHost)
             .port(this.configNetworkWebserverPort)
-            .path(Constants.AUTH_PATH);
+            .path(AUTH_PATH);
 
         LOG.info("External auth server URL is: " + externalAuthServerUrl);
 
@@ -152,7 +87,7 @@ public class IdentityService implements ContainerService {
                 .host(container.getConfig(KEYCLOAK_HOST, KEYCLOAK_HOST_DEFAULT))
                 .port(container.getConfigInteger(KEYCLOAK_PORT, KEYCLOAK_PORT_DEFAULT));
 
-        keycloakServiceUri = keycloakHostUri.clone().replacePath(KEYCLOAK_CONTEXT_PATH);
+        keycloakServiceUri = keycloakHostUri.clone().replacePath(Keycloak.KEYCLOAK_CONTEXT_PATH);
 
         LOG.info("Preparing identity service for Keycloak host: " + keycloakServiceUri);
 
@@ -176,44 +111,33 @@ public class IdentityService implements ContainerService {
             .register(new ClientSecretRequestFilter())
             .build();
 
-        clientInstallCache = createClientInstallCache();
+        clientApplicationCache = createClientApplicationCache();
 
-        container.getService(ManagerWebService.class).getApiSingletons().add(
+        container.getService(getWebServiceClass()).getApiSingletons().add(
             new IdentityResource(this)
         );
 
-        SimpleProxyClientProvider proxyClient = new SimpleProxyClientProvider(keycloakHostUri.build());
-        ProxyHandler proxyHandler = new ProxyHandler(
-            proxyClient,
-            container.getConfigInteger(KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT),
-            ResponseCodeHandler.HANDLE_404
-        );
-        container.getService(ManagerWebService.class).getPrefixRoutes().put(AUTH_PATH, proxyHandler);
+        if (enableKeycloakReverseProxy()) {
+            SimpleProxyClientProvider proxyClient = new SimpleProxyClientProvider(keycloakHostUri.build());
+            ProxyHandler proxyHandler = new ProxyHandler(
+                proxyClient,
+                container.getConfigInteger(KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT),
+                ResponseCodeHandler.HANDLE_404
+            );
+            container.getService(getWebServiceClass()).getPrefixRoutes().put(AUTH_PATH, proxyHandler);
+        }
 
-        container.getService(ManagerWebService.class).setKeycloakConfigResolver(request -> {
-            String realm = request.getQueryParamValue("realm");
-            if (realm == null || realm.length() == 0)
-                throw new IllegalStateException("Can't authenticate API call without realm parameter");
-            LOG.fine("Resolving Keycloak config for request realm: " + realm);
-            ClientInstall clientInstall = getClientInstall(realm, MANAGER_CLIENT_ID);
-            if (clientInstall == null)
-                throw new RuntimeException("No Keycloak client install found for realm: " + realm);
-            KeycloakDeployment keycloakDeployment = new KeycloakDeployment();
-
-            keycloakDeployment.setRealm(clientInstall.getRealm());
-            keycloakDeployment.setRealmKey(clientInstall.getPublicKey());
-            keycloakDeployment.setResourceName(clientInstall.getClientId());
-            keycloakDeployment.setSslRequired(SslRequired.valueOf(clientInstall.getSslRequired().toUpperCase(Locale.ROOT)));
-            keycloakDeployment.setBearerOnly(true);
-
-            AdapterConfig adapterConfig =new AdapterConfig();
-            adapterConfig.setResource(keycloakDeployment.getResourceName());
-            adapterConfig.setAuthServerUrl(clientInstall.getAuthServerUrl());
-            adapterConfig.setAuthServerUrlForBackendRequests(clientInstall.getAuthServerUrlForBackendRequests());
-            keycloakDeployment.setAuthServerBaseUrl(adapterConfig);
-
-            return keycloakDeployment;
-        });
+        if (!isDisableAPISecurity()) {
+            container.getService(getWebServiceClass()).setKeycloakConfigResolver(request -> {
+                String realm = request.getQueryParamValue("realm");
+                if (realm == null || realm.length() == 0)
+                    throw new IllegalStateException("Can't authenticate API call without realm parameter");
+                SecuredClientApplication clientApplication = getSecureClientApplication(realm, getClientId());
+                if (clientApplication == null)
+                    throw new RuntimeException("No Keycloak client application found for realm: " + realm);
+                return clientApplication.keycloakDeployment;
+            });
+        }
     }
 
     @Override
@@ -299,23 +223,23 @@ public class IdentityService implements ContainerService {
         ).toBlocking().singleOrDefault(false);
     }
 
-    public ClientInstall getClientInstall(String realm, String clientId) {
+    public SecuredClientApplication getSecureClientApplication(String realm, String clientId) {
         try {
-            return clientInstallCache.get(new ClientInstallKey(realm, clientId));
+            return clientApplicationCache.get(new SecuredClientApplication.Key(realm, clientId));
         } catch (Exception ex) {
             LOG.log(
                 Level.INFO,
-                "Error loading client '" + clientId + "' install for realm '" + realm + "' from identity provider",
+                "Error loading client application '" + clientId + "' for realm '" + realm + "' from identity provider",
                 ex
             );
             return null;
         }
     }
 
-    protected LoadingCache<ClientInstallKey, ClientInstall> createClientInstallCache() {
-        CacheLoader<ClientInstallKey, ClientInstall> loader =
-            new CacheLoader<ClientInstallKey, ClientInstall>() {
-                public ClientInstall load(ClientInstallKey key) {
+    protected LoadingCache<SecuredClientApplication.Key, SecuredClientApplication> createClientApplicationCache() {
+        CacheLoader<SecuredClientApplication.Key, SecuredClientApplication> loader =
+            new CacheLoader<SecuredClientApplication.Key, SecuredClientApplication>() {
+                public SecuredClientApplication load(SecuredClientApplication.Key key) {
                     LOG.fine("Loading client '" + key.clientId + "' install details for realm '" + key.realm + "'");
 
                     ClientInstall clientInstall = getKeycloak().getClientInstall(key.realm, key.clientId);
@@ -338,7 +262,24 @@ public class IdentityService implements ContainerService {
                             .build().toString()
                     );
 
-                    return clientInstall;
+                    // Some more bloated infrastructure needed to configure stuff
+                    KeycloakDeployment keycloakDeployment = new KeycloakDeployment();
+
+                    keycloakDeployment.setRealm(clientInstall.getRealm());
+                    keycloakDeployment.setRealmKey(clientInstall.getPublicKey());
+                    keycloakDeployment.setResourceName(clientInstall.getClientId());
+                    keycloakDeployment.setSslRequired(SslRequired.valueOf(clientInstall.getSslRequired().toUpperCase(Locale.ROOT)));
+                    keycloakDeployment.setBearerOnly(true);
+
+                    AdapterConfig adapterConfig = new AdapterConfig();
+                    adapterConfig.setResource(keycloakDeployment.getResourceName());
+                    adapterConfig.setAuthServerUrl(clientInstall.getAuthServerUrl());
+                    adapterConfig.setAuthServerUrlForBackendRequests(clientInstall.getAuthServerUrlForBackendRequests());
+                    keycloakDeployment.setAuthServerBaseUrl(adapterConfig);
+
+                    return new SecuredClientApplication(
+                        clientInstall, keycloakDeployment
+                    );
                 }
             };
 
@@ -348,4 +289,10 @@ public class IdentityService implements ContainerService {
             .expireAfterWrite(10, MINUTES)
             .build(loader);
     }
+
+    protected abstract boolean enableKeycloakReverseProxy();
+
+    protected abstract Class<? extends WebService> getWebServiceClass();
+
+    protected abstract String getClientId();
 }

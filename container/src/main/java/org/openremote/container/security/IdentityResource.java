@@ -1,12 +1,10 @@
-package org.openremote.manager.server.identity;
+package org.openremote.container.security;
 
 import org.openremote.container.web.WebResource;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 @Path("identity")
 public class IdentityResource extends WebResource {
@@ -21,6 +19,10 @@ public class IdentityResource extends WebResource {
     @Path("install/{clientId}")
     @Produces(MediaType.APPLICATION_JSON)
     public ClientInstall getClientInstall(@PathParam("clientId") String clientId) {
-        return identityService.getClientInstall(getRealm(), clientId);
+        SecuredClientApplication clientApplication =
+            identityService.getSecureClientApplication(getRealm(), clientId);
+        if (clientApplication == null)
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        return clientApplication.clientInstall;
     }
 }

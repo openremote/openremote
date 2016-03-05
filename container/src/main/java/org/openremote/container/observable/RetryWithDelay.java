@@ -1,4 +1,4 @@
-package org.openremote.manager.server.observable;
+package org.openremote.container.observable;
 
 import rx.Observable;
 import rx.functions.Func1;

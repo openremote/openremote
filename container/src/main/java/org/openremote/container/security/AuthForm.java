@@ -1,4 +1,4 @@
-package org.openremote.manager.server.identity;
+package org.openremote.container.security;
 
 import javax.ws.rs.FormParam;
 

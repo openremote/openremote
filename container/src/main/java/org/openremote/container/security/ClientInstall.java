@@ -1,4 +1,4 @@
-package org.openremote.manager.server.identity;
+package org.openremote.container.security;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;

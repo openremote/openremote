@@ -1,3 +1,3 @@
 org.openremote.manager.server.web.ManagerWebService
-org.openremote.manager.server.identity.IdentityService
+org.openremote.manager.server.identity.ManagerIdentityService
 org.openremote.manager.server.map.MapService

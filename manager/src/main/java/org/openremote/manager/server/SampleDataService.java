@@ -1,16 +1,13 @@
 package org.openremote.manager.server;
 
-import elemental.json.Json;
 import org.apache.log4j.Logger;
 import org.keycloak.representations.idm.*;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.manager.server.contextbroker.ContextBrokerService;
-import org.openremote.manager.server.identity.AuthForm;
-import org.openremote.manager.server.identity.IdentityService;
-import org.openremote.manager.server.identity.Keycloak;
-import org.openremote.manager.shared.model.ngsi.Attribute;
-import org.openremote.manager.shared.model.ngsi.Entity;
+import org.openremote.container.security.AuthForm;
+import org.openremote.container.security.IdentityService;
+import org.openremote.container.security.Keycloak;
+import org.openremote.manager.server.identity.ManagerIdentityService;
 import rx.Observable;
 
 import javax.ws.rs.core.UriBuilder;
@@ -18,10 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.openremote.container.util.IdentifierUtil.generateGlobalUniqueId;
 import static org.openremote.manager.server.Constants.MANAGER_CLIENT_ID;
 import static org.openremote.manager.server.Constants.MASTER_REALM;
-import static org.openremote.manager.server.identity.IdentityService.ADMIN_CLI_CLIENT;
 import static rx.Observable.fromCallable;
 
 public class SampleDataService implements ContainerService {
@@ -31,6 +26,7 @@ public class SampleDataService implements ContainerService {
     public static final String IMPORT_SAMPLE_DATA = "IMPORT_SAMPLE_DATA";
     public static final boolean IMPORT_SAMPLE_DATA_DEFAULT = false;
 
+    public static final String ADMIN_CLI_CLIENT_ID = "admin-cli";
     public static final String ADMIN_USERNAME = "admin";
     public static final String ADMIN_PASSWORD = "admin";
 
@@ -42,21 +38,19 @@ public class SampleDataService implements ContainerService {
 
     @Override
     public void prepare(Container container) {
-        if (!container.isDevMode())
-            return;
-
-        identityService = container.getService(IdentityService.class);
+        identityService = container.getService(ManagerIdentityService.class);
     }
 
     @Override
     public void start(Container container) {
-        if (!container.isDevMode())
+        if (!container.isDevMode() && !container.getConfigBoolean(IMPORT_SAMPLE_DATA, IMPORT_SAMPLE_DATA_DEFAULT)) {
             return;
+        }
 
         LOG.info("--- CREATING SAMPLE DATA ---");
 
         String accessToken = identityService.getKeycloak().getAccessToken(
-            MASTER_REALM, new AuthForm(ADMIN_CLI_CLIENT, ADMIN_USERNAME, ADMIN_PASSWORD)
+            MASTER_REALM, new AuthForm(ADMIN_CLI_CLIENT_ID, ADMIN_USERNAME, ADMIN_PASSWORD)
         ).getToken();
 
         configureMasterRealm(identityService, accessToken);

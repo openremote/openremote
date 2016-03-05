@@ -1,24 +1,30 @@
 package org.openremote.test;
 
+import org.openremote.container.Container;
+import org.openremote.manager.server.SampleDataService;
+
+import java.net.Inet4Address;
+import java.net.ServerSocket;
+
 public abstract class ServerTest extends IntegrationTest {
-/*
+
     protected int ephemeralPort;
+    protected Container container;
 
     @Override
-    public void setUp(TestContext context) {
-        super.setUp(context);
+    public void setUp() {
+        super.setUp();
 
         this.ephemeralPort = findEphemeralPort();
 
-        DeploymentOptions options = new DeploymentOptions().setConfig(
-            new JsonObject().put(NETWORK_WEBSERVER_PORT, ephemeralPort)
-        );
+        container = new Container(new SampleDataService());
+    }
 
-        vertx.deployVerticle(
-            ServerVerticle.class.getName(),
-            options,
-            context.asyncAssertSuccess()
-        );
+    @Override
+    public void tearDown() {
+        if (container != null)
+            container.stop();
+        super.tearDown();
     }
 
     protected Integer findEphemeralPort() {
@@ -31,5 +37,4 @@ public abstract class ServerTest extends IntegrationTest {
             throw new RuntimeException(ex);
         }
     }
-*/
 }

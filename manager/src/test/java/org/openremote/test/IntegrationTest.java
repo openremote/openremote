@@ -1,23 +1,15 @@
 package org.openremote.test;
 
-//@RunWith(VertxUnitRunner.class)
-public abstract class IntegrationTest {
-/*
-    static {
-        // One-time static configuration goes here
-        JsonUtil.configure(Json.mapper);
-    }
+import org.junit.After;
+import org.junit.Before;
 
-    protected Vertx vertx;
+public abstract class IntegrationTest {
 
     @Before
-    public void setUp(TestContext context) {
-        vertx = Vertx.vertx();
+    public void setUp() {
     }
 
     @After
-    public void tearDown(TestContext context) {
-        vertx.close(context.asyncAssertSuccess());
+    public void tearDown() {
     }
-*/
 }
