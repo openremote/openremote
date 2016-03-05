@@ -22,7 +22,7 @@ dependencies {
     compile "io.mikael:urlbuilder:$urlbuilderVersion"
 
     compile "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
-    compile "org.keycloak:keycloak-adapter-core:$keycloakVersion"
+    compile "org.keycloak:keycloak-undertow-adapter:$keycloakVersion"
 
     compile "com.google.gwt:gwt-elemental:$gwtVersion"
 }

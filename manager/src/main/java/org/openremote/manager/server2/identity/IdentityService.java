@@ -9,7 +9,10 @@ import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.server.handlers.proxy.SimpleProxyClientProvider;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
+import org.keycloak.adapters.KeycloakDeployment;
+import org.keycloak.common.enums.SslRequired;
 import org.keycloak.common.util.PemUtils;
+import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.web.JacksonConfig;
@@ -30,6 +33,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.Base64;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -189,6 +193,31 @@ public class IdentityService implements ContainerService {
             ResponseCodeHandler.HANDLE_404
         );
         container.getService(ManagerWebService.class).getPrefixRoutes().put(AUTH_PATH, proxyHandler);
+
+        container.getService(ManagerWebService.class).setKeycloakConfigResolver(request -> {
+            String realm = request.getQueryParamValue("realm");
+            if (realm == null || realm.length() == 0)
+                throw new IllegalStateException("Can't authenticate API call without realm parameter");
+            LOG.fine("Resolving Keycloak config for request realm: " + realm);
+            ClientInstall clientInstall = getClientInstall(realm, MANAGER_CLIENT_ID);
+            if (clientInstall == null)
+                throw new RuntimeException("No Keycloak client install found for realm: " + realm);
+            KeycloakDeployment keycloakDeployment = new KeycloakDeployment();
+
+            keycloakDeployment.setRealm(clientInstall.getRealm());
+            keycloakDeployment.setRealmKey(clientInstall.getPublicKey());
+            keycloakDeployment.setResourceName(clientInstall.getClientId());
+            keycloakDeployment.setSslRequired(SslRequired.valueOf(clientInstall.getSslRequired().toUpperCase(Locale.ROOT)));
+            keycloakDeployment.setBearerOnly(true);
+
+            AdapterConfig adapterConfig =new AdapterConfig();
+            adapterConfig.setResource(keycloakDeployment.getResourceName());
+            adapterConfig.setAuthServerUrl(clientInstall.getAuthServerUrl());
+            adapterConfig.setAuthServerUrlForBackendRequests(clientInstall.getAuthServerUrlForBackendRequests());
+            keycloakDeployment.setAuthServerBaseUrl(adapterConfig);
+
+            return keycloakDeployment;
+        });
     }
 
     @Override
@@ -306,9 +335,9 @@ public class IdentityService implements ContainerService {
                     // we'll later reverse-proxy back to Keycloak
                     clientInstall.setAuthServerUrl(externalAuthServerUrl);
 
-                    // Also correct the realm info URL at this time, this URL will be written by Keycloak
-                    // as the issue into each token and we need to verify it
-                    clientInstall.setRealmInfoUrl(
+                    // Also correct the backend URL at this time, this URL will be written
+                    // by Keycloak as the issuer into each token automatically
+                    clientInstall.setAuthServerUrlForBackendRequests(
                         url(clientInstall.getAuthServerUrl(), "realms", clientInstall.getRealm()).toString()
                     );
 

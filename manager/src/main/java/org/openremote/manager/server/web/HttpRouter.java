@@ -125,7 +125,7 @@ public class HttpRouter extends RouterImpl {
                 token = RSATokenVerifier.verifyToken(
                     tokenString,
                     clientInstall.getPublicKey(),
-                    clientInstall.getRealmInfoUrl()
+                    clientInstall.getAuthServerUrlForBackendRequests()
                 );
             } catch (VerificationException ex) {
                 LOG.log(Level.INFO, "Bearer token verification failed: " + request.method() + " " + request.absoluteURI(), ex);

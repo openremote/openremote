@@ -4,6 +4,7 @@ import elemental.json.JsonObject;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.shared.rest.MapRestService;
 
+import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import java.util.logging.Logger;
@@ -18,6 +19,7 @@ public class MapResource extends WebResource implements MapRestService {
         this.mapService = mapService;
     }
 
+    @RolesAllowed({"admin", "map:read"})
     public JsonObject getOptions() {
         String tileUrl = uriInfo.getBaseUriBuilder().clone()
             .replacePath(getRealm()).path("map/tile").build().toString() + "/{z}/{x}/{y}";

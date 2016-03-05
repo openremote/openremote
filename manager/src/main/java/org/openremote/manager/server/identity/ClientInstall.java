@@ -28,7 +28,7 @@ public class ClientInstall {
     protected PublicKey publicKey;
 
     @JsonIgnore
-    protected String realmInfoUrl;
+    protected String authServerUrlForBackendRequests;
 
     public ClientInstall() {
     }
@@ -89,11 +89,11 @@ public class ClientInstall {
         this.publicKey = publicKey;
     }
 
-    public String getRealmInfoUrl() {
-        return realmInfoUrl;
+    public String getAuthServerUrlForBackendRequests() {
+        return authServerUrlForBackendRequests;
     }
 
-    public void setRealmInfoUrl(String realmInfoUrl) {
-        this.realmInfoUrl = realmInfoUrl;
+    public void setAuthServerUrlForBackendRequests(String authServerUrlForBackendRequests) {
+        this.authServerUrlForBackendRequests = authServerUrlForBackendRequests;
     }
 }
