@@ -27,43 +27,24 @@ dependencies {
     compile "org.slf4j:jcl-over-slf4j:$slf4jVersion"
     compile "org.slf4j:log4j-over-slf4j:$slf4jVersion"
 
-    compile "io.mikael:urlbuilder:$urlbuilderVersion"
-
-    compile "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
-    compile "org.keycloak:keycloak-adapter-core:$keycloakVersion"
-
-    compile "io.vertx:vertx-web:$vertxVersion"
-    compile "io.vertx:vertx-rx-java:$vertxVersion"
-    compile "com.hubrick.vertx:vertx-rest-client:$vertxRestClientVersion"
-
     compile "org.xerial:sqlite-jdbc:$sqliteVersion"
     compile "com.h2database:h2:$h2Version"
     compile "com.zaxxer:HikariCP:$hikaricpVersion"
     compile "org.hibernate:hibernate-entitymanager:$hibernateVersion"
     compile "org.hibernate:hibernate-java8:$hibernateVersion"
     compile "org.hibernate:hibernate-validator:$hibernateValidatorVersion"
+    apt "org.hibernate:hibernate-jpamodelgen:$hibernateVersion"
 
     compile "com.google.gwt:gwt-user:$gwtVersion"
     compile "com.google.gwt:gwt-elemental:$gwtVersion"
     compile ("com.google.gwt.inject:gin:$ginVersion") {
         exclude group: "asm"
     }
-
-    // REST SERVICES
     compile "org.fusesource.restygwt:restygwt:$restygwtVersion"
-    compile "javax.ws.rs:javax.ws.rs-api:2.0.1"
-
-    apt "org.hibernate:hibernate-jpamodelgen:$hibernateVersion"
-
-    testCompile "junit:junit:$junitVersion"
-    testCompile "io.vertx:vertx-unit:$vertxVersion"
-        
-    // GWT Bootstrap support
     compile "org.gwtbootstrap3:gwtbootstrap3:0.9.2"
     compile "org.gwtbootstrap3:gwtbootstrap3-extras:0.9.2"
-    
-    // GWT Material Design
-    //compile 'com.github.gwtmaterialdesign:gwt-material:1.4.1'
+
+    testCompile "junit:junit:$junitVersion"
 }
 
 gwt {

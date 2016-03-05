@@ -1,25 +1,6 @@
 package org.openremote.manager.server.contextbroker;
 
-import com.google.common.base.Charsets;
-import com.hubrick.vertx.rest.HttpInputMessage;
-import com.hubrick.vertx.rest.HttpOutputMessage;
-import com.hubrick.vertx.rest.MediaType;
-import com.hubrick.vertx.rest.converter.AbstractHttpMessageConverter;
-import com.hubrick.vertx.rest.exception.HttpMessageConverterException;
-import elemental.json.Json;
-import elemental.json.JsonArray;
-import elemental.json.JsonObject;
-import elemental.json.impl.JsonUtil;
-import io.vertx.core.MultiMap;
-import org.openremote.manager.shared.model.ngsi.AbstractEntity;
-import org.openremote.manager.shared.model.ngsi.Entity;
-import org.openremote.manager.shared.model.ngsi.KeyValueEntity;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-public class NgsiEntityHttpMessageConverter extends AbstractHttpMessageConverter<Object> {
+public class NgsiEntityHttpMessageConverter { /*extends AbstractHttpMessageConverter<Object> {
 
     public static final String OPERATION_IS_UPDATE = "OPERATION_IS_UPDATE";
 
@@ -109,4 +90,5 @@ public class NgsiEntityHttpMessageConverter extends AbstractHttpMessageConverter
         }
         return entity.getJsonObject();
     }
+    */
 }

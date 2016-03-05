@@ -1,17 +1,7 @@
 package org.openremote.test;
 
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.unit.TestContext;
-import org.openremote.manager.server.ServerVerticle;
-
-import java.net.Inet4Address;
-import java.net.ServerSocket;
-
-import static org.openremote.manager.server.Constants.NETWORK_WEBSERVER_PORT;
-
 public abstract class ServerTest extends IntegrationTest {
-
+/*
     protected int ephemeralPort;
 
     @Override
@@ -41,5 +31,5 @@ public abstract class ServerTest extends IntegrationTest {
             throw new RuntimeException(ex);
         }
     }
-
+*/
 }

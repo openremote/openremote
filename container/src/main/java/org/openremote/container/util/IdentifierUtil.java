@@ -1,4 +1,4 @@
-package org.openremote.manager.server.util;
+package org.openremote.container.util;
 
 import java.net.NetworkInterface;
 import java.nio.ByteBuffer;

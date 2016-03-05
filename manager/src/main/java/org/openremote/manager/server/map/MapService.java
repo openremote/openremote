@@ -1,8 +1,10 @@
 package org.openremote.manager.server.map;
 
-import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.openremote.container.Container;
+import org.openremote.container.ContainerService;
+import org.openremote.manager.server.web.ManagerWebService;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,9 +14,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import static org.openremote.manager.server.Constants.*;
+import static org.openremote.container.Container.JSON;
+import static org.openremote.manager.server.Constants.STATIC_PATH;
 
-public class MapService {
+public class MapService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(MapService.class.getName());
 
@@ -26,29 +29,36 @@ public class MapService {
     // Shared SQL connection is fine concurrently in SQLite
     protected Connection connection;
 
-    protected Vertx vertx;
     protected boolean devMode;
+    protected Path mapTilesPath;
     protected Path mapSettingsPath;
-    protected JsonObject mapSettings;
+    protected ObjectNode mapSettings;
 
-    public void start(Vertx vertx, JsonObject config) {
-        this.vertx = vertx;
-        this.devMode = config.getBoolean(DEV_MODE, DEV_MODE_DEFAULT);
+    @Override
+    public void prepare(Container container) {
+        this.devMode = container.isDevMode();
 
-        Path mapTilesPath = Paths.get(config.getString(MAP_TILES_PATH, MAP_TILES_PATH_DEFAULT));
+        mapTilesPath = Paths.get(container.getConfig(MAP_TILES_PATH, MAP_TILES_PATH_DEFAULT));
         if (!Files.isRegularFile(mapTilesPath)) {
             throw new IllegalStateException(
                 "MapWidget tiles data file not found: " + mapTilesPath.toAbsolutePath()
             );
         }
 
-        mapSettingsPath = Paths.get(config.getString(MAP_SETTINGS_PATH, MAP_SETTINGS_PATH_DEFAULT));
+        mapSettingsPath = Paths.get(container.getConfig(MAP_SETTINGS_PATH, MAP_SETTINGS_PATH_DEFAULT));
         if (!Files.isRegularFile(mapSettingsPath)) {
             throw new IllegalStateException(
                 "MapWidget settings file not found: " + mapSettingsPath.toAbsolutePath()
             );
         }
 
+        container.getService(ManagerWebService.class).getApiSingletons().add(
+            new MapResource(this)
+        );
+    }
+
+    @Override
+    public void start(Container container) {
         LOG.info("Starting map service with tile data: " + mapTilesPath.toAbsolutePath());
         try {
             Class.forName(org.sqlite.JDBC.class.getName());
@@ -60,7 +70,8 @@ public class MapService {
         readMapSettings();
     }
 
-    public void stop() {
+    @Override
+    public void stop(Container container) {
         LOG.info("Stopping map service...");
         if (connection != null) {
             try {
@@ -71,21 +82,24 @@ public class MapService {
         }
     }
 
-    public JsonObject getMapSettings(String tileUrl) {
+    public ObjectNode getMapSettings(String tileUrl) {
 
         // Refresh map settings for every request in dev mode, cache it in production
         if (devMode) {
             readMapSettings();
         }
 
-        JsonObject settingsCopy = mapSettings.copy();
-        JsonArray tilesArray = new JsonArray();
+        ObjectNode settingsCopy = mapSettings.deepCopy();
+        ArrayNode tilesArray = JSON.createArrayNode();
         tilesArray.add(tileUrl);
-        settingsCopy.getJsonObject("style").getJsonObject("sources").getJsonObject("vector_tiles").put("tiles", tilesArray);
+        settingsCopy.with("style").with("sources").with("vector_tiles").set("tiles", tilesArray);
         return settingsCopy;
     }
 
     public byte[] getMapTile(int zoom, int column, int row) throws Exception {
+        // Flip y, oh why
+        row = new Double(Math.pow(2, zoom) - 1 - row).intValue();
+
         PreparedStatement query = null;
         ResultSet result = null;
         try {
@@ -114,23 +128,23 @@ public class MapService {
 
         // Mix settings from file with database metadata, and some hardcoded magic
         try {
-            String mapSettingsJson = vertx.fileSystem().readFileBlocking(mapSettingsPath.toAbsolutePath().toString()).toString();
-            mapSettings = new JsonObject(mapSettingsJson);
+            String mapSettingsJson = new String(Files.readAllBytes(mapSettingsPath), "utf-8");
+            mapSettings = JSON.readValue(mapSettingsJson, ObjectNode.class);
         } catch (Exception ex) {
             throw new RuntimeException("Error parsing map settings: " + mapSettingsPath.toAbsolutePath(), ex);
         }
 
-        JsonObject style = mapSettings.getJsonObject("style");
+        ObjectNode style = mapSettings.with("style");
 
         style.put("version", 8);
 
         style.put("glyphs", STATIC_PATH + "/fonts/{fontstack}/{range}.pbf");
 
-        JsonObject sources = new JsonObject();
-        style.put("sources", sources);
+        ObjectNode sources = JSON.createObjectNode();
+        style.set("sources", sources);
 
-        JsonObject vectorTiles = new JsonObject();
-        sources.put("vector_tiles", vectorTiles);
+        ObjectNode vectorTiles = JSON.createObjectNode();
+        sources.set("vector_tiles", vectorTiles);
 
         vectorTiles.put("type", "vector");
 
@@ -149,9 +163,8 @@ public class MapService {
                 throw new RuntimeException("Missing JSON metadata in map database");
             }
 
-            JsonObject metadataJson = new JsonObject(resultMap.get("json"));
-            vectorTiles.put("vector_layers", metadataJson.getJsonArray("vector_layers"));
-
+            ObjectNode metadataJson = JSON.readValue(resultMap.get("json"), ObjectNode.class);
+            vectorTiles.set("vector_layers", metadataJson.get("vector_layers"));
             vectorTiles.put("maxzoom", Integer.valueOf(resultMap.get("maxzoom")));
             vectorTiles.put("minzoom", Integer.valueOf(resultMap.get("minzoom")));
             vectorTiles.put("attribution", resultMap.get("attribution"));

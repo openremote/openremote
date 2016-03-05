@@ -1,19 +1,6 @@
 package org.openremote.manager.server.contextbroker;
 
-import com.google.common.base.Charsets;
-import com.hubrick.vertx.rest.HttpInputMessage;
-import com.hubrick.vertx.rest.HttpOutputMessage;
-import com.hubrick.vertx.rest.MediaType;
-import com.hubrick.vertx.rest.converter.AbstractHttpMessageConverter;
-import com.hubrick.vertx.rest.exception.HttpMessageConverterException;
-import elemental.json.Json;
-import elemental.json.JsonObject;
-import org.openremote.manager.shared.model.ngsi.EntryPoint;
-
-import java.io.IOException;
-import java.util.logging.Logger;
-
-public class NgsiEntryPointHttpMessageConverter extends AbstractHttpMessageConverter<EntryPoint> {
+public class NgsiEntryPointHttpMessageConverter { /* extends AbstractHttpMessageConverter<EntryPoint> {
 
     private static final Logger LOG = Logger.getLogger(NgsiEntryPointHttpMessageConverter.class.getName());
 
@@ -47,4 +34,5 @@ public class NgsiEntryPointHttpMessageConverter extends AbstractHttpMessageConve
             throw new HttpMessageConverterException("Error converting to JSON", ex);
         }
     }
+    */
 }

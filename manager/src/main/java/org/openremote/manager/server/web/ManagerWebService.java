@@ -1,4 +1,4 @@
-package org.openremote.manager.server2;
+package org.openremote.manager.server.web;
 
 import org.openremote.container.Container;
 import org.openremote.container.web.WebService;

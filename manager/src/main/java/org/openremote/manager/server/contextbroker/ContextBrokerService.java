@@ -1,12 +1,8 @@
 package org.openremote.manager.server.contextbroker;
 
-import com.hubrick.vertx.rest.RestClientOptions;
-import io.vertx.core.Vertx;
-import io.vertx.core.json.JsonObject;
-
-import java.util.logging.Logger;
 
 public class ContextBrokerService {
+    /*
 
     private static final Logger LOG = Logger.getLogger(ContextBrokerService.class.getName());
 
@@ -49,5 +45,5 @@ public class ContextBrokerService {
     public NgsiClient getClient() {
         return client;
     }
-
+*/
 }

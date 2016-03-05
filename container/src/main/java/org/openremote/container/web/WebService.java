@@ -280,6 +280,8 @@ public abstract class WebService implements ContainerService {
     }
 
     public void setKeycloakConfigResolver(KeycloakConfigResolver keycloakConfigResolver) {
+        if (this.keycloakConfigResolver != null)
+            throw new IllegalStateException("Keycloak config resolver already set: " + this.keycloakConfigResolver);
         this.keycloakConfigResolver = keycloakConfigResolver;
     }
 

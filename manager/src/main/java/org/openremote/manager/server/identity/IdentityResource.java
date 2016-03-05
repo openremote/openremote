@@ -1,7 +1,6 @@
-package org.openremote.manager.server2.identity;
+package org.openremote.manager.server.identity;
 
 import org.openremote.container.web.WebResource;
-import org.openremote.manager.server.identity.ClientInstall;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

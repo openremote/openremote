@@ -1,4 +1,4 @@
-package org.openremote.manager.server2.identity;
+package org.openremote.manager.server.identity;
 
 import org.jboss.resteasy.annotations.Form;
 import org.keycloak.representations.AccessTokenResponse;

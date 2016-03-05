@@ -8,6 +8,7 @@ dependencies {
     compile "org.slf4j:log4j-over-slf4j:$slf4jVersion"
 
     compile 'io.reactivex:rxjava:1.1.1'
+    compile 'com.google.guava:guava:19.0'
 
     compile 'io.undertow:undertow-servlet:1.3.18.Final'
     compile 'io.undertow:undertow-websockets-jsr:1.3.18.Final'
@@ -18,8 +19,6 @@ dependencies {
     compile 'org.jboss.resteasy:resteasy-multipart-provider:3.0.16.Final'
     compile 'org.jboss.resteasy:resteasy-cache-core:3.0.16.Final'
     compile 'org.jboss.resteasy:async-http-servlet-3.0:3.0.16.Final'
-
-    compile "io.mikael:urlbuilder:$urlbuilderVersion"
 
     compile "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
     compile "org.keycloak:keycloak-undertow-adapter:$keycloakVersion"

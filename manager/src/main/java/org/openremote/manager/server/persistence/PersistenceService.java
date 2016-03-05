@@ -1,18 +1,7 @@
 package org.openremote.manager.server.persistence;
 
-import io.vertx.core.json.JsonObject;
-
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.logging.Logger;
-
-import static org.openremote.manager.server.Constants.DEV_MODE;
-import static org.openremote.manager.server.Constants.DEV_MODE_DEFAULT;
-
 public class PersistenceService {
-
+/*
     private static final Logger LOG = Logger.getLogger(PersistenceService.class.getName());
 
     public static final String PERSISTENCE_UNIT_NAME = "PERSISTENCE_UNIT_NAME";
@@ -92,4 +81,5 @@ public class PersistenceService {
         );
         Persistence.generateSchema(persistenceUnitName, createSchemaProperties);
     }
+    */
 }

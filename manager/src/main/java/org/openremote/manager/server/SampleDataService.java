@@ -1,4 +1,4 @@
-package org.openremote.manager.server2;
+package org.openremote.manager.server;
 
 import elemental.json.Json;
 import org.apache.log4j.Logger;
@@ -6,22 +6,22 @@ import org.keycloak.representations.idm.*;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.manager.server.contextbroker.ContextBrokerService;
-import org.openremote.manager.server.util.UrlUtil;
-import org.openremote.manager.server2.identity.AuthForm;
-import org.openremote.manager.server2.identity.IdentityService;
-import org.openremote.manager.server2.identity.Keycloak;
+import org.openremote.manager.server.identity.AuthForm;
+import org.openremote.manager.server.identity.IdentityService;
+import org.openremote.manager.server.identity.Keycloak;
 import org.openremote.manager.shared.model.ngsi.Attribute;
 import org.openremote.manager.shared.model.ngsi.Entity;
 import rx.Observable;
 
+import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
 import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.openremote.container.util.IdentifierUtil.generateGlobalUniqueId;
 import static org.openremote.manager.server.Constants.MANAGER_CLIENT_ID;
 import static org.openremote.manager.server.Constants.MASTER_REALM;
-import static org.openremote.manager.server.identity.KeycloakClient.ADMIN_CLI_CLIENT;
-import static org.openremote.manager.server.util.IdentifierUtil.generateGlobalUniqueId;
+import static org.openremote.manager.server.identity.IdentityService.ADMIN_CLI_CLIENT;
 import static rx.Observable.fromCallable;
 
 public class SampleDataService implements ContainerService {
@@ -79,6 +79,7 @@ public class SampleDataService implements ContainerService {
     public void stop(Container container) {
     }
 
+    /*
     protected void createSampleRooms(ContextBrokerService contextBrokerService) {
         Entity room1 = new Entity(Json.createObject());
         room1.setId(generateGlobalUniqueId());
@@ -115,6 +116,7 @@ public class SampleDataService implements ContainerService {
         contextBrokerService.getClient().postEntity(room1).toBlocking().first();
         contextBrokerService.getClient().postEntity(room2).toBlocking().first();
     }
+    */
 
     protected void configureMasterRealm(IdentityService identityService, String accessToken) {
         Keycloak keycloak = identityService.getKeycloak(accessToken);
@@ -150,12 +152,12 @@ public class SampleDataService implements ContainerService {
         managerClient.setName("OpenRemote Manager");
         managerClient.setPublicClient(true);
 
-        String callbackUrl = UrlUtil.url(
-            identityService.isConfigNetworkSecure() ? "https" : "http",
-            identityService.getConfigNetworkHost(),
-            identityService.getConfigNetworkWebserverPort(),
-            MASTER_REALM
-        ).toString();
+        String callbackUrl = UriBuilder.fromUri("")
+            .scheme(identityService.isConfigNetworkSecure() ? "https" : "http")
+            .host(identityService.getConfigNetworkHost())
+            .port(identityService.getConfigNetworkWebserverPort())
+            .path(MASTER_REALM)
+        .build().toString();
 
         List<String> redirectUrls = new ArrayList<>();
         redirectUrls.add(callbackUrl);

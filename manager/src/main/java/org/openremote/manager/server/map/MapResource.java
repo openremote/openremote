@@ -1,4 +1,4 @@
-package org.openremote.manager.server2.map;
+package org.openremote.manager.server.map;
 
 import elemental.json.JsonObject;
 import org.openremote.container.web.WebResource;

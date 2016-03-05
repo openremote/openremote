@@ -1,30 +1,9 @@
 package org.openremote.manager.server.contextbroker;
 
-import com.google.common.collect.ImmutableList;
-import com.hubrick.vertx.rest.MediaType;
-import com.hubrick.vertx.rest.RestClientOptions;
-import com.hubrick.vertx.rest.RestClientResponse;
-import com.hubrick.vertx.rest.converter.HttpMessageConverter;
-import com.hubrick.vertx.rest.converter.StringHttpMessageConverter;
-import com.hubrick.vertx.rest.impl.DefaultRestClient;
-import com.hubrick.vertx.rest.rx.RxRestClient;
-import com.hubrick.vertx.rest.rx.impl.DefaultRxRestClient;
-import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpHeaders;
-import org.openremote.manager.server.observable.RetryWithDelay;
-import org.openremote.manager.shared.model.ngsi.Entity;
-import org.openremote.manager.shared.model.ngsi.EntryPoint;
-import rx.Observable;
-
-import java.util.List;
-import java.util.logging.Logger;
-
-import static io.vertx.core.http.HttpMethod.PATCH;
-
 /**
  * http://telefonicaid.github.io/fiware-orion/api/v2/
  */
-public class NgsiClient implements AutoCloseable {
+public class NgsiClient { /*implements AutoCloseable {
 
     private static final Logger LOG = Logger.getLogger(NgsiClient.class.getName());
 
@@ -41,10 +20,6 @@ public class NgsiClient implements AutoCloseable {
     final protected String ngsiServerInfo;
     final protected EntryPoint entryPoint;
 
-    /**
-     * Attempts to immediately connect to the NGSI context broker and throws {@link NgsiException} if the server's
-     * entry point can't be accessed.
-     */
     public NgsiClient(Vertx vertx, RestClientOptions restClientOptions) {
         defaultClient = new DefaultRestClient(vertx, restClientOptions, messageConverters);
         client = new DefaultRxRestClient(defaultClient);
@@ -165,4 +140,5 @@ public class NgsiClient implements AutoCloseable {
             }
         ).flatMap(response -> Observable.just(response.statusCode()));
     }
+    */
 }
