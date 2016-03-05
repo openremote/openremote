@@ -36,7 +36,6 @@ dependencies {
     apt "org.hibernate:hibernate-jpamodelgen:$hibernateVersion"
 
     compile "com.google.gwt:gwt-user:$gwtVersion"
-    compile "com.google.gwt:gwt-elemental:$gwtVersion"
     compile ("com.google.gwt.inject:gin:$ginVersion") {
         exclude group: "asm"
     }
