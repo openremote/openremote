@@ -13,7 +13,6 @@ import org.keycloak.adapters.KeycloakDeployment;
 import org.keycloak.common.enums.SslRequired;
 import org.keycloak.common.util.PemUtils;
 import org.keycloak.representations.adapters.config.AdapterConfig;
-import org.openremote.container.Constants;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.observable.RetryWithDelay;
@@ -132,7 +131,7 @@ public abstract class IdentityService implements ContainerService {
                 String realm = request.getQueryParamValue("realm");
                 if (realm == null || realm.length() == 0)
                     throw new IllegalStateException("Can't authenticate API call without realm parameter");
-                SecuredClientApplication clientApplication = getSecureClientApplication(realm, getClientId());
+                SecuredClientApplication clientApplication = getSecuredClientApplication(realm, getClientId());
                 if (clientApplication == null)
                     throw new RuntimeException("No Keycloak client application found for realm: " + realm);
                 return clientApplication.keycloakDeployment;
@@ -223,7 +222,7 @@ public abstract class IdentityService implements ContainerService {
         ).toBlocking().singleOrDefault(false);
     }
 
-    public SecuredClientApplication getSecureClientApplication(String realm, String clientId) {
+    public SecuredClientApplication getSecuredClientApplication(String realm, String clientId) {
         try {
             return clientApplicationCache.get(new SecuredClientApplication.Key(realm, clientId));
         } catch (Exception ex) {

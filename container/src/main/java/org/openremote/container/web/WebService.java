@@ -47,6 +47,7 @@ public abstract class WebService implements ContainerService {
     public static final int WEB_SERVER_LISTEN_PORT_DEFAULT = 8080;
 
     public static final String API_PATH = "/api";
+    public static final String JSAPI_PATH = "/jsapi";
     public static final String STATIC_PATH = "/static";
     protected final Pattern PATTERN_STATIC = Pattern.compile(Pattern.quote(STATIC_PATH) + "(\\/.*)?");
     protected final Pattern PATTERN_REALM_ROOT = Pattern.compile("\\/([a-z]+)\\/?");
@@ -92,9 +93,11 @@ public abstract class WebService implements ContainerService {
     protected Undertow.Builder build(Container container, Undertow.Builder builder) {
 
         Path docRoot = getStaticResourceDocRoot(container);
-        HttpHandler staticResourceHandler = docRoot != null ? createStaticResourceHandler(container, docRoot) : null;
+        WebApplication webApplication = getWebApplication(container);
 
-        HttpHandler apiHandler = createApiHandler(container);
+        HttpHandler staticResourceHandler = docRoot != null ? createStaticResourceHandler(container, docRoot) : null;
+        HttpHandler apiHandler = createApiHandler(container, webApplication);
+        HttpHandler jsApiHandler = createJsApiHandler(container, webApplication);
 
         HttpHandler handler = exchange -> {
             String requestPath = exchange.getRequestPath();
@@ -105,7 +108,6 @@ public abstract class WebService implements ContainerService {
             for (Map.Entry<String, HttpHandler> entry : getPrefixRoutes().entrySet()) {
                 if (requestPath.startsWith(entry.getKey())) {
                     LOG.fine("Handling with '" + entry.getValue().getClass().getName() + "' path prefix: " + entry.getKey());
-                    ;
                     entry.getValue().handleRequest(exchange);
                     handled = true;
                     break;
@@ -146,6 +148,13 @@ public abstract class WebService implements ContainerService {
                     staticResourceHandler.handleRequest(exchange);
                     return;
                 }
+            }
+
+            // Serve JavaScript API with path /jsapi/*
+            if (jsApiHandler != null && requestPath.startsWith(JSAPI_PATH)) {
+                LOG.fine("Serving JS API call: " + requestPath);
+                jsApiHandler.handleRequest(exchange);
+                return;
             }
 
             // Serve API with path /<realm>/*
@@ -199,15 +208,12 @@ public abstract class WebService implements ContainerService {
             .setMimeMappings(mimeBuilder.build());
     }
 
-    protected HttpHandler createApiHandler(Container container) {
-        Application restApplication = getRestApplication(container);
-        if (restApplication == null)
+    protected HttpHandler createApiHandler(Container container, WebApplication webApplication) {
+        if (webApplication == null)
             return null;
 
-        LOG.fine("Registering REST application: " + restApplication.getClass().getName());
-
         ResteasyDeployment resteasyDeployment = new ResteasyDeployment();
-        resteasyDeployment.setApplication(restApplication);
+        resteasyDeployment.setApplication(webApplication);
 
         // Custom providers (these only apply to server applications, not client calls)
         resteasyDeployment.getActualProviderClasses().add(JacksonConfig.class);
@@ -222,7 +228,7 @@ public abstract class WebService implements ContainerService {
             .setContextPath(API_PATH)
             .addServletContextAttribute(ResteasyDeployment.class.getName(), resteasyDeployment)
             .addServlet(restServlet).setDeploymentName("RESTEasy Deployment")
-            .setClassLoader(restApplication.getClass().getClassLoader());
+            .setClassLoader(Container.class.getClassLoader());
 
         if (getKeycloakConfigResolver() != null) {
             resteasyDeployment.setSecurityEnabled(true);
@@ -240,6 +246,36 @@ public abstract class WebService implements ContainerService {
         }
     }
 
+    protected HttpHandler createJsApiHandler(Container container, WebApplication webApplication) {
+        if (webApplication == null)
+            return null;
+        /*
+            TODO We don't really need security and realms etc. here.
+            Anyone should be able to get API client code/metadata.
+            Servles.defaultContainer() can be called multiple times.
+        */
+        /*
+        ServletInfo jsApiServlet = Servlets.servlet("My Servlet", MyServlet.class)
+            .setAsyncSupported(true)
+            .setLoadOnStartup(1)
+            .addMapping("/*");
+
+        DeploymentInfo deploymentInfo = new DeploymentInfo()
+            .setContextPath(JSAPI_PATH)
+            .addServlet(jsApiServlet).setDeploymentName("JS API Servlet")
+            .setClassLoader(Container.class.getClassLoader());
+
+        try {
+            DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
+            manager.deploy();
+            return manager.start();
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+        */
+        return null;
+    }
+
     /**
      * Override this method to serve static resources from file system on the /static/* path.
      */
@@ -247,7 +283,7 @@ public abstract class WebService implements ContainerService {
         return null;
     }
 
-    protected WebApplication getRestApplication(Container container) {
+    protected WebApplication getWebApplication(Container container) {
         if (getApiClasses() != null || getApiSingletons() != null) {
             return new WebApplication(container, getApiClasses(), getApiSingletons());
         }
