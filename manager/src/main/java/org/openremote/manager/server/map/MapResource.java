@@ -2,20 +2,20 @@ package org.openremote.manager.server.map;
 
 import elemental.json.JsonObject;
 import org.openremote.container.web.WebResource;
-import org.openremote.manager.shared.rest.MapRestService;
+import org.openremote.manager.shared.rest.MapService;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import java.util.logging.Logger;
 
-public class MapResource extends WebResource implements MapRestService {
+public class MapResource extends WebResource implements MapService {
 
     private static final Logger LOG = Logger.getLogger(MapResource.class.getName());
 
-    protected final MapService mapService;
+    protected final org.openremote.manager.server.map.MapService mapService;
 
-    public MapResource(MapService mapService) {
+    public MapResource(org.openremote.manager.server.map.MapService mapService) {
         this.mapService = mapService;
     }
 

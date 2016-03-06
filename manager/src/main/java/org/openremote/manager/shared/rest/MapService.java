@@ -1,6 +1,8 @@
 package org.openremote.manager.shared.rest;
 
 import elemental.json.JsonObject;
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsType;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.GET;
@@ -10,7 +12,8 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 @Path("map")
-public interface MapRestService {
+@JsType(isNative = true)
+public interface MapService {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     JsonObject getOptions();

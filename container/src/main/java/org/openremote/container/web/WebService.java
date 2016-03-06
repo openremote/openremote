@@ -14,7 +14,9 @@ import io.undertow.servlet.api.LoginConfig;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.util.HttpString;
 import io.undertow.util.MimeMappings;
+import org.jboss.resteasy.jsapi.JSAPIServlet;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
+import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.keycloak.adapters.KeycloakConfigResolver;
 import org.openremote.container.ConfigurationException;
@@ -22,14 +24,10 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.security.SimpleKeycloakServletExtension;
 
-import javax.ws.rs.core.Application;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -60,6 +58,7 @@ public abstract class WebService implements ContainerService {
     protected Collection<Class<?>> apiClasses = new HashSet<>();
     protected Collection<Object> apiSingletons = new HashSet<>();
     protected KeycloakConfigResolver keycloakConfigResolver;
+    private ResteasyDeployment resteasyDeployment;
 
     @Override
     public void prepare(Container container) {
@@ -125,6 +124,13 @@ public abstract class WebService implements ContainerService {
                 return;
             }
 
+            // Serve JavaScript API with path /jsapi/*
+            if (jsApiHandler != null && requestPath.startsWith(JSAPI_PATH)) {
+                LOG.fine("Serving JS API call: " + requestPath);
+                jsApiHandler.handleRequest(exchange);
+                return;
+            }
+
             if (staticResourceHandler != null) {
                 // Serve /<realm>/index.html
                 Matcher realmRootMatcher = PATTERN_REALM_ROOT.matcher(requestPath);
@@ -148,13 +154,6 @@ public abstract class WebService implements ContainerService {
                     staticResourceHandler.handleRequest(exchange);
                     return;
                 }
-            }
-
-            // Serve JavaScript API with path /jsapi/*
-            if (jsApiHandler != null && requestPath.startsWith(JSAPI_PATH)) {
-                LOG.fine("Serving JS API call: " + requestPath);
-                jsApiHandler.handleRequest(exchange);
-                return;
             }
 
             // Serve API with path /<realm>/*
@@ -212,7 +211,7 @@ public abstract class WebService implements ContainerService {
         if (webApplication == null)
             return null;
 
-        ResteasyDeployment resteasyDeployment = new ResteasyDeployment();
+        resteasyDeployment = new ResteasyDeployment();
         resteasyDeployment.setApplication(webApplication);
 
         // Custom providers (these only apply to server applications, not client calls)
@@ -252,10 +251,9 @@ public abstract class WebService implements ContainerService {
         /*
             TODO We don't really need security and realms etc. here.
             Anyone should be able to get API client code/metadata.
-            Servles.defaultContainer() can be called multiple times.
+            Servlets.defaultContainer() can be called multiple times.
         */
-        /*
-        ServletInfo jsApiServlet = Servlets.servlet("My Servlet", MyServlet.class)
+        ServletInfo jsApiServlet = Servlets.servlet("My Servlet", JSAPIServlet.class)
             .setAsyncSupported(true)
             .setLoadOnStartup(1)
             .addMapping("/*");
@@ -265,6 +263,16 @@ public abstract class WebService implements ContainerService {
             .addServlet(jsApiServlet).setDeploymentName("JS API Servlet")
             .setClassLoader(Container.class.getClassLoader());
 
+        // Manually add in attribute that JS API expects
+        // TODO: Maybe deal with this more gracefully
+        deploymentInfo.addServletContextAttribute(ResteasyContextParameters.RESTEASY_DEPLOYMENTS, new HashMap<String,ResteasyDeployment>() {
+                {
+                    put("", resteasyDeployment);
+                }
+
+            }
+        );
+
         try {
             DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
             manager.deploy();
@@ -272,8 +280,6 @@ public abstract class WebService implements ContainerService {
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
-        */
-        return null;
     }
 
     /**

@@ -89,9 +89,9 @@ public class MainModule extends AbstractGinModule {
 
 //    @Provides
 //    @Singleton
-//    public MapRestService getMapRestService() {
+//    public MapService getMapRestService() {
 //        String baseUrl = GWT.getHostPageBaseURL() + Window.Location.getPath().substring(1);
-//        MapRestService mapRestService = GWT.create(MapRestService.class);
+//        MapService mapRestService = GWT.create(MapService.class);
 //        ((RestServiceProxy) mapRestService).setResource(new Resource(baseUrl));
 //        return mapRestService;
 //    }

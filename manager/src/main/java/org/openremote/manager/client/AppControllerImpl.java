@@ -1,5 +1,6 @@
 package org.openremote.manager.client;
 
+import com.google.gwt.core.client.GWT;
 import com.google.gwt.place.shared.*;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.RootLayoutPanel;
@@ -8,6 +9,7 @@ import com.google.web.bindery.event.shared.EventBus;
 import org.openremote.manager.client.event.LoginRequestEvent;
 import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.i18n.ManagerConstants;
+import org.openremote.manager.client.interop.resteasy.REST;
 import org.openremote.manager.client.presenter.ActivityInitialiser;
 import org.openremote.manager.client.presenter.HeaderPresenter;
 import org.openremote.manager.client.presenter.LoginPresenter;
@@ -52,6 +54,9 @@ public class AppControllerImpl implements AppController, AppLayout.Presenter {
                 return;
             }
             */
+
+            // TODO: Correctly initialise REST API URL based on realm
+            REST.apiURL = "//" + Window.Location.getHostName() + ":" + Window.Location.getPort() + Window.Location.getPath();
 
             super.goTo(newPlace);
         }
