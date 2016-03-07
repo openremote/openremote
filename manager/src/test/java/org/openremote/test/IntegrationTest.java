@@ -6,10 +6,10 @@ import org.junit.Before;
 public abstract class IntegrationTest {
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws Exception {
     }
 }

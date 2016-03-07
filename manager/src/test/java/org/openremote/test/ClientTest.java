@@ -1,6 +1,6 @@
 package org.openremote.test;
 
-public abstract class ManagerClientTest extends IntegrationTest {
+public abstract class ClientTest extends IntegrationTest {
 /*
     protected String managerHost;
     protected String managerPort;

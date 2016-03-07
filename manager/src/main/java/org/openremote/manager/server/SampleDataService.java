@@ -7,7 +7,7 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.security.AuthForm;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.Keycloak;
-import org.openremote.manager.server.identity.ManagerIdentityService;
+import org.openremote.manager.server.security.ManagerIdentityService;
 import rx.Observable;
 
 import javax.ws.rs.core.UriBuilder;
@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.openremote.container.web.WebClient.getTarget;
 import static org.openremote.manager.server.Constants.MANAGER_CLIENT_ID;
 import static org.openremote.manager.server.Constants.MASTER_REALM;
 import static rx.Observable.fromCallable;
@@ -177,7 +178,7 @@ public class SampleDataService implements ContainerService {
             fromCallable(() -> keycloak.createRoleForClientApplication(
                 MASTER_REALM, clientObjectId, new RoleRepresentation("read", "Read all data", false)
             )).map(response ->
-                identityService.getTarget(response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
+                getTarget(identityService.getClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
             ).toBlocking().single();
         LOG.info("Added role '" + readRole.getName() + "'");
 
@@ -185,7 +186,7 @@ public class SampleDataService implements ContainerService {
             fromCallable(() -> keycloak.createRoleForClientApplication(
                 MASTER_REALM, clientObjectId, new RoleRepresentation("read:map", "View map", false)
             )).map(response ->
-                identityService.getTarget(response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
+                getTarget(identityService.getClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
             ).toBlocking().single();
 
         keycloak.addCompositesToRoleForClientApplication(
@@ -208,7 +209,7 @@ public class SampleDataService implements ContainerService {
         final UserRepresentation finalTestUser = testUser;
         testUser = fromCallable(() -> keycloak.createUser(MASTER_REALM, finalTestUser))
             .map(response ->
-                identityService.getTarget(response.getLocation(), accessToken).request(APPLICATION_JSON).get(UserRepresentation.class)
+                getTarget(identityService.getClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(UserRepresentation.class)
             ).toBlocking().single();
 
         CredentialRepresentation testUserCredential = new CredentialRepresentation();

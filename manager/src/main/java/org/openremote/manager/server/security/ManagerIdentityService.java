@@ -1,4 +1,4 @@
-package org.openremote.manager.server.identity;
+package org.openremote.manager.server.security;
 
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;

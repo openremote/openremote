@@ -1,4 +1,4 @@
-package org.openremote.container.web;
+package org.openremote.container.json;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.openremote.container.Container;

@@ -11,10 +11,8 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import static jsinterop.annotations.JsPackage.GLOBAL;
-
 @Path("map")
-@JsType(isNative = true, namespace = GLOBAL, name = "MapResource")
+@JsType(isNative = true)
 public interface MapResource {
 
     @GET

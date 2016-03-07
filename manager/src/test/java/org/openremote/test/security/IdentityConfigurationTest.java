@@ -1,11 +1,12 @@
-package org.openremote.test;
+package org.openremote.test.security;
 
 import org.junit.Ignore;
+import org.openremote.test.ClientTest;
 
 import java.util.logging.Logger;
 
 @Ignore
-public class IdentityConfigurationTest extends ManagerClientTest {
+public class IdentityConfigurationTest extends ClientTest {
 
     private static final Logger LOG = Logger.getLogger(IdentityConfigurationTest.class.getName());
 

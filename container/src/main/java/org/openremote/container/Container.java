@@ -1,21 +1,20 @@
 package org.openremote.container;
 
-import elemental.json.JsonValue;
-import elemental.json.Json;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.Map;
+import java.util.ServiceLoader;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -38,7 +37,6 @@ public class Container {
         }
 
         LOG = Logger.getLogger(Container.class.getName());
-        LOG.info("Starting runtime container...");
 
         JSON = new ObjectMapper();
         JSON.setSerializationInclusion(JsonInclude.Include.NON_NULL)
@@ -50,30 +48,6 @@ public class Container {
             .setVisibility(PropertyAccessor.SETTER, JsonAutoDetect.Visibility.NONE)
             .setVisibility(PropertyAccessor.IS_GETTER, JsonAutoDetect.Visibility.NONE)
             .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.NONE);
-
-        // TODO: Server2 should use its' own object mapper maybe for elemental json
-        SimpleModule elementalModule = new SimpleModule();
-        elementalModule.addSerializer(JsonValue.class, new ElementalSerialiser());
-        elementalModule.addDeserializer(JsonValue.class, new ElementalDeserialiser());
-        JSON.registerModule(elementalModule);
-    }
-
-    public static class ElementalSerialiser extends JsonSerializer<JsonValue> {
-
-        @Override
-        public void serialize(JsonValue value, JsonGenerator gen, SerializerProvider serializers) throws IOException, JsonProcessingException {
-            String str = value.toJson();
-            gen.writeRaw(str);
-        }
-    }
-
-    public static class ElementalDeserialiser extends JsonDeserializer<JsonValue> {
-
-        @Override
-        public JsonValue deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-            String str = p.getText();
-            return Json.parse(str);
-        }
     }
 
     public static final String DEV_MODE = "DEV_MODE";
@@ -84,14 +58,16 @@ public class Container {
 
     protected final Map<Class<? extends ContainerService>, ContainerService> services = new ConcurrentHashMap<>();
 
-    public static void configure(Container container) {
-        if (container.getConfigBoolean(DEV_MODE, DEV_MODE_DEFAULT)) {
-            JSON.enable(SerializationFeature.INDENT_OUTPUT);
-        }
-    }
     public Container() {
         this(
             System.getenv(),
+            StreamSupport.stream(ServiceLoader.load(ContainerService.class).spliterator(), false)
+        );
+    }
+
+    public Container(Map<String, String> config) {
+        this(
+            config,
             StreamSupport.stream(ServiceLoader.load(ContainerService.class).spliterator(), false)
         );
     }
@@ -114,6 +90,10 @@ public class Container {
         }
 
         this.devMode = getConfigBoolean(DEV_MODE, DEV_MODE_DEFAULT);
+
+        if (this.devMode) {
+            JSON.enable(SerializationFeature.INDENT_OUTPUT);
+        }
 
         if (serviceStreams != null) {
             for (Stream<ContainerService> serviceStream : serviceStreams) {
@@ -144,30 +124,48 @@ public class Container {
         return devMode;
     }
 
-    synchronized public void start() {
-        // Don't block the main thread
-        new Thread() {
+    synchronized public CompletableFuture start() {
+        return CompletableFuture.runAsync(() -> {
+            for (ContainerService service : getServices()) {
+                LOG.fine("Preparing service: " + service);
+                service.prepare(Container.this);
+            }
+            for (ContainerService service : getServices()) {
+                LOG.fine("Starting service: " + service);
+                service.start(Container.this);
+            }
+        });
+    }
+
+    /**
+     * Starts the container and a non-daemon thread that waits forever.
+     */
+    public void startBackground() throws Exception{
+        // We block here so we die fast if startup fails
+        LOG.info(">>> Starting runtime container...");
+        start().get();
+        Thread containerThread = new Thread("container") {
             @Override
             public void run() {
-                for (ContainerService service : getServices()) {
-                    LOG.fine("Preparing service: " + service);
-                    service.prepare(Container.this);
+                try {
+                    new CountDownLatch(1).await();
+                } catch (InterruptedException ex) {
+                    // Shutdown
                 }
-                for (ContainerService service : getServices()) {
-                    LOG.fine("Starting service: " + service);
-                    service.start(Container.this);
-                }
-                LOG.info("Runtime container startup complete");
             }
-        }.start();
+        };
+        containerThread.setDaemon(false);
+        containerThread.start();
+        LOG.info(">>> Runtime container startup complete");
     }
 
     synchronized public void stop() {
-        LOG.info("Stopping runtime container...");
+        LOG.info("<<< Stopping runtime container...");
         for (ContainerService service : getServices()) {
             LOG.fine("Stopping service: " + service);
             service.stop(this);
         }
+        LOG.info("<<< Runtime container stopped");
     }
 
     synchronized public void addService(ContainerService service) {

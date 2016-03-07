@@ -16,7 +16,7 @@ import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.observable.RetryWithDelay;
-import org.openremote.container.web.JacksonConfig;
+import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebService;
 import rx.Observable;
 
@@ -25,7 +25,6 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
-import java.net.URI;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -35,6 +34,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static javax.ws.rs.core.Response.Status.Family.REDIRECTION;
 import static javax.ws.rs.core.Response.Status.Family.SUCCESSFUL;
 import static org.openremote.container.Constants.*;
+import static org.openremote.container.web.WebClient.getTarget;
 
 public abstract class IdentityService implements ContainerService {
 
@@ -79,7 +79,7 @@ public abstract class IdentityService implements ContainerService {
             .port(this.configNetworkWebserverPort)
             .path(AUTH_PATH);
 
-        LOG.info("External auth server URL is: " + externalAuthServerUrl);
+        LOG.info("External auth server URL is: " + externalAuthServerUrl.build());
 
         keycloakHostUri =
             UriBuilder.fromPath("/")
@@ -89,7 +89,7 @@ public abstract class IdentityService implements ContainerService {
 
         keycloakServiceUri = keycloakHostUri.clone().replacePath(Keycloak.KEYCLOAK_CONTEXT_PATH);
 
-        LOG.info("Preparing identity service for Keycloak host: " + keycloakServiceUri);
+        LOG.info("Preparing identity service for Keycloak host: " + keycloakServiceUri.build());
 
         ResteasyClientBuilder clientBuilder =
             new ResteasyClientBuilder()
@@ -105,11 +105,7 @@ public abstract class IdentityService implements ContainerService {
                     container.getConfigInteger(KEYCLOAK_CLIENT_POOL_SIZE, KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT)
                 );
 
-        this.client = clientBuilder
-            .register(JacksonConfig.class)
-            .register(new BearerAuthClientRequestFilter())
-            .register(new ClientSecretRequestFilter())
-            .build();
+        this.client = WebClient.registerDefaults(clientBuilder).build();
 
         clientApplicationCache = createClientApplicationCache();
 
@@ -173,35 +169,16 @@ public abstract class IdentityService implements ContainerService {
         return configNetworkWebserverPort;
     }
 
-    public ResteasyWebTarget getTarget() {
-        return getTarget(keycloakServiceUri.build(), null);
-    }
-
-    public ResteasyWebTarget getTarget(URI uri, String accessToken) {
-        ResteasyWebTarget target = ((ResteasyWebTarget) client.target(uri));
-        if (accessToken != null) {
-            target.property("accessToken", accessToken);
-        }
-        return target;
-    }
-
-    public ResteasyWebTarget getTarget(URI uri, String clientId, String clientSecret) {
-        ResteasyWebTarget target = getTarget(uri, null);
-        if (clientId != null) {
-            target.property("clientId", clientId);
-        }
-        if (clientSecret != null) {
-            target.property("clientSecret", clientSecret);
-        }
-        return target;
+    public Client getClient() {
+        return client;
     }
 
     public Keycloak getKeycloak() {
-        return getKeycloak(getTarget(keycloakServiceUri.build(), null));
+        return getKeycloak(getTarget(client, keycloakServiceUri.build(), null));
     }
 
     public Keycloak getKeycloak(String accessToken) {
-        return getKeycloak(getTarget(keycloakServiceUri.build(), accessToken));
+        return getKeycloak(getTarget(client, keycloakServiceUri.build(), accessToken));
     }
 
     public Keycloak getKeycloak(ResteasyWebTarget target) {

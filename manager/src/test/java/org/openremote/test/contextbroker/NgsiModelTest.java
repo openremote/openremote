@@ -1,4 +1,4 @@
-package org.openremote.test;
+package org.openremote.test.contextbroker;
 
 import elemental.json.Json;
 import elemental.json.JsonObject;
@@ -11,9 +11,9 @@ import java.util.logging.Logger;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class ModelTest {
+public class NgsiModelTest {
 
-    private static final Logger LOG = Logger.getLogger(ModelTest.class.getName());
+    private static final Logger LOG = Logger.getLogger(NgsiModelTest.class.getName());
 
     @Test
     public void validateModel() {
