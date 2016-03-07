@@ -1,19 +1,15 @@
 package org.openremote.manager.client.presenter;
 
-import com.google.gwt.core.client.GWT;
-import com.google.gwt.http.client.Request;
-import com.google.gwt.http.client.RequestBuilder;
-import com.google.gwt.http.client.RequestCallback;
-import com.google.gwt.http.client.Response;
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.web.bindery.event.shared.EventBus;
 import com.workingflows.js.jscore.client.api.promise.Promise;
-import elemental.json.Json;
 import elemental.json.JsonObject;
-import org.openremote.manager.client.interop.resteasy.MapService;
+import org.openremote.manager.client.auth.KeycloakUtil;
 import org.openremote.manager.client.view.MapView;
+import org.openremote.manager.shared.rest.ClientInvocation;
+import org.openremote.manager.shared.rest.MapResource;
 
 import javax.inject.Inject;
 import java.util.logging.Level;
@@ -46,6 +42,11 @@ public class MapActivity
 
     }
 
+    public static native MapResource getMapResource() /*-{
+        // TODO Should be injected so we can stub in tests
+        return $wnd.MapResource;
+    }-*/;
+
     @Override
     public void start(AcceptsOneWidget container, com.google.gwt.event.shared.EventBus activityBus) {
         view.setPresenter(this);
@@ -53,8 +54,16 @@ public class MapActivity
 
         if (!view.isMapInitialised()) {
             Promise p = new Promise((resolve, reject) -> {
-                JsonObject mapSettings = MapService.getOptions();
-                resolve.resolve(mapSettings);
+
+                ClientInvocation<JsonObject> clientInvocation =
+                    new ClientInvocation<JsonObject>(KeycloakUtil.getAccessToken())
+                    .onResponse(200, resolve::resolve, reject::rejected);
+
+                getMapResource().getSettings(clientInvocation);
+
+//                JsonObject mapSettings = getMapResource().getSettings(clientInvocation);
+//                resolve.resolve(mapSettings);
+
 //                RequestBuilder rb = new RequestBuilder(RequestBuilder.GET, GWT.getHostPageBaseURL()+ "master/map");
 //                try {
 //                    rb.sendRequest(null, new RequestCallback() {
@@ -89,10 +98,10 @@ public class MapActivity
 
             p.then(obj -> {
                 //JsonObject mapOptions = elemental.js.json.JsJsonObject.create(). obj;
-                view.initialiseMap((JsonObject)obj);
+                view.initialiseMap((JsonObject) obj);
                 return null;
             }).catchException(obj -> {
-                LOG.log(Level.SEVERE, "Error retrieving map settings", (Exception)obj);
+                LOG.log(Level.SEVERE, "Error retrieving map settings", (Exception) obj);
                 return null;
             });
         } else {

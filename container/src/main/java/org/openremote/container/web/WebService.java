@@ -15,6 +15,7 @@ import io.undertow.servlet.api.ServletInfo;
 import io.undertow.util.HttpString;
 import io.undertow.util.MimeMappings;
 import org.jboss.resteasy.jsapi.JSAPIServlet;
+import org.jboss.resteasy.plugins.interceptors.encoding.GZIPEncodingInterceptor;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.ResteasyDeployment;
@@ -58,7 +59,6 @@ public abstract class WebService implements ContainerService {
     protected Collection<Class<?>> apiClasses = new HashSet<>();
     protected Collection<Object> apiSingletons = new HashSet<>();
     protected KeycloakConfigResolver keycloakConfigResolver;
-    private ResteasyDeployment resteasyDeployment;
 
     @Override
     public void prepare(Container container) {
@@ -92,11 +92,11 @@ public abstract class WebService implements ContainerService {
     protected Undertow.Builder build(Container container, Undertow.Builder builder) {
 
         Path docRoot = getStaticResourceDocRoot(container);
-        WebApplication webApplication = getWebApplication(container);
-
         HttpHandler staticResourceHandler = docRoot != null ? createStaticResourceHandler(container, docRoot) : null;
-        HttpHandler apiHandler = createApiHandler(container, webApplication);
-        HttpHandler jsApiHandler = createJsApiHandler(container, webApplication);
+
+        ResteasyDeployment resteasyDeployment = createResteasyDeployment(container);
+        HttpHandler apiHandler = createApiHandler(resteasyDeployment);
+        HttpHandler jsApiHandler = createJsApiHandler(resteasyDeployment);
 
         HttpHandler handler = exchange -> {
             String requestPath = exchange.getRequestPath();
@@ -148,6 +148,7 @@ public abstract class WebService implements ContainerService {
                     String remaining = staticMatcher.group(1);
                     exchange.setRelativePath(remaining == null || remaining.length() == 0 ? "/" : remaining);
                     // Special handling for compression of pbf static files (they are already compressed...)
+                    // TODO configurable
                     if (exchange.getRequestPath().endsWith(".pbf")) {
                         exchange.getResponseHeaders().put(new HttpString(CONTENT_ENCODING), "gzip");
                     }
@@ -207,16 +208,9 @@ public abstract class WebService implements ContainerService {
             .setMimeMappings(mimeBuilder.build());
     }
 
-    protected HttpHandler createApiHandler(Container container, WebApplication webApplication) {
-        if (webApplication == null)
+    protected HttpHandler createApiHandler(ResteasyDeployment resteasyDeployment) {
+        if (resteasyDeployment == null)
             return null;
-
-        resteasyDeployment = new ResteasyDeployment();
-        resteasyDeployment.setApplication(webApplication);
-
-        // Custom providers (these only apply to server applications, not client calls)
-        resteasyDeployment.getActualProviderClasses().add(JacksonConfig.class);
-        resteasyDeployment.getActualProviderClasses().add(GZIPPEDEncodingInterceptor.class);
 
         ServletInfo restServlet = Servlets.servlet("RESTEasy Servlet", HttpServlet30Dispatcher.class)
             .setAsyncSupported(true)
@@ -224,9 +218,10 @@ public abstract class WebService implements ContainerService {
             .addMapping("/*");
 
         DeploymentInfo deploymentInfo = new DeploymentInfo()
+            .setDeploymentName("RESTEasy Deployment")
             .setContextPath(API_PATH)
             .addServletContextAttribute(ResteasyDeployment.class.getName(), resteasyDeployment)
-            .addServlet(restServlet).setDeploymentName("RESTEasy Deployment")
+            .addServlet(restServlet)
             .setClassLoader(Container.class.getClassLoader());
 
         if (getKeycloakConfigResolver() != null) {
@@ -236,6 +231,34 @@ public abstract class WebService implements ContainerService {
             deploymentInfo.addServletExtension(new SimpleKeycloakServletExtension(getKeycloakConfigResolver()));
         }
 
+        return addServletDeployment(deploymentInfo);
+    }
+
+    protected HttpHandler createJsApiHandler(ResteasyDeployment resteasyDeployment) {
+        if (resteasyDeployment == null)
+            return null;
+
+        ServletInfo jsApiServlet = Servlets.servlet("RESTEasy JS Servlet", JSAPIServlet.class)
+            .setAsyncSupported(true)
+            .setLoadOnStartup(1)
+            .addMapping("/*");
+
+        DeploymentInfo deploymentInfo = new DeploymentInfo()
+            .setDeploymentName("RESTEasy JS Deployment")
+            .setContextPath(JSAPI_PATH)
+            .addServlet(jsApiServlet)
+            .setClassLoader(Container.class.getClassLoader());
+
+        deploymentInfo.addServletContextAttribute(
+            ResteasyContextParameters.RESTEASY_DEPLOYMENTS,
+            new HashMap<String, ResteasyDeployment>() {{
+                    put("", resteasyDeployment);
+                }}
+        );
+        return addServletDeployment(deploymentInfo);
+    }
+
+    protected HttpHandler addServletDeployment(DeploymentInfo deploymentInfo) {
         try {
             DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
             manager.deploy();
@@ -245,54 +268,24 @@ public abstract class WebService implements ContainerService {
         }
     }
 
-    protected HttpHandler createJsApiHandler(Container container, WebApplication webApplication) {
-        if (webApplication == null)
+    protected ResteasyDeployment createResteasyDeployment(Container container) {
+        if (getApiClasses() == null && getApiSingletons() == null)
             return null;
-        /*
-            TODO We don't really need security and realms etc. here.
-            Anyone should be able to get API client code/metadata.
-            Servlets.defaultContainer() can be called multiple times.
-        */
-        ServletInfo jsApiServlet = Servlets.servlet("My Servlet", JSAPIServlet.class)
-            .setAsyncSupported(true)
-            .setLoadOnStartup(1)
-            .addMapping("/*");
+        WebApplication webApplication = new WebApplication(container, getApiClasses(), getApiSingletons());
+        ResteasyDeployment resteasyDeployment = new ResteasyDeployment();
+        resteasyDeployment.setApplication(webApplication);
 
-        DeploymentInfo deploymentInfo = new DeploymentInfo()
-            .setContextPath(JSAPI_PATH)
-            .addServlet(jsApiServlet).setDeploymentName("JS API Servlet")
-            .setClassLoader(Container.class.getClassLoader());
+        // Custom providers (these only apply to server applications, not client calls)
+        resteasyDeployment.getActualProviderClasses().add(JacksonConfig.class);
+        resteasyDeployment.getActualProviderClasses().add(AlreadyGzippedWriterInterceptor.class);
 
-        // Manually add in attribute that JS API expects
-        // TODO: Maybe deal with this more gracefully
-        deploymentInfo.addServletContextAttribute(ResteasyContextParameters.RESTEASY_DEPLOYMENTS, new HashMap<String,ResteasyDeployment>() {
-                {
-                    put("", resteasyDeployment);
-                }
-
-            }
-        );
-
-        try {
-            DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
-            manager.deploy();
-            return manager.start();
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
+        return resteasyDeployment;
     }
 
     /**
      * Override this method to serve static resources from file system on the /static/* path.
      */
     protected Path getStaticResourceDocRoot(Container container) {
-        return null;
-    }
-
-    protected WebApplication getWebApplication(Container container) {
-        if (getApiClasses() != null || getApiSingletons() != null) {
-            return new WebApplication(container, getApiClasses(), getApiSingletons());
-        }
         return null;
     }
 

@@ -16,8 +16,13 @@
 
 .alert-error {
     background-color: #ffffff;
-    border-color: #cc0000;
+    border-color: #e64a19;
     color: #333333;
+    font-weight: bold;
+}
+
+.pficon-error-circle-o:before {
+    color: #e64a19;
 }
 
 #kc-locale ul {

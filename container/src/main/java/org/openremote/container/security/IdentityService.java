@@ -20,6 +20,7 @@ import org.openremote.container.web.JacksonConfig;
 import org.openremote.container.web.WebService;
 import rx.Observable;
 
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
@@ -126,14 +127,18 @@ public abstract class IdentityService implements ContainerService {
             container.getService(getWebServiceClass()).getPrefixRoutes().put(AUTH_PATH, proxyHandler);
         }
 
-        if (!isDisableAPISecurity()) {
+        if (isDisableAPISecurity()) {
+            LOG.warning("###################### API SECURITY DISABLED! ######################");
+        } else {
             container.getService(getWebServiceClass()).setKeycloakConfigResolver(request -> {
+                KeycloakDeployment passthroughKeycloakDeployment = new KeycloakDeployment();
+
                 String realm = request.getQueryParamValue("realm");
                 if (realm == null || realm.length() == 0)
-                    throw new IllegalStateException("Can't authenticate API call without realm parameter");
+                    return passthroughKeycloakDeployment;
                 SecuredClientApplication clientApplication = getSecuredClientApplication(realm, getClientId());
                 if (clientApplication == null)
-                    throw new RuntimeException("No Keycloak client application found for realm: " + realm);
+                    return passthroughKeycloakDeployment;
                 return clientApplication.keycloakDeployment;
             });
         }
@@ -226,11 +231,15 @@ public abstract class IdentityService implements ContainerService {
         try {
             return clientApplicationCache.get(new SecuredClientApplication.Key(realm, clientId));
         } catch (Exception ex) {
-            LOG.log(
-                Level.INFO,
-                "Error loading client application '" + clientId + "' for realm '" + realm + "' from identity provider",
-                ex
-            );
+            if (ex.getCause() != null && ex.getCause() instanceof NotFoundException) {
+                LOG.fine("Client application '" + clientId + "' for realm '" + realm + "' not found on identity provider");
+            } else {
+                LOG.log(
+                    Level.INFO,
+                    "Error loading client application '" + clientId + "' for realm '" + realm + "' from identity provider",
+                    ex
+                );
+            }
             return null;
         }
     }

@@ -5,7 +5,6 @@ import elemental.json.JsonArray;
 import elemental.json.JsonObject;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.container.web.WebService;
 import org.openremote.manager.server.web.ManagerWebService;
 
 import java.nio.file.Files;
@@ -54,7 +53,7 @@ public class MapService implements ContainerService {
         }
 
         container.getService(ManagerWebService.class).getApiSingletons().add(
-            new MapResource(this)
+            new MapResourceImpl(this)
         );
     }
 
