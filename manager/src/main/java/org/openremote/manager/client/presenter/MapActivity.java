@@ -22,17 +22,17 @@ public class MapActivity
     private static final Logger LOG = Logger.getLogger(MapActivity.class.getName());
 
     private final MapView view;
-    //private final MapService mapRestService;
+    private final MapResource mapResource;
     private final PlaceController placeController;
     private final EventBus bus;
 
     @Inject
     public MapActivity(MapView view,
-                       //MapService mapRestService,
+                       MapResource mapResource,
                        PlaceController placeController,
                        EventBus bus) {
         this.view = view;
-        //this.mapRestService = mapRestService;
+        this.mapResource = mapResource;
         this.placeController = placeController;
         this.bus = bus;
     }
@@ -41,11 +41,6 @@ public class MapActivity
     protected void init(OverviewPlace place) {
 
     }
-
-    public static native MapResource getMapResource() /*-{
-        // TODO Should be injected so we can stub in tests
-        return $wnd.MapResource;
-    }-*/;
 
     @Override
     public void start(AcceptsOneWidget container, com.google.gwt.event.shared.EventBus activityBus) {
@@ -59,7 +54,7 @@ public class MapActivity
                     new ClientInvocation<JsonObject>(KeycloakUtil.getAccessToken())
                     .onResponse(200, resolve::resolve, reject::rejected);
 
-                getMapResource().getSettings(clientInvocation);
+                mapResource.getSettings(clientInvocation);
 
 //                JsonObject mapSettings = getMapResource().getSettings(clientInvocation);
 //                resolve.resolve(mapSettings);
