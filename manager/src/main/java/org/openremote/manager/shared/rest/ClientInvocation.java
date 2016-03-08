@@ -3,6 +3,7 @@ package org.openremote.manager.shared.rest;
 import elemental.xml.XMLHttpRequest;
 import jsinterop.annotations.JsFunction;
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 
 import javax.ws.rs.HeaderParam;
@@ -14,11 +15,16 @@ import javax.ws.rs.core.HttpHeaders;
 @JsType
 public class ClientInvocation<T> {
 
+    @JsFunction
+    public interface Callback<T> {
+        void call(int statusCode, XMLHttpRequest request, T entity);
+    }
+
     @HeaderParam(HttpHeaders.AUTHORIZATION)
-    @jsinterop.annotations.JsProperty(name = HttpHeaders.AUTHORIZATION)
+    @JsProperty(name = HttpHeaders.AUTHORIZATION)
     public String authorization;
 
-    @jsinterop.annotations.JsProperty(name = "$callback")
+    @JsProperty(name = "$callback")
     public Callback<T> callback;
 
     @JsIgnore
@@ -32,9 +38,7 @@ public class ClientInvocation<T> {
 
     @JsIgnore
     public ClientInvocation<T> setAccessToken(String accessToken) {
-        if (accessToken != null) {
-            this.authorization = "Bearer " + accessToken;
-        }
+        this.authorization = accessToken != null ? "Bearer " + accessToken : null;
         return this;
     }
 
@@ -67,12 +71,6 @@ public class ClientInvocation<T> {
         public int getStatusCode() {
             return statusCode;
         }
-    }
-
-
-    @JsFunction
-    public interface Callback<T> {
-        void call(int statusCode, XMLHttpRequest request, T entity);
     }
 
     public interface OnSuccess<T> {

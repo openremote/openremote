@@ -6,12 +6,9 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.inject.Inject;
 import com.google.web.bindery.event.shared.EventBus;
 import com.workingflows.js.jscore.client.api.promise.Promise;
-import org.fusesource.restygwt.client.Method;
-import org.fusesource.restygwt.client.MethodCallback;
 import org.gwtbootstrap3.client.ui.constants.AlertType;
 import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.rest.LoginRestService;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.view.LoginView;
 import org.openremote.manager.shared.model.Credentials;
@@ -24,14 +21,12 @@ public class LoginPresenter extends com.google.gwt.activity.shared.AbstractActiv
     private LoginView view;
     private PlaceController placeController;
     private EventBus eventBus;
-    private LoginRestService loginRestService;
     private SecurityService securityService;
     private ManagerMessages messages;
     private Place redirectTo;
 
     @Inject
     public LoginPresenter(LoginView view,
-                          LoginRestService loginRestService,
                           SecurityService securityService,
                           PlaceController placeController,
                           ManagerMessages messages,
@@ -40,7 +35,6 @@ public class LoginPresenter extends com.google.gwt.activity.shared.AbstractActiv
         this.placeController = placeController;
         this.messages = messages;
         this.eventBus = eventBus;
-        this.loginRestService = loginRestService;
         this.securityService = securityService;
         view.setPresenter(this);
     }
@@ -71,6 +65,7 @@ public class LoginPresenter extends com.google.gwt.activity.shared.AbstractActiv
             credentials.setPassword(view.getPassword());
 
             // Make call to server
+            /* TODO
             loginRestService.login(credentials, new MethodCallback<LoginResult>() {
                 @Override
                 public void onFailure(Method method, Throwable exception) {
@@ -82,6 +77,7 @@ public class LoginPresenter extends com.google.gwt.activity.shared.AbstractActiv
                     resolve.resolve(response);
                 }
             });
+            */
         });
 
         p.then(obj -> {

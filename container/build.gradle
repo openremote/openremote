@@ -7,19 +7,19 @@ dependencies {
     compile "org.slf4j:jcl-over-slf4j:$slf4jVersion"
     compile "org.slf4j:log4j-over-slf4j:$slf4jVersion"
 
-    compile 'io.reactivex:rxjava:1.1.1'
-    compile 'com.google.guava:guava:19.0'
+    compile "io.reactivex:rxjava:$rxjavaVersion"
+    compile "com.google.guava:guava:$guavaVersion"
 
-    compile 'io.undertow:undertow-servlet:1.3.18.Final'
-    compile 'io.undertow:undertow-websockets-jsr:1.3.18.Final'
+    compile "io.undertow:undertow-servlet:$undertowVersion"
+    compile "io.undertow:undertow-websockets-jsr:$undertowVersion"
 
-    compile 'org.jboss.resteasy:resteasy-jaxrs:3.0.16.Final'
-    compile 'org.jboss.resteasy:resteasy-client:3.0.16.Final'
-    compile 'org.jboss.resteasy:resteasy-jackson2-provider:3.0.16.Final'
-    compile 'org.jboss.resteasy:resteasy-multipart-provider:3.0.16.Final'
-    compile 'org.jboss.resteasy:resteasy-cache-core:3.0.16.Final'
-    compile 'org.jboss.resteasy:async-http-servlet-3.0:3.0.16.Final'
-    compile 'org.jboss.resteasy:resteasy-jsapi:3.0.16.Final'
+    compile "org.jboss.resteasy:resteasy-jaxrs:$resteasyVersion"
+    compile "org.jboss.resteasy:resteasy-client:$resteasyVersion"
+    compile "org.jboss.resteasy:resteasy-jackson2-provider:$resteasyVersion"
+    compile "org.jboss.resteasy:resteasy-multipart-provider:$resteasyVersion"
+    compile "org.jboss.resteasy:resteasy-cache-core:$resteasyVersion"
+    compile "org.jboss.resteasy:async-http-servlet-3.0:$resteasyVersion"
+    compile "org.jboss.resteasy:resteasy-jsapi:$resteasyVersion"
 
     compile "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
     compile "org.keycloak:keycloak-undertow-adapter:$keycloakVersion"

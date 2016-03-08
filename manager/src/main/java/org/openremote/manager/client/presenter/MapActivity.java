@@ -6,7 +6,7 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.web.bindery.event.shared.EventBus;
 import com.workingflows.js.jscore.client.api.promise.Promise;
 import elemental.json.JsonObject;
-import org.openremote.manager.client.auth.KeycloakUtil;
+import org.openremote.manager.client.security.KeycloakUtil;
 import org.openremote.manager.client.view.MapView;
 import org.openremote.manager.shared.rest.ClientInvocation;
 import org.openremote.manager.shared.rest.MapResource;

@@ -79,7 +79,7 @@ public abstract class IdentityService implements ContainerService {
             .port(this.configNetworkWebserverPort)
             .path(AUTH_PATH);
 
-        LOG.info("External auth server URL is: " + externalAuthServerUrl.build());
+        LOG.info("External auth server URL (reverse proxy for Keycloak) is: " + externalAuthServerUrl.build());
 
         keycloakHostUri =
             UriBuilder.fromPath("/")

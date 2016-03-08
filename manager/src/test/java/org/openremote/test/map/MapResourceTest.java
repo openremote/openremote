@@ -17,7 +17,6 @@ public class MapResourceTest extends ServerTest {
     @Override
     protected ContainerService[] getContainerServices() {
         return new ContainerService[] {
-            new org.openremote.manager.server.web.ManagerWebService(),
             new org.openremote.manager.server.map.MapService()
         };
     }

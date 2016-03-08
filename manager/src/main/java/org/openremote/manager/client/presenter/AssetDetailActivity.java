@@ -2,10 +2,8 @@ package org.openremote.manager.client.presenter;
 
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
-import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.web.bindery.event.shared.EventBus;
-import org.fusesource.restygwt.client.Resource;
 import org.openremote.manager.client.view.AssetDetailView;
 
 import javax.inject.Inject;
@@ -61,6 +59,7 @@ public class AssetDetailActivity
 //        });
     }
 
+    /* TODO outdated
     protected static String hostname() {
         return Window.Location.getHostName();
     }
@@ -79,4 +78,5 @@ public class AssetDetailActivity
         }
         return new Resource(sb.toString());
     }
+    */
 }

@@ -1,14 +1,11 @@
 package org.openremote.test;
 
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.container.Constants;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebService;
-import org.openremote.manager.server.SampleDataService;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.UriBuilder;
@@ -42,7 +39,10 @@ public abstract class ServerTest extends IntegrationTest {
 
         container = new Container(
             config,
-            Stream.of(getContainerServices())
+            Stream.concat(
+                Stream.of(getContainerServices()),
+                Stream.of(new org.openremote.manager.server.web.ManagerWebService())
+            )
         );
 
         ResteasyClientBuilder clientBuilder =

@@ -6,22 +6,16 @@ import com.google.gwt.inject.client.AbstractGinModule;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.place.shared.PlaceHistoryHandler;
 import com.google.gwt.place.shared.PlaceHistoryMapper;
-import com.google.gwt.user.client.Window;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.google.web.bindery.event.shared.EventBus;
 import com.google.web.bindery.event.shared.SimpleEventBus;
-import org.fusesource.restygwt.client.Resource;
-import org.fusesource.restygwt.client.RestServiceProxy;
 import org.openremote.manager.client.i18n.ManagerConstants;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.presenter.*;
-import org.openremote.manager.client.rest.AssetRestService;
-import org.openremote.manager.client.rest.LoginRestService;
 import org.openremote.manager.client.service.*;
 import org.openremote.manager.client.view.*;
-import org.openremote.manager.server.map.MapService;
 import org.openremote.manager.shared.rest.MapResource;
 
 public class MainModule extends AbstractGinModule {
@@ -80,14 +74,16 @@ public class MainModule extends AbstractGinModule {
         return GWT.create(ManagerMessages.class);
     }
 
+    /* TODO cleanup
     @Provides
     @Singleton
     public LoginRestService getLoginRestService() {
         String baseUrl = GWT.getHostPageBaseURL();
         LoginRestService loginService = GWT.create(LoginRestService.class);
-        ((RestServiceProxy) loginService).setResource(new Resource(baseUrl));
+        // ((RestServiceProxy) loginService).setResource(new Resource(baseUrl));
         return loginService;
     }
+    */
 
     @Provides
     @Singleton
@@ -100,6 +96,7 @@ public class MainModule extends AbstractGinModule {
         return $wnd.MapResource;
     }-*/;
 
+    /* TODO
     @Provides
     @Singleton
     public AssetRestService getAssetRestService() {
@@ -108,6 +105,7 @@ public class MainModule extends AbstractGinModule {
         ((RestServiceProxy) assetRestService).setResource(new Resource(baseUrl));
         return assetRestService;
     }
+    (*/
 
     @Provides
     @Singleton

@@ -1,4 +1,4 @@
-package org.openremote.manager.client.auth;
+package org.openremote.manager.client.security;
 
 public class KeycloakUtil {
 
