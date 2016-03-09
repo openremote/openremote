@@ -104,10 +104,6 @@ public class Container {
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
     }
 
-    public ObjectNode getConfig() {
-        return config;
-    }
-
     public String getConfig(String variable, String defaultValue) {
         return config.has(variable) ? config.get(variable).asText() : defaultValue;
     }
@@ -126,6 +122,7 @@ public class Container {
 
     synchronized public CompletableFuture start() {
         return CompletableFuture.runAsync(() -> {
+            LOG.info(">>> Starting runtime container...");
             for (ContainerService service : getServices()) {
                 LOG.fine("Preparing service: " + service);
                 service.prepare(Container.this);
@@ -134,7 +131,17 @@ public class Container {
                 LOG.fine("Starting service: " + service);
                 service.start(Container.this);
             }
+            LOG.info(">>> Runtime container startup complete");
         });
+    }
+
+    synchronized public void stop() {
+        LOG.info("<<< Stopping runtime container...");
+        for (ContainerService service : getServices()) {
+            LOG.fine("Stopping service: " + service);
+            service.stop(this);
+        }
+        LOG.info("<<< Runtime container stopped");
     }
 
     /**
@@ -142,7 +149,6 @@ public class Container {
      */
     public void startBackground() throws Exception{
         // We block here so we die fast if startup fails
-        LOG.info(">>> Starting runtime container...");
         start().get();
         Thread containerThread = new Thread("container") {
             @Override
@@ -156,16 +162,6 @@ public class Container {
         };
         containerThread.setDaemon(false);
         containerThread.start();
-        LOG.info(">>> Runtime container startup complete");
-    }
-
-    synchronized public void stop() {
-        LOG.info("<<< Stopping runtime container...");
-        for (ContainerService service : getServices()) {
-            LOG.fine("Stopping service: " + service);
-            service.stop(this);
-        }
-        LOG.info("<<< Runtime container stopped");
     }
 
     synchronized public void addService(ContainerService service) {

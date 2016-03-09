@@ -2,7 +2,7 @@ package org.openremote.container.security;
 
 import org.keycloak.adapters.KeycloakDeployment;
 
-public class SecuredClientApplication {
+public class ClientRealm {
 
     public static class Key {
         public final String realm;
@@ -36,7 +36,7 @@ public class SecuredClientApplication {
     final public ClientInstall clientInstall;
     final public KeycloakDeployment keycloakDeployment;
 
-    public SecuredClientApplication(ClientInstall clientInstall, KeycloakDeployment keycloakDeployment) {
+    public ClientRealm(ClientInstall clientInstall, KeycloakDeployment keycloakDeployment) {
         this.clientInstall = clientInstall;
         this.keycloakDeployment = keycloakDeployment;
     }

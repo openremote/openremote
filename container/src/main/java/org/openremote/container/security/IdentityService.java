@@ -63,7 +63,7 @@ public abstract class IdentityService implements ContainerService {
     protected UriBuilder keycloakHostUri;
     protected UriBuilder keycloakServiceUri;
     protected Client client;
-    protected LoadingCache<SecuredClientApplication.Key, SecuredClientApplication> clientApplicationCache;
+    protected LoadingCache<ClientRealm.Key, ClientRealm> clientApplicationCache;
 
     @Override
     public void prepare(Container container) {
@@ -132,7 +132,7 @@ public abstract class IdentityService implements ContainerService {
                 String realm = request.getQueryParamValue("realm");
                 if (realm == null || realm.length() == 0)
                     return passthroughKeycloakDeployment;
-                SecuredClientApplication clientApplication = getSecuredClientApplication(realm, getClientId());
+                ClientRealm clientApplication = getClientRealm(realm, getClientId());
                 if (clientApplication == null)
                     return passthroughKeycloakDeployment;
                 return clientApplication.keycloakDeployment;
@@ -204,16 +204,16 @@ public abstract class IdentityService implements ContainerService {
         ).toBlocking().singleOrDefault(false);
     }
 
-    public SecuredClientApplication getSecuredClientApplication(String realm, String clientId) {
+    public ClientRealm getClientRealm(String realm, String clientId) {
         try {
-            return clientApplicationCache.get(new SecuredClientApplication.Key(realm, clientId));
+            return clientApplicationCache.get(new ClientRealm.Key(realm, clientId));
         } catch (Exception ex) {
             if (ex.getCause() != null && ex.getCause() instanceof NotFoundException) {
-                LOG.fine("Client application '" + clientId + "' for realm '" + realm + "' not found on identity provider");
+                LOG.fine("Client '" + clientId + "' for realm '" + realm + "' not found on identity provider");
             } else {
                 LOG.log(
                     Level.INFO,
-                    "Error loading client application '" + clientId + "' for realm '" + realm + "' from identity provider",
+                    "Error loading client '" + clientId + "' for realm '" + realm + "' from identity provider",
                     ex
                 );
             }
@@ -221,15 +221,16 @@ public abstract class IdentityService implements ContainerService {
         }
     }
 
-    protected LoadingCache<SecuredClientApplication.Key, SecuredClientApplication> createClientApplicationCache() {
-        CacheLoader<SecuredClientApplication.Key, SecuredClientApplication> loader =
-            new CacheLoader<SecuredClientApplication.Key, SecuredClientApplication>() {
-                public SecuredClientApplication load(SecuredClientApplication.Key key) {
-                    LOG.fine("Loading client '" + key.clientId + "' install details for realm '" + key.realm + "'");
+    protected LoadingCache<ClientRealm.Key, ClientRealm> createClientApplicationCache() {
+        CacheLoader<ClientRealm.Key, ClientRealm> loader =
+            new CacheLoader<ClientRealm.Key, ClientRealm>() {
+                public ClientRealm load(ClientRealm.Key key) {
+                    LOG.fine("Loading client '" + key.clientId + "' for realm '" + key.realm + "'");
 
+                    // The client install contains the details we need to verify access tokens
                     ClientInstall clientInstall = getKeycloak().getClientInstall(key.realm, key.clientId);
 
-                    // Make the public key usable
+                    // Make the public key usable for token verification
                     try {
                         clientInstall.setPublicKey(PemUtils.decodePublicKey(clientInstall.getPublicKeyPEM()));
                     } catch (Exception ex) {
@@ -247,7 +248,9 @@ public abstract class IdentityService implements ContainerService {
                             .build().toString()
                     );
 
-                    // Some more bloated infrastructure needed to configure stuff
+                    // Some more bloated infrastructure needed, this is for the Keycloak container adapter which
+                    // does the automatic token verification. As you can see, it's duplicating ClientInstall.
+                    // TODO: Some of the options should be configurable, e.g. CORS and NotBefore
                     KeycloakDeployment keycloakDeployment = new KeycloakDeployment();
 
                     keycloakDeployment.setRealm(clientInstall.getRealm());
@@ -262,7 +265,7 @@ public abstract class IdentityService implements ContainerService {
                     adapterConfig.setAuthServerUrlForBackendRequests(clientInstall.getAuthServerUrlForBackendRequests());
                     keycloakDeployment.setAuthServerBaseUrl(adapterConfig);
 
-                    return new SecuredClientApplication(
+                    return new ClientRealm(
                         clientInstall, keycloakDeployment
                     );
                 }
