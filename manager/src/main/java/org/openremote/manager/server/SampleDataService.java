@@ -146,6 +146,7 @@ public class SampleDataService implements ContainerService {
 
         managerClient.setName("OpenRemote Manager");
         managerClient.setPublicClient(true);
+        managerClient.setDirectAccessGrantsEnabled(true);
 
         String callbackUrl = UriBuilder.fromUri("")
             .scheme(identityService.isConfigNetworkSecure() ? "https" : "http")

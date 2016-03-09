@@ -8,8 +8,8 @@ import com.workingflows.js.jscore.client.api.promise.Promise;
 import elemental.json.JsonObject;
 import org.openremote.manager.client.security.KeycloakUtil;
 import org.openremote.manager.client.view.MapView;
-import org.openremote.manager.shared.rest.ClientInvocation;
-import org.openremote.manager.shared.rest.MapResource;
+import org.openremote.manager.shared.ClientInvocation;
+import org.openremote.manager.shared.map.MapResource;
 
 import javax.inject.Inject;
 import java.util.logging.Level;
@@ -53,46 +53,11 @@ public class MapActivity
                 ClientInvocation<JsonObject> clientInvocation =
                     new ClientInvocation<JsonObject>(KeycloakUtil.getAccessToken())
                     .onResponse(200, resolve::resolve, reject::rejected);
-
                 mapResource.getSettings(clientInvocation);
 
-//                JsonObject mapSettings = getMapResource().getSettings(clientInvocation);
-//                resolve.resolve(mapSettings);
-
-//                RequestBuilder rb = new RequestBuilder(RequestBuilder.GET, GWT.getHostPageBaseURL()+ "master/map");
-//                try {
-//                    rb.sendRequest(null, new RequestCallback() {
-//                        @Override
-//                        public void onResponseReceived(Request request, Response response) {
-//                            JsonObject mapSettings = Json.parse(response.getText());
-//                            resolve.resolve(mapSettings);
-//                        }
-//
-//                        @Override
-//                        public void onError(Request request, Throwable exception) {
-//                            reject.rejected(exception);
-//                        }
-//                    });
-//                } catch (Exception ex) {
-//                    reject.rejected(ex);
-//                }
-
-                // Make call to server
-//                REST.withCallback(new MethodCallback<JSONObject>() {
-//                    @Override
-//                    public void onFailure(Method method, Throwable exception) {
-//                        reject.rejected(exception);
-//                    }
-//
-//                    @Override
-//                    public void onSuccess(Method method, JSONObject response) {
-//                        resolve.resolve(response);
-//                    }
-//                }).call(mapRestService).getOptions();
             });
 
             p.then(obj -> {
-                //JsonObject mapOptions = elemental.js.json.JsJsonObject.create(). obj;
                 view.initialiseMap((JsonObject) obj);
                 return null;
             }).catchException(obj -> {

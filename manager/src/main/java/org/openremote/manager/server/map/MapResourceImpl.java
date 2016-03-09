@@ -2,8 +2,8 @@ package org.openremote.manager.server.map;
 
 import elemental.json.JsonObject;
 import org.openremote.container.web.WebResource;
-import org.openremote.manager.shared.rest.ClientInvocation;
-import org.openremote.manager.shared.rest.MapResource;
+import org.openremote.manager.shared.ClientInvocation;
+import org.openremote.manager.shared.map.MapResource;
 
 import javax.ws.rs.PathParam;
 import javax.ws.rs.WebApplicationException;

@@ -1,4 +1,4 @@
-package org.openremote.manager.shared.model.ngsi;
+package org.openremote.manager.shared.ngsi;
 
 public enum ModelProblem {
 

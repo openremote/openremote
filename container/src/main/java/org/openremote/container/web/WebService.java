@@ -49,9 +49,9 @@ public abstract class WebService implements ContainerService {
     public static final String API_PATH = "/api";
     public static final String JSAPI_PATH = "/jsapi";
     public static final String STATIC_PATH = "/static";
-    protected final Pattern PATTERN_STATIC = Pattern.compile(Pattern.quote(STATIC_PATH) + "(\\/.*)?");
-    protected final Pattern PATTERN_REALM_ROOT = Pattern.compile("\\/([a-z]+)\\/?");
-    protected final Pattern PATTERN_REALM_SUB = Pattern.compile("\\/([a-z]+)\\/(.*)");
+    protected final Pattern PATTERN_STATIC = Pattern.compile(Pattern.quote(STATIC_PATH) + "(/.*)?");
+    protected final Pattern PATTERN_REALM_ROOT = Pattern.compile("/([a-z]+)/?");
+    protected final Pattern PATTERN_REALM_SUB = Pattern.compile("/([a-z]+)/(.*)");
 
     protected String host;
     protected int port;

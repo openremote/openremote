@@ -1,14 +1,15 @@
-package org.openremote.manager.shared.model.ngsi;
+package org.openremote.manager.shared.ngsi;
 
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 
-public class Attribute extends AbstractAttribute {
+public class MetadataElement {
 
+    final protected String name;
     final protected JsonObject jsonObject;
 
-    public Attribute(String name, JsonObject jsonObject) {
-        super(name);
+    public MetadataElement(String name, JsonObject jsonObject) {
+        this.name = name;
         this.jsonObject = jsonObject;
     }
 
@@ -16,13 +17,15 @@ public class Attribute extends AbstractAttribute {
         return jsonObject;
     }
 
-    @Override
+    public String getName() {
+        return name;
+    }
+
     public JsonValue getValue() {
         return jsonObject.hasKey("value") ? jsonObject.get("value") : null;
     }
 
-    @Override
-    public Attribute setValue(JsonValue value) {
+    public MetadataElement setValue(JsonValue value) {
         jsonObject.put("value", value);
         return this;
     }
@@ -31,17 +34,8 @@ public class Attribute extends AbstractAttribute {
         return jsonObject.hasKey("type") ? jsonObject.getString("type") : null;
     }
 
-    public Attribute setType(String type) {
+    public MetadataElement setType(String type) {
         jsonObject.put("type", type);
-        return this;
-    }
-
-    public Metadata getMetadata() {
-        return jsonObject.hasKey("metadata") ? new Metadata(jsonObject.getObject("metadata")) : null;
-    }
-
-    public Attribute setMetadata(Metadata metadata) {
-        jsonObject.put("metadata", metadata.getJsonObject());
         return this;
     }
 
@@ -50,18 +44,13 @@ public class Attribute extends AbstractAttribute {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Attribute attribute = (Attribute) o;
+        MetadataElement metadata = (MetadataElement) o;
 
-        return jsonObject.equals(attribute.jsonObject);
+        return jsonObject.equals(metadata.jsonObject);
     }
 
     @Override
     public int hashCode() {
         return jsonObject.hashCode();
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + ": " + jsonObject.toJson();
     }
 }

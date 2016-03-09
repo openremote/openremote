@@ -1,4 +1,4 @@
-package org.openremote.manager.shared.rest;
+package org.openremote.manager.shared;
 
 import elemental.xml.XMLHttpRequest;
 import jsinterop.annotations.JsFunction;

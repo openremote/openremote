@@ -2,11 +2,11 @@ package org.openremote.test.contextbroker
 
 import elemental.json.Json
 import elemental.json.JsonObject
-import org.openremote.manager.shared.model.ngsi.Entity
-import org.openremote.manager.shared.model.ngsi.KeyValueEntity
-import org.openremote.manager.shared.model.ngsi.Metadata
-import org.openremote.manager.shared.model.ngsi.Model
-import org.openremote.manager.shared.model.ngsi.ModelValidationError
+import org.openremote.manager.shared.ngsi.Entity
+import org.openremote.manager.shared.ngsi.KeyValueEntity
+import org.openremote.manager.shared.ngsi.Metadata
+import org.openremote.manager.shared.ngsi.Model
+import org.openremote.manager.shared.ngsi.ModelValidationError
 import spock.lang.Specification
 
 class NgsiModelTest extends Specification {

@@ -1,8 +1,9 @@
-package org.openremote.manager.shared.rest;
+package org.openremote.manager.shared.map;
 
 import elemental.json.JsonObject;
 import jsinterop.annotations.JsType;
 import org.jboss.resteasy.annotations.Form;
+import org.openremote.manager.shared.ClientInvocation;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.GET;

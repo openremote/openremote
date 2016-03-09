@@ -16,7 +16,7 @@ import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.presenter.*;
 import org.openremote.manager.client.service.*;
 import org.openremote.manager.client.view.*;
-import org.openremote.manager.shared.rest.MapResource;
+import org.openremote.manager.shared.map.MapResource;
 
 public class MainModule extends AbstractGinModule {
 
