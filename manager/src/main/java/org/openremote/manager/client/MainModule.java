@@ -13,10 +13,13 @@ import com.google.web.bindery.event.shared.EventBus;
 import com.google.web.bindery.event.shared.SimpleEventBus;
 import org.openremote.manager.client.i18n.ManagerConstants;
 import org.openremote.manager.client.i18n.ManagerMessages;
+import org.openremote.manager.client.interop.keycloak.Keycloak;
 import org.openremote.manager.client.presenter.*;
 import org.openremote.manager.client.service.*;
 import org.openremote.manager.client.view.*;
 import org.openremote.manager.shared.map.MapResource;
+import org.openremote.manager.shared.rest.RestParams;
+import org.openremote.manager.shared.rest.RestService;
 
 public class MainModule extends AbstractGinModule {
 
@@ -74,16 +77,38 @@ public class MainModule extends AbstractGinModule {
         return GWT.create(ManagerMessages.class);
     }
 
-    /* TODO cleanup
     @Provides
     @Singleton
-    public LoginRestService getLoginRestService() {
-        String baseUrl = GWT.getHostPageBaseURL();
-        LoginRestService loginService = GWT.create(LoginRestService.class);
-        // ((RestServiceProxy) loginService).setResource(new Resource(baseUrl));
-        return loginService;
+    public Keycloak getKeycloak() {
+        return new Keycloak("/master/identity/install/or-manager");
     }
-    */
+
+    @Provides
+    @Singleton
+    public RestService getRestService() {
+        return new RestService(this::execute);
+    }
+
+    private <T> void execute(RestService.RestRequest<T> request) {
+        // Client side MapResource implementation uses AJAX callback to async resolve
+        // the request so we just construct the request params object and pass the request
+        // through and handle the callback
+        RestParams<T> requestParams = new RestParams<>();
+
+        if (request.authorization != null) {
+            requestParams.authorization = request.authorization;
+        }
+        requestParams.callback = (responseCode, xmlHttpRequest, result) -> {
+            if (responseCode == 0) {
+                request.errorCallback.accept(new RestService.Failure(0, "No response"));
+            } else if (responseCode == request.expectedStatusCode) {
+                request.successCallback.accept(result);
+            } else {
+                request.errorCallback.accept(new RestService.Failure(responseCode, "Expected status code: " + request.expectedStatusCode + " but received: " + responseCode));
+            }
+        };
+        request.fn.apply(requestParams);
+    }
 
     @Provides
     @Singleton
@@ -109,8 +134,8 @@ public class MainModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    public PlaceController getPlaceController(SecurityService securityService, PlaceHistoryMapper historyMapper, EventBus eventBus) {
-        return new AppControllerImpl.AppPlaceController(securityService, historyMapper, eventBus);
+    public PlaceController getPlaceController(Keycloak keycloak,SecurityService securityService, PlaceHistoryMapper historyMapper, EventBus eventBus) {
+        return new AppControllerImpl.AppPlaceController(keycloak, securityService, historyMapper, eventBus);
     }
 
     @Provides

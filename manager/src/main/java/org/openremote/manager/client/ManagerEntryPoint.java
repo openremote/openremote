@@ -9,6 +9,6 @@ public class ManagerEntryPoint implements com.google.gwt.core.client.EntryPoint 
     @Override
     public void onModuleLoad() {
 
-        injector.getMainController().start();
+        injector.getAppController().start();
     }
 }

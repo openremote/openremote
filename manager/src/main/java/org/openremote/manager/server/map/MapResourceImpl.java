@@ -2,7 +2,7 @@ package org.openremote.manager.server.map;
 
 import elemental.json.JsonObject;
 import org.openremote.container.web.WebResource;
-import org.openremote.manager.shared.ClientInvocation;
+import org.openremote.manager.shared.rest.RestParams;
 import org.openremote.manager.shared.map.MapResource;
 
 import javax.ws.rs.PathParam;
@@ -20,7 +20,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
     }
 
     @Override
-    public JsonObject getSettings(ClientInvocation clientInvocation) {
+    public JsonObject getSettings(RestParams restParams) {
         String tileUrl = uriInfo.getBaseUriBuilder().clone()
             .replacePath(getRealm()).path("map/tile").build().toString() + "/{z}/{x}/{y}";
         return mapService.getMapSettings(tileUrl);

@@ -9,5 +9,5 @@ import com.google.gwt.inject.client.Ginjector;
         }
 )
 public interface ManagerGinjector extends Ginjector {
-    AppController getMainController();
+    AppController getAppController();
 }

@@ -3,7 +3,7 @@ package org.openremote.manager.shared.map;
 import elemental.json.JsonObject;
 import jsinterop.annotations.JsType;
 import org.jboss.resteasy.annotations.Form;
-import org.openremote.manager.shared.ClientInvocation;
+import org.openremote.manager.shared.rest.RestParams;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.GET;
@@ -19,7 +19,7 @@ public interface MapResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({"admin", "map:read"})
-    JsonObject getSettings(@Form ClientInvocation clientInvocation);
+    JsonObject getSettings(@Form RestParams restParams);
 
     @GET
     @Produces("application/vnd.mapbox-vector-tile")

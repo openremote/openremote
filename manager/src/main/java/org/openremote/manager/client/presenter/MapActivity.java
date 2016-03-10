@@ -2,17 +2,15 @@ package org.openremote.manager.client.presenter;
 
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.web.bindery.event.shared.EventBus;
-import com.workingflows.js.jscore.client.api.promise.Promise;
-import elemental.json.JsonObject;
-import org.openremote.manager.client.security.KeycloakUtil;
+import org.openremote.manager.client.interop.keycloak.Keycloak;
 import org.openremote.manager.client.view.MapView;
-import org.openremote.manager.shared.ClientInvocation;
 import org.openremote.manager.shared.map.MapResource;
+import org.openremote.manager.shared.rest.RestService;
 
 import javax.inject.Inject;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class MapActivity
@@ -25,13 +23,19 @@ public class MapActivity
     private final MapResource mapResource;
     private final PlaceController placeController;
     private final EventBus bus;
+    private final Keycloak keycloak;
+    private final RestService restService;
 
     @Inject
     public MapActivity(MapView view,
+                       Keycloak keycloak,
+                       RestService restService,
                        MapResource mapResource,
                        PlaceController placeController,
                        EventBus bus) {
         this.view = view;
+        this.keycloak = keycloak;
+        this.restService = restService;
         this.mapResource = mapResource;
         this.placeController = placeController;
         this.bus = bus;
@@ -48,22 +52,16 @@ public class MapActivity
         container.setWidget(view.asWidget());
 
         if (!view.isMapInitialised()) {
-            Promise p = new Promise((resolve, reject) -> {
-
-                ClientInvocation<JsonObject> clientInvocation =
-                    new ClientInvocation<JsonObject>(KeycloakUtil.getAccessToken())
-                    .onResponse(200, resolve::resolve, reject::rejected);
-                mapResource.getSettings(clientInvocation);
-
-            });
-
-            p.then(obj -> {
-                view.initialiseMap((JsonObject) obj);
-                return null;
-            }).catchException(obj -> {
-                LOG.log(Level.SEVERE, "Error retrieving map settings", (Exception) obj);
-                return null;
-            });
+            restService.request(mapResource::getSettings)
+                    .withBearerAuth(keycloak.token)
+                    .onSuccess((jsonObject) -> {
+                        view.initialiseMap(jsonObject);
+                    })
+                    .onError((e) -> {
+                        // TODO: Handle map settings failure
+                        Window.alert(e.getMessage());
+                    })
+                    .execute();
         } else {
             //TODO: Reconfigure the map
         }
