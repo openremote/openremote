@@ -148,16 +148,14 @@ public class SampleDataService implements ContainerService {
         managerClient.setPublicClient(true);
         managerClient.setDirectAccessGrantsEnabled(true);
 
-        String callbackUrl = UriBuilder.fromUri("")
-            .scheme(identityService.isConfigNetworkSecure() ? "https" : "http")
-            .host(identityService.getConfigNetworkHost())
-            .port(identityService.getConfigNetworkWebserverPort())
-            .path(MASTER_REALM)
-        .build().toString();
+        String callbackUrl = UriBuilder.fromUri("/").path(MASTER_REALM).path("*").build().toString();
 
         List<String> redirectUrls = new ArrayList<>();
         redirectUrls.add(callbackUrl);
         managerClient.setRedirectUris(redirectUrls);
+
+        String baseUrl = UriBuilder.fromUri("/").path(MASTER_REALM).build().toString();
+        managerClient.setBaseUrl(baseUrl);
 
         String clientResourceLocation =
             keycloak.registerClientApplication(MASTER_REALM, managerClient).getLocation().toString();

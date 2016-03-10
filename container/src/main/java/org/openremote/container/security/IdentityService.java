@@ -76,8 +76,13 @@ public abstract class IdentityService implements ContainerService {
         externalAuthServerUrl = UriBuilder.fromUri("")
             .scheme(this.configNetworkSecure ? "https" : "http")
             .host(this.configNetworkHost)
-            .port(this.configNetworkWebserverPort)
             .path(AUTH_PATH);
+
+        // Only set the port if it's not the default protocol port. Browsers do this and Keycloak will
+        // bake the browsers' redirect URL into the token, so we need a matching config when verifying tokens.
+        if (this.configNetworkWebserverPort != 80 && this.configNetworkWebserverPort != 443) {
+            externalAuthServerUrl.port(this.configNetworkWebserverPort);
+        }
 
         LOG.info("External auth server URL (reverse proxy for Keycloak) is: " + externalAuthServerUrl.build());
 
@@ -244,8 +249,7 @@ public abstract class IdentityService implements ContainerService {
                     // Also correct the backend URL at this time, this URL will be written
                     // by Keycloak as the issuer into each token automatically
                     clientInstall.setAuthServerUrlForBackendRequests(
-                        UriBuilder.fromUri(clientInstall.getAuthServerUrl()).path("realms").path(clientInstall.getRealm())
-                            .build().toString()
+                        externalAuthServerUrl.clone().path("realms").path(clientInstall.getRealm()).build().toString()
                     );
 
                     // Some more bloated infrastructure needed, this is for the Keycloak container adapter which

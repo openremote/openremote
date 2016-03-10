@@ -11,10 +11,12 @@ services:
       IMPORT_SAMPLE_DATA: 'true'
       NETWORK_HOST: demo2.openremote.com
       NETWORK_WEBSERVER_PORT: 80
+      WEB_SERVER_LISTEN_HOST: 0.0.0.0
+      WEB_SERVER_LISTEN_PORT: 8080
       CONTEXT_BROKER_HOST: orion
       CONTEXT_BROKER_PORT: 1026
-      IDENTITY_PROVIDER_HOST: keycloak
-      IDENTITY_PROVIDER_PORT: 8080
+      KEYCLOAK_HOST: keycloak
+      KEYCLOAK_PORT: 8080
     ports:
       - "8090:8080"
   keycloak:
