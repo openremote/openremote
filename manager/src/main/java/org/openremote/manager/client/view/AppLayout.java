@@ -20,11 +20,5 @@ public interface AppLayout extends IsWidget {
 
     AcceptsOneWidget getHeaderPanel();
 
-    LoginView getLoginView();
-
-    void showLogin();
-
-    void hideLogin();
-
     void updateLayout(Place place);
 }

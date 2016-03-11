@@ -1,6 +1,10 @@
 package org.openremote.manager.client.service;
 
-import java.util.Date;
+import org.openremote.manager.client.interop.keycloak.InitOptions;
+import org.openremote.manager.client.interop.keycloak.LoginOptions;
+import org.openremote.manager.client.interop.keycloak.LogoutOptions;
+import org.openremote.manager.shared.Consumer;
+import org.openremote.manager.shared.Runnable;
 
 /**
  * Created by Richard on 10/02/2016.
@@ -8,13 +12,47 @@ import java.util.Date;
 public interface SecurityService {
     String getUsername();
 
-    boolean isTokenExpired();
-
-    boolean hasToken();
-
-    Date getTokenExpirationDate();
-
     String getXsrfToken();
 
+    void login();
+
+    void login(LoginOptions options);
+
     void logout();
+
+    void logout(LogoutOptions options);
+
+    void register();
+
+    void register(LoginOptions options);
+
+    boolean hasRealmRole(String role);
+
+    boolean hasResourceRole(String role, String resource);
+
+    boolean isTokenExpired();
+
+    boolean isTokenExpired(int minValiditySeconds);
+
+    void clearToken();
+
+    void onTokenExpired(Runnable expiredFn);
+
+    void onAuthSuccess(Runnable expiredFn);
+
+    void onAuthLogout(Runnable expiredFn);
+
+    void init(InitOptions options, Consumer<Boolean> successFn, Runnable errorFn);
+
+    void init(Consumer<Boolean> successFn, Runnable errorFn);
+
+    void updateToken(Consumer<Boolean> successFn, Runnable errorFn);
+
+    void updateToken(int minValiditySeconds, Consumer<Boolean> successFn, Runnable errorFn);
+
+    String getRealm();
+
+    String getToken();
+
+    String getRefreshToken();
 }

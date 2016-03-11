@@ -11,6 +11,7 @@ import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.google.web.bindery.event.shared.EventBus;
 import com.google.web.bindery.event.shared.SimpleEventBus;
+import org.apache.http.cookie.Cookie;
 import org.openremote.manager.client.i18n.ManagerConstants;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.interop.keycloak.Keycloak;
@@ -32,7 +33,6 @@ public class MainModule extends AbstractGinModule {
 
         // Views
         bind(HeaderView.class).to(HeaderViewImpl.class).in(Singleton.class);
-        bind(LoginView.class).to(LoginViewImpl.class).in(Singleton.class);
         bind(AppLayout.class).to(AppLayoutImpl.class).in(Singleton.class);
         bind(MapView.class).to(MapViewImpl.class).in(Singleton.class);
         bind(AssetListView.class).to(AssetListViewImpl.class).in(Singleton.class);
@@ -44,9 +44,15 @@ public class MainModule extends AbstractGinModule {
         bind(MapActivity.class);
 
         // Services
-        bind(SecurityService.class).to(SecurityServiceImpl.class).in(Singleton.class);
         bind(CookieService.class).to(CookieServiceImpl.class).in(Singleton.class);
         bind(ValidatorService.class).to(ValidatorServiceImpl.class).in(Singleton.class);
+    }
+
+    @Provides
+    @Singleton
+    public SecurityService getSecurityService(
+            CookieService cookieService, EventBus eventBus) {
+        return new SecurityServiceImpl("/master/identity/install/or-manager", cookieService, eventBus);
     }
 
     @Provides
@@ -79,35 +85,8 @@ public class MainModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    public Keycloak getKeycloak() {
-        return new Keycloak("/master/identity/install/or-manager");
-    }
-
-    @Provides
-    @Singleton
     public RestService getRestService() {
-        return new RestService(this::execute);
-    }
-
-    private <T> void execute(RestService.RestRequest<T> request) {
-        // Client side MapResource implementation uses AJAX callback to async resolve
-        // the request so we just construct the request params object and pass the request
-        // through and handle the callback
-        RestParams<T> requestParams = new RestParams<>();
-
-        if (request.authorization != null) {
-            requestParams.authorization = request.authorization;
-        }
-        requestParams.callback = (responseCode, xmlHttpRequest, result) -> {
-            if (responseCode == 0) {
-                request.errorCallback.accept(new RestService.Failure(0, "No response"));
-            } else if (responseCode == request.expectedStatusCode) {
-                request.successCallback.accept(result);
-            } else {
-                request.errorCallback.accept(new RestService.Failure(responseCode, "Expected status code: " + request.expectedStatusCode + " but received: " + responseCode));
-            }
-        };
-        request.fn.apply(requestParams);
+        return new RestService();
     }
 
     @Provides
@@ -134,8 +113,8 @@ public class MainModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    public PlaceController getPlaceController(Keycloak keycloak,SecurityService securityService, PlaceHistoryMapper historyMapper, EventBus eventBus) {
-        return new AppControllerImpl.AppPlaceController(keycloak, securityService, historyMapper, eventBus);
+    public PlaceController getPlaceController(SecurityService securityService, PlaceHistoryMapper historyMapper, EventBus eventBus) {
+        return new AppControllerImpl.AppPlaceController(securityService, historyMapper, eventBus);
     }
 
     @Provides

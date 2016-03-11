@@ -5,7 +5,11 @@ import com.google.web.bindery.event.shared.EventBus;
 import elemental.json.Json;
 import elemental.json.JsonObject;
 import org.openremote.manager.client.event.UserChangeEvent;
+import org.openremote.manager.client.interop.keycloak.*;
 import org.openremote.manager.client.util.Base64Utils;
+import org.openremote.manager.shared.BiConsumer;
+import org.openremote.manager.shared.Consumer;
+import org.openremote.manager.shared.Runnable;
 
 import java.util.Date;
 import java.util.logging.Level;
@@ -17,82 +21,23 @@ import java.util.logging.Logger;
 public class SecurityServiceImpl implements SecurityService {
     private static Logger logger = Logger.getLogger("");
 
+    private Keycloak keycloak;
     private CookieService cookieService;
     private EventBus eventBus;
 
     @Inject
-    public SecurityServiceImpl(CookieService cookieService,
+    public SecurityServiceImpl(String keycloakURL,
+                               CookieService cookieService,
                                EventBus eventBus) {
+        this.keycloak = new Keycloak(keycloakURL);
         this.cookieService = cookieService;
         this.eventBus = eventBus;
     }
 
-    private String getToken() {
-        return cookieService.getCookie("access_token");
-    }
-
-    private JsonObject decodeToken() {
-        JsonObject decodedToken = Json.createObject();
-
-        String token = getToken();
-        if (token != null) {
-            String[] parts = token.split("\\.");
-
-            if (parts.length == 3) {
-                try {
-                    String decoded = new String(Base64Utils.fromBase64(parts[1]), "UTF-8");
-                    decodedToken = Json.parse(decoded);
-                } catch (Exception e) {
-                    logger.log(Level.SEVERE, e.getMessage());
-                }
-            }
-        }
-
-        return decodedToken;
-    }
-
-
     @Override
     public String getUsername() {
-        JsonObject decoded = decodeToken();
         String name = null;
-
-        if (decoded.hasKey("name")) {
-            name = decoded.getString("name");
-        }
-
         return name;
-    }
-
-    @Override
-    public boolean isTokenExpired() {
-        Date expiryDate = getTokenExpirationDate();
-        if (expiryDate == null) {
-            return true;
-        }
-
-        return expiryDate.before(new Date());
-    }
-
-    @Override
-    public boolean hasToken() {
-        return getToken() != null;
-    }
-
-    @Override
-    public Date getTokenExpirationDate() {
-        JsonObject decoded = decodeToken();
-        Date expiryDate = null;
-
-        if (decoded.hasKey("exp")) {
-            // This is seconds since the EPOCH
-            String expiryDateStr = decoded.getString("exp");
-            expiryDate = new Date();
-            // Can't use calendar on client side
-            expiryDate.setSeconds(Integer.parseInt(expiryDateStr));
-        }
-
-        return expiryDate;
     }
 
     @Override
@@ -101,10 +46,115 @@ public class SecurityServiceImpl implements SecurityService {
     }
 
     @Override
+    public void login() {
+        keycloak.login();
+    }
+
+    @Override
+    public void login(LoginOptions options) {
+        keycloak.login(options);
+    }
+
+    @Override
     public void logout() {
-        // Destroy the token and XSRF cookies
-        cookieService.removeCookie("access_token");
-        cookieService.removeCookie("XSRF-TOKEN");
-        eventBus.fireEvent(new UserChangeEvent(null));
+        keycloak.logout();
+    }
+
+    @Override
+    public void logout(LogoutOptions options) {
+        keycloak.logout(options);
+    }
+
+    @Override
+    public void register() {
+        keycloak.register();
+    }
+
+    @Override
+    public void register(LoginOptions options) {
+        keycloak.register(options);
+    }
+
+    @Override
+    public boolean hasRealmRole(String role) {
+        return keycloak.hasRealmRole(role);
+    }
+
+    @Override
+    public boolean hasResourceRole(String role, String resource) {
+        return keycloak.hasResourceRole(role, resource);
+    }
+
+    @Override
+    public boolean isTokenExpired() {
+        return keycloak.isTokenExpired();
+    }
+
+    @Override
+    public boolean isTokenExpired(int minValiditySeconds) {
+        return keycloak.isTokenExpired(minValiditySeconds);
+    }
+
+    @Override
+    public void clearToken() {
+        keycloak.clearToken();
+    }
+
+    @Override
+    public void onTokenExpired(Runnable fn) {
+        keycloak.onTokenExpired(fn);
+    }
+
+    @Override
+    public void onAuthSuccess(Runnable fn) {
+        keycloak.onAuthSuccess(fn);
+    }
+
+    @Override
+    public void onAuthLogout(Runnable fn) {
+        keycloak.onAuthLogout(fn);
+    }
+
+    @Override
+    public void init(InitOptions options, Consumer<Boolean> successFn, Runnable errorFn) {
+        KeycloakCallback kcCallback = keycloak.init(options);
+        kcCallback.success(successFn);
+        kcCallback.error(errorFn);
+    }
+
+    @Override
+    public void init(Consumer<Boolean> successFn, Runnable errorFn) {
+        KeycloakCallback kcCallback = keycloak.init();
+        kcCallback.success(successFn);
+        kcCallback.error(errorFn);
+    }
+
+    @Override
+    public void updateToken(Consumer<Boolean> successFn, Runnable errorFn) {
+        KeycloakCallback kcCallback = keycloak.updateToken();
+        kcCallback.success(successFn);
+        kcCallback.error(errorFn);
+    }
+
+    @Override
+    public void updateToken(int minValiditySeconds, Consumer<Boolean> successFn, Runnable errorFn) {
+        KeycloakCallback kcCallback = keycloak.updateToken(minValiditySeconds);
+        kcCallback.success(successFn);
+        kcCallback.error(errorFn);
+    }
+
+    @Override
+    public String getRealm() {
+        return keycloak.realm;
+    }
+
+    @Override
+    public String getToken() {
+        return keycloak.token;
+    }
+
+    @Override
+    public String getRefreshToken() {
+        return keycloak.refreshToken;
     }
 }

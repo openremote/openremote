@@ -1,7 +1,7 @@
 package org.openremote.manager.shared.rest;
 
-import org.openremote.manager.client.interop.Consumer;
-import org.openremote.manager.client.interop.Function;
+import org.openremote.manager.shared.Consumer;
+import org.openremote.manager.shared.Function;
 
 public class RestService {
     private Executor executor;
@@ -40,16 +40,22 @@ public class RestService {
     }
 
     public static class RestRequest<T> {
-        public Function<RestParams<T>,T> fn;
+        public Function<RestParams<T>,T> endpoint;
         public Consumer<T> successCallback;
         public Consumer<Exception> errorCallback;
         public String authorization;
+        public String xsrfToken;
         private Executor executor;
         public int expectedStatusCode = 200;
 
-        public RestRequest(Executor executor, Function<RestParams<T>,T> fn) {
+        public RestRequest(Executor executor, Function<RestParams<T>,T> endpoint) {
             this.executor = executor;
-            this.fn = fn;
+            this.endpoint = endpoint;
+        }
+
+        public RestRequest<T> withBasicAuth(String authorization) {
+            this.authorization = "Basic " + authorization;
+            return this;
         }
 
         public RestRequest<T> withBearerAuth(String authorization) {
@@ -57,8 +63,8 @@ public class RestService {
             return this;
         }
 
-        public RestRequest<T> withBasicAuth(String authorization) {
-            this.authorization = "Basic " + authorization;
+        public RestRequest<T> withXsrfToken(String xsrfToken) {
+            this.xsrfToken = xsrfToken;
             return this;
         }
 
@@ -92,7 +98,13 @@ public class RestService {
         }
     }
 
+    public RestService() {}
+
     public RestService(Executor executor) {
+        setExecutor(executor);
+    }
+
+    public void setExecutor(Executor executor) {
         this.executor = executor;
     }
 

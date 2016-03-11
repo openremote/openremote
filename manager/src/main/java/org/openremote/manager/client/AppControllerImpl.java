@@ -5,27 +5,27 @@ import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.RootLayoutPanel;
 import com.google.inject.Provider;
 import com.google.web.bindery.event.shared.EventBus;
-import org.openremote.manager.client.event.LoginRequestEvent;
 import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.i18n.ManagerConstants;
 import org.openremote.manager.client.interop.keycloak.Keycloak;
 import org.openremote.manager.client.interop.resteasy.REST;
 import org.openremote.manager.client.presenter.ActivityInitialiser;
 import org.openremote.manager.client.presenter.HeaderPresenter;
-import org.openremote.manager.client.presenter.LoginPresenter;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.view.AppLayout;
+import org.openremote.manager.shared.rest.RestParams;
+import org.openremote.manager.shared.rest.RestService;
 
 import javax.inject.Inject;
 
 public class AppControllerImpl implements AppController, AppLayout.Presenter {
-    private final Keycloak keycloak;
+    private final RestService restService;
+    private final SecurityService securityService;
     private final AppLayout appLayout;
     private final EventBus eventBus;
     private final PlaceController placeController;
     private final PlaceHistoryHandler placeHistoryHandler;
     private ManagerConstants constants;
-    private Provider<LoginPresenter> loginPresenterProvider;
     private Provider<HeaderPresenter> headerPresenterProvider;
 
     /**
@@ -37,14 +37,11 @@ public class AppControllerImpl implements AppController, AppLayout.Presenter {
         private PlaceHistoryMapper historyMapper;
         private Place redirectPlace;
         private EventBus eventBus;
-        private Keycloak keycloak;
 
-        public AppPlaceController(Keycloak keycloak,
-                SecurityService securityService,
+        public AppPlaceController(SecurityService securityService,
                                   PlaceHistoryMapper historyMapper,
                                   EventBus eventBus) {
             super(eventBus);
-            this.keycloak = keycloak;
             this.securityService = securityService;
             this.historyMapper = historyMapper;
             this.eventBus = eventBus;
@@ -52,8 +49,8 @@ public class AppControllerImpl implements AppController, AppLayout.Presenter {
 
         @Override
         public void goTo(Place newPlace) {
-            if (keycloak.isTokenExpired(10)) {
-                keycloak.login();
+            if (securityService.isTokenExpired(10)) {
+                securityService.login();
                 return;
             }
             super.goTo(newPlace);
@@ -62,22 +59,22 @@ public class AppControllerImpl implements AppController, AppLayout.Presenter {
 
     @Inject
     public AppControllerImpl(PlaceController placeController,
-                             Provider<LoginPresenter> loginPresenterProvider,
                              Provider<HeaderPresenter> headerPresenterProvider,
                              PlaceHistoryHandler placeHistoryHandler,
                              EventBus eventBus,
                              AppLayout appLayout,
                              ManagerConstants constants,
-                             Keycloak keycloak,
+                             SecurityService securityService,
+                             RestService restService,
                              ActivityInitialiser activityInitialiser) {
 
         // ActivityInitialiser is needed so that activities are mapped to views
-        this.keycloak = keycloak;
+        this.securityService = securityService;
         this.appLayout = appLayout;
         this.placeController = placeController;
-        this.loginPresenterProvider = loginPresenterProvider;
         this.headerPresenterProvider = headerPresenterProvider;
         this.placeHistoryHandler = placeHistoryHandler;
+        this.restService = restService;
         this.eventBus = eventBus;
         this.constants = constants;
 
@@ -92,18 +89,8 @@ public class AppControllerImpl implements AppController, AppLayout.Presenter {
             headerPresenter.onPlaceChange(newPlace);
         });
 
-        // Monitor login/logout requests
-        eventBus.addHandler(LoginRequestEvent.TYPE, event -> {
-            Place place = event.getRedirectPlace();
-            LoginPresenter loginPresenter = loginPresenterProvider.get();
-            loginPresenter.setRedirectTo(place);
-            appLayout.showLogin();
-        });
-
+        // Monitor user change events
         eventBus.addHandler(UserChangeEvent.TYPE, event -> {
-            if (event.getUsername() != null) {
-                appLayout.hideLogin();
-            }
             headerPresenter.setUsername(event.getUsername());
         });
     }
@@ -124,19 +111,53 @@ public class AppControllerImpl implements AppController, AppLayout.Presenter {
 
         // Initialise Keycloak
         // TODO: Handle keycloak failure
-        keycloak.init()
-                .success(authenticated -> {
+        securityService.init(
+                authenticated -> {
                     if (authenticated) {
-                        REST.apiURL = "//" + Window.Location.getHostName() + ":" + Window.Location.getPort() + "/" + keycloak.realm;
+                        // Set base URL for all API Requests
+                        REST.apiURL = "//" + Window.Location.getHostName() + ":" + Window.Location.getPort() + "/" + securityService.getRealm();
+
+                        // Set default executor for REST Service
+                        restService.setExecutor(this::execute);
+
                         RootLayoutPanel.get().add(appLayout);
                         appLayout.setPresenter(this);
                         placeHistoryHandler.handleCurrentHistory();
                     } else {
-                        keycloak.login();
+                        securityService.login();
                     }
-                })
-                .error(() -> {
+                },
+                () -> {
                     Window.alert("KEYCLOAK INIT FAILURE");
                 });
+    }
+
+    private <T> void execute(RestService.RestRequest<T> request) {
+        // Client side MapResource implementation uses AJAX callback to async resolve
+        // the request so we just construct the request params object and pass the request
+        // through and handle the callback
+        RestParams<T> requestParams = new RestParams<>();
+
+        if (request.authorization != null) {
+            requestParams.authorization = request.authorization;
+        } else {
+            requestParams.authorization = "Bearer " + securityService.getToken();
+        }
+        if (request.xsrfToken != null) {
+            requestParams.xsrfToken = request.xsrfToken;
+        } else {
+            requestParams.xsrfToken = securityService.getXsrfToken();
+        }
+
+        requestParams.callback = (responseCode, xmlHttpRequest, result) -> {
+            if (responseCode == 0) {
+                request.errorCallback.accept(new RestService.Failure(0, "No response"));
+            } else if (responseCode == request.expectedStatusCode) {
+                request.successCallback.accept(result);
+            } else {
+                request.errorCallback.accept(new RestService.Failure(responseCode, "Expected status code: " + request.expectedStatusCode + " but received: " + responseCode));
+            }
+        };
+        request.endpoint.apply(requestParams);
     }
 }

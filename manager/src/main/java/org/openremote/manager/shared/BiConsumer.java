@@ -1,4 +1,4 @@
-package org.openremote.manager.client.interop;
+package org.openremote.manager.shared;
 
 import jsinterop.annotations.JsFunction;
 

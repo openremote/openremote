@@ -4,6 +4,7 @@ import elemental.json.JsonArray;
 import elemental.json.JsonObject;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
+import org.openremote.manager.shared.Runnable;
 
 @JsType(isNative = true, namespace = "")
 public class Keycloak {
@@ -69,7 +70,13 @@ public class Keycloak {
 
     public native void login(LoginOptions options);
 
+    public native void logout();
+
     public native void logout(LogoutOptions options);
+
+    public native void register();
+
+    public native void register(LoginOptions options);
 
     public native boolean hasRealmRole(String role);
 
@@ -85,7 +92,9 @@ public class Keycloak {
 
     public native void clearToken();
 
-    public native void onTokenExpired(ExpiredFn expiredFn);
+    public native void onTokenExpired(Runnable expiredFn);
 
-    public native void onAuthSuccess(ExpiredFn expiredFn);
+    public native void onAuthSuccess(Runnable expiredFn);
+
+    public native void onAuthLogout(Runnable expiredFn);
 }

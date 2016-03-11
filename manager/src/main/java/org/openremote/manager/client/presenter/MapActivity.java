@@ -5,7 +5,7 @@ import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.web.bindery.event.shared.EventBus;
-import org.openremote.manager.client.interop.keycloak.Keycloak;
+import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.view.MapView;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.rest.RestService;
@@ -23,18 +23,18 @@ public class MapActivity
     private final MapResource mapResource;
     private final PlaceController placeController;
     private final EventBus bus;
-    private final Keycloak keycloak;
+    private final SecurityService securityService;
     private final RestService restService;
 
     @Inject
     public MapActivity(MapView view,
-                       Keycloak keycloak,
+                       SecurityService securityService,
                        RestService restService,
                        MapResource mapResource,
                        PlaceController placeController,
                        EventBus bus) {
         this.view = view;
-        this.keycloak = keycloak;
+        this.securityService = securityService;
         this.restService = restService;
         this.mapResource = mapResource;
         this.placeController = placeController;
@@ -53,7 +53,6 @@ public class MapActivity
 
         if (!view.isMapInitialised()) {
             restService.request(mapResource::getSettings)
-                    .withBearerAuth(keycloak.token)
                     .onSuccess((jsonObject) -> {
                         view.initialiseMap(jsonObject);
                     })

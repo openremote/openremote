@@ -18,7 +18,6 @@ public class AppLayoutImpl extends Composite implements AppLayout {
 
     private UI ui = GWT.create(UI.class);
     private HeaderPanel appLayout;
-    private LoginView loginView;
 
     @UiField
     SimpleLayoutPanel headerPanel;
@@ -40,11 +39,10 @@ public class AppLayoutImpl extends Composite implements AppLayout {
     EventBus eventBus;
 
     @Inject
-    public AppLayoutImpl(EventBus eventBus, LoginView loginView, ManagerConstants constants) {
+    public AppLayoutImpl(EventBus eventBus, ManagerConstants constants) {
         this.eventBus = eventBus;
         this.constants = constants;
         appLayout = ui.createAndBindUi(this);
-        this.loginView = loginView;
         initWidget(appLayout);
     }
 
@@ -66,23 +64,6 @@ public class AppLayoutImpl extends Composite implements AppLayout {
     @Override
     public AcceptsOneWidget getHeaderPanel() {
         return headerPanel;
-    }
-
-    @Override
-    public LoginView getLoginView() {
-        return loginView;
-    }
-
-    @Override
-    public void showLogin() {
-        loginView.show();
-        appLayout.setVisible(false);
-    }
-
-    @Override
-    public void hideLogin() {
-        loginView.hide();
-        appLayout.setVisible(true);
     }
 
     @Override

@@ -13,18 +13,12 @@ import org.openremote.manager.client.service.SecurityService;
 public class MainContentActivityMapper implements ActivityMapper {
     private final Provider<AssetDetailActivity> assetsActivityProvider;
     private final Provider<MapActivity> mapActivityProvider;
-    private final Provider<LoginPresenter> loginActivityProvider;
-    private final SecurityService securityService;
 
     @Inject
     public MainContentActivityMapper(Provider<AssetDetailActivity> assetsActivityProvider,
-                                     Provider<MapActivity> mapActivityProvider,
-                                     Provider<LoginPresenter> loginActivityProvider,
-                                     SecurityService securityService) {
+                                     Provider<MapActivity> mapActivityProvider) {
         this.assetsActivityProvider = assetsActivityProvider;
         this.mapActivityProvider = mapActivityProvider;
-        this.loginActivityProvider = loginActivityProvider;
-        this.securityService = securityService;
     }
 
     public Activity getActivity(Place place) {

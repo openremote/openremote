@@ -25,6 +25,10 @@ public class RestParams<T> {
     @JsProperty(name = HttpHeaders.AUTHORIZATION)
     public String authorization;
 
+    @HeaderParam("XSRF")
+    @JsProperty(name= "XSRF")
+    public String xsrfToken;
+
     @JsProperty(name = "$callback")
     public Callback<T> callback;
 
