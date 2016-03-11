@@ -1,8 +1,5 @@
-package org.openremote.manager.shared.rest;
+package org.openremote.manager.shared.rpc;
 
-import elemental.xml.XMLHttpRequest;
-import jsinterop.annotations.JsFunction;
-import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 
@@ -13,14 +10,7 @@ import javax.ws.rs.core.HttpHeaders;
  * TODO https://issues.jboss.org/browse/RESTEASY-1315
  */
 @JsType
-public class RestParams<T> {
-
-    @FunctionalInterface
-    @JsFunction
-    public interface Callback<T> {
-        void call(int responseCode, XMLHttpRequest xmlHttpRequest, T entity);
-    }
-
+public class RequestData {
     @HeaderParam(HttpHeaders.AUTHORIZATION)
     @JsProperty(name = HttpHeaders.AUTHORIZATION)
     public String authorization;
@@ -30,7 +20,7 @@ public class RestParams<T> {
     public String xsrfToken;
 
     @JsProperty(name = "$callback")
-    public Callback<T> callback;
+    public Callback callback;
 
     @JsProperty
     public String entity;

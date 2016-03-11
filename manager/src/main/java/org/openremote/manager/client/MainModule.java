@@ -11,16 +11,13 @@ import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.google.web.bindery.event.shared.EventBus;
 import com.google.web.bindery.event.shared.SimpleEventBus;
-import org.apache.http.cookie.Cookie;
 import org.openremote.manager.client.i18n.ManagerConstants;
 import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.interop.keycloak.Keycloak;
 import org.openremote.manager.client.presenter.*;
 import org.openremote.manager.client.service.*;
 import org.openremote.manager.client.view.*;
 import org.openremote.manager.shared.map.MapResource;
-import org.openremote.manager.shared.rest.RestParams;
-import org.openremote.manager.shared.rest.RestService;
+import org.openremote.manager.shared.rpc.RpcService;
 
 public class MainModule extends AbstractGinModule {
 
@@ -85,8 +82,8 @@ public class MainModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    public RestService getRestService() {
-        return new RestService();
+    public RpcService getRestService() {
+        return new RpcService();
     }
 
     @Provides

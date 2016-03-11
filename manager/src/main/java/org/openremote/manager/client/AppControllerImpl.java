@@ -7,19 +7,17 @@ import com.google.inject.Provider;
 import com.google.web.bindery.event.shared.EventBus;
 import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.i18n.ManagerConstants;
-import org.openremote.manager.client.interop.keycloak.Keycloak;
 import org.openremote.manager.client.interop.resteasy.REST;
 import org.openremote.manager.client.presenter.ActivityInitialiser;
 import org.openremote.manager.client.presenter.HeaderPresenter;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.view.AppLayout;
-import org.openremote.manager.shared.rest.RestParams;
-import org.openremote.manager.shared.rest.RestService;
+import org.openremote.manager.shared.rpc.*;
 
 import javax.inject.Inject;
 
 public class AppControllerImpl implements AppController, AppLayout.Presenter {
-    private final RestService restService;
+    private final RpcService rpcService;
     private final SecurityService securityService;
     private final AppLayout appLayout;
     private final EventBus eventBus;
@@ -65,7 +63,7 @@ public class AppControllerImpl implements AppController, AppLayout.Presenter {
                              AppLayout appLayout,
                              ManagerConstants constants,
                              SecurityService securityService,
-                             RestService restService,
+                             RpcService rpcService,
                              ActivityInitialiser activityInitialiser) {
 
         // ActivityInitialiser is needed so that activities are mapped to views
@@ -74,7 +72,7 @@ public class AppControllerImpl implements AppController, AppLayout.Presenter {
         this.placeController = placeController;
         this.headerPresenterProvider = headerPresenterProvider;
         this.placeHistoryHandler = placeHistoryHandler;
-        this.restService = restService;
+        this.rpcService = rpcService;
         this.eventBus = eventBus;
         this.constants = constants;
 
@@ -109,8 +107,7 @@ public class AppControllerImpl implements AppController, AppLayout.Presenter {
     public void start() {
         Window.setTitle(constants.appTitle());
 
-        // Initialise Keycloak
-        // TODO: Handle keycloak failure
+        // Initialise security service
         securityService.init(
                 authenticated -> {
                     if (authenticated) {
@@ -118,7 +115,16 @@ public class AppControllerImpl implements AppController, AppLayout.Presenter {
                         REST.apiURL = "//" + Window.Location.getHostName() + ":" + Window.Location.getPort() + "/" + securityService.getRealm();
 
                         // Set default executor for REST Service
-                        restService.setExecutor(this::execute);
+                        rpcService.setExecutor(this::execute);
+
+                        // Add event handlers for security service
+//                        securityService.onAuthLogout(() -> {
+//                            eventBus.fireEvent(new UserChangeEvent(null));
+//                        });
+//
+//                        securityService.onAuthSuccess(() -> {
+//                            eventBus.fireEvent(new UserChangeEvent(securityService.getUsername()));
+//                        });
 
                         RootLayoutPanel.get().add(appLayout);
                         appLayout.setPresenter(this);
@@ -128,36 +134,48 @@ public class AppControllerImpl implements AppController, AppLayout.Presenter {
                     }
                 },
                 () -> {
+                    // TODO: Handle keycloak failure
                     Window.alert("KEYCLOAK INIT FAILURE");
                 });
     }
 
-    private <T> void execute(RestService.RestRequest<T> request) {
-        // Client side MapResource implementation uses AJAX callback to async resolve
-        // the request so we just construct the request params object and pass the request
-        // through and handle the callback
-        RestParams<T> requestParams = new RestParams<>();
+    private <T, U extends RequestData> void execute(RestRequest<T, U> request) throws Failure {
+        // RESTEasy AJAX Client implementation uses async callback for the request so we just
+        // construct the request params object and pass the request through and handle the callback
+        U requestParams = request.params;
+
+        // Sanity check the data
+        if (requestParams == null) {
+            throw new Failure("Parameters cannot be null");
+        }
 
         if (request.authorization != null) {
             requestParams.authorization = request.authorization;
         } else {
             requestParams.authorization = "Bearer " + securityService.getToken();
         }
+
         if (request.xsrfToken != null) {
             requestParams.xsrfToken = request.xsrfToken;
         } else {
             requestParams.xsrfToken = securityService.getXsrfToken();
         }
 
-        requestParams.callback = (responseCode, xmlHttpRequest, result) -> {
-            if (responseCode == 0) {
-                request.errorCallback.accept(new RestService.Failure(0, "No response"));
-            } else if (responseCode == request.expectedStatusCode) {
+        if (request.sendData != null) {
+            requestParams.entity = request.sendData;
+        }
+
+        Callback<T> callback = (responseCode, xmlHttpRequest, result) -> {
+            if (responseCode == 0 && request.errorCallback != null) {
+                request.errorCallback.accept(new Failure("No response"));
+            } else if (responseCode == request.expectedStatusCode && request.successCallback != null) {
                 request.successCallback.accept(result);
-            } else {
-                request.errorCallback.accept(new RestService.Failure(responseCode, "Expected status code: " + request.expectedStatusCode + " but received: " + responseCode));
+            } else if (request.errorCallback != null) {
+                request.errorCallback.accept(new Failure(responseCode, "Expected status code: " + request.expectedStatusCode + " but received: " + responseCode));
             }
         };
+
+        requestParams.callback = callback;
         request.endpoint.apply(requestParams);
     }
 }

@@ -3,6 +3,7 @@ package org.openremote.manager.client.presenter;
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.inject.Inject;
+import com.google.web.bindery.event.shared.EventBus;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.view.HeaderView;
 
@@ -13,14 +14,21 @@ public class HeaderPresenter implements HeaderView.Presenter {
     private HeaderView view;
     private PlaceController placeController;
     private SecurityService securityService;
+    private final EventBus eventBus;
 
     @Inject
     public HeaderPresenter(HeaderView view,
                            SecurityService securityService,
-                           PlaceController placeController) {
+                           PlaceController placeController,
+                           EventBus eventBus) {
         this.view = view;
         this.placeController = placeController;
         this.securityService = securityService;
+        this.eventBus = eventBus;
+
+        // Register for user change events
+
+
         view.setPresenter(this);
         view.setUsername(securityService.getUsername());
     }
