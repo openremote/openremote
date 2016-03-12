@@ -92,7 +92,7 @@ public abstract class IdentityService implements ContainerService {
                 .host(container.getConfig(KEYCLOAK_HOST, KEYCLOAK_HOST_DEFAULT))
                 .port(container.getConfigInteger(KEYCLOAK_PORT, KEYCLOAK_PORT_DEFAULT));
 
-        keycloakServiceUri = keycloakHostUri.clone().replacePath(Keycloak.KEYCLOAK_CONTEXT_PATH);
+        keycloakServiceUri = keycloakHostUri.clone().replacePath(KeycloakResource.KEYCLOAK_CONTEXT_PATH);
 
         LOG.info("Preparing identity service for Keycloak host: " + keycloakServiceUri.build());
 
@@ -178,16 +178,16 @@ public abstract class IdentityService implements ContainerService {
         return client;
     }
 
-    public Keycloak getKeycloak() {
+    public KeycloakResource getKeycloak() {
         return getKeycloak(getTarget(client, keycloakServiceUri.build(), null));
     }
 
-    public Keycloak getKeycloak(String accessToken) {
+    public KeycloakResource getKeycloak(String accessToken) {
         return getKeycloak(getTarget(client, keycloakServiceUri.build(), accessToken));
     }
 
-    public Keycloak getKeycloak(ResteasyWebTarget target) {
-        return target.proxy(Keycloak.class);
+    public KeycloakResource getKeycloak(ResteasyWebTarget target) {
+        return target.proxy(KeycloakResource.class);
     }
 
     public void pingKeycloak() {

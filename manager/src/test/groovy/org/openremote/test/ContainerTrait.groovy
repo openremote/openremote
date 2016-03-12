@@ -63,12 +63,16 @@ trait ContainerTrait {
             container.stop();
     }
 
-    def ResteasyWebTarget getTarget() {
+    def ResteasyWebTarget getClientTarget() {
         WebClient.getTarget(client, serverApiUri.build());
     }
 
-    def ResteasyWebTarget getTarget(String path) {
-        WebClient.getTarget(client, serverApiUri.path(path).build());
+    def ResteasyWebTarget getClientTarget(String accessToken) {
+        WebClient.getTarget(client, serverApiUri.build(), accessToken);
+    }
+
+    def ResteasyWebTarget getClientTarget(String path, String accessToken) {
+        WebClient.getTarget(client, serverApiUri.path(path).build(), accessToken);
     }
 
     def findEphemeralPort() {

@@ -17,7 +17,6 @@ import org.openremote.manager.client.presenter.*;
 import org.openremote.manager.client.service.*;
 import org.openremote.manager.client.view.*;
 import org.openremote.manager.shared.map.MapResource;
-import org.openremote.manager.shared.rpc.RpcService;
 
 public class MainModule extends AbstractGinModule {
 
@@ -54,6 +53,13 @@ public class MainModule extends AbstractGinModule {
 
     @Provides
     @Singleton
+    public RequestService getRequestService(SecurityService securityService) {
+        RequestServiceImpl.Configuration.setDefaults(securityService);
+        return new RequestServiceImpl(securityService);
+    }
+
+    @Provides
+    @Singleton
     @Named("MainContentManager")
     public ActivityManager getMainContentActivityMapper(
             MainContentActivityMapper activityMapper, EventBus eventBus) {
@@ -78,12 +84,6 @@ public class MainModule extends AbstractGinModule {
     @Singleton
     public ManagerMessages getMessages() {
         return GWT.create(ManagerMessages.class);
-    }
-
-    @Provides
-    @Singleton
-    public RpcService getRestService() {
-        return new RpcService();
     }
 
     @Provides

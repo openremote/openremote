@@ -2,24 +2,11 @@ package org.openremote.manager.client.service;
 
 import com.google.inject.Inject;
 import com.google.web.bindery.event.shared.EventBus;
-import elemental.json.Json;
-import elemental.json.JsonObject;
-import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.interop.keycloak.*;
-import org.openremote.manager.client.util.Base64Utils;
-import org.openremote.manager.shared.BiConsumer;
 import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.Runnable;
 
-import java.util.Date;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-/**
- * Created by Richard on 10/02/2016.
- */
 public class SecurityServiceImpl implements SecurityService {
-    private static Logger logger = Logger.getLogger("");
 
     private Keycloak keycloak;
     private CookieService cookieService;

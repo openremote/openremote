@@ -16,7 +16,7 @@ class MapResourceTest extends Specification implements ContainerTrait {
 
     def "Retrieve map settings"() {
         given: "The map resource"
-        def mapResource = getTarget().proxy(MapResource.class);
+        def mapResource = getClientTarget().proxy(MapResource.class);
 
         when: "A request has been made"
         def mapSettings = mapResource.getSettings(null);

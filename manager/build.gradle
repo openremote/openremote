@@ -39,14 +39,19 @@ dependencies {
     apt "org.hibernate:hibernate-jpamodelgen:$hibernateVersion"
 
     compile "com.google.gwt:gwt-user:$gwtVersion"
-    compile ("com.google.gwt.inject:gin:$ginVersion") {
-        exclude group: "asm"
+    compile("com.google.gwt.inject:gin:$ginVersion") {
+        exclude module: "cglib"
     }
+    compile "cglib:cglib:$cglibVersion"
     compile "org.gwtbootstrap3:gwtbootstrap3:$gwtBootstrapVersion"
     compile "org.gwtbootstrap3:gwtbootstrap3-extras:$gwtBootstrapVersion"
 
     testCompile "junit:junit:$junitVersion"
     testCompile "org.spockframework:spock-core:$spockVersion"
+    testCompile "org.objenesis:objenesis:$objenesisVersion"
+}
+
+configurations {
 }
 
 gwt {

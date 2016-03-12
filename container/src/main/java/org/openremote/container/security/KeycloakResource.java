@@ -9,7 +9,7 @@ import javax.ws.rs.core.Response;
 
 import static javax.ws.rs.core.MediaType.*;
 
-public interface Keycloak {
+public interface KeycloakResource {
 
     String KEYCLOAK_CONTEXT_PATH = "auth";
 
