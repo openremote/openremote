@@ -100,6 +100,18 @@ public class AppControllerImpl implements AppController, AppLayout.Presenter {
 
     @Override
     public void start() {
+
+
+/* TODO something is broken here when compiling real GWT (no super dev)
+function $start(this$static){
+  var lastArg;
+  $doc.title = 'OpenRemote Manager';
+  (lastArg = this$static.securityService , makeLambdaFunction(AppControllerImpl$lambda$2$Type.prototype.accept, new AppControllerImpl$lambda$2$Type(this$static)) , lastArg).keycloak.init();
+  null.$_nullMethod();
+  null.$_nullMethod();
+}
+*/
+
         Window.setTitle(constants.appTitle());
 
         // Initialise security service

@@ -76,7 +76,7 @@ public interface KeycloakResource {
     @GET
     @Path("admin/realms/{realm}/users")
     @Produces(APPLICATION_JSON)
-    UserRepresentation[] getUsers(@PathParam("realm") String realm);
+    UserRepresentation[] getUsers(@PathParam("realm") String realm, @QueryParam("username") String username);
 
     @DELETE
     @Path("admin/realms/{realm}/users/{userId}")

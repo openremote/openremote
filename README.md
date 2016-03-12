@@ -58,6 +58,6 @@ You can extract smaller tilesets with the following procedure:
 
 First build Docker images with `./gradlew buildImage`, you might want to `clean` before.
 
-The configuration in `docker-compose-demo.yml` is prepared for our demo server deployment. You will have to change the `NETWORK_HOST` and `NETWORK_WEBSERVER_PORT` to the externally (by users) reachable hostname and port of your stack.
+The configuration in `docker-compose-demo.yml` is prepared for our demo server deployment. You will have to change the `IDENTITY__NETWORK_HOST` and `IDENTITY__NETWORK_WEBSERVER_PORT` to the externally (by users) reachable hostname and port of your stack.
 
 Deploy the whole stack with `docker-compose -f docker-compose-demo.yml [up|down]`.

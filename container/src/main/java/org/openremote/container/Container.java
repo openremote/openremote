@@ -10,10 +10,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
@@ -56,7 +56,7 @@ public class Container {
     protected final ObjectNode config;
     protected final boolean devMode;
 
-    protected final Map<Class<? extends ContainerService>, ContainerService> services = new ConcurrentHashMap<>();
+    protected final Map<Class<? extends ContainerService>, ContainerService> services = new LinkedHashMap<>();
 
     public Container() {
         this(

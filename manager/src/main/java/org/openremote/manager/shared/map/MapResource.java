@@ -20,7 +20,7 @@ public interface MapResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed({"admin", "map:read"})
+    @RolesAllowed({"read:map"})
     JsonObject getSettings(@Form RequestParams requestParams);
 
     @GET

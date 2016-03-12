@@ -33,7 +33,6 @@ import java.util.logging.Logger;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static javax.ws.rs.core.Response.Status.Family.REDIRECTION;
 import static javax.ws.rs.core.Response.Status.Family.SUCCESSFUL;
-import static org.openremote.container.Constants.*;
 import static org.openremote.container.web.WebClient.getTarget;
 
 public abstract class IdentityService implements ContainerService {
@@ -42,6 +41,13 @@ public abstract class IdentityService implements ContainerService {
 
     public static final String DISABLE_API_SECURITY = "DISABLE_API_SECURITY";
     public static final boolean DISABLE_API_SECURITY_DEFAULT = false;
+
+    public static final String IDENTITY_NETWORK_SECURE = "IDENTITY_NETWORK_SECURE";
+    public static final boolean IDENTITY_NETWORK_SECURE_DEFAULT = false;
+    public static final String IDENTITY_NETWORK_HOST = "IDENTITY_NETWORK_HOST";
+    public static final String IDENTITY_NETWORK_HOST_DEFAULT = "localhost";
+    public static final String IDENTITY_NETWORK_WEBSERVER_PORT = "IDENTITY_NETWORK_WEBSERVER_PORT";
+    public static final int IDENTITY_NETWORK_WEBSERVER_PORT_DEFAULT = 8080;
     public static final String KEYCLOAK_HOST = "KEYCLOAK_HOST";
     public static final String KEYCLOAK_HOST_DEFAULT = "192.168.99.100";
     public static final String KEYCLOAK_PORT = "KEYCLOAK_PORT";
@@ -55,10 +61,6 @@ public abstract class IdentityService implements ContainerService {
 
     public static final String AUTH_PATH = "/auth";
 
-    protected boolean disableAPISecurity;
-    protected boolean configNetworkSecure;
-    protected String configNetworkHost;
-    protected int configNetworkWebserverPort;
     protected UriBuilder externalAuthServerUrl;
     protected UriBuilder keycloakHostUri;
     protected UriBuilder keycloakServiceUri;
@@ -68,23 +70,23 @@ public abstract class IdentityService implements ContainerService {
     @Override
     public void prepare(Container container) {
 
-        this.disableAPISecurity = container.getConfigBoolean(DISABLE_API_SECURITY, DISABLE_API_SECURITY_DEFAULT);
-        this.configNetworkSecure = container.getConfigBoolean(NETWORK_SECURE, NETWORK_SECURE_DEFAULT);
-        this.configNetworkHost = container.getConfig(NETWORK_HOST, NETWORK_HOST_DEFAULT);
-        this.configNetworkWebserverPort = container.getConfigInteger(NETWORK_WEBSERVER_PORT, NETWORK_WEBSERVER_PORT_DEFAULT);
+        boolean disableAPISecurity = container.getConfigBoolean(DISABLE_API_SECURITY, DISABLE_API_SECURITY_DEFAULT);
+        boolean identityNetworkSecure = container.getConfigBoolean(IDENTITY_NETWORK_SECURE, IDENTITY_NETWORK_SECURE_DEFAULT);
+        String identityNetworkHost = container.getConfig(IDENTITY_NETWORK_HOST, IDENTITY_NETWORK_HOST_DEFAULT);
+        int identityNetworkPort = container.getConfigInteger(IDENTITY_NETWORK_WEBSERVER_PORT, IDENTITY_NETWORK_WEBSERVER_PORT_DEFAULT);
 
         externalAuthServerUrl = UriBuilder.fromUri("")
-            .scheme(this.configNetworkSecure ? "https" : "http")
-            .host(this.configNetworkHost)
+            .scheme(identityNetworkSecure ? "https" : "http")
+            .host(identityNetworkHost)
             .path(AUTH_PATH);
 
         // Only set the port if it's not the default protocol port. Browsers do this and Keycloak will
         // bake the browsers' redirect URL into the token, so we need a matching config when verifying tokens.
-        if (this.configNetworkWebserverPort != 80 && this.configNetworkWebserverPort != 443) {
-            externalAuthServerUrl.port(this.configNetworkWebserverPort);
+        if (identityNetworkPort != 80 && identityNetworkPort != 443) {
+            externalAuthServerUrl.port(identityNetworkPort);
         }
 
-        LOG.info("External auth server URL (reverse proxy for Keycloak) is: " + externalAuthServerUrl.build());
+        LOG.info("Token issuer URL: " + externalAuthServerUrl.build());
 
         keycloakHostUri =
             UriBuilder.fromPath("/")
@@ -128,7 +130,7 @@ public abstract class IdentityService implements ContainerService {
             container.getService(getWebServiceClass()).getPrefixRoutes().put(AUTH_PATH, proxyHandler);
         }
 
-        if (isDisableAPISecurity()) {
+        if (disableAPISecurity) {
             LOG.warning("###################### API SECURITY DISABLED! ######################");
         } else {
             container.getService(getWebServiceClass()).setKeycloakConfigResolver(request -> {
@@ -156,22 +158,6 @@ public abstract class IdentityService implements ContainerService {
     public void stop(Container container) {
         if (client != null)
             client.close();
-    }
-
-    public boolean isDisableAPISecurity() {
-        return disableAPISecurity;
-    }
-
-    public boolean isConfigNetworkSecure() {
-        return configNetworkSecure;
-    }
-
-    public String getConfigNetworkHost() {
-        return configNetworkHost;
-    }
-
-    public int getConfigNetworkWebserverPort() {
-        return configNetworkWebserverPort;
     }
 
     public Client getClient() {
@@ -260,6 +246,7 @@ public abstract class IdentityService implements ContainerService {
                     keycloakDeployment.setRealm(clientInstall.getRealm());
                     keycloakDeployment.setRealmKey(clientInstall.getPublicKey());
                     keycloakDeployment.setResourceName(clientInstall.getClientId());
+                    keycloakDeployment.setUseResourceRoleMappings(true);
                     keycloakDeployment.setSslRequired(SslRequired.valueOf(clientInstall.getSslRequired().toUpperCase(Locale.ROOT)));
                     keycloakDeployment.setBearerOnly(true);
 

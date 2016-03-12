@@ -146,6 +146,8 @@ public class SampleDataService implements ContainerService {
 
         managerClient.setName("OpenRemote Manager");
         managerClient.setPublicClient(true);
+
+        // TODO this should only be enabled in dev mode, we need it for integration tests
         managerClient.setDirectAccessGrantsEnabled(true);
 
         String callbackUrl = UriBuilder.fromUri("/").path(MASTER_REALM).path("*").build().toString();
@@ -193,11 +195,20 @@ public class SampleDataService implements ContainerService {
         );
         LOG.info("Added role '" + readMapRole.getName() + "'");
 
-        // Find out if there is a 'test' user already present
-        fromCallable(() -> keycloakResource.getUsers(MASTER_REALM))
+        // Give admin all roles (we can only check realm _or_ application roles in @RolesAllowed)!
+        fromCallable(() -> keycloakResource.getUsers(MASTER_REALM, "admin"))
             .flatMap(Observable::from)
-            .filter(userRepresentation -> userRepresentation.getUsername().equals("test"))
-            .subscribe(userRepresentation -> keycloakResource.deleteUser(MASTER_REALM, userRepresentation.getId()));
+            .subscribe(adminUser -> {
+                    keycloakResource.addUserClientRoleMapping(MASTER_REALM, adminUser.getId(), clientObjectId, new RoleRepresentation[]{readRole});
+                    // TODO more role mappings go here
+                    LOG.info("Assigned all application roles to 'admin' user");
+                }
+            );
+
+        // Find out if there is a 'test' user already present, delete it
+        fromCallable(() -> keycloakResource.getUsers(MASTER_REALM, "test"))
+            .flatMap(Observable::from)
+            .subscribe(testUser -> keycloakResource.deleteUser(MASTER_REALM, testUser.getId()));
 
         // Create a new 'test' user with 'read' role
         UserRepresentation testUser = new UserRepresentation();

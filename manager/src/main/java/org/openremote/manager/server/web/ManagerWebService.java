@@ -13,8 +13,8 @@ public class ManagerWebService extends WebService {
 
     private static final Logger LOG = Logger.getLogger(ManagerWebService.class.getName());
 
-    public static final String WEB_SERVER_DOCROOT = "WEB_SERVER_DOCROOT";
-    public static final String WEB_SERVER_DOCROOT_DEFAULT = "src/main/webapp";
+    public static final String WEBSERVER_DOCROOT = "WEBSERVER_DOCROOT";
+    public static final String WEBSERVER_DOCROOT_DEFAULT = "src/main/webapp";
 
     @Override
     protected String getDefaultRealm() {
@@ -23,6 +23,6 @@ public class ManagerWebService extends WebService {
 
     @Override
     protected Path getStaticResourceDocRoot(Container container) {
-        return Paths.get(container.getConfig(WEB_SERVER_DOCROOT, WEB_SERVER_DOCROOT_DEFAULT));
+        return Paths.get(container.getConfig(WEBSERVER_DOCROOT, WEBSERVER_DOCROOT_DEFAULT));
     }
 }

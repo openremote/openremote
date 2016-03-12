@@ -9,7 +9,7 @@ import java.lang.reflect.Method
 
 trait ClientTrait {
 
-    def void callResourceProxy(def mockInvocation) {
+    def void callResourceProxy(String realm, def mockInvocation) {
         // If the first parameter of the method we want to call is RequestParams
         List<Object> args = mockInvocation.getArguments();
         IMockMethod mockMethod = mockInvocation.getMethod();
@@ -22,7 +22,7 @@ trait ClientTrait {
                     mockMethod.name,
                     mockMethod.parameterTypes.toArray(new Class[mockMethod.parameterTypes.size()])
             );
-            def resourceProxy = getClientTarget().proxy(mockedResourceType);
+            def resourceProxy = getClientTarget(realm).proxy(mockedResourceType);
 
             // Try to find out what the expected success status code is
             SuccessStatusCode successStatusCode =
@@ -37,6 +37,6 @@ trait ClientTrait {
         }
     }
 
-    abstract def ResteasyWebTarget getClientTarget();
+    abstract def ResteasyWebTarget getClientTarget(String realm);
 
 }

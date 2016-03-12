@@ -4,36 +4,36 @@ import com.google.gwt.place.shared.PlaceController
 import com.google.gwt.user.client.ui.AcceptsOneWidget
 import com.google.web.bindery.event.shared.EventBus
 import elemental.json.JsonObject
-import groovy.json.JsonSlurper
-import org.openremote.container.ContainerService
 import org.openremote.manager.client.presenter.MapActivity
 import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.service.SecurityService
 import org.openremote.manager.client.view.MapView
-import org.openremote.manager.server.map.MapService
 import org.openremote.manager.shared.map.MapResource
 import org.openremote.test.ClientTrait
 import org.openremote.test.ContainerTrait
 import spock.lang.Specification
 
-class MapActivityTest extends Specification implements ContainerTrait, ClientTrait {
+import static org.openremote.manager.server.Constants.MANAGER_CLIENT_ID
+import static org.openremote.manager.server.Constants.MASTER_REALM
 
-    @Override
-    ContainerService[] getContainerServices() {
-        [new MapService()]
-    }
+class MapActivityTest extends Specification implements ContainerTrait, ClientTrait {
 
     def "Initialize map"() {
         given: "The fake client environment"
-        def securityService = Stub(SecurityService) {
-            getToken() >> "TEST_ACCESS_TOKEN"
-            getXsrfToken() >> "TEST_XSRF_TOKEN"
-        }
-        def requestService = new RequestServiceImpl(securityService)
         def placeController = Mock(PlaceController)
         def eventBus = Mock(EventBus)
         def activityContainer = Mock(AcceptsOneWidget)
         def activityBus = Mock(com.google.gwt.event.shared.EventBus)
+
+        and: "An authenticated user"
+        def realm = MASTER_REALM;
+        def accessTokenResponse = authenticate(realm, MANAGER_CLIENT_ID, "test", "test")
+        def securityService = Stub(SecurityService) {
+            getRealm() >> realm;
+            getToken() >> accessTokenResponse.getToken()
+            getXsrfToken() >> "TODO: NOT ENABLED" // TODO
+        }
+        def requestService = new RequestServiceImpl(securityService)
 
         and: "The map view, resource, and activity"
         def mapView = Mock(MapView) {
@@ -41,14 +41,14 @@ class MapActivityTest extends Specification implements ContainerTrait, ClientTra
         }
         def mapResource = Stub(MapResource) {
             // This matches all methods with any parameters, of the MapResource class
-            _(_) >> { callResourceProxy(getDelegate()) }
+            _(_) >> { callResourceProxy(realm, getDelegate()) }
         }
         def mapActivity = new MapActivity(
                 mapView, mapResource, requestService, placeController, eventBus
         )
 
         and: "The expected map settings"
-        def mapSettings;
+        JsonObject mapSettings;
 
         when: "The activity is started"
         mapActivity.start(activityContainer, activityBus)

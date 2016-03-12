@@ -4,11 +4,16 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
 import org.junit.After
 import org.junit.Before
-import org.openremote.container.Constants
+import org.keycloak.representations.AccessTokenResponse
 import org.openremote.container.Container
 import org.openremote.container.ContainerService
+import org.openremote.container.security.AuthForm
+import org.openremote.container.security.IdentityService
 import org.openremote.container.web.WebClient
 import org.openremote.container.web.WebService
+import org.openremote.manager.server.SampleDataService
+import org.openremote.manager.server.map.MapService
+import org.openremote.manager.server.security.ManagerIdentityService
 import org.openremote.manager.server.web.ManagerWebService
 
 import javax.ws.rs.client.Client
@@ -29,14 +34,18 @@ trait ContainerTrait {
         serverPort = findEphemeralPort();
 
         def config = [
-                (WebService.WEB_SERVER_LISTEN_PORT): Integer.toString(serverPort),
-                (Constants.NETWORK_WEBSERVER_PORT) : Integer.toString(serverPort)
+                (WebService.WEBSERVER_LISTEN_PORT)               : Integer.toString(serverPort),
+                (IdentityService.IDENTITY_NETWORK_HOST)          : IdentityService.KEYCLOAK_HOST_DEFAULT,
+                (IdentityService.IDENTITY_NETWORK_WEBSERVER_PORT): Integer.toString(IdentityService.KEYCLOAK_PORT_DEFAULT)
         ];
 
         Stream<ContainerService> services = Stream.concat(
                 Arrays.stream(getContainerServices()),
                 Stream.of(
-                        new ManagerWebService()
+                        new ManagerWebService(),
+                        new ManagerIdentityService(),
+                        new MapService(),
+                        new SampleDataService()
                 )
         );
 
@@ -51,8 +60,7 @@ trait ContainerTrait {
         client = WebClient.registerDefaults(clientBuilder).build();
 
         serverApiUri = UriBuilder.fromUri("")
-                .scheme("http").host("localhost").port(serverPort)
-                .path(WebService.API_PATH);
+                .scheme("http").host("localhost").port(serverPort);
 
         container.startBackground();
     }
@@ -63,16 +71,16 @@ trait ContainerTrait {
             container.stop();
     }
 
-    def ResteasyWebTarget getClientTarget() {
-        WebClient.getTarget(client, serverApiUri.build());
+    def ResteasyWebTarget getClientTarget(String realm) {
+        WebClient.getTarget(client, serverApiUri.clone().replacePath(realm).build());
     }
 
-    def ResteasyWebTarget getClientTarget(String accessToken) {
-        WebClient.getTarget(client, serverApiUri.build(), accessToken);
+    def ResteasyWebTarget getClientTarget(String realm, String accessToken) {
+        WebClient.getTarget(client, serverApiUri.clone().replacePath(realm).build(), accessToken);
     }
 
-    def ResteasyWebTarget getClientTarget(String path, String accessToken) {
-        WebClient.getTarget(client, serverApiUri.path(path).build(), accessToken);
+    def ResteasyWebTarget getClientTarget(String realm, String path, String accessToken) {
+        WebClient.getTarget(client, serverApiUri.clone().replacePath(realm).path(path).build(), accessToken);
     }
 
     def findEphemeralPort() {
@@ -82,5 +90,12 @@ trait ContainerTrait {
         return port;
     }
 
-    abstract ContainerService[] getContainerServices();
+    AccessTokenResponse authenticate(String realm, String clientId, String username, String password) {
+        container.getService(ManagerIdentityService.class).getKeycloak()
+                .getAccessToken(realm, new AuthForm(clientId, username, password));
+    }
+
+    def ContainerService[] getContainerServices() {
+        []
+    }
 }

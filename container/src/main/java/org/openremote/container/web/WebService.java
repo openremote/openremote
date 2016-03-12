@@ -41,10 +41,10 @@ public abstract class WebService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(WebService.class.getName());
 
-    public static final String WEB_SERVER_LISTEN_HOST = "WEB_SERVER_LISTEN_HOST";
-    public static final String WEB_SERVER_LISTEN_HOST_DEFAULT = "localhost";
-    public static final String WEB_SERVER_LISTEN_PORT = "WEB_SERVER_LISTEN_PORT";
-    public static final int WEB_SERVER_LISTEN_PORT_DEFAULT = 8080;
+    public static final String WEBSERVER_LISTEN_HOST = "WEBSERVER_LISTEN_HOST";
+    public static final String WEBSERVER_LISTEN_HOST_DEFAULT = "localhost";
+    public static final String WEBSERVER_LISTEN_PORT = "WEBSERVER_LISTEN_PORT";
+    public static final int WEBSERVER_LISTEN_PORT_DEFAULT = 8080;
 
     public static final String API_PATH = "/api";
     public static final String JSAPI_PATH = "/jsapi";
@@ -63,8 +63,8 @@ public abstract class WebService implements ContainerService {
 
     @Override
     public void prepare(Container container) {
-        host = container.getConfig(WEB_SERVER_LISTEN_HOST, WEB_SERVER_LISTEN_HOST_DEFAULT);
-        port = container.getConfigInteger(WEB_SERVER_LISTEN_PORT, WEB_SERVER_LISTEN_PORT_DEFAULT);
+        host = container.getConfig(WEBSERVER_LISTEN_HOST, WEBSERVER_LISTEN_HOST_DEFAULT);
+        port = container.getConfigInteger(WEBSERVER_LISTEN_PORT, WEBSERVER_LISTEN_PORT_DEFAULT);
     }
 
     @Override

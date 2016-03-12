@@ -1,22 +1,22 @@
 package org.openremote.test.map
 
 import groovy.json.JsonSlurper
-import org.openremote.container.ContainerService
-import org.openremote.manager.server.map.MapService
 import org.openremote.manager.shared.map.MapResource
 import org.openremote.test.ContainerTrait
 import spock.lang.Specification
 
+import static org.openremote.manager.server.Constants.MANAGER_CLIENT_ID
+import static org.openremote.manager.server.Constants.MASTER_REALM
+
 class MapResourceTest extends Specification implements ContainerTrait {
 
-    @Override
-    ContainerService[] getContainerServices() {
-        [new MapService()]
-    }
-
     def "Retrieve map settings"() {
-        given: "The map resource"
-        def mapResource = getClientTarget().proxy(MapResource.class);
+        given: "An authenticated user"
+        def realm = MASTER_REALM;
+        def accessTokenResponse = authenticate(realm, MANAGER_CLIENT_ID, "test", "test")
+
+        and: "The map resource"
+        def mapResource = getClientTarget(realm, accessTokenResponse.getToken()).proxy(MapResource.class);
 
         when: "A request has been made"
         def mapSettings = mapResource.getSettings(null);

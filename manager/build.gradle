@@ -122,7 +122,7 @@ import com.bmuschko.gradle.docker.tasks.image.*
 task createDockerfile(type: Dockerfile) {
     destFile = project.file("build/install/Dockerfile")
     from "java:8"
-    environmentVariable "WEB_SERVER_DOCROOT", "webapp"
+    environmentVariable "WEBSERVER_DOCROOT", "webapp"
     addFile project.name, "/opt/app"
     exposePort 8080
     workingDir "/opt/app"
