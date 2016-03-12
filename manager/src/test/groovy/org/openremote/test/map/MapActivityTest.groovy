@@ -3,6 +3,8 @@ package org.openremote.test.map
 import com.google.gwt.place.shared.PlaceController
 import com.google.gwt.user.client.ui.AcceptsOneWidget
 import com.google.web.bindery.event.shared.EventBus
+import elemental.json.JsonObject
+import groovy.json.JsonSlurper
 import org.openremote.container.ContainerService
 import org.openremote.manager.client.presenter.MapActivity
 import org.openremote.manager.client.service.RequestServiceImpl
@@ -45,13 +47,23 @@ class MapActivityTest extends Specification implements ContainerTrait, ClientTra
                 mapView, mapResource, requestService, placeController, eventBus
         )
 
+        and: "The expected map settings"
+        def mapSettings;
+
         when: "The activity is started"
         mapActivity.start(activityContainer, activityBus)
 
         then: "The view should have the activity set as presenter"
         1 * mapView.setPresenter(mapActivity)
 
-        and: "The view should have been initialized with map settings"
-        1 * mapView.initialiseMap(!null)
+        and: "The view should have been initialized"
+        1 * mapView.initialiseMap(!null) >> { mapSettings = it[0] }
+
+        and: "The correct map settings must be used"
+        mapSettings.getArray("center").length() == 2;
+        mapSettings.getArray("maxBounds").length() == 4;
+        mapSettings.getNumber("maxZoom") == 18;
+        mapSettings.getObject("style") != null;
+
     }
 }
