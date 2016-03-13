@@ -5,11 +5,7 @@ import com.google.gwt.activity.shared.ActivityMapper;
 import com.google.gwt.place.shared.Place;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import org.openremote.manager.client.service.SecurityService;
 
-/**
- * Created by Richard on 12/02/2016.
- */
 public class MainContentActivityMapper implements ActivityMapper {
     private final Provider<AssetDetailActivity> assetsActivityProvider;
     private final Provider<MapActivity> mapActivityProvider;

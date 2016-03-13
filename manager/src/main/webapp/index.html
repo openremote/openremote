@@ -6,16 +6,64 @@
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
-    <script src="/jsapi"></script>
+    <script src="/auth/js/keycloak.min.js"></script>
 
-    <script src="/static/3rdparty/keycloak/1.9.0.Final/keycloak.js"></script>
+    <script>
 
-    <script src="/static/gwt/Manager/Manager.nocache.js"></script>
+        function init() {
+            var keycloakConfig = {
+                url: '/auth',
+                realm: window.location.pathname.split('/')[1],
+                clientId: "or-manager"
+            };
+            window.keycloak = Keycloak(keycloakConfig);
+            window.keycloak.init({onLoad: 'login-required'})
+                    .success(function (authenticated) {
+                        if (authenticated) {
+                            loadApp();
+                        } else {
+                            window.keycloak.login();
+                        }
+                    })
+                    .error(function () {
+                        alert("Failed to initialize login. Please contact your administrator.");
+                    });
+        }
 
-    <script src="/static/3rdparty/mapbox-gl-js/0.14.1/mapbox-gl.js"></script>
-    <link href="/static/3rdparty/mapbox-gl-js/0.14.1/mapbox-gl.css" rel="stylesheet"/>
+        function loadApp() {
+            var jsapi = new Promise(function (resolve, reject) {
+                loadScript("/jsapi", resolve);
+            });
+
+            var mapbox = new Promise(function (resolve, reject) {
+                loadStyleSheet("/static/3rdparty/mapbox-gl-js/0.14.1/mapbox-gl.css");
+                loadScript("/static/3rdparty/mapbox-gl-js/0.14.1/mapbox-gl.js", resolve);
+            });
+
+            Promise.all([
+                jsapi,
+                mapbox
+            ]).then(function (results) {
+                loadScript("/static/gwt/Manager/Manager.nocache.js");
+            });
+        }
+
+        function loadStyleSheet(href) {
+            var link = document.createElement("link");
+            link.href = href;
+            document.getElementsByTagName('head')[0].appendChild(link);
+        }
+
+        function loadScript(src, onload) {
+            var script = document.createElement("script");
+            script.src = src;
+            script.onload = onload;
+            document.getElementsByTagName('head')[0].appendChild(script);
+        }
+    </script>
+
 </head>
-<body>
+<body onload="init()">
 
 <iframe src="javascript:''"
         id="__gwt_historyFrame"

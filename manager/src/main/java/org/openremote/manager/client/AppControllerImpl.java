@@ -100,43 +100,9 @@ public class AppControllerImpl implements AppController, AppLayout.Presenter {
 
     @Override
     public void start() {
-
-
-/* TODO something is broken here when compiling real GWT (no super dev)
-function $start(this$static){
-  var lastArg;
-  $doc.title = 'OpenRemote Manager';
-  (lastArg = this$static.securityService , makeLambdaFunction(AppControllerImpl$lambda$2$Type.prototype.accept, new AppControllerImpl$lambda$2$Type(this$static)) , lastArg).keycloak.init();
-  null.$_nullMethod();
-  null.$_nullMethod();
-}
-*/
-
         Window.setTitle(constants.appTitle());
-
-        // Initialise security service
-        securityService.init(
-                authenticated -> {
-                    if (authenticated) {
-                        // Add event handlers for security service
-//                        securityService.onAuthLogout(() -> {
-//                            eventBus.fireEvent(new UserChangeEvent(null));
-//                        });
-//
-//                        securityService.onAuthSuccess(() -> {
-//                            eventBus.fireEvent(new UserChangeEvent(securityService.getUsername()));
-//                        });
-
-                        RootLayoutPanel.get().add(appLayout);
-                        appLayout.setPresenter(this);
-                        placeHistoryHandler.handleCurrentHistory();
-                    } else {
-                        securityService.login();
-                    }
-                },
-                () -> {
-                    // TODO: Handle keycloak failure
-                    Window.alert("KEYCLOAK INIT FAILURE");
-                });
+        RootLayoutPanel.get().add(appLayout);
+        appLayout.setPresenter(this);
+        placeHistoryHandler.handleCurrentHistory();
     }
 }

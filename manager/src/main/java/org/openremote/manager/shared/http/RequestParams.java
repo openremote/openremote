@@ -1,10 +1,8 @@
 package org.openremote.manager.shared.http;
 
-import elemental.xml.XMLHttpRequest;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
-import org.openremote.manager.shared.Consumer;
 
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.core.HttpHeaders;
@@ -14,8 +12,6 @@ import javax.ws.rs.core.HttpHeaders;
  */
 @JsType
 public class RequestParams<T> {
-
-    public static final int ANY_STATUS_CODE = -1;
 
     public static class Failure extends RuntimeException {
 
@@ -68,32 +64,16 @@ public class RequestParams<T> {
     @JsProperty(name = "$password")
     public String password;
 
-    public int expectedStatusCode = ANY_STATUS_CODE;
-
     @JsProperty(name = "$callback")
-    public Request.Callback callback;
+    public Request.InternalCallback callback;
 
     @JsIgnore
     public RequestParams() {
     }
 
     @JsIgnore
-    public RequestParams(int expectedStatusCode, Consumer<T> onSuccess, Consumer<Exception> onFailure) {
-        this.expectedStatusCode = expectedStatusCode;
-        this.callback = new Request.Callback<T>() {
-            @Override
-            public void call(int responseCode, XMLHttpRequest xmlHttpRequest, T entity) {
-                if (responseCode == 0) {
-                    onFailure.accept(new RequestParams.Failure(0, "No response"));
-                    return;
-                }
-                if (expectedStatusCode != -1 && responseCode != expectedStatusCode) {
-                    onFailure.accept(new RequestParams.Failure(responseCode, "Expected status code: " + expectedStatusCode));
-                    return;
-                }
-                onSuccess.accept(entity);
-            }
-        };
+    public RequestParams(Callback<T> callback) {
+        this.callback = new Request.InternalCallbackImpl(callback);
     }
 
     public RequestParams<T> withBearerAuth(String authorization) {
@@ -109,11 +89,6 @@ public class RequestParams<T> {
 
     public RequestParams<T> setXsrfToken(String xsrfToken) {
         this.xsrfToken = xsrfToken;
-        return this;
-    }
-
-    public RequestParams<T> setExpectedStatusCode(int expectedStatusCode) {
-        this.expectedStatusCode = expectedStatusCode;
         return this;
     }
 

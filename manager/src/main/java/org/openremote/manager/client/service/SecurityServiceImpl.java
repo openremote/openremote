@@ -13,12 +13,21 @@ public class SecurityServiceImpl implements SecurityService {
     private EventBus eventBus;
 
     @Inject
-    public SecurityServiceImpl(String keycloakURL,
+    public SecurityServiceImpl(Keycloak keycloak,
                                CookieService cookieService,
                                EventBus eventBus) {
-        this.keycloak = new Keycloak(keycloakURL);
+        this.keycloak = keycloak;
         this.cookieService = cookieService;
         this.eventBus = eventBus;
+
+        // TODO Add event handlers for security service?
+        // onAuthLogout(() -> {
+        //  eventBus.fireEvent(new UserChangeEvent(null));
+        // });
+        //
+        // onAuthSuccess(() -> {
+        //  eventBus.fireEvent(new UserChangeEvent(securityService.getUsername()));
+        // });
     }
 
     @Override
@@ -100,20 +109,6 @@ public class SecurityServiceImpl implements SecurityService {
     @Override
     public void onAuthLogout(Runnable fn) {
         keycloak.onAuthLogout(fn);
-    }
-
-    @Override
-    public void init(InitOptions options, Consumer<Boolean> successFn, Runnable errorFn) {
-        KeycloakCallback kcCallback = keycloak.init(options);
-        kcCallback.success(successFn);
-        kcCallback.error(errorFn);
-    }
-
-    @Override
-    public void init(Consumer<Boolean> successFn, Runnable errorFn) {
-        KeycloakCallback kcCallback = keycloak.init();
-        kcCallback.success(successFn);
-        kcCallback.error(errorFn);
     }
 
     @Override

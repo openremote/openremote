@@ -1,7 +1,7 @@
 package org.openremote.manager.shared.http;
 
-import elemental.xml.XMLHttpRequest;
 import jsinterop.annotations.JsFunction;
+import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsType;
 
 @JsType(isNative = true, namespace = "REST")
@@ -9,15 +9,34 @@ public class Request<T> {
 
     @FunctionalInterface
     @JsFunction
-    public interface Callback<T> {
-        void call(int responseCode, XMLHttpRequest xmlHttpRequest, T entity);
+    interface InternalCallback {
+        void call(int responseCode, Object xmlHttpRequest, Object entity);
+    }
+
+    public static class InternalCallbackImpl implements InternalCallback {
+
+        final protected Callback callback;
+
+        public InternalCallbackImpl(Callback callback) {
+            this.callback = callback;
+        }
+
+        @Override
+        public void call(int responseCode, Object xmlHttpRequest, Object entity) {
+            callback.call(responseCode, entity);
+        }
+    }
+
+    @JsOverlay
+    final public void execute(Callback<T> callback) {
+        execute(new InternalCallbackImpl(callback));
     }
 
     /**
      * Executes the request with all the information set in the current object. The value is never returned
      * but passed to the optional argument callback.
      */
-    native public void execute(Callback<T> callback);
+    native public void execute(InternalCallback callback);
 
     /**
      * Sets the Accept request header. Defaults to star/star.
@@ -25,7 +44,7 @@ public class Request<T> {
     native public void setAccepts(String acceptHeader);
 
     /**
-     * 	Sets the request credentials.
+     * Sets the request credentials.
      */
     native public void setCredentials(String username, String password);
 
@@ -47,7 +66,7 @@ public class Request<T> {
     /**
      * Sets the request method. Defaults to GET.
      */
-    native public void     setMethod(String method);
+    native public void setMethod(String method);
 
     /**
      * Controls whether the request should be asynchronous. Defaults to true.

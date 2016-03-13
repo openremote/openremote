@@ -58,25 +58,4 @@ public class AssetDetailActivity
 //            }
 //        });
     }
-
-    /* TODO outdated
-    protected static String hostname() {
-        return Window.Location.getHostName();
-    }
-
-    protected static String port() {
-        return Window.Location.getPort();
-    }
-
-    protected Resource resource(String... pathElement) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("http://").append(hostname()).append(":").append(port());
-        if (pathElement != null) {
-            for (String pe : pathElement) {
-                sb.append("/").append(pe);
-            }
-        }
-        return new Resource(sb.toString());
-    }
-    */
 }

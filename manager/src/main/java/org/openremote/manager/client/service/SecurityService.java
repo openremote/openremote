@@ -42,10 +42,6 @@ public interface SecurityService {
 
     void onAuthLogout(Runnable expiredFn);
 
-    void init(InitOptions options, Consumer<Boolean> successFn, Runnable errorFn);
-
-    void init(Consumer<Boolean> successFn, Runnable errorFn);
-
     void updateToken(Consumer<Boolean> successFn, Runnable errorFn);
 
     void updateToken(int minValiditySeconds, Consumer<Boolean> successFn, Runnable errorFn);

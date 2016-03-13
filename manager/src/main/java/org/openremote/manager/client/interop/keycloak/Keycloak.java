@@ -6,7 +6,9 @@ import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import org.openremote.manager.shared.Runnable;
 
-@JsType(isNative = true, namespace = "")
+import static jsinterop.annotations.JsPackage.GLOBAL;
+
+@JsType(isNative = true, namespace = GLOBAL)
 public class Keycloak {
     @JsProperty
     public boolean authenticated;

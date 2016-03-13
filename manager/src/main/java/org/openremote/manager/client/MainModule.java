@@ -13,6 +13,7 @@ import com.google.web.bindery.event.shared.EventBus;
 import com.google.web.bindery.event.shared.SimpleEventBus;
 import org.openremote.manager.client.i18n.ManagerConstants;
 import org.openremote.manager.client.i18n.ManagerMessages;
+import org.openremote.manager.client.interop.keycloak.Keycloak;
 import org.openremote.manager.client.presenter.*;
 import org.openremote.manager.client.service.*;
 import org.openremote.manager.client.view.*;
@@ -48,13 +49,13 @@ public class MainModule extends AbstractGinModule {
     @Singleton
     public SecurityService getSecurityService(
             CookieService cookieService, EventBus eventBus) {
-        return new SecurityServiceImpl("/master/identity/install/or-manager", cookieService, eventBus);
+        return new SecurityServiceImpl(getKeyCloak(), cookieService, eventBus);
     }
 
     @Provides
     @Singleton
     public RequestService getRequestService(SecurityService securityService) {
-        RequestServiceImpl.Configuration.setDefaults(securityService);
+        RequestServiceImpl.Configuration.setDefaults(securityService.getRealm());
         return new RequestServiceImpl(securityService);
     }
 
@@ -85,6 +86,10 @@ public class MainModule extends AbstractGinModule {
     public ManagerMessages getMessages() {
         return GWT.create(ManagerMessages.class);
     }
+
+    public static native Keycloak getKeyCloak() /*-{
+        return $wnd.keycloak;
+    }-*/;
 
     @Provides
     @Singleton

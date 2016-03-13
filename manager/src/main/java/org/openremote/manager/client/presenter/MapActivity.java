@@ -7,6 +7,7 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.web.bindery.event.shared.EventBus;
 import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.client.view.MapView;
+import org.openremote.manager.shared.http.JsonObjectCallback;
 import org.openremote.manager.shared.map.MapResource;
 
 import javax.inject.Inject;
@@ -54,14 +55,18 @@ public class MapActivity
             request.setURI("http://localhost:8080/master/map");
             request.setMethod("GET");
             request.setAccepts("application/json");
-            request.execute((responseCode, xmlHttpRequest, entity) -> {
-                view.initialiseMap(entity);
-            });
+            request.execute(new JsonObjectCallback(
+                200,
+                view::initialiseMap,
+                ex -> {
+                    // TODO: Handle map settings failure
+                    Window.alert(ex.getMessage());
+                }
+            ));
             */
 
             // This is the strongly typed client
-            mapResource.getSettings(
-                requestService.createRequestParams(
+            mapResource.getSettings(requestService.createRequestParams(new JsonObjectCallback(
                     200,
                     view::initialiseMap,
                     ex -> {
@@ -69,7 +74,7 @@ public class MapActivity
                         Window.alert(ex.getMessage());
                     }
                 )
-            );
+            ));
 
         } else {
             //TODO: Reconfigure the map

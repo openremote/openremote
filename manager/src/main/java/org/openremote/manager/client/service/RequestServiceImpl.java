@@ -1,11 +1,12 @@
 package org.openremote.manager.client.service;
 
-import com.google.gwt.user.client.Window;
 import com.google.inject.Inject;
+import elemental.client.Browser;
+import elemental.html.Location;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
-import org.openremote.manager.shared.Consumer;
+import org.openremote.manager.shared.http.Callback;
 import org.openremote.manager.shared.http.Request;
 import org.openremote.manager.shared.http.RequestParams;
 
@@ -21,8 +22,9 @@ public class RequestServiceImpl implements RequestService {
             public static String apiURL;
         }
 
-        public static void setDefaults(SecurityService securityService) {
-            REST.apiURL = "//" + Window.Location.getHostName() + ":" + Window.Location.getPort() + "/" + securityService.getRealm();
+        public static void setDefaults(String realm) {
+            Location location = Browser.getWindow().getLocation();
+            REST.apiURL = "//" + location.getHostname() + ":" + location.getPort() + "/" + realm;
         }
     }
 
@@ -44,8 +46,8 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
-    public <T> RequestParams<T> createRequestParams(int expectedStatusCode, Consumer<T> onSuccess, Consumer<Exception> onFailure) {
-        return new RequestParams<T>(expectedStatusCode, onSuccess, onFailure)
+    public <T> RequestParams<T> createRequestParams(Callback<T> callback) {
+        return new RequestParams<T>(callback)
             .withBearerAuth(securityService.getToken())
             .setXsrfToken(securityService.getXsrfToken());
     }
