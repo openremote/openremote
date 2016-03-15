@@ -12,6 +12,7 @@ import org.openremote.container.security.IdentityService
 import org.openremote.container.web.WebClient
 import org.openremote.container.web.WebService
 import org.openremote.manager.server.SampleDataService
+import org.openremote.manager.server.contextbroker.ContextBrokerService
 import org.openremote.manager.server.map.MapService
 import org.openremote.manager.server.security.ManagerIdentityService
 import org.openremote.manager.server.web.ManagerWebService
@@ -44,6 +45,7 @@ trait ContainerTrait {
                 Stream.of(
                         new ManagerWebService(),
                         new ManagerIdentityService(),
+                        new ContextBrokerService(),
                         new MapService(),
                         new SampleDataService()
                 )
@@ -57,7 +59,7 @@ trait ContainerTrait {
                         .socketTimeout(10, SECONDS)
                         .connectionPoolSize(10);
 
-        client = WebClient.registerDefaults(clientBuilder).build();
+        client = prepareClient(WebClient.registerDefaults(clientBuilder)).build();
 
         serverApiUri = UriBuilder.fromUri("")
                 .scheme("http").host("localhost").port(serverPort);
@@ -69,6 +71,10 @@ trait ContainerTrait {
     cleanupContainer() {
         if (container)
             container.stop();
+    }
+
+    def prepareClient(ResteasyClientBuilder clientBuilder) {
+        return clientBuilder;
     }
 
     def ResteasyWebTarget getClientTarget(String realm) {

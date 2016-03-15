@@ -1,6 +1,7 @@
 package org.openremote.manager.server;
 
 import org.openremote.container.Container;
+import org.openremote.manager.server.contextbroker.ContextBrokerService;
 import org.openremote.manager.server.map.MapService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebService;
@@ -15,6 +16,7 @@ public class Server {
         new Container(
             new ManagerWebService(),
             new ManagerIdentityService(),
+            new ContextBrokerService(),
             new MapService(),
             new SampleDataService()
         ).startBackground();

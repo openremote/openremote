@@ -1,5 +1,6 @@
 package org.openremote.manager.server;
 
+import elemental.json.Json;
 import org.apache.log4j.Logger;
 import org.keycloak.representations.idm.*;
 import org.openremote.container.Container;
@@ -7,7 +8,12 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.security.AuthForm;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.KeycloakResource;
+import org.openremote.container.util.IdentifierUtil;
+import org.openremote.manager.server.contextbroker.ContextBrokerService;
+import org.openremote.manager.server.contextbroker.NgsiResource;
 import org.openremote.manager.server.security.ManagerIdentityService;
+import org.openremote.manager.shared.ngsi.Attribute;
+import org.openremote.manager.shared.ngsi.Entity;
 import rx.Observable;
 
 import javax.ws.rs.core.UriBuilder;
@@ -15,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.openremote.container.util.IdentifierUtil.generateGlobalUniqueId;
 import static org.openremote.container.web.WebClient.getTarget;
 import static org.openremote.manager.server.Constants.MANAGER_CLIENT_ID;
 import static org.openremote.manager.server.Constants.MASTER_REALM;
@@ -32,14 +39,15 @@ public class SampleDataService implements ContainerService {
     public static final String ADMIN_PASSWORD = "admin";
 
     protected IdentityService identityService;
+    protected ContextBrokerService contextBrokerService;
     /* TODO
-    protected ContextBrokerService contextBrokerService,
     protected PersistenceService persistenceService
     */
 
     @Override
     public void prepare(Container container) {
         identityService = container.getService(ManagerIdentityService.class);
+        contextBrokerService = container.getService(ContextBrokerService.class);
     }
 
     @Override
@@ -58,9 +66,9 @@ public class SampleDataService implements ContainerService {
         registerClientApplications(identityService, accessToken);
         addRolesAndTestUsers(identityService, accessToken);
 
-        /* TODO
         createSampleRooms(contextBrokerService);
 
+        /* TODO
         persistenceService.createSchema();
         EntityManager em = persistenceService.getEntityManagerFactory().createEntityManager();
         EntityTransaction tx = em.getTransaction();
@@ -74,7 +82,6 @@ public class SampleDataService implements ContainerService {
     public void stop(Container container) {
     }
 
-    /*
     protected void createSampleRooms(ContextBrokerService contextBrokerService) {
         Entity room1 = new Entity(Json.createObject());
         room1.setId(generateGlobalUniqueId());
@@ -102,16 +109,16 @@ public class SampleDataService implements ContainerService {
                 .setValue(Json.create("Office 456"))
         );
 
+        NgsiResource contextBroker = contextBrokerService.getContextBroker();
 
-        contextBrokerService.getClient().listEntities()
+        fromCallable(contextBroker::getEntities)
             .flatMap(Observable::from)
-            .flatMap(entity -> contextBrokerService.getClient().deleteEntity(entity))
+            .flatMap(entity -> fromCallable(() -> contextBroker.deleteEntity(entity.getId())))
             .toList().toBlocking().single();
 
-        contextBrokerService.getClient().postEntity(room1).toBlocking().first();
-        contextBrokerService.getClient().postEntity(room2).toBlocking().first();
+        contextBroker.postEntity(room1);
+        contextBroker.postEntity(room2);
     }
-    */
 
     protected void configureMasterRealm(IdentityService identityService, String accessToken) {
         KeycloakResource keycloakResource = identityService.getKeycloak(accessToken);
@@ -190,17 +197,46 @@ public class SampleDataService implements ContainerService {
                 getTarget(identityService.getClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
             ).toBlocking().single();
 
+        RoleRepresentation readAssetsRole =
+            fromCallable(() -> keycloakResource.createRoleForClientApplication(
+                MASTER_REALM, clientObjectId, new RoleRepresentation("read:assets", "Read context broker assets", false)
+            )).map(response ->
+                getTarget(identityService.getClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
+            ).toBlocking().single();
+        LOG.info("Added role '" + readAssetsRole.getName() + "'");
+
         keycloakResource.addCompositesToRoleForClientApplication(
-            MASTER_REALM, clientObjectId, readRole.getName(), new RoleRepresentation[]{readMapRole}
+            MASTER_REALM, clientObjectId, readRole.getName(), new RoleRepresentation[]{readMapRole, readAssetsRole}
         );
-        LOG.info("Added role '" + readMapRole.getName() + "'");
+
+        RoleRepresentation writeRole =
+            fromCallable(() -> keycloakResource.createRoleForClientApplication(
+                MASTER_REALM, clientObjectId, new RoleRepresentation("write", "Write all data", false)
+            )).map(response ->
+                getTarget(identityService.getClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
+            ).toBlocking().single();
+        LOG.info("Added role '" + writeRole.getName() + "'");
+
+        RoleRepresentation writeAssetsRole =
+            fromCallable(() -> keycloakResource.createRoleForClientApplication(
+                MASTER_REALM, clientObjectId, new RoleRepresentation("write:assets", "Write context broker assets", false)
+            )).map(response ->
+                getTarget(identityService.getClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
+            ).toBlocking().single();
+        LOG.info("Added role '" + writeAssetsRole.getName() + "'");
+
+        keycloakResource.addCompositesToRoleForClientApplication(
+            MASTER_REALM, clientObjectId, writeRole.getName(), new RoleRepresentation[]{writeAssetsRole}
+        );
 
         // Give admin all roles (we can only check realm _or_ application roles in @RolesAllowed)!
         fromCallable(() -> keycloakResource.getUsers(MASTER_REALM, "admin"))
             .flatMap(Observable::from)
             .subscribe(adminUser -> {
-                    keycloakResource.addUserClientRoleMapping(MASTER_REALM, adminUser.getId(), clientObjectId, new RoleRepresentation[]{readRole});
-                    // TODO more role mappings go here
+                    keycloakResource.addUserClientRoleMapping(MASTER_REALM, adminUser.getId(), clientObjectId, new RoleRepresentation[]{
+                        readRole,
+                        writeRole
+                    });
                     LOG.info("Assigned all application roles to 'admin' user");
                 }
             );
@@ -231,7 +267,10 @@ public class SampleDataService implements ContainerService {
         LOG.info("Added user '" + testUser.getUsername() + "' with password '" + testUserCredential.getValue() + "'");
 
         // Add mapping for client role 'read' to user 'test'
-        keycloakResource.addUserClientRoleMapping(MASTER_REALM, testUser.getId(), clientObjectId, new RoleRepresentation[]{readRole});
+        keycloakResource.addUserClientRoleMapping(MASTER_REALM, testUser.getId(), clientObjectId, new RoleRepresentation[]{
+            readRole,
+            writeRole
+        });
 
     }
 }

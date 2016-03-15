@@ -41,6 +41,10 @@ Configure your IDE and set up a *Run Configuration*:
 
 You can now open http://localhost:8080/ in your browser.
 
+### Running tests
+
+You can run the tests of the `manager` project with `./gradlew test` or run the individual test classes in your IDE directly. Note that some of these tests are end-to-end tests that require the whole environment to be running. This means your Keycloak and Orion containers will be used, and data will be inserted and deleted during a test run. You might want to start with clean containers before running tests and you might have to restart containers after (failed) tests.
+
 ### Updating map data
 
 We currently do not have our own pipeline for extracting/converting OSM data into vector tilesets but depend on the extracts offered on https://github.com/osm2vectortiles/osm2vectortiles.
