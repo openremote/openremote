@@ -1,4 +1,4 @@
-package org.openremote.manager.client.view;
+package org.openremote.manager.client.app;
 
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.user.client.ui.IsWidget;

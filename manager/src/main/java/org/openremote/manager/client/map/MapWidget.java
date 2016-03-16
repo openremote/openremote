@@ -1,4 +1,4 @@
-package org.openremote.manager.client.ui;
+package org.openremote.manager.client.map;
 
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;

@@ -1,10 +1,14 @@
-package org.openremote.manager.client.presenter;
+package org.openremote.manager.client.app;
 
 import com.google.gwt.activity.shared.Activity;
 import com.google.gwt.activity.shared.ActivityMapper;
 import com.google.gwt.place.shared.Place;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import org.openremote.manager.client.assets.AssetDetailActivity;
+import org.openremote.manager.client.assets.AssetsPlace;
+import org.openremote.manager.client.map.MapActivity;
+import org.openremote.manager.client.map.MapPlace;
 
 public class MainContentActivityMapper implements ActivityMapper {
     private final Provider<AssetDetailActivity> assetsActivityProvider;
@@ -21,8 +25,8 @@ public class MainContentActivityMapper implements ActivityMapper {
         if (place instanceof AssetsPlace) {
             return assetsActivityProvider.get().doInit((AssetsPlace) place);
         }
-        if (place instanceof OverviewPlace) {
-            return mapActivityProvider.get().doInit((OverviewPlace) place);
+        if (place instanceof MapPlace) {
+            return mapActivityProvider.get().doInit((MapPlace) place);
         }
         return null;
     }

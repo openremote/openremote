@@ -1,12 +1,12 @@
-package org.openremote.manager.client.presenter;
+package org.openremote.manager.client.map;
 
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.web.bindery.event.shared.EventBus;
+import org.openremote.manager.client.app.AbstractActivity;
 import org.openremote.manager.client.service.RequestService;
-import org.openremote.manager.client.view.MapView;
 import org.openremote.manager.shared.http.JsonObjectCallback;
 import org.openremote.manager.shared.map.MapResource;
 
@@ -14,7 +14,7 @@ import javax.inject.Inject;
 import java.util.logging.Logger;
 
 public class MapActivity
-    extends AbstractActivity<OverviewPlace>
+    extends AbstractActivity<MapPlace>
     implements MapView.Presenter {
 
     private static final Logger LOG = Logger.getLogger(MapActivity.class.getName());
@@ -39,7 +39,7 @@ public class MapActivity
     }
 
     @Override
-    protected void init(OverviewPlace place) {
+    protected void init(MapPlace place) {
 
     }
 

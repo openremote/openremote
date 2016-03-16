@@ -1,4 +1,4 @@
-package org.openremote.manager.client.view;
+package org.openremote.manager.client.assets;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.uibinder.client.UiBinder;

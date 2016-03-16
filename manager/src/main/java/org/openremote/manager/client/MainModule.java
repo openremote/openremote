@@ -14,9 +14,10 @@ import com.google.web.bindery.event.shared.SimpleEventBus;
 import org.openremote.manager.client.i18n.ManagerConstants;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.interop.keycloak.Keycloak;
-import org.openremote.manager.client.presenter.*;
+import org.openremote.manager.client.app.*;
 import org.openremote.manager.client.service.*;
-import org.openremote.manager.client.view.*;
+import org.openremote.manager.client.map.*;
+import org.openremote.manager.client.assets.*;
 import org.openremote.manager.shared.map.MapResource;
 
 public class MainModule extends AbstractGinModule {
@@ -125,7 +126,7 @@ public class MainModule extends AbstractGinModule {
                                                  PlaceHistoryMapper historyMapper,
                                                  EventBus eventBus) {
         PlaceHistoryHandler historyHandler = new PlaceHistoryHandler(historyMapper);
-        historyHandler.register(placeController, eventBus, new OverviewPlace());
+        historyHandler.register(placeController, eventBus, new MapPlace());
         return historyHandler;
     }
 }

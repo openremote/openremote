@@ -1,4 +1,4 @@
-package org.openremote.manager.client.view;
+package org.openremote.manager.client.app;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.place.shared.Place;
@@ -7,7 +7,7 @@ import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.*;
 import com.google.web.bindery.event.shared.EventBus;
 import org.openremote.manager.client.i18n.ManagerConstants;
-import org.openremote.manager.client.presenter.AssetsPlace;
+import org.openremote.manager.client.assets.AssetsPlace;
 
 import javax.inject.Inject;
 

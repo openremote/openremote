@@ -1,7 +1,9 @@
-package org.openremote.manager.client.presenter;
+package org.openremote.manager.client;
 
 import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.gwt.place.shared.WithTokenizers;
+import org.openremote.manager.client.assets.AssetsPlace;
+import org.openremote.manager.client.map.MapPlace;
 
 /**
  * Created by Richard on 12/02/2016.
@@ -9,7 +11,7 @@ import com.google.gwt.place.shared.WithTokenizers;
 @WithTokenizers(
         {
                 AssetsPlace.Tokenizer.class,
-                OverviewPlace.Tokenizer.class
+                MapPlace.Tokenizer.class
         }
 )
 public interface HistoryMapper extends PlaceHistoryMapper {

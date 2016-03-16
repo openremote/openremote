@@ -1,11 +1,10 @@
-package org.openremote.manager.client.presenter;
+package org.openremote.manager.client.app;
 
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.inject.Inject;
 import com.google.web.bindery.event.shared.EventBus;
 import org.openremote.manager.client.service.SecurityService;
-import org.openremote.manager.client.view.HeaderView;
 
 /**
  * Created by Richard on 24/02/2016.

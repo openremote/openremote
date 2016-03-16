@@ -4,10 +4,10 @@ import com.google.gwt.place.shared.PlaceController
 import com.google.gwt.user.client.ui.AcceptsOneWidget
 import com.google.web.bindery.event.shared.EventBus
 import elemental.json.JsonObject
-import org.openremote.manager.client.presenter.MapActivity
+import org.openremote.manager.client.map.MapActivity
 import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.service.SecurityService
-import org.openremote.manager.client.view.MapView
+import org.openremote.manager.client.map.MapView
 import org.openremote.manager.shared.map.MapResource
 import org.openremote.test.ClientTrait
 import org.openremote.test.ContainerTrait

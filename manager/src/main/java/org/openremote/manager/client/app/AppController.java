@@ -1,4 +1,4 @@
-package org.openremote.manager.client;
+package org.openremote.manager.client.app;
 
 import com.google.gwt.place.shared.Place;
 

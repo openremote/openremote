@@ -1,4 +1,4 @@
-package org.openremote.manager.client;
+package org.openremote.manager.client.app;
 
 import com.google.gwt.place.shared.*;
 import com.google.gwt.user.client.Window;
@@ -7,10 +7,7 @@ import com.google.inject.Provider;
 import com.google.web.bindery.event.shared.EventBus;
 import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.i18n.ManagerConstants;
-import org.openremote.manager.client.presenter.ActivityInitialiser;
-import org.openremote.manager.client.presenter.HeaderPresenter;
 import org.openremote.manager.client.service.SecurityService;
-import org.openremote.manager.client.view.AppLayout;
 
 import javax.inject.Inject;
 

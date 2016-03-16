@@ -1,4 +1,4 @@
-package org.openremote.manager.client.view;
+package org.openremote.manager.client.app;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
@@ -14,8 +14,8 @@ import org.gwtbootstrap3.client.ui.NavbarLink;
 import org.gwtbootstrap3.client.ui.NavbarText;
 import org.gwtbootstrap3.client.ui.html.Span;
 import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.presenter.AssetsPlace;
-import org.openremote.manager.client.presenter.OverviewPlace;
+import org.openremote.manager.client.assets.AssetsPlace;
+import org.openremote.manager.client.map.MapPlace;
 
 /**
  * Created by Richard on 24/02/2016.
@@ -50,7 +50,7 @@ public class HeaderViewImpl extends Composite implements HeaderView {
 
     @UiHandler("btnMap")
     void defaultLayoutClicked(ClickEvent e) {
-        presenter.goTo(new OverviewPlace());
+        presenter.goTo(new MapPlace());
     }
 
     @UiHandler("btnAssets")
@@ -71,7 +71,7 @@ public class HeaderViewImpl extends Composite implements HeaderView {
 
     @Override
     public void onPlaceChange(Place place) {
-        btnMap.setActive(place instanceof OverviewPlace);
+        btnMap.setActive(place instanceof MapPlace);
         btnAssets.setActive(place instanceof AssetsPlace);
     }
 

@@ -1,9 +1,8 @@
-package org.openremote.manager.client.presenter;
+package org.openremote.manager.client.app;
 
 import com.google.gwt.activity.shared.ActivityManager;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import org.openremote.manager.client.view.AppLayout;
 
 /**
  * This maps activity managers to parts of the main view

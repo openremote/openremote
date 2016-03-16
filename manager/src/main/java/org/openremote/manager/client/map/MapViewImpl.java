@@ -1,11 +1,10 @@
-package org.openremote.manager.client.view;
+package org.openremote.manager.client.map;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Composite;
 import elemental.json.JsonObject;
-import org.openremote.manager.client.ui.MapWidget;
 
 import javax.inject.Inject;
 

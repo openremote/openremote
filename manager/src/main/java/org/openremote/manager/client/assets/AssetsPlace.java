@@ -1,4 +1,4 @@
-package org.openremote.manager.client.presenter;
+package org.openremote.manager.client.assets;
 
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceTokenizer;
