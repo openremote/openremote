@@ -1,7 +1,7 @@
 package org.openremote.container.json;
 
-import elemental.json.Json;
 import elemental.json.JsonValue;
+import elemental.json.impl.JsonUtil;
 import org.jboss.resteasy.plugins.providers.ProviderHelper;
 
 import javax.ws.rs.WebApplicationException;
@@ -27,7 +27,7 @@ public class ElementalMessageBodyConverter implements MessageBodyReader<JsonValu
     @Override
     public JsonValue readFrom(Class<JsonValue> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
         String str = ProviderHelper.readString(entityStream, mediaType);
-        return Json.parse(str);
+        return JsonUtil.parse(str);
     }
 
     @Override

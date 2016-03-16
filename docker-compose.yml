@@ -17,7 +17,7 @@ services:
     image: mongo:2.6
     command: --smallfiles
   orion:
-    image: fiware/orion:latest
+    image: fiware/orion:0.28
     links:
       - mongo
     ports:

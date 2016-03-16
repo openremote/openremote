@@ -1,4 +1,4 @@
-package org.openremote.manager.server.contextbroker;
+package org.openremote.manager.server.assets;
 
 
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
@@ -19,9 +19,9 @@ import java.util.logging.Logger;
 
 import static org.openremote.container.web.WebClient.getTarget;
 
-public class ContextBrokerService implements ContainerService {
+public class AssetsService implements ContainerService {
 
-    private static final Logger LOG = Logger.getLogger(ContextBrokerService.class.getName());
+    private static final Logger LOG = Logger.getLogger(AssetsService.class.getName());
 
     public static final String CONTEXTBROKER_HOST = "CONTEXTBROKER_HOST";
     public static final String CONTEXTBROKER_HOST_DEFAULT = "192.168.99.100";
@@ -46,7 +46,7 @@ public class ContextBrokerService implements ContainerService {
                 .host(container.getConfig(CONTEXTBROKER_HOST, CONTEXTBROKER_HOST_DEFAULT))
                 .port(container.getConfigInteger(CONTEXTBROKER_PORT, CONTEXTBROKER_PORT_DEFAULT));
 
-        LOG.info("Preparing context broker service for broker host: " + contextBrokerHostUri.build());
+        LOG.info("Preparing assets service for broker host: " + contextBrokerHostUri.build());
 
         ResteasyClientBuilder clientBuilder =
             new ResteasyClientBuilder()
@@ -73,7 +73,7 @@ public class ContextBrokerService implements ContainerService {
         container.getService(ManagerWebService.class).getApiSingletons().add(new EntityMessageBodyConverter());
         container.getService(ManagerWebService.class).getApiSingletons().add(new EntityArrayMessageBodyConverter());
 
-        container.getService(ManagerWebService.class).getApiSingletons().add(new ContextBrokerResourceImpl(this));
+        container.getService(ManagerWebService.class).getApiSingletons().add(new AssetsResourceImpl(this));
     }
 
     @Override
@@ -93,12 +93,12 @@ public class ContextBrokerService implements ContainerService {
         return client;
     }
 
-    public NgsiResource getContextBroker() {
+    public ContextBrokerResource getContextBroker() {
         return getContextBroker(getTarget(client, contextBrokerHostUri.build(), null));
     }
 
-    public NgsiResource getContextBroker(ResteasyWebTarget target) {
-        return target.proxy(NgsiResource.class);
+    public ContextBrokerResource getContextBroker(ResteasyWebTarget target) {
+        return target.proxy(ContextBrokerResource.class);
     }
 
     public void pingContextBroker() {

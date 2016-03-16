@@ -1,16 +1,23 @@
-package org.openremote.manager.server.contextbroker;
+package org.openremote.manager.server.assets;
 
+import elemental.json.JsonArray;
+import elemental.json.JsonObject;
 import org.openremote.manager.shared.http.PATCH;
 import org.openremote.manager.shared.ngsi.Entity;
 import org.openremote.manager.shared.ngsi.EntryPoint;
+import org.openremote.manager.shared.ngsi.params.EntityListParams;
+import org.openremote.manager.shared.ngsi.params.EntityParams;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
+/**
+ * http://telefonicaid.github.io/fiware-orion/api/v2/
+ */
 @Path("v2")
-public interface NgsiResource {
+public interface ContextBrokerResource {
 
     @GET
     @Produces(APPLICATION_JSON)
@@ -19,7 +26,7 @@ public interface NgsiResource {
     @GET
     @Path("entities")
     @Produces(APPLICATION_JSON)
-    Entity[] getEntities();
+    JsonArray getEntities(@BeanParam EntityListParams entityListParams);
 
     @POST
     @Path("entities")
@@ -29,7 +36,7 @@ public interface NgsiResource {
     @GET
     @Path("entities/{entityId}")
     @Produces(APPLICATION_JSON)
-    Entity getEntity(@PathParam("entityId") String entityId);
+    JsonObject getEntity(@PathParam("entityId") String entityId, @BeanParam EntityParams entityParams);
 
     @DELETE
     @Path("entities/{entityId}")

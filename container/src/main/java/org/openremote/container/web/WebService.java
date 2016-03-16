@@ -101,7 +101,7 @@ public abstract class WebService implements ContainerService {
 
         HttpHandler handler = exchange -> {
             String requestPath = exchange.getRequestPath();
-            LOG.fine("Handling request: " + exchange.getRequestURL());
+            LOG.fine("Handling request: " + exchange.getRequestMethod() + " " + exchange.getRequestURL());
 
             // Other services can register routes here with a prefix patch match
             boolean handled = false;
@@ -280,6 +280,7 @@ public abstract class WebService implements ContainerService {
         resteasyDeployment.getActualProviderClasses().add(JacksonConfig.class);
         resteasyDeployment.getActualProviderClasses().add(ElementalMessageBodyConverter.class);
         resteasyDeployment.getActualProviderClasses().add(AlreadyGzippedWriterInterceptor.class);
+        resteasyDeployment.getActualProviderClasses().add(ClientErrorExceptionHandler.class);
 
         return resteasyDeployment;
     }

@@ -1,4 +1,4 @@
-package org.openremote.manager.server.contextbroker;
+package org.openremote.manager.server.assets;
 
 import elemental.json.Json;
 import elemental.json.JsonObject;

@@ -8,9 +8,8 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.security.AuthForm;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.KeycloakResource;
-import org.openremote.container.util.IdentifierUtil;
-import org.openremote.manager.server.contextbroker.ContextBrokerService;
-import org.openremote.manager.server.contextbroker.NgsiResource;
+import org.openremote.manager.server.assets.AssetsService;
+import org.openremote.manager.server.assets.ContextBrokerResource;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.ngsi.Attribute;
 import org.openremote.manager.shared.ngsi.Entity;
@@ -21,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.openremote.container.util.IdentifierUtil.generateGlobalUniqueId;
 import static org.openremote.container.web.WebClient.getTarget;
 import static org.openremote.manager.server.Constants.MANAGER_CLIENT_ID;
 import static org.openremote.manager.server.Constants.MASTER_REALM;
@@ -39,7 +37,7 @@ public class SampleDataService implements ContainerService {
     public static final String ADMIN_PASSWORD = "admin";
 
     protected IdentityService identityService;
-    protected ContextBrokerService contextBrokerService;
+    protected AssetsService assetsService;
     /* TODO
     protected PersistenceService persistenceService
     */
@@ -47,7 +45,7 @@ public class SampleDataService implements ContainerService {
     @Override
     public void prepare(Container container) {
         identityService = container.getService(ManagerIdentityService.class);
-        contextBrokerService = container.getService(ContextBrokerService.class);
+        assetsService = container.getService(AssetsService.class);
     }
 
     @Override
@@ -66,7 +64,7 @@ public class SampleDataService implements ContainerService {
         registerClientApplications(identityService, accessToken);
         addRolesAndTestUsers(identityService, accessToken);
 
-        createSampleRooms(contextBrokerService);
+        createSampleRooms(assetsService);
 
         /* TODO
         persistenceService.createSchema();
@@ -82,9 +80,9 @@ public class SampleDataService implements ContainerService {
     public void stop(Container container) {
     }
 
-    protected void createSampleRooms(ContextBrokerService contextBrokerService) {
+    protected void createSampleRooms(AssetsService assetsService) {
         Entity room1 = new Entity(Json.createObject());
-        room1.setId(generateGlobalUniqueId());
+        room1.setId("Room1");
         room1.setType("Room");
         room1.addAttribute(
             new Attribute("temperature", Json.createObject())
@@ -97,7 +95,7 @@ public class SampleDataService implements ContainerService {
         );
 
         Entity room2 = new Entity(Json.createObject());
-        room2.setId(generateGlobalUniqueId());
+        room2.setId("Room2");
         room2.setType("Room");
         room2.addAttribute(
             new Attribute("temperature", Json.createObject())
@@ -109,15 +107,16 @@ public class SampleDataService implements ContainerService {
                 .setValue(Json.create("Office 456"))
         );
 
-        NgsiResource contextBroker = contextBrokerService.getContextBroker();
+        ContextBrokerResource ngsiService = assetsService.getContextBroker();
 
-        fromCallable(contextBroker::getEntities)
+        fromCallable(() -> ngsiService.getEntities(null))
+            .map(Entity::from)
             .flatMap(Observable::from)
-            .flatMap(entity -> fromCallable(() -> contextBroker.deleteEntity(entity.getId())))
+            .flatMap(entity -> fromCallable(() -> ngsiService.deleteEntity(entity.getId())))
             .toList().toBlocking().single();
 
-        contextBroker.postEntity(room1);
-        contextBroker.postEntity(room2);
+        ngsiService.postEntity(room1);
+        ngsiService.postEntity(room2);
     }
 
     protected void configureMasterRealm(IdentityService identityService, String accessToken) {

@@ -12,7 +12,7 @@ import org.openremote.container.security.IdentityService
 import org.openremote.container.web.WebClient
 import org.openremote.container.web.WebService
 import org.openremote.manager.server.SampleDataService
-import org.openremote.manager.server.contextbroker.ContextBrokerService
+import org.openremote.manager.server.assets.AssetsService
 import org.openremote.manager.server.map.MapService
 import org.openremote.manager.server.security.ManagerIdentityService
 import org.openremote.manager.server.web.ManagerWebService
@@ -45,7 +45,7 @@ trait ContainerTrait {
                 Stream.of(
                         new ManagerWebService(),
                         new ManagerIdentityService(),
-                        new ContextBrokerService(),
+                        new AssetsService(),
                         new MapService(),
                         new SampleDataService()
                 )

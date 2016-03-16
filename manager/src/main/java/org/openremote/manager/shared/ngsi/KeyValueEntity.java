@@ -1,11 +1,24 @@
 package org.openremote.manager.shared.ngsi;
 
+import elemental.json.JsonArray;
 import elemental.json.JsonObject;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class KeyValueEntity extends AbstractEntity<KeyValueAttribute> {
+
+    public static KeyValueEntity[] from(JsonArray jsonArray) {
+        KeyValueEntity[] array = new KeyValueEntity[jsonArray.length()];
+        for (int i = 0; i < array.length; i++) {
+            array[i] = new KeyValueEntity(jsonArray.get(i));
+        }
+        return array;
+    }
+
+    public static KeyValueEntity from(JsonObject jsonObject) {
+        return new KeyValueEntity(jsonObject);
+    }
 
     public KeyValueEntity(JsonObject jsonObject) {
         super(jsonObject);
