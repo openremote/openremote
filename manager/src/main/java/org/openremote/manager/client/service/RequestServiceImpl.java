@@ -48,8 +48,7 @@ public class RequestServiceImpl implements RequestService {
     @Override
     public <T> RequestParams<T> createRequestParams(Callback<T> callback) {
         return new RequestParams<T>(callback)
-            .withBearerAuth(securityService.getToken())
-            .setXsrfToken(securityService.getXsrfToken());
+            .withBearerAuth(securityService.getToken());
     }
 
 }

@@ -13,8 +13,6 @@ import org.openremote.manager.shared.Runnable;
 public interface SecurityService {
     String getUsername();
 
-    String getXsrfToken();
-
     void login();
 
     void login(LoginOptions options);

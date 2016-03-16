@@ -43,11 +43,6 @@ public class SecurityServiceImpl implements SecurityService {
     }
 
     @Override
-    public String getXsrfToken() {
-        return cookieService.getCookie("XSRF-TOKEN");
-    }
-
-    @Override
     public void login() {
         keycloak.login();
     }
@@ -59,8 +54,8 @@ public class SecurityServiceImpl implements SecurityService {
 
     @Override
     public void logout() {
-        // Keycloak generates an invalid redirect URI as redirects are defined against client in keycloak admin console
-        // Only valid URI is /master
+        // Keycloak generates an invalid redirect URI as redirects are defined
+        // against client in keycloak admin console only valid URI is /master
         LogoutOptions opts = new LogoutOptions();
         opts.redirectUri = "/master";
         keycloak.logout(opts);

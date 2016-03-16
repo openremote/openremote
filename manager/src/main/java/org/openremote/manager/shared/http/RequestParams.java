@@ -42,10 +42,6 @@ public class RequestParams<T> {
     @JsProperty(name = HttpHeaders.AUTHORIZATION)
     public String authorization;
 
-    @HeaderParam("XSRF")
-    @JsProperty(name= "XSRF")
-    public String xsrfToken;
-
     @JsProperty
     public String entity;
 
@@ -85,11 +81,6 @@ public class RequestParams<T> {
         if (authorization == null || !authorization.startsWith("Bearer ") || authorization.split(" ").length != 2)
             return null;
         return authorization.split(" ")[1];
-    }
-
-    public RequestParams<T> setXsrfToken(String xsrfToken) {
-        this.xsrfToken = xsrfToken;
-        return this;
     }
 
     public RequestParams<T> setEntity(String entity) {
