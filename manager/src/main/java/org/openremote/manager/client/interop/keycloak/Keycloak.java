@@ -96,7 +96,9 @@ public class Keycloak {
 
     public native void onTokenExpired(Runnable expiredFn);
 
-    public native void onAuthSuccess(Runnable expiredFn);
+    @JsProperty
+    public Runnable onAuthSuccess;
 
-    public native void onAuthLogout(Runnable expiredFn);
+    @JsProperty
+    public Runnable onAuthLogout;
 }

@@ -1,7 +1,10 @@
 package org.openremote.manager.client.service;
 
+import com.google.gwt.user.client.Window;
 import com.google.inject.Inject;
 import com.google.web.bindery.event.shared.EventBus;
+import elemental.json.JsonObject;
+import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.interop.keycloak.*;
 import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.Runnable;
@@ -11,6 +14,7 @@ public class SecurityServiceImpl implements SecurityService {
     private Keycloak keycloak;
     private CookieService cookieService;
     private EventBus eventBus;
+    private String username = null;
 
     @Inject
     public SecurityServiceImpl(Keycloak keycloak,
@@ -20,20 +24,22 @@ public class SecurityServiceImpl implements SecurityService {
         this.cookieService = cookieService;
         this.eventBus = eventBus;
 
-        // TODO Add event handlers for security service?
-        // onAuthLogout(() -> {
-        //  eventBus.fireEvent(new UserChangeEvent(null));
-        // });
-        //
-        // onAuthSuccess(() -> {
-        //  eventBus.fireEvent(new UserChangeEvent(securityService.getUsername()));
-        // });
+         // TODO Add event handlers for security service?
+         onAuthSuccess(() -> {
+          eventBus.fireEvent(new UserChangeEvent(getUsername()));
+         });
+
+        onAuthLogout(() -> {
+            eventBus.fireEvent(new UserChangeEvent(null));
+        });
+
+        // Update username
+        updateUsername();
     }
 
     @Override
     public String getUsername() {
-        String name = null;
-        return name;
+        return username;
     }
 
     @Override
@@ -53,7 +59,11 @@ public class SecurityServiceImpl implements SecurityService {
 
     @Override
     public void logout() {
-        keycloak.logout();
+        // Keycloak generates an invalid redirect URI as redirects are defined against client in keycloak admin console
+        // Only valid URI is /master
+        LogoutOptions opts = new LogoutOptions();
+        opts.redirectUri = "/master";
+        keycloak.logout(opts);
     }
 
     @Override
@@ -103,12 +113,12 @@ public class SecurityServiceImpl implements SecurityService {
 
     @Override
     public void onAuthSuccess(Runnable fn) {
-        keycloak.onAuthSuccess(fn);
+        keycloak.onAuthSuccess = fn;
     }
 
     @Override
     public void onAuthLogout(Runnable fn) {
-        keycloak.onAuthLogout(fn);
+        keycloak.onAuthLogout = fn;
     }
 
     @Override
@@ -136,7 +146,21 @@ public class SecurityServiceImpl implements SecurityService {
     }
 
     @Override
+    public JsonObject getParsedToken() {
+        return keycloak.tokenParsed;
+    }
+
+    @Override
     public String getRefreshToken() {
         return keycloak.refreshToken;
+    }
+
+    private void updateUsername() {
+        username = null;
+
+        if (!isTokenExpired()) {
+            JsonObject token = getParsedToken();
+            username = token.getString("preferred_username");
+        }
     }
 }

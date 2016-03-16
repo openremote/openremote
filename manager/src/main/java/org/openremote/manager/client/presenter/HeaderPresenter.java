@@ -26,9 +26,6 @@ public class HeaderPresenter implements HeaderView.Presenter {
         this.securityService = securityService;
         this.eventBus = eventBus;
 
-        // Register for user change events
-
-
         view.setPresenter(this);
         view.setUsername(securityService.getUsername());
     }
@@ -51,9 +48,6 @@ public class HeaderPresenter implements HeaderView.Presenter {
     @Override
     public void doLogout() {
         securityService.logout();
-
-        //Reload current place to cause login dialog to reappear
-        goTo(placeController.getWhere());
     }
 
     @Override

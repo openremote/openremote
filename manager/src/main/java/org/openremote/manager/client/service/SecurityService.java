@@ -1,5 +1,6 @@
 package org.openremote.manager.client.service;
 
+import elemental.json.JsonObject;
 import org.openremote.manager.client.interop.keycloak.InitOptions;
 import org.openremote.manager.client.interop.keycloak.LoginOptions;
 import org.openremote.manager.client.interop.keycloak.LogoutOptions;
@@ -49,6 +50,8 @@ public interface SecurityService {
     String getRealm();
 
     String getToken();
+
+    JsonObject getParsedToken();
 
     String getRefreshToken();
 }
