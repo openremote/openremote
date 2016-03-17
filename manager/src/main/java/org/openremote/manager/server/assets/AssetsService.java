@@ -108,7 +108,7 @@ public class AssetsService implements ContainerService {
                 return true;
             throw new WebApplicationException("Context broker not available");
         }).retryWhen(
-            new RetryWithDelay("Connecting to context broker" + contextBrokerHostUri.build(), 10, 3000)
+            new RetryWithDelay("Connecting to context broker: " + contextBrokerHostUri.build(), 10, 3000)
         ).toBlocking().singleOrDefault(false);
     }
 

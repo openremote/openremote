@@ -54,10 +54,8 @@ public class SecurityServiceImpl implements SecurityService {
 
     @Override
     public void logout() {
-        // Keycloak generates an invalid redirect URI as redirects are defined
-        // against client in keycloak admin console only valid URI is /master
         LogoutOptions opts = new LogoutOptions();
-        opts.redirectUri = "/master";
+        opts.redirectUri = "/" + getRealm();
         keycloak.logout(opts);
     }
 
