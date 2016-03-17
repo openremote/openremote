@@ -31,11 +31,6 @@ dependencies {
     compile "org.slf4j:log4j-over-slf4j:$slf4jVersion"
 
     compile "org.xerial:sqlite-jdbc:$sqliteVersion"
-    compile "com.h2database:h2:$h2Version"
-    compile "com.zaxxer:HikariCP:$hikaricpVersion"
-    compile "org.hibernate:hibernate-entitymanager:$hibernateVersion"
-    compile "org.hibernate:hibernate-java8:$hibernateVersion"
-    compile "org.hibernate:hibernate-validator:$hibernateValidatorVersion"
     apt "org.hibernate:hibernate-jpamodelgen:$hibernateVersion"
 
     compile "com.google.gwt:gwt-user:$gwtVersion"

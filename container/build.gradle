@@ -25,4 +25,10 @@ dependencies {
     compile "org.keycloak:keycloak-undertow-adapter:$keycloakVersion"
 
     compile "com.google.gwt:gwt-elemental:$gwtVersion"
+
+    compile "com.h2database:h2:$h2Version"
+    compile "com.zaxxer:HikariCP:$hikaricpVersion"
+    compile "org.hibernate:hibernate-entitymanager:$hibernateVersion"
+    compile "org.hibernate:hibernate-java8:$hibernateVersion"
+    compile "org.hibernate:hibernate-validator:$hibernateValidatorVersion"
 }

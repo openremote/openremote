@@ -1,16 +1,24 @@
-package org.openremote.manager.server.persistence;
+package org.openremote.container.persistence;
 
-public class PersistenceService {
-/*
+import org.openremote.container.Container;
+import org.openremote.container.ContainerService;
+
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Logger;
+
+public class PersistenceService implements ContainerService {
+
     private static final Logger LOG = Logger.getLogger(PersistenceService.class.getName());
 
     public static final String PERSISTENCE_UNIT_NAME = "PERSISTENCE_UNIT_NAME";
-    public static final String PERSISTENCE_UNIT_NAME_DEFAULT = "ManagerPU";
+    public static final String PERSISTENCE_UNIT_NAME_DEFAULT = "OpenRemotePU";
     public static final String DATABASE_PRODUCT = "DATABASE_PRODUCT";
     public static final String DATABASE_PRODUCT_DEFAULT = "H2";
     public static final String DATABASE_CONNECTION_URL = "DATABASE_CONNECTION_URL";
-    public static final String DATABASE_CONNECTION_URL_DEFAULT = "jdbc:h2:file:/data/or-manager-database";
-    public static final String DATABASE_CONNECTION_URL_DEV_MODE = "jdbc:h2:mem:test";
+    public static final String DATABASE_CONNECTION_URL_DEFAULT = "jdbc:h2:mem:test";
     public static final String DATABASE_USERNAME = "DATABASE_USERNAME";
     public static final String DATABASE_USERNAME_DEFAULT = "sa";
     public static final String DATABASE_PASSWORD = "DATABASE_PASSWORD";
@@ -25,32 +33,35 @@ public class PersistenceService {
     protected Map<String, Object> persistenceUnitProperties;
     protected EntityManagerFactory entityManagerFactory;
 
-    public void start(JsonObject config) {
-        boolean devMode = config.getBoolean(DEV_MODE, DEV_MODE_DEFAULT);
-        String databaseProduct = config.getString(DATABASE_PRODUCT, DATABASE_PRODUCT_DEFAULT);
+    @Override
+    public void prepare(Container container) {
+        String databaseProduct = container.getConfig(DATABASE_PRODUCT, DATABASE_PRODUCT_DEFAULT);
 
-        LOG.info("Starting persistence service for database: " + databaseProduct);
+        LOG.info("Preparing persistence service for database: " + databaseProduct);
 
         database = Database.Product.valueOf(databaseProduct);
 
-        String connectionUrl = devMode
-            ? DATABASE_CONNECTION_URL_DEV_MODE
-            : config.getString(DATABASE_CONNECTION_URL, DATABASE_CONNECTION_URL_DEFAULT);
+        String connectionUrl = container.getConfig(DATABASE_CONNECTION_URL, DATABASE_CONNECTION_URL_DEFAULT);
         LOG.info("Using database connection URL: " + connectionUrl);
 
-        String databaseUsername = config.getString(DATABASE_USERNAME, DATABASE_USERNAME_DEFAULT);
-        String databasePassword = config.getString(DATABASE_PASSWORD, DATABASE_PASSWORD_DEFAULT);
-        int databaseMinPoolSize = config.getInteger(DATABASE_MIN_POOL_SIZE, DATABASE_MIN_POOL_SIZE_DEFAULT);
-        int databaseMaxPoolSize = config.getInteger(DATABASE_MAX_POOL_SIZE, DATABASE_MAX_POOL_SIZE_DEFAULT);
+        String databaseUsername = container.getConfig(DATABASE_USERNAME, DATABASE_USERNAME_DEFAULT);
+        String databasePassword = container.getConfig(DATABASE_PASSWORD, DATABASE_PASSWORD_DEFAULT);
+        int databaseMinPoolSize = container.getConfigInteger(DATABASE_MIN_POOL_SIZE, DATABASE_MIN_POOL_SIZE_DEFAULT);
+        int databaseMaxPoolSize = container.getConfigInteger(DATABASE_MAX_POOL_SIZE, DATABASE_MAX_POOL_SIZE_DEFAULT);
         persistenceUnitProperties =
             database.open(connectionUrl, databaseUsername, databasePassword, databaseMinPoolSize, databaseMaxPoolSize);
 
-        persistenceUnitName = config.getString(PERSISTENCE_UNIT_NAME, PERSISTENCE_UNIT_NAME_DEFAULT);
+        persistenceUnitName = container.getConfig(PERSISTENCE_UNIT_NAME, PERSISTENCE_UNIT_NAME_DEFAULT);
+    }
+
+    @Override
+    public void start(Container container) {
         this.entityManagerFactory =
             Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties);
     }
 
-    public void stop() {
+    @Override
+    public void stop(Container container) {
         LOG.info("Stopping persistence service...");
         if (entityManagerFactory != null) {
             entityManagerFactory.close();
@@ -59,7 +70,7 @@ public class PersistenceService {
             database.close();
         }
     }
-
+    
     public EntityManagerFactory getEntityManagerFactory() {
         return entityManagerFactory;
     }
@@ -81,5 +92,4 @@ public class PersistenceService {
         );
         Persistence.generateSchema(persistenceUnitName, createSchemaProperties);
     }
-    */
 }
