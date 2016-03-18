@@ -5,7 +5,7 @@ import elemental.json.JsonArray;
 import elemental.json.JsonObject;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.manager.server.web.ManagerWebService;
+import org.openremote.container.web.WebService;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,7 +35,7 @@ public class MapService implements ContainerService {
     protected JsonObject mapSettings;
 
     @Override
-    public void prepare(Container container) {
+    public void init(Container container) throws Exception {
         this.devMode = container.isDevMode();
 
         mapTilesPath = Paths.get(container.getConfig(MAP_TILES_PATH, MAP_TILES_PATH_DEFAULT));
@@ -51,34 +51,29 @@ public class MapService implements ContainerService {
                 "MapWidget settings file not found: " + mapSettingsPath.toAbsolutePath()
             );
         }
+    }
 
-        container.getService(ManagerWebService.class).getApiSingletons().add(
+    @Override
+    public void configure(Container container) throws Exception {
+        container.getService(WebService.class).getApiSingletons().add(
             new MapResourceImpl(this)
         );
     }
 
     @Override
-    public void start(Container container) {
+    public void start(Container container) throws Exception {
         LOG.info("Starting map service with tile data: " + mapTilesPath.toAbsolutePath());
-        try {
-            Class.forName(org.sqlite.JDBC.class.getName());
-            connection = DriverManager.getConnection("jdbc:sqlite:" + mapTilesPath.toAbsolutePath());
-        } catch (Exception ex) {
-            throw new IllegalStateException(ex);
-        }
+        Class.forName(org.sqlite.JDBC.class.getName());
+        connection = DriverManager.getConnection("jdbc:sqlite:" + mapTilesPath.toAbsolutePath());
 
         readMapSettings();
     }
 
     @Override
-    public void stop(Container container) {
+    public void stop(Container container) throws Exception {
         LOG.info("Stopping map service...");
         if (connection != null) {
-            try {
-                connection.close();
-            } catch (SQLException ex) {
-                LOG.warning("Error closing connection: " + ex);
-            }
+            connection.close();
         }
     }
 

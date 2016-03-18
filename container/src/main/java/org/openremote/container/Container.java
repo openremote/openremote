@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -23,7 +24,6 @@ import java.util.stream.StreamSupport;
 public class Container {
 
     public static final Logger LOG;
-    public static final ObjectMapper JSON;
 
     static {
         if (System.getProperty("java.util.logging.config.file") == null) {
@@ -37,21 +37,12 @@ public class Container {
         }
 
         LOG = Logger.getLogger(Container.class.getName());
-
-        JSON = new ObjectMapper();
-        JSON.setSerializationInclusion(JsonInclude.Include.NON_NULL)
-            .configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false)
-            .configure(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS, false)
-            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
-            .setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE)
-            .setVisibility(PropertyAccessor.SETTER, JsonAutoDetect.Visibility.NONE)
-            .setVisibility(PropertyAccessor.IS_GETTER, JsonAutoDetect.Visibility.NONE)
-            .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.NONE);
     }
 
     public static final String DEV_MODE = "DEV_MODE";
     public static final boolean DEV_MODE_DEFAULT = true;
+
+    public final ObjectMapper JSON;
 
     protected final ObjectNode config;
     protected final boolean devMode;
@@ -84,6 +75,17 @@ public class Container {
 
     @SafeVarargs
     public Container(Map<String, String> config, Stream<ContainerService>... serviceStreams) {
+        JSON = new ObjectMapper();
+        JSON.setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false)
+            .configure(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS, false)
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+            .setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE)
+            .setVisibility(PropertyAccessor.SETTER, JsonAutoDetect.Visibility.NONE)
+            .setVisibility(PropertyAccessor.IS_GETTER, JsonAutoDetect.Visibility.NONE)
+            .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.NONE);
+
         this.config = JSON.createObjectNode();
         for (Map.Entry<String, String> entry : config.entrySet()) {
             this.config.put(entry.getKey(), entry.getValue());
@@ -123,13 +125,22 @@ public class Container {
     synchronized public CompletableFuture start() {
         return CompletableFuture.runAsync(() -> {
             LOG.info(">>> Starting runtime container...");
-            for (ContainerService service : getServices()) {
-                LOG.fine("Preparing service: " + service);
-                service.prepare(Container.this);
-            }
-            for (ContainerService service : getServices()) {
-                LOG.fine("Starting service: " + service);
-                service.start(Container.this);
+            try {
+                for (ContainerService service : getServices()) {
+                    LOG.fine("Initializing service: " + service);
+                    service.init(Container.this);
+                }
+                for (int counter = getServices().length - 1; counter >= 0; counter--) {
+                    ContainerService service = getServices()[counter];
+                    LOG.fine("Configuring service: " + service);
+                    service.configure(Container.this);
+                }
+                for (ContainerService service : getServices()) {
+                    LOG.fine("Starting service: " + service);
+                    service.start(Container.this);
+                }
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
             }
             LOG.info(">>> Runtime container startup complete");
         });
@@ -139,7 +150,11 @@ public class Container {
         LOG.info("<<< Stopping runtime container...");
         for (ContainerService service : getServices()) {
             LOG.fine("Stopping service: " + service);
-            service.stop(this);
+            try {
+                service.stop(this);
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
         }
         LOG.info("<<< Runtime container stopped");
     }
@@ -147,7 +162,7 @@ public class Container {
     /**
      * Starts the container and a non-daemon thread that waits forever.
      */
-    public void startBackground() throws Exception{
+    public void startBackground() throws Exception {
         // We block here so we die fast if startup fails
         start().get();
         Thread containerThread = new Thread("container") {
@@ -172,9 +187,22 @@ public class Container {
         return services.values().toArray(new ContainerService[services.size()]);
     }
 
+    /**
+     * Get a service instance matching the specified type exactly, or if that yields
+     * no result, try to get the first service instance that has a matching interface.
+     */
     synchronized public <T extends ContainerService> T getService(Class<T> type) {
         //noinspection unchecked
         T service = (T) services.get(type);
+        if (service == null) {
+            for (ContainerService containerService : services.values()) {
+                if (type.isAssignableFrom(containerService.getClass())) {
+                    //noinspection unchecked
+                    service = (T) containerService;
+                    break;
+                }
+            }
+        }
         if (service == null)
             throw new IllegalStateException("Missing required service: " + type);
         return service;

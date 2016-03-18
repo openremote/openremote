@@ -30,6 +30,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -56,44 +57,51 @@ public abstract class WebService implements ContainerService {
     protected String host;
     protected int port;
     protected Undertow undertow;
+
+    protected String defaultRealm;
     protected Map<String, HttpHandler> prefixRoutes = new LinkedHashMap<>();
+    protected Path staticResourceDocRoot;
     protected Collection<Class<?>> apiClasses = new HashSet<>();
     protected Collection<Object> apiSingletons = new HashSet<>();
     protected KeycloakConfigResolver keycloakConfigResolver;
 
     @Override
-    public void prepare(Container container) {
+    public void init(Container container) throws Exception {
         host = container.getConfig(WEBSERVER_LISTEN_HOST, WEBSERVER_LISTEN_HOST_DEFAULT);
         port = container.getConfigInteger(WEBSERVER_LISTEN_PORT, WEBSERVER_LISTEN_PORT_DEFAULT);
     }
 
     @Override
-    public void start(Container container) {
-        if (undertow == null) {
+    public void configure(Container container) throws Exception {
+        undertow = build(
+            container,
+            Undertow.builder()
+                .addHttpListener(port, host)
+        ).build();
+    }
 
-            undertow = build(
-                container,
-                Undertow.builder()
-                    .addHttpListener(port, host)
-            ).build();
-
+    @Override
+    public void start(Container container) throws Exception {
+        if (undertow != null) {
             LOG.info("Starting webserver on http://" + host + ":" + port);
             undertow.start();
         }
     }
 
     @Override
-    public void stop(Container container) {
+    public void stop(Container container) throws Exception {
         if (undertow != null) {
             LOG.info("Stopping webserver...");
+            undertow.stop();
             undertow = null;
         }
     }
 
     protected Undertow.Builder build(Container container, Undertow.Builder builder) {
 
-        Path docRoot = getStaticResourceDocRoot(container);
-        HttpHandler staticResourceHandler = docRoot != null ? createStaticResourceHandler(container, docRoot) : null;
+        HttpHandler staticResourceHandler = getStaticResourceDocRoot() != null
+            ? createStaticResourceHandler(container, getStaticResourceDocRoot())
+            : null;
 
         ResteasyDeployment resteasyDeployment = createResteasyDeployment(container);
         HttpHandler apiHandler = createApiHandler(resteasyDeployment);
@@ -253,17 +261,28 @@ public abstract class WebService implements ContainerService {
         deploymentInfo.addServletContextAttribute(
             ResteasyContextParameters.RESTEASY_DEPLOYMENTS,
             new HashMap<String, ResteasyDeployment>() {{
-                    put("", resteasyDeployment);
-                }}
+                put("", resteasyDeployment);
+            }}
         );
         return addServletDeployment(deploymentInfo);
     }
 
-    protected HttpHandler addServletDeployment(DeploymentInfo deploymentInfo) {
+    public HttpHandler addServletDeployment(DeploymentInfo deploymentInfo) {
         try {
             DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
             manager.deploy();
             return manager.start();
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public void removeServletDeployment(DeploymentInfo deploymentInfo) {
+        try {
+            DeploymentManager manager = Servlets.defaultContainer().getDeployment(deploymentInfo.getDeploymentName());
+            manager.stop();
+            manager.undeploy();
+            Servlets.defaultContainer().removeDeployment(deploymentInfo);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -277,7 +296,7 @@ public abstract class WebService implements ContainerService {
         resteasyDeployment.setApplication(webApplication);
 
         // Custom providers (these only apply to server applications, not client calls)
-        resteasyDeployment.getActualProviderClasses().add(JacksonConfig.class);
+        resteasyDeployment.getProviders().add(new JacksonConfig(container));
         resteasyDeployment.getActualProviderClasses().add(ElementalMessageBodyConverter.class);
         resteasyDeployment.getActualProviderClasses().add(AlreadyGzippedWriterInterceptor.class);
         resteasyDeployment.getActualProviderClasses().add(ClientErrorExceptionHandler.class);
@@ -286,21 +305,14 @@ public abstract class WebService implements ContainerService {
     }
 
     /**
-     * Override this method to serve static resources from file system on the /static/* path.
-     */
-    protected Path getStaticResourceDocRoot(Container container) {
-        return null;
-    }
-
-    /**
-     * Simple path prefix routing.
+     * Add handlers with a path prefix.
      */
     public Map<String, HttpHandler> getPrefixRoutes() {
         return prefixRoutes;
     }
 
     /**
-     * Add resource/provider/etc. classes to enable REST API.
+     * Add resource/provider/etc. classes to enable REST API
      */
     public Collection<Class<?>> getApiClasses() {
         return apiClasses;
@@ -326,6 +338,30 @@ public abstract class WebService implements ContainerService {
         this.keycloakConfigResolver = keycloakConfigResolver;
     }
 
-    protected abstract String getDefaultRealm();
+    /**
+     * Default realm path the browser will be redirected to when a / root request is made.
+     */
+    public String getDefaultRealm() {
+        return defaultRealm;
+    }
+
+    public void setDefaultRealm(String defaultRealm) {
+        if (this.defaultRealm != null)
+            throw new IllegalStateException("Default realm already set: " + this.defaultRealm);
+        this.defaultRealm = defaultRealm;
+    }
+
+    /**
+     * Set to serve static resources from file system on the /static/* path.
+     */
+    public Path getStaticResourceDocRoot() {
+        return staticResourceDocRoot;
+    }
+
+    public void setStaticResourceDocRoot(Path staticResourceDocRoot) {
+        if (this.staticResourceDocRoot != null)
+            throw new IllegalStateException("Static resource path already set: " + this.staticResourceDocRoot);
+        this.staticResourceDocRoot = staticResourceDocRoot;
+    }
 
 }

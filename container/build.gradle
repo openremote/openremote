@@ -31,4 +31,11 @@ dependencies {
     compile "org.hibernate:hibernate-entitymanager:$hibernateVersion"
     compile "org.hibernate:hibernate-java8:$hibernateVersion"
     compile "org.hibernate:hibernate-validator:$hibernateValidatorVersion"
+
+    compile "org.apache.camel:camel-core:$camelVersion"
+    compile "org.apache.camel:camel-servlet:$camelVersion"
+    compile "org.apache.camel:camel-ahc-ws:$camelVersion"
+    compile "org.apache.camel:camel-jackson:$camelVersion"
+    compile "org.apache.camel:camel-script:$camelVersion"
+    compile "org.apache.camel:camel-groovy:$camelVersion"
 }

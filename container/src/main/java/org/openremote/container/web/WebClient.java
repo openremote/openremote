@@ -2,6 +2,7 @@ package org.openremote.container.web;
 
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
+import org.openremote.container.Container;
 import org.openremote.container.json.ElementalMessageBodyConverter;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.BearerAuthClientRequestFilter;
@@ -12,9 +13,9 @@ import java.net.URI;
 
 public interface WebClient {
 
-    static ResteasyClientBuilder registerDefaults(ResteasyClientBuilder builder) {
+    static ResteasyClientBuilder registerDefaults(Container container, ResteasyClientBuilder builder) {
         return builder
-            .register(JacksonConfig.class)
+            .register(new JacksonConfig(container))
             .register(ElementalMessageBodyConverter.class)
             .register(new BearerAuthClientRequestFilter())
             .register(new ClientSecretRequestFilter());

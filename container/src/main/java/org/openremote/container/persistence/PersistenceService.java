@@ -34,13 +34,14 @@ public class PersistenceService implements ContainerService {
     protected EntityManagerFactory entityManagerFactory;
 
     @Override
-    public void prepare(Container container) {
+    public void init(Container container) throws Exception {
         String databaseProduct = container.getConfig(DATABASE_PRODUCT, DATABASE_PRODUCT_DEFAULT);
-
         LOG.info("Preparing persistence service for database: " + databaseProduct);
-
         database = Database.Product.valueOf(databaseProduct);
+    }
 
+    @Override
+    public void configure(Container container) throws Exception {
         String connectionUrl = container.getConfig(DATABASE_CONNECTION_URL, DATABASE_CONNECTION_URL_DEFAULT);
         LOG.info("Using database connection URL: " + connectionUrl);
 
@@ -55,13 +56,13 @@ public class PersistenceService implements ContainerService {
     }
 
     @Override
-    public void start(Container container) {
+    public void start(Container container) throws Exception {
         this.entityManagerFactory =
             Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties);
     }
 
     @Override
-    public void stop(Container container) {
+    public void stop(Container container) throws Exception {
         LOG.info("Stopping persistence service...");
         if (entityManagerFactory != null) {
             entityManagerFactory.close();

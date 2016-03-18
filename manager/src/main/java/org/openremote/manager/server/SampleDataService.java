@@ -43,9 +43,14 @@ public class SampleDataService implements ContainerService {
     */
 
     @Override
-    public void prepare(Container container) {
+    public void init(Container container) throws Exception {
         identityService = container.getService(ManagerIdentityService.class);
         assetsService = container.getService(AssetsService.class);
+    }
+
+    @Override
+    public void configure(Container container) throws Exception {
+
     }
 
     @Override
@@ -185,7 +190,7 @@ public class SampleDataService implements ContainerService {
             fromCallable(() -> keycloakResource.createRoleForClientApplication(
                 MASTER_REALM, clientObjectId, new RoleRepresentation("read", "Read all data", false)
             )).map(response ->
-                getTarget(identityService.getClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
+                getTarget(identityService.getHttpClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
             ).toBlocking().single();
         LOG.info("Added role '" + readRole.getName() + "'");
 
@@ -193,14 +198,14 @@ public class SampleDataService implements ContainerService {
             fromCallable(() -> keycloakResource.createRoleForClientApplication(
                 MASTER_REALM, clientObjectId, new RoleRepresentation("read:map", "View map", false)
             )).map(response ->
-                getTarget(identityService.getClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
+                getTarget(identityService.getHttpClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
             ).toBlocking().single();
 
         RoleRepresentation readAssetsRole =
             fromCallable(() -> keycloakResource.createRoleForClientApplication(
                 MASTER_REALM, clientObjectId, new RoleRepresentation("read:assets", "Read context broker assets", false)
             )).map(response ->
-                getTarget(identityService.getClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
+                getTarget(identityService.getHttpClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
             ).toBlocking().single();
         LOG.info("Added role '" + readAssetsRole.getName() + "'");
 
@@ -212,7 +217,7 @@ public class SampleDataService implements ContainerService {
             fromCallable(() -> keycloakResource.createRoleForClientApplication(
                 MASTER_REALM, clientObjectId, new RoleRepresentation("write", "Write all data", false)
             )).map(response ->
-                getTarget(identityService.getClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
+                getTarget(identityService.getHttpClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
             ).toBlocking().single();
         LOG.info("Added role '" + writeRole.getName() + "'");
 
@@ -220,7 +225,7 @@ public class SampleDataService implements ContainerService {
             fromCallable(() -> keycloakResource.createRoleForClientApplication(
                 MASTER_REALM, clientObjectId, new RoleRepresentation("write:assets", "Write context broker assets", false)
             )).map(response ->
-                getTarget(identityService.getClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
+                getTarget(identityService.getHttpClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
             ).toBlocking().single();
         LOG.info("Added role '" + writeAssetsRole.getName() + "'");
 
@@ -254,7 +259,7 @@ public class SampleDataService implements ContainerService {
         final UserRepresentation finalTestUser = testUser;
         testUser = fromCallable(() -> keycloakResource.createUser(MASTER_REALM, finalTestUser))
             .map(response ->
-                getTarget(identityService.getClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(UserRepresentation.class)
+                getTarget(identityService.getHttpClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(UserRepresentation.class)
             ).toBlocking().single();
 
         CredentialRepresentation testUserCredential = new CredentialRepresentation();

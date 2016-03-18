@@ -11,8 +11,6 @@ import org.openremote.manager.shared.ngsi.Entity;
 import org.openremote.manager.shared.ngsi.params.EntityListParams;
 import org.openremote.manager.shared.ngsi.params.EntityParams;
 
-import javax.ws.rs.ClientErrorException;
-import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.util.logging.Logger;

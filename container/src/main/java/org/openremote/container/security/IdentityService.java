@@ -35,7 +35,7 @@ import static javax.ws.rs.core.Response.Status.Family.REDIRECTION;
 import static javax.ws.rs.core.Response.Status.Family.SUCCESSFUL;
 import static org.openremote.container.web.WebClient.getTarget;
 
-public abstract class IdentityService implements ContainerService {
+public class IdentityService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(IdentityService.class.getName());
 
@@ -64,13 +64,13 @@ public abstract class IdentityService implements ContainerService {
     protected UriBuilder externalAuthServerUrl;
     protected UriBuilder keycloakHostUri;
     protected UriBuilder keycloakServiceUri;
-    protected Client client;
+    protected Client httpClient;
     protected LoadingCache<ClientRealm.Key, ClientRealm> clientApplicationCache;
+    protected boolean keycloakReverseProxy;
+    protected String clientId;
 
     @Override
-    public void prepare(Container container) {
-
-        boolean disableAPISecurity = container.getConfigBoolean(DISABLE_API_SECURITY, DISABLE_API_SECURITY_DEFAULT);
+    public void init(Container container) throws Exception {
         boolean identityNetworkSecure = container.getConfigBoolean(IDENTITY_NETWORK_SECURE, IDENTITY_NETWORK_SECURE_DEFAULT);
         String identityNetworkHost = container.getConfig(IDENTITY_NETWORK_HOST, IDENTITY_NETWORK_HOST_DEFAULT);
         int identityNetworkPort = container.getConfigInteger(IDENTITY_NETWORK_WEBSERVER_PORT, IDENTITY_NETWORK_WEBSERVER_PORT_DEFAULT);
@@ -112,28 +112,33 @@ public abstract class IdentityService implements ContainerService {
                     container.getConfigInteger(KEYCLOAK_CLIENT_POOL_SIZE, KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT)
                 );
 
-        this.client = WebClient.registerDefaults(clientBuilder).build();
+        this.httpClient = WebClient.registerDefaults(container, clientBuilder).build();
 
         clientApplicationCache = createClientApplicationCache();
+    }
 
-        container.getService(getWebServiceClass()).getApiSingletons().add(
+    @Override
+    public void configure(Container container) throws Exception {
+        container.getService(WebService.class).getApiSingletons().add(
             new IdentityResource(this)
         );
 
-        if (enableKeycloakReverseProxy()) {
+        if (isKeycloakReverseProxy()) {
             SimpleProxyClientProvider proxyClient = new SimpleProxyClientProvider(keycloakHostUri.build());
             ProxyHandler proxyHandler = new ProxyHandler(
                 proxyClient,
                 container.getConfigInteger(KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT),
                 ResponseCodeHandler.HANDLE_404
             );
-            container.getService(getWebServiceClass()).getPrefixRoutes().put(AUTH_PATH, proxyHandler);
+            container.getService(WebService.class).getPrefixRoutes().put(AUTH_PATH, proxyHandler);
         }
 
-        if (disableAPISecurity) {
+        if (container.getConfigBoolean(DISABLE_API_SECURITY, DISABLE_API_SECURITY_DEFAULT)) {
             LOG.warning("###################### API SECURITY DISABLED! ######################");
         } else {
-            container.getService(getWebServiceClass()).setKeycloakConfigResolver(request -> {
+            if (getClientId() == null)
+                throw new IllegalStateException("Client ID must be set to enable API security");
+            container.getService(WebService.class).setKeycloakConfigResolver(request -> {
                 KeycloakDeployment passthroughKeycloakDeployment = new KeycloakDeployment();
 
                 String realm = request.getQueryParamValue("realm");
@@ -148,28 +153,28 @@ public abstract class IdentityService implements ContainerService {
     }
 
     @Override
-    public void start(Container container) {
+    public void start(Container container) throws Exception {
         // TODO Not a great way to block startup while we wait for other services (Hystrix?)
         pingKeycloak();
         LOG.info("Keycloak identity provider available: " + keycloakServiceUri.build());
     }
 
     @Override
-    public void stop(Container container) {
-        if (client != null)
-            client.close();
+    public void stop(Container container) throws Exception {
+        if (httpClient != null)
+            httpClient.close();
     }
 
-    public Client getClient() {
-        return client;
+    public Client getHttpClient() {
+        return httpClient;
     }
 
     public KeycloakResource getKeycloak() {
-        return getKeycloak(getTarget(client, keycloakServiceUri.build(), null));
+        return getKeycloak(getTarget(httpClient, keycloakServiceUri.build(), null));
     }
 
     public KeycloakResource getKeycloak(String accessToken) {
-        return getKeycloak(getTarget(client, keycloakServiceUri.build(), accessToken));
+        return getKeycloak(getTarget(httpClient, keycloakServiceUri.build(), accessToken));
     }
 
     public KeycloakResource getKeycloak(ResteasyWebTarget target) {
@@ -269,9 +274,19 @@ public abstract class IdentityService implements ContainerService {
             .build(loader);
     }
 
-    protected abstract boolean enableKeycloakReverseProxy();
+    public boolean isKeycloakReverseProxy() {
+        return keycloakReverseProxy;
+    }
 
-    protected abstract Class<? extends WebService> getWebServiceClass();
+    public void setKeycloakReverseProxy(boolean keycloakReverseProxy) {
+        this.keycloakReverseProxy = keycloakReverseProxy;
+    }
 
-    protected abstract String getClientId();
+    public String getClientId() {
+        return clientId;
+    }
+
+    public void setClientId(String clientId) {
+        this.clientId = clientId;
+    }
 }

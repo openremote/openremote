@@ -7,7 +7,7 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.observable.RetryWithDelay;
 import org.openremote.container.web.WebClient;
-import org.openremote.manager.server.web.ManagerWebService;
+import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.ngsi.EntryPoint;
 import rx.Observable;
 
@@ -35,11 +35,10 @@ public class AssetsService implements ContainerService {
     public static final int CONTEXTBROKER_CLIENT_POOL_SIZE_DEFAULT = 20;
 
     protected UriBuilder contextBrokerHostUri;
-    protected Client client;
+    protected Client httpClient;
 
     @Override
-    public void prepare(Container container) {
-
+    public void init(Container container) throws Exception {
         contextBrokerHostUri =
             UriBuilder.fromPath("/")
                 .scheme("http")
@@ -62,39 +61,41 @@ public class AssetsService implements ContainerService {
                     container.getConfigInteger(CONTEXTBROKER_CLIENT_POOL_SIZE, CONTEXTBROKER_CLIENT_POOL_SIZE_DEFAULT)
                 );
 
-        this.client = WebClient
-            .registerDefaults(clientBuilder)
+        this.httpClient = WebClient
+            .registerDefaults(container, clientBuilder)
             .register(EntryPointMessageBodyConverter.class)
             .register(EntityMessageBodyConverter.class)
             .register(EntityArrayMessageBodyConverter.class)
             .build();
-
-        container.getService(ManagerWebService.class).getApiSingletons().add(new EntryPointMessageBodyConverter());
-        container.getService(ManagerWebService.class).getApiSingletons().add(new EntityMessageBodyConverter());
-        container.getService(ManagerWebService.class).getApiSingletons().add(new EntityArrayMessageBodyConverter());
-
-        container.getService(ManagerWebService.class).getApiSingletons().add(new AssetsResourceImpl(this));
     }
 
     @Override
-    public void start(Container container) {
+    public void configure(Container container) throws Exception {
+        container.getService(WebService.class).getApiSingletons().add(new EntryPointMessageBodyConverter());
+        container.getService(WebService.class).getApiSingletons().add(new EntityMessageBodyConverter());
+        container.getService(WebService.class).getApiSingletons().add(new EntityArrayMessageBodyConverter());
+        container.getService(WebService.class).getApiSingletons().add(new AssetsResourceImpl(this));
+    }
+
+    @Override
+    public void start(Container container) throws Exception {
         // TODO Not a great way to block startup while we wait for other services (Hystrix?)
         pingContextBroker();
         LOG.info("Context broker provider available: " + contextBrokerHostUri.build());
     }
 
     @Override
-    public void stop(Container container) {
-        if (client != null)
-            client.close();
+    public void stop(Container container) throws Exception {
+        if (httpClient != null)
+            httpClient.close();
     }
 
-    public Client getClient() {
-        return client;
+    public Client getHttpClient() {
+        return httpClient;
     }
 
     public ContextBrokerResource getContextBroker() {
-        return getContextBroker(getTarget(client, contextBrokerHostUri.build(), null));
+        return getContextBroker(getTarget(httpClient, contextBrokerHostUri.build(), null));
     }
 
     public ContextBrokerResource getContextBroker(ResteasyWebTarget target) {
