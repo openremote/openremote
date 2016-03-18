@@ -30,7 +30,6 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -235,9 +234,6 @@ public abstract class WebService implements ContainerService {
 
         if (getKeycloakConfigResolver() != null) {
             resteasyDeployment.setSecurityEnabled(true);
-            LoginConfig loginConfig = new LoginConfig(SimpleKeycloakServletExtension.AUTH_MECHANISM, "OpenRemote");
-            deploymentInfo.setLoginConfig(loginConfig);
-            deploymentInfo.addServletExtension(new SimpleKeycloakServletExtension(getKeycloakConfigResolver()));
         }
 
         return addServletDeployment(deploymentInfo);
@@ -269,6 +265,14 @@ public abstract class WebService implements ContainerService {
 
     public HttpHandler addServletDeployment(DeploymentInfo deploymentInfo) {
         try {
+
+            if (getKeycloakConfigResolver() != null) {
+                deploymentInfo.setSecurityDisabled(false);
+                LoginConfig loginConfig = new LoginConfig(SimpleKeycloakServletExtension.AUTH_MECHANISM, "OpenRemote");
+                deploymentInfo.setLoginConfig(loginConfig);
+                deploymentInfo.addServletExtension(new SimpleKeycloakServletExtension(getKeycloakConfigResolver()));
+            }
+
             DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
             manager.deploy();
             return manager.start();

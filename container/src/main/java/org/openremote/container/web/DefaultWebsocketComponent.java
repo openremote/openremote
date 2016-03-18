@@ -21,9 +21,7 @@
 package org.openremote.container.web;
 
 import io.undertow.server.HttpHandler;
-import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.servlet.api.FilterInfo;
-import io.undertow.servlet.api.InstanceHandle;
+import io.undertow.servlet.api.*;
 import io.undertow.websockets.jsr.DefaultContainerConfigurator;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 import org.openremote.container.message.MessageBrokerService;
@@ -77,6 +75,16 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
             .setContextPath(MessageBrokerService.WEBSOCKET_PATH)
             .addServletContextAttribute(WebSocketDeploymentInfo.ATTRIBUTE_NAME, webSocketDeploymentInfo)
             .setClassLoader(WebsocketComponent.class.getClassLoader());
+
+        /* TODO Websocket security
+        deploymentInfo.addSecurityRoles("read");
+        SecurityConstraint constraint = new SecurityConstraint();
+        constraint.addRoleAllowed("read");
+        WebResourceCollection resourceCollection = new WebResourceCollection();
+        resourceCollection.addUrlPattern("/*");
+        constraint.addWebResourceCollection(resourceCollection);
+        deploymentInfo.addSecurityConstraints(constraint);
+        */
 
         HttpHandler handler = webService.addServletDeployment(deploymentInfo);
 

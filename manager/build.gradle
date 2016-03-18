@@ -44,6 +44,8 @@ dependencies {
     testCompile "junit:junit:$junitVersion"
     testCompile "org.spockframework:spock-core:$spockVersion"
     testCompile "org.objenesis:objenesis:$objenesisVersion"
+    testCompile "org.glassfish.tyrus:tyrus-client:$tyrusVersion"
+    testCompile "org.glassfish.tyrus:tyrus-container-grizzly-client:$tyrusVersion"
 }
 
 configurations {

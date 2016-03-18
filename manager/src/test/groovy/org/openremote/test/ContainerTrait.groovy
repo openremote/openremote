@@ -1,9 +1,6 @@
 package org.openremote.test
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.apache.camel.ProducerTemplate
-import org.apache.camel.builder.RouteBuilder
-import org.apache.camel.component.mock.MockEndpoint
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
 import org.junit.After
@@ -11,7 +8,6 @@ import org.junit.Before
 import org.keycloak.representations.AccessTokenResponse
 import org.openremote.container.Container
 import org.openremote.container.ContainerService
-import org.openremote.container.message.MessageBrokerContext
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.security.AuthForm
 import org.openremote.container.security.IdentityService
@@ -36,28 +32,6 @@ trait ContainerTrait {
     int serverPort;
     Client client;
     UriBuilder serverApiUri;
-    MessageBrokerContext messageClientContext;
-    ProducerTemplate messageProducer;
-    MockEndpoint messageReceiver;
-
-    static class MockRouteBuilder extends RouteBuilder {
-
-        final String eventsUrl;
-
-        MockRouteBuilder(String eventsUrl) {
-            this.eventsUrl = eventsUrl
-        }
-
-        @Override
-        public void configure() throws Exception {
-            from("direct:sendEvent")
-                    .to(eventsUrl);
-
-            from(eventsUrl)
-                    .to('log:EVENT_RECEIVED: ${body}')
-                    .to("mock:eventReceiver");
-        }
-    }
 
     @Before
     setupContainer() {
@@ -96,25 +70,10 @@ trait ContainerTrait {
                 .scheme("http").host("localhost").port(serverPort);
 
         container.startBackground();
-
-        // Websocket/message broker test client using Camel
-        messageClientContext = new MessageBrokerContext();
-
-        messageProducer = messageClientContext.createProducerTemplate();
-        messageProducer.setDefaultEndpoint(messageClientContext.getEndpoint("direct:sendEvent"));
-
-        messageReceiver = messageClientContext.getEndpoint("mock:eventReceiver", MockEndpoint.class);
-        messageReceiver.setResultWaitTime(5000);
-
-        messageClientContext.addRoutes(new MockRouteBuilder(getWebsocketUrl(EventService.WEBSOCKET_EVENTS)));
-
-        messageClientContext.start()
     }
 
     @After
     cleanupContainer() {
-        if (messageClientContext)
-            messageClientContext.stop();
         if (container)
             container.stop();
     }
@@ -141,18 +100,6 @@ trait ContainerTrait {
 
     def ResteasyWebTarget getClientTarget(String realm, String path, String accessToken) {
         WebClient.getTarget(client, serverApiUri.clone().replacePath(realm).path(path).build(), accessToken);
-    }
-
-    def getWebSocketScheme() {
-        "ahc-ws";
-    }
-
-    def getWebsocketUrl(String endpoint) {
-        getClientTarget().getUriBuilder().clone()
-                .scheme(webSocketScheme)
-                .path(MessageBrokerService.WEBSOCKET_PATH)
-                .path(endpoint)
-                .build().toString();
     }
 
     def findEphemeralPort() {
