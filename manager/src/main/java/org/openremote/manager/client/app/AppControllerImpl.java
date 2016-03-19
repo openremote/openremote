@@ -5,6 +5,7 @@ import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.RootLayoutPanel;
 import com.google.inject.Provider;
 import com.google.web.bindery.event.shared.EventBus;
+import elemental.client.Browser;
 import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.i18n.ManagerConstants;
 import org.openremote.manager.client.service.SecurityService;
@@ -41,11 +42,18 @@ public class AppControllerImpl implements AppController, AppLayout.Presenter {
 
         @Override
         public void goTo(Place newPlace) {
-            if (securityService.isTokenExpired(10)) {
-                securityService.login();
-                return;
-            }
-            super.goTo(newPlace);
+            // TODO Should we also update access token before every API call?
+            int minValiditySeconds = 10;
+            securityService.updateToken(
+                minValiditySeconds,
+                refreshed -> {
+                    // If it wasn't refreshed, it was still valid, in both cases we can continue
+                    super.goTo(newPlace);
+                },
+                () -> {
+                    // TODO Better error handling
+                    Browser.getWindow().alert("Error refreshing access token. Sorry.");
+                });
         }
     }
 
