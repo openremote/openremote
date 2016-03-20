@@ -25,6 +25,7 @@ class EventEchoTest extends Specification implements ContainerTrait, WebsocketCl
         def session = connect(
                 testClient,
                 getClientTarget(),
+                realm,
                 accessTokenResponse.getToken(),
                 EventService.WEBSOCKET_EVENTS
         );

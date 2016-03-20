@@ -49,13 +49,14 @@ public class WebsocketConsumer extends DefaultConsumer {
         return endpoint;
     }
 
-    public void sendMessage(final String sessionKey, final String message) {
-        sendMessage(sessionKey, (Object)message);
+    public void sendMessage(final String sessionKey, final WebsocketAuth websocketAuth, final String message) {
+        sendMessage(sessionKey, websocketAuth, (Object)message);
     }
 
-    public void sendMessage(final String sessionKey, final Object message) {
+    public void sendMessage(final String sessionKey, final WebsocketAuth websocketAuth, final Object message) {
         final Exchange exchange = getEndpoint().createExchange();
         exchange.getIn().setHeader(WebsocketConstants.SESSION_KEY, sessionKey);
+        exchange.getIn().setHeader(WebsocketConstants.AUTH, websocketAuth);
         exchange.getIn().setBody(message);
 
         getAsyncProcessor().process(exchange, doneSync -> {

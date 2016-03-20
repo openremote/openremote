@@ -115,6 +115,25 @@ public class IdentityService implements ContainerService {
         this.httpClient = WebClient.registerDefaults(container, clientBuilder).build();
 
         clientApplicationCache = createClientApplicationCache();
+
+        if (container.getConfigBoolean(DISABLE_API_SECURITY, DISABLE_API_SECURITY_DEFAULT)) {
+            LOG.warning("###################### API SECURITY DISABLED! ######################");
+        } else {
+            if (getClientId() == null)
+                throw new IllegalStateException("Client ID must be set to enable API security");
+            container.getService(WebService.class).setKeycloakConfigResolver(request -> {
+                // This will pass authentication ("NOT ATTEMPTED" state), but later fail any role authorization
+                KeycloakDeployment notAuthenticatedKeycloakDeployment = new KeycloakDeployment();
+
+                String realm = request.getQueryParamValue("realm");
+                if (realm == null || realm.length() == 0)
+                    return notAuthenticatedKeycloakDeployment;
+                ClientRealm clientApplication = getClientRealm(realm, getClientId());
+                if (clientApplication == null)
+                    return notAuthenticatedKeycloakDeployment;
+                return clientApplication.keycloakDeployment;
+            });
+        }
     }
 
     @Override
@@ -131,24 +150,6 @@ public class IdentityService implements ContainerService {
                 ResponseCodeHandler.HANDLE_404
             );
             container.getService(WebService.class).getPrefixRoutes().put(AUTH_PATH, proxyHandler);
-        }
-
-        if (container.getConfigBoolean(DISABLE_API_SECURITY, DISABLE_API_SECURITY_DEFAULT)) {
-            LOG.warning("###################### API SECURITY DISABLED! ######################");
-        } else {
-            if (getClientId() == null)
-                throw new IllegalStateException("Client ID must be set to enable API security");
-            container.getService(WebService.class).setKeycloakConfigResolver(request -> {
-                KeycloakDeployment passthroughKeycloakDeployment = new KeycloakDeployment();
-
-                String realm = request.getQueryParamValue("realm");
-                if (realm == null || realm.length() == 0)
-                    return passthroughKeycloakDeployment;
-                ClientRealm clientApplication = getClientRealm(realm, getClientId());
-                if (clientApplication == null)
-                    return passthroughKeycloakDeployment;
-                return clientApplication.keycloakDeployment;
-            });
         }
     }
 

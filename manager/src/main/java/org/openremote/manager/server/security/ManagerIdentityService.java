@@ -8,8 +8,8 @@ public class ManagerIdentityService extends IdentityService {
 
     @Override
     public void init(Container container) throws Exception {
+        setClientId(Constants.MANAGER_CLIENT_ID);
         super.init(container);
         setKeycloakReverseProxy(true);
-        setClientId(Constants.MANAGER_CLIENT_ID);
     }
 }

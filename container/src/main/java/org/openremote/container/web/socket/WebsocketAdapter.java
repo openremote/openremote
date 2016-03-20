@@ -42,11 +42,13 @@ public class WebsocketAdapter extends Endpoint {
         if (LOG.isLoggable(Level.FINE))
             LOG.fine("Websocket session open: " + session.getId());
         consumer.getEndpoint().getWebsocketSessions().add(session);
-
         session.addMessageHandler(String.class, message -> {
             if (LOG.isLoggable(Level.FINE))
                 LOG.fine("Websocket session " + session.getId() + " message received: " + message);
-            this.consumer.sendMessage(session.getId(), message);
+            WebsocketAuth websocketAuth = (WebsocketAuth) session.getUserProperties().get(WebsocketConstants.AUTH);
+            if (websocketAuth == null)
+                throw new IllegalStateException("No authorization details in websocket session: " + session.getId());
+            this.consumer.sendMessage(session.getId(), websocketAuth, message);
         });
     }
 

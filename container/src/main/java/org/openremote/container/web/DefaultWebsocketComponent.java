@@ -25,15 +25,13 @@ import io.undertow.servlet.api.*;
 import io.undertow.websockets.jsr.DefaultContainerConfigurator;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.web.socket.WebsocketAdapter;
-import org.openremote.container.web.socket.WebsocketCORSFilter;
-import org.openremote.container.web.socket.WebsocketComponent;
-import org.openremote.container.web.socket.WebsocketConsumer;
+import org.openremote.container.web.socket.*;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
+import javax.websocket.HandshakeResponse;
+import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpointConfig;
-import java.util.Map;
 import java.util.logging.Logger;
 
 public class DefaultWebsocketComponent extends WebsocketComponent {
@@ -65,6 +63,15 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
                         public <T> T getEndpointInstance(Class<T> endpointClass) throws InstantiationException {
                             return (T) new WebsocketAdapter(consumerEntry.getValue());
                         }
+
+                        @Override
+                        public void modifyHandshake(ServerEndpointConfig config, HandshakeRequest request, HandshakeResponse response) {
+                            config.getUserProperties().put(
+                                WebsocketConstants.AUTH,
+                                (WebsocketAuth) request::isUserInRole
+                            );
+                            super.modifyHandshake(config, request, response);
+                        }
                     })
                     .build()
             );
@@ -76,15 +83,13 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
             .addServletContextAttribute(WebSocketDeploymentInfo.ATTRIBUTE_NAME, webSocketDeploymentInfo)
             .setClassLoader(WebsocketComponent.class.getClassLoader());
 
-        /* TODO Websocket security
-        deploymentInfo.addSecurityRoles("read");
-        SecurityConstraint constraint = new SecurityConstraint();
-        constraint.addRoleAllowed("read");
         WebResourceCollection resourceCollection = new WebResourceCollection();
         resourceCollection.addUrlPattern("/*");
+        // A constraint with empty roles triggers authentication, we authorize specific roles later in Camel
+        SecurityConstraint constraint = new SecurityConstraint();
+        constraint.setEmptyRoleSemantic(SecurityInfo.EmptyRoleSemantic.PERMIT);
         constraint.addWebResourceCollection(resourceCollection);
         deploymentInfo.addSecurityConstraints(constraint);
-        */
 
         HttpHandler handler = webService.addServletDeployment(deploymentInfo);
 

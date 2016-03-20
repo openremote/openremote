@@ -28,6 +28,7 @@ trait WebsocketClientTrait {
             this.accessToken = accessToken
         }
 
+        @Override
         public void beforeRequest(Map<String, List<String>> headers) {
             if (accessToken != null)
                 headers.put("Authorization", ["Bearer " + accessToken]);
@@ -103,11 +104,12 @@ trait WebsocketClientTrait {
         }
     }
 
-    def getWebsocketServerUrl(UriBuilder uriBuilder, String endpointPath) {
+    def getWebsocketServerUrl(UriBuilder uriBuilder, String realm, String endpointPath) {
         uriBuilder.clone()
                 .scheme("ws")
-                .path(MessageBrokerService.WEBSOCKET_PATH)
+                .replacePath(MessageBrokerService.WEBSOCKET_PATH)
                 .path(endpointPath)
+                .queryParam("realm", realm)
                 .build();
     }
 
@@ -117,8 +119,8 @@ trait WebsocketClientTrait {
                 .build();
     }
 
-    def Session connect(TestClient client, WebTarget webTarget, String accessToken, String endpointPath) {
-        def uri = getWebsocketServerUrl(webTarget.getUriBuilder(), endpointPath);
+    def Session connect(TestClient client, WebTarget webTarget, String realm, String accessToken, String endpointPath) {
+        def uri = getWebsocketServerUrl(webTarget.getUriBuilder(), realm, endpointPath);
         def config = getWebsocketClientEndpointConfig(accessToken);
         websocketContainer.connectToServer(client, config, uri);
     }
