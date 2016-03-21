@@ -1,17 +1,14 @@
 package org.openremote.manager.client.app;
 
-import com.google.gwt.activity.shared.Activity;
-import com.google.gwt.activity.shared.ActivityMapper;
 import com.google.gwt.place.shared.Place;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import org.openremote.manager.client.assets.AssetListActivity;
 import org.openremote.manager.client.assets.AssetsPlace;
+import org.openremote.manager.client.mvp.AppActivity;
+import org.openremote.manager.client.mvp.AppActivityMapper;
 
-/**
- * Created by Richard on 12/02/2016.
- */
-public class LeftSideActivityMapper implements ActivityMapper {
+public class LeftSideActivityMapper implements AppActivityMapper {
     private final Provider<AssetListActivity> assetsActivityProvider;
 
     @Inject
@@ -19,11 +16,10 @@ public class LeftSideActivityMapper implements ActivityMapper {
         this.assetsActivityProvider = assetsActivityProvider;
     }
 
-    public Activity getActivity(Place place) {
+    public AppActivity getActivity(Place place) {
         if (place instanceof AssetsPlace) {
             AssetsPlace assetsPlace = (AssetsPlace) place;
-            Activity activity = assetsActivityProvider.get().doInit(assetsPlace);
-            return activity;
+            return assetsActivityProvider.get().doInit(assetsPlace);
         }
 
         return null;

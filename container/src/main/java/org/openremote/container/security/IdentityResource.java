@@ -19,10 +19,10 @@ public class IdentityResource extends WebResource {
     @Path("install/{clientId}")
     @Produces(MediaType.APPLICATION_JSON)
     public ClientInstall getClientInstall(@PathParam("clientId") String clientId) {
-        ClientRealm clientApplication =
+        ClientRealm clientRealm =
             identityService.getClientRealm(getRealm(), clientId);
-        if (clientApplication == null)
+        if (clientRealm == null)
             throw new WebApplicationException(Response.Status.NOT_FOUND);
-        return clientApplication.clientInstall;
+        return clientRealm.clientInstall;
     }
 }

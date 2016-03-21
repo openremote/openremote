@@ -5,9 +5,8 @@ import com.google.gwt.place.shared.Place;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.*;
-import com.google.web.bindery.event.shared.EventBus;
-import org.openremote.manager.client.i18n.ManagerConstants;
 import org.openremote.manager.client.assets.AssetsPlace;
+import org.openremote.manager.client.i18n.ManagerConstants;
 
 import javax.inject.Inject;
 
@@ -36,11 +35,8 @@ public class AppLayoutImpl extends Composite implements AppLayout {
 
     Presenter presenter;
 
-    EventBus eventBus;
-
     @Inject
-    public AppLayoutImpl(EventBus eventBus, ManagerConstants constants) {
-        this.eventBus = eventBus;
+    public AppLayoutImpl(ManagerConstants constants) {
         this.constants = constants;
         appLayout = ui.createAndBindUi(this);
         initWidget(appLayout);

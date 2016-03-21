@@ -3,29 +3,28 @@ package org.openremote.manager.client.assets;
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
-import com.google.web.bindery.event.shared.EventBus;
-import org.openremote.manager.client.app.AbstractActivity;
+import org.openremote.manager.client.event.bus.EventBus;
+import org.openremote.manager.client.event.bus.EventRegistration;
+import org.openremote.manager.client.mvp.AppActivity;
 
 import javax.inject.Inject;
+import java.util.Collection;
 
 /**
  * Activity for Asset Manager
  */
 public class AssetListActivity
-        extends AbstractActivity<AssetsPlace>
+        extends AppActivity<AssetsPlace>
         implements AssetListView.Presenter {
 
     final AssetListView view;
     final PlaceController placeController;
-    final EventBus bus;
 
     @Inject
     public AssetListActivity(AssetListView view,
-                             PlaceController placeController,
-                             EventBus bus) {
+                             PlaceController placeController) {
         this.view = view;
         this.placeController = placeController;
-        this.bus = bus;
     }
 
     @Override
@@ -34,7 +33,7 @@ public class AssetListActivity
     }
 
     @Override
-    public void start(AcceptsOneWidget container, com.google.gwt.event.shared.EventBus activityBus) {
+    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
         view.setPresenter(this);
         container.setWidget(view.asWidget());
     }

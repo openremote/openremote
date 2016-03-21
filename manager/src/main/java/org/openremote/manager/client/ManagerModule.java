@@ -1,6 +1,5 @@
 package org.openremote.manager.client;
 
-import com.google.gwt.activity.shared.ActivityManager;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.inject.client.AbstractGinModule;
 import com.google.gwt.place.shared.PlaceController;
@@ -9,24 +8,26 @@ import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import com.google.web.bindery.event.shared.EventBus;
-import com.google.web.bindery.event.shared.SimpleEventBus;
+import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.i18n.ManagerConstants;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.interop.keycloak.Keycloak;
 import org.openremote.manager.client.app.*;
+import org.openremote.manager.client.mvp.AppActivityManager;
+import org.openremote.manager.client.mvp.AppPlaceController;
 import org.openremote.manager.client.service.*;
 import org.openremote.manager.client.map.*;
 import org.openremote.manager.client.assets.*;
 import org.openremote.manager.shared.map.MapResource;
 
-public class MainModule extends AbstractGinModule {
+public class ManagerModule extends AbstractGinModule {
 
     @Override
     protected void configure() {
         // App Wiring
-        bind(EventBus.class).to(SimpleEventBus.class).in(Singleton.class);
-        bind(PlaceHistoryMapper.class).to(HistoryMapper.class).in(Singleton.class);
+        bind(com.google.web.bindery.event.shared.EventBus.class).to(com.google.web.bindery.event.shared.SimpleEventBus.class).in(Singleton.class);
+        bind(EventBus.class).in(Singleton.class);
+        bind(PlaceHistoryMapper.class).to(ManagerHistoryMapper.class).in(Singleton.class);
         bind(AppController.class).to(AppControllerImpl.class).in(Singleton.class);
 
         // Views
@@ -63,17 +64,15 @@ public class MainModule extends AbstractGinModule {
     @Provides
     @Singleton
     @Named("MainContentManager")
-    public ActivityManager getMainContentActivityMapper(
-            MainContentActivityMapper activityMapper, EventBus eventBus) {
-        return new ActivityManager(activityMapper, eventBus);
+    public AppActivityManager getMainContentActivityMapper(MainContentActivityMapper activityMapper, EventBus eventBus) {
+        return new AppActivityManager("MainContentManager", activityMapper, eventBus);
     }
 
     @Provides
     @Singleton
     @Named("LeftSideManager")
-    public ActivityManager getLeftSideActivityMapper(
-            LeftSideActivityMapper activityMapper, EventBus eventBus) {
-        return new ActivityManager(activityMapper, eventBus);
+    public AppActivityManager getLeftSideActivityMapper(LeftSideActivityMapper activityMapper, EventBus eventBus) {
+        return new AppActivityManager("LeftSideManager", activityMapper, eventBus);
     }
 
     @Provides
@@ -103,30 +102,19 @@ public class MainModule extends AbstractGinModule {
         return $wnd.MapResource;
     }-*/;
 
-    /* TODO
     @Provides
     @Singleton
-    public AssetRestService getAssetRestService() {
-        String baseUrl = GWT.getHostPageBaseURL();
-        AssetRestService assetRestService = GWT.create(AssetRestService.class);
-        ((RestServiceProxy) assetRestService).setResource(new Resource(baseUrl));
-        return assetRestService;
-    }
-    (*/
-
-    @Provides
-    @Singleton
-    public PlaceController getPlaceController(SecurityService securityService, PlaceHistoryMapper historyMapper, EventBus eventBus) {
-        return new AppControllerImpl.AppPlaceController(securityService, historyMapper, eventBus);
+    public PlaceController getPlaceController(SecurityService securityService, PlaceHistoryMapper historyMapper, EventBus eventBus, com.google.web.bindery.event.shared.EventBus legacyEventBus) {
+        return new AppPlaceController(securityService, eventBus, legacyEventBus);
     }
 
     @Provides
     @Singleton
     public PlaceHistoryHandler getHistoryHandler(PlaceController placeController,
                                                  PlaceHistoryMapper historyMapper,
-                                                 EventBus eventBus) {
+                                                 com.google.web.bindery.event.shared.EventBus legacyEventBus) {
         PlaceHistoryHandler historyHandler = new PlaceHistoryHandler(historyMapper);
-        historyHandler.register(placeController, eventBus, new MapPlace());
+        historyHandler.register(placeController, legacyEventBus, new MapPlace());
         return historyHandler;
     }
 }

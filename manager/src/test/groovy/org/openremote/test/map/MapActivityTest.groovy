@@ -2,8 +2,8 @@ package org.openremote.test.map
 
 import com.google.gwt.place.shared.PlaceController
 import com.google.gwt.user.client.ui.AcceptsOneWidget
-import com.google.web.bindery.event.shared.EventBus
 import elemental.json.JsonObject
+import org.openremote.manager.client.event.bus.EventBus
 import org.openremote.manager.client.map.MapActivity
 import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.service.SecurityService
@@ -21,9 +21,9 @@ class MapActivityTest extends Specification implements ContainerTrait, ClientTra
     def "Initialize map"() {
         given: "The fake client environment"
         def placeController = Mock(PlaceController)
-        def eventBus = Mock(EventBus)
         def activityContainer = Mock(AcceptsOneWidget)
-        def activityBus = Mock(com.google.gwt.event.shared.EventBus)
+        def activityBus = Mock(EventBus)
+        def activityRegistrations = []
 
         and: "An authenticated user"
         def realm = MASTER_REALM;
@@ -44,14 +44,14 @@ class MapActivityTest extends Specification implements ContainerTrait, ClientTra
             _(_) >> { callResourceProxy(realm, getDelegate()) }
         }
         def mapActivity = new MapActivity(
-                mapView, mapResource, requestService, placeController, eventBus
+                mapView, mapResource, requestService, placeController
         )
 
         and: "The expected map settings"
         JsonObject mapSettings;
 
         when: "The activity is started"
-        mapActivity.start(activityContainer, activityBus)
+        mapActivity.start(activityContainer, activityBus, activityRegistrations)
 
         then: "The view should have the activity set as presenter"
         1 * mapView.setPresenter(mapActivity)

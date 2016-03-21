@@ -3,10 +3,8 @@ package org.openremote.manager.client.app;
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.user.client.ui.IsWidget;
 
-/**
- * Created by Richard on 24/02/2016.
- */
 public interface HeaderView extends IsWidget {
+
     interface Presenter {
         HeaderView getView();
 

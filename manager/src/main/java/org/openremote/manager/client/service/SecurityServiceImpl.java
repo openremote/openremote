@@ -1,11 +1,13 @@
 package org.openremote.manager.client.service;
 
-import com.google.gwt.user.client.Window;
 import com.google.inject.Inject;
-import com.google.web.bindery.event.shared.EventBus;
 import elemental.json.JsonObject;
 import org.openremote.manager.client.event.UserChangeEvent;
-import org.openremote.manager.client.interop.keycloak.*;
+import org.openremote.manager.client.event.bus.EventBus;
+import org.openremote.manager.client.interop.keycloak.Keycloak;
+import org.openremote.manager.client.interop.keycloak.KeycloakCallback;
+import org.openremote.manager.client.interop.keycloak.LoginOptions;
+import org.openremote.manager.client.interop.keycloak.LogoutOptions;
 import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.Runnable;
 
@@ -24,13 +26,13 @@ public class SecurityServiceImpl implements SecurityService {
         this.cookieService = cookieService;
         this.eventBus = eventBus;
 
-         // TODO Add event handlers for security service?
-         onAuthSuccess(() -> {
-          eventBus.fireEvent(new UserChangeEvent(getUsername()));
-         });
+        // TODO Add event handlers for security service?
+        onAuthSuccess(() -> {
+            eventBus.dispatch(new UserChangeEvent(getUsername()));
+        });
 
         onAuthLogout(() -> {
-            eventBus.fireEvent(new UserChangeEvent(null));
+            eventBus.dispatch(new UserChangeEvent(null));
         });
 
         // Update username

@@ -4,17 +4,19 @@ import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
-import com.google.web.bindery.event.shared.EventBus;
-import org.openremote.manager.client.app.AbstractActivity;
+import org.openremote.manager.client.event.bus.EventBus;
+import org.openremote.manager.client.event.bus.EventRegistration;
+import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.shared.http.JsonObjectCallback;
 import org.openremote.manager.shared.map.MapResource;
 
 import javax.inject.Inject;
+import java.util.Collection;
 import java.util.logging.Logger;
 
 public class MapActivity
-    extends AbstractActivity<MapPlace>
+    extends AppActivity<MapPlace>
     implements MapView.Presenter {
 
     private static final Logger LOG = Logger.getLogger(MapActivity.class.getName());
@@ -23,19 +25,16 @@ public class MapActivity
     private final MapResource mapResource;
     private final RequestService requestService;
     private final PlaceController placeController;
-    private final EventBus bus;
 
     @Inject
     public MapActivity(MapView view,
                        MapResource mapResource,
                        RequestService requestService,
-                       PlaceController placeController,
-                       EventBus bus) {
+                       PlaceController placeController) {
         this.view = view;
         this.requestService = requestService;
         this.mapResource = mapResource;
         this.placeController = placeController;
-        this.bus = bus;
     }
 
     @Override
@@ -44,7 +43,7 @@ public class MapActivity
     }
 
     @Override
-    public void start(AcceptsOneWidget container, com.google.gwt.event.shared.EventBus activityBus) {
+    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
         view.setPresenter(this);
         container.setWidget(view.asWidget());
 
