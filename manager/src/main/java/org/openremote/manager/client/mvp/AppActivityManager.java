@@ -3,7 +3,6 @@ package org.openremote.manager.client.mvp;
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.gwt.user.client.ui.IsWidget;
-import com.google.web.bindery.event.shared.UmbrellaException;
 import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.WillGoToPlaceEvent;
 import org.openremote.manager.client.event.bus.EventBus;
@@ -11,7 +10,6 @@ import org.openremote.manager.client.event.bus.EventRegistration;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,8 +25,8 @@ public class AppActivityManager {
      * Wraps our real display to prevent an Activity from taking it over if it is
      * not the currentActivity.
      */
-    private class ProtectedDisplay implements AcceptsOneWidget {
-        private final AppActivity appActivity;
+    protected class ProtectedDisplay implements AcceptsOneWidget {
+        protected final AppActivity appActivity;
 
         ProtectedDisplay(AppActivity appActivity) {
             this.appActivity = appActivity;
@@ -42,7 +40,7 @@ public class AppActivityManager {
         }
     }
 
-    private static final AppActivity NULL_ACTIVITY = new AppActivity() {
+    protected static final AppActivity NULL_ACTIVITY = new AppActivity() {
         @Override
         protected void init(Place place) {
 
@@ -87,10 +85,6 @@ public class AppActivityManager {
         if (LOG.isLoggable(Level.FINE))
             LOG.fine(name + " - next activity is: " + nextActivity);
 
-        Throwable caughtOnStop = null;
-        Throwable caughtOnCancel = null;
-        Throwable caughtOnStart = null;
-
         if (nextActivity == null) {
             nextActivity = NULL_ACTIVITY;
         }
@@ -104,21 +98,16 @@ public class AppActivityManager {
         if (startingNext) {
             // The place changed again before the new current activity showed its
             // widget
-            caughtOnCancel = tryStopOrCancel(false);
+            tryStopOrCancel(false);
             currentActivity = NULL_ACTIVITY;
             startingNext = false;
         } else if (!currentActivity.equals(NULL_ACTIVITY)) {
             showWidget(null);
-          /*
-           * Kill off the activity's handlers, so it doesn't have to worry about
-           * them accidentally firing as a side effect of its tear down
-           */
             if (LOG.isLoggable(Level.FINE))
                 LOG.fine(name + " - removing current activity registrations: " + activityRegistrations);
             eventBus.removeAll(activityRegistrations);
             activityRegistrations.clear();
-
-            caughtOnStop = tryStopOrCancel(true);
+            tryStopOrCancel(true);
         }
 
         currentActivity = nextActivity;
@@ -127,22 +116,7 @@ public class AppActivityManager {
             showWidget(null);
         } else {
             startingNext = true;
-            caughtOnStart = tryStart();
-        }
-
-        if (caughtOnStart != null || caughtOnCancel != null || caughtOnStop != null) {
-            Set<Throwable> causes = new LinkedHashSet<Throwable>();
-            if (caughtOnStop != null) {
-                causes.add(caughtOnStop);
-            }
-            if (caughtOnCancel != null) {
-                causes.add(caughtOnCancel);
-            }
-            if (caughtOnStart != null) {
-                causes.add(caughtOnStart);
-            }
-
-            throw new UmbrellaException(causes);
+            tryStart();
         }
     }
 
@@ -178,7 +152,7 @@ public class AppActivityManager {
         }
     }
 
-    private AppActivity getNextActivity(Place newPlace) {
+    protected AppActivity getNextActivity(Place newPlace) {
         if (display == null) {
       /*
        * Display may have been nulled during PlaceChangeEvent dispatch. Don't
@@ -190,31 +164,20 @@ public class AppActivityManager {
         return mapper.getActivity(newPlace);
     }
 
-    private void showWidget(IsWidget view) {
+    protected void showWidget(IsWidget view) {
         if (display != null) {
             display.setWidget(view);
         }
     }
 
-    private Throwable tryStart() {
+    protected void tryStart() {
         Throwable caughtOnStart = null;
-        try {
-      /*
-       * Wrap the actual display with a per-call instance that protects the
-       * display from canceled or stopped activities, and which maintains our
-       * startingNext state.
-       */
-            if (LOG.isLoggable(Level.FINE))
-                LOG.fine(name + " - starting activity: " + currentActivity);
-            currentActivity.start(new ProtectedDisplay(currentActivity), eventBus, activityRegistrations);
-        } catch (Throwable t) {
-            caughtOnStart = t;
-        }
-        return caughtOnStart;
+        if (LOG.isLoggable(Level.FINE))
+            LOG.fine(name + " - starting activity: " + currentActivity);
+        currentActivity.start(new ProtectedDisplay(currentActivity), eventBus, activityRegistrations);
     }
 
-    private Throwable tryStopOrCancel(boolean stop) {
-        Throwable caughtOnStop = null;
+    protected void tryStopOrCancel(boolean stop) {
         try {
             if (stop) {
                 if (LOG.isLoggable(Level.FINE))
@@ -225,8 +188,6 @@ public class AppActivityManager {
                     LOG.fine(name + " - cancelling current activity: " + currentActivity);
                 currentActivity.onCancel();
             }
-        } catch (Throwable t) {
-            caughtOnStop = t;
         } finally {
             // Activity might have added registrations in onStop or onCancel
             if (!activityRegistrations.isEmpty()) {
@@ -236,6 +197,5 @@ public class AppActivityManager {
                 activityRegistrations.clear();
             }
         }
-        return caughtOnStop;
     }
 }

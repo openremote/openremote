@@ -126,11 +126,15 @@ public class IdentityService implements ContainerService {
                 KeycloakDeployment notAuthenticatedKeycloakDeployment = new KeycloakDeployment();
 
                 String realm = request.getQueryParamValue("realm");
-                if (realm == null || realm.length() == 0)
+                if (realm == null || realm.length() == 0) {
+                    LOG.fine("No realm in request, no authentication will be attempted: " + request.getURI());
                     return notAuthenticatedKeycloakDeployment;
+                }
                 ClientRealm clientApplication = getClientRealm(realm, getClientId());
-                if (clientApplication == null)
+                if (clientApplication == null) {
+                    LOG.fine("No client application configured for realm, no authentication will be attempted: " + request.getURI());
                     return notAuthenticatedKeycloakDeployment;
+                }
                 return clientApplication.keycloakDeployment;
             });
         }

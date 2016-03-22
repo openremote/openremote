@@ -1,16 +1,15 @@
 package org.openremote.manager.client.service;
 
 import elemental.json.JsonObject;
-import org.openremote.manager.client.interop.keycloak.InitOptions;
 import org.openremote.manager.client.interop.keycloak.LoginOptions;
 import org.openremote.manager.client.interop.keycloak.LogoutOptions;
 import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.Runnable;
 
-/**
- * Created by Richard on 10/02/2016.
- */
 public interface SecurityService {
+
+    public static final int MIN_VALIDITY_SECONDS = 10;
+
     String getUsername();
 
     void login();

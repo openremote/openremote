@@ -8,8 +8,10 @@ public interface AssetDetailView extends IsWidget {
     interface Presenter {
         void goTo(Place place);
 
-        void getHelloText();
+        void sendMessage();
     }
 
     void setPresenter(Presenter presenter);
+
+    void setMessageText(String text);
 }

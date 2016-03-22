@@ -94,8 +94,7 @@ public class EventService implements ContainerService {
         if (LOG.isLoggable(Level.FINE))
             LOG.fine("### On incoming message event: " + message);
 
-        // TODO echo!
-        sendEvent(message);
+        sendEvent(new Message("Hello from server, the time is: " + System.currentTimeMillis()));
     }
 
 }

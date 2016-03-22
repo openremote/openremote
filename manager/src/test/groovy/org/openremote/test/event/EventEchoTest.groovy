@@ -37,7 +37,7 @@ class EventEchoTest extends Specification implements ContainerTrait, WebsocketCl
         testClient.awaitMessages(false);
 
         then: "the expected messages should eventually arrive"
-        testClient.messages[0] == JSON.writeValueAsString(sampleMessage); // It's an echo
+        JSON.readValue(testClient.messages[0] as String, Message.class).getBody().startsWith("Hello from server");
 
         when: "we do the same again after resetting the test client"
         testClient.reset(1);
@@ -52,6 +52,6 @@ class EventEchoTest extends Specification implements ContainerTrait, WebsocketCl
         testClient.awaitMessages();
 
         then: "the expected messages should eventually arrive"
-        testClient.messages[0] == JSON.writeValueAsString(sampleMessage); // It's an echo
+        JSON.readValue(testClient.messages[0] as String, Message.class).getBody().startsWith("Hello from server");
     }
 }

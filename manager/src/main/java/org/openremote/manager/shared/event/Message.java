@@ -20,8 +20,6 @@
 
 package org.openremote.manager.shared.event;
 
-import jsinterop.annotations.JsIgnore;
-
 import java.util.Map;
 
 public class Message extends Event {
@@ -40,7 +38,6 @@ public class Message extends Event {
     public Message(String body) {
         this.body = body;
     }
-
 
     public Map<String, Object> getHeaders() {
         return headers;

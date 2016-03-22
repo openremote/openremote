@@ -8,6 +8,7 @@ import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
+import org.openremote.manager.client.event.EventMapper;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.i18n.ManagerConstants;
 import org.openremote.manager.client.i18n.ManagerMessages;
@@ -18,6 +19,8 @@ import org.openremote.manager.client.mvp.AppPlaceController;
 import org.openremote.manager.client.service.*;
 import org.openremote.manager.client.map.*;
 import org.openremote.manager.client.assets.*;
+import org.openremote.manager.client.service.EventService;
+import org.openremote.manager.server.event.*;
 import org.openremote.manager.shared.map.MapResource;
 
 public class ManagerModule extends AbstractGinModule {
@@ -45,6 +48,14 @@ public class ManagerModule extends AbstractGinModule {
         // Services
         bind(CookieService.class).to(CookieServiceImpl.class).in(Singleton.class);
         bind(ValidatorService.class).to(ValidatorServiceImpl.class).in(Singleton.class);
+    }
+
+    @Provides
+    @Singleton
+    public EventService getEventBus(SecurityService securityService, EventBus eventBus, EventMapper eventMapper) {
+        EventService eventService = EventServiceImpl.create(securityService, eventBus, eventMapper);
+        eventService.connect();
+        return eventService;
     }
 
     @Provides
@@ -104,7 +115,10 @@ public class ManagerModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    public PlaceController getPlaceController(SecurityService securityService, PlaceHistoryMapper historyMapper, EventBus eventBus, com.google.web.bindery.event.shared.EventBus legacyEventBus) {
+    public PlaceController getPlaceController(SecurityService securityService,
+                                              EventService eventService,
+                                              EventBus eventBus,
+                                              com.google.web.bindery.event.shared.EventBus legacyEventBus) {
         return new AppPlaceController(securityService, eventBus, legacyEventBus);
     }
 

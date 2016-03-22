@@ -15,7 +15,6 @@ public abstract class WillGoToPlaceEvent extends Event {
         return newPlace;
     }
 
-
     abstract public String getWarning();
 
     abstract public void setWarning(String warning);

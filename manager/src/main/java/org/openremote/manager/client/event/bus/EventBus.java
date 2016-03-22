@@ -31,6 +31,10 @@ public class EventBus {
 
     final protected List<EventRegistration> registrations = new ArrayList<>();
 
+    synchronized public List<EventRegistration> getRegistrations() {
+        return Collections.unmodifiableList(registrations);
+    }
+
     synchronized public <E extends Event> EventRegistration<E> register(Class<E> eventClass, EventListener<E> listener) {
         return register(false, eventClass, listener);
     }

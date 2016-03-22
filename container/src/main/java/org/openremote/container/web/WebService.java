@@ -8,10 +8,7 @@ import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.resource.FileResourceManager;
 import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.servlet.Servlets;
-import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.servlet.api.DeploymentManager;
-import io.undertow.servlet.api.LoginConfig;
-import io.undertow.servlet.api.ServletInfo;
+import io.undertow.servlet.api.*;
 import io.undertow.util.HttpString;
 import io.undertow.util.MimeMappings;
 import org.jboss.resteasy.jsapi.JSAPIServlet;
@@ -24,6 +21,7 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.json.ElementalMessageBodyConverter;
 import org.openremote.container.json.JacksonConfig;
+import org.openremote.container.security.AuthOverloadHandler;
 import org.openremote.container.security.SimpleKeycloakServletExtension;
 
 import java.net.URI;
@@ -267,6 +265,7 @@ public abstract class WebService implements ContainerService {
         try {
 
             if (getKeycloakConfigResolver() != null) {
+                deploymentInfo.addOuterHandlerChainWrapper(AuthOverloadHandler::new);
                 deploymentInfo.setSecurityDisabled(false);
                 LoginConfig loginConfig = new LoginConfig(SimpleKeycloakServletExtension.AUTH_MECHANISM, "OpenRemote");
                 deploymentInfo.setLoginConfig(loginConfig);

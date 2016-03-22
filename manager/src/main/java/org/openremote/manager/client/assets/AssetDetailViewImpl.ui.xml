@@ -1,8 +1,17 @@
 <ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
-             xmlns:g="urn:import:com.google.gwt.user.client.ui">
+             xmlns:g="urn:import:com.google.gwt.user.client.ui"
+             xmlns:b="urn:import:org.gwtbootstrap3.client.ui">
 
     <g:ScrollPanel>
-        <g:Label>ASSET DETAILS</g:Label>
+        <g:VerticalPanel>
+
+            <g:Label>ASSET DETAILS</g:Label>
+
+            <b:Button ui:field="sendMessageButton" text="Send message to server"/>
+
+            <g:Label ui:field="messageLabel" text="Waiting for response..."/>
+
+        </g:VerticalPanel>
     </g:ScrollPanel>
 
 </ui:UiBinder>

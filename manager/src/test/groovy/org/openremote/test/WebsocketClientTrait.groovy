@@ -4,13 +4,7 @@ import org.glassfish.tyrus.client.ClientManager
 import org.openremote.container.message.MessageBrokerService
 import spock.lang.Shared
 
-import javax.websocket.ClientEndpointConfig
-import javax.websocket.CloseReason
-import javax.websocket.Endpoint
-import javax.websocket.EndpointConfig
-import javax.websocket.MessageHandler
-import javax.websocket.Session
-import javax.websocket.WebSocketContainer
+import javax.websocket.*
 import javax.ws.rs.client.WebTarget
 import javax.ws.rs.core.UriBuilder
 import java.util.concurrent.TimeoutException
@@ -19,21 +13,6 @@ trait WebsocketClientTrait {
 
     @Shared
     WebSocketContainer websocketContainer = ClientManager.createClient();
-
-    static class BearerAuthConfigurator extends ClientEndpointConfig.Configurator {
-
-        final protected String accessToken;
-
-        BearerAuthConfigurator(String accessToken) {
-            this.accessToken = accessToken
-        }
-
-        @Override
-        public void beforeRequest(Map<String, List<String>> headers) {
-            if (accessToken != null)
-                headers.put("Authorization", ["Bearer " + accessToken]);
-        }
-    }
 
     public static class TestClient extends Endpoint {
 
@@ -104,24 +83,19 @@ trait WebsocketClientTrait {
         }
     }
 
-    def getWebsocketServerUrl(UriBuilder uriBuilder, String realm, String endpointPath) {
+    def getWebsocketServerUrl(UriBuilder uriBuilder, String realm, String endpointPath, String accessToken) {
         uriBuilder.clone()
                 .scheme("ws")
                 .replacePath(MessageBrokerService.WEBSOCKET_PATH)
                 .path(endpointPath)
                 .queryParam("realm", realm)
-                .build();
-    }
-
-    def ClientEndpointConfig getWebsocketClientEndpointConfig(String accessToken) {
-        return ClientEndpointConfig.Builder.create()
-                .configurator(new BearerAuthConfigurator(accessToken))
+                .queryParam("Authorization", "Bearer " + accessToken)
                 .build();
     }
 
     def Session connect(TestClient client, WebTarget webTarget, String realm, String accessToken, String endpointPath) {
-        def uri = getWebsocketServerUrl(webTarget.getUriBuilder(), realm, endpointPath);
-        def config = getWebsocketClientEndpointConfig(accessToken);
+        def uri = getWebsocketServerUrl(webTarget.getUriBuilder(), realm, endpointPath, accessToken);
+        def config = ClientEndpointConfig.Builder.create().build();
         websocketContainer.connectToServer(client, config, uri);
     }
 }

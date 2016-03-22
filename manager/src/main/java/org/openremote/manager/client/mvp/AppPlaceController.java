@@ -56,9 +56,8 @@ public class AppPlaceController extends PlaceController {
     @Override
     public void goTo(Place newPlace) {
         // TODO Should we also update access token before every API call?
-        int minValiditySeconds = 10;
         securityService.updateToken(
-            minValiditySeconds,
+            SecurityService.MIN_VALIDITY_SECONDS,
             refreshed -> {
                 // If it wasn't refreshed, it was still valid, in both cases we can continue
                 super.goTo(newPlace);
@@ -66,6 +65,7 @@ public class AppPlaceController extends PlaceController {
             () -> {
                 // TODO Better error handling
                 Browser.getWindow().alert("Error refreshing access token. Sorry.");
-            });
+            }
+        );
     }
 }

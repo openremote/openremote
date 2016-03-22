@@ -76,7 +76,7 @@ public class Container {
     @SafeVarargs
     public Container(Map<String, String> config, Stream<ContainerService>... serviceStreams) {
         JSON = new ObjectMapper();
-        JSON.setSerializationInclusion(JsonInclude.Include.NON_NULL)
+        JSON.setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
             .configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false)
             .configure(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS, false)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
