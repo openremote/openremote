@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -73,8 +72,7 @@ public class Container {
         );
     }
 
-    @SafeVarargs
-    public Container(Map<String, String> config, Stream<ContainerService>... serviceStreams) {
+    public Container(Map<String, String> config, Stream<ContainerService> servicesStream) {
         JSON = new ObjectMapper();
         JSON.setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
             .configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false)
@@ -97,10 +95,8 @@ public class Container {
             JSON.enable(SerializationFeature.INDENT_OUTPUT);
         }
 
-        if (serviceStreams != null) {
-            for (Stream<ContainerService> serviceStream : serviceStreams) {
-                serviceStream.forEach(this::addService);
-            }
+        if (servicesStream != null) {
+            servicesStream.forEach(this::addService);
         }
 
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
