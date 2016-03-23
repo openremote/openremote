@@ -41,9 +41,10 @@ public class AppActivityManager {
     }
 
     protected static final AppActivity NULL_ACTIVITY = new AppActivity() {
-        @Override
-        protected void init(Place place) {
 
+        @Override
+        public AppActivity init(Place place) {
+            return this;
         }
 
         @Override

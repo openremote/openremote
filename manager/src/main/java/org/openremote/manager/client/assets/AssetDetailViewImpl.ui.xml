@@ -6,10 +6,10 @@
         <g:VerticalPanel>
 
             <g:Label>ASSET DETAILS</g:Label>
-
             <b:Button ui:field="sendMessageButton" text="Send message to server"/>
-
             <g:Label ui:field="messageLabel" text="Waiting for response..."/>
+
+            <b:Button ui:field="togglePopup" text="Toggle"/>
 
         </g:VerticalPanel>
     </g:ScrollPanel>

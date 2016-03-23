@@ -11,8 +11,11 @@ import com.google.gwt.user.client.ui.ScrollPanel;
 import org.gwtbootstrap3.client.ui.Button;
 
 import javax.inject.Inject;
+import java.util.logging.Logger;
 
 public class AssetDetailViewImpl extends Composite implements AssetDetailView {
+
+    private static final Logger LOG = Logger.getLogger(AssetDetailViewImpl.class.getName());
 
     interface UI extends UiBinder<ScrollPanel, AssetDetailViewImpl> {
     }
@@ -27,8 +30,14 @@ public class AssetDetailViewImpl extends Composite implements AssetDetailView {
     @UiField
     Label messageLabel;
 
+    @UiField
+    Button togglePopup;
+
+    final AssetMapPanel assetMapPanel;
+
     @Inject
-    public AssetDetailViewImpl() {
+    public AssetDetailViewImpl(AssetMapPanel assetMapPanel) {
+        this.assetMapPanel = assetMapPanel;
         initWidget(ui.createAndBindUi(this));
     }
 
@@ -46,4 +55,16 @@ public class AssetDetailViewImpl extends Composite implements AssetDetailView {
     public void setMessageText(String text) {
         messageLabel.setText(text);
     }
+
+    @UiHandler("togglePopup")
+    public void onToggleButtonClick(final ClickEvent event) {
+        if (assetMapPanel.isShowing()) {
+            LOG.info("### HIDING");
+            assetMapPanel.hide();
+        } else {
+            LOG.info("### SHOWING");
+            assetMapPanel.show();
+        }
+    }
+
 }

@@ -34,8 +34,8 @@ public class AssetDetailActivity
     }
 
     @Override
-    protected void init(AssetsPlace place) {
-
+    public AppActivity<AssetsPlace> init(AssetsPlace place) {
+        return this;
     }
 
     @Override

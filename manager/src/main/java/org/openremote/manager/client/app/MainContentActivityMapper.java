@@ -24,10 +24,10 @@ public class MainContentActivityMapper implements AppActivityMapper {
 
     public AppActivity getActivity(Place place) {
         if (place instanceof AssetsPlace) {
-            return assetsActivityProvider.get().doInit((AssetsPlace) place);
+            return assetsActivityProvider.get().init((AssetsPlace) place);
         }
         if (place instanceof MapPlace) {
-            return mapActivityProvider.get().doInit((MapPlace) place);
+            return mapActivityProvider.get().init((MapPlace) place);
         }
         return null;
     }

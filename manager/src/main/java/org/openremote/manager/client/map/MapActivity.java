@@ -38,8 +38,8 @@ public class MapActivity
     }
 
     @Override
-    protected void init(MapPlace place) {
-
+    public AppActivity<MapPlace> init(MapPlace place) {
+        return this;
     }
 
     @Override

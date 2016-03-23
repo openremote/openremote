@@ -19,7 +19,7 @@ public class LeftSideActivityMapper implements AppActivityMapper {
     public AppActivity getActivity(Place place) {
         if (place instanceof AssetsPlace) {
             AssetsPlace assetsPlace = (AssetsPlace) place;
-            return assetsActivityProvider.get().doInit(assetsPlace);
+            return assetsActivityProvider.get().init(assetsPlace);
         }
 
         return null;

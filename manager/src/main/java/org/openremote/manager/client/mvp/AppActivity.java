@@ -12,11 +12,6 @@ import java.util.Collection;
  */
 public abstract class AppActivity<T extends Place>  {
 
-    public AppActivity doInit(T place) {
-        init(place);
-        return this;
-    }
-
     public String mayStop() {
         return null;
     }
@@ -27,7 +22,7 @@ public abstract class AppActivity<T extends Place>  {
     public void onStop() {
     }
 
-    abstract protected void init(T place);
+    public abstract AppActivity<T> init(T place);
 
     /**
      * Any registrations added to the supplied collection will be unregistered automatically when the activity stops.
