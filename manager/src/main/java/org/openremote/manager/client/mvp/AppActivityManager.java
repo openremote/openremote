@@ -94,6 +94,9 @@ public class AppActivityManager {
             if (LOG.isLoggable(Level.FINE))
                 LOG.fine(name + " - activity unchanged");
             return;
+        } else {
+            if (LOG.isLoggable(Level.FINE))
+                LOG.fine(name + " - activity changed, transitioning");
         }
 
         if (startingNext) {

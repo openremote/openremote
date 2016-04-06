@@ -41,17 +41,25 @@
                 loadScript("/static/3rdparty/mapbox-gl-js/0.14.1/mapbox-gl.js", resolve);
             });
 
+            var entrypoint = new Promise(function (resolve, reject) {
+                loadStyleSheet("/static/css/openremote.css");
+                loadScript("/static/gwt/Manager/Manager.nocache.js", resolve);
+            });
+
             Promise.all([
                 jsapi,
-                mapbox
+                mapbox,
+                entrypoint
             ]).then(function (results) {
-                loadScript("/static/gwt/Manager/Manager.nocache.js");
+                console.log("Application resources loaded successfully")
             });
         }
 
         function loadStyleSheet(href) {
             var link = document.createElement("link");
             link.href = href;
+            link.rel = "stylesheet";
+            link.type = "text/css";
             document.getElementsByTagName('head')[0].appendChild(link);
         }
 

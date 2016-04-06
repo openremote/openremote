@@ -1,32 +1,63 @@
 <ui:UiBinder xmlns:ui='urn:ui:com.google.gwt.uibinder'
-             xmlns:b="urn:import:org.gwtbootstrap3.client.ui">
+             xmlns:g="urn:import:com.google.gwt.user.client.ui"
+             xmlns:m="urn:import:gwt.material.design.client.ui">
+
+    <ui:with field="constants" type="org.openremote.manager.client.i18n.ManagerConstants"/>
+    <ui:with field="themeStyle" type="org.openremote.manager.client.ThemeStyle"/>
 
     <ui:style>
-        .pad-right {
-            padding-right: 5px;
+        .navBar {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1em;
+        }
+
+        .userControls {
+            width: 44%;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .userControls > * {
+            margin: 0 0 0 1em;
         }
     </ui:style>
 
-    <ui:with field="constants" type="org.openremote.manager.client.i18n.ManagerConstants"/>
+    <g:HTMLPanel>
 
-    <b:Navbar position="STATIC_TOP">
-        <b:Container width="100%">
-            <b:NavbarHeader>
-                <b:NavbarBrand>OpenRemote</b:NavbarBrand>
-                <b:NavbarCollapseButton dataTarget="#navbar-collapse"/>
-            </b:NavbarHeader>
+        <g:HTMLPanel addStyleNames="{style.navBar}">
 
-            <b:NavbarCollapse b:id="navbar-collapse">
-                <b:NavbarNav height="100%">
-                    <b:AnchorListItem ui:field="btnMap" text="{constants.overviewMap}"></b:AnchorListItem>
-                    <b:AnchorListItem ui:field="btnAssets" text="{constants.assetManager}"></b:AnchorListItem>
-                </b:NavbarNav>
+            <m:MaterialButton ui:field="itemMap"
+                              addStyleNames="{themeStyle.NavItemMain}"
+                              waves="LIGHT"
+                              text="{constants.locate}"
+                              iconType="MAP"/>
 
-                <b:NavbarText pull="RIGHT" ui:field="signinText" visible="false" addStyleNames="{style.pad-right}">
-                    <b:html.Span ui:field="lblSignedIn" addStyleNames="{style.pad-right}"/>
-                    <b:NavbarLink ui:field="btnLogout" text="({constants.logout})"/>
-                </b:NavbarText>
-            </b:NavbarCollapse>
-        </b:Container>
-    </b:Navbar>
+            <m:MaterialButton ui:field="itemAssets"
+                              addStyleNames="{themeStyle.NavItemMain}"
+                              waves="LIGHT"
+                              text="{constants.manage}"
+                              iconType="APPS"/>
+
+            <m:MaterialButton ui:field="itemFlows"
+                              addStyleNames="{themeStyle.NavItemMain}"
+                              waves="LIGHT"
+                              iconType="DEVELOPER_MODE"
+                              text="{constants.connect}"/>
+
+            <g:HTMLPanel addStyleNames="{style.userControls}">
+                <m:MaterialLabel ui:field="signinText"/>
+                <m:MaterialButton ui:field="logoutButton"
+                                  addStyleNames="{themeStyle.NavItem}"
+                                  waves="LIGHT"
+                                  text="{constants.logout}"/>
+            </g:HTMLPanel>
+
+        </g:HTMLPanel>
+
+    </g:HTMLPanel>
+
 </ui:UiBinder>

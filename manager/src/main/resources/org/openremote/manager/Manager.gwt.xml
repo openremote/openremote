@@ -12,11 +12,13 @@
     <inherits name="com.google.gwt.activity.Activity"/>
     <inherits name="com.google.gwt.place.Place"/>
     <inherits name="com.google.gwt.inject.Inject"/>
-    <inherits name="org.gwtbootstrap3.GwtBootstrap3" />
     <inherits name="com.google.gwt.i18n.I18N"/>
     <inherits name="com.workingflows.js.jscore.JSCore" />
     <inherits name="com.google.gwt.http.HTTP"/>
     <inherits name="com.github.nmorel.gwtjackson.GwtJackson"/>
+    <!-- TODO which of the GWT material modules do we need? -->
+    <inherits name="gwt.material.design.GwtMaterialWithJQueryDebug"/>
+    <inherits name="gwt.material.design.addins.GWTMaterialAddins"/>
 
     <!-- ##################################################################### -->
 

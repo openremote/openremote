@@ -5,6 +5,7 @@ import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Composite;
 import elemental.json.JsonObject;
+import gwt.material.design.client.ui.MaterialLoader;
 
 import javax.inject.Inject;
 
@@ -32,7 +33,9 @@ public class MapViewImpl extends Composite implements MapView {
 
     @Override
     public void initialiseMap(JsonObject mapOptions) {
+        MaterialLoader.showLoading(true);
         mapWidget.initialise(mapOptions);
+        MaterialLoader.showLoading(false);
     }
 
     @Override

@@ -38,8 +38,9 @@ dependencies {
         exclude module: "cglib"
     }
     compile "cglib:cglib:$cglibVersion"
-    compile "org.gwtbootstrap3:gwtbootstrap3:$gwtBootstrapVersion"
-    compile "org.gwtbootstrap3:gwtbootstrap3-extras:$gwtBootstrapVersion"
+    compile "com.github.gwtmaterialdesign:gwt-material:$gwtMaterialDesignVersion"
+    compile "com.github.gwtmaterialdesign:gwt-material-addins:$gwtMaterialDesignVersion"
+    compile "com.github.gwtmaterialdesign:gwt-material-themes:$gwtMaterialDesignVersion"
     compile "com.github.nmorel.gwtjackson:gwt-jackson:$gwtJacksonVersion"
 
     testCompile "junit:junit:$junitVersion"

@@ -7,56 +7,36 @@ import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.Composite;
+import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.inject.Inject;
-import org.gwtbootstrap3.client.ui.AnchorListItem;
-import org.gwtbootstrap3.client.ui.Navbar;
-import org.gwtbootstrap3.client.ui.NavbarLink;
-import org.gwtbootstrap3.client.ui.NavbarText;
-import org.gwtbootstrap3.client.ui.html.Span;
-import org.openremote.manager.client.i18n.ManagerMessages;
+import gwt.material.design.client.ui.MaterialButton;
+import gwt.material.design.client.ui.MaterialLabel;
+import gwt.material.design.client.ui.MaterialLink;
 import org.openremote.manager.client.assets.AssetsPlace;
+import org.openremote.manager.client.flows.FlowsPlace;
+import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.map.MapPlace;
 
 /**
  * Created by Richard on 24/02/2016.
  */
 public class HeaderViewImpl extends Composite implements HeaderView {
-    interface UI extends UiBinder<Navbar, HeaderViewImpl> {
+    interface UI extends UiBinder<HTMLPanel, HeaderViewImpl> {
     }
 
     private static UI ui = GWT.create(UI.class);
     private Presenter presenter;
     private ManagerMessages messages;
-
     @UiField
-    AnchorListItem btnMap;
-
+    MaterialButton itemMap;
     @UiField
-    AnchorListItem btnAssets;
-
+    MaterialButton itemFlows;
     @UiField
-    Span lblSignedIn;
-
+    MaterialButton itemAssets;
     @UiField
-    NavbarText signinText;
-
+    MaterialLabel signinText;
     @UiField
-    NavbarLink btnLogout;
-
-    @UiHandler("btnLogout")
-    void logoutClicked(ClickEvent e) {
-        presenter.doLogout();
-    }
-
-    @UiHandler("btnMap")
-    void defaultLayoutClicked(ClickEvent e) {
-        presenter.goTo(new MapPlace());
-    }
-
-    @UiHandler("btnAssets")
-    void vmdLayoutClicked(ClickEvent e) {
-        presenter.goTo(new AssetsPlace());
-    }
+    MaterialButton logoutButton;
 
     @Inject
     public HeaderViewImpl(ManagerMessages messages) {
@@ -69,19 +49,53 @@ public class HeaderViewImpl extends Composite implements HeaderView {
         this.presenter = presenter;
     }
 
+
     @Override
     public void onPlaceChange(Place place) {
-        btnMap.setActive(place instanceof MapPlace);
-        btnAssets.setActive(place instanceof AssetsPlace);
+        if (place instanceof MapPlace)
+            itemMap.addStyleName("active");
+        else
+            itemMap.removeStyleName("active");
+
+        if (place instanceof AssetsPlace)
+            itemAssets.addStyleName("active");
+        else
+            itemAssets.removeStyleName("active");
+
+        if (place instanceof FlowsPlace)
+            itemFlows.addStyleName("active");
+        else
+            itemFlows.removeStyleName("active");
     }
 
     @Override
     public void setUsername(String username) {
         if (username != null && username.length() > 0) {
-            lblSignedIn.setText(messages.signedInAs(username));
+            signinText.setText(messages.signedInAs(username));
             signinText.setVisible(true);
         } else {
             signinText.setVisible(false);
         }
     }
+
+    @UiHandler("logoutButton")
+    void logoutClicked(ClickEvent e) {
+        presenter.doLogout();
+    }
+
+    @UiHandler("itemMap")
+    void itemMapClicked(ClickEvent e) {
+        presenter.goTo(new MapPlace());
+    }
+
+    @UiHandler("itemAssets")
+    void itemAssetsClicked(ClickEvent e) {
+        presenter.goTo(new AssetsPlace());
+    }
+
+    @UiHandler("itemFlows")
+    void itemFlowsClicked(ClickEvent e) {
+        presenter.goTo(new FlowsPlace());
+    }
+
 }

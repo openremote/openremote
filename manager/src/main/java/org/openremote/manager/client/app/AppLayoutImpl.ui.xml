@@ -1,15 +1,10 @@
-<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
-             xmlns:g="urn:import:com.google.gwt.user.client.ui"
->
+<ui:UiBinder xmlns:ui='urn:ui:com.google.gwt.uibinder'
+             xmlns:g='urn:import:com.google.gwt.user.client.ui'
+             xmlns:ma="urn:import:gwt.material.design.addins.client">
 
     <ui:style>
-        .headerPanel {
-            background-color: red;
-            color: black;
-        }
-
         .contentPanel {
-            background-color: lightgreen;
+            background-color: lightgrey;
             color: black;
         }
 
@@ -17,25 +12,20 @@
             background-color: lightslategray;
             color: black;
         }
-
-        .sidePanel {
-            background-color: lightgoldenrodyellow;
-            color: black;
-        }
-
-        .no-padding {
-            padding: 0;
-        }
     </ui:style>
 
     <ui:with field="constants" type="org.openremote.manager.client.i18n.ManagerConstants"/>
+    <ui:with field="themeStyle" type="org.openremote.manager.client.ThemeStyle"/>
 
     <g:HeaderPanel>
-        <g:SimpleLayoutPanel height="50px" ui:field="headerPanel" addStyleNames="{style.headerPanel}"/>
+        <g:HTMLPanel>
+            <g:SimpleLayoutPanel ui:field="headerPanel" addStyleNames="{themeStyle.HeaderPanel}"/>
+            <g:HTMLPanel addStyleNames="{themeStyle.HeaderHorizontalSeparator}"/>
+        </g:HTMLPanel>
         <g:ResizeLayoutPanel width="100%" height="100%">
             <g:SplitLayoutPanel ui:field="bodyPanel">
-                <g:west size="200">
-                    <g:SimpleLayoutPanel ui:field="leftSidePanel" addStyleNames="{style.sidePanel}"/>
+                <g:west size="250">
+                    <g:SimpleLayoutPanel ui:field="leftSidePanel" addStyleNames="{themeStyle.SidePanel}"/>
                 </g:west>
                 <g:center>
                     <g:SimpleLayoutPanel ui:field="contentPanel" addStyleNames="{style.contentPanel}"/>
@@ -44,51 +34,4 @@
         </g:ResizeLayoutPanel>
     </g:HeaderPanel>
 
-    <!--<g:DockLayoutPanel unit="EM">-->
-    <!--<g:north size="5">-->
-    <!--<g:SimpleLayoutPanel ui:field="headerPanel" addStyleNames="{style.headerPanel}"/>-->
-    <!--</g:north>-->
-    <!--<g:center>-->
-    <!--<g:SplitLayoutPanel ui:field="bodyPanel">-->
-    <!--<g:west size="200">-->
-    <!--<g:SimpleLayoutPanel ui:field="leftSidePanel" addStyleNames="{style.sidePanel}"/>-->
-    <!--</g:west>-->
-    <!--<g:center>-->
-    <!--<g:SimpleLayoutPanel ui:field="contentPanel" addStyleNames="{style.contentPanel}"/>-->
-    <!--</g:center>-->
-    <!--</g:SplitLayoutPanel>-->
-    <!--</g:center>-->
-    <!--</g:DockLayoutPanel>-->
-
-    <!--<b:Container>-->
-    <!--<b:Navbar position="FIXED_TOP">-->
-    <!--<b:Container>-->
-    <!--<b:NavbarHeader>-->
-    <!--<b:NavbarBrand>OpenRemote</b:NavbarBrand>-->
-    <!--<b:NavbarCollapseButton dataTarget="#navbar-collapse"/>-->
-    <!--</b:NavbarHeader>-->
-
-    <!--<b:NavbarCollapse b:id="navbar-collapse">-->
-    <!--<b:NavbarNav>-->
-    <!--<b:AnchorListItem ui:field="btnMap" text="{constants.overviewMap}"></b:AnchorListItem>-->
-    <!--<b:AnchorListItem ui:field="btnAssets" text="{constants.assetManager}"></b:AnchorListItem>-->
-    <!--</b:NavbarNav>-->
-
-    <!--<b:NavbarText pull="RIGHT">-->
-    <!--<b:html.Span>Signed in as <b:NavbarLink>John Snow</b:NavbarLink>-->
-    <!--</b:html.Span>-->
-    <!--</b:NavbarText>-->
-    <!--</b:NavbarCollapse>-->
-    <!--</b:Container>-->
-    <!--</b:Navbar>-->
-
-    <!--<g:DockLayoutPanel unit="EM">-->
-    <!--<g:west size="10">-->
-    <!--<g:SimpleLayoutPanel ui:field="leftSidePanel" addStyleNames="{style.sidePanel}"/>-->
-    <!--</g:west>-->
-    <!--<g:center>-->
-    <!--<g:SimpleLayoutPanel ui:field="contentPanel" addStyleNames="{style.contentPanel}"/>-->
-    <!--</g:center>-->
-    <!--</g:DockLayoutPanel>-->
-    <!--</b:Container>-->
 </ui:UiBinder>

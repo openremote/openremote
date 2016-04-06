@@ -8,42 +8,51 @@ import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
+import org.openremote.manager.client.app.*;
+import org.openremote.manager.client.assets.*;
 import org.openremote.manager.client.event.EventMapper;
 import org.openremote.manager.client.event.bus.EventBus;
+import org.openremote.manager.client.flows.FlowsActivity;
+import org.openremote.manager.client.flows.FlowsView;
+import org.openremote.manager.client.flows.FlowsViewImpl;
 import org.openremote.manager.client.i18n.ManagerConstants;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.interop.keycloak.Keycloak;
-import org.openremote.manager.client.app.*;
+import org.openremote.manager.client.map.MapActivity;
+import org.openremote.manager.client.map.MapPlace;
+import org.openremote.manager.client.map.MapView;
+import org.openremote.manager.client.map.MapViewImpl;
 import org.openremote.manager.client.mvp.AppActivityManager;
 import org.openremote.manager.client.mvp.AppPlaceController;
 import org.openremote.manager.client.service.*;
-import org.openremote.manager.client.map.*;
-import org.openremote.manager.client.assets.*;
-import org.openremote.manager.client.service.EventService;
-import org.openremote.manager.server.event.*;
 import org.openremote.manager.shared.map.MapResource;
 
 public class ManagerModule extends AbstractGinModule {
 
     @Override
     protected void configure() {
-        // App Wiring
+
+        bind(ResourceLoader.class).asEagerSingleton();
+
+            // App Wiring
         bind(com.google.web.bindery.event.shared.EventBus.class).to(com.google.web.bindery.event.shared.SimpleEventBus.class).in(Singleton.class);
         bind(EventBus.class).in(Singleton.class);
         bind(PlaceHistoryMapper.class).to(ManagerHistoryMapper.class).in(Singleton.class);
         bind(AppController.class).to(AppControllerImpl.class).in(Singleton.class);
 
         // Views
-        bind(HeaderView.class).to(HeaderViewImpl.class).in(Singleton.class);
         bind(AppLayout.class).to(AppLayoutImpl.class).in(Singleton.class);
+        bind(HeaderView.class).to(HeaderViewImpl.class).in(Singleton.class);
+        bind(LeftSideView.class).to(LeftSideViewImpl.class).in(Singleton.class);
         bind(MapView.class).to(MapViewImpl.class).in(Singleton.class);
         bind(AssetListView.class).to(AssetListViewImpl.class).in(Singleton.class);
         bind(AssetDetailView.class).to(AssetDetailViewImpl.class).in(Singleton.class);
-        bind(LeftSideView.class).to(LeftSideViewImpl.class).in(Singleton.class);
+        bind(FlowsView.class).to(FlowsViewImpl.class).in(Singleton.class);
 
         // Activities
         bind(AssetDetailActivity.class);
         bind(MapActivity.class);
+        bind(FlowsActivity.class);
 
         // Services
         bind(CookieService.class).to(CookieServiceImpl.class).in(Singleton.class);
@@ -61,7 +70,7 @@ public class ManagerModule extends AbstractGinModule {
     @Provides
     @Singleton
     public SecurityService getSecurityService(
-            CookieService cookieService, EventBus eventBus) {
+        CookieService cookieService, EventBus eventBus) {
         return new SecurityServiceImpl(getKeyCloak(), cookieService, eventBus);
     }
 

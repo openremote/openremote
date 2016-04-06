@@ -13,6 +13,9 @@ allprojects {
         mavenLocal()
         mavenCentral()
         jcenter()
+        maven {
+            url "https://oss.sonatype.org/content/repositories/snapshots/"
+        }
     }
 
     version = projectVersion

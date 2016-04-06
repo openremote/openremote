@@ -2,7 +2,10 @@ package org.openremote.manager.client.app;
 
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
+import com.google.gwt.user.client.Window;
 import com.google.inject.Inject;
+import org.openremote.manager.client.event.GoToPlaceEvent;
+import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.service.SecurityService;
 
 public class HeaderPresenter implements HeaderView.Presenter {
@@ -14,7 +17,8 @@ public class HeaderPresenter implements HeaderView.Presenter {
     @Inject
     public HeaderPresenter(HeaderView view,
                            SecurityService securityService,
-                           PlaceController placeController) {
+                           PlaceController placeController,
+                           EventBus eventbus) {
         this.view = view;
         this.placeController = placeController;
         this.securityService = securityService;

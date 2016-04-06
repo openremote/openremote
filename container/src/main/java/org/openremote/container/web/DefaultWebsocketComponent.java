@@ -20,12 +20,18 @@
 
 package org.openremote.container.web;
 
+import io.undertow.connector.ByteBufferPool;
+import io.undertow.server.DefaultByteBufferPool;
 import io.undertow.server.HttpHandler;
 import io.undertow.servlet.api.*;
 import io.undertow.websockets.jsr.DefaultContainerConfigurator;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.web.socket.*;
+import org.xnio.OptionMap;
+import org.xnio.Options;
+import org.xnio.Xnio;
+import org.xnio.XnioWorker;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -76,6 +82,13 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
                     .build()
             );
         });
+
+        // TODO https://issues.jboss.org/browse/UNDERTOW-682 remove this code block in 1.3.21.final
+        boolean directBuffers = Boolean.getBoolean("io.undertow.websockets.direct-buffers");
+        XnioWorker worker = Xnio.getInstance().createWorker(OptionMap.create(Options.THREAD_DAEMON, true));
+        ByteBufferPool buffers = new DefaultByteBufferPool(directBuffers, 1024, 100, 12);
+        webSocketDeploymentInfo.setWorker(worker);
+        webSocketDeploymentInfo.setBuffers(buffers);
 
         deploymentInfo = new DeploymentInfo()
             .setDeploymentName("WebSocket Deployment")

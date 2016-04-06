@@ -5,10 +5,7 @@ import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
-import com.google.gwt.user.client.ui.Composite;
-import com.google.gwt.user.client.ui.Label;
-import com.google.gwt.user.client.ui.ScrollPanel;
-import org.gwtbootstrap3.client.ui.Button;
+import com.google.gwt.user.client.ui.*;
 
 import javax.inject.Inject;
 import java.util.logging.Logger;
@@ -59,10 +56,8 @@ public class AssetDetailViewImpl extends Composite implements AssetDetailView {
     @UiHandler("togglePopup")
     public void onToggleButtonClick(final ClickEvent event) {
         if (assetMapPanel.isShowing()) {
-            LOG.info("### HIDING");
             assetMapPanel.hide();
         } else {
-            LOG.info("### SHOWING");
             assetMapPanel.show();
         }
     }
