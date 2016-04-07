@@ -1,1 +1,2 @@
 Christian Bauer <christian@openremote.org>
+Richard Turner <richard@openremote.org>

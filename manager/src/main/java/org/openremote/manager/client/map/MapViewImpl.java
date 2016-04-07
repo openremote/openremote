@@ -24,6 +24,7 @@ public class MapViewImpl extends Composite implements MapView {
     @Inject
     public MapViewImpl() {
         initWidget(ui.createAndBindUi(this));
+        MaterialLoader.showLoading(true);
     }
 
     @Override
@@ -33,7 +34,6 @@ public class MapViewImpl extends Composite implements MapView {
 
     @Override
     public void initialiseMap(JsonObject mapOptions) {
-        MaterialLoader.showLoading(true);
         mapWidget.initialise(mapOptions);
         MaterialLoader.showLoading(false);
     }

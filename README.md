@@ -1,5 +1,12 @@
 # OpenRemote
 
+* **Live Demo**: http://demo2.openremote.com (test/test)
+* **Documentation/Wiki:** https://github.com/openremote/openremote/wiki
+* **Community:** https://groups.google.com/forum/#!forum/openremotecommunity
+* **Issues:** https://github.com/openremote/openremote/issues
+
+## Development
+
 ### Preparing the environment
 
 You'll need a Docker host to work on this project.
@@ -10,8 +17,6 @@ You'll need a Docker host to work on this project.
 All Docker and Gradle commands should be executed in the project root directory.
 
 NOTE: For docker volume mapping to work correctly on Windows and OS X ensure that your working directory is located somewhere under your home directory
-
-## Development
 
 We are using the [Orion Context Broker](https://fiware-orion.readthedocs.org/en/develop/) with a MongoDB backend. For development, this is an instance with a non-persistent data store.
 
@@ -58,10 +63,10 @@ You can extract smaller tilesets with the following procedure:
 1. Extract the region with: 
     `tilelive-copy --minzoom=0 --maxzoom=14 --bounds="BOUNDARY BOX COORDINATES" theworld.mbtiles myextract.mbtiles`
 
-## Run demo server
+## Update demo server
 
 First build Docker images with `./gradlew buildImage`, you might want to `clean` before.
 
-The configuration in `docker-compose-demo.yml` is prepared for our demo server deployment. You will have to change the `IDENTITY__NETWORK_HOST` and `IDENTITY__NETWORK_WEBSERVER_PORT` to the externally (by users) reachable hostname and port of your stack.
+The configuration in `docker-compose-demo.yml` is prepared for our demo server deployment. You will have to change the `IDENTITY_NETWORK_HOST` and `IDENTITY_NETWORK_WEBSERVER_PORT` variables to the externally (by users) reachable hostname and port of your stack.
 
 Deploy the whole stack with `docker-compose -f docker-compose-demo.yml [up|down]`.

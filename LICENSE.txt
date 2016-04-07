@@ -19,90 +19,86 @@ antlr:antlr: ANTLR BSD LICENSE
 aopalliance:aopalliance: PUBLIC DOMAIN
 ch.qos.logback:logback-classic: ECLIPSE DISTRIBUTION LICENSE, VERSION 1.0
 ch.qos.logback:logback-core: ECLIPSE DISTRIBUTION LICENSE, VERSION 1.0
+cglib:*: APACHE LICENSE, VERSION 2.0
 com.ahome-it:ahome-tooling-common: APACHE LICENSE, VERSION 2.0
 com.ahome-it:ahome-tooling-nativetools: APACHE LICENSE, VERSION 2.0
 com.ahome-it:lienzo-core: APACHE LICENSE, VERSION 2.0
-com.fasterxml.jackson.core:jackson-annotations: APACHE LICENSE, VERSION 2.0
-com.fasterxml.jackson.core:jackson-core: APACHE LICENSE, VERSION 2.0
-com.fasterxml.jackson.core:jackson-databind: APACHE LICENSE, VERSION 2.0
-com.fasterxml.jackson.module:jackson-module-jaxb-annotations: APACHE LICENSE, VERSION 2.0
+com.fasterxml.jackson.core:*: APACHE LICENSE, VERSION 2.0
+com.fasterxml.jackson.module:*: APACHE LICENSE, VERSION 2.0
+com.fasterxml.jackson.jaxrs:*: APACHE LICENSE, VERSION 2.0
 com.fasterxml:classmate: APACHE LICENSE, VERSION 2.0
+com.github.gwtmaterialdesign:*: APACHE LICENSE, VERSION 2.0
 com.google.code.findbugs: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 3
 com.google.errorprone:error_prone_annotations: APACHE LICENSE, VERSION 2.0
-com.google.guava:guava-gwt: APACHE LICENSE, VERSION 2.0
-com.google.guava:guava: APACHE LICENSE, VERSION 2.0
+com.google.guava:*: APACHE LICENSE, VERSION 2.0
+com.google.gwt:*: APACHE LICENSE, VERSION 2.0
+com.google.gwt.inject:*: APACHE LICENSE, VERSION 2.0
 com.google.j2objc:j2objc-annotations: APACHE LICENSE, VERSION 2.0
 com.h2database:h2: ECLIPSE PUBLIC LICENSE, VERSION 1.0
 com.ning:async-http-client: APACHE LICENSE, VERSION 2.0
-com.sun.xml.bind:jaxb-core: GNU GENERAL PUBLIC LICENSE, VERSION 2.0 WITH CLASSPATH EXCEPTION
-com.sun.xml.bind:jaxb-impl: GNU GENERAL PUBLIC LICENSE, VERSION 2.0 WITH CLASSPATH EXCEPTION
+com.sun.xml.bind:*: GNU GENERAL PUBLIC LICENSE, VERSION 2.0 WITH CLASSPATH EXCEPTION
+com.zaxxer:HikariCP: APACHE LICENSE, VERSION 2.0
 commons-codec:commons-codec: APACHE LICENSE, VERSION 2.0
+commons-io:commons-io: APACHE LICENSE, VERSION 2.0
 commons-httpclient:commons-httpclient: APACHE LICENSE, VERSION 2.0
 commons-logging:commons-logging: APACHE LICENSE, VERSION 2.0
 dom4j:dom4j: DOM4J BSD LICENSE
+io.reactivex:rxjava: APACHE LICENSE, VERSION 2.0
 io.netty:netty: APACHE LICENSE, VERSION 2.0
-io.undertow:undertow-core: APACHE LICENSE, VERSION 2.0
-io.undertow:undertow-servlet: APACHE LICENSE, VERSION 2.0
-io.undertow:undertow-websockets-jsr:  APACHE LICENSE, VERSION 2.0
+io.undertow:*: APACHE LICENSE, VERSION 2.0
 javax.jmdns:jmdns: APACHE LICENSE, VERSION 2.0
 javax.validation:validation-api: APACHE LICENSE, VERSION 2.0
+javax.activation:activation: COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0
+javax.mail:mail: COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0
 jdom:jdom: APACHE LICENSE, VERSION 2.0
 mikaelhg:urlbuilder: APACHE LICENSE, VERSION 2.0
 net.sf.flexjson:flexjson: APACHE LICENSE, VERSION 2.0
-org.apache.camel:camel-ahc-ws: APACHE LICENSE, VERSION 2.0
-org.apache.camel:camel-ahc: APACHE LICENSE, VERSION 2.0
-org.apache.camel:camel-core: APACHE LICENSE, VERSION 2.0
-org.apache.camel:camel-groovy: APACHE LICENSE, VERSION 2.0
-org.apache.camel:camel-http: APACHE LICENSE, VERSION 2.0
-org.apache.camel:camel-jackson: APACHE LICENSE, VERSION 2.0
-org.apache.camel:camel-script: APACHE LICENSE, VERSION 2.0
-org.apache.camel:camel-servlet: APACHE LICENSE, VERSION 2.0
-org.apache.camel:camel-spring: APACHE LICENSE, VERSION 2.0
+net.jcip:jcip-annotations: Creative Commons Attribution License (http://creativecommons.org/licenses/by/2.5), see http://www.jcip.net
+org.apache.camel:*: APACHE LICENSE, VERSION 2.0
+org.apache.httpcomponents:*: APACHE LICENSE, VERSION 2.0
 org.apache.geronimo.specs:geronimo-jta_1.1_spec: APACHE LICENSE, VERSION 2.0
+org.apache.james:*: APACHE LICENSE, VERSION 2.0
 org.bidib.com.neuronrobotics:nrjavaserial: RXTX LICENSE, VERSION 2.1
 org.bouncycastle:bcpkix-jdk15on: BOUNCYCASTLE LICENSE
 org.bouncycastle:bcprov-jdk15on: BOUNCYCASTLE LICENSE
 org.codehaus.btm:btm: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 3
-org.codehaus.groovy:groovy-all: APACHE LICENSE, VERSION 2.0
+org.codehaus.groovy:*: APACHE LICENSE, VERSION 2.0
 org.fourthline.cling:cling-core: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
-org.fusesource.restygwt: APACHE LICENSE, VERSION 2.0
 org.hibernate.common:hibernate-commons-annotations: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
 org.hibernate.javax.persistence:hibernate-jpa-2.1-api: ECLIPSE DISTRIBUTION LICENSE, VERSION 1.0
 org.hibernate:hibernate-core: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
 org.hibernate:hibernate-entitymanager: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
 org.hibernate:hibernate-validator: APACHE LICENSE, VERSION 2.0
+org.infinispan:*: APACHE LICENSE, VERSION 2.0
 org.javassist:javassist: APACHE LICENSE, VERSION 2.0
 org.jboss.jdeparser:jdeparser: GNU GENERAL PUBLIC LICENSE, VERSION 2.0 WITH CLASSPATH EXCEPTION
-org.jboss.logging:jboss-logging-annotations: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
-org.jboss.logging:jboss-logging-processor: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
-org.jboss.logging:jboss-logging: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
-org.jboss.spec.javax.annotation:jboss-annotations-api_1.2_spec: GNU GENERAL PUBLIC LICENSE, VERSION 2.0 WITH CLASSPATH EXCEPTION
-org.jboss.spec.javax.servlet:jboss-servlet-api_3.1_spec: GNU GENERAL PUBLIC LICENSE, VERSION 2.0 WITH CLASSPATH EXCEPTION
-org.jboss.spec.javax.websocket:jboss-websocket-api_1.1_spec: GNU GENERAL PUBLIC LICENSE, VERSION 2.0 WITH CLASSPATH EXCEPTION
-org.jboss.xnio:xnio-api: APACHE LICENSE, VERSION 2.0
-org.jboss.xnio:xnio-nio: APACHE LICENSE, VERSION 2.0
-org.jboss:jandex: APACHE LICENSE, VERSION 2.0
+org.jboss.logging:*: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
+org.jboss.spec.javax.annotation:*: GNU GENERAL PUBLIC LICENSE, VERSION 2.0 WITH CLASSPATH EXCEPTION
+org.jboss.spec.javax.servlet:*: GNU GENERAL PUBLIC LICENSE, VERSION 2.0 WITH CLASSPATH EXCEPTION
+org.jboss.spec.javax.websocket:*: GNU GENERAL PUBLIC LICENSE, VERSION 2.0 WITH CLASSPATH EXCEPTION
+org.jboss.spec.javax.transaction:*: GNU GENERAL PUBLIC LICENSE, VERSION 2.0 WITH CLASSPATH EXCEPTION
+org.jboss.spec.javax.ws:*: GNU GENERAL PUBLIC LICENSE, VERSION 2.0 WITH CLASSPATH EXCEPTION
+org.jboss.spec.javax.ws.rs:*: GNU GENERAL PUBLIC LICENSE, VERSION 2.0 WITH CLASSPATH EXCEPTION
+org.jboss.xnio:*: APACHE LICENSE, VERSION 2.0
+org.jboss:jandex:*: APACHE LICENSE, VERSION 2.0
+org.jboss.resteasy:*: APACHE LICENSE, VERSION 2.0
+org.jboss.marshalling:*: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
+org.jgroups:jgroups:*: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
+org.keycloak:*: APACHE LICENSE, VERSION 2.0
+org.bouncycastle:*: BOUNCYCASTLE LICENSE
+org.rhq.helpers:rhq-pluginAnnotations: TODO GPL?
+org.codehaus.woodstox:*: APACHE LICENSE, VERSION 2.0
 org.openremote:or-commons: GNU AFFERO GENERAL PUBLIC LICENSE, VERSION 3
 org.openremote:or-controller: GNU AFFERO GENERAL PUBLIC LICENSE, VERSION 3
 org.openremote:or-shared: GNU AFFERO GENERAL PUBLIC LICENSE, VERSION 3
-org.openremote:or-zwave: TODO
+org.openremote:or-zwave: TODO Proprietary?
 org.seamless:seamless-http: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
 org.seamless:seamless-util: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
 org.seamless:seamless-xml: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
-org.slf4j:jcl-over-slf4j: SLF4J LICENSE
-org.slf4j:jul-to-slf4j: SLF4J LICENSE
-org.slf4j:slf4j-api: SLF4J LICENSE
-org.springframework:spring-aop: APACHE LICENSE, VERSION 2.0
-org.springframework:spring-beans: APACHE LICENSE, VERSION 2.0
-org.springframework:spring-context: APACHE LICENSE, VERSION 2.0
-org.springframework:spring-core: APACHE LICENSE, VERSION 2.0
-org.springframework:spring-expression: APACHE LICENSE, VERSION 2.0
-org.springframework:spring-tx: APACHE LICENSE, VERSION 2.0
+org.slf4j:*: SLF4J LICENSE
 xml-apis:xml-apis: APACHE LICENSE, VERSION 2.0
-javax.ws.rs:javax.ws.rs-api: COMMON DEVELOPMENT AND DISTRIBUTION LICENSE 1.1
-org.gwtbootstrap3:gwtbootstrap3: APACHE LICENSE, VERSION 2.0
-org.gwtbootstrap3:gwtbootstrap3-extras: APACHE LICENSE, VERSION 2.0
-https://github.com/workingflows/gwt-jscore: UNKNOWN
+org.xerial:sqlite-jdbc: APACHE LICENSE, VERSION 2.0
+https://github.com/workingflows/gwt-jscore: TODO Unknown!
 
 ---
 
