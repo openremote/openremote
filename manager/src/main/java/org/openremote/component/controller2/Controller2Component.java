@@ -1,12 +1,28 @@
+/*
+ * Copyright 2016, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.openremote.component.controller2;
 
-import com.ning.http.client.uri.Uri;
 import org.apache.camel.Endpoint;
 import org.apache.camel.impl.UriEndpointComponent;
 
-import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
-import java.net.URL;
 import java.util.Map;
 
 public class Controller2Component extends UriEndpointComponent {
@@ -34,8 +50,7 @@ public class Controller2Component extends UriEndpointComponent {
             URI endpointUri = URI.create(uri);
             String host = endpointUri.getHost();
             int port = endpointUri.getPort() > 0 ? endpointUri.getPort() : 8080; // TODO default port?
-            String path = endpointUri.getPath();
-            boolean discoveryOnly = endpointUri.getPath().equals("/discovery");
+            boolean discoveryOnly = endpointUri.getPath().equals("/" + DISCOVERY);
             return new Controller2Endpoint(uri, this, adapterManager, host, port, discoveryOnly);
         } catch (Exception ex) {
             throw new IllegalArgumentException("Invalid URI: " + uri);
