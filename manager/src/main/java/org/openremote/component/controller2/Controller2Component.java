@@ -23,12 +23,13 @@ import org.apache.camel.Endpoint;
 import org.apache.camel.impl.UriEndpointComponent;
 
 import java.net.URI;
+import java.net.URL;
 import java.util.Map;
 
 public class Controller2Component extends UriEndpointComponent {
-
-    public static final String DISCOVERY = "discovery";
-    public static final String HEADER_COMMAND = Controller2Component.class.getCanonicalName() + ".HEADER_COMMAND";
+    public static final String HEADER_DEVICE_URI = Controller2Component.class.getCanonicalName() + ".HEADER_DEVICE_URI";
+    public static final String HEADER_RESOURCE_URI = Controller2Component.class.getCanonicalName() + ".HEADER_RESOURCE_URI";
+    public static final String HEADER_COMMAND_VALUE = Controller2Component.class.getCanonicalName() + ".HEADER_COMMAND_VALUE";
 
     protected final Controller2Adapter.Manager adapterManager;
 
@@ -43,18 +44,18 @@ public class Controller2Component extends UriEndpointComponent {
 
     @Override
     protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
-        if (remaining == null || remaining.length() == 0) {
-            throw new IllegalArgumentException("Required '<IP or host name>[:<port>]' in URI");
-        }
         try {
-            URI endpointUri = URI.create(uri);
-            String host = endpointUri.getHost();
-            int port = endpointUri.getPort() > 0 ? endpointUri.getPort() : 8080; // TODO default port?
-            boolean discoveryOnly = endpointUri.getPath().equals("/" + DISCOVERY);
-            return new Controller2Endpoint(uri, this, adapterManager, host, port, discoveryOnly);
+            URI endpointUri = URI.create(remaining);
+            if (endpointUri.getPort() <= 0) {
+                throw new Exception("Invalid port number");
+            }
+
+            URL controllerUrl = new URL(endpointUri.getScheme(), endpointUri.getHost(), endpointUri.getPort(), "/controller");
+            Endpoint ep = new Controller2Endpoint(uri, this, adapterManager, controllerUrl, endpointUri.getPath());
+            setProperties(ep, parameters);
+            return ep;
         } catch (Exception ex) {
-            throw new IllegalArgumentException("Invalid URI: " + uri);
+            throw new IllegalArgumentException("Required URL in format of '<COMPONENT_NAME>:<SCHEME>://<IP or host name>:<port>/[discovery|inventory][?authUsername=&authPassword=]' in URI", ex);
         }
     }
-
 }
