@@ -7,6 +7,7 @@ services:
       - orion
       - keycloak
     environment:
+      TZ: "Europe/Zurich"
       DEV_MODE: 'false'
       IMPORT_SAMPLE_DATA: 'true'
       WEBSERVER_LISTEN_HOST: 0.0.0.0
@@ -22,14 +23,19 @@ services:
   keycloak:
     image: openremote/keycloak:latest
     environment:
+      TZ: "Europe/Zurich"
       KEYCLOAK_USER: admin
       KEYCLOAK_PASSWORD: admin
       KEYCLOAK_LOGLEVEL: DEBUG
   mongo:
     image: mongo:2.6
     command: --smallfiles
+    environment:
+        TZ: "Europe/Zurich"
   orion:
     image: fiware/orion:0.28
     links:
       - mongo
     command: -dbhost mongo
+    environment:
+        TZ: "Europe/Zurich"

@@ -8,6 +8,7 @@ services:
     volumes:
       - ./keycloak/theme:/opt/jboss/keycloak/themes/openremote
     environment:
+      TZ: "Europe/Zurich"
       KEYCLOAK_USER: admin
       KEYCLOAK_PASSWORD: admin
       KEYCLOAK_LOGLEVEL: DEBUG
@@ -16,6 +17,8 @@ services:
   mongo:
     image: mongo:2.6
     command: --smallfiles
+    environment:
+        TZ: "Europe/Zurich"
   orion:
     image: fiware/orion:0.28
     links:
@@ -23,3 +26,5 @@ services:
     ports:
       - "8082:1026"
     command: -dbhost mongo
+    environment:
+        TZ: "Europe/Zurich"

@@ -16,7 +16,9 @@ You'll need a Docker host to work on this project.
 
 All Docker and Gradle commands should be executed in the project root directory.
 
-NOTE: For docker volume mapping to work correctly on Windows and OS X ensure that your working directory is located somewhere under your home directory
+NOTE: For Docker volume mapping to work correctly on Windows and OS X ensure that your working directory is located somewhere under your home directory
+
+NOTE: The Docker virtual machine's time will drift when you are using VirtualBox. Until this is [fixed](https://github.com/boot2docker/boot2docker/issues/69), periodically run `docker-machine ssh default 'sudo ntpclient -s -h pool.ntp.org'` to update the virtual machine's clock.
 
 We are using the [Orion Context Broker](https://fiware-orion.readthedocs.org/en/develop/) with a MongoDB backend. For development, this is an instance with a non-persistent data store.
 
