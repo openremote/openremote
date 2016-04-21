@@ -1,15 +1,6 @@
 version: '2'
-
-# We have four services:
-#
-# - The Manager is the management frontend and main API gateway.
-# - Keycloak is the identity provider, we use OAuth2 and bearer tokens for all API access.
-# - MongoDB is the storage backend of Orion
-# - Orion is the context broker, it holds the current state of all IoT assets and devices.
 services:
 
-  # Manager
-  #
   # This is the API gateway for the whole system and hosting the public resources
   # of the manager web application.
   manager:
@@ -64,6 +55,7 @@ services:
       KEYCLOAK_HOST: keycloak
       KEYCLOAK_PORT: 8080
 
+  # The identity provider, we use OAuth2 and bearer tokens for all API access.
   keycloak:
     image: openremote/keycloak:latest
     environment:
@@ -74,11 +66,15 @@ services:
       # that imported sample data also creates a 'test' user with password 'test'. This should
       # not be imported in production.
       KEYCLOAK_PASSWORD: admin
+
+  # MongoDB is the storage backend of Orion.
   mongo:
     image: mongo:2.6
     command: --smallfiles
     environment:
         TZ: "Europe/Zurich"
+
+  # Orion is the context broker, it holds the current state of all IoT assets and devices.
   orion:
     image: fiware/orion:0.28
     links:
