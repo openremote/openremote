@@ -1,9 +1,5 @@
-<div style="color: #c1d72f; font-size: 150%">
- OpenRemote 
-</div>
-<div style="color: #000000; font-weight: bold; font-size: 110%;">
-IoT Management Simplified
-</div>
+# OpenRemote 
+> IoT Management Simplified
 
 ---
 
