@@ -1,18 +1,33 @@
-# OpenRemote
+<div style="color: #c1d72f; font-size: 150%">
+ OpenRemote 
+</div>
+<div style="color: #000000; font-weight: bold; font-size: 110%;">
+IoT Management Simplified
+</div>
+
+---
 
 * **Live Demo**: http://demo2.openremote.com (test/test)
+* **Docker Images**: https://hub.docker.com/u/openremote/
 * **Documentation/Wiki:** https://github.com/openremote/openremote/wiki
 * **Community:** https://groups.google.com/forum/#!forum/openremotecommunity
 * **Issues:** https://github.com/openremote/openremote/issues
 
+## Quickstart
+
+You'll need a Docker host to run this software.
+
+1. Install [Docker Toolbox](https://www.docker.com/products/overview#/docker_toolbox)
+1. Start Kitematic and open the *Docker CLI*
+1. Get the IP of your Docker host VM with: `docker-machine ip default`
+1. Download [docker-compose-demo.yml](https://raw.githubusercontent.com/openremote/openremote/master/docker-compose-quickstart.yml)
+1. Edit this file and review the settings
+1. Deploy the whole stack with: `docker-compose -f docker-compose-demo.yml [up|down]`
+1. Open http://DOCKER_HOST_IP:MAPPED_PUBLIC_PORT in your browser
+
 ## Development
 
 ### Preparing the environment
-
-You'll need a Docker host to work on this project.
-
-* Install Docker Toolbox: https://www.docker.com/products/overview#/docker_toolbox
-* Start Kitematic and open the *Docker CLI*. The environment variable `DOCKER_HOST` should be set and you should be able to execute `docker images`, `docker ps` and any other Docker client command.
 
 All Docker and Gradle commands should be executed in the project root directory.
 
@@ -30,9 +45,7 @@ Test and sample data will be installed fresh every time you start the server(s).
 
 All services required for development can be deployed with Docker Compose, configured in `docker-compose.yml`. Execute `docker-compose up` in the project root to download required images (this might take a while and give no feedback) and run containers.
 
-When startup completes, get the IP of your Docker host VM with `docker-machine ip default`.
-
-The default configuration of all `*Service` classes is for host IP `192.168.99.100`. If this is not your Docker host IP, you must set various environment variables. (TODO documentation)
+The default configuration of all `*Service` classes is for host IP `192.168.99.100`. If this is not your Docker host IP, you must set various environment variables (see [Quickstart](https://raw.githubusercontent.com/openremote/openremote/master/docker-compose-quickstart.yml)).
 
 ### Run GWT code server
 
@@ -65,10 +78,11 @@ You can extract smaller tilesets with the following procedure:
 1. Extract the region with: 
     `tilelive-copy --minzoom=0 --maxzoom=14 --bounds="BOUNDARY BOX COORDINATES" theworld.mbtiles myextract.mbtiles`
 
-## Update demo server
+## Production
 
-First build Docker images with `./gradlew buildImage`, you might want to `clean` before.
+### Publishing images
 
-The configuration in `docker-compose-demo.yml` is prepared for our demo server deployment. You will have to change the `IDENTITY_NETWORK_HOST` and `IDENTITY_NETWORK_WEBSERVER_PORT` variables to the externally (by users) reachable hostname and port of your stack.
 
-Deploy the whole stack with `docker-compose -f docker-compose-demo.yml [up|down]`.
+Build Docker images with `./gradlew buildImage`, you might want to `clean` before.
+
+You can also directly build and push the image to our (Docker Hub Account)[https://hub.docker.com/u/openremote/]: `/gradlew pushImage -PdockerHubUsername=username -PdockerHubPassword=secret`

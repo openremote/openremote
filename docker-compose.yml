@@ -1,7 +1,7 @@
 version: '2'
 
 services:
-  keycloak:
+  keycloak_dev:
     build:
       context: ./keycloak
       dockerfile: Dockerfile-dev
@@ -14,17 +14,17 @@ services:
       KEYCLOAK_LOGLEVEL: DEBUG
     ports:
       - "8081:8080"
-  mongo:
+  mongo_dev:
     image: mongo:2.6
     command: --smallfiles
     environment:
         TZ: "Europe/Zurich"
-  orion:
+  orion_dev:
     image: fiware/orion:0.28
     links:
-      - mongo
+      - mongo_dev
     ports:
       - "8082:1026"
-    command: -dbhost mongo
+    command: -dbhost mongo_dev
     environment:
         TZ: "Europe/Zurich"
