@@ -47,6 +47,11 @@ The default configuration of all `*Service` classes is for host IP `192.168.99.1
 
 The GWT compiler will listen for compilation requests and produce Javascript code from our Java code. Start and keep it running in the background with `./gradlew -p manager gwtSuperDev`.
 
+### Import project to Eclipse (optional)
+
+- run `./gradlew eclipse`
+- In Eclipse go to File > Import and import the project as "Existing Projects into Workspace"
+
 ### Run Manager server
 
 Configure your IDE and set up a *Run Configuration*:
