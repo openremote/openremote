@@ -219,7 +219,7 @@ public class IdentityService implements ContainerService {
                     response.close();
             }
         }).retryWhen(
-            new RetryWithDelay("Connecting to Keycloak server " + keycloakServiceUri.build(), 10, 3000)
+            new RetryWithDelay("Connecting to Keycloak server " + keycloakServiceUri.build(), 100, 3000)
         ).toBlocking().singleOrDefault(false);
     }
 

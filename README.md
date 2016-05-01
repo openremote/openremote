@@ -19,7 +19,7 @@ You'll need a Docker host to run this software.
 1. Download [docker-compose-quickstart.yml](https://raw.githubusercontent.com/openremote/openremote/master/docker-compose-quickstart.yml)
 1. Edit this file and review the settings
 1. Deploy the whole stack with: `docker-compose -f docker-compose-quickstart.yml [up|down]`
-1. Open http://DOCKER_HOST_IP:MAPPED_PUBLIC_PORT in your browser
+1. Open http://DOCKER_HOST_IP:MAPPED_PUBLIC_PORT in your browser (default http://192.168.99.100:8080/)
 
 ## Development
 
@@ -46,6 +46,11 @@ The default configuration of all `*Service` classes is for host IP `192.168.99.1
 ### Run GWT code server
 
 The GWT compiler will listen for compilation requests and produce Javascript code from our Java code. Start and keep it running in the background with `./gradlew -p manager gwtSuperDev`.
+
+### Import project to Eclipse (optional)
+
+- run `./gradlew eclipse`
+- In Eclipse go to File > Import and import the project as "Existing Projects into Workspace"
 
 ### Run Manager server
 

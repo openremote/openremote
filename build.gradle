@@ -38,4 +38,5 @@ allprojects {
 
     ext.dockerImageName = "$dockerRepository/$project.name:$imageVersion".toString()
 
+    apply plugin: 'eclipse'
 }

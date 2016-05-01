@@ -11,3 +11,6 @@ bin/
 *.ipr
 *.iws
 .idea/
+
+*~
+manager/.factorypath
