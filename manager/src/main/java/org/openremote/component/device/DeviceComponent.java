@@ -8,6 +8,7 @@ import org.openremote.manager.server.device.DeviceService;
 import java.util.Map;
 
 public class DeviceComponent extends DefaultComponent {
+
     public enum Action {
         ADD,
         REMOVE,

@@ -12,9 +12,18 @@ import static org.openremote.manager.server.Constants.MASTER_REALM
 class EventEchoTest extends Specification implements ContainerTrait, WebsocketClientTrait {
 
     def "Ping/pong event service"() {
-        given: "An authenticated user"
+        given: "the server container is started"
+        def serverPort = findEphemeralPort();
+        def container = startContainer(defaultConfig(serverPort), defaultServices())
+
+        and: "an authenticated user"
         def realm = MASTER_REALM;
-        def accessTokenResponse = authenticate(realm, MANAGER_CLIENT_ID, "test", "test")
+        def accessTokenResponse = authenticate(container, realm, MANAGER_CLIENT_ID, "test", "test")
+
+        and: "a test client target"
+        def client = createClient(container).build();
+        def serverUri = serverUri(serverPort);
+        def clientTarget = getClientTarget(client, serverUri, realm, accessTokenResponse.getToken());
 
         and: "A sample message"
         def sampleMessage = new Message("Hello World");
@@ -24,20 +33,21 @@ class EventEchoTest extends Specification implements ContainerTrait, WebsocketCl
         when: "connecting to the websocket"
         def session = connect(
                 testClient,
-                getClientTarget(),
+                clientTarget,
                 realm,
                 accessTokenResponse.getToken(),
                 EventService.WEBSOCKET_EVENTS
         );
 
         and: "sending a message"
-        session.basicRemote.sendText(JSON.writeValueAsString(sampleMessage));
+        session.basicRemote.sendText(container.JSON.writeValueAsString(sampleMessage));
 
         and: "waiting for the answers"
         testClient.awaitMessages(false);
 
         then: "the expected messages should eventually arrive"
-        JSON.readValue(testClient.messages[0] as String, Message.class).getBody().startsWith("Hello from server");
+        container.JSON.readValue(testClient.messages[0] as String, Message.class)
+                .getBody().startsWith("Hello from server");
 
         when: "we do the same again after resetting the test client"
         testClient.reset(1);
@@ -46,12 +56,13 @@ class EventEchoTest extends Specification implements ContainerTrait, WebsocketCl
         testClient.messages.size() == 0
 
         when: "sending a message"
-        session.basicRemote.sendText(JSON.writeValueAsString(sampleMessage));
+        session.basicRemote.sendText(container.JSON.writeValueAsString(sampleMessage));
 
         and: "waiting for the answers"
         testClient.awaitMessages();
 
         then: "the expected messages should eventually arrive"
-        JSON.readValue(testClient.messages[0] as String, Message.class).getBody().startsWith("Hello from server");
+        container.JSON.readValue(testClient.messages[0] as String, Message.class)
+                .getBody().startsWith("Hello from server");
     }
 }

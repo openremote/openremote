@@ -8,14 +8,13 @@ import org.openremote.console.controller.connector.HttpConnector
 import org.openremote.console.controller.connector.HttpConnector.ControllerCallback
 import org.openremote.container.message.MessageBrokerContext
 import org.openremote.entities.controller.ControllerInfo
-import org.openremote.test.ManualContainerTrait
+import org.openremote.test.ContainerTrait
 import spock.lang.Specification
-import spock.util.concurrent.BlockingVariables
 import spock.util.concurrent.PollingConditions
 
 import java.nio.file.Files
 
-class Controller2Test extends Specification implements ManualContainerTrait {
+class Controller2Test extends Specification implements ContainerTrait {
 
     def "Get Device Inventory"() {
         given: "A spy of the controller connector returning fake responses"

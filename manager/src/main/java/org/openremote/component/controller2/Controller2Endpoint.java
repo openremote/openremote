@@ -24,53 +24,44 @@ import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.spi.UriEndpoint;
-import org.jgroups.annotations.Unsupported;
 
 import java.net.URL;
-import java.util.logging.Logger;
 
 @UriEndpoint(
     scheme = "controller2",
-    title = "OpenRemote Controller v2 Adapter",
-    syntax = "controller2:<scheme>://<IP or host name>:<port>[/discovery]",
+    title = "OpenRemote Controller v2 Agent",
+    syntax = Controller2Component.URI_SYNTAX,
     consumerClass = Controller2Consumer.class
 )
 public class Controller2Endpoint extends DefaultEndpoint {
-    private static final Logger LOG = Logger.getLogger(Controller2Endpoint.class.getName());
+
     final protected Controller2Adapter.Manager adapterManager;
     final protected boolean isDiscovery;
     final protected boolean isInventory;
     final protected URL controllerUrl;
+
+    @org.apache.camel.spi.UriParam(
+        label = "Username",
+        description = "The OR Controller 2 Username"
+    )
     protected String username;
+
+    @org.apache.camel.spi.UriParam(
+        label = "Password",
+        description = "The OR Controller 2 Password"
+    )
     protected String password;
+
     protected String deviceUri;
     protected String resourceUri;
 
     protected Controller2Adapter adapter;
 
-    /* TODO This is how you do options. A query parameter on the endpoint URI is automatically a property of the endpoint.
-    @org.apache.camel.spi.UriParam(
-        label = "Foo",
-        description = "This will be automatically parsed from the endpoint URI query parameters!",
-        defaultValue = "bar"
-    )
-    protected String foo;
-
-    TODO Also should add getter/setter for this property
-    */
-
     public Controller2Endpoint(String endpointUri, Controller2Component component, Controller2Adapter.Manager adapterManager,
                                URL controllerUrl, String path) {
-        this(endpointUri, component, adapterManager, controllerUrl, null, null, path);
-    }
-
-    public Controller2Endpoint(String endpointUri, Controller2Component component, Controller2Adapter.Manager adapterManager,
-                               URL controllerUrl, String username, String password, String path) {
         super(endpointUri, component);
         this.adapterManager = adapterManager;
         this.controllerUrl = controllerUrl;
-        this.username = username;
-        this.password = password;
         this.isDiscovery = "/discovery".equals(path);
         this.isInventory = "/inventory".equals(path);
 
@@ -86,11 +77,19 @@ public class Controller2Endpoint extends DefaultEndpoint {
         }
     }
 
-    public void setAuthUsername(String username) {
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
         this.username = username;
     }
 
-    public void setAuthPassword(String password) {
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
         this.password = password;
     }
 
@@ -139,10 +138,9 @@ public class Controller2Endpoint extends DefaultEndpoint {
 
     public Controller2Adapter getAdapter() {
         if (adapter == null) {
-            adapter = adapterManager.openAdapter(controllerUrl, username, password); // TODO If you want more options passed into the adapter, see @UriParam example above
-
+            adapter = adapterManager.openAdapter(controllerUrl, username, password);
             if (adapter == null)
-                throw new IllegalStateException("Manager did not open adapter: " + controllerUrl.toString());
+                throw new IllegalStateException("Manager did not open adapter: " + controllerUrl);
         }
         return adapter;
     }

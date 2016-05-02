@@ -27,6 +27,9 @@ import java.net.URL;
 import java.util.Map;
 
 public class Controller2Component extends UriEndpointComponent {
+
+    public static final String URI_SYNTAX = "'controller2://<IP or host name>:<port>/([<device URI>/<resource URI>]|[discovery|inventory])[?authUsername=username&authPassword=secret]";
+
     public static final String HEADER_DEVICE_URI = Controller2Component.class.getCanonicalName() + ".HEADER_DEVICE_URI";
     public static final String HEADER_RESOURCE_URI = Controller2Component.class.getCanonicalName() + ".HEADER_RESOURCE_URI";
     public static final String HEADER_COMMAND_VALUE = Controller2Component.class.getCanonicalName() + ".HEADER_COMMAND_VALUE";
@@ -55,7 +58,7 @@ public class Controller2Component extends UriEndpointComponent {
             setProperties(ep, parameters);
             return ep;
         } catch (Exception ex) {
-            throw new IllegalArgumentException("Required URL in format of '<COMPONENT_NAME>:<SCHEME>://<IP or host name>:<port>/[discovery|inventory][?authUsername=&authPassword=]' in URI", ex);
+            throw new IllegalArgumentException("Required URL in format of " + URI_SYNTAX, ex);
         }
     }
 }

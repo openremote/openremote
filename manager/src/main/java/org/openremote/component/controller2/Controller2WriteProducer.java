@@ -11,6 +11,7 @@ import java.util.logging.Logger;
 public class Controller2WriteProducer extends DefaultProducer {
 
     private static final Logger LOG = Logger.getLogger(Controller2WriteProducer.class.getName());
+
     protected String deviceUri;
     protected String resourceUri;
 
@@ -30,13 +31,13 @@ public class Controller2WriteProducer extends DefaultProducer {
         // Extract write related headers
         String deviceUri = exchange.getIn().getHeader(
                 Controller2Component.HEADER_DEVICE_URI,
-                null,
+            this.deviceUri,
                 String.class
         );
 
         String resourceUri = exchange.getIn().getHeader(
                 Controller2Component.HEADER_RESOURCE_URI,
-                null,
+                this.resourceUri,
                 String.class
         );
 
@@ -46,12 +47,9 @@ public class Controller2WriteProducer extends DefaultProducer {
                 String.class
         );
 
-        deviceUri = deviceUri == null ? this.deviceUri : deviceUri;
-        resourceUri = resourceUri == null ? this.resourceUri : resourceUri;
-
         if (deviceUri == null || "".equals(deviceUri) || resourceUri == null || "".equals(resourceUri)) {
             throw new IllegalArgumentException(
-                    "Both device and resource URI must be defined for write producer"
+                    "Both device and resource URI message headers must be defined for write producer"
             );
         }
 
@@ -59,6 +57,6 @@ public class Controller2WriteProducer extends DefaultProducer {
             LOG.fine("Writing to '" + deviceUri + " : " + resourceUri + "' with value: " + commandValue);
         }
 
-        getEndpoint().getAdapter().sendCommand(deviceUri, resourceUri, commandValue);
+        getEndpoint().getAdapter().writeResource(deviceUri, resourceUri, commandValue);
     }
 }

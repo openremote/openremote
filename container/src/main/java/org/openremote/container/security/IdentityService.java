@@ -148,12 +148,12 @@ public class IdentityService implements ContainerService {
                     LOG.fine("No realm in request, no authentication will be attempted: " + request.getURI());
                     return notAuthenticatedKeycloakDeployment;
                 }
-                ClientRealm clientApplication = getClientRealm(realm, getClientId());
-                if (clientApplication == null) {
+                ClientRealm clientRealm = getClientRealm(realm, getClientId());
+                if (clientRealm == null) {
                     LOG.fine("No client application configured for realm, no authentication will be attempted: " + request.getURI());
                     return notAuthenticatedKeycloakDeployment;
                 }
-                return clientApplication.keycloakDeployment;
+                return clientRealm.keycloakDeployment;
             });
         }
     }
@@ -257,7 +257,7 @@ public class IdentityService implements ContainerService {
                     }
 
                     // Must rewrite the auth-server URL to our external host and port, which
-                    // we'll later reverse-proxy back to Keycloak
+                    // we reverse-proxy back to Keycloak
                     clientInstall.setAuthServerUrl(externalAuthServerUrl.build().toString());
 
                     // Also correct the backend URL at this time, this URL will be written

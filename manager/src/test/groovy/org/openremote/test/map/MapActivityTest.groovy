@@ -5,18 +5,17 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget
 import elemental.json.JsonObject
 import org.openremote.manager.client.event.bus.EventBus
 import org.openremote.manager.client.map.MapActivity
+import org.openremote.manager.client.map.MapView
 import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.service.SecurityService
-import org.openremote.manager.client.map.MapView
 import org.openremote.manager.shared.map.MapResource
-import org.openremote.test.ClientTrait
 import org.openremote.test.ContainerTrait
 import spock.lang.Specification
 
 import static org.openremote.manager.server.Constants.MANAGER_CLIENT_ID
 import static org.openremote.manager.server.Constants.MASTER_REALM
 
-class MapActivityTest extends Specification implements ContainerTrait, ClientTrait {
+class MapActivityTest extends Specification implements ContainerTrait {
 
     def "Initialize map"() {
         given: "The fake client environment"
@@ -25,9 +24,13 @@ class MapActivityTest extends Specification implements ContainerTrait, ClientTra
         def activityBus = Mock(EventBus)
         def activityRegistrations = []
 
+        and: "the server container is started"
+        def serverPort = findEphemeralPort();
+        def container = startContainer(defaultConfig(serverPort), defaultServices())
+
         and: "An authenticated user"
         def realm = MASTER_REALM;
-        def accessTokenResponse = authenticate(realm, MANAGER_CLIENT_ID, "test", "test")
+        def accessTokenResponse = authenticate(container, realm, MANAGER_CLIENT_ID, "test", "test")
         def securityService = Stub(SecurityService) {
             getRealm() >> realm;
             getToken() >> accessTokenResponse.getToken()
@@ -35,13 +38,18 @@ class MapActivityTest extends Specification implements ContainerTrait, ClientTra
         }
         def requestService = new RequestServiceImpl(securityService)
 
+        and: "a test client target"
+        def client = createClient(container).build();
+        def serverUri = serverUri(serverPort);
+        def clientTarget = getClientTarget(client, serverUri, realm);
+
         and: "The map view, resource, and activity"
         def mapView = Mock(MapView) {
             isMapInitialised() >> false
         }
         def mapResource = Stub(MapResource) {
             // This matches all methods with any parameters, of the MapResource class
-            _(_) >> { callResourceProxy(realm, getDelegate()) }
+            _(_) >> { callResourceProxy(clientTarget, getDelegate()) }
         }
         def mapActivity = new MapActivity(
                 mapView, mapResource, requestService, placeController

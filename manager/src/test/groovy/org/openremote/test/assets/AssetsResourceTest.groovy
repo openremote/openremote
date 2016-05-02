@@ -1,7 +1,6 @@
 package org.openremote.test.assets
 
 import elemental.json.Json
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder
 import org.openremote.manager.server.assets.EntityArrayMessageBodyConverter
 import org.openremote.manager.server.assets.EntityMessageBodyConverter
 import org.openremote.manager.server.assets.EntryPointMessageBodyConverter
@@ -12,6 +11,7 @@ import org.openremote.manager.shared.ngsi.params.EntityListParams
 import org.openremote.manager.shared.ngsi.simplequery.BinaryStatement
 import org.openremote.manager.shared.ngsi.simplequery.Query
 import org.openremote.manager.shared.ngsi.simplequery.QueryValue
+
 import org.openremote.test.ContainerTrait
 import spock.lang.Specification
 
@@ -22,21 +22,26 @@ import static org.openremote.manager.server.Constants.MASTER_REALM
 
 class AssetsResourceTest extends Specification implements ContainerTrait {
 
-    @Override
-    def prepareClient(ResteasyClientBuilder clientBuilder) {
-        clientBuilder
+    def "Retrieve sample rooms"() {
+        given: "the server container is started"
+        def serverPort = findEphemeralPort();
+        def container = startContainer(defaultConfig(serverPort), defaultServices())
+
+        and: "an authenticated user"
+        def realm = MASTER_REALM;
+        def accessTokenResponse = authenticate(container, realm, MANAGER_CLIENT_ID, "test", "test")
+
+        and: "a test client target"
+        def client = createClient(container)
                 .register(EntryPointMessageBodyConverter.class)
                 .register(EntityMessageBodyConverter.class)
-                .register(EntityArrayMessageBodyConverter.class);
-    }
-
-    def "Retrieve sample rooms"() {
-        given: "An authenticated user"
-        def realm = MASTER_REALM;
-        def accessTokenResponse = authenticate(realm, MANAGER_CLIENT_ID, "test", "test")
+                .register(EntityArrayMessageBodyConverter.class)
+                .build();
+        def serverUri = serverUri(serverPort);
+        def clientTarget = getClientTarget(client, serverUri, realm, accessTokenResponse.getToken());
 
         and: "the assets resource"
-        def assetsResource = getClientTarget(realm, accessTokenResponse.getToken()).proxy(AssetsResource.class);
+        def assetsResource = clientTarget.proxy(AssetsResource.class);
 
         when: "query with no restrictions"
         def entities = Entity.from(assetsResource.getEntities(null, null));
@@ -118,12 +123,25 @@ class AssetsResourceTest extends Specification implements ContainerTrait {
     }
 
     def "Create, update, and delete entity"() {
-        given: "An authenticated user"
+        given: "the server container is started"
+        def serverPort = findEphemeralPort();
+        def container = startContainer(defaultConfig(serverPort), defaultServices())
+
+        and: "an authenticated user"
         def realm = MASTER_REALM;
-        def accessTokenResponse = authenticate(realm, MANAGER_CLIENT_ID, "test", "test")
+        def accessTokenResponse = authenticate(container, realm, MANAGER_CLIENT_ID, "test", "test")
+
+        and: "a test client target"
+        def client = createClient(container)
+                .register(EntryPointMessageBodyConverter.class)
+                .register(EntityMessageBodyConverter.class)
+                .register(EntityArrayMessageBodyConverter.class)
+                .build();
+        def serverUri = serverUri(serverPort);
+        def clientTarget = getClientTarget(client, serverUri, realm, accessTokenResponse.getToken());
 
         and: "the assets resource"
-        def assetsResource = getClientTarget(realm, accessTokenResponse.getToken()).proxy(AssetsResource.class);
+        def assetsResource = clientTarget.proxy(AssetsResource.class);
 
         and: "a sample room"
         Entity room = new Entity(Json.createObject());

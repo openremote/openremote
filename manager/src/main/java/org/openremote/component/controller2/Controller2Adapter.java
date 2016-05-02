@@ -53,7 +53,7 @@ public class Controller2Adapter {
     }
 
     /**
-     * This is a reference counting manager per hostPortKey.
+     * This is a reference counting manager, one adapter for each adapter URL.
      */
     final static public Manager DEFAULT_MANAGER = new Manager() {
         final protected List<Controller2Adapter> adapters = new ArrayList<>();
@@ -202,6 +202,7 @@ public class Controller2Adapter {
     protected boolean connectionInProgress;
     protected boolean forceDisconnect;
     final static protected long RECONNECT_DELAY_SECONDS = 5;
+    // TODO: This will not scale, we can't hold 1 milliond device mappings in memory
     protected Map<String, DeviceMapping> deviceMap;
     protected final ScheduledExecutorService connectionScheduler = Executors.newScheduledThreadPool(1);
     protected List<WriteResourceRequest> queuedWriteRequests = new ArrayList<>();
@@ -213,7 +214,7 @@ public class Controller2Adapter {
     }
 
     public Controller2Adapter(URL url, String username, String password, Controller controller) {
-        LOG.info("### CREATING ADAPTER: " + url.toString());
+        LOG.info("Creating adapter: " + url);
         this.url = url;
         this.username = username;
         this.password = password;
@@ -232,7 +233,7 @@ public class Controller2Adapter {
 
             @Override
             public void onFailure(ControllerResponseCode controllerResponseCode) {
-                LOG.fine("Disconnected from the controller");
+                LOG.fine("Disconnected from the controller: " + url);
                 if (!forceDisconnect) {
                     doConnection(true);
                 }
@@ -240,7 +241,7 @@ public class Controller2Adapter {
 
             @Override
             public void onSuccess(ControllerConnectionStatus controllerConnectionStatus) {
-                LOG.fine("Connected to the controller");
+                LOG.fine("Connected to the controller: " + url);
                 if (!forceDisconnect) {
                     onConnected();
                 }
@@ -257,7 +258,7 @@ public class Controller2Adapter {
     }
 
     public synchronized void close() {
-        LOG.info("### CLOSING ADAPTER: " + url.toString());
+        LOG.info("Closing adapter: " + url);
         if (controller != null) {
             forceDisconnect = true;
             controller.disconnect();
@@ -265,25 +266,25 @@ public class Controller2Adapter {
     }
 
     public synchronized void addDiscoveryListener(DiscoveryListener listener) {
-        LOG.info("### ADDING DISCOVERY LISTENER: " + listener);
+        LOG.fine("Adding discovery listener (" + url + "): " + listener);
         discoveryListeners.add(listener);
     }
 
     public synchronized void removeDiscoveryListener(DiscoveryListener listener) {
-        LOG.info("### REMOVING DISCOVERY LISTENER: " + listener);
+        LOG.fine("Removing discovery listener (" + url + "): " + listener);
         discoveryListeners.remove(listener);
     }
 
     public void triggerDiscovery() {
-        LOG.info("### TRIGGERING DISCOVERY");
+        LOG.fine("Triggering discovery (" + url + ")");
         // TODO: This should, at some point (asynchronous?) call the registered discovery listeners
     }
 
     public synchronized void addSensorListener(SensorListener listener) {
-        LOG.info("### ADDING SENSOR LISTENER: " + listener);
+        LOG.fine("Adding sensor listener (" + url + "): " + listener);
         sensorListeners.add(listener);
 
-        if (connectionInProgress || controller == null && !controller.isConnected()) {
+        if (connectionInProgress || controller == null || !controller.isConnected()) {
             return;
         }
 
@@ -310,7 +311,7 @@ public class Controller2Adapter {
     }
 
     public synchronized void removeSensorListener(SensorListener listener) {
-        LOG.info("### REMOVING SENSOR LISTENER: " + listener);
+        LOG.fine("Removing sensor listener (" + url + "): " + listener);
         sensorListeners.remove(listener);
 
         if (deviceMap == null) {
@@ -335,10 +336,10 @@ public class Controller2Adapter {
         resourceMapping.removeSensorListener(listener);
     }
 
-    public synchronized void sendCommand(String deviceUri, String resourceUri, Object resourceValue) {
-        LOG.info("### WRITING RESOURCE: " + deviceUri + " : " + resourceUri + " - " + resourceValue);
+    public synchronized void writeResource(String deviceUri, String resourceUri, Object resourceValue) {
+        LOG.fine("Writing resource (" + url + "): " + deviceUri + " : " + resourceUri + " - " + resourceValue);
 
-        if (connectionInProgress || controller == null && !controller.isConnected()) {
+        if (connectionInProgress || controller == null || !controller.isConnected()) {
             WriteResourceRequest writeRequest = new WriteResourceRequest();
             writeRequest.deviceUri = deviceUri;
             writeRequest.resourceUri = resourceUri;
@@ -351,10 +352,10 @@ public class Controller2Adapter {
     }
 
     public synchronized void addDeviceListener(DeviceListener listener) {
-        LOG.info("### ADDING DEVICE LISTENER: " + listener);
+        LOG.fine("Adding device listener (" + url + "): " + listener);
         deviceListeners.add(listener);
 
-        if (connectionInProgress || controller == null && !controller.isConnected()) {
+        if (connectionInProgress || controller == null || !controller.isConnected()) {
             queuedDeviceListeners.add(listener);
             return;
         }
@@ -363,7 +364,7 @@ public class Controller2Adapter {
     }
 
     public synchronized void removeDeviceListener(DeviceListener listener) {
-        LOG.info("### REMOVING DEVICE LISTENER: " + listener);
+        LOG.fine("Removing device listener (" + url + "): " + listener);
         deviceListeners.remove(listener);
     }
 
@@ -633,6 +634,7 @@ public class Controller2Adapter {
             return;
         }
 
+        // TODO: Callback handling? Should maybe just log something...
         deviceMapping.gatewayDevice.sendCommand(sendCommand, (resourceValue != null ? resourceValue.toString() : null), new AsyncControllerCallback<CommandResponse>() {
             @Override
             public void onFailure(ControllerResponseCode controllerResponseCode) {

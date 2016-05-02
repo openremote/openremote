@@ -11,17 +11,26 @@ import static org.openremote.manager.server.Constants.MASTER_REALM
 class MapResourceTest extends Specification implements ContainerTrait {
 
     def "Retrieve map settings"() {
-        given: "An authenticated user"
+        given: "the server container is started"
+        def serverPort = findEphemeralPort();
+        def container = startContainer(defaultConfig(serverPort), defaultServices())
+
+        and: "an authenticated user"
         def realm = MASTER_REALM;
-        def accessTokenResponse = authenticate(realm, MANAGER_CLIENT_ID, "test", "test")
+        def accessTokenResponse = authenticate(container, realm, MANAGER_CLIENT_ID, "test", "test")
 
-        and: "The map resource"
-        def mapResource = getClientTarget(realm, accessTokenResponse.getToken()).proxy(MapResource.class);
+        and: "a test client target"
+        def client = createClient(container).build();
+        def serverUri = serverUri(serverPort);
+        def clientTarget = getClientTarget(client, serverUri, realm, accessTokenResponse.getToken());
 
-        when: "A request has been made"
+        and: "the map resource"
+        def mapResource = clientTarget.proxy(MapResource.class);
+
+        when: "a request has been made"
         def mapSettings = mapResource.getSettings(null);
 
-        then: "Settings should be not-null"
+        then: "settings should be not-null"
         mapSettings != null;
 
         and: "JSON content is valid"
