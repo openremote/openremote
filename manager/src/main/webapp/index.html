@@ -11,7 +11,50 @@
 
     <script>
 
-        function init() {
+        var defaultErrorMessage = "Service not available, please try again later.";
+
+        var load = (function () {
+            function _load(tag, rel) {
+                return function (url) {
+                    return new Promise(function (resolve, reject) {
+                        var element = window.document.createElement(tag);
+                        var parent = 'body';
+                        var attr = 'src';
+
+                        // Important success and error for the promise
+                        element.onload = function () {
+                            resolve(url);
+                        };
+                        element.onerror = function () {
+                            reject(url);
+                        };
+
+                        switch (tag) {
+                            case 'script':
+                                element.async = true;
+                                break;
+                            case 'link':
+                                element.type = 'text/css';
+                                element.rel = rel;
+                                attr = 'href';
+                                parent = 'head';
+                        }
+
+                        element[attr] = url;
+                        window.document[parent].appendChild(element);
+                    });
+                };
+            }
+
+            return {
+                css: _load("link", "stylesheet"),
+                import: _load("link", "import"),
+                js: _load("script"),
+                img: _load("img")
+            }
+        })();
+
+        document.addEventListener("DOMContentLoaded", function (event) {
             var keycloakConfig = {
                 url: '/auth',
                 realm: window.location.pathname.split('/')[1],
@@ -21,58 +64,59 @@
             window.keycloak.init({onLoad: 'login-required'})
                     .success(function (authenticated) {
                         if (authenticated) {
-                            loadApp();
+                            loadResources();
                         } else {
                             window.keycloak.login();
                         }
                     })
                     .error(function () {
-                        alert("Failed to initialize login. Please contact your administrator.");
+                        alert("Failed to initialize login. " + defaultErrorMessage);
                     });
-        }
+        });
 
-        function loadApp() {
-            var jsapi = new Promise(function (resolve, reject) {
-                loadScript("/jsapi", resolve);
-            });
-
-            var mapbox = new Promise(function (resolve, reject) {
-                loadStyleSheet("/static/3rdparty/mapbox-gl-js/0.14.1/mapbox-gl.css");
-                loadScript("/static/3rdparty/mapbox-gl-js/0.14.1/mapbox-gl.js", resolve);
-            });
-
-            var entrypoint = new Promise(function (resolve, reject) {
-                loadStyleSheet("/static/css/openremote.css");
-                loadScript("/static/gwt/Manager/Manager.nocache.js", resolve);
-            });
-
+        function loadResources() {
             Promise.all([
-                jsapi,
-                mapbox,
-                entrypoint
-            ]).then(function (results) {
-                console.log("Application resources loaded successfully")
+ /* TODO Webcomponents
+                load.js("/static/bower_components/webcomponentsjs/webcomponents-lite.min.js"),
+
+                load.import("/static/bower_components/polymer/polymer.html"),
+                load.import("/static/bower_components/iron-icons/iron-icons.html"),
+                load.import("/static/bower_components/iron-icons/maps-icons.html"),
+                load.import("/static/bower_components/iron-icons/hardware-icons.html"),
+                load.import("/static/bower_components/iron-flex-layout/iron-flex-layout-classes.html"),
+                load.import("/static/bower_components/paper-button/paper-button.html"),
+                load.import("/static/bower_components/paper-input/paper-input.html"),
+                load.import("/static/bower_components/paper-badge/paper-badge.html"),
+                load.import("/static/components/ui/or-icons.html"),
+                load.import("/static/components/ui/or-toast.html"),
+                load.import("/static/css/style.html")
+*/
+                load.css("/static/3rdparty/mapbox-gl-js/0.14.1/mapbox-gl.css"),
+                load.js("/static/3rdparty/mapbox-gl-js/0.14.1/mapbox-gl.js"),
+                load.css("/static/css/openremote.css"),
+                load.js("/jsapi"),
+                load.js("/static/gwt/Manager/Manager.nocache.js")
+
+            ]).then(function () {
+                console.log("Auxiliary application resources loaded, web components will initialize...");
+            }).catch(function () {
+                alert("Error loading application resources. " + defaultErrorMessage);
             });
         }
 
-        function loadStyleSheet(href) {
-            var link = document.createElement("link");
-            link.href = href;
-            link.rel = "stylesheet";
-            link.type = "text/css";
-            document.getElementsByTagName('head')[0].appendChild(link);
-        }
-
-        function loadScript(src, onload) {
-            var script = document.createElement("script");
-            script.src = src;
-            script.onload = onload;
-            document.getElementsByTagName('head')[0].appendChild(script);
-        }
+/* TODO Webcomponents
+        window.addEventListener('WebComponentsReady', function () {
+            Promise.all([
+                load.js("/static/gwt/Manager/Manager.nocache.js")
+            ]).then(function () {
+                console.log("Main application starting...");
+            });
+        });
+*/
     </script>
 
 </head>
-<body onload="init()">
+<body>
 
 <iframe src="javascript:''"
         id="__gwt_historyFrame"
