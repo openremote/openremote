@@ -48,6 +48,9 @@ dependencies {
     testCompile "org.objenesis:objenesis:$objenesisVersion"
     testCompile "org.glassfish.tyrus:tyrus-client:$tyrusVersion"
     testCompile "org.glassfish.tyrus:tyrus-container-grizzly-client:$tyrusVersion"
+            
+    compile files('libs/orlibrary-0.3.0.jar')
+    compile files('libs/orentities-1.2.0.jar')
 }
 
 configurations {

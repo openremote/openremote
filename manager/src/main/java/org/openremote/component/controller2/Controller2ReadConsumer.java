@@ -24,12 +24,16 @@ import org.apache.camel.Processor;
 
 import java.util.logging.Logger;
 
-public class Controller2SensorConsumer extends Controller2Consumer implements Controller2Adapter.SensorListener{
+public class Controller2ReadConsumer extends Controller2Consumer implements Controller2Adapter.SensorListener {
 
-    private static final Logger LOG = Logger.getLogger(Controller2SensorConsumer.class.getName());
+    private static final Logger LOG = Logger.getLogger(Controller2ReadConsumer.class.getName());
+    protected String deviceUri;
+    protected String resourceUri;
 
-    public Controller2SensorConsumer(Controller2Endpoint endpoint, Processor processor) {
+    public Controller2ReadConsumer(Controller2Endpoint endpoint, Processor processor, String deviceUri, String resourceUri) {
         super(endpoint, processor);
+        this.deviceUri = deviceUri;
+        this.resourceUri = resourceUri;
     }
 
     @Override
@@ -45,10 +49,22 @@ public class Controller2SensorConsumer extends Controller2Consumer implements Co
     }
 
     @Override
-    public void onUpdate(String state) {
-        LOG.fine("Consuming state change: " + state);
+    public String getDeviceUri() {
+        return deviceUri;
+    }
+
+    @Override
+    public String getResourceUri() {
+        return resourceUri;
+    }
+
+    @Override
+    public void onUpdate(Object newValue) {
+        // Push value into message body and camel type converter can be used to
+        // get value into the required type by the next processor in the route
+        LOG.fine("Consuming state change from '" + deviceUri + " : " + resourceUri + "'");
         Exchange exchange = getEndpoint().createExchange();
-        exchange.getIn().setBody(state);
+        exchange.getIn().setBody(newValue);
         try {
             getProcessor().process(exchange);
         } catch (Exception ex) {

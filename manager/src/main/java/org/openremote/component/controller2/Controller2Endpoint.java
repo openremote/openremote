@@ -24,20 +24,27 @@ import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.spi.UriEndpoint;
+import org.jgroups.annotations.Unsupported;
+
+import java.net.URL;
+import java.util.logging.Logger;
 
 @UriEndpoint(
     scheme = "controller2",
     title = "OpenRemote Controller v2 Adapter",
-    syntax = "controller2://<IP or host name>:<port>[/discovery]",
+    syntax = "controller2:<scheme>://<IP or host name>:<port>[/discovery]",
     consumerClass = Controller2Consumer.class
 )
 public class Controller2Endpoint extends DefaultEndpoint {
-
+    private static final Logger LOG = Logger.getLogger(Controller2Endpoint.class.getName());
     final protected Controller2Adapter.Manager adapterManager;
-    final protected boolean discoveryOnly;
-    final protected String host;
-    final protected int port;
-    final protected String hostPortKey; // TODO: For each host:port combination, we'll manage one Controller2Adapter
+    final protected boolean isDiscovery;
+    final protected boolean isInventory;
+    final protected URL controllerUrl;
+    protected String username;
+    protected String password;
+    protected String deviceUri;
+    protected String resourceUri;
 
     protected Controller2Adapter adapter;
 
@@ -53,13 +60,38 @@ public class Controller2Endpoint extends DefaultEndpoint {
     */
 
     public Controller2Endpoint(String endpointUri, Controller2Component component, Controller2Adapter.Manager adapterManager,
-                               String host, int port, boolean discoveryOnly) {
+                               URL controllerUrl, String path) {
+        this(endpointUri, component, adapterManager, controllerUrl, null, null, path);
+    }
+
+    public Controller2Endpoint(String endpointUri, Controller2Component component, Controller2Adapter.Manager adapterManager,
+                               URL controllerUrl, String username, String password, String path) {
         super(endpointUri, component);
         this.adapterManager = adapterManager;
-        this.host = host;
-        this.port = port;
-        this.hostPortKey = host + ":" + port;
-        this.discoveryOnly = discoveryOnly;
+        this.controllerUrl = controllerUrl;
+        this.username = username;
+        this.password = password;
+        this.isDiscovery = "/discovery".equals(path);
+        this.isInventory = "/inventory".equals(path);
+
+        if (!isDiscovery && !isInventory && path != null) {
+            // See if we have device and resource URIs
+            // There must be a nicer way of dealing with this??
+            // maybe we should use params and let setProperties on component resolve the values
+            String[] deviceResourceArr = path.split("//");
+            if (deviceResourceArr.length == 2) {
+                deviceUri = deviceResourceArr[0];
+                resourceUri = deviceResourceArr[1];
+            }
+        }
+    }
+
+    public void setAuthUsername(String username) {
+        this.username = username;
+    }
+
+    public void setAuthPassword(String password) {
+        this.password = password;
     }
 
     @Override
@@ -76,16 +108,28 @@ public class Controller2Endpoint extends DefaultEndpoint {
 
     @Override
     public Producer createProducer() throws Exception {
-        return discoveryOnly
-        ? new Controller2DiscoveryProducer(this)
-        : new Controller2ActuatorProducer(this);
+        if (isDiscovery) {
+            return new Controller2DiscoveryProducer(this);
+        }
+
+        return new Controller2WriteProducer(this, deviceUri, resourceUri);
     }
 
     @Override
     public Consumer createConsumer(Processor processor) throws Exception {
-        return discoveryOnly
-            ? new Controller2DiscoveryConsumer(this, processor)
-            : new Controller2SensorConsumer(this, processor);
+        if (isDiscovery) {
+            return new Controller2DiscoveryConsumer(this, processor);
+        } else if (isInventory) {
+            return new Controller2InventoryConsumer(this, processor);
+        }
+
+        // Read consumer needs specific device and resource so gateway can
+        // deal with providing push notifications whichever way it needs to
+        if (deviceUri == null || resourceUri == null) {
+            return new Controller2ReadConsumer(this, processor, deviceUri, resourceUri);
+        } else {
+           throw new UnsupportedOperationException("Read consumer requires deviceURI and resource URI");
+        }
     }
 
     @Override
@@ -95,15 +139,11 @@ public class Controller2Endpoint extends DefaultEndpoint {
 
     public Controller2Adapter getAdapter() {
         if (adapter == null) {
-            adapter = adapterManager.openAdapter(hostPortKey); // TODO If you want more options passed into the adapter, see @UriParam example above
+            adapter = adapterManager.openAdapter(controllerUrl, username, password); // TODO If you want more options passed into the adapter, see @UriParam example above
+
             if (adapter == null)
-                throw new IllegalStateException("Manager did not open adapter: " + hostPortKey);
+                throw new IllegalStateException("Manager did not open adapter: " + controllerUrl.toString());
         }
         return adapter;
     }
-
-    public void sendCommand(String command, String argument) {
-        getAdapter().sendCommand(command, argument); // TODO: You can enrich the call here with some other endpoint settings
-    }
-
 }

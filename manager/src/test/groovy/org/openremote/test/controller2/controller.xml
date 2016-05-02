@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openremote xmlns="http://www.openremote.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openremote.org http://www.openremote.org/schemas/controller.xsd">
+    <components>
+        <switch id="10">
+            <on>
+                <include type="command" ref="17" />
+            </on>
+            <off>
+                <include type="command" ref="15" />
+            </off>
+            <include type="sensor" ref="107970902" />
+        </switch>
+        <button id="6">
+            <include type="command" ref="19" />
+        </button>
+        <button id="8">
+            <include type="command" ref="13" />
+        </button>
+        <slider id="12">
+            <setValue>
+                <include type="command" ref="18" />
+            </setValue>
+            <include type="sensor" ref="107970901" />
+        </slider>
+    </components>
+    <sensors>
+        <sensor id="107970902" name="Light1Switch" type="switch">
+            <include type="command" ref="16" />
+            <state name="on" />
+            <state name="off" />
+        </sensor>
+        <sensor id="107970901" name="Light1Slider" type="level">
+            <include type="command" ref="18" />
+        </sensor>
+    </sensors>
+    <commands>
+        <command id="13" protocol="virtual">
+            <property name="address" value="TV" />
+            <property name="command" value="OFF" />
+            <property name="name" value="TVOff" />
+            <property name="urn:openremote:device-command:device-name" value="TestDevice" />
+            <property name="urn:openremote:device-command:device-id" value="1" />
+        </command>
+        <command id="14" protocol="virtual">
+            <property name="address" value="LightOneBrightness" />
+            <property name="command" value="ON" />
+            <property name="name" value="Light1BrightnessSet" />
+            <property name="urn:openremote:device-command:device-name" value="TestDevice" />
+            <property name="urn:openremote:device-command:device-id" value="1" />
+        </command>
+        <command id="15" protocol="virtual">
+            <property name="address" value="LightOne" />
+            <property name="command" value="OFF" />
+            <property name="name" value="Light1Off" />
+            <property name="urn:openremote:device-command:device-name" value="TestDevice" />
+            <property name="urn:openremote:device-command:device-id" value="1" />
+        </command>
+        <command id="16" protocol="virtual">
+            <property name="address" value="LightOne" />
+            <property name="command" value="STATUS" />
+            <property name="name" value="Light1Status" />
+            <property name="urn:openremote:device-command:device-name" value="TestDevice" />
+            <property name="urn:openremote:device-command:device-id" value="1" />
+        </command>
+        <command id="17" protocol="virtual">
+            <property name="address" value="LightOne" />
+            <property name="command" value="ON" />
+            <property name="name" value="Light1On" />
+            <property name="urn:openremote:device-command:device-name" value="TestDevice" />
+            <property name="urn:openremote:device-command:device-id" value="1" />
+        </command>
+        <command id="18" protocol="virtual">
+            <property name="address" value="LightOneBrightness" />
+            <property name="command" value="STATUS" />
+            <property name="name" value="Light1BrightnessStatus" />
+            <property name="urn:openremote:device-command:device-name" value="TestDevice" />
+            <property name="urn:openremote:device-command:device-id" value="1" />
+        </command>
+        <command id="19" protocol="virtual">
+            <property name="address" value="TV" />
+            <property name="command" value="ON" />
+            <property name="name" value="TVOn" />
+            <property name="urn:openremote:device-command:device-name" value="TestDevice" />
+            <property name="urn:openremote:device-command:device-id" value="1" />
+        </command>
+    </commands>
+    <config>
+        <property name="controller.roundrobin.multicast.port" value="10000" />
+        <property name="controller.roundrobin.tcpserver.port" value="20000" />
+        <property name="controller.groupname" value="floor20" />
+        <property name="multicast.port" value="3333" />
+        <property name="enocean.commLayer" value="" />
+        <property name="enocean.comPort" value="" />
+        <property name="protocol.vera.classname" value="org.openremote.controller.protocol.vera.VeraCommandBuilder" />
+        <property name="controller.groupmember.autodetect.on" value="true" />
+        <property name="amx_ni.port" value="50000" />
+        <property name="enocean.serialProtocol" value="ESP3" />
+        <property name="zwave.commLayer" value="" />
+        <property name="copy.lircd.conf.on" value="true" />
+        <property name="irsend.path" value="/usr/local/bin/irsend" />
+        <property name="domintell.port" value="17481" />
+        <property name="controller.applicationname" value="controller" />
+        <property name="domintell.address" value="192.168.1.1" />
+        <property name="multicast.address" value="224.0.1.100" />
+        <property name="Macro.IR.Execution.Delay" value="500" />
+        <property name="zwave.pad.port" value="7876" />
+        <property name="controller.roundrobin.multicast.address" value="224.0.1.200" />
+        <property name="zwave.comPort" value="" />
+        <property name="lutron_homeworks.password" value="openremote" />
+        <property name="lagarto_network.broadcast" value="tcp://127.0.0.1:5001" />
+        <property name="lircd.conf.path" value="/etc/lircd.conf" />
+        <property name="lutron_homeworks.port" value="23" />
+        <property name="lutron_homeworks.address" value="192.168.1.1" />
+        <property name="zwave.pad.host" value="localhost" />
+        <property name="lutron_homeworks.username" value="openremote" />
+        <property name="webapp.port" value="8080" />
+        <property name="vera.address" value="" />
+        <property name="protocol.zwave.classname" value="org.openremote.controller.protocol.zwave.ZWaveCommandBuilder" />
+        <property name="resource.upload.enable" value="true" />
+        <property name="amx_ni.address" value="192.168.1.1" />
+    </config>
+</openremote>
