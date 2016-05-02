@@ -1,4 +1,4 @@
-package org.openremote.component.device;
+package org.openremote.agent.device;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;

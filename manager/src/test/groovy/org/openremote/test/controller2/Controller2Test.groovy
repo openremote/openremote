@@ -1,7 +1,7 @@
 package org.openremote.test.controller2
 
-import org.openremote.component.controller2.Controller2Adapter
-import org.openremote.component.controller2.Controller2Component
+import org.openremote.agent.controller2.Controller2Adapter
+import org.openremote.agent.controller2.Controller2Component
 import org.openremote.console.controller.Controller
 import org.openremote.console.controller.connector.AsyncHttpConnector
 import org.openremote.console.controller.connector.HttpConnector

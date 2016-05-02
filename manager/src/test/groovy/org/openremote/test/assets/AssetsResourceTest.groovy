@@ -99,6 +99,9 @@ class AssetsResourceTest extends Specification implements ContainerTrait {
         then: "the result should match"
         entities.length == 1
         assertRoom(entities[0], "Room1", 21.3, "Office 123")
+
+        and: "the server should be stopped"
+        stopContainer(container);
     }
 
     boolean assertRoom(Entity room, String expectedId, Double expectedTemperature, String expectedLabel) {
@@ -181,5 +184,8 @@ class AssetsResourceTest extends Specification implements ContainerTrait {
         Entity.from(assetsResource.getEntity(null, room.getId(), null));
         then: "the room shouldn't exist"
         thrown NotFoundException
+
+        and: "the server should be stopped"
+        stopContainer(container);
     }
 }

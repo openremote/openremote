@@ -1,1 +1,1 @@
-class=org.openremote.component.controller2.Controller2Component
+class=org.openremote.agent.controller2.Controller2Component

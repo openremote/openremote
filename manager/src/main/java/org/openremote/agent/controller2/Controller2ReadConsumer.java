@@ -17,43 +17,54 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.component.controller2;
+package org.openremote.agent.controller2;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 
-import java.util.List;
 import java.util.logging.Logger;
 
-public class Controller2DiscoveryConsumer extends Controller2Consumer implements Controller2Adapter.DiscoveryListener{
+public class Controller2ReadConsumer extends Controller2Consumer implements Controller2Adapter.SensorListener {
 
-    private static final Logger LOG = Logger.getLogger(Controller2DiscoveryConsumer.class.getName());
+    private static final Logger LOG = Logger.getLogger(Controller2ReadConsumer.class.getName());
+    protected String deviceUri;
+    protected String resourceUri;
 
-    public Controller2DiscoveryConsumer(Controller2Endpoint endpoint, Processor processor) {
+    public Controller2ReadConsumer(Controller2Endpoint endpoint, Processor processor, String deviceUri, String resourceUri) {
         super(endpoint, processor);
+        this.deviceUri = deviceUri;
+        this.resourceUri = resourceUri;
     }
 
     @Override
     synchronized protected void doStart() throws Exception {
         super.doStart();
-        getEndpoint().getAdapter().addDiscoveryListener(this);
+        getEndpoint().getAdapter().addSensorListener(this);
     }
 
     @Override
     synchronized protected void doStop() throws Exception {
-        getEndpoint().getAdapter().removeDiscoveryListener(this);
+        getEndpoint().getAdapter().removeSensorListener(this);
         super.doStop();
     }
 
     @Override
-    public void onDiscovery(List<String> list) {
-        if (!isStarted()) {
-            LOG.fine("Received discovery event but consumer hasn't been started");
-            return;
-        }
-        LOG.fine("Starting new exchange for discovered devices: " + list.size());
+    public String getDeviceUri() {
+        return deviceUri;
+    }
+
+    @Override
+    public String getResourceUri() {
+        return resourceUri;
+    }
+
+    @Override
+    public void onUpdate(Object newValue) {
+        // Push value into message body and camel type converter can be used to
+        // get value into the required type by the next processor in the route
+        LOG.fine("Consuming state change from '" + deviceUri + " : " + resourceUri + "'");
         Exchange exchange = getEndpoint().createExchange();
-        exchange.getIn().setBody(list);
+        exchange.getIn().setBody(newValue);
         try {
             getProcessor().process(exchange);
         } catch (Exception ex) {

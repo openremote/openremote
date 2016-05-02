@@ -17,25 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.component.controller2;
+package org.openremote.agent.controller2;
 
-import org.apache.camel.Endpoint;
-import org.apache.camel.Exchange;
-import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.Processor;
+import org.apache.camel.impl.DefaultConsumer;
 
-public class Controller2DiscoveryProducer extends DefaultProducer {
+public class Controller2Consumer extends DefaultConsumer {
 
-    public Controller2DiscoveryProducer(Endpoint endpoint) {
-        super(endpoint);
+    public Controller2Consumer(Controller2Endpoint endpoint, Processor processor) {
+        super(endpoint, processor);
     }
 
     @Override
     public Controller2Endpoint getEndpoint() {
         return (Controller2Endpoint) super.getEndpoint();
-    }
-
-    @Override
-    public void process(Exchange exchange) throws Exception {
-        getEndpoint().getAdapter().triggerDiscovery();
     }
 }

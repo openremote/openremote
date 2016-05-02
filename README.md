@@ -86,4 +86,4 @@ You can extract smaller tilesets with the following procedure:
 
 Build Docker images with `./gradlew buildImage`, you might want to `clean` before.
 
-You can also directly build and push the image to our (Docker Hub Account)[https://hub.docker.com/u/openremote/]: `/gradlew pushImage -PdockerHubUsername=username -PdockerHubPassword=secret`
+You can also directly build and push the image to our [Docker Hub Account](https://hub.docker.com/u/openremote/): `/gradlew pushImage -PdockerHubUsername=username -PdockerHubPassword=secret`

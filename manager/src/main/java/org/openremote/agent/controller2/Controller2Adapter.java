@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.component.controller2;
+package org.openremote.agent.controller2;
 
 import org.openremote.console.controller.AsyncRegistrationCallback;
 import org.openremote.console.controller.Controller;
 import org.openremote.console.controller.ControllerConnectionStatus;
 import org.openremote.console.controller.DeviceRegistrationHandle;
 import org.openremote.console.controller.auth.UserPasswordCredentials;
-import org.openremote.console.controller.connector.ControllerConnector;
 import org.openremote.entities.controller.*;
 import org.openremote.manager.shared.device.Device;
 import org.openremote.manager.shared.device.DeviceResource;

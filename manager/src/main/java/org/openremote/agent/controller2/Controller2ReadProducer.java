@@ -1,4 +1,4 @@
-package org.openremote.component.controller2;
+package org.openremote.agent.controller2;
 
 import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;

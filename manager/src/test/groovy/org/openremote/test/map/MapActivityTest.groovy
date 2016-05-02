@@ -73,5 +73,7 @@ class MapActivityTest extends Specification implements ContainerTrait {
         mapSettings.getNumber("maxZoom") == 18;
         mapSettings.getObject("style") != null;
 
+        and: "the server should be stopped"
+        stopContainer(container);
     }
 }

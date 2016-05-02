@@ -39,5 +39,8 @@ class MapResourceTest extends Specification implements ContainerTrait {
         json.maxBounds.size() == 4;
         json.maxZoom == 18;
         json.style != null;
+
+        and: "the server should be stopped"
+        stopContainer(container);
     }
 }

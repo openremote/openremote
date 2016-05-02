@@ -6,7 +6,7 @@ import java.util.Map;
  * Analogous to an Object in LWM2M; note the mandatory field
  * has been removed to make the device object model flexible.
  *
- * Idea is that we have a repository of capabilites that can
+ * Idea is that we have a repository of capabilities that can
  * be implemented by devices.
  *
  * Example capabilities are: -

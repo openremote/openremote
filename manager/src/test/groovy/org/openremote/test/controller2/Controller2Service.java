@@ -2,8 +2,7 @@ package org.openremote.test.controller2;
 
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.component.controller2.Controller2Component;
-import org.openremote.component.device.DeviceComponent;
+import org.openremote.agent.controller2.Controller2Component;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerContext;
@@ -13,10 +12,10 @@ import org.openremote.manager.shared.device.Device;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.openremote.component.device.DeviceComponent.Action.ADD;
-import static org.openremote.component.device.DeviceComponent.Action.REMOVE;
-import static org.openremote.component.device.DeviceComponent.Action.UPDATE;
-import static org.openremote.component.device.DeviceComponent.HEADER_DEVICE_ACTION;
+import static org.openremote.agent.device.DeviceComponent.Action.ADD;
+import static org.openremote.agent.device.DeviceComponent.Action.REMOVE;
+import static org.openremote.agent.device.DeviceComponent.Action.UPDATE;
+import static org.openremote.agent.device.DeviceComponent.HEADER_DEVICE_ACTION;
 
 // TODO This is an example service for testing, replaced later with production code
 public class Controller2Service implements ContainerService {
@@ -24,7 +23,7 @@ public class Controller2Service implements ContainerService {
     public List<Device> addedDevices = new ArrayList<>();
     public List<Device> removedDevices = new ArrayList<>();
     public List<Device> updatedDevices = new ArrayList<>();
-    public List<Device> discoveredItems = new ArrayList<>();
+    public List<String> discoveredItems = new ArrayList<>();
     public List<String> receivedSensorData = new ArrayList<>();
     public ProducerTemplate messageProducerTemplate;
 
@@ -70,7 +69,7 @@ public class Controller2Service implements ContainerService {
                 from("mockController2:http://10.0.0.123:8080/discovery")
                     .routeId("Discovered devices")
                     .process(exchange -> {
-                        List<Device> discovered = exchange.getIn().getBody(List.class);
+                        List<String> discovered = exchange.getIn().getBody(List.class);
                         discoveredItems.addAll(discovered);
                     });
 

@@ -64,5 +64,8 @@ class EventEchoTest extends Specification implements ContainerTrait, WebsocketCl
         then: "the expected messages should eventually arrive"
         container.JSON.readValue(testClient.messages[0] as String, Message.class)
                 .getBody().startsWith("Hello from server");
+
+        and: "the server should be stopped"
+        stopContainer(container);
     }
 }

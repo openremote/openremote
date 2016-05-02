@@ -1,4 +1,4 @@
-package org.openremote.component.controller2;
+package org.openremote.agent.controller2;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
@@ -6,10 +6,10 @@ import org.openremote.manager.shared.device.Device;
 
 import java.util.logging.Logger;
 
-import static org.openremote.component.device.DeviceComponent.Action.ADD;
-import static org.openremote.component.device.DeviceComponent.Action.REMOVE;
-import static org.openremote.component.device.DeviceComponent.Action.UPDATE;
-import static org.openremote.component.device.DeviceComponent.HEADER_DEVICE_ACTION;
+import static org.openremote.agent.device.DeviceComponent.Action.ADD;
+import static org.openremote.agent.device.DeviceComponent.Action.REMOVE;
+import static org.openremote.agent.device.DeviceComponent.Action.UPDATE;
+import static org.openremote.agent.device.DeviceComponent.HEADER_DEVICE_ACTION;
 
 public class Controller2InventoryConsumer extends Controller2Consumer implements Controller2Adapter.DeviceListener {
 

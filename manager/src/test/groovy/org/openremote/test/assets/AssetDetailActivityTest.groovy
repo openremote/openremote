@@ -75,5 +75,7 @@ class AssetDetailActivityTest extends Specification implements ContainerTrait {
         and: "the messaging should be closed so we don't get an ugly termination exception on the server"
         eventEndpoint.close()
 
+        and: "the server should be stopped"
+        stopContainer(container);
     }
 }
