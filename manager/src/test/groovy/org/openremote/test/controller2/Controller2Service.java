@@ -13,6 +13,11 @@ import org.openremote.manager.shared.device.Device;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.openremote.component.device.DeviceComponent.Action.ADD;
+import static org.openremote.component.device.DeviceComponent.Action.REMOVE;
+import static org.openremote.component.device.DeviceComponent.Action.UPDATE;
+import static org.openremote.component.device.DeviceComponent.HEADER_DEVICE_ACTION;
+
 // TODO This is an example service for testing, replaced later with production code
 public class Controller2Service implements ContainerService {
 
@@ -42,17 +47,17 @@ public class Controller2Service implements ContainerService {
                 from("mockController2:http://10.0.0.123:8080/inventory")
                         .routeId("Device Inventory")
                         .choice()
-                            .when(header(DeviceComponent.HEADER_DEVICE_ACTION).isEqualTo(DeviceComponent.Action.ADD))
+                            .when(header(HEADER_DEVICE_ACTION).isEqualTo(ADD))
                                 .process(exchange -> {
                                     Device device = exchange.getIn().getBody(Device.class);
                                     addedDevices.add(device);
                             }).endChoice()
-                            .when(header(DeviceComponent.HEADER_DEVICE_ACTION).isEqualTo(DeviceComponent.Action.REMOVE))
+                            .when(header(HEADER_DEVICE_ACTION).isEqualTo(REMOVE))
                             .process(exchange -> {
                                 Device device = exchange.getIn().getBody(Device.class);
                                 removedDevices.add(device);
                             }).endChoice()
-                            .when(header(DeviceComponent.HEADER_DEVICE_ACTION).isEqualTo(DeviceComponent.Action.UPDATE))
+                            .when(header(HEADER_DEVICE_ACTION).isEqualTo(UPDATE))
                             .process(exchange -> {
                                 Device device = exchange.getIn().getBody(Device.class);
                                 updatedDevices.add(device);

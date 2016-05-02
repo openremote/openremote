@@ -2,10 +2,14 @@ package org.openremote.component.controller2;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.openremote.component.device.DeviceComponent;
 import org.openremote.manager.shared.device.Device;
 
 import java.util.logging.Logger;
+
+import static org.openremote.component.device.DeviceComponent.Action.ADD;
+import static org.openremote.component.device.DeviceComponent.Action.REMOVE;
+import static org.openremote.component.device.DeviceComponent.Action.UPDATE;
+import static org.openremote.component.device.DeviceComponent.HEADER_DEVICE_ACTION;
 
 public class Controller2InventoryConsumer extends Controller2Consumer implements Controller2Adapter.DeviceListener {
 
@@ -36,7 +40,7 @@ public class Controller2InventoryConsumer extends Controller2Consumer implements
 
         LOG.fine("Starting new exchange for added device '" + device.getUri() + "'");
         Exchange exchange = getEndpoint().createExchange();
-        exchange.getIn().setHeader(DeviceComponent.HEADER_DEVICE_ACTION, DeviceComponent.Action.ADD);
+        exchange.getIn().setHeader(HEADER_DEVICE_ACTION, ADD);
         exchange.getIn().setBody(device);
         processExchange(exchange);
     }
@@ -52,7 +56,7 @@ public class Controller2InventoryConsumer extends Controller2Consumer implements
 
         LOG.fine("Starting new exchange for removed device '" + device.getUri() + "'");
         Exchange exchange = getEndpoint().createExchange();
-        exchange.getIn().setHeader(DeviceComponent.HEADER_DEVICE_ACTION, DeviceComponent.Action.REMOVE);
+        exchange.getIn().setHeader(HEADER_DEVICE_ACTION, REMOVE);
         exchange.getIn().setBody(device);
         processExchange(exchange);
     }
@@ -66,7 +70,7 @@ public class Controller2InventoryConsumer extends Controller2Consumer implements
 
         LOG.fine("Starting new exchange for updated device '" + device.getUri() + "'");
         Exchange exchange = getEndpoint().createExchange();
-        exchange.getIn().setHeader(DeviceComponent.HEADER_DEVICE_ACTION, DeviceComponent.Action.UPDATE);
+        exchange.getIn().setHeader(HEADER_DEVICE_ACTION, UPDATE);
         exchange.getIn().setBody(device);
         processExchange(exchange);
     }
