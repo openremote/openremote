@@ -23,7 +23,7 @@ import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.place.shared.PlaceHistoryHandler;
 import com.google.gwt.user.client.Window;
-import com.google.gwt.user.client.ui.RootLayoutPanel;
+import com.google.gwt.user.client.ui.RootPanel;
 import com.google.inject.Provider;
 import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.UserChangeEvent;
@@ -32,9 +32,9 @@ import org.openremote.manager.client.i18n.ManagerConstants;
 
 import javax.inject.Inject;
 
-public class AppControllerImpl implements AppController, AppLayout.Presenter {
+public class AppControllerImpl implements AppController, AppView.Presenter {
 
-    private final AppLayout appLayout;
+    private final AppView appView;
     private final PlaceController placeController;
     private final PlaceHistoryHandler placeHistoryHandler;
     private ManagerConstants constants;
@@ -42,38 +42,42 @@ public class AppControllerImpl implements AppController, AppLayout.Presenter {
     @Inject
     public AppControllerImpl(PlaceController placeController,
                              Provider<HeaderPresenter> headerPresenterProvider,
+                             Provider<FooterPresenter> footerPresenterProvider,
                              PlaceHistoryHandler placeHistoryHandler,
                              EventBus eventBus,
-                             AppLayout appLayout,
+                             AppView appView,
                              ManagerConstants constants,
                              AppInitializer appInitializer) {
 
         // AppInitializer is needed so that activities are mapped to views
-        this.appLayout = appLayout;
+        this.appView = appView;
         this.placeController = placeController;
         this.placeHistoryHandler = placeHistoryHandler;
         this.constants = constants;
 
-        // Configure the header as not using activity mapper for header (it's static)
+        // Configure the header/footer as not using activity mapper for header (it's static)
         HeaderPresenter headerPresenter = headerPresenterProvider.get();
-        appLayout.getHeaderPanel().setWidget(headerPresenter.getView());
+        appView.getHeaderPanel().setWidget(headerPresenter.getView());
+        FooterPresenter footerPresenter = footerPresenterProvider.get();
+        appView.getFooterPanel().setWidget(footerPresenter.getView());
 
         // Monitor place changes to reconfigure the UI
         eventBus.register(GoToPlaceEvent.class, event -> {
-            Place newPlace = event.getNewPlace();
-                appLayout.updateLayout(newPlace);
+                Place newPlace = event.getNewPlace();
+                appView.updateLayout(newPlace);
                 headerPresenter.onPlaceChange(newPlace);
+                footerPresenter.onPlaceChange(newPlace);
             }
         );
 
-        eventBus.register(UserChangeEvent.class, event-> {
+        eventBus.register(UserChangeEvent.class, event -> {
             headerPresenter.setUsername(event.getUsername());
         });
     }
 
     @Override
-    public AppLayout getView() {
-        return appLayout;
+    public AppView getView() {
+        return appView;
     }
 
     @Override
@@ -84,8 +88,8 @@ public class AppControllerImpl implements AppController, AppLayout.Presenter {
     @Override
     public void start() {
         Window.setTitle(constants.appTitle());
-        RootLayoutPanel.get().add(appLayout);
-        appLayout.setPresenter(this);
+        RootPanel.get().add(appView);
+        appView.setPresenter(this);
         placeHistoryHandler.handleCurrentHistory();
     }
 }

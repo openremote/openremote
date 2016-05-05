@@ -21,18 +21,17 @@ package org.openremote.manager.client.map;
 
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
-import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.ComplexPanel;
-import com.google.gwt.user.client.ui.ResizeLayoutPanel;
-import com.google.web.bindery.event.shared.HandlerRegistration;
+import com.google.gwt.user.client.ui.FlowPanel;
 import elemental.json.JsonObject;
-import org.openremote.manager.client.interop.mapbox.*;
+import org.openremote.manager.client.interop.mapbox.Map;
+import org.openremote.manager.client.interop.mapbox.Navigation;
 
 public class MapWidget extends ComplexPanel {
-    ResizeLayoutPanel host;
-    HandlerRegistration resizeHandler;
-    private String id;
-    private org.openremote.manager.client.interop.mapbox.Map map;
+
+    protected FlowPanel host;
+    protected String id;
+    protected Map map;
 
     public MapWidget(JsonObject mapOptions) {
         this();
@@ -43,14 +42,17 @@ public class MapWidget extends ComplexPanel {
         setElement(Document.get().createDivElement());
     }
 
-    public Map getJsMap() {
+    public Map getMap() {
         return map;
+    }
+
+    public boolean isInitialised() {
+        return map != null;
     }
 
     public void initialise(JsonObject mapOptions) {
         if (map != null) {
             map.remove();
-            resizeHandler.removeHandler();
             remove(host);
         }
 
@@ -59,31 +61,23 @@ public class MapWidget extends ComplexPanel {
         }
 
         id = Document.get().createUniqueId();
-        host = new ResizeLayoutPanel();
-        host.setWidth("100%");
-        host.setHeight("100%");
+
+        host = new FlowPanel();
+        host.setStyleName("flex");
         host.getElement().setId(id);
-        resizeHandler = host.addResizeHandler(event -> {
-            resizeMap();
-        });
-        add(host, (Element)getElement());
+        add(host, (Element) getElement());
+
         mapOptions.put("container", id);
         map = new Map(mapOptions);
+
         map.addControl(new Navigation());
+
+        /* TODO conflicts with double click-zoom on map behavior
         map.on(EventType.CLICK, eventData -> {
             CameraOptions opts = new CameraOptions();
             opts.center = eventData.getLngLat();
             map.jumpTo(opts);
         });
-    }
-
-    public boolean isInitialised() {
-        return map != null;
-    }
-
-    private void resizeMap() {
-        if (map != null) {
-            map.resize();
-        }
+        */
     }
 }

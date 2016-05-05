@@ -82,8 +82,7 @@ public class AppPlaceController extends PlaceController {
                 super.goTo(newPlace);
             },
             () -> {
-                // TODO Better error handling
-                Browser.getWindow().alert("Error refreshing access token. Sorry.");
+                securityService.logout();
             }
         );
     }

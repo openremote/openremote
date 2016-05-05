@@ -1,0 +1,19 @@
+<ui:UiBinder xmlns:ui='urn:ui:com.google.gwt.uibinder'
+             xmlns:g='urn:import:com.google.gwt.user.client.ui'
+             xmlns:ma="urn:import:gwt.material.design.addins.client">
+
+    <ui:style>
+        .footer {
+            flex-shrink: 0;
+            flex-basis: auto;
+        }
+    </ui:style>
+
+    <ui:with field="constants" type="org.openremote.manager.client.i18n.ManagerConstants"/>
+    <ui:with field="themeStyle" type="org.openremote.manager.client.ThemeStyle"/>
+
+    <g:HTMLPanel styleName="flex layout horizontal" addStyleNames="{style.footer} {themeStyle.Footer}">
+        Footer
+    </g:HTMLPanel>
+
+</ui:UiBinder>

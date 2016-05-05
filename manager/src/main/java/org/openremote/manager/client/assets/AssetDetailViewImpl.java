@@ -33,7 +33,7 @@ public class AssetDetailViewImpl extends Composite implements AssetDetailView {
 
     private static final Logger LOG = Logger.getLogger(AssetDetailViewImpl.class.getName());
 
-    interface UI extends UiBinder<ScrollPanel, AssetDetailViewImpl> {
+    interface UI extends UiBinder<HTMLPanel, AssetDetailViewImpl> {
     }
 
     private UI ui = GWT.create(UI.class);

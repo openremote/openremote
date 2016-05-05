@@ -26,7 +26,6 @@ import com.google.gwt.place.shared.PlaceHistoryHandler;
 import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.name.Named;
 import org.openremote.manager.client.app.*;
 import org.openremote.manager.client.assets.*;
 import org.openremote.manager.client.event.EventMapper;
@@ -60,9 +59,10 @@ public class ManagerModule extends AbstractGinModule {
         bind(AppController.class).to(AppControllerImpl.class).in(Singleton.class);
 
         // Views
-        bind(AppLayout.class).to(AppLayoutImpl.class).in(Singleton.class);
+        bind(AppView.class).to(AppViewImpl.class).in(Singleton.class);
         bind(HeaderView.class).to(HeaderViewImpl.class).in(Singleton.class);
-        bind(LeftSideView.class).to(LeftSideViewImpl.class).in(Singleton.class);
+        bind(FooterView.class).to(FooterViewImpl.class).in(Singleton.class);
+
         bind(MapView.class).to(MapViewImpl.class).in(Singleton.class);
         bind(AssetListView.class).to(AssetListViewImpl.class).in(Singleton.class);
         bind(AssetDetailView.class).to(AssetDetailViewImpl.class).in(Singleton.class);
@@ -102,16 +102,8 @@ public class ManagerModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    @Named("MainContentManager")
-    public AppActivityManager getMainContentActivityMapper(MainContentActivityMapper activityMapper, EventBus eventBus) {
-        return new AppActivityManager("MainContentManager", activityMapper, eventBus);
-    }
-
-    @Provides
-    @Singleton
-    @Named("LeftSideManager")
-    public AppActivityManager getLeftSideActivityMapper(LeftSideActivityMapper activityMapper, EventBus eventBus) {
-        return new AppActivityManager("LeftSideManager", activityMapper, eventBus);
+    public AppActivityManager getAppActivityMapper(MainActivityMapper activityMapper, EventBus eventBus) {
+        return new AppActivityManager("AppActivityManager", activityMapper, eventBus);
     }
 
     @Provides

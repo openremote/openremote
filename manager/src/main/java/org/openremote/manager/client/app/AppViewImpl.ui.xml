@@ -1,0 +1,16 @@
+<ui:UiBinder xmlns:ui='urn:ui:com.google.gwt.uibinder'
+             xmlns:g='urn:import:com.google.gwt.user.client.ui'>
+
+    <ui:style>
+    </ui:style>
+
+    <ui:with field="constants" type="org.openremote.manager.client.i18n.ManagerConstants"/>
+    <ui:with field="themeStyle" type="org.openremote.manager.client.ThemeStyle"/>
+
+    <g:FlowPanel styleName="layout vertical viewport">
+        <g:SimplePanel ui:field="header" styleName="layout horizontal header"/>
+        <g:SimplePanel ui:field="content" styleName="flex layout vertical content"/>
+        <g:SimplePanel ui:field="footer" styleName="layout horizontal footer"/>
+    </g:FlowPanel>
+
+</ui:UiBinder>

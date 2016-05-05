@@ -1,0 +1,60 @@
+<style is="custom-style" include="iron-flex iron-flex-alignment iron-flex-factors iron-positioning">
+
+    :root {
+        --theme-white: #ffffff; /* rgb(255, 255, 255); */
+        --theme-black: #000000; /* rgb(0, 0, 0); */
+        --theme-darkgreen: #006224; /* rgb(0, 98, 36); */
+        --theme-mediumgreen: #49a942; /* rgb(73, 169, 66); */
+        --theme-lightgreen: #c1d72f; /* rgb(193, 215, 47); */
+        --theme-darkgrey: #455a64; /* rgb(69, 90, 100); */
+        --theme-mediumgrey: #919194; /* rgb(145, 145, 148); */
+        --theme-lightgrey: #cccccc; /* rgb(204, 204, 204); */
+        --theme-brightgrey: #f5f5f5; /* rgb(245, 245, 245); */
+        --theme-red: #e64a19; /* rgb(230, 74, 25); */
+        --theme-yellow: #fbc02d; /* rgb(251, 192, 45); */
+        --theme-blue: #1976d2; /* rgb(25, 118, 210); */
+        --theme-purple: #660092; /* rgb(102, 0, 146) */
+    }
+
+    * html, body {
+        font-family: Helvetica, sans-serif !important;
+        font-weight: 500 !important;
+    }
+
+    html, body, .viewport {
+        width: 100%;
+        height: 100vh;
+        min-height: 100%;
+        margin: 0;
+    }
+
+    .content {
+        overflow: auto;
+        z-index: -1;
+    }
+
+    .theme-Header {
+        background-color: var(--theme-black);
+        color: var(--theme-white);
+        -webkit-box-shadow: 0px 4px 14px -4px rgba(0,0,0,0.75);
+        -moz-box-shadow: 0px 4px 14px -4px rgba(0,0,0,0.75);
+        box-shadow: 0px 4px 14px -4px rgba(0,0,0,0.75);
+    }
+
+    .theme-Footer {
+        background-color: var(--theme-black);
+        color: var(--theme-white);
+    }
+
+    .theme-NavItem {
+        background: var(--theme-black) !important;
+        color: var(--theme-lightgreen) !important;
+    }
+
+    .theme-NavItemActive {
+        background: var(--theme-lightgreen) !important;
+        color: var(--theme-black) !important;
+    }
+
+
+</style>

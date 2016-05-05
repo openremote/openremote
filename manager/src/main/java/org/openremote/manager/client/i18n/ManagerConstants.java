@@ -29,6 +29,8 @@ public interface ManagerConstants extends Constants {
 
     String logout();
 
+    String inventory();
+
     String locate();
 
     String manage();

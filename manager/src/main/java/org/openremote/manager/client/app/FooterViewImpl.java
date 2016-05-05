@@ -20,28 +20,53 @@
 package org.openremote.manager.client.app;
 
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.place.shared.Place;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.user.client.ui.Composite;
-import com.google.gwt.user.client.ui.ScrollPanel;
+import com.google.gwt.user.client.ui.HTMLPanel;
+import com.google.inject.Inject;
+import org.openremote.manager.client.i18n.ManagerMessages;
 
-import javax.inject.Inject;
+public class FooterViewImpl extends Composite implements FooterView {
 
-public class LeftSideViewImpl extends Composite implements LeftSideView {
-
-    interface UI extends UiBinder<ScrollPanel, LeftSideViewImpl> {
+    interface UI extends UiBinder<HTMLPanel, FooterViewImpl> {
     }
 
-    private UI ui = GWT.create(UI.class);
+    private static UI ui = GWT.create(UI.class);
 
-    Presenter presenter;
+    private Presenter presenter;
+
+    private ManagerMessages messages;
 
     @Inject
-    public LeftSideViewImpl() {
+    public FooterViewImpl(ManagerMessages messages) {
+        this.messages = messages;
         initWidget(ui.createAndBindUi(this));
     }
 
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
+    }
+
+
+    @Override
+    public void onPlaceChange(Place place) {
+/*
+        if (place instanceof MapPlace)
+            itemMap.addStyleName("active");
+        else
+            itemMap.removeStyleName("active");
+
+        if (place instanceof AssetsPlace)
+            itemAssets.addStyleName("active");
+        else
+            itemAssets.removeStyleName("active");
+
+        if (place instanceof FlowsPlace)
+            itemFlows.addStyleName("active");
+        else
+            itemFlows.removeStyleName("active");
+*/
     }
 }

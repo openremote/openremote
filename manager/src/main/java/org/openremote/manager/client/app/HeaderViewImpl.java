@@ -22,6 +22,7 @@ package org.openremote.manager.client.app;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.place.shared.Place;
+import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
@@ -30,28 +31,56 @@ import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.inject.Inject;
 import gwt.material.design.client.ui.MaterialButton;
 import gwt.material.design.client.ui.MaterialLabel;
+import org.openremote.manager.client.ThemeStyle;
 import org.openremote.manager.client.assets.AssetsPlace;
 import org.openremote.manager.client.flows.FlowsPlace;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.map.MapPlace;
 
 public class HeaderViewImpl extends Composite implements HeaderView {
+
+    interface Style extends CssResource {
+        String navItem();
+
+        String active();
+
+        String controls();
+
+        String iconButton();
+
+        String header();
+    }
+
     interface UI extends UiBinder<HTMLPanel, HeaderViewImpl> {
     }
 
     private static UI ui = GWT.create(UI.class);
     private Presenter presenter;
     private ManagerMessages messages;
+
+    @UiField
+    Style style;
+
+    @UiField
+    ThemeStyle themeStyle;
+
+    @UiField
+    MaterialButton itemInventory;
+
     @UiField
     MaterialButton itemMap;
+
     @UiField
     MaterialButton itemFlows;
+
     @UiField
     MaterialButton itemAssets;
+
     @UiField
-    MaterialLabel signinText;
+    MaterialButton userButton;
+
     @UiField
-    MaterialButton logoutButton;
+    MaterialButton notificationButton;
 
     @Inject
     public HeaderViewImpl(ManagerMessages messages) {
@@ -67,34 +96,40 @@ public class HeaderViewImpl extends Composite implements HeaderView {
 
     @Override
     public void onPlaceChange(Place place) {
-        if (place instanceof MapPlace)
-            itemMap.addStyleName("active");
-        else
-            itemMap.removeStyleName("active");
+        itemMap.removeStyleName(style.active());
+        itemMap.removeStyleName(themeStyle.NavItemActive());
+        itemAssets.removeStyleName(style.active());
+        itemAssets.removeStyleName(themeStyle.NavItemActive());
+        itemFlows.removeStyleName(style.active());
+        itemFlows.removeStyleName(themeStyle.NavItemActive());
 
-        if (place instanceof AssetsPlace)
-            itemAssets.addStyleName("active");
-        else
-            itemAssets.removeStyleName("active");
-
-        if (place instanceof FlowsPlace)
-            itemFlows.addStyleName("active");
-        else
-            itemFlows.removeStyleName("active");
+        if (place instanceof MapPlace) {
+            itemMap.addStyleName(style.active());
+            itemMap.addStyleName(themeStyle.NavItemActive());
+        }
+        if (place instanceof AssetsPlace) {
+            itemAssets.addStyleName(style.active());
+            itemAssets.addStyleName(themeStyle.NavItemActive());
+        }
+        if (place instanceof FlowsPlace) {
+            itemFlows.addStyleName(style.active());
+            itemFlows.addStyleName(themeStyle.NavItemActive());
+        }
     }
 
     @Override
     public void setUsername(String username) {
         if (username != null && username.length() > 0) {
-            signinText.setText(messages.signedInAs(username));
-            signinText.setVisible(true);
+            userButton.setText(messages.signedInAs(username));
+            userButton.setVisible(true);
         } else {
-            signinText.setVisible(false);
+            userButton.setVisible(false);
         }
     }
 
-    @UiHandler("logoutButton")
+    @UiHandler("userButton")
     void logoutClicked(ClickEvent e) {
+        // TODO: Open user self-edit activity
         presenter.doLogout();
     }
 

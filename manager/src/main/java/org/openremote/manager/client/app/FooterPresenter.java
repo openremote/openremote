@@ -20,27 +20,37 @@
 package org.openremote.manager.client.app;
 
 import com.google.gwt.place.shared.Place;
+import com.google.gwt.place.shared.PlaceController;
 import com.google.inject.Inject;
-import com.google.inject.Provider;
-import org.openremote.manager.client.assets.AssetListActivity;
-import org.openremote.manager.client.assets.AssetsPlace;
-import org.openremote.manager.client.mvp.AppActivity;
-import org.openremote.manager.client.mvp.AppActivityMapper;
+import org.openremote.manager.client.event.bus.EventBus;
 
-public class LeftSideActivityMapper implements AppActivityMapper {
-    private final Provider<AssetListActivity> assetsActivityProvider;
+public class FooterPresenter implements FooterView.Presenter {
+
+    private FooterView view;
+    private PlaceController placeController;
 
     @Inject
-    public LeftSideActivityMapper(Provider<AssetListActivity> assetsActivityProvider) {
-        this.assetsActivityProvider = assetsActivityProvider;
+    public FooterPresenter(FooterView view,
+                           PlaceController placeController,
+                           EventBus eventbus) {
+        this.view = view;
+        this.placeController = placeController;
+
+        view.setPresenter(this);
     }
 
-    public AppActivity getActivity(Place place) {
-        if (place instanceof AssetsPlace) {
-            AssetsPlace assetsPlace = (AssetsPlace) place;
-            return assetsActivityProvider.get().init(assetsPlace);
-        }
+    @Override
+    public FooterView getView() {
+        return view;
+    }
 
-        return null;
+    @Override
+    public void goTo(Place place) {
+        placeController.goTo(place);
+    }
+
+    @Override
+    public void onPlaceChange(Place place) {
+        view.onPlaceChange(place);
     }
 }

@@ -23,32 +23,24 @@ public class ThemeStyle {
 
     public static final String PREFIX = "theme-";
 
-    public String HeaderPanel() {
-        return PREFIX + "HeaderPanel";
+    public String Header() {
+        return PREFIX + "Header";
     }
 
-    public String HeaderHorizontalSeparator() {
-        return PREFIX + "HeaderHorizontalSeparator";
-    }
-
-    public String PopupPanel() {
-        return PREFIX + "PopupPanel";
-    }
-
-    public String NavItemMain() {
-        return PREFIX + "NavItemMain";
+    public String Footer() {
+        return PREFIX + "Footer";
     }
 
     public String NavItem() {
         return PREFIX + "NavItem";
     }
 
-    public String NavItemIconOnly() {
-        return PREFIX + "NavItemIconOnly";
+    public String NavItemActive() {
+        return PREFIX + "NavItemActive";
     }
 
-    public String SidePanel() {
-        return PREFIX + "SidePanel";
+    public String PopupPanel() {
+        return PREFIX + "PopupPanel";
     }
 
 }

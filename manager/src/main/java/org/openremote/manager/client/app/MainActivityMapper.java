@@ -31,16 +31,16 @@ import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.mvp.AppActivityMapper;
 
-public class MainContentActivityMapper implements AppActivityMapper {
+public class MainActivityMapper implements AppActivityMapper {
 
     private final Provider<AssetDetailActivity> assetsActivityProvider;
     private final Provider<MapActivity> mapActivityProvider;
     private final Provider<FlowsActivity> flowsActivityProvider;
 
     @Inject
-    public MainContentActivityMapper(Provider<AssetDetailActivity> assetsActivityProvider,
-                                     Provider<MapActivity> mapActivityProvider,
-                                     Provider<FlowsActivity> flowsActivityProvider) {
+    public MainActivityMapper(Provider<AssetDetailActivity> assetsActivityProvider,
+                              Provider<MapActivity> mapActivityProvider,
+                              Provider<FlowsActivity> flowsActivityProvider) {
         this.assetsActivityProvider = assetsActivityProvider;
         this.mapActivityProvider = mapActivityProvider;
         this.flowsActivityProvider = flowsActivityProvider;

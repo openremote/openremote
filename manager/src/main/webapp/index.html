@@ -76,26 +76,15 @@
 
         function loadResources() {
             Promise.all([
- /* TODO Webcomponents
                 load.js("/static/bower_components/webcomponentsjs/webcomponents-lite.min.js"),
-
-                load.import("/static/bower_components/polymer/polymer.html"),
-                load.import("/static/bower_components/iron-icons/iron-icons.html"),
-                load.import("/static/bower_components/iron-icons/maps-icons.html"),
-                load.import("/static/bower_components/iron-icons/hardware-icons.html"),
                 load.import("/static/bower_components/iron-flex-layout/iron-flex-layout-classes.html"),
-                load.import("/static/bower_components/paper-button/paper-button.html"),
-                load.import("/static/bower_components/paper-input/paper-input.html"),
-                load.import("/static/bower_components/paper-badge/paper-badge.html"),
-                load.import("/static/components/ui/or-icons.html"),
-                load.import("/static/components/ui/or-toast.html"),
-                load.import("/static/css/style.html")
-*/
+
                 load.css("/static/3rdparty/mapbox-gl-js/0.14.1/mapbox-gl.css"),
                 load.js("/static/3rdparty/mapbox-gl-js/0.14.1/mapbox-gl.js"),
-                load.css("/static/css/openremote.css"),
-                load.js("/jsapi"),
-                load.js("/static/gwt/Manager/Manager.nocache.js")
+
+                load.import("/static/css/style.html"),
+
+                load.js("/jsapi")
 
             ]).then(function () {
                 console.log("Auxiliary application resources loaded, web components will initialize...");
@@ -104,19 +93,20 @@
             });
         }
 
-/* TODO Webcomponents
         window.addEventListener('WebComponentsReady', function () {
             Promise.all([
                 load.js("/static/gwt/Manager/Manager.nocache.js")
             ]).then(function () {
                 console.log("Main application starting...");
+            }).catch(function () {
+                alert("Error loading application resources. " + defaultErrorMessage);
             });
         });
-*/
+
     </script>
 
 </head>
-<body>
+<body class="layout vertical">
 
 <iframe src="javascript:''"
         id="__gwt_historyFrame"

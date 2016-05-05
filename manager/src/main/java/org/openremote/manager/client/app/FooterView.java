@@ -20,24 +20,19 @@
 package org.openremote.manager.client.app;
 
 import com.google.gwt.place.shared.Place;
-import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.gwt.user.client.ui.IsWidget;
 
-public interface AppLayout extends IsWidget {
+public interface FooterView extends IsWidget {
 
     interface Presenter {
-        AppLayout getView();
+        FooterView getView();
 
         void goTo(Place place);
+
+        void onPlaceChange(Place place);
     }
 
     void setPresenter(Presenter presenter);
 
-    AcceptsOneWidget getMainContentPanel();
-
-    AcceptsOneWidget getLeftSidePanel();
-
-    AcceptsOneWidget getHeaderPanel();
-
-    void updateLayout(Place place);
+    void onPlaceChange(Place place);
 }

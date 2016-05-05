@@ -4,14 +4,11 @@
 
     <ui:style>
         .mapContainer {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 100%;
-            background-color: white;
         }
     </ui:style>
 
-    <o:MapWidget ui:field="mapWidget" addStyleNames="{style.mapContainer}"></o:MapWidget>
+    <o:MapWidget ui:field="mapWidget"
+                 styleName="flex layout vertical"
+                 addStyleNames="{style.mapContainer}"/>
 
 </ui:UiBinder>

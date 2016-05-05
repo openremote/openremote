@@ -1,8 +1,0 @@
-<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
-             xmlns:g="urn:import:com.google.gwt.user.client.ui">
-
-    <g:ScrollPanel>
-        <g:Label>LEFT PANE</g:Label>
-    </g:ScrollPanel>
-
-</ui:UiBinder>
