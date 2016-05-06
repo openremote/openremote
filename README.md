@@ -3,6 +3,10 @@
 
 ---
 
+####  This is pre-alpha software under development, we are working on internal Milestone 2. Older code we are currently migrating can be found [in the M1 repository](https://github.com/openremote/or-controller).
+
+---
+
 * **Live Demo**: http://demo2.openremote.com (test/test)
 * **Docker Images**: https://hub.docker.com/u/openremote/
 * **Documentation/Wiki:** https://github.com/openremote/openremote/wiki
@@ -47,9 +51,13 @@ The default configuration of all `*Service` classes is for host IP `192.168.99.1
 
 The GWT compiler will listen for compilation requests and produce Javascript code from our Java code. Start and keep it running in the background with `./gradlew -p manager gwtSuperDev`.
 
-### Import project to Eclipse (optional)
+### Import into IntelliJ IDEA
 
-- run `./gradlew eclipse`
+- Create a "New Project From Existing Sources" and import as a Gradle project
+
+### Import project to Eclipse
+
+- Run `./gradlew eclipse`
 - In Eclipse go to File > Import and import the project as "Existing Projects into Workspace"
 
 ### Run Manager server

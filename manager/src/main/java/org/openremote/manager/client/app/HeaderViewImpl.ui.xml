@@ -38,7 +38,7 @@
                           addStyleNames="{style.navItem} {themeStyle.NavItem}"
                           waves="LIGHT">
             <g:HTMLPanel addStyleNames="{style.iconButton}" styleName="layout horizontal center">
-                <svg style="pointer-events: none; display: block; height: 80%;" viewBox="0 0 24 24"
+                <svg style="pointer-events: none; display: block; height: 80%; margin-right: 15px;" viewBox="0 0 24 24"
                      preserveAspectRatio="xMidYMid meet">
                     <path fill="#C4D600"
                           d="M11.93,21.851c-5.551,0-10.066-4.515-10.066-10.065h2.108c0,4.388,3.57,7.958,7.958,7.958 c4.387,0,7.958-3.57,7.958-7.958c0-4.388-3.57-7.958-7.958-7.958V1.72c5.55,0,10.066,4.517,10.066,10.066 C21.996,17.336,17.48,21.851,11.93,21.851L11.93,21.851z"/>

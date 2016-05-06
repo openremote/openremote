@@ -2,15 +2,25 @@
              xmlns:g='urn:import:com.google.gwt.user.client.ui'>
 
     <ui:style>
+        .viewport {
+            width: 100%;
+            height: 100vh;
+            min-height: 100%;
+            margin: 0;
+        }
+
+        .content {
+            overflow: auto;
+        }
     </ui:style>
 
     <ui:with field="constants" type="org.openremote.manager.client.i18n.ManagerConstants"/>
     <ui:with field="themeStyle" type="org.openremote.manager.client.ThemeStyle"/>
 
-    <g:FlowPanel styleName="layout vertical viewport">
-        <g:SimplePanel ui:field="header" styleName="layout horizontal header"/>
-        <g:SimplePanel ui:field="content" styleName="flex layout vertical content"/>
-        <g:SimplePanel ui:field="footer" styleName="layout horizontal footer"/>
+    <g:FlowPanel styleName="layout vertical" addStyleNames="{style.viewport}">
+        <g:SimplePanel ui:field="header" styleName="layout horizontal"/>
+        <g:SimplePanel ui:field="content" styleName="flex layout vertical" addStyleNames="{style.content}"/>
+        <g:SimplePanel ui:field="footer" styleName="layout horizontal"/>
     </g:FlowPanel>
 
 </ui:UiBinder>
