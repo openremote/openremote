@@ -34,4 +34,6 @@ public interface MapView extends IsWidget {
     void initialiseMap(JsonObject mapOptions);
 
     boolean isMapInitialised();
+
+    void refresh();
 }

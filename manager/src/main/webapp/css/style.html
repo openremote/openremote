@@ -6,7 +6,7 @@
         --theme-darkgreen: #006224; /* rgb(0, 98, 36); */
         --theme-mediumgreen: #49a942; /* rgb(73, 169, 66); */
         --theme-lightgreen: #c1d72f; /* rgb(193, 215, 47); */
-        --theme-darkgrey: #455a64; /* rgb(69, 90, 100); */
+        --theme-darkgrey: #374c4f; /* rgb(55, 76, 79) */
         --theme-mediumgrey: #919194; /* rgb(145, 145, 148); */
         --theme-lightgrey: #cccccc; /* rgb(204, 204, 204); */
         --theme-brightgrey: #f5f5f5; /* rgb(245, 245, 245); */
@@ -17,7 +17,7 @@
     }
 
     * html, body {
-        font-family: Helvetica, sans-serif !important;
+        font-family: 'Open Sans', Helvetica, Arial, Lucida, sans-serif;
         font-weight: 500 !important;
     }
 
@@ -30,13 +30,14 @@
 
     .theme-Header,
     .theme-Footer {
-        background-color: var(--theme-black);
+        background-color: var(--theme-darkgrey);
         color: var(--theme-white);
     }
 
     .theme-NavItem {
-        background: var(--theme-black) !important;
-        color: var(--theme-lightgreen) !important;
+        background: transparent;
+        color: var(--theme-white) !important;
+        font-weight: 700;
     }
 
     .theme-NavItemActive {

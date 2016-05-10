@@ -65,7 +65,7 @@ public class HeaderViewImpl extends Composite implements HeaderView {
     ThemeStyle themeStyle;
 
     @UiField
-    MaterialButton itemInventory;
+    MaterialButton itemQuickAccess;
 
     @UiField
     MaterialButton itemMap;

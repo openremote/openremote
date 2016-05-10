@@ -61,4 +61,11 @@ public class MapViewImpl extends Composite implements MapView {
     public boolean isMapInitialised() {
         return mapWidget.isInitialised();
     }
+
+    @Override
+    public void refresh() {
+        if (!isMapInitialised())
+            return;
+        mapWidget.refresh();
+    }
 }

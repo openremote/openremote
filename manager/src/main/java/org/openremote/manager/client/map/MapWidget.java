@@ -80,4 +80,11 @@ public class MapWidget extends ComplexPanel {
         });
         */
     }
+
+    public void refresh() {
+        // TODO: we might want to further define what "refresh" means, currently it's triggered on GoToPlaceEvent
+        if (map != null) {
+            map.resize();
+        }
+    }
 }
