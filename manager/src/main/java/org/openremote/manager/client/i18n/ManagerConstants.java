@@ -36,4 +36,6 @@ public interface ManagerConstants extends Constants {
     String manage();
 
     String connect();
+
+    String mapLoading();
 }

@@ -1,75 +1,30 @@
 <ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
              xmlns:g="urn:import:com.google.gwt.user.client.ui"
-             xmlns:m="urn:import:gwt.material.design.client.ui">
+             xmlns:w="urn:import:org.openremote.manager.client.widget">
 
     <ui:with field="constants" type="org.openremote.manager.client.i18n.ManagerConstants"/>
     <ui:with field="themeStyle" type="org.openremote.manager.client.ThemeStyle"/>
 
     <g:HTMLPanel styleName="flex layout vertical">
 
-        <g:Label>ASSET DETAILS</g:Label>
+        <div style="padding: 1em;">
+            <w:PushButton ui:field="showInfo"
+                          addStyleNames="{themeStyle.PushButton}"
+                          text="Show INFO message"/>
+            <w:PushButton ui:field="showTempFailure"
+                      addStyleNames="{themeStyle.PushButton}"
+                      text="Show temporary ERROR message"/>
+            <w:PushButton ui:field="showDurableFailure"
+                      addStyleNames="{themeStyle.PushButton}"
+                      text="Show durable ERROR message"/>
+        </div>
 
-        <div>
-            <g:Button ui:field="sendMessageButton" text="Send message to server"/>
+        <div style="padding: 1em;">
+            <w:PushButton ui:field="sendMessageButton"
+                          addStyleNames="{themeStyle.PushButton}"
+                          text="Send message to server"/>
             <g:Label ui:field="messageLabel" text="Waiting for response..."/>
         </div>
-
-        <div>
-            <g:Button ui:field="togglePopup" text="Toggle Popup"/>
-        </div>
-
-        <div>
-            <m:MaterialChip letter="A" letterColor="white" letterBackgroundColor="green" text="Room 1" iconType="HOME"/>
-            <m:MaterialChip letter="A" letterColor="white" letterBackgroundColor="green" text="Room 2" iconType="HOME"/>
-            <m:MaterialChip letter="A" letterColor="white" letterBackgroundColor="green" text="Room 3" iconType="HOME"/>
-
-            <m:MaterialChip letter="S" letterColor="white" letterBackgroundColor="green" text="Sensor A"
-                            iconType="CAST"/>
-            <m:MaterialChip letter="S" letterColor="white" letterBackgroundColor="red" text="Sensor B" iconType="CAST"/>
-            <m:MaterialChip letter="S" letterColor="black" letterBackgroundColor="yellow" text="Sensor C"
-                            iconType="CAST"/>
-        </div>
-
-
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
-        <g:Label>ASSET</g:Label>
 
     </g:HTMLPanel>
 

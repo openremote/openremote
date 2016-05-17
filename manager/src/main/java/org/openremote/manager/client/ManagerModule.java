@@ -43,6 +43,11 @@ import org.openremote.manager.client.map.MapViewImpl;
 import org.openremote.manager.client.mvp.AppActivityManager;
 import org.openremote.manager.client.mvp.AppPlaceController;
 import org.openremote.manager.client.service.*;
+import org.openremote.manager.client.toast.PopupToastDisplay;
+import org.openremote.manager.client.toast.ToastDisplay;
+import org.openremote.manager.client.user.UserControls;
+import org.openremote.manager.client.user.UserControlsImpl;
+import org.openremote.manager.client.user.UserControlsPresenter;
 import org.openremote.manager.shared.map.MapResource;
 
 public class ManagerModule extends AbstractGinModule {
@@ -51,29 +56,29 @@ public class ManagerModule extends AbstractGinModule {
     protected void configure() {
 
         bind(ResourceLoader.class).asEagerSingleton();
-
-            // App Wiring
         bind(com.google.web.bindery.event.shared.EventBus.class).to(com.google.web.bindery.event.shared.SimpleEventBus.class).in(Singleton.class);
         bind(EventBus.class).in(Singleton.class);
         bind(PlaceHistoryMapper.class).to(ManagerHistoryMapper.class).in(Singleton.class);
         bind(AppController.class).to(AppControllerImpl.class).in(Singleton.class);
-
-        // Views
         bind(AppView.class).to(AppViewImpl.class).in(Singleton.class);
+        bind(ToastDisplay.class).to(PopupToastDisplay.class).in(Singleton.class);
+
         bind(HeaderView.class).to(HeaderViewImpl.class).in(Singleton.class);
         bind(FooterView.class).to(FooterViewImpl.class).in(Singleton.class);
 
         bind(MapView.class).to(MapViewImpl.class).in(Singleton.class);
+        bind(MapActivity.class);
+
         bind(AssetListView.class).to(AssetListViewImpl.class).in(Singleton.class);
         bind(AssetDetailView.class).to(AssetDetailViewImpl.class).in(Singleton.class);
-        bind(FlowsView.class).to(FlowsViewImpl.class).in(Singleton.class);
-
-        // Activities
         bind(AssetDetailActivity.class);
-        bind(MapActivity.class);
+
+        bind(FlowsView.class).to(FlowsViewImpl.class).in(Singleton.class);
         bind(FlowsActivity.class);
 
-        // Services
+        bind(UserControls.class).to(UserControlsImpl.class).in(Singleton.class);
+        bind(UserControls.Presenter.class).to(UserControlsPresenter.class).in(Singleton.class);
+
         bind(CookieService.class).to(CookieServiceImpl.class).in(Singleton.class);
         bind(ValidatorService.class).to(ValidatorServiceImpl.class).in(Singleton.class);
     }

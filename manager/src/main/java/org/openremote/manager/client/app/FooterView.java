@@ -28,8 +28,6 @@ public interface FooterView extends IsWidget {
         FooterView getView();
 
         void goTo(Place place);
-
-        void onPlaceChange(Place place);
     }
 
     void setPresenter(Presenter presenter);

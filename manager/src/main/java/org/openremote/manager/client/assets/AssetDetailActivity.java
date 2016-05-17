@@ -28,6 +28,8 @@ import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.event.Message;
+import org.openremote.manager.shared.event.ui.ShowFailureEvent;
+import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -77,5 +79,20 @@ public class AssetDetailActivity
         eventBus.dispatch(new ServerSendEvent(
             new Message("Hello from client!")
         ));
+    }
+
+    @Override
+    public void showInfo() {
+        eventBus.dispatch(new ShowInfoEvent("Hello World!"));
+    }
+
+    @Override
+    public void showTempFailure() {
+        eventBus.dispatch(new ShowFailureEvent("A temporary error. This will disappear in a few seconds.", 5000));
+    }
+
+    @Override
+    public void showDurableFailure() {
+        eventBus.dispatch(new ShowFailureEvent("The application crashed. This is a durable error."));
     }
 }

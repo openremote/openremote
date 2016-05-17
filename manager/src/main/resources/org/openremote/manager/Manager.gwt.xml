@@ -16,9 +16,6 @@
     <inherits name="com.workingflows.js.jscore.JSCore" />
     <inherits name="com.google.gwt.http.HTTP"/>
     <inherits name="com.github.nmorel.gwtjackson.GwtJackson"/>
-    <!-- TODO which of the GWT material modules do we need? -->
-    <inherits name="gwt.material.design.GwtMaterialWithJQueryDebug"/>
-    <inherits name="gwt.material.design.addins.GWTMaterialAddins"/>
 
     <!-- ##################################################################### -->
 

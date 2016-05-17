@@ -26,4 +26,6 @@ import com.google.gwt.i18n.client.Messages;
 public interface ManagerMessages extends Messages {
 
     String signedInAs(String username);
+
+    String failureLoadingMapSettings(String error);
 }

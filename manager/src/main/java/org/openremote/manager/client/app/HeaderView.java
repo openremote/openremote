@@ -21,6 +21,7 @@ package org.openremote.manager.client.app;
 
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.user.client.ui.IsWidget;
+import org.openremote.manager.client.user.UserControls;
 
 public interface HeaderView extends IsWidget {
 
@@ -29,11 +30,7 @@ public interface HeaderView extends IsWidget {
 
         void goTo(Place place);
 
-        void onPlaceChange(Place place);
-
-        void doLogout();
-
-        void setUsername(String username);
+        UserControls getUserControls();
     }
 
     void setPresenter(Presenter presenter);

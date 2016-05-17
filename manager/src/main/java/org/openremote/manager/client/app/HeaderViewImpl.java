@@ -29,26 +29,24 @@ import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.inject.Inject;
-import gwt.material.design.client.ui.MaterialButton;
-import gwt.material.design.client.ui.MaterialLabel;
 import org.openremote.manager.client.ThemeStyle;
 import org.openremote.manager.client.assets.AssetsPlace;
 import org.openremote.manager.client.flows.FlowsPlace;
-import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.map.MapPlace;
+import org.openremote.manager.client.widget.PushButton;
 
 public class HeaderViewImpl extends Composite implements HeaderView {
 
     interface Style extends CssResource {
+        String logoButton();
+
         String navItem();
 
-        String active();
-
-        String controls();
-
-        String iconButton();
+        String navItemLast();
 
         String header();
+
+        String navItemFirst();
     }
 
     interface UI extends UiBinder<HTMLPanel, HeaderViewImpl> {
@@ -56,7 +54,6 @@ public class HeaderViewImpl extends Composite implements HeaderView {
 
     private static UI ui = GWT.create(UI.class);
     private Presenter presenter;
-    private ManagerMessages messages;
 
     @UiField
     Style style;
@@ -65,26 +62,22 @@ public class HeaderViewImpl extends Composite implements HeaderView {
     ThemeStyle themeStyle;
 
     @UiField
-    MaterialButton itemQuickAccess;
+    HTMLPanel quickAccess;
 
     @UiField
-    MaterialButton itemMap;
+    PushButton mapButton;
 
     @UiField
-    MaterialButton itemFlows;
+    PushButton assetsButton;
 
     @UiField
-    MaterialButton itemAssets;
+    PushButton flowsButton;
 
     @UiField
-    MaterialButton userButton;
-
-    @UiField
-    MaterialButton notificationButton;
+    PushButton userButton;
 
     @Inject
-    public HeaderViewImpl(ManagerMessages messages) {
-        this.messages = messages;
+    public HeaderViewImpl() {
         initWidget(ui.createAndBindUi(this));
     }
 
@@ -93,59 +86,46 @@ public class HeaderViewImpl extends Composite implements HeaderView {
         this.presenter = presenter;
     }
 
-
     @Override
     public void onPlaceChange(Place place) {
-        itemMap.removeStyleName(style.active());
-        itemMap.removeStyleName(themeStyle.NavItemActive());
-        itemAssets.removeStyleName(style.active());
-        itemAssets.removeStyleName(themeStyle.NavItemActive());
-        itemFlows.removeStyleName(style.active());
-        itemFlows.removeStyleName(themeStyle.NavItemActive());
+        mapButton.removeStyleName(themeStyle.NavItemActive());
+        assetsButton.removeStyleName(themeStyle.NavItemActive());
+        flowsButton.removeStyleName(themeStyle.NavItemActive());
 
         if (place instanceof MapPlace) {
-            itemMap.addStyleName(style.active());
-            itemMap.addStyleName(themeStyle.NavItemActive());
+            mapButton.addStyleName(themeStyle.NavItemActive());
         }
         if (place instanceof AssetsPlace) {
-            itemAssets.addStyleName(style.active());
-            itemAssets.addStyleName(themeStyle.NavItemActive());
+            assetsButton.addStyleName(themeStyle.NavItemActive());
         }
         if (place instanceof FlowsPlace) {
-            itemFlows.addStyleName(style.active());
-            itemFlows.addStyleName(themeStyle.NavItemActive());
+            flowsButton.addStyleName(themeStyle.NavItemActive());
         }
     }
 
     @Override
     public void setUsername(String username) {
-        if (username != null && username.length() > 0) {
-            userButton.setText(messages.signedInAs(username));
-            userButton.setVisible(true);
-        } else {
-            userButton.setVisible(false);
-        }
+        userButton.setText(username != null ? username : "");
+        userButton.setEnabled(username != null && username.length() > 0);
     }
 
-    @UiHandler("userButton")
-    void logoutClicked(ClickEvent e) {
-        // TODO: Open user self-edit activity
-        presenter.doLogout();
-    }
-
-    @UiHandler("itemMap")
+    @UiHandler("mapButton")
     void itemMapClicked(ClickEvent e) {
         presenter.goTo(new MapPlace());
     }
 
-    @UiHandler("itemAssets")
+    @UiHandler("assetsButton")
     void itemAssetsClicked(ClickEvent e) {
         presenter.goTo(new AssetsPlace());
     }
 
-    @UiHandler("itemFlows")
+    @UiHandler("flowsButton")
     void itemFlowsClicked(ClickEvent e) {
         presenter.goTo(new FlowsPlace());
     }
 
+    @UiHandler("userButton")
+    public void onToggleNotificationPanel(final ClickEvent event) {
+        presenter.getUserControls().toggleRelativeTo(userButton);
+    }
 }

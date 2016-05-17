@@ -28,6 +28,12 @@ public interface AssetDetailView extends IsWidget {
         void goTo(Place place);
 
         void sendMessage();
+
+        void showInfo();
+
+        void showTempFailure();
+
+        void showDurableFailure();
     }
 
     void setPresenter(Presenter presenter);

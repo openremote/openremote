@@ -21,39 +21,38 @@ package org.openremote.manager.client.map;
 
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
-import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
+import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.service.RequestService;
+import org.openremote.manager.shared.event.ui.ShowFailureEvent;
 import org.openremote.manager.shared.http.JsonObjectCallback;
 import org.openremote.manager.shared.map.MapResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
-import java.util.logging.Logger;
 
-public class MapActivity
-    extends AppActivity<MapPlace>
-    implements MapView.Presenter {
+public class MapActivity extends AppActivity<MapPlace> implements MapView.Presenter {
 
-    private static final Logger LOG = Logger.getLogger(MapActivity.class.getName());
-
-    private final MapView view;
-    private final MapResource mapResource;
-    private final RequestService requestService;
-    private final PlaceController placeController;
+    final MapView view;
+    final MapResource mapResource;
+    final ManagerMessages managerMessages;
+    final RequestService requestService;
+    final PlaceController placeController;
 
     @Inject
     public MapActivity(MapView view,
                        MapResource mapResource,
+                       ManagerMessages managerMessages,
                        RequestService requestService,
                        PlaceController placeController) {
         this.view = view;
-        this.requestService = requestService;
         this.mapResource = mapResource;
+        this.managerMessages = managerMessages;
+        this.requestService = requestService;
         this.placeController = placeController;
     }
 
@@ -69,37 +68,32 @@ public class MapActivity
 
         registrations.add(eventBus.register(GoToPlaceEvent.class, event -> view.refresh()));
 
-        if (!view.isMapInitialised()) {
+        if (view.isMapInitialised())
+            return;
 
-            /* TODO This is the generic resteasy client
-            Request<JsonObject> request = requestService.createRequest(true);
-            request.setURI("http://localhost:8080/master/map");
-            request.setMethod("GET");
-            request.setAccepts("application/json");
-            request.execute(new JsonObjectCallback(
+        /* TODO This is the generic resteasy client
+        Request<JsonObject> request = requestService.createRequest(true);
+        request.setURI("http://localhost:8080/master/map");
+        request.setMethod("GET");
+        request.setAccepts("application/json");
+        request.execute(new JsonObjectCallback(
+            200,
+            view::initialiseMap,
+                ex -> eventBus.dispatch(new ShowFailureEvent(
+                    managerMessages.failureLoadingMapSettings(ex.getMessage())
+                ))
+        ));
+        */
+
+        // This is the strongly typed client
+        mapResource.getSettings(requestService.createRequestParams(new JsonObjectCallback(
                 200,
                 view::initialiseMap,
-                ex -> {
-                    // TODO: Handle map settings failure
-                    Window.alert(ex.getMessage());
-                }
-            ));
-            */
-
-            // This is the strongly typed client
-            mapResource.getSettings(requestService.createRequestParams(new JsonObjectCallback(
-                    200,
-                    view::initialiseMap,
-                    ex -> {
-                        // TODO: Handle map settings failure
-                        Window.alert(ex.getMessage());
-                    }
-                )
-            ));
-
-        } else {
-            //TODO: Reconfigure the map
-        }
+                ex -> eventBus.dispatch(new ShowFailureEvent(
+                    managerMessages.failureLoadingMapSettings(ex.getMessage())
+                ))
+            )
+        ));
     }
 
     @Override

@@ -1,0 +1,59 @@
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+             xmlns:g="urn:import:com.google.gwt.user.client.ui"
+             xmlns:w="urn:import:org.openremote.manager.client.widget">
+
+    <ui:with field="constants" type="org.openremote.manager.client.i18n.ManagerConstants"/>
+    <ui:with field="themeStyle" type="org.openremote.manager.client.ThemeStyle"/>
+
+    <ui:style>
+        .popup {
+            z-index: 10;
+        }
+
+        .popup, .panel {
+            width: 10em;
+            height: 10em;
+        }
+
+        .panel {
+        }
+
+        .header {
+            font-weight: 700;
+            padding: 0.4em;
+        }
+
+        .content {
+            overflow: auto;
+            padding: 0.4em;
+        }
+
+        .grid {
+            flex: auto;
+        }
+
+        .footer {
+            padding: 0.4em;
+        }
+    </ui:style>
+
+    <g:PopupPanel glassEnabled="false" addStyleNames="{style.popup} {themeStyle.PopupPanel}">
+        <g:HTMLPanel styleName="flex layout vertical" addStyleNames="{style.panel}">
+            <g:HTMLPanel styleName="layout horizontal" addStyleNames="{style.header} {themeStyle.PopupPanelHeader}">
+                <g:Label ui:field="usernameLabel"/>
+            </g:HTMLPanel>
+            <g:HTMLPanel styleName="flex layout vertical"
+                         addStyleNames="{style.content} {themeStyle.PopupPanelContent}">
+                <g:Label ui:field="userMessage"/>
+            </g:HTMLPanel>
+            <g:HTMLPanel styleName="layout horizontal center-center"
+                         addStyleNames="{style.footer} {themeStyle.PopupPanelFooter}">
+                <w:PushButton ui:field="logoutButton"
+                              icon="sign-out"
+                              text="{constants.logout}"
+                              addStyleNames="{themeStyle.PushButton}"/>
+            </g:HTMLPanel>
+        </g:HTMLPanel>
+    </g:PopupPanel>
+
+</ui:UiBinder>

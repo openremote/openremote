@@ -21,29 +21,43 @@ package org.openremote.manager.client.app;
 
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
-import com.google.gwt.user.client.Window;
 import com.google.inject.Inject;
 import org.openremote.manager.client.event.GoToPlaceEvent;
+import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.service.SecurityService;
+import org.openremote.manager.client.user.UserControls;
 
 public class HeaderPresenter implements HeaderView.Presenter {
 
-    private HeaderView view;
-    private PlaceController placeController;
-    private SecurityService securityService;
+    final protected HeaderView view;
+    final protected UserControls.Presenter userControlsPresenter;
+    final protected PlaceController placeController;
+    final protected  SecurityService securityService;
 
     @Inject
     public HeaderPresenter(HeaderView view,
+                           UserControls.Presenter userControlsPresenter,
                            SecurityService securityService,
                            PlaceController placeController,
-                           EventBus eventbus) {
+                           EventBus eventBus) {
         this.view = view;
+        this.userControlsPresenter = userControlsPresenter;
         this.placeController = placeController;
         this.securityService = securityService;
 
         view.setPresenter(this);
+
+        eventBus.register(
+            GoToPlaceEvent.class,
+            event -> view.onPlaceChange(event.getNewPlace())
+        );
+
         view.setUsername(securityService.getUsername());
+        eventBus.register(
+            UserChangeEvent.class,
+            event -> view.setUsername(event.getUsername())
+        );
     }
 
     @Override
@@ -57,17 +71,7 @@ public class HeaderPresenter implements HeaderView.Presenter {
     }
 
     @Override
-    public void onPlaceChange(Place place) {
-        view.onPlaceChange(place);
-    }
-
-    @Override
-    public void doLogout() {
-        securityService.logout();
-    }
-
-    @Override
-    public void setUsername(String username) {
-        view.setUsername(username);
+    public UserControls getUserControls() {
+        return userControlsPresenter.getView();
     }
 }

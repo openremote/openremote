@@ -24,14 +24,14 @@ import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
-import com.google.gwt.user.client.ui.*;
+import com.google.gwt.user.client.ui.Composite;
+import com.google.gwt.user.client.ui.HTMLPanel;
+import com.google.gwt.user.client.ui.Label;
+import org.openremote.manager.client.widget.PushButton;
 
 import javax.inject.Inject;
-import java.util.logging.Logger;
 
 public class AssetDetailViewImpl extends Composite implements AssetDetailView {
-
-    private static final Logger LOG = Logger.getLogger(AssetDetailViewImpl.class.getName());
 
     interface UI extends UiBinder<HTMLPanel, AssetDetailViewImpl> {
     }
@@ -41,19 +41,22 @@ public class AssetDetailViewImpl extends Composite implements AssetDetailView {
     Presenter presenter;
 
     @UiField
-    Button sendMessageButton;
+    com.google.gwt.user.client.ui.PushButton sendMessageButton;
 
     @UiField
     Label messageLabel;
 
     @UiField
-    Button togglePopup;
+    PushButton showInfo;
 
-    final AssetMapPanel assetMapPanel;
+    @UiField
+    PushButton showTempFailure;
+
+    @UiField
+    PushButton showDurableFailure;
 
     @Inject
-    public AssetDetailViewImpl(AssetMapPanel assetMapPanel) {
-        this.assetMapPanel = assetMapPanel;
+    public AssetDetailViewImpl() {
         initWidget(ui.createAndBindUi(this));
     }
 
@@ -67,18 +70,23 @@ public class AssetDetailViewImpl extends Composite implements AssetDetailView {
         presenter.sendMessage();
     }
 
+    @UiHandler("showInfo")
+    public void onShowInfo(final ClickEvent event) {
+        presenter.showInfo();
+    }
+
+    @UiHandler("showTempFailure")
+    public void onShowTempFailure(final ClickEvent event) {
+        presenter.showTempFailure();
+    }
+
+    @UiHandler("showDurableFailure")
+    public void onShowDurableFailure(final ClickEvent event) {
+        presenter.showDurableFailure();
+    }
+
     @Override
     public void setMessageText(String text) {
         messageLabel.setText(text);
     }
-
-    @UiHandler("togglePopup")
-    public void onToggleButtonClick(final ClickEvent event) {
-        if (assetMapPanel.isShowing()) {
-            assetMapPanel.hide();
-        } else {
-            assetMapPanel.show();
-        }
-    }
-
 }

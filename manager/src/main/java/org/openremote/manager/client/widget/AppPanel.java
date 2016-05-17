@@ -19,11 +19,19 @@
  */
 package org.openremote.manager.client.widget;
 
+import com.google.gwt.user.client.ui.UIObject;
+
 public interface AppPanel {
 
     boolean isShowing();
 
     void show();
+
+    void showRelativeTo(UIObject target);
+
+    void toggle();
+
+    void toggleRelativeTo(UIObject target);
 
     void hide();
 

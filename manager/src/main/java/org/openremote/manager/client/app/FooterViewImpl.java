@@ -52,21 +52,6 @@ public class FooterViewImpl extends Composite implements FooterView {
 
     @Override
     public void onPlaceChange(Place place) {
-/*
-        if (place instanceof MapPlace)
-            itemMap.addStyleName("active");
-        else
-            itemMap.removeStyleName("active");
-
-        if (place instanceof AssetsPlace)
-            itemAssets.addStyleName("active");
-        else
-            itemAssets.removeStyleName("active");
-
-        if (place instanceof FlowsPlace)
-            itemFlows.addStyleName("active");
-        else
-            itemFlows.removeStyleName("active");
-*/
+        // TODO
     }
 }

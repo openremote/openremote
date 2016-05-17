@@ -38,9 +38,6 @@ dependencies {
         exclude module: "cglib"
     }
     compile "cglib:cglib:$cglibVersion"
-    compile "com.github.gwtmaterialdesign:gwt-material:$gwtMaterialDesignVersion"
-    compile "com.github.gwtmaterialdesign:gwt-material-addins:$gwtMaterialDesignVersion"
-    compile "com.github.gwtmaterialdesign:gwt-material-themes:$gwtMaterialDesignVersion"
     compile "com.github.nmorel.gwtjackson:gwt-jackson:$gwtJacksonVersion"
 
     testCompile "junit:junit:$junitVersion"
@@ -95,7 +92,7 @@ tasks.withType(de.richsource.gradle.plugins.gwt.AbstractGwtActionTask) {
 
     //args "-logLevel", "TRACE"
     args "-generateJsInteropExports"
-    args "-noincremental" // TODO Yep, incremental compile is apparently broken right now in 2.8.0
+    //args "-noincremental" // TODO Yep, incremental compile is apparently broken right now in 2.8.0
 
     // I've had various problems with this cache and GWT snapshot updates, so it's a good idea to make it easily cleanable
     jvmArgs("-Dgwt.persistentunitcachedir=$project.buildDir/gwt/cache")

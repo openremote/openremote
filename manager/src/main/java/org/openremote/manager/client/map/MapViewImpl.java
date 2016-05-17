@@ -23,14 +23,15 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Composite;
+import com.google.gwt.user.client.ui.HTMLPanel;
+import com.google.gwt.user.client.ui.Label;
 import elemental.json.JsonObject;
-import gwt.material.design.client.ui.MaterialLoader;
 
 import javax.inject.Inject;
 
 public class MapViewImpl extends Composite implements MapView {
 
-    interface UI extends UiBinder<MapWidget, MapViewImpl> {
+    interface UI extends UiBinder<HTMLPanel, MapViewImpl> {
     }
 
     private UI ui = GWT.create(UI.class);
@@ -38,12 +39,19 @@ public class MapViewImpl extends Composite implements MapView {
     Presenter presenter;
 
     @UiField
+    HTMLPanel mapContainer;
+
+    @UiField
+    Label mapLoadingLabel;
+
+    @UiField
     MapWidget mapWidget;
 
     @Inject
     public MapViewImpl() {
         initWidget(ui.createAndBindUi(this));
-        MaterialLoader.showLoading(true);
+        mapLoadingLabel.setVisible(true);
+        mapWidget.setVisible(false);
     }
 
     @Override
@@ -54,7 +62,9 @@ public class MapViewImpl extends Composite implements MapView {
     @Override
     public void initialiseMap(JsonObject mapOptions) {
         mapWidget.initialise(mapOptions);
-        MaterialLoader.showLoading(false);
+        mapLoadingLabel.setVisible(false);
+        mapWidget.setVisible(true);
+        mapWidget.refresh();
     }
 
     @Override

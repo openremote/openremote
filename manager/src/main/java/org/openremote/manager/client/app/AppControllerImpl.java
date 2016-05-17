@@ -26,9 +26,12 @@ import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.inject.Provider;
 import org.openremote.manager.client.event.GoToPlaceEvent;
-import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.i18n.ManagerConstants;
+import org.openremote.manager.client.toast.Toast;
+import org.openremote.manager.client.toast.Toasts;
+import org.openremote.manager.shared.event.ui.ShowFailureEvent;
+import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 
 import javax.inject.Inject;
 
@@ -46,10 +49,10 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
                              PlaceHistoryHandler placeHistoryHandler,
                              EventBus eventBus,
                              AppView appView,
+                             Toasts toasts,
                              ManagerConstants constants,
-                             AppInitializer appInitializer) {
+                             AppInitializer appInitializer) { // AppInitializer is needed so that activities are mapped to views
 
-        // AppInitializer is needed so that activities are mapped to views
         this.appView = appView;
         this.placeController = placeController;
         this.placeHistoryHandler = placeHistoryHandler;
@@ -61,18 +64,28 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
         FooterPresenter footerPresenter = footerPresenterProvider.get();
         appView.getFooterPanel().setWidget(footerPresenter.getView());
 
-        // Monitor place changes to reconfigure the UI
-        eventBus.register(GoToPlaceEvent.class, event -> {
-                Place newPlace = event.getNewPlace();
-                appView.updateLayout(newPlace);
-                headerPresenter.onPlaceChange(newPlace);
-                footerPresenter.onPlaceChange(newPlace);
-            }
+        eventBus.register(
+            GoToPlaceEvent.class,
+            event -> appView.updateLayout(event.getNewPlace())
         );
 
-        eventBus.register(UserChangeEvent.class, event -> {
-            headerPresenter.setUsername(event.getUsername());
-        });
+        eventBus.register(
+            ShowInfoEvent.class,
+            event -> toasts.showToast(
+                new Toast(Toast.Type.INFO, event.getText(), Toast.INFO_DEFAULT_MAX_AGE)
+            )
+        );
+
+        eventBus.register(
+            ShowFailureEvent.class,
+            event -> {
+                Toast.Type type = event.getDurationMillis() == ShowFailureEvent.DURABLE
+                    ? Toast.Type.DURABLE_FAILURE : Toast.Type.FAILURE;
+                toasts.showToast(
+                    new Toast(type, event.getText(), event.getDurationMillis())
+                );
+            }
+        );
     }
 
     @Override

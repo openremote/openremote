@@ -39,8 +39,36 @@ public class ThemeStyle {
         return PREFIX + "NavItemActive";
     }
 
+    public String PushButton() {
+        return PREFIX + "PushButton";
+    }
+
+    public String Toast() {
+        return PREFIX + "Toast";
+    }
+
+    public String ToastInfo() {
+        return PREFIX + "ToastInfo";
+    }
+
+    public String ToastFailure() {
+        return PREFIX + "ToastFailure";
+    }
+
     public String PopupPanel() {
         return PREFIX + "PopupPanel";
+    }
+
+    public String PopupPanelHeader() {
+        return PREFIX + "PopupPanelHeader";
+    }
+
+    public String PopupPanelContent() {
+        return PREFIX + "PopupPanelContent";
+    }
+
+    public String PopupPanelFooter() {
+        return PREFIX + "PopupPanelFooter";
     }
 
 }

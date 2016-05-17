@@ -1,30 +1,27 @@
 <ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
              xmlns:g="urn:import:com.google.gwt.user.client.ui"
-             xmlns:m="urn:import:gwt.material.design.client.ui">
+             xmlns:w="urn:import:org.openremote.manager.client.widget">
 
     <ui:style type="org.openremote.manager.client.app.HeaderViewImpl.Style">
         .header {
             height: 4em;
         }
 
-        .iconButton {
+        .logoButton {
             height: 36px;
         }
 
         .navItem {
-            border-radius: 0;
-            box-shadow: none;
+            margin: 0 1.6em;
+            font-size: larger;
         }
 
-        .navItem:hover {
-            box-shadow: none;
+        .navItemFirst {
+            margin-left: 0;
         }
 
-        .navItem.active {
-        }
-
-        .controls {
-            border-left: 1px solid #888888;
+        .navItemLast {
+            margin-right: 0;
         }
 
     </ui:style>
@@ -34,11 +31,11 @@
 
     <g:HTMLPanel styleName="flex layout horizontal center" addStyleNames="{style.header} {themeStyle.Header}">
 
-        <m:MaterialButton ui:field="itemQuickAccess"
-                          addStyleNames="{style.navItem} {themeStyle.NavItem}"
-                          waves="LIGHT">
-            <g:HTMLPanel addStyleNames="{style.iconButton}" styleName="layout horizontal center">
-                <svg style="pointer-events: none; display: block; height: 100%; margin-right: 15px;" viewBox="0 0 24 24"
+        <g:HTMLPanel ui:field="quickAccess"
+                     styleName="or-PushButton"
+                     addStyleNames="{style.navItem} {style.navItemFirst} {themeStyle.NavItem}">
+            <g:HTMLPanel addStyleNames="{style.logoButton}" styleName="layout horizontal center">
+                <svg style="pointer-events: none; display: block; height: 100%; margin-right: 8px;" viewBox="0 0 24 24"
                      preserveAspectRatio="xMidYMid meet">
                     <path fill="#C4D600"
                           d="M11.93,21.851c-5.551,0-10.066-4.515-10.066-10.065h2.108c0,4.388,3.57,7.958,7.958,7.958 c4.387,0,7.958-3.57,7.958-7.958c0-4.388-3.57-7.958-7.958-7.958V1.72c5.55,0,10.066,4.517,10.066,10.066 C21.996,17.336,17.48,21.851,11.93,21.851L11.93,21.851z"/>
@@ -49,37 +46,28 @@
                 </svg>
                 <g:Label text="OpenRemote"/>
             </g:HTMLPanel>
-        </m:MaterialButton>
-
-        <m:MaterialButton ui:field="itemMap"
-                          addStyleNames="{style.navItem} {themeStyle.NavItem}"
-                          waves="LIGHT"
-                          text="{constants.locate}"
-                          iconType="MAP"/>
-
-        <m:MaterialButton ui:field="itemAssets"
-                          addStyleNames="{style.navItem} {themeStyle.NavItem}"
-                          waves="LIGHT"
-                          text="{constants.manage}"
-                          iconType="APPS"/>
-
-        <m:MaterialButton ui:field="itemFlows"
-                          addStyleNames="{style.navItem} {themeStyle.NavItem}"
-                          waves="LIGHT"
-                          iconType="DEVELOPER_MODE"
-                          text="{constants.connect}"/>
-
-        <g:HTMLPanel styleName="flex center end-justified layout horizontal" addStyleNames="{style.controls}">
-            <m:MaterialButton ui:field="notificationButton"
-                              addStyleNames="{style.navItem} {themeStyle.NavItem}"
-                              iconType="NOTIFICATIONS"
-                              waves="LIGHT"/>
-
-            <m:MaterialButton ui:field="userButton"
-                              addStyleNames="{style.navItem} {themeStyle.NavItem}"
-                              iconType="PERSON"
-                              waves="LIGHT"/>
         </g:HTMLPanel>
+
+        <w:PushButton ui:field="mapButton"
+                      addStyleNames="{style.navItem} {themeStyle.NavItem}"
+                      icon="map"
+                      text="{constants.locate}"/>
+
+        <w:PushButton ui:field="assetsButton"
+                      addStyleNames="{style.navItem} {themeStyle.NavItem}"
+                      icon="table"
+                      text="{constants.manage}"/>
+
+        <w:PushButton ui:field="flowsButton"
+                      addStyleNames="{style.navItem} {themeStyle.NavItem}"
+                      icon="connectdevelop"
+                      text="{constants.connect}"/>
+
+        <g:HTMLPanel styleName="flex"/>
+
+        <w:PushButton ui:field="userButton"
+                      icon="user"
+                      addStyleNames="{style.navItem} {style.navItemLast} {themeStyle.NavItem}"/>
 
     </g:HTMLPanel>
 

@@ -22,6 +22,7 @@ package org.openremote.manager.client.app;
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.inject.Inject;
+import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 
 public class FooterPresenter implements FooterView.Presenter {
@@ -32,11 +33,16 @@ public class FooterPresenter implements FooterView.Presenter {
     @Inject
     public FooterPresenter(FooterView view,
                            PlaceController placeController,
-                           EventBus eventbus) {
+                           EventBus eventBus) {
         this.view = view;
         this.placeController = placeController;
 
         view.setPresenter(this);
+
+        eventBus.register(
+            GoToPlaceEvent.class,
+            event -> view.onPlaceChange(event.getNewPlace())
+        );
     }
 
     @Override
@@ -47,10 +53,5 @@ public class FooterPresenter implements FooterView.Presenter {
     @Override
     public void goTo(Place place) {
         placeController.goTo(place);
-    }
-
-    @Override
-    public void onPlaceChange(Place place) {
-        view.onPlaceChange(place);
     }
 }

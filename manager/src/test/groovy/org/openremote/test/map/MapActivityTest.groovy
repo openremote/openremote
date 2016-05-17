@@ -4,6 +4,7 @@ import com.google.gwt.place.shared.PlaceController
 import com.google.gwt.user.client.ui.AcceptsOneWidget
 import elemental.json.JsonObject
 import org.openremote.manager.client.event.bus.EventBus
+import org.openremote.manager.client.i18n.ManagerMessages
 import org.openremote.manager.client.map.MapActivity
 import org.openremote.manager.client.map.MapView
 import org.openremote.manager.client.service.RequestServiceImpl
@@ -22,6 +23,7 @@ class MapActivityTest extends Specification implements ContainerTrait {
         def placeController = Mock(PlaceController)
         def activityContainer = Mock(AcceptsOneWidget)
         def activityBus = Mock(EventBus)
+        def managerMessages = Mock(ManagerMessages)
         def activityRegistrations = []
 
         and: "the server container is started"
@@ -52,7 +54,7 @@ class MapActivityTest extends Specification implements ContainerTrait {
             _(_) >> { callResourceProxy(clientTarget, getDelegate()) }
         }
         def mapActivity = new MapActivity(
-                mapView, mapResource, requestService, placeController
+                mapView, mapResource, managerMessages, requestService, placeController
         )
 
         and: "The expected map settings"
