@@ -17,13 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.i18n;
+package org.openremote.manager.client.user;
 
-import com.google.gwt.i18n.client.LocalizableResource;
-import com.google.gwt.i18n.client.Messages;
+import com.google.gwt.user.client.ui.IsWidget;
 
-@LocalizableResource.DefaultLocale("en")
-public interface ManagerMessages extends Messages {
+public interface UserAccountView extends IsWidget {
 
-    String failureLoadingMapSettings(String error);
+    interface Presenter {
+
+    }
+
+    void setPresenter(Presenter presenter);
+
+    void setRealm(String realm);
+
 }

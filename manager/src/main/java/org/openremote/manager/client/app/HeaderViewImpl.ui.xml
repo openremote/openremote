@@ -17,11 +17,11 @@
         }
 
         .navItemFirst {
-            margin-left: 0;
+            margin-left: 0.4em;
         }
 
         .navItemLast {
-            margin-right: 0;
+            margin-right: 0.4em;
         }
 
     </ui:style>

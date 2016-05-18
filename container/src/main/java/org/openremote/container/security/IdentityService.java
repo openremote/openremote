@@ -260,12 +260,6 @@ public class IdentityService implements ContainerService {
                     // we reverse-proxy back to Keycloak
                     clientInstall.setAuthServerUrl(externalAuthServerUrl.build().toString());
 
-                    // Also correct the backend URL at this time, this URL will be written
-                    // by Keycloak as the issuer into each token automatically
-                    clientInstall.setAuthServerUrlForBackendRequests(
-                        externalAuthServerUrl.clone().path("realms").path(clientInstall.getRealm()).build().toString()
-                    );
-
                     // Some more bloated infrastructure needed, this is for the Keycloak container adapter which
                     // does the automatic token verification. As you can see, it's duplicating ClientInstall.
                     // TODO: Some of the options should be configurable, e.g. CORS and NotBefore
@@ -281,7 +275,6 @@ public class IdentityService implements ContainerService {
                     AdapterConfig adapterConfig = new AdapterConfig();
                     adapterConfig.setResource(keycloakDeployment.getResourceName());
                     adapterConfig.setAuthServerUrl(clientInstall.getAuthServerUrl());
-                    adapterConfig.setAuthServerUrlForBackendRequests(clientInstall.getAuthServerUrlForBackendRequests());
                     keycloakDeployment.setAuthServerBaseUrl(adapterConfig);
 
                     return new ClientRealm(

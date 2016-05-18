@@ -22,6 +22,14 @@
         outline: 0;
     }
 
+    .or-MainContent {
+        padding: 1em;
+    }
+
+    .or-SidebarContent {
+        padding: 1em;
+    }
+
     .or-PushButton {
         user-select: none;
         -webkit-user-select: none; /* Chrome/Safari/Opera */
@@ -50,7 +58,7 @@
         opacity: inherit;
     }
 
-    .or-PushButton-Icon {
+    .or-PushButtonIcon {
         margin-right: 0.4em;
     }
 
@@ -65,14 +73,97 @@
         filter: inherit;
     }
 
+    .or-Hyperlink a,
+    .or-Hyperlink a:visited {
+        cursor: pointer;
+        font-weight: bold;
+        text-decoration: none;
+        display: inline-block;
+        padding: 0.4em;
+        border-radius: 0.2em;
+    }
+
+    .or-Hyperlink a:hover,
+    .or-Hyperlink a:focus {
+        text-decoration: underline;
+    }
+
+    .or-Header1 {
+        font-size: x-large;
+        font-weight: 600;
+        margin: 0 0 0.4em 0;
+    }
+
+    .or-HeaderSub {
+        font-size: smaller;
+        font-weight: 600;
+        margin: 0 0 0.4em 0;
+    }
+
+    .or-UnorderedList {
+        list-style: square inside none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .or-MessagesIcon {
+        font-size: larger;
+        padding: 0.1em 0.4em 0 0;
+    }
+
+    .or-Form {
+        margin: 0.4em 0;
+    }
+
+    .or-FormMessages {
+        margin-bottom: 1em;
+    }
+
+    .or-FormGroup {
+
+    }
+
+    .or-FormLabel {
+        min-width: 10em;
+        font-weight: 600;
+    }
+
+    .or-FormField {
+
+    }
+
+    .or-FormControl {
+        font-family: 'Open Sans', Helvetica, Arial, Lucida, sans-serif;
+        font-size: inherit;
+        margin: 0.4em;
+        border: none;
+    }
+
+    .or-FormControl[disabled] {
+        cursor: not-allowed;
+        opacity: .5;
+    }
+
+    .or-FormInputText {
+        border: 1px solid;
+        font-size: inherit;
+        padding: 0.2em;
+        border-radius: 0.2em;
+    }
+
+    .or-FormButton:focus, .or-FormButtonPrimary:focus {
+        text-decoration: underline;
+    }
+
+    .or-FormMessages,
     .or-Toast {
         font-size: smaller;
         font-weight: 600;
         padding: 0.8em;
         border-radius: 0.25em;
-        -webkit-box-shadow: 2px 2px 4px -2px rgba(0,0,0,0.9);
-        -moz-box-shadow: 2px 2px 4px -2px rgba(0,0,0,0.9);
-        box-shadow: 2px 2px 4px -2px rgba(0,0,0,0.9);
+        -webkit-box-shadow: 2px 2px 4px -2px rgba(0, 0, 0, 0.9);
+        -moz-box-shadow: 2px 2px 4px -2px rgba(0, 0, 0, 0.9);
+        box-shadow: 2px 2px 4px -2px rgba(0, 0, 0, 0.9);
     }
 
 </style>

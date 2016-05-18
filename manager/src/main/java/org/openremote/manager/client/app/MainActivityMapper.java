@@ -30,20 +30,29 @@ import org.openremote.manager.client.map.MapActivity;
 import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.mvp.AppActivityMapper;
+import org.openremote.manager.client.user.UserAccountActivity;
+import org.openremote.manager.client.user.UserAccountPlace;
+
+import java.util.logging.Logger;
 
 public class MainActivityMapper implements AppActivityMapper {
 
-    private final Provider<AssetDetailActivity> assetsActivityProvider;
-    private final Provider<MapActivity> mapActivityProvider;
-    private final Provider<FlowsActivity> flowsActivityProvider;
+    private static final Logger LOG = Logger.getLogger(MainActivityMapper.class.getName());
+
+    protected final Provider<AssetDetailActivity> assetsActivityProvider;
+    protected final Provider<MapActivity> mapActivityProvider;
+    protected final Provider<FlowsActivity> flowsActivityProvider;
+    protected final Provider<UserAccountActivity> userProfileActivityProvider;
 
     @Inject
     public MainActivityMapper(Provider<AssetDetailActivity> assetsActivityProvider,
                               Provider<MapActivity> mapActivityProvider,
-                              Provider<FlowsActivity> flowsActivityProvider) {
+                              Provider<FlowsActivity> flowsActivityProvider,
+                              Provider<UserAccountActivity> userProfileActivityProvider) {
         this.assetsActivityProvider = assetsActivityProvider;
         this.mapActivityProvider = mapActivityProvider;
         this.flowsActivityProvider = flowsActivityProvider;
+        this.userProfileActivityProvider = userProfileActivityProvider;
     }
 
     public AppActivity getActivity(Place place) {
@@ -55,6 +64,9 @@ public class MainActivityMapper implements AppActivityMapper {
         }
         if (place instanceof FlowsPlace) {
             return flowsActivityProvider.get().init((FlowsPlace) place);
+        }
+        if (place instanceof UserAccountPlace) {
+            return userProfileActivityProvider.get().init((UserAccountPlace)place);
         }
         return null;
     }

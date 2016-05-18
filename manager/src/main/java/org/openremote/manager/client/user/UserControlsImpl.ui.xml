@@ -11,7 +11,7 @@
         }
 
         .popup, .panel {
-            width: 10em;
+            width: 15em;
             height: 10em;
         }
 
@@ -40,11 +40,19 @@
     <g:PopupPanel glassEnabled="false" addStyleNames="{style.popup} {themeStyle.PopupPanel}">
         <g:HTMLPanel styleName="flex layout vertical" addStyleNames="{style.panel}">
             <g:HTMLPanel styleName="layout horizontal" addStyleNames="{style.header} {themeStyle.PopupPanelHeader}">
-                <g:Label ui:field="usernameLabel"/>
+                <g:Label ui:field="userLabel"/>
             </g:HTMLPanel>
             <g:HTMLPanel styleName="flex layout vertical"
                          addStyleNames="{style.content} {themeStyle.PopupPanelContent}">
-                <g:Label ui:field="userMessage"/>
+
+                <ul class="or-UnorderedList {themeStyle.UnorderedList}">
+                    <li>
+                        <w:Hyperlink ui:field="editProfileLink"
+                                     addStyleNames="{themeStyle.Hyperlink}"
+                                     text="{constants.editAccount}"/>
+                    </li>
+                </ul>
+
             </g:HTMLPanel>
             <g:HTMLPanel styleName="layout horizontal center-center"
                          addStyleNames="{style.footer} {themeStyle.PopupPanelFooter}">

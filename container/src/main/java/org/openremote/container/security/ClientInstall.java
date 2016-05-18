@@ -46,9 +46,6 @@ public class ClientInstall {
     @JsonIgnore
     protected PublicKey publicKey;
 
-    @JsonIgnore
-    protected String authServerUrlForBackendRequests;
-
     public ClientInstall() {
     }
 
@@ -106,13 +103,5 @@ public class ClientInstall {
 
     public void setPublicKey(PublicKey publicKey) {
         this.publicKey = publicKey;
-    }
-
-    public String getAuthServerUrlForBackendRequests() {
-        return authServerUrlForBackendRequests;
-    }
-
-    public void setAuthServerUrlForBackendRequests(String authServerUrlForBackendRequests) {
-        this.authServerUrlForBackendRequests = authServerUrlForBackendRequests;
     }
 }

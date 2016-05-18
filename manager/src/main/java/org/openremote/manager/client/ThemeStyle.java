@@ -43,6 +43,14 @@ public class ThemeStyle {
         return PREFIX + "PushButton";
     }
 
+    public String Hyperlink() {
+        return PREFIX + "Hyperlink";
+    }
+
+    public String UnorderedList() {
+        return PREFIX + "UnorderedList";
+    }
+
     public String Toast() {
         return PREFIX + "Toast";
     }
@@ -71,4 +79,7 @@ public class ThemeStyle {
         return PREFIX + "PopupPanelFooter";
     }
 
+    public String Header1() {
+        return PREFIX + "Header1";
+    }
 }

@@ -24,12 +24,14 @@ import com.google.gwt.place.shared.WithTokenizers;
 import org.openremote.manager.client.assets.AssetsPlace;
 import org.openremote.manager.client.flows.FlowsPlace;
 import org.openremote.manager.client.map.MapPlace;
+import org.openremote.manager.client.user.UserAccountPlace;
 
 @WithTokenizers(
     {
         AssetsPlace.Tokenizer.class,
         MapPlace.Tokenizer.class,
-        FlowsPlace.Tokenizer.class
+        FlowsPlace.Tokenizer.class,
+        UserAccountPlace.Tokenizer.class
     }
 )
 public interface ManagerHistoryMapper extends PlaceHistoryMapper {

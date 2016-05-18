@@ -42,7 +42,7 @@ public class Keycloak {
     public String clientId;
 
     @JsProperty
-    public JsonObject tokenParsed;
+    public AuthToken tokenParsed;
 
     @JsProperty
     public String subject;

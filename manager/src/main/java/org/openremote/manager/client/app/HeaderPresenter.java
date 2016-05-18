@@ -33,7 +33,7 @@ public class HeaderPresenter implements HeaderView.Presenter {
     final protected HeaderView view;
     final protected UserControls.Presenter userControlsPresenter;
     final protected PlaceController placeController;
-    final protected  SecurityService securityService;
+    final protected SecurityService securityService;
 
     @Inject
     public HeaderPresenter(HeaderView view,
@@ -53,7 +53,7 @@ public class HeaderPresenter implements HeaderView.Presenter {
             event -> view.onPlaceChange(event.getNewPlace())
         );
 
-        view.setUsername(securityService.getUsername());
+        view.setUsername(securityService.getParsedToken().getPreferredUsername());
         eventBus.register(
             UserChangeEvent.class,
             event -> view.setUsername(event.getUsername())

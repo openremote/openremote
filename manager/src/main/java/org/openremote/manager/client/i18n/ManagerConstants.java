@@ -38,4 +38,6 @@ public interface ManagerConstants extends Constants {
     String connect();
 
     String mapLoading();
+
+    String editAccount();
 }

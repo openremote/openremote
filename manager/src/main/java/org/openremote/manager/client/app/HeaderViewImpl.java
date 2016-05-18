@@ -33,6 +33,7 @@ import org.openremote.manager.client.ThemeStyle;
 import org.openremote.manager.client.assets.AssetsPlace;
 import org.openremote.manager.client.flows.FlowsPlace;
 import org.openremote.manager.client.map.MapPlace;
+import org.openremote.manager.client.user.UserAccountPlace;
 import org.openremote.manager.client.widget.PushButton;
 
 public class HeaderViewImpl extends Composite implements HeaderView {
@@ -91,6 +92,7 @@ public class HeaderViewImpl extends Composite implements HeaderView {
         mapButton.removeStyleName(themeStyle.NavItemActive());
         assetsButton.removeStyleName(themeStyle.NavItemActive());
         flowsButton.removeStyleName(themeStyle.NavItemActive());
+        userButton.removeStyleName(themeStyle.NavItemActive());
 
         if (place instanceof MapPlace) {
             mapButton.addStyleName(themeStyle.NavItemActive());
@@ -100,6 +102,9 @@ public class HeaderViewImpl extends Composite implements HeaderView {
         }
         if (place instanceof FlowsPlace) {
             flowsButton.addStyleName(themeStyle.NavItemActive());
+        }
+        if (place instanceof UserAccountPlace) {
+            userButton.addStyleName(themeStyle.NavItemActive());
         }
     }
 

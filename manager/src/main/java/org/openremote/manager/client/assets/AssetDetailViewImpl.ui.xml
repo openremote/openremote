@@ -5,7 +5,7 @@
     <ui:with field="constants" type="org.openremote.manager.client.i18n.ManagerConstants"/>
     <ui:with field="themeStyle" type="org.openremote.manager.client.ThemeStyle"/>
 
-    <g:HTMLPanel styleName="flex layout vertical">
+    <g:HTMLPanel styleName="flex layout vertical or-MainContent">
 
         <div style="padding: 1em;">
             <w:PushButton ui:field="showInfo"

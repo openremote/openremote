@@ -19,7 +19,9 @@
  */
 package org.openremote.manager.client.user;
 
+import com.google.gwt.place.shared.PlaceController;
 import com.google.inject.Inject;
+import org.openremote.manager.client.ManagerHistoryMapper;
 import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.service.SecurityService;
@@ -28,21 +30,25 @@ public class UserControlsPresenter implements UserControls.Presenter {
 
     final protected UserControls view;
     final protected SecurityService securityService;
+    final protected PlaceController placeController;
+    final protected ManagerHistoryMapper managerHistoryMapper;
 
     @Inject
     public UserControlsPresenter(UserControls view,
                                  SecurityService securityService,
+                                 PlaceController placeController,
+                                 ManagerHistoryMapper managerHistoryMapper,
                                  EventBus eventBus) {
         this.view = view;
         this.securityService = securityService;
+        this.placeController = placeController;
+        this.managerHistoryMapper = managerHistoryMapper;
 
         view.setPresenter(this);
 
-        view.setUsername(securityService.getUsername());
-        eventBus.register(
-            UserChangeEvent.class,
-            event -> view.setUsername(event.getUsername())
-        );
+        updateView();
+
+        eventBus.register(UserChangeEvent.class, event -> updateView());
     }
 
     @Override
@@ -54,4 +60,13 @@ public class UserControlsPresenter implements UserControls.Presenter {
     public void doLogout() {
         securityService.logout();
     }
+
+    protected void updateView() {
+        view.setUserDetails(
+            securityService.getParsedToken().getPreferredUsername(),
+            securityService.getParsedToken().getName(),
+            managerHistoryMapper.getToken(new UserAccountPlace())
+        );
+    }
+
 }

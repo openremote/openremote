@@ -151,6 +151,7 @@ public class SampleDataService implements ContainerService {
         masterRealm.setDisplayNameHtml("<div class=\"kc-logo-text\"><span>OpenRemote</span></div>");
 
         masterRealm.setLoginTheme("openremote");
+        masterRealm.setAccountTheme("openremote");
 
         keycloakResource.putRealm(MASTER_REALM, masterRealm);
     }

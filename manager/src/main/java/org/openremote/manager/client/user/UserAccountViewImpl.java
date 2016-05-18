@@ -20,37 +20,29 @@
 package org.openremote.manager.client.user;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.dom.client.IFrameElement;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
-import com.google.gwt.uibinder.client.UiHandler;
-import com.google.gwt.user.client.ui.Label;
-import com.google.gwt.user.client.ui.PopupPanel;
-import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.widget.AbstractAppPanel;
-import org.openremote.manager.client.widget.Hyperlink;
+import com.google.gwt.user.client.ui.Composite;
+import com.google.gwt.user.client.ui.HTMLPanel;
 
 import javax.inject.Inject;
 
-public class UserControlsImpl extends AbstractAppPanel implements UserControls {
+public class UserAccountViewImpl extends Composite implements UserAccountView {
 
-    interface UI extends UiBinder<PopupPanel, UserControlsImpl> {
+    interface UI extends UiBinder<HTMLPanel, UserAccountViewImpl> {
     }
 
-    final ManagerMessages managerMessages;
-
-    @UiField
-    Label userLabel;
-
-    @UiField
-    Hyperlink editProfileLink;
+    private UI ui = GWT.create(UI.class);
 
     Presenter presenter;
 
+    @UiField
+    IFrameElement frame;
+
     @Inject
-    public UserControlsImpl(ManagerMessages managerMessages) {
-        super(GWT.create(UI.class), true);
-        this.managerMessages = managerMessages;
+    public UserAccountViewImpl() {
+        initWidget(ui.createAndBindUi(this));
     }
 
     @Override
@@ -59,13 +51,7 @@ public class UserControlsImpl extends AbstractAppPanel implements UserControls {
     }
 
     @Override
-    public void setUserDetails(String username, String fullName, String userProfilePlaceToken) {
-        userLabel.setText(fullName != null && fullName.length() > 0 ? fullName : username);
-        editProfileLink.setTargetHistoryToken(userProfilePlaceToken);
-    }
-
-    @UiHandler("logoutButton")
-    void logoutClicked(ClickEvent e) {
-        presenter.doLogout();
+    public void setRealm(String realm) {
+        frame.setSrc("/auth/realms/" + realm + "/account/");
     }
 }

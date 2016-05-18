@@ -17,13 +17,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.i18n;
+package org.openremote.manager.client.user;
 
-import com.google.gwt.i18n.client.LocalizableResource;
-import com.google.gwt.i18n.client.Messages;
+import com.google.gwt.place.shared.Place;
+import com.google.gwt.place.shared.PlaceTokenizer;
+import com.google.gwt.place.shared.Prefix;
 
-@LocalizableResource.DefaultLocale("en")
-public interface ManagerMessages extends Messages {
+public class UserAccountPlace extends Place {
 
-    String failureLoadingMapSettings(String error);
+    @Prefix("userAccount")
+    public static class Tokenizer implements PlaceTokenizer<UserAccountPlace> {
+
+        @Override
+        public UserAccountPlace getPlace(String token) {
+            return new UserAccountPlace();
+        }
+
+        @Override
+        public String getToken(UserAccountPlace place) {
+            return "";
+        }
+    }
 }

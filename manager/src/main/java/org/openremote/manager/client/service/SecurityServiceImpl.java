@@ -20,47 +20,29 @@
 package org.openremote.manager.client.service;
 
 import com.google.inject.Inject;
-import elemental.json.JsonObject;
 import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.event.bus.EventBus;
-import org.openremote.manager.client.interop.keycloak.Keycloak;
-import org.openremote.manager.client.interop.keycloak.KeycloakCallback;
-import org.openremote.manager.client.interop.keycloak.LoginOptions;
-import org.openremote.manager.client.interop.keycloak.LogoutOptions;
+import org.openremote.manager.client.interop.keycloak.*;
 import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.Runnable;
 
 public class SecurityServiceImpl implements SecurityService {
 
-    private Keycloak keycloak;
-    private CookieService cookieService;
-    private EventBus eventBus;
-    private String username = null;
+    protected final Keycloak keycloak;
 
     @Inject
     public SecurityServiceImpl(Keycloak keycloak,
                                CookieService cookieService,
                                EventBus eventBus) {
         this.keycloak = keycloak;
-        this.cookieService = cookieService;
-        this.eventBus = eventBus;
 
-        // TODO Add event handlers for security service?
-        onAuthSuccess(() -> {
-            eventBus.dispatch(new UserChangeEvent(getUsername()));
-        });
+        onAuthSuccess(() -> eventBus.dispatch(
+            new UserChangeEvent(getParsedToken().getPreferredUsername())
+        ));
 
         onAuthLogout(() -> {
             eventBus.dispatch(new UserChangeEvent(null));
         });
-
-        // Update username
-        updateUsername();
-    }
-
-    @Override
-    public String getUsername() {
-        return username;
     }
 
     @Override
@@ -160,21 +142,12 @@ public class SecurityServiceImpl implements SecurityService {
     }
 
     @Override
-    public JsonObject getParsedToken() {
+    public AuthToken getParsedToken() {
         return keycloak.tokenParsed;
     }
 
     @Override
     public String getRefreshToken() {
         return keycloak.refreshToken;
-    }
-
-    private void updateUsername() {
-        username = null;
-
-        if (!isTokenExpired()) {
-            JsonObject token = getParsedToken();
-            username = token.getString("preferred_username");
-        }
     }
 }

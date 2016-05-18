@@ -45,9 +45,7 @@ import org.openremote.manager.client.mvp.AppPlaceController;
 import org.openremote.manager.client.service.*;
 import org.openremote.manager.client.toast.PopupToastDisplay;
 import org.openremote.manager.client.toast.ToastDisplay;
-import org.openremote.manager.client.user.UserControls;
-import org.openremote.manager.client.user.UserControlsImpl;
-import org.openremote.manager.client.user.UserControlsPresenter;
+import org.openremote.manager.client.user.*;
 import org.openremote.manager.shared.map.MapResource;
 
 public class ManagerModule extends AbstractGinModule {
@@ -78,6 +76,9 @@ public class ManagerModule extends AbstractGinModule {
 
         bind(UserControls.class).to(UserControlsImpl.class).in(Singleton.class);
         bind(UserControls.Presenter.class).to(UserControlsPresenter.class).in(Singleton.class);
+
+        bind(UserAccountView.class).to(UserAccountViewImpl.class).in(Singleton.class);
+        bind(UserAccountActivity.class);
 
         bind(CookieService.class).to(CookieServiceImpl.class).in(Singleton.class);
         bind(ValidatorService.class).to(ValidatorServiceImpl.class).in(Singleton.class);

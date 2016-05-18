@@ -20,6 +20,7 @@
 package org.openremote.manager.client.toast;
 
 import com.google.gwt.user.client.Window;
+import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.VerticalPanel;
@@ -73,7 +74,7 @@ public class PopupToastDisplay implements ToastDisplay {
 
     class ToastPopupPanel extends PopupPanel {
 
-        final VerticalPanel content = new VerticalPanel();
+        final FlowPanel content = new FlowPanel();
         final Toast toast;
 
         ToastPopupPanel(final Toast toast) {
@@ -84,13 +85,17 @@ public class PopupToastDisplay implements ToastDisplay {
             getElement().getStyle().setZIndex(1000);
             setWidget(content);
 
+            boolean isInfo = toast.getType() == Toast.Type.INFO;
+
+            content.setStyleName("layout horizontal center");
             content.addStyleName("or-Toast");
             content.addStyleName(themeStyle.Toast());
-            content.addStyleName(
-                toast.getType() == Toast.Type.INFO
-                    ? themeStyle.ToastInfo()
-                    : themeStyle.ToastFailure()
-            );
+            content.addStyleName(isInfo ? themeStyle.ToastInfo() : themeStyle.ToastFailure());
+
+            Label icon = new Label();
+            icon.setStyleName("or-MessagesIcon theme-MessagesIcon fa fa-" + (isInfo ? "check" : "warning"));
+            content.add(icon);
+
             Label text = new Label(toast.getText());
             content.add(text);
         }

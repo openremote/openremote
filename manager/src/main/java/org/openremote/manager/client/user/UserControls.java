@@ -31,7 +31,7 @@ public interface UserControls {
 
     void setPresenter(Presenter presenter);
 
-    void setUsername(String username);
+    void setUserDetails(String username, String fullName, String userProfilePlaceToken);
 
     void toggleRelativeTo(UIObject target);
 

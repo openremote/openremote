@@ -20,6 +20,7 @@
 package org.openremote.manager.client.service;
 
 import elemental.json.JsonObject;
+import org.openremote.manager.client.interop.keycloak.AuthToken;
 import org.openremote.manager.client.interop.keycloak.LoginOptions;
 import org.openremote.manager.client.interop.keycloak.LogoutOptions;
 import org.openremote.manager.shared.Consumer;
@@ -28,8 +29,6 @@ import org.openremote.manager.shared.Runnable;
 public interface SecurityService {
 
     public static final int MIN_VALIDITY_SECONDS = 10;
-
-    String getUsername();
 
     void login();
 
@@ -67,7 +66,7 @@ public interface SecurityService {
 
     String getToken();
 
-    JsonObject getParsedToken();
+    AuthToken getParsedToken();
 
     String getRefreshToken();
 }
