@@ -23,11 +23,16 @@ import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.user.client.ui.ComplexPanel;
 import com.google.gwt.user.client.ui.FlowPanel;
+import elemental.js.util.JsMapFromStringTo;
+import elemental.js.util.JsMapFromStringToString;
 import elemental.json.JsonObject;
-import org.openremote.manager.client.interop.mapbox.Map;
-import org.openremote.manager.client.interop.mapbox.Navigation;
+import org.openremote.manager.client.interop.mapbox.*;
+
+import java.util.logging.Logger;
 
 public class MapWidget extends ComplexPanel {
+
+    private static final Logger LOG = Logger.getLogger(MapWidget.class.getName());
 
     protected FlowPanel host;
     protected String id;
@@ -72,13 +77,18 @@ public class MapWidget extends ComplexPanel {
 
         map.addControl(new Navigation());
 
-        /* TODO conflicts with double click-zoom on map behavior
+        JsMapFromStringTo<Object> popupOptions = JsMapFromStringTo.create();
+        popupOptions.put("closeOnClick", false);
+        new Popup(popupOptions.cast())
+            .setHTML("Videolab")
+            .setText("This is the Videolab.")
+            .setLngLat(new LngLat(5.460315214821094, 51.44541688237109))
+            .addTo(map);
+
         map.on(EventType.CLICK, eventData -> {
-            CameraOptions opts = new CameraOptions();
-            opts.center = eventData.getLngLat();
-            map.jumpTo(opts);
+            LOG.info("### COORDS: " + eventData.getLngLat());
+            LOG.info("### BOUNDS: " + map.getBounds());
         });
-        */
     }
 
     public void refresh() {
