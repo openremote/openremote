@@ -40,3 +40,13 @@ window.load = (function () {
         img: _load("img")
     }
 })();
+
+window.checkLogoutRedirect = function(pathname) {
+    // We listen to onLoad event of iframes in parent window: If the iframe is loading
+    // the /auth path (this is how we detect a redirect after session timeout), we logout
+    // the parent window and go to the start page of the realm
+    if (pathname.endsWith('/auth')) {
+        var options = {redirectUri: "/" + keycloak.realm};
+        keycloak.logout(options);
+    }
+};

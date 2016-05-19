@@ -36,8 +36,8 @@
     <div class="flex layout horizontal center-start">
         <div class="or-SidebarContent theme-SidebarContent">
             <ul class="or-UnorderedList theme-UnorderedList">
-                <li class="or-Hyperlink theme-Hyperlink <#if active=='account'>active</#if>"><a href="${url.accountUrl}">${msg("account")}</a></li>
-                <#if features.passwordUpdateSupported><li class="or-Hyperlink theme-Hyperlink <#if active=='password'>active</#if>"><a href="${url.passwordUrl}">${msg("password")}</a></li></#if>
+                <li><div class="or-Hyperlink theme-Hyperlink <#if active=='account'>active</#if>"><a href="${url.accountUrl}">${msg("account")}</a></div></li>
+                <#if features.passwordUpdateSupported><li><div class="or-Hyperlink theme-Hyperlink <#if active=='password'>active</#if>"><a href="${url.passwordUrl}">${msg("password")}</a></div></li></#if>
             </ul>
         </div>
         <div class="or-MainContent theme-MainContent">
