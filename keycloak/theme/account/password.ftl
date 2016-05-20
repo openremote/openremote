@@ -4,8 +4,8 @@
 
 <div class="layout vertical">
 
-    <div class="or-Header1 theme-Header1">${msg("changePasswordHtmlTitle")}</div>
-    <div class="or-HeaderSub theme-HeaderSub">${msg("allFieldsRequired")}</div>
+    <div class="or-Headline1 theme-Headline1">${msg("changePasswordHtmlTitle")}</div>
+    <div class="or-HeadlineSub theme-HeadlineSub">${msg("allFieldsRequired")}</div>
 
     <form action="${url.passwordUrl}" class="layout vertical or-Form theme-Form" method="post">
 

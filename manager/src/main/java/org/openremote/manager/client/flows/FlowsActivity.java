@@ -49,7 +49,7 @@ public class FlowsActivity
     }
 
     @Override
-    public AppActivity<FlowsPlace> init(FlowsPlace place) {
+    protected AppActivity<FlowsPlace> init(FlowsPlace place) {
         return this;
     }
 

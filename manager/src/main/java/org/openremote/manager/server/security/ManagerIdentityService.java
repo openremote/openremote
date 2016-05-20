@@ -21,7 +21,7 @@ package org.openremote.manager.server.security;
 
 import org.openremote.container.Container;
 import org.openremote.container.security.IdentityService;
-import org.openremote.manager.server.Constants;
+import org.openremote.manager.shared.Constants;
 
 public class ManagerIdentityService extends IdentityService {
 

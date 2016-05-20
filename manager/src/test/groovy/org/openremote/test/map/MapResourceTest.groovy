@@ -5,8 +5,8 @@ import org.openremote.manager.shared.map.MapResource
 import org.openremote.test.ContainerTrait
 import spock.lang.Specification
 
-import static org.openremote.manager.server.Constants.MANAGER_CLIENT_ID
-import static org.openremote.manager.server.Constants.MASTER_REALM
+import static org.openremote.manager.shared.Constants.MANAGER_CLIENT_ID
+import static org.openremote.manager.shared.Constants.MASTER_REALM
 
 class MapResourceTest extends Specification implements ContainerTrait {
 

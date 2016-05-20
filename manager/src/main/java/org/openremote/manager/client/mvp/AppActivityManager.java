@@ -62,7 +62,7 @@ public class AppActivityManager {
     protected static final AppActivity NULL_ACTIVITY = new AppActivity() {
 
         @Override
-        public AppActivity init(Place place) {
+        protected AppActivity init(Place place) {
             return this;
         }
 

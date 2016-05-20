@@ -26,6 +26,19 @@ import com.google.gwt.place.shared.PlaceHistoryHandler;
 import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import org.openremote.manager.client.admin.*;
+import org.openremote.manager.client.admin.navigation.AdminNavigation;
+import org.openremote.manager.client.admin.navigation.AdminNavigationImpl;
+import org.openremote.manager.client.admin.navigation.AdminNavigationPresenter;
+import org.openremote.manager.client.admin.overview.AdminOverview;
+import org.openremote.manager.client.admin.overview.AdminOverviewActivity;
+import org.openremote.manager.client.admin.overview.AdminOverviewImpl;
+import org.openremote.manager.client.admin.realms.AdminRealms;
+import org.openremote.manager.client.admin.realms.AdminRealmsActivity;
+import org.openremote.manager.client.admin.realms.AdminRealmsImpl;
+import org.openremote.manager.client.admin.users.AdminUsers;
+import org.openremote.manager.client.admin.users.AdminUsersActivity;
+import org.openremote.manager.client.admin.users.AdminUsersImpl;
 import org.openremote.manager.client.app.*;
 import org.openremote.manager.client.assets.*;
 import org.openremote.manager.client.event.EventMapper;
@@ -47,6 +60,7 @@ import org.openremote.manager.client.toast.PopupToastDisplay;
 import org.openremote.manager.client.toast.ToastDisplay;
 import org.openremote.manager.client.user.*;
 import org.openremote.manager.shared.map.MapResource;
+import rx.Single;
 
 public class ManagerModule extends AbstractGinModule {
 
@@ -73,6 +87,16 @@ public class ManagerModule extends AbstractGinModule {
 
         bind(FlowsView.class).to(FlowsViewImpl.class).in(Singleton.class);
         bind(FlowsActivity.class);
+
+        bind(AdminView.class).to(AdminViewImpl.class).in(Singleton.class);
+        bind(AdminNavigation.class).to(AdminNavigationImpl.class).in(Singleton.class);
+        bind(AdminNavigation.Presenter.class).to(AdminNavigationPresenter.class);
+        bind(AdminOverview.class).to(AdminOverviewImpl.class).in(Singleton.class);
+        bind(AdminOverviewActivity.class);
+        bind(AdminRealms.class).to(AdminRealmsImpl.class).in(Singleton.class);
+        bind(AdminRealmsActivity.class);
+        bind(AdminUsers.class).to(AdminUsersImpl.class).in(Singleton.class);
+        bind(AdminUsersActivity.class);
 
         bind(UserControls.class).to(UserControlsImpl.class).in(Singleton.class);
         bind(UserControls.Presenter.class).to(UserControlsPresenter.class).in(Singleton.class);
@@ -108,7 +132,7 @@ public class ManagerModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    public AppActivityManager getAppActivityMapper(MainActivityMapper activityMapper, EventBus eventBus) {
+    public AppActivityManager getAppActivityMapper(ManagerActivityMapper activityMapper, EventBus eventBus) {
         return new AppActivityManager("AppActivityManager", activityMapper, eventBus);
     }
 

@@ -17,69 +17,81 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client;
+package org.openremote.manager.client.style;
 
-public class ThemeStyle {
-
-    public static final String PREFIX = "theme-";
+public abstract class AbstractStyle {
+    
+    abstract String getPrefix();
 
     public String Header() {
-        return PREFIX + "Header";
+        return getPrefix() + "Header";
     }
 
     public String Footer() {
-        return PREFIX + "Footer";
+        return getPrefix() + "Footer";
     }
 
     public String NavItem() {
-        return PREFIX + "NavItem";
+        return getPrefix() + "NavItem";
     }
 
     public String NavItemActive() {
-        return PREFIX + "NavItemActive";
+        return getPrefix() + "NavItemActive";
+    }
+
+    public String SidebarContent() {
+        return getPrefix() + "SidebarContent";
+    }
+
+    public String MainContent() {
+        return getPrefix() + "MainContent";
     }
 
     public String PushButton() {
-        return PREFIX + "PushButton";
+        return getPrefix() + "PushButton";
     }
 
     public String Hyperlink() {
-        return PREFIX + "Hyperlink";
+        return getPrefix() + "Hyperlink";
     }
 
     public String UnorderedList() {
-        return PREFIX + "UnorderedList";
+        return getPrefix() + "UnorderedList";
     }
 
     public String Toast() {
-        return PREFIX + "Toast";
+        return getPrefix() + "Toast";
     }
 
     public String ToastInfo() {
-        return PREFIX + "ToastInfo";
+        return getPrefix() + "ToastInfo";
     }
 
     public String ToastFailure() {
-        return PREFIX + "ToastFailure";
+        return getPrefix() + "ToastFailure";
+    }
+
+    public String MessagesIcon() {
+        return getPrefix() + "MessagesIcon";
     }
 
     public String PopupPanel() {
-        return PREFIX + "PopupPanel";
+        return getPrefix() + "PopupPanel";
     }
 
     public String PopupPanelHeader() {
-        return PREFIX + "PopupPanelHeader";
+        return getPrefix() + "PopupPanelHeader";
     }
 
     public String PopupPanelContent() {
-        return PREFIX + "PopupPanelContent";
+        return getPrefix() + "PopupPanelContent";
     }
 
     public String PopupPanelFooter() {
-        return PREFIX + "PopupPanelFooter";
+        return getPrefix() + "PopupPanelFooter";
     }
 
-    public String Header1() {
-        return PREFIX + "Header1";
+    public String Headline1() {
+        return getPrefix() + "Headline1";
     }
 }

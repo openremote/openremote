@@ -40,7 +40,7 @@
 </head>
 <body class="layout vertical">
 
-    <div class="flex layout horizontal center-start">
+    <div class="flex layout horizontal">
         <div class="or-SidebarContent theme-SidebarContent">
             <ul class="or-UnorderedList theme-UnorderedList">
                 <li><div class="or-Hyperlink theme-Hyperlink <#if active=='account'>active</#if>"><a href="${url.accountUrl}">${msg("account")}</a></div></li>

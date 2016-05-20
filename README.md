@@ -7,7 +7,7 @@
 
 ---
 
-* **Live Demo**: http://demo2.openremote.com (test/test)
+* **Live Demo**: http://demo2.openremote.com (sign-in with `test/test` or `admin/admin`)
 * **Docker Images**: https://hub.docker.com/u/openremote/
 * **Documentation/Wiki:** https://github.com/openremote/openremote/wiki
 * **Community:** https://groups.google.com/forum/#!forum/openremotecommunity

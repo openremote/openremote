@@ -3,25 +3,26 @@
              xmlns:w="urn:import:org.openremote.manager.client.widget">
 
     <ui:with field="constants" type="org.openremote.manager.client.i18n.ManagerConstants"/>
-    <ui:with field="themeStyle" type="org.openremote.manager.client.ThemeStyle"/>
+    <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
+    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
-    <g:HTMLPanel styleName="flex layout vertical or-MainContent">
+    <g:HTMLPanel styleName="flex layout vertical {widgetStyle.MainContent} {themeStyle.MainContent}">
 
         <div style="padding: 1em;">
             <w:PushButton ui:field="showInfo"
-                          addStyleNames="{themeStyle.PushButton}"
+                          addStyleNames="{widgetStyle.PushButton} {themeStyle.PushButton}"
                           text="Show INFO message"/>
             <w:PushButton ui:field="showTempFailure"
-                      addStyleNames="{themeStyle.PushButton}"
+                      addStyleNames="{widgetStyle.PushButton} {themeStyle.PushButton}"
                       text="Show temporary ERROR message"/>
             <w:PushButton ui:field="showDurableFailure"
-                      addStyleNames="{themeStyle.PushButton}"
+                      addStyleNames="{widgetStyle.PushButton} {themeStyle.PushButton}"
                       text="Show durable ERROR message"/>
         </div>
 
         <div style="padding: 1em;">
             <w:PushButton ui:field="sendMessageButton"
-                          addStyleNames="{themeStyle.PushButton}"
+                          addStyleNames="{widgetStyle.PushButton} {themeStyle.PushButton}"
                           text="Send message to server"/>
             <g:Label ui:field="messageLabel" text="Waiting for response..."/>
         </div>

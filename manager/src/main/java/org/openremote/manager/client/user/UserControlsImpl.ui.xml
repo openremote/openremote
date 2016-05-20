@@ -3,19 +3,17 @@
              xmlns:w="urn:import:org.openremote.manager.client.widget">
 
     <ui:with field="constants" type="org.openremote.manager.client.i18n.ManagerConstants"/>
-    <ui:with field="themeStyle" type="org.openremote.manager.client.ThemeStyle"/>
+    <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
+    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
     <ui:style>
         .popup {
             z-index: 10;
         }
 
-        .popup, .panel {
+        .panel {
             width: 15em;
             height: 10em;
-        }
-
-        .panel {
         }
 
         .header {
@@ -40,29 +38,31 @@
         }
     </ui:style>
 
-    <g:PopupPanel glassEnabled="false" addStyleNames="{style.popup} {themeStyle.PopupPanel}">
-        <g:HTMLPanel styleName="flex layout vertical" addStyleNames="{style.panel}">
-            <g:HTMLPanel styleName="layout horizontal" addStyleNames="{style.header} {themeStyle.PopupPanelHeader}">
+    <g:PopupPanel glassEnabled="false" addStyleNames="{style.popup} {widgetStyle.PopupPanel} {themeStyle.PopupPanel}">
+        <g:HTMLPanel styleName="flex layout vertical {style.panel}">
+            <g:HTMLPanel styleName="layout horizontal {style.header} {widgetStyle.PopupPanelHeader} {themeStyle.PopupPanelHeader}">
                 <g:Label ui:field="userLabel"/>
             </g:HTMLPanel>
             <g:HTMLPanel styleName="flex layout vertical"
-                         addStyleNames="{style.content} {themeStyle.PopupPanelContent}">
+                         addStyleNames="{style.content} {widgetStyle.PopupPanelContent} {themeStyle.PopupPanelContent}">
 
-                <ul class="or-UnorderedList {themeStyle.UnorderedList}">
-                    <li>
+                <ul class="{widgetStyle.UnorderedList} {themeStyle.UnorderedList}">
+
+                    <li ui:field="editProfileItem">
                         <w:Hyperlink ui:field="editProfileLink"
-                                     addStyleNames="{themeStyle.Hyperlink}"
+                                     addStyleNames="{widgetStyle.Hyperlink} {themeStyle.Hyperlink}"
                                      text="{constants.editAccount}"/>
                     </li>
+
                 </ul>
 
             </g:HTMLPanel>
             <g:HTMLPanel styleName="layout horizontal center-center"
-                         addStyleNames="{style.footer} {themeStyle.PopupPanelFooter}">
+                         addStyleNames="{style.footer} {widgetStyle.PopupPanelFooter} {themeStyle.PopupPanelFooter}">
                 <w:PushButton ui:field="logoutButton"
                               icon="sign-out"
                               text="{constants.logout}"
-                              addStyleNames="{themeStyle.PushButton}"/>
+                              addStyleNames="{widgetStyle.PushButton} {themeStyle.PushButton}"/>
             </g:HTMLPanel>
         </g:HTMLPanel>
     </g:PopupPanel>

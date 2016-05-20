@@ -25,8 +25,13 @@ import org.openremote.manager.client.ManagerHistoryMapper;
 import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.service.SecurityService;
+import org.openremote.manager.client.util.JsUtil;
+
+import java.util.logging.Logger;
 
 public class UserControlsPresenter implements UserControls.Presenter {
+
+    private static final Logger LOG = Logger.getLogger(UserControlsPresenter.class.getName());
 
     final protected UserControls view;
     final protected SecurityService securityService;
@@ -65,7 +70,8 @@ public class UserControlsPresenter implements UserControls.Presenter {
         view.setUserDetails(
             securityService.getParsedToken().getPreferredUsername(),
             securityService.getParsedToken().getName(),
-            managerHistoryMapper.getToken(new UserAccountPlace())
+            managerHistoryMapper.getToken(new UserAccountPlace()),
+            securityService.hasResourceRole("manage-account", "account")
         );
     }
 

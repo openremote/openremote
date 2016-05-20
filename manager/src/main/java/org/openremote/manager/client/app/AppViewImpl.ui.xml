@@ -15,7 +15,7 @@
     </ui:style>
 
     <ui:with field="constants" type="org.openremote.manager.client.i18n.ManagerConstants"/>
-    <ui:with field="themeStyle" type="org.openremote.manager.client.ThemeStyle"/>
+    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
     <g:FlowPanel styleName="layout vertical" addStyleNames="{style.viewport}">
         <g:SimplePanel ui:field="header" styleName="layout horizontal"/>

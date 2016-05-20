@@ -3,8 +3,8 @@
 
 <div class="layout vertical">
 
-    <div class="or-Header1 theme-Header1">${msg("editAccountHtmlTtile")}</div>
-    <div class="or-HeaderSub theme-HeaderSub"><span class="required">*</span> ${msg("requiredFields")}</div>
+    <div class="or-Headline1 theme-Headline1">${msg("editAccountHtmlTtile")}</div>
+    <div class="or-HeadlineSub theme-HeadlineSub"><span class="required">*</span> ${msg("requiredFields")}</div>
 
     <form action="${url.accountUrl}" class="layout vertical or-Form theme-Form" method="post">
 

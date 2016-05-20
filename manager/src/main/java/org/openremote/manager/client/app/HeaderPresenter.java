@@ -27,6 +27,9 @@ import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.user.UserControls;
+import org.openremote.manager.client.util.JsUtil;
+
+import static org.openremote.manager.shared.Constants.MANAGER_CLIENT_ID;
 
 public class HeaderPresenter implements HeaderView.Presenter {
 
@@ -58,6 +61,8 @@ public class HeaderPresenter implements HeaderView.Presenter {
             UserChangeEvent.class,
             event -> view.setUsername(event.getUsername())
         );
+
+        JsUtil.log(securityService.getParsedToken());
     }
 
     @Override
@@ -73,5 +78,10 @@ public class HeaderPresenter implements HeaderView.Presenter {
     @Override
     public UserControls getUserControls() {
         return userControlsPresenter.getView();
+    }
+
+    @Override
+    public boolean isUserInRole(String role) {
+        return securityService.hasResourceRoleOrIsAdmin(role, MANAGER_CLIENT_ID);
     }
 }

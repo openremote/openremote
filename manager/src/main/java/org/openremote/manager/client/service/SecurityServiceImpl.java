@@ -88,6 +88,11 @@ public class SecurityServiceImpl implements SecurityService {
     }
 
     @Override
+    public boolean hasResourceRoleOrIsAdmin(String role, String resource) {
+        return keycloak.hasResourceRole(role, resource) || keycloak.hasRealmRole("admin");
+    }
+
+    @Override
     public boolean isTokenExpired() {
         return keycloak.isTokenExpired();
     }

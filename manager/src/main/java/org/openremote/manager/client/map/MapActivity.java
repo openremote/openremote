@@ -57,8 +57,13 @@ public class MapActivity extends AppActivity<MapPlace> implements MapView.Presen
     }
 
     @Override
-    public AppActivity<MapPlace> init(MapPlace place) {
+    protected AppActivity<MapPlace> init(MapPlace place) {
         return this;
+    }
+
+    @Override
+    protected String[] getRequiredRoles() {
+        return new String[]{"read:map"};
     }
 
     @Override

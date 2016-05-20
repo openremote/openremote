@@ -27,14 +27,14 @@
     </ui:style>
 
     <ui:with field="constants" type="org.openremote.manager.client.i18n.ManagerConstants"/>
-    <ui:with field="themeStyle" type="org.openremote.manager.client.ThemeStyle"/>
+    <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
+    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
-    <g:HTMLPanel styleName="flex layout horizontal center" addStyleNames="{style.header} {themeStyle.Header}">
+    <g:HTMLPanel styleName="flex layout horizontal center {style.header} {widgetStyle.Header} {themeStyle.Header}">
 
         <g:HTMLPanel ui:field="quickAccess"
-                     styleName="or-PushButton"
-                     addStyleNames="{style.navItem} {style.navItemFirst} {themeStyle.NavItem}">
-            <g:HTMLPanel addStyleNames="{style.logoButton}" styleName="layout horizontal center">
+                     styleName="{style.navItem} {style.navItemFirst} {widgetStyle.NavItem} {themeStyle.NavItem}">
+            <g:HTMLPanel styleName="layout horizontal center {style.logoButton}">
                 <svg style="pointer-events: none; display: block; height: 100%; margin-right: 8px;" viewBox="0 0 24 24"
                      preserveAspectRatio="xMidYMid meet">
                     <path fill="#C4D600"
@@ -49,25 +49,35 @@
         </g:HTMLPanel>
 
         <w:PushButton ui:field="mapButton"
-                      addStyleNames="{style.navItem} {themeStyle.NavItem}"
+                      addStyleNames="{style.navItem} {widgetStyle.NavItem} {themeStyle.NavItem}"
                       icon="map"
-                      text="{constants.locate}"/>
+                      text="{constants.map}"/>
 
         <w:PushButton ui:field="assetsButton"
-                      addStyleNames="{style.navItem} {themeStyle.NavItem}"
-                      icon="table"
-                      text="{constants.manage}"/>
+                      addStyleNames="{style.navItem} {widgetStyle.NavItem} {themeStyle.NavItem}"
+                      icon="cubes"
+                      text="{constants.assets}"/>
+
+        <w:PushButton ui:field="rulesButton"
+                      addStyleNames="{style.navItem} {widgetStyle.NavItem} {themeStyle.NavItem}"
+                      icon="chain"
+                      text="{constants.rules}"/>
 
         <w:PushButton ui:field="flowsButton"
-                      addStyleNames="{style.navItem} {themeStyle.NavItem}"
+                      addStyleNames="{style.navItem} {widgetStyle.NavItem} {themeStyle.NavItem}"
                       icon="connectdevelop"
-                      text="{constants.connect}"/>
+                      text="{constants.flows}"/>
 
         <g:HTMLPanel styleName="flex"/>
 
+        <w:PushButton ui:field="adminButton"
+                      addStyleNames="{style.navItem} {widgetStyle.NavItem} {themeStyle.NavItem}"
+                      icon="gears"
+                      text="{constants.admin}"/>
+
         <w:PushButton ui:field="userButton"
                       icon="user"
-                      addStyleNames="{style.navItem} {style.navItemLast} {themeStyle.NavItem}"/>
+                      addStyleNames="{style.navItem} {style.navItemLast} {widgetStyle.NavItem} {themeStyle.NavItem}"/>
 
     </g:HTMLPanel>
 

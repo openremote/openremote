@@ -23,6 +23,8 @@ import com.google.gwt.place.shared.Place;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
+import org.openremote.manager.client.service.SecurityService;
+import org.openremote.manager.shared.Constants;
 
 import java.util.Collection;
 
@@ -41,10 +43,26 @@ public abstract class AppActivity<T extends Place>  {
     public void onStop() {
     }
 
-    public abstract AppActivity<T> init(T place);
+    public AppActivity<T> init(SecurityService securityService, T place) throws RoleRequiredException {
+        for (String requiredRole : getRequiredRoles()) {
+            if (!securityService.hasResourceRoleOrIsAdmin(requiredRole, Constants.MANAGER_CLIENT_ID)) {
+                throw new RoleRequiredException();
+            }
+        }
+        return init(place);
+    };
+
+    protected abstract AppActivity<T> init(T place);
 
     /**
      * Any registrations added to the supplied collection will be unregistered automatically when the activity stops.
      */
     abstract public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations);
+
+    /**
+     * Checked when the activity is initialized, return empty array to allow all access.
+     */
+    protected String[] getRequiredRoles() {
+        return new String[0];
+    }
 }

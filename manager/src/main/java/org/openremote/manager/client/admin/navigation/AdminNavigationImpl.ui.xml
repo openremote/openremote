@@ -1,0 +1,33 @@
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+             xmlns:g="urn:import:com.google.gwt.user.client.ui"
+             xmlns:w="urn:import:org.openremote.manager.client.widget">
+
+    <ui:with field="constants" type="org.openremote.manager.client.i18n.ManagerConstants"/>
+    <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
+    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
+
+    <g:HTMLPanel styleName="layout vertical {widgetStyle.SidebarContent} {themeStyle.SidebarContent}">
+        <ul class="{widgetStyle.UnorderedList} {themeStyle.UnorderedList}">
+
+            <li ui:field="overview">
+                <w:Hyperlink ui:field="overviewLink"
+                             addStyleNames="{themeStyle.Hyperlink}"
+                             text="{constants.overview}"/>
+            </li>
+
+            <li ui:field="realmsItem">
+                <w:Hyperlink ui:field="realmsLink"
+                             addStyleNames="{themeStyle.Hyperlink}"
+                             text="{constants.manageRealms}"/>
+            </li>
+
+            <li ui:field="usersItem">
+                <w:Hyperlink ui:field="usersLink"
+                             addStyleNames="{themeStyle.Hyperlink}"
+                             text="{constants.manageUsers}"/>
+            </li>
+
+        </ul>
+    </g:HTMLPanel>
+
+</ui:UiBinder>

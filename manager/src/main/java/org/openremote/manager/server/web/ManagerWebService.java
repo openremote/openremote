@@ -24,7 +24,7 @@ import org.openremote.container.web.WebService;
 
 import java.nio.file.Paths;
 
-import static org.openremote.manager.server.Constants.MASTER_REALM;
+import static org.openremote.manager.shared.Constants.MASTER_REALM;
 
 public class ManagerWebService extends WebService {
 

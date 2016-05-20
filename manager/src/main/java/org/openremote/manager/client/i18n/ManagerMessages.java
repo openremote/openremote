@@ -25,5 +25,7 @@ import com.google.gwt.i18n.client.Messages;
 @LocalizableResource.DefaultLocale("en")
 public interface ManagerMessages extends Messages {
 
+    String accessDenied();
+
     String failureLoadingMapSettings(String error);
 }

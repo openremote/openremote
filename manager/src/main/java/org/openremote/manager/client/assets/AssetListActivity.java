@@ -47,7 +47,7 @@ public class AssetListActivity
     }
 
     @Override
-    public AppActivity<AssetsPlace> init(AssetsPlace place) {
+    protected AppActivity<AssetsPlace> init(AssetsPlace place) {
         return this;
     }
 

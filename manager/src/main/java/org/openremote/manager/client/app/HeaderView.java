@@ -31,6 +31,8 @@ public interface HeaderView extends IsWidget {
         void goTo(Place place);
 
         UserControls getUserControls();
+
+        boolean isUserInRole(String role);
     }
 
     void setPresenter(Presenter presenter);

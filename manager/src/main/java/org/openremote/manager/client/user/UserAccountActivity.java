@@ -52,7 +52,7 @@ public class UserAccountActivity extends AppActivity<UserAccountPlace> implement
     }
 
     @Override
-    public AppActivity<UserAccountPlace> init(UserAccountPlace place) {
+    protected AppActivity<UserAccountPlace> init(UserAccountPlace place) {
         return this;
     }
 

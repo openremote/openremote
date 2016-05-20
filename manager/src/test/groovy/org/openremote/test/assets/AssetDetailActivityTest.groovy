@@ -11,8 +11,8 @@ import org.openremote.test.ContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.BlockingVariables
 
-import static org.openremote.manager.server.Constants.MANAGER_CLIENT_ID
-import static org.openremote.manager.server.Constants.MASTER_REALM
+import static org.openremote.manager.shared.Constants.MANAGER_CLIENT_ID
+import static org.openremote.manager.shared.Constants.MASTER_REALM
 
 class AssetDetailActivityTest extends Specification implements ContainerTrait {
 

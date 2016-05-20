@@ -29,7 +29,9 @@ import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.inject.Inject;
-import org.openremote.manager.client.ThemeStyle;
+import org.openremote.manager.client.style.ThemeStyle;
+import org.openremote.manager.client.admin.AdminPlace;
+import org.openremote.manager.client.admin.overview.AdminOverviewPlace;
 import org.openremote.manager.client.assets.AssetsPlace;
 import org.openremote.manager.client.flows.FlowsPlace;
 import org.openremote.manager.client.map.MapPlace;
@@ -72,7 +74,13 @@ public class HeaderViewImpl extends Composite implements HeaderView {
     PushButton assetsButton;
 
     @UiField
+    PushButton rulesButton;
+
+    @UiField
     PushButton flowsButton;
+
+    @UiField
+    PushButton adminButton;
 
     @UiField
     PushButton userButton;
@@ -85,6 +93,12 @@ public class HeaderViewImpl extends Composite implements HeaderView {
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
+
+        mapButton.setEnabled(presenter.isUserInRole("read:map"));
+        assetsButton.setEnabled(presenter.isUserInRole("read:assets"));
+        rulesButton.setEnabled(presenter.isUserInRole("read:rules"));
+        flowsButton.setEnabled(presenter.isUserInRole("read:flows"));
+        adminButton.setEnabled(presenter.isUserInRole("read:admin"));
     }
 
     @Override
@@ -92,6 +106,7 @@ public class HeaderViewImpl extends Composite implements HeaderView {
         mapButton.removeStyleName(themeStyle.NavItemActive());
         assetsButton.removeStyleName(themeStyle.NavItemActive());
         flowsButton.removeStyleName(themeStyle.NavItemActive());
+        adminButton.removeStyleName(themeStyle.NavItemActive());
         userButton.removeStyleName(themeStyle.NavItemActive());
 
         if (place instanceof MapPlace) {
@@ -102,6 +117,9 @@ public class HeaderViewImpl extends Composite implements HeaderView {
         }
         if (place instanceof FlowsPlace) {
             flowsButton.addStyleName(themeStyle.NavItemActive());
+        }
+        if (place instanceof AdminPlace) {
+            adminButton.addStyleName(themeStyle.NavItemActive());
         }
         if (place instanceof UserAccountPlace) {
             userButton.addStyleName(themeStyle.NavItemActive());
@@ -115,22 +133,27 @@ public class HeaderViewImpl extends Composite implements HeaderView {
     }
 
     @UiHandler("mapButton")
-    void itemMapClicked(ClickEvent e) {
+    void mapClicked(ClickEvent e) {
         presenter.goTo(new MapPlace());
     }
 
     @UiHandler("assetsButton")
-    void itemAssetsClicked(ClickEvent e) {
+    void assetsClicked(ClickEvent e) {
         presenter.goTo(new AssetsPlace());
     }
 
+    @UiHandler("adminButton")
+    void adminClicked(ClickEvent e) {
+        presenter.goTo(new AdminOverviewPlace());
+    }
+
     @UiHandler("flowsButton")
-    void itemFlowsClicked(ClickEvent e) {
+    void flowsClicked(ClickEvent e) {
         presenter.goTo(new FlowsPlace());
     }
 
     @UiHandler("userButton")
-    public void onToggleNotificationPanel(final ClickEvent event) {
+    public void userClicked(final ClickEvent event) {
         presenter.getUserControls().toggleRelativeTo(userButton);
     }
 }

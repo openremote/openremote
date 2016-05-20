@@ -3,7 +3,7 @@
              xmlns:w="urn:import:org.openremote.manager.client.widget">
 
     <ui:with field="constants" type="org.openremote.manager.client.i18n.ManagerConstants"/>
-    <ui:with field="themeStyle" type="org.openremote.manager.client.ThemeStyle"/>
+    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
     <g:HTMLPanel styleName="flex layout vertical">
         <iframe ui:field="frame"

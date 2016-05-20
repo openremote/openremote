@@ -17,8 +17,8 @@ import spock.lang.Specification
 
 import javax.ws.rs.NotFoundException
 
-import static org.openremote.manager.server.Constants.MANAGER_CLIENT_ID
-import static org.openremote.manager.server.Constants.MASTER_REALM
+import static org.openremote.manager.shared.Constants.MANAGER_CLIENT_ID
+import static org.openremote.manager.shared.Constants.MASTER_REALM
 
 class AssetsResourceTest extends Specification implements ContainerTrait {
 

@@ -55,8 +55,13 @@ public class AssetDetailActivity
     }
 
     @Override
-    public AppActivity<AssetsPlace> init(AssetsPlace place) {
+    protected AppActivity<AssetsPlace> init(AssetsPlace place) {
         return this;
+    }
+
+    @Override
+    protected String[] getRequiredRoles() {
+        return new String[]{"read:assets"};
     }
 
     @Override

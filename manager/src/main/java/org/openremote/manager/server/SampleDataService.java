@@ -40,8 +40,8 @@ import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.openremote.container.web.WebClient.getTarget;
-import static org.openremote.manager.server.Constants.MANAGER_CLIENT_ID;
-import static org.openremote.manager.server.Constants.MASTER_REALM;
+import static org.openremote.manager.shared.Constants.MANAGER_CLIENT_ID;
+import static org.openremote.manager.shared.Constants.MASTER_REALM;
 import static rx.Observable.fromCallable;
 
 public class SampleDataService implements ContainerService {

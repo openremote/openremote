@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.client.service;
 
-import elemental.json.JsonObject;
 import org.openremote.manager.client.interop.keycloak.AuthToken;
 import org.openremote.manager.client.interop.keycloak.LoginOptions;
 import org.openremote.manager.client.interop.keycloak.LogoutOptions;
@@ -28,7 +27,7 @@ import org.openremote.manager.shared.Runnable;
 
 public interface SecurityService {
 
-    public static final int MIN_VALIDITY_SECONDS = 10;
+    int MIN_VALIDITY_SECONDS = 10;
 
     void login();
 
@@ -45,6 +44,8 @@ public interface SecurityService {
     boolean hasRealmRole(String role);
 
     boolean hasResourceRole(String role, String resource);
+
+    boolean hasResourceRoleOrIsAdmin(String role, String resource);
 
     boolean isTokenExpired();
 

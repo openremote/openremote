@@ -20,6 +20,8 @@
 package org.openremote.manager.client.user;
 
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.dom.client.LIElement;
+import com.google.gwt.dom.client.Style;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
@@ -43,6 +45,9 @@ public class UserControlsImpl extends AbstractAppPanel implements UserControls {
     Label userLabel;
 
     @UiField
+    LIElement editProfileItem;
+
+    @UiField
     Hyperlink editProfileLink;
 
     Presenter presenter;
@@ -59,8 +64,15 @@ public class UserControlsImpl extends AbstractAppPanel implements UserControls {
     }
 
     @Override
-    public void setUserDetails(String username, String fullName, String userProfilePlaceToken) {
+    public void setUserDetails(String username,
+                               String fullName,
+                               String userProfilePlaceToken,
+                               boolean hasManageAccountRole) {
         userLabel.setText(fullName != null && fullName.length() > 0 ? fullName : username);
+
+        editProfileItem.getStyle().setDisplay(
+            hasManageAccountRole ? Style.Display.LIST_ITEM : Style.Display.NONE
+        );
         editProfileLink.setTargetHistoryToken(userProfilePlaceToken);
     }
 

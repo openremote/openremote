@@ -31,13 +31,23 @@ public interface ManagerConstants extends Constants {
 
     String inventory();
 
-    String locate();
+    String map();
 
-    String manage();
+    String assets();
 
-    String connect();
+    String rules();
+
+    String flows();
+
+    String admin();
 
     String mapLoading();
 
     String editAccount();
+
+    String manageRealms();
+
+    String manageUsers();
+
+    String overview();
 }
