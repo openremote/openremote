@@ -25,8 +25,6 @@ import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
-import org.openremote.manager.client.mvp.RoleRequiredException;
-import org.openremote.manager.client.service.SecurityService;
 
 import java.util.Collection;
 

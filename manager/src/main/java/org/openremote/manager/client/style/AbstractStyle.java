@@ -20,7 +20,7 @@
 package org.openremote.manager.client.style;
 
 public abstract class AbstractStyle {
-    
+
     abstract String getPrefix();
 
     public String Header() {
@@ -93,5 +93,153 @@ public abstract class AbstractStyle {
 
     public String Headline1() {
         return getPrefix() + "Headline1";
+    }
+
+    public String Form() {
+        return getPrefix() + "Form";
+    }
+
+    public String FormGroup() {
+        return getPrefix() + "FormGroup";
+    }
+
+    public String FormLabel() {
+        return getPrefix() + "FormLabel";
+    }
+
+    public String FormField() {
+        return getPrefix() + "FormField";
+    }
+
+    public String FormControl() {
+        return getPrefix() + "FormControl";
+    }
+
+    public String FormInputText() {
+        return getPrefix() + "FormInputText";
+    }
+
+    public String FormDropDown() {
+        return getPrefix() + "FormDropDown";
+    }
+
+    public String FormButton() {
+        return getPrefix() + "FormButton";
+    }
+
+    public String FormButtonPrimary() {
+        return getPrefix() + "FormButtonPrimary";
+    }
+
+    public String FormCheckBox() {
+        return getPrefix() + "FormCheckBox";
+    }
+
+    public String FormTableHeaderCell() {
+        return getPrefix() + "FormTableHeaderCell";
+    }
+
+    public String FormTableCell() {
+        return getPrefix() + "FormTableCell";
+    }
+
+    public String FormTableCellText() {
+        return getPrefix() + "FormTableCellText";
+    }
+
+    public String FormTableEvenRow() {
+        return getPrefix() + "FormTableEvenRow";
+    }
+
+    public String FormTableEvenRowCell() {
+        return getPrefix() + "FormTableEvenRowCell";
+    }
+
+    public String FormTableFirstColumn() {
+        return getPrefix() + "FormTableFirstColumn";
+    }
+
+    public String FormTableFirstColumnFooter() {
+        return getPrefix() + "FormTableFirstColumnFooter";
+    }
+
+    public String FormTableFirstColumnHeader() {
+        return getPrefix() + "FormTableFirstColumnHeader";
+    }
+
+    public String FormTableFooter() {
+        return getPrefix() + "FormTableFooter";
+    }
+
+    public String FormTableHeader() {
+        return getPrefix() + "FormTableHeader";
+    }
+
+    public String FormTableHoveredRow() {
+        return getPrefix() + "FormTableHoveredRow";
+    }
+
+    public String FormTableHoveredRowCell() {
+        return getPrefix() + "FormTableHoveredRowCell";
+    }
+
+    public String FormTableKeyboardSelectedCell() {
+        return getPrefix() + "FormTableKeyboardSelectedCell";
+    }
+
+    public String FormTableKeyboardSelectedRow() {
+        return getPrefix() + "FormTableKeyboardSelectedRow";
+    }
+
+    public String FormTableKeyboardSelectedRowCell() {
+        return getPrefix() + "FormTableKeyboardSelectedRowCell";
+    }
+
+    public String FormTableLastColumn() {
+        return getPrefix() + "FormTableLastColumn";
+    }
+
+    public String FormTableLastColumnHeader() {
+        return getPrefix() + "FormTableLastColumnHeader";
+    }
+
+    public String FormTableLastColumnFooter() {
+        return getPrefix() + "FormTableLastColumnFooter";
+    }
+
+    public String FormTableLoading() {
+        return getPrefix() + "FormTableLoading";
+    }
+
+    public String FormTableOddRow() {
+        return getPrefix() + "FormTableOddRow";
+    }
+
+    public String FormTableOddRowCell() {
+        return getPrefix() + "FormTableOddRowCell";
+    }
+
+    public String FormTableSelectedRow() {
+        return getPrefix() + "FormTableSelectedRow";
+    }
+
+    public String FormTableSelectedRowCell() {
+        return getPrefix() + "FormTableSelectedRowCell";
+    }
+
+    public String FormTableSortableHeader() {
+        return getPrefix() + "FormTableSortableHeader";
+    }
+
+    public String FormTableSortedHeaderAscending() {
+        return getPrefix() + "FormTableSortedHeaderAscending";
+    }
+
+    public String FormTableSortedHeaderDescending() {
+        return getPrefix() + "FormTableSortedHeaderDescending";
+    }
+
+    public String FormTableWidget() {
+        return getPrefix() + "FormTableWidget";
     }
 }

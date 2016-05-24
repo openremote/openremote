@@ -25,7 +25,7 @@ import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
-import org.openremote.manager.client.admin.realms.AdminRealmsPlace;
+import org.openremote.manager.client.admin.realms.AdminRealmPlace;
 import org.openremote.manager.client.admin.users.AdminUsersPlace;
 import org.openremote.manager.client.admin.AdminPlace;
 import org.openremote.manager.client.widget.Hyperlink;
@@ -76,7 +76,7 @@ public class AdminNavigationImpl extends Composite implements AdminNavigation {
         realmsLink.removeStyleName("active");
         usersLink.removeStyleName("active");
 
-        if (adminPlace instanceof AdminRealmsPlace) {
+        if (adminPlace instanceof AdminRealmPlace) {
             realmsLink.addStyleName("active");
         } else if (adminPlace instanceof AdminUsersPlace) {
             usersLink.addStyleName("active");

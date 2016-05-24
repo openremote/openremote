@@ -40,26 +40,11 @@ import org.openremote.manager.client.widget.PushButton;
 
 public class HeaderViewImpl extends Composite implements HeaderView {
 
-    interface Style extends CssResource {
-        String logoButton();
-
-        String navItem();
-
-        String navItemLast();
-
-        String header();
-
-        String navItemFirst();
-    }
-
     interface UI extends UiBinder<HTMLPanel, HeaderViewImpl> {
     }
 
     private static UI ui = GWT.create(UI.class);
     private Presenter presenter;
-
-    @UiField
-    Style style;
 
     @UiField
     ThemeStyle themeStyle;

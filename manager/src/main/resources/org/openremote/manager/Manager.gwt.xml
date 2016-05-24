@@ -16,6 +16,7 @@
     <inherits name="com.workingflows.js.jscore.JSCore" />
     <inherits name="com.google.gwt.http.HTTP"/>
     <inherits name="com.github.nmorel.gwtjackson.GwtJackson"/>
+    <inherits name="org.keycloak.representations.idm.KeycloakIDM"/>
 
     <!-- ##################################################################### -->
 

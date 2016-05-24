@@ -19,9 +19,13 @@
  */
 package org.openremote.manager.server.security;
 
+import org.keycloak.admin.client.resource.RealmsResource;
 import org.openremote.container.Container;
 import org.openremote.container.security.IdentityService;
+import org.openremote.container.security.KeycloakResource;
+import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.Constants;
+import org.openremote.manager.shared.http.RequestParams;
 
 public class ManagerIdentityService extends IdentityService {
 
@@ -30,5 +34,28 @@ public class ManagerIdentityService extends IdentityService {
         setClientId(Constants.MANAGER_CLIENT_ID);
         super.init(container);
         setKeycloakReverseProxy(true);
+    }
+
+    @Override
+    public void configure(Container container) throws Exception {
+        super.configure(container);
+
+        container.getService(WebService.class).getApiSingletons().add(
+            new RealmsResourceImpl(this)
+        );
+    }
+
+    /**
+     * Pass access token from external request to Keycloak request, emulate a reverse proxy.
+     */
+    public KeycloakResource getKeycloak(RequestParams requestParams) {
+        return getKeycloak(requestParams.getBearerAuth(), true);
+    }
+
+    /**
+     * Pass access token from external request to Keycloak request, emulate a reverse proxy.
+     */
+    public RealmsResource getRealms(RequestParams requestParams) {
+        return getRealms(requestParams.getBearerAuth(), true);
     }
 }

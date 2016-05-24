@@ -21,10 +21,26 @@ package org.openremote.manager.client;
 
 import com.google.gwt.inject.client.GinModules;
 import com.google.gwt.inject.client.Ginjector;
+import org.openremote.manager.client.admin.AdminModule;
 import org.openremote.manager.client.app.AppController;
+import org.openremote.manager.client.app.AppModule;
+import org.openremote.manager.client.assets.AssetsModule;
+import org.openremote.manager.client.flows.FlowsModule;
+import org.openremote.manager.client.map.MapModule;
+import org.openremote.manager.client.mvp.MVPModule;
+import org.openremote.manager.client.toast.ToastModule;
+import org.openremote.manager.client.user.UserModule;
 
 @GinModules({
+    MVPModule.class,
+    ToastModule.class,
     ManagerModule.class,
+    AppModule.class,
+    MapModule.class,
+    AssetsModule.class,
+    FlowsModule.class,
+    AdminModule.class,
+    UserModule.class
 })
 public interface ManagerGinjector extends Ginjector {
     AppController getAppController();

@@ -26,94 +26,22 @@ import com.google.gwt.place.shared.PlaceHistoryHandler;
 import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import org.openremote.manager.client.admin.*;
-import org.openremote.manager.client.admin.navigation.AdminNavigation;
-import org.openremote.manager.client.admin.navigation.AdminNavigationImpl;
-import org.openremote.manager.client.admin.navigation.AdminNavigationPresenter;
-import org.openremote.manager.client.admin.overview.AdminOverview;
-import org.openremote.manager.client.admin.overview.AdminOverviewActivity;
-import org.openremote.manager.client.admin.overview.AdminOverviewImpl;
-import org.openremote.manager.client.admin.realms.AdminRealms;
-import org.openremote.manager.client.admin.realms.AdminRealmsActivity;
-import org.openremote.manager.client.admin.realms.AdminRealmsImpl;
-import org.openremote.manager.client.admin.users.AdminUsers;
-import org.openremote.manager.client.admin.users.AdminUsersActivity;
-import org.openremote.manager.client.admin.users.AdminUsersImpl;
-import org.openremote.manager.client.app.*;
-import org.openremote.manager.client.assets.*;
-import org.openremote.manager.client.event.EventMapper;
 import org.openremote.manager.client.event.bus.EventBus;
-import org.openremote.manager.client.flows.FlowsActivity;
-import org.openremote.manager.client.flows.FlowsView;
-import org.openremote.manager.client.flows.FlowsViewImpl;
 import org.openremote.manager.client.i18n.ManagerConstants;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.interop.keycloak.Keycloak;
-import org.openremote.manager.client.map.MapActivity;
 import org.openremote.manager.client.map.MapPlace;
-import org.openremote.manager.client.map.MapView;
-import org.openremote.manager.client.map.MapViewImpl;
-import org.openremote.manager.client.mvp.AppActivityManager;
-import org.openremote.manager.client.mvp.AppPlaceController;
 import org.openremote.manager.client.service.*;
-import org.openremote.manager.client.toast.PopupToastDisplay;
-import org.openremote.manager.client.toast.ToastDisplay;
-import org.openremote.manager.client.user.*;
-import org.openremote.manager.shared.map.MapResource;
-import rx.Single;
 
 public class ManagerModule extends AbstractGinModule {
 
     @Override
     protected void configure() {
 
-        bind(ResourceLoader.class).asEagerSingleton();
-        bind(com.google.web.bindery.event.shared.EventBus.class).to(com.google.web.bindery.event.shared.SimpleEventBus.class).in(Singleton.class);
-        bind(EventBus.class).in(Singleton.class);
         bind(PlaceHistoryMapper.class).to(ManagerHistoryMapper.class).in(Singleton.class);
-        bind(AppController.class).to(AppControllerImpl.class).in(Singleton.class);
-        bind(AppView.class).to(AppViewImpl.class).in(Singleton.class);
-        bind(ToastDisplay.class).to(PopupToastDisplay.class).in(Singleton.class);
-
-        bind(HeaderView.class).to(HeaderViewImpl.class).in(Singleton.class);
-        bind(FooterView.class).to(FooterViewImpl.class).in(Singleton.class);
-
-        bind(MapView.class).to(MapViewImpl.class).in(Singleton.class);
-        bind(MapActivity.class);
-
-        bind(AssetListView.class).to(AssetListViewImpl.class).in(Singleton.class);
-        bind(AssetDetailView.class).to(AssetDetailViewImpl.class).in(Singleton.class);
-        bind(AssetDetailActivity.class);
-
-        bind(FlowsView.class).to(FlowsViewImpl.class).in(Singleton.class);
-        bind(FlowsActivity.class);
-
-        bind(AdminView.class).to(AdminViewImpl.class).in(Singleton.class);
-        bind(AdminNavigation.class).to(AdminNavigationImpl.class).in(Singleton.class);
-        bind(AdminNavigation.Presenter.class).to(AdminNavigationPresenter.class);
-        bind(AdminOverview.class).to(AdminOverviewImpl.class).in(Singleton.class);
-        bind(AdminOverviewActivity.class);
-        bind(AdminRealms.class).to(AdminRealmsImpl.class).in(Singleton.class);
-        bind(AdminRealmsActivity.class);
-        bind(AdminUsers.class).to(AdminUsersImpl.class).in(Singleton.class);
-        bind(AdminUsersActivity.class);
-
-        bind(UserControls.class).to(UserControlsImpl.class).in(Singleton.class);
-        bind(UserControls.Presenter.class).to(UserControlsPresenter.class).in(Singleton.class);
-
-        bind(UserAccountView.class).to(UserAccountViewImpl.class).in(Singleton.class);
-        bind(UserAccountActivity.class);
 
         bind(CookieService.class).to(CookieServiceImpl.class).in(Singleton.class);
         bind(ValidatorService.class).to(ValidatorServiceImpl.class).in(Singleton.class);
-    }
-
-    @Provides
-    @Singleton
-    public EventService getEventBus(SecurityService securityService, EventBus eventBus, EventMapper eventMapper) {
-        EventService eventService = EventServiceImpl.create(securityService, eventBus, eventMapper);
-        eventService.connect();
-        return eventService;
     }
 
     @Provides
@@ -123,17 +51,15 @@ public class ManagerModule extends AbstractGinModule {
         return new SecurityServiceImpl(getKeyCloak(), cookieService, eventBus);
     }
 
+    public static native Keycloak getKeyCloak() /*-{
+        return $wnd.keycloak;
+    }-*/;
+
     @Provides
     @Singleton
     public RequestService getRequestService(SecurityService securityService) {
         RequestServiceImpl.Configuration.setDefaults(securityService.getRealm());
         return new RequestServiceImpl(securityService);
-    }
-
-    @Provides
-    @Singleton
-    public AppActivityManager getAppActivityMapper(ManagerActivityMapper activityMapper, EventBus eventBus) {
-        return new AppActivityManager("AppActivityManager", activityMapper, eventBus);
     }
 
     @Provides
@@ -146,30 +72,6 @@ public class ManagerModule extends AbstractGinModule {
     @Singleton
     public ManagerMessages getMessages() {
         return GWT.create(ManagerMessages.class);
-    }
-
-    public static native Keycloak getKeyCloak() /*-{
-        return $wnd.keycloak;
-    }-*/;
-
-    @Provides
-    @Singleton
-    public MapResource getMapResource() {
-        MapResource mapRestService = getNativeMapResource();
-        return mapRestService;
-    }
-
-    public static native MapResource getNativeMapResource() /*-{
-        return $wnd.MapResource;
-    }-*/;
-
-    @Provides
-    @Singleton
-    public PlaceController getPlaceController(SecurityService securityService,
-                                              EventService eventService,
-                                              EventBus eventBus,
-                                              com.google.web.bindery.event.shared.EventBus legacyEventBus) {
-        return new AppPlaceController(securityService, eventBus, legacyEventBus);
     }
 
     @Provides

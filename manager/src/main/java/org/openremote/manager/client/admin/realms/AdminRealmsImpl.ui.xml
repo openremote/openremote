@@ -6,10 +6,37 @@
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
     <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
+    <ui:style field="realmsTableStyle" type="org.openremote.manager.client.admin.realms.AdminRealmsTable.Style">
+        .nameColumn {
+            width: 15em;
+        }
+
+        .realmColumn {
+            width: 10em;
+        }
+
+        .enabledColumn {
+            width: 4em;
+        }
+    </ui:style>
+
     <g:HTMLPanel styleName="flex layout vertical">
 
         <div class="{widgetStyle.Headline1} {themeStyle.Headline1}">Manage Tenants</div>
 
+        <div class="layout vertical {widgetStyle.Form} {themeStyle.Form}">
+
+            <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}">
+                <div class="{widgetStyle.FormField} {themeStyle.FormField}">
+                    <w:PushButton ui:field="createRealmButton"
+                                  addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                  text="{constants.createRealm}"
+                                  icon="group"/>
+                </div>
+            </div>
+
+            <g:SimplePanel ui:field="cellTableContainer"/>
+        </div>
     </g:HTMLPanel>
 
 </ui:UiBinder>

@@ -19,14 +19,19 @@
  */
 package org.openremote.manager.client.admin.realms;
 
+import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.manager.client.admin.AdminContent;
 
 public interface AdminRealms extends AdminContent {
 
     interface Presenter {
 
+        void onRealmSelected(RealmRepresentation realm);
+
     }
 
     void setPresenter(Presenter presenter);
+
+    void setRealms(RealmRepresentation[] realms);
 
 }

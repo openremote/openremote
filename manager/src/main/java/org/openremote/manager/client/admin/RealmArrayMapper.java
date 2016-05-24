@@ -17,15 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client;
+package org.openremote.manager.client.admin;
 
-import com.google.inject.Inject;
-import org.openremote.manager.client.app.AppResources;
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import org.keycloak.representations.idm.RealmRepresentation;
 
-public class ResourceLoader {
-
-    @Inject
-    public ResourceLoader(AppResources appResources) {
-        // appResources.todo().ensureInjected();
-    }
+public interface RealmArrayMapper extends ObjectMapper<RealmRepresentation[]> {
 }

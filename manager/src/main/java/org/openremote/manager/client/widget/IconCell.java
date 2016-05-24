@@ -17,10 +17,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.app;
+package org.openremote.manager.client.widget;
 
-import com.google.gwt.resources.client.ClientBundle;
+import com.google.gwt.cell.client.AbstractCell;
+import com.google.gwt.core.client.GWT;
+import com.google.gwt.safehtml.client.SafeHtmlTemplates;
+import com.google.gwt.safehtml.shared.SafeHtml;
+import com.google.gwt.safehtml.shared.SafeHtmlBuilder;
 
-public interface AppResources extends ClientBundle {
+public class IconCell extends AbstractCell<String> {
 
+    interface Templates extends SafeHtmlTemplates {
+        @SafeHtmlTemplates.Template("<span class=\"fa fa-{0}\"></span>")
+        SafeHtml cell(String value);
+    }
+
+    private static Templates templates = GWT.create(Templates.class);
+
+    @Override
+    public void render(Context context, String value, SafeHtmlBuilder sb) {
+        if (value == null) {
+            return;
+        }
+        SafeHtml rendered = templates.cell(value);
+        sb.append(rendered);
+    }
 }

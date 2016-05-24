@@ -10,6 +10,9 @@
 
         <div class="{widgetStyle.Headline1} {themeStyle.Headline1}">Admin Overview</div>
 
+        <div>
+            TODO: Implement some general admin actions, logs display, etc.
+        </div>
     </g:HTMLPanel>
 
 </ui:UiBinder>

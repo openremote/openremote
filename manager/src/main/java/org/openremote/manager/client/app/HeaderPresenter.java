@@ -61,8 +61,6 @@ public class HeaderPresenter implements HeaderView.Presenter {
             UserChangeEvent.class,
             event -> view.setUsername(event.getUsername())
         );
-
-        JsUtil.log(securityService.getParsedToken());
     }
 
     @Override

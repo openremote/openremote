@@ -50,4 +50,12 @@ public interface ManagerConstants extends Constants {
     String manageUsers();
 
     String overview();
+
+    String createRealm();
+
+    String realmName();
+
+    String realm();
+
+    String enabled();
 }

@@ -22,12 +22,10 @@ package org.openremote.manager.client;
 import com.google.gwt.place.shared.Place;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import org.openremote.manager.client.admin.overview.AdminOverview;
 import org.openremote.manager.client.admin.overview.AdminOverviewActivity;
-import org.openremote.manager.client.admin.AdminPlace;
 import org.openremote.manager.client.admin.overview.AdminOverviewPlace;
 import org.openremote.manager.client.admin.realms.AdminRealmsActivity;
-import org.openremote.manager.client.admin.realms.AdminRealmsPlace;
+import org.openremote.manager.client.admin.realms.AdminRealmPlace;
 import org.openremote.manager.client.admin.users.AdminUsersActivity;
 import org.openremote.manager.client.admin.users.AdminUsersPlace;
 import org.openremote.manager.client.assets.AssetDetailActivity;
@@ -100,8 +98,8 @@ public class ManagerActivityMapper implements AppActivityMapper {
             if (place instanceof AdminOverviewPlace) {
                 return adminOverviewActivityProvider.get().init(securityService, (AdminOverviewPlace) place);
             }
-            if (place instanceof AdminRealmsPlace) {
-                return adminRealmsActivityProvider.get().init(securityService, (AdminRealmsPlace) place);
+            if (place instanceof AdminRealmPlace) {
+                return adminRealmsActivityProvider.get().init(securityService, (AdminRealmPlace) place);
             }
             if (place instanceof AdminUsersPlace) {
                 return adminUsersActivityProvider.get().init(securityService, (AdminUsersPlace) place);

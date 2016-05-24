@@ -125,11 +125,16 @@
 
     .or-FormGroup {
         margin-bottom: 0.4em;
+        min-height: 2.4em;
     }
 
     .or-FormLabel {
         min-width: 10em;
         font-weight: 600;
+    }
+
+    .or-FormLabel.larger {
+        min-width: 13em;
     }
 
     .or-FormField {
@@ -156,6 +161,33 @@
 
     .or-FormButton:focus, .or-FormButtonPrimary:focus {
         text-decoration: underline;
+    }
+
+    .or-FormDropDown {
+        font-size: inherit;
+        border: 1px solid;
+        background: transparent;
+    }
+
+    .or-FormCheckBox {
+    }
+
+    .or-FormTableHeaderCell {
+        text-shadow: none;
+        border-bottom: 1px solid;
+        text-align: left;
+    }
+
+    .or-FormTableHoveredRow {
+        cursor: pointer;
+    }
+
+    .or-FormTableHoveredRowCell.or-FormTableCellText {
+        text-decoration: underline;
+    }
+
+    .or-FormTableCell {
+        padding: 0.4em;
     }
 
     .or-FormMessages,

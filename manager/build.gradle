@@ -39,6 +39,7 @@ dependencies {
     }
     compile "cglib:cglib:$cglibVersion"
     compile "com.github.nmorel.gwtjackson:gwt-jackson:$gwtJacksonVersion"
+    compile "org.keycloak:keycloak-core:$keycloakVersion:sources"
 
     testCompile "junit:junit:$junitVersion"
     testCompile "org.spockframework:spock-core:$spockVersion"

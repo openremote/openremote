@@ -21,7 +21,6 @@ package org.openremote.container.security;
 
 import org.jboss.resteasy.annotations.Form;
 import org.keycloak.representations.AccessTokenResponse;
-import org.keycloak.representations.idm.*;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
@@ -48,71 +47,4 @@ public interface KeycloakResource {
     @Produces(APPLICATION_JSON)
     ClientInstall getClientInstall(@PathParam("realm") String realm, @PathParam("clientId") String clientId);
 
-    @GET
-    @Path("admin/realms/{realm}")
-    @Produces(APPLICATION_JSON)
-    RealmRepresentation getRealm(@PathParam("realm") String realm);
-
-    @PUT
-    @Path("admin/realms/{realm}")
-    @Consumes(APPLICATION_JSON)
-    Response putRealm(@PathParam("realm") String realm, RealmRepresentation realmRepresentation);
-
-    @POST
-    @Path("admin/realms/{realm}/clients")
-    @Consumes(APPLICATION_JSON)
-    Response registerClientApplication(@PathParam("realm") String realm, ClientRepresentation clientRepresentation);
-
-    @GET
-    @Path("admin/realms/{realm}/clients")
-    @Produces(APPLICATION_JSON)
-    ClientRepresentation[] getClientApplications(@PathParam("realm") String realm);
-
-    @GET
-    @Path("admin/realms/{realm}/clients/{clientId}")
-    @Produces(APPLICATION_JSON)
-    ClientRepresentation getClientApplication(@PathParam("realm") String realm, @PathParam("clientId") String clientId);
-
-    @DELETE
-    @Path("admin/realms/{realm}/clients/{clientId}")
-    Response deleteClientApplication(@PathParam("realm") String realm, @PathParam("clientId") String clientId);
-
-    @POST
-    @Path("admin/realms/{realm}/clients/{clientObjectId}/roles")
-    @Consumes(APPLICATION_JSON)
-    Response createRoleForClientApplication(@PathParam("realm") String realm, @PathParam("clientObjectId") String clientObjectId, RoleRepresentation roleRepresentation);
-
-    @GET
-    @Path("admin/realms/{realm}/clients/{clientObjectId}/roles/{role}")
-    @Produces(APPLICATION_JSON)
-    RoleRepresentation getRoleOfClientApplication(@PathParam("realm") String realm, @PathParam("clientObjectId") String clientObjectId, @PathParam("role") String role);
-
-    @POST
-    @Path("admin/realms/{realm}/clients/{clientObjectId}/roles/{role}/composites")
-    @Consumes(APPLICATION_JSON)
-    Response addCompositesToRoleForClientApplication(@PathParam("realm") String realm, @PathParam("clientObjectId") String clientObjectId, @PathParam("role") String role, RoleRepresentation[] roleRepresentations);
-
-    @GET
-    @Path("admin/realms/{realm}/users")
-    @Produces(APPLICATION_JSON)
-    UserRepresentation[] getUsers(@PathParam("realm") String realm, @QueryParam("username") String username);
-
-    @DELETE
-    @Path("admin/realms/{realm}/users/{userId}")
-    Response deleteUser(@PathParam("realm") String realm, @PathParam("userId") String userId);
-
-    @POST
-    @Path("admin/realms/{realm}/users")
-    @Consumes(APPLICATION_JSON)
-    Response createUser(@PathParam("realm") String realm, UserRepresentation userRepresentation);
-
-    @PUT
-    @Path("admin/realms/{realm}/users/{userId}/reset-password")
-    @Consumes(APPLICATION_JSON)
-    Response resetPassword(@PathParam("realm") String realm, @PathParam("userId") String userId, CredentialRepresentation credentialRepresentation);
-
-    @POST
-    @Path("admin/realms/{realm}/users/{userId}/role-mappings/clients/{clientObjectId}")
-    @Consumes(APPLICATION_JSON)
-    Response addUserClientRoleMapping(@PathParam("realm") String realm, @PathParam("userId") String userId, @PathParam("clientObjectId") String clientObjectId, RoleRepresentation[] roleRepresentations);
 }

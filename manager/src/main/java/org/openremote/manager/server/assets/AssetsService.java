@@ -113,7 +113,7 @@ public class AssetsService implements ContainerService {
     }
 
     public ContextBrokerResource getContextBroker() {
-        return getContextBroker(getTarget(httpClient, contextBrokerHostUri.build(), null));
+        return getContextBroker(getTarget(httpClient, contextBrokerHostUri.build()));
     }
 
     public ContextBrokerResource getContextBroker(ResteasyWebTarget target) {

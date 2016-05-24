@@ -36,24 +36,48 @@ public interface WebClient {
         return builder
             .register(new JacksonConfig(container))
             .register(ElementalMessageBodyConverter.class)
+            .register(new ProxyClientRequestFilter())
             .register(new BearerAuthClientRequestFilter())
             .register(new ClientSecretRequestFilter());
     }
 
     static ResteasyWebTarget getTarget(Client client, URI uri) {
-        return getTarget(client, uri, null);
+        return getTarget(client, uri, null, null, null);
     }
 
     static ResteasyWebTarget getTarget(Client client, URI uri, String accessToken) {
+        return getTarget(client, uri, accessToken, null, null);
+    }
+
+    /**
+     * @param enableProxyForward Set to <code>true</code> to add X-Forward-* headers on requests.
+     */
+    static ResteasyWebTarget getTarget(Client client, URI uri, String accessToken, URI externalAuthServerUri, boolean enableProxyForward) {
+        return getTarget(
+            client,
+            uri,
+            accessToken,
+            enableProxyForward ? externalAuthServerUri.getHost() + ":" + externalAuthServerUri.getPort() : null,
+            enableProxyForward ? externalAuthServerUri.getScheme() : null
+        );
+    }
+
+    static ResteasyWebTarget getTarget(Client client, URI uri, String accessToken, String forwardFor, String forwardProto) {
         ResteasyWebTarget target = ((ResteasyWebTarget) client.target(uri));
         if (accessToken != null) {
             target.property("accessToken", accessToken);
+        }
+        if (forwardFor != null) {
+            target.property("forwardedFor", forwardFor);
+        }
+        if (forwardProto != null) {
+            target.property("forwardedProto", forwardProto);
         }
         return target;
     }
 
     static ResteasyWebTarget getTarget(Client client, URI uri, String clientId, String clientSecret) {
-        ResteasyWebTarget target = getTarget(client, uri, null);
+        ResteasyWebTarget target = getTarget(client, uri, null, null, null);
         if (clientId != null) {
             target.property("clientId", clientId);
         }

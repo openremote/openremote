@@ -27,5 +27,7 @@ public interface ManagerMessages extends Messages {
 
     String accessDenied();
 
+    String failureLoadingResource(String error);
+
     String failureLoadingMapSettings(String error);
 }

@@ -21,12 +21,13 @@ package org.openremote.manager.server;
 
 import elemental.json.Json;
 import org.apache.log4j.Logger;
+import org.keycloak.admin.client.resource.*;
+import org.keycloak.common.enums.SslRequired;
 import org.keycloak.representations.idm.*;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.security.AuthForm;
 import org.openremote.container.security.IdentityService;
-import org.openremote.container.security.KeycloakResource;
 import org.openremote.manager.server.assets.AssetsService;
 import org.openremote.manager.server.assets.ContextBrokerResource;
 import org.openremote.manager.server.security.ManagerIdentityService;
@@ -36,10 +37,9 @@ import rx.Observable;
 
 import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static org.openremote.container.web.WebClient.getTarget;
 import static org.openremote.manager.shared.Constants.MANAGER_CLIENT_ID;
 import static org.openremote.manager.shared.Constants.MASTER_REALM;
 import static rx.Observable.fromCallable;
@@ -80,6 +80,7 @@ public class SampleDataService implements ContainerService {
 
         LOG.info("--- CREATING SAMPLE DATA ---");
 
+        // Use a non-proxy client to get the access token
         String accessToken = identityService.getKeycloak().getAccessToken(
             MASTER_REALM, new AuthForm(ADMIN_CLI_CLIENT_ID, ADMIN_USERNAME, ADMIN_PASSWORD)
         ).getToken();
@@ -144,28 +145,33 @@ public class SampleDataService implements ContainerService {
     }
 
     protected void configureMasterRealm(IdentityService identityService, String accessToken) {
-        KeycloakResource keycloakResource = identityService.getKeycloak(accessToken);
-
-        RealmRepresentation masterRealm = keycloakResource.getRealm(MASTER_REALM);
+        RealmResource realmResource = identityService.getRealms(accessToken, false).realm(MASTER_REALM);
+        RealmRepresentation masterRealm = realmResource.toRepresentation();
 
         masterRealm.setDisplayNameHtml("<div class=\"kc-logo-text\"><span>OpenRemote</span></div>");
 
         masterRealm.setLoginTheme("openremote");
         masterRealm.setAccountTheme("openremote");
 
-        keycloakResource.putRealm(MASTER_REALM, masterRealm);
+        // TODO: Make SSL setup configurable
+        masterRealm.setSslRequired(SslRequired.NONE.toString());
+
+        // TODO: This should only be set in dev mode, 60 seconds is enough in production?
+        masterRealm.setAccessTokenLifespan(900); // 15 minutes
+
+        realmResource.update(masterRealm);
     }
 
     protected void registerClientApplications(IdentityService identityService, String accessToken) {
-        KeycloakResource keycloakResource = identityService.getKeycloak(accessToken);
+        ClientsResource clientsResource = identityService.getRealms(accessToken, false).realm(MASTER_REALM).clients();
 
         // Find out if there is a client already present for this application, if so, delete it
-        fromCallable(() -> keycloakResource.getClientApplications(MASTER_REALM))
+        fromCallable(clientsResource::findAll)
             .flatMap(Observable::from)
             .filter(clientRepresentation -> clientRepresentation.getClientId().equals(MANAGER_CLIENT_ID))
             .map(ClientRepresentation::getId)
             .subscribe(clientObjectId -> {
-                keycloakResource.deleteClientApplication(MASTER_REALM, clientObjectId);
+                clientsResource.get(clientObjectId).remove();
             });
 
         // Register a new client for this application
@@ -191,84 +197,68 @@ public class SampleDataService implements ContainerService {
         managerClient.setBaseUrl(baseUrl);
 
         String clientResourceLocation =
-            keycloakResource.registerClientApplication(MASTER_REALM, managerClient).getLocation().toString();
+            clientsResource.create(managerClient).getLocation().toString();
 
         LOG.info("Registered client application '" + MANAGER_CLIENT_ID + "' with identity provider: " + clientResourceLocation);
     }
 
     protected void addRolesAndTestUsers(IdentityService identityService, String accessToken) {
-        KeycloakResource keycloakResource = identityService.getKeycloak(accessToken);
+        ClientsResource clientsResource = identityService.getRealms(accessToken, false).realm(MASTER_REALM).clients();
+        UsersResource usersResource = identityService.getRealms(accessToken, false).realm(MASTER_REALM).users();
 
-        String clientObjectId = fromCallable(() -> keycloakResource.getClientApplications(MASTER_REALM))
+        String clientObjectId = fromCallable(clientsResource::findAll)
             .flatMap(Observable::from)
             .filter(clientRepresentation -> clientRepresentation.getClientId().equals(MANAGER_CLIENT_ID))
             .map(ClientRepresentation::getId)
             .toBlocking().singleOrDefault(null);
 
         // Register some roles
-        RoleRepresentation readRole =
-            fromCallable(() -> keycloakResource.createRoleForClientApplication(
-                MASTER_REALM, clientObjectId, new RoleRepresentation("read", "Read all data", false)
-            )).map(response ->
-                getTarget(identityService.getHttpClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
-            ).toBlocking().single();
+        ClientResource clientResource = clientsResource.get(clientObjectId);
+        RolesResource rolesResource = clientResource.roles();
+
+        rolesResource.create(new RoleRepresentation("read", "Read all data", false));
+        RoleRepresentation readRole = rolesResource.get("read").toRepresentation();
         LOG.info("Added role '" + readRole.getName() + "'");
 
-        RoleRepresentation readMapRole =
-            fromCallable(() -> keycloakResource.createRoleForClientApplication(
-                MASTER_REALM, clientObjectId, new RoleRepresentation("read:map", "View map", false)
-            )).map(response ->
-                getTarget(identityService.getHttpClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
-            ).toBlocking().single();
+        rolesResource.create(new RoleRepresentation("read:map", "View map", false));
+        RoleRepresentation readMapRole = rolesResource.get("read:map").toRepresentation();
+        LOG.info("Added role '" + readMapRole.getName() + "'");
 
-        RoleRepresentation readAssetsRole =
-            fromCallable(() -> keycloakResource.createRoleForClientApplication(
-                MASTER_REALM, clientObjectId, new RoleRepresentation("read:assets", "Read context broker assets", false)
-            )).map(response ->
-                getTarget(identityService.getHttpClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
-            ).toBlocking().single();
+        rolesResource.create(new RoleRepresentation("read:assets", "Read context broker assets", false));
+        RoleRepresentation readAssetsRole = rolesResource.get("read:assets").toRepresentation();
         LOG.info("Added role '" + readAssetsRole.getName() + "'");
 
-        keycloakResource.addCompositesToRoleForClientApplication(
-            MASTER_REALM, clientObjectId, readRole.getName(), new RoleRepresentation[]{readMapRole, readAssetsRole}
-        );
+        rolesResource.get("read").addComposites(Arrays.asList(readMapRole, readAssetsRole));
 
-        RoleRepresentation writeRole =
-            fromCallable(() -> keycloakResource.createRoleForClientApplication(
-                MASTER_REALM, clientObjectId, new RoleRepresentation("write", "Write all data", false)
-            )).map(response ->
-                getTarget(identityService.getHttpClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
-            ).toBlocking().single();
+        rolesResource.create(new RoleRepresentation("write", "Write all data", false));
+        RoleRepresentation writeRole = rolesResource.get("write").toRepresentation();
         LOG.info("Added role '" + writeRole.getName() + "'");
 
-        RoleRepresentation writeAssetsRole =
-            fromCallable(() -> keycloakResource.createRoleForClientApplication(
-                MASTER_REALM, clientObjectId, new RoleRepresentation("write:assets", "Write context broker assets", false)
-            )).map(response ->
-                getTarget(identityService.getHttpClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(RoleRepresentation.class)
-            ).toBlocking().single();
+        rolesResource.create(new RoleRepresentation("write:assets", "Write context broker assets", false));
+        RoleRepresentation writeAssetsRole = rolesResource.get("write:assets").toRepresentation();
         LOG.info("Added role '" + writeAssetsRole.getName() + "'");
 
-        keycloakResource.addCompositesToRoleForClientApplication(
-            MASTER_REALM, clientObjectId, writeRole.getName(), new RoleRepresentation[]{writeAssetsRole}
-        );
+        rolesResource.get("write").addComposites(Arrays.asList(writeAssetsRole));
+
 
         // Give admin all roles (we can only check realm _or_ application roles in @RolesAllowed)!
-        fromCallable(() -> keycloakResource.getUsers(MASTER_REALM, "admin"))
+        fromCallable(() -> usersResource.search("admin", null, null, null, null, null))
             .flatMap(Observable::from)
+            .map(userRepresentation -> usersResource.get(userRepresentation.getId()))
             .subscribe(adminUser -> {
-                    keycloakResource.addUserClientRoleMapping(MASTER_REALM, adminUser.getId(), clientObjectId, new RoleRepresentation[]{
+                    adminUser.roles().clientLevel(clientObjectId).add(Arrays.asList(
                         readRole,
                         writeRole
-                    });
+                    ));
                     LOG.info("Assigned all application roles to 'admin' user");
                 }
             );
 
         // Find out if there is a 'test' user already present, delete it
-        fromCallable(() -> keycloakResource.getUsers(MASTER_REALM, "test"))
+        fromCallable(() -> usersResource.search("test", null, null, null, null, null))
             .flatMap(Observable::from)
-            .subscribe(testUser -> keycloakResource.deleteUser(MASTER_REALM, testUser.getId()));
+            .map(userRepresentation -> usersResource.get(userRepresentation.getId()))
+            .subscribe(UserResource::remove);
 
         // Create a new 'test' user with 'read' role
         UserRepresentation testUser = new UserRepresentation();
@@ -276,25 +266,22 @@ public class SampleDataService implements ContainerService {
         testUser.setFirstName("Testuserfirst");
         testUser.setLastName("Testuserlast");
         testUser.setEnabled(true);
-        final UserRepresentation finalTestUser = testUser;
-        testUser = fromCallable(() -> keycloakResource.createUser(MASTER_REALM, finalTestUser))
-            .map(response ->
-                getTarget(identityService.getHttpClient(), response.getLocation(), accessToken).request(APPLICATION_JSON).get(UserRepresentation.class)
-            ).toBlocking().single();
+        usersResource.create(testUser);
+        testUser = usersResource.search("test", null, null, null, null, null).get(0);
 
         CredentialRepresentation testUserCredential = new CredentialRepresentation();
         testUserCredential.setType("password");
         testUserCredential.setValue("test");
         testUserCredential.setTemporary(false);
-        keycloakResource.resetPassword(MASTER_REALM, testUser.getId(), testUserCredential);
+        usersResource.get(testUser.getId()).resetPassword(testUserCredential);
 
         LOG.info("Added user '" + testUser.getUsername() + "' with password '" + testUserCredential.getValue() + "'");
 
         // Add mapping for client role 'read' to user 'test'
-        keycloakResource.addUserClientRoleMapping(MASTER_REALM, testUser.getId(), clientObjectId, new RoleRepresentation[]{
+        usersResource.get(testUser.getId()).roles().clientLevel(clientObjectId).add(Arrays.asList(
             readRole,
             writeRole
-        });
+        ));
 
     }
 }

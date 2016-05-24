@@ -23,6 +23,7 @@ dependencies {
 
     compile "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
     compile "org.keycloak:keycloak-undertow-adapter:$keycloakVersion"
+    compile "org.keycloak:keycloak-admin-client:$keycloakVersion"
 
     compile "com.google.gwt:gwt-elemental:$gwtVersion"
 
