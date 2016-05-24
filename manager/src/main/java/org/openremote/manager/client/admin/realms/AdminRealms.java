@@ -28,6 +28,8 @@ public interface AdminRealms extends AdminContent {
 
         void onRealmSelected(RealmRepresentation realm);
 
+        void createRealm();
+
     }
 
     void setPresenter(Presenter presenter);

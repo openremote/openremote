@@ -24,6 +24,7 @@ import org.openremote.manager.client.ManagerHistoryMapper;
 import org.openremote.manager.client.admin.AdminPlace;
 import org.openremote.manager.client.admin.overview.AdminOverviewPlace;
 import org.openremote.manager.client.admin.realms.AdminRealmPlace;
+import org.openremote.manager.client.admin.realms.AdminRealmsPlace;
 import org.openremote.manager.client.admin.users.AdminUsersPlace;
 
 public class AdminNavigationPresenter implements AdminNavigation.Presenter {
@@ -52,7 +53,7 @@ public class AdminNavigationPresenter implements AdminNavigation.Presenter {
 
     @Override
     public String getAdminRealmsPlaceToken(String realm) {
-        return managerHistoryMapper.getToken(new AdminRealmPlace(realm));
+        return managerHistoryMapper.getToken(new AdminRealmsPlace(realm));
     }
 
     @Override

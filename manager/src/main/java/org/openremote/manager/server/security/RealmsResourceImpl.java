@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.server.security;
 
-import org.jboss.resteasy.annotations.Form;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.shared.http.RequestParams;
@@ -39,8 +38,13 @@ public class RealmsResourceImpl extends WebResource implements RealmsResource {
     }
 
     @Override
-    public RealmRepresentation[] getRealms(@Form RequestParams requestParams) {
+    public RealmRepresentation[] getRealms(RequestParams requestParams) {
         List<RealmRepresentation> realms =  managerIdentityService.getRealms(requestParams).findAll();
         return realms.toArray(new RealmRepresentation[realms.size()]);
+    }
+
+    @Override
+    public RealmRepresentation getRealm(RequestParams requestParams, String realmId) {
+        return managerIdentityService.getRealms(requestParams).realm(realmId).toRepresentation();
     }
 }

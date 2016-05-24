@@ -17,49 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.i18n;
+package org.openremote.manager.client.admin;
 
-import com.google.gwt.i18n.client.Constants;
-import com.google.gwt.i18n.client.LocalizableResource;
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import org.keycloak.representations.idm.RealmRepresentation;
 
-@LocalizableResource.DefaultLocale("en")
-public interface ManagerConstants extends Constants {
-
-    String appTitle();
-
-    String logout();
-
-    String inventory();
-
-    String map();
-
-    String assets();
-
-    String rules();
-
-    String flows();
-
-    String admin();
-
-    String mapLoading();
-
-    String editAccount();
-
-    String manageRealms();
-
-    String manageUsers();
-
-    String overview();
-
-    String createRealm();
-
-    String realmName();
-
-    String realm();
-
-    String enabled();
-
-    String editRealm();
-
-    String realmDisplayName();
+public interface RealmMapper extends ObjectMapper<RealmRepresentation> {
 }

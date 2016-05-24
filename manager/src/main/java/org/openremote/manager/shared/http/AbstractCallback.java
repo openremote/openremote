@@ -46,7 +46,10 @@ public abstract class AbstractCallback<T> implements Callback<T> {
             return;
         }
         if (expectedStatusCode != ANY_STATUS_CODE && responseCode != expectedStatusCode) {
-            onFailure.accept(new RequestParams.Failure(responseCode, "Expected status code: " + expectedStatusCode));
+            onFailure.accept(new RequestParams.Failure(
+                responseCode,
+                "Expected response status code " + expectedStatusCode + " but received " + responseCode + ".")
+            );
             return;
         }
         onSuccess.accept(readMessageBody(entity));

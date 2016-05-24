@@ -28,9 +28,7 @@ import org.openremote.manager.client.admin.navigation.AdminNavigationPresenter;
 import org.openremote.manager.client.admin.overview.AdminOverview;
 import org.openremote.manager.client.admin.overview.AdminOverviewActivity;
 import org.openremote.manager.client.admin.overview.AdminOverviewImpl;
-import org.openremote.manager.client.admin.realms.AdminRealms;
-import org.openremote.manager.client.admin.realms.AdminRealmsActivity;
-import org.openremote.manager.client.admin.realms.AdminRealmsImpl;
+import org.openremote.manager.client.admin.realms.*;
 import org.openremote.manager.client.admin.users.AdminUsers;
 import org.openremote.manager.client.admin.users.AdminUsersActivity;
 import org.openremote.manager.client.admin.users.AdminUsersImpl;
@@ -47,6 +45,8 @@ public class AdminModule extends AbstractGinModule {
         bind(AdminOverviewActivity.class);
         bind(AdminRealms.class).to(AdminRealmsImpl.class).in(Singleton.class);
         bind(AdminRealmsActivity.class);
+        bind(AdminRealm.class).to(AdminRealmImpl.class).in(Singleton.class);
+        bind(AdminRealmActivity.class);
         bind(AdminUsers.class).to(AdminUsersImpl.class).in(Singleton.class);
         bind(AdminUsersActivity.class);
     }

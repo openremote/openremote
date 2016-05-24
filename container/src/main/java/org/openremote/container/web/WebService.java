@@ -30,7 +30,6 @@ import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.*;
 import io.undertow.util.HttpString;
 import io.undertow.util.MimeMappings;
-import org.jboss.resteasy.jsapi.JSAPIServlet;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.ResteasyDeployment;
@@ -42,6 +41,7 @@ import org.openremote.container.json.ElementalMessageBodyConverter;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.AuthOverloadHandler;
 import org.openremote.container.security.SimpleKeycloakServletExtension;
+import org.openremote.container.web.jsapi.JSAPIServlet;
 
 import java.net.URI;
 import java.nio.file.Files;

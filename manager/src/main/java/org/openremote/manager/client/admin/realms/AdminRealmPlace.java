@@ -25,14 +25,18 @@ import org.openremote.manager.client.admin.AdminPlace;
 
 public class AdminRealmPlace extends AdminPlace {
 
-    final String realm;
+    final String realmId;
 
-    public AdminRealmPlace(String realm) {
-        this.realm = realm;
+    public AdminRealmPlace() {
+        realmId = null;
     }
 
-    public String getRealm() {
-        return realm;
+    public AdminRealmPlace(String realmId) {
+        this.realmId = realmId;
+    }
+
+    public String getRealmId() {
+        return realmId;
     }
 
     @Prefix("realm")
@@ -40,12 +44,12 @@ public class AdminRealmPlace extends AdminPlace {
 
         @Override
         public AdminRealmPlace getPlace(String token) {
-            return new AdminRealmPlace(token);
+            return new AdminRealmPlace(token != null && token.length() > 0 ? token : null);
         }
 
         @Override
         public String getToken(AdminRealmPlace place) {
-            return place.getRealm();
+            return place.getRealmId() != null ? place.getRealmId() : "";
         }
     }
 

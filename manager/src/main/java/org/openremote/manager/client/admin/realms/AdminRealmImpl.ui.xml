@@ -8,7 +8,9 @@
 
     <g:HTMLPanel styleName="flex layout vertical">
 
-        <div class="{widgetStyle.Headline1} {themeStyle.Headline1}">Manage Tenants</div>
+        <div class="{widgetStyle.Headline1} {themeStyle.Headline1}">
+            <g:Label text="{constants.editRealm}"/>
+        </div>
 
         <div class="layout vertical {widgetStyle.Form} {themeStyle.Form}">
 
@@ -16,18 +18,7 @@
 
             <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}">
                 <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
-                    <label ui:field="realmsListBoxLabel">Select tenant</label>
-                </div>
-                <div class="{widgetStyle.FormField} {themeStyle.FormField}">
-                    <g:ListBox ui:field="realmsListBox"
-                               addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormDropDown} {themeStyle.FormDropDown}"
-                               visibleItemCount="1"/>
-                </div>
-            </div>
-
-            <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}">
-                <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
-                    <label ui:field="realmNameInputLabel">Tenant display name</label>
+                    <label ui:field="realmNameInputLabel"><g:Label text="{constants.realmDisplayName}"/></label>
                 </div>
                 <div class="{widgetStyle.FormField} {themeStyle.FormField}">
                     <g:TextBox ui:field="realmNameInput"
@@ -37,11 +28,11 @@
 
             <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}">
                 <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
-                    <label ui:field="realmEnabledLabel">Enabled</label>
+                    <label ui:field="realmEnabledLabel"><g:Label text="{constants.enabled}"/></label>
                 </div>
                 <div class="{widgetStyle.FormField} {themeStyle.FormField}">
                     <g:SimpleCheckBox ui:field="realmEnabledCheckBox"
-                               addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormCheckBox} {themeStyle.FormCheckBox}"/>
+                                      addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormCheckBox} {themeStyle.FormCheckBox}"/>
                 </div>
             </div>
 

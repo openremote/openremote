@@ -22,7 +22,6 @@ package org.openremote.manager.server.assets;
 import elemental.json.Json;
 import elemental.json.JsonArray;
 import elemental.json.JsonObject;
-import org.jboss.resteasy.annotations.Form;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.shared.assets.AssetsResource;
 import org.openremote.manager.shared.http.RequestParams;
@@ -45,33 +44,33 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource {
     }
 
     @Override
-    public JsonArray getEntities(@Form RequestParams requestParams, @Form EntityListParams entityListParams) {
+    public JsonArray getEntities(RequestParams requestParams, EntityListParams entityListParams) {
         return assetsService.getContextBroker().getEntities(entityListParams);
     }
 
     @Override
-    public void postEntity(@Form RequestParams requestParams, Entity entity) {
+    public void postEntity(RequestParams requestParams, Entity entity) {
         checkSuccessResponse(assetsService.getContextBroker().postEntity(entity));
     }
 
     @Override
-    public JsonObject getEntity(@Form RequestParams requestParams, String entityId, @Form EntityParams entityParams) {
+    public JsonObject getEntity(RequestParams requestParams, String entityId, EntityParams entityParams) {
         return assetsService.getContextBroker().getEntity(entityId, entityParams);
     }
 
     @Override
-    public void deleteEntity(@Form RequestParams requestParams, String entityId) {
+    public void deleteEntity(RequestParams requestParams, String entityId) {
         checkSuccessResponse(assetsService.getContextBroker().deleteEntity(entityId));
     }
 
     @Override
-    public void putEntity(@Form RequestParams requestParams, String entityId, Entity entity) {
+    public void putEntity(RequestParams requestParams, String entityId, Entity entity) {
         entity = new Entity(fixForUpdate(entity.getJsonObject()));
         checkSuccessResponse(assetsService.getContextBroker().putEntity(entityId, entity));
     }
 
     @Override
-    public void patchEntity(@Form RequestParams requestParams, String entityId, Entity entity) {
+    public void patchEntity(RequestParams requestParams, String entityId, Entity entity) {
         entity = new Entity(fixForUpdate(entity.getJsonObject()));
         checkSuccessResponse(assetsService.getContextBroker().patchEntity(entityId, entity));
     }

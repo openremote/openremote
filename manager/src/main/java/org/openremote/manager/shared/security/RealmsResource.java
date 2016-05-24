@@ -20,13 +20,10 @@
 package org.openremote.manager.shared.security;
 
 import jsinterop.annotations.JsType;
-import org.jboss.resteasy.annotations.Form;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.manager.shared.http.RequestParams;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 
 @Path("realm")
@@ -35,6 +32,11 @@ public interface RealmsResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    RealmRepresentation[] getRealms(@Form RequestParams requestParams);
+    RealmRepresentation[] getRealms(@BeanParam RequestParams requestParams);
+
+    @GET
+    @Path("{realmId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    RealmRepresentation getRealm(@BeanParam RequestParams requestParams, @PathParam("realmId") String realmId);
 
 }

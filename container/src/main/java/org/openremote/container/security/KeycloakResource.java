@@ -19,7 +19,6 @@
  */
 package org.openremote.container.security;
 
-import org.jboss.resteasy.annotations.Form;
 import org.keycloak.representations.AccessTokenResponse;
 
 import javax.ws.rs.*;
@@ -40,7 +39,7 @@ public interface KeycloakResource {
     @Path("realms/{realm}/protocol/openid-connect/token")
     @Consumes(APPLICATION_FORM_URLENCODED)
     @Produces(APPLICATION_JSON)
-    AccessTokenResponse getAccessToken(@PathParam("realm") String realm, @Form AuthForm authForm);
+    AccessTokenResponse getAccessToken(@PathParam("realm") String realm, @BeanParam AuthForm authForm);
 
     @GET
     @Path("realms/{realm}/clients-registrations/install/{clientId}")

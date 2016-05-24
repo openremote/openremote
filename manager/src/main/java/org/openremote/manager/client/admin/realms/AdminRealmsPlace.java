@@ -17,49 +17,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.i18n;
+package org.openremote.manager.client.admin.realms;
 
-import com.google.gwt.i18n.client.Constants;
-import com.google.gwt.i18n.client.LocalizableResource;
+import com.google.gwt.place.shared.PlaceTokenizer;
+import com.google.gwt.place.shared.Prefix;
+import org.openremote.manager.client.admin.AdminPlace;
 
-@LocalizableResource.DefaultLocale("en")
-public interface ManagerConstants extends Constants {
+public class AdminRealmsPlace extends AdminPlace {
 
-    String appTitle();
+    final String realm;
 
-    String logout();
+    public AdminRealmsPlace(String realm) {
+        this.realm = realm;
+    }
 
-    String inventory();
+    public String getRealm() {
+        return realm;
+    }
 
-    String map();
+    @Prefix("realms")
+    public static class Tokenizer implements PlaceTokenizer<AdminRealmsPlace> {
 
-    String assets();
+        @Override
+        public AdminRealmsPlace getPlace(String token) {
+            return new AdminRealmsPlace(token);
+        }
 
-    String rules();
+        @Override
+        public String getToken(AdminRealmsPlace place) {
+            return place.getRealm();
+        }
+    }
 
-    String flows();
-
-    String admin();
-
-    String mapLoading();
-
-    String editAccount();
-
-    String manageRealms();
-
-    String manageUsers();
-
-    String overview();
-
-    String createRealm();
-
-    String realmName();
-
-    String realm();
-
-    String enabled();
-
-    String editRealm();
-
-    String realmDisplayName();
 }

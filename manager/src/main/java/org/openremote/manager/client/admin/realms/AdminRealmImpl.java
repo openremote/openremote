@@ -24,17 +24,12 @@ import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.LabelElement;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
-import com.google.gwt.user.cellview.client.CellTable;
-import com.google.gwt.user.cellview.client.HasKeyboardSelectionPolicy;
-import com.google.gwt.user.cellview.client.TextColumn;
-import com.google.gwt.user.cellview.client.TextHeader;
 import com.google.gwt.user.client.ui.*;
 import org.keycloak.representations.idm.RealmRepresentation;
 
 import javax.inject.Inject;
-import java.util.Arrays;
 
-public class AdminRealmImpl extends Composite implements AdminRealms {
+public class AdminRealmImpl extends Composite implements AdminRealm {
 
     interface UI extends UiBinder<HTMLPanel, AdminRealmImpl> {
     }
@@ -42,11 +37,6 @@ public class AdminRealmImpl extends Composite implements AdminRealms {
     private UI ui = GWT.create(UI.class);
 
     Presenter presenter;
-
-    @UiField
-    LabelElement realmsListBoxLabel;
-    @UiField
-    ListBox realmsListBox;
 
     @UiField
     LabelElement realmNameInputLabel;
@@ -61,35 +51,11 @@ public class AdminRealmImpl extends Composite implements AdminRealms {
     @UiField
     SimplePanel cellTableContainer;
 
-    final CellTable<RealmRepresentation> realmTable = new CellTable<>();
+    protected RealmRepresentation realm;
 
     @Inject
     public AdminRealmImpl() {
         initWidget(ui.createAndBindUi(this));
-
-        cellTableContainer.add(realmTable);
-        realmTable.setKeyboardSelectionPolicy(HasKeyboardSelectionPolicy.KeyboardSelectionPolicy.ENABLED);
-
-        TextHeader textHeader = new TextHeader("headerTitle");
-        textHeader.setHeaderStyleNames("my-style");
-        TextColumn<RealmRepresentation> nameColumn = new TextColumn<RealmRepresentation>() {
-            @Override
-            public String getValue(RealmRepresentation realmRepresentation) {
-                return realmRepresentation.getDisplayName();
-            }
-        };
-        realmTable.addColumn(nameColumn, textHeader);
-
-        TextColumn<RealmRepresentation> foo = new TextColumn<RealmRepresentation>() {
-            @Override
-            public String getValue(RealmRepresentation realmRepresentation) {
-                return realmRepresentation.getRealm();
-            }
-        };
-        realmTable.addColumn(foo, "Realm");
-
-        realmsListBoxLabel.setHtmlFor(Document.get().createUniqueId());
-        realmsListBox.getElement().setId(realmsListBoxLabel.getHtmlFor());
 
         realmNameInputLabel.setHtmlFor(Document.get().createUniqueId());
         realmNameInput.getElement().setId(realmNameInputLabel.getHtmlFor());
@@ -107,13 +73,9 @@ public class AdminRealmImpl extends Composite implements AdminRealms {
     }
 
     @Override
-    public void setRealms(RealmRepresentation[] realms) {
-        realmsListBox.clear();
-        for (RealmRepresentation realm : realms) {
-            realmsListBox.addItem(realm.getDisplayName());
-        }
-
-        realmTable.setRowData(0, Arrays.asList(realms));
-
+    public void setRealm(RealmRepresentation realm) {
+        this.realm = realm;
+        realmNameInput.setText(realm.getDisplayName());
     }
+
 }

@@ -24,11 +24,12 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.manager.client.admin.AbstractAdminActivity;
 import org.openremote.manager.client.admin.AdminView;
-import org.openremote.manager.client.admin.RealmArrayMapper;
+import org.openremote.manager.client.admin.RealmMapper;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.i18n.ManagerMessages;
+import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.shared.event.ui.ShowFailureEvent;
 import org.openremote.manager.shared.http.ObjectMapperCallback;
@@ -38,33 +39,38 @@ import javax.inject.Inject;
 import java.util.Collection;
 import java.util.logging.Logger;
 
-public class AdminRealmsActivity
-    extends AbstractAdminActivity<AdminRealmsPlace, AdminRealms>
-    implements AdminRealms.Presenter {
+public class AdminRealmActivity
+    extends AbstractAdminActivity<AdminRealmPlace, AdminRealm>
+    implements AdminRealm.Presenter {
 
-    private static final Logger LOG = Logger.getLogger(AdminRealmsActivity.class.getName());
+    private static final Logger LOG = Logger.getLogger(AdminRealmActivity.class.getName());
 
     final protected ManagerMessages managerMessages;
     final protected PlaceController placeController;
+    final protected EventBus eventBus;
     final protected RequestService requestService;
     final protected RealmsResource realmsResource;
-    final protected RealmArrayMapper realmArrayMapper;
+    final protected RealmMapper realmMapper;
+
+    protected String realmId;
 
     @Inject
-    public AdminRealmsActivity(AdminView adminView,
-                               AdminNavigation.Presenter adminNavigationPresenter,
-                               AdminRealms view,
-                               ManagerMessages managerMessages,
-                               PlaceController placeController,
-                               RequestService requestService,
-                               RealmsResource realmsResource,
-                               RealmArrayMapper realmArrayMapper) {
+    public AdminRealmActivity(AdminView adminView,
+                              AdminNavigation.Presenter adminNavigationPresenter,
+                              AdminRealm view,
+                              ManagerMessages managerMessages,
+                              PlaceController placeController,
+                              EventBus eventBus,
+                              RequestService requestService,
+                              RealmsResource realmsResource,
+                              RealmMapper realmMapper) {
         super(adminView, adminNavigationPresenter, view);
         this.managerMessages = managerMessages;
         this.placeController = placeController;
+        this.eventBus = eventBus;
         this.requestService = requestService;
         this.realmsResource = realmsResource;
-        this.realmArrayMapper = realmArrayMapper;
+        this.realmMapper = realmMapper;
     }
 
     @Override
@@ -73,29 +79,51 @@ public class AdminRealmsActivity
     }
 
     @Override
+    protected AppActivity<AdminRealmPlace> init(AdminRealmPlace place) {
+        realmId = place.getRealmId();
+        return super.init(place);
+    }
+
+    @Override
     public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
         super.start(container, eventBus, registrations);
         adminContent.setPresenter(this);
 
-        realmsResource.getRealms(requestService.createRequestParams(new ObjectMapperCallback<>(
-                realmArrayMapper,
-                200,
-                adminContent::setRealms,
-                ex -> eventBus.dispatch(new ShowFailureEvent(
-                    managerMessages.failureLoadingResource(ex.getMessage()),
-                    10000
-                ))
-            )
-        ));
+        if (realmId != null) {
+            loadRealm();
+        } else {
+            adminContent.setRealm(new RealmRepresentation());
+        }
     }
 
     @Override
-    public void onRealmSelected(RealmRepresentation realm) {
-        placeController.goTo(new AdminRealmPlace(realm.getId()));
+    public void createRealm(RealmRepresentation realm) {
+
     }
 
     @Override
-    public void createRealm() {
-        placeController.goTo(new AdminRealmPlace());
+    public void updateRealm(RealmRepresentation realm) {
+
+    }
+
+    @Override
+    public void deleteRealm(RealmRepresentation realm) {
+
+    }
+
+    protected void loadRealm() {
+        realmsResource.getRealm(
+            requestService.createRequestParams(new ObjectMapperCallback<>(
+                    realmMapper,
+                    200,
+                    adminContent::setRealm,
+                    ex -> eventBus.dispatch(new ShowFailureEvent(
+                        managerMessages.failureLoadingResource(ex.getMessage()),
+                        10000
+                    ))
+                )
+            ),
+            realmId
+        );
     }
 }

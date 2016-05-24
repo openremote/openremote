@@ -20,10 +20,13 @@
 package org.openremote.manager.client.admin.realms;
 
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
+import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.*;
 import org.keycloak.representations.idm.RealmRepresentation;
+import org.openremote.manager.client.admin.overview.AdminOverviewPlace;
 import org.openremote.manager.client.i18n.ManagerConstants;
 import org.openremote.manager.client.style.FormTableStyle;
 import org.openremote.manager.client.widget.PushButton;
@@ -80,6 +83,11 @@ public class AdminRealmsImpl extends Composite implements AdminRealms {
     @Override
     public void setRealms(RealmRepresentation[] realms) {
         realmsTable.setRowData(Arrays.asList(realms));
+    }
+
+    @UiHandler("createRealmButton")
+    void createRealmClicked(ClickEvent e) {
+        presenter.createRealm();
     }
 
     protected void setTestData() {

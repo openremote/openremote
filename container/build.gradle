@@ -19,7 +19,6 @@ dependencies {
     compile "org.jboss.resteasy:resteasy-multipart-provider:$resteasyVersion"
     compile "org.jboss.resteasy:resteasy-cache-core:$resteasyVersion"
     compile "org.jboss.resteasy:async-http-servlet-3.0:$resteasyVersion"
-    compile "org.jboss.resteasy:resteasy-jsapi:$resteasyVersion"
 
     compile "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
     compile "org.keycloak:keycloak-undertow-adapter:$keycloakVersion"

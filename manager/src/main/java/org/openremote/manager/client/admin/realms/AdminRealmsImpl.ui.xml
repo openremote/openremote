@@ -22,7 +22,9 @@
 
     <g:HTMLPanel styleName="flex layout vertical">
 
-        <div class="{widgetStyle.Headline1} {themeStyle.Headline1}">Manage Tenants</div>
+        <div class="{widgetStyle.Headline1} {themeStyle.Headline1}">
+            <g:Label text="{constants.manageRealms}"/>
+        </div>
 
         <div class="layout vertical {widgetStyle.Form} {themeStyle.Form}">
 
