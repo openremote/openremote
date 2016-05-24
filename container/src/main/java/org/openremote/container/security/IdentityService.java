@@ -126,7 +126,7 @@ public class IdentityService implements ContainerService {
         // the Host header. Keycloak will verify token issuer name based on this, so it must match the external host
         // and port that was used to obtain the token.
         ResteasyClientBuilder clientBuilder =
-            new ProxyWebClientBuilder(externalAuthServerUri.getHost(), -1)
+            new ProxyWebClientBuilder(externalAuthServerUri.getHost(), externalAuthServerUri.getPort())
                 .establishConnectionTimeout(
                     container.getConfigInteger(KEYCLOAK_CONNECT_TIMEOUT, KEYCLOAK_CONNECT_TIMEOUT_DEFAULT),
                     TimeUnit.MILLISECONDS
