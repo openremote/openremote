@@ -29,5 +29,12 @@ public interface ManagerMessages extends Messages {
 
     String failureLoadingResource(String error);
 
-    String failureLoadingMapSettings(String error);
+    String resourceUpdated(String msg);
+
+    String resourceCreated(String msg);
+
+    String resourceDeleted(String msg);
+
+    String failureUpdatingResource(String error);
+
 }

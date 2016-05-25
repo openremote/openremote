@@ -93,7 +93,7 @@ tasks.withType(de.richsource.gradle.plugins.gwt.AbstractGwtActionTask) {
 
     //args "-logLevel", "TRACE"
     args "-generateJsInteropExports"
-    //args "-noincremental" // TODO Yep, incremental compile is apparently broken right now in 2.8.0
+    args "-noincremental" // Incremental compilation in SDM causes problems with many generators (e.g. GwtJackson)
 
     // I've had various problems with this cache and GWT snapshot updates, so it's a good idea to make it easily cleanable
     jvmArgs("-Dgwt.persistentunitcachedir=$project.buildDir/gwt/cache")

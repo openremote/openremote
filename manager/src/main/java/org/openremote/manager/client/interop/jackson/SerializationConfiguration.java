@@ -17,28 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin.navigation;
+package org.openremote.manager.client.interop.jackson;
 
-import com.google.gwt.user.client.ui.IsWidget;
-import org.openremote.manager.client.admin.AdminPlace;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.github.nmorel.gwtjackson.client.AbstractConfiguration;
 
-public interface AdminNavigation extends IsWidget {
+public class SerializationConfiguration extends AbstractConfiguration {
 
-    interface Presenter {
-
-        AdminNavigation getView();
-
-        String getAdminOverviewPlaceToken();
-
-        String getAdminRealmsPlaceToken();
-
-        String getAdminUsersPlaceToken(String userId);
-
-        void setActivePlace(AdminPlace place);
+    @Override
+    protected void configure() {
+        fieldVisibility(JsonAutoDetect.Visibility.ANY);
+        getterVisibility(JsonAutoDetect.Visibility.NONE);
+        setterVisibility(JsonAutoDetect.Visibility.NONE);
+        isGetterVisibility(JsonAutoDetect.Visibility.NONE);
+        creatorVisibility(JsonAutoDetect.Visibility.NONE);
     }
-
-    void setPresenter(Presenter presenter);
-
-    void onPlaceChange(AdminPlace adminPlace);
-
 }

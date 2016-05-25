@@ -52,7 +52,7 @@ public abstract class AbstractCallback<T> implements Callback<T> {
             );
             return;
         }
-        onSuccess.accept(readMessageBody(entity));
+        onSuccess.accept(readMessageBody(responseCode, entity));
     }
 
     /**
@@ -66,5 +66,5 @@ public abstract class AbstractCallback<T> implements Callback<T> {
      *
      * This method converts to the desired type.
      */
-    protected abstract T readMessageBody(Object entity);
+    protected abstract T readMessageBody(int responseCode, Object entity);
 }

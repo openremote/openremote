@@ -18,7 +18,17 @@
 
             <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}">
                 <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
-                    <label ui:field="realmNameInputLabel"><g:Label text="{constants.realmDisplayName}"/></label>
+                    <label ui:field="realmDisplayNameInputLabel"><g:Label text="{constants.realmDisplayName}"/></label>
+                </div>
+                <div class="{widgetStyle.FormField} {themeStyle.FormField}">
+                    <g:TextBox ui:field="realmDisplayNameInput"
+                               addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                </div>
+            </div>
+
+            <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}">
+                <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
+                    <label ui:field="realmNameInputLabel"><g:Label text="{constants.realm}"/></label>
                 </div>
                 <div class="{widgetStyle.FormField} {themeStyle.FormField}">
                     <g:TextBox ui:field="realmNameInput"
@@ -33,6 +43,30 @@
                 <div class="{widgetStyle.FormField} {themeStyle.FormField}">
                     <g:SimpleCheckBox ui:field="realmEnabledCheckBox"
                                       addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormCheckBox} {themeStyle.FormCheckBox}"/>
+                </div>
+            </div>
+
+            <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}">
+                <div class="{widgetStyle.FormField} {themeStyle.FormField}">
+                    <w:PushButton ui:field="updateRealmButton"
+                                  addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                  text="{constants.updateRealm}"
+                                  visible="false"
+                                  icon="save"/>
+                    <w:PushButton ui:field="createRealmButton"
+                                  addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                  text="{constants.createRealm}"
+                                  visible="false"
+                                  icon="save"/>
+                    <w:PushButton ui:field="deleteRealmButton"
+                                  addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonDanger} {themeStyle.FormButtonDanger} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                  text="{constants.deleteRealm}"
+                                  visible="false"
+                                  icon="remove"/>
+                    <w:PushButton ui:field="cancelButton"
+                                  addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButton} {themeStyle.FormButton} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                  text="{constants.cancel}"
+                                  icon="close"/>
                 </div>
             </div>
 

@@ -28,6 +28,7 @@ import javax.ws.rs.core.Context;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -87,9 +88,10 @@ public class MethodMetaData {
         serviceRegistry.collectResourceMethodsUntilRoot(methodsUntilRoot);
         for (Method method : methodsUntilRoot) {
             Annotation[][] allAnnotations = method.getParameterAnnotations();
+            Parameter[] parameters = method.getParameters();
             Class<?>[] parameterTypes = method.getParameterTypes();
             for (int i = 0; i < parameterTypes.length; i++) {
-                processMetaData(parameterTypes[i], allAnnotations[i], true);
+                processMetaData(parameters[i].getName(), parameterTypes[i], allAnnotations[i], true);
             }
         }
         // this must be after we scan the params in case of @Form
@@ -107,7 +109,7 @@ public class MethodMetaData {
         return (ResourceLocator) resourceMethodField.get(invoker);
     }
 
-    protected void processMetaData(Class<?> type, Annotation[] annotations,
+    protected void processMetaData(String parameterName, Class<?> type, Annotation[] annotations,
                                    boolean useBody) {
         QueryParam query;
         HeaderParam header;
@@ -158,20 +160,19 @@ public class MethodMetaData {
         } else if ((FindAnnotation.findAnnotation(annotations, Context.class)) != null) {
             // righfully ignore
         } else if (useBody) {
-            addParameter(type, annotations, MethodParamMetaData.MethodParamType.ENTITY_PARAMETER, null);
+            addParameter(type, annotations, MethodParamMetaData.MethodParamType.ENTITY_PARAMETER, parameterName);
         }
     }
 
     private void walkForm(Class<?> type) {
         for (Field field : type.getDeclaredFields()) {
-            processMetaData(field.getType(), field.getAnnotations(), false);
+            processMetaData(field.getName(), field.getType(), field.getAnnotations(), false);
         }
         for (Method method : type.getDeclaredMethods()) {
             if (method.getParameterTypes().length != 1
                 || !method.getReturnType().equals(Void.class))
                 continue;
-            processMetaData(method.getParameterTypes()[0],
-                method.getAnnotations(), false);
+            processMetaData(method.getParameters()[0].getName(), method.getParameterTypes()[0], method.getAnnotations(), false);
         }
         if (type.getSuperclass() != null) {
             walkForm(type.getSuperclass());

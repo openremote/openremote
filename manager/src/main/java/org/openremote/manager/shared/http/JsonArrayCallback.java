@@ -33,7 +33,7 @@ public class JsonArrayCallback extends AbstractCallback<JsonArray> {
     }
 
     @Override
-    protected JsonArray readMessageBody(Object entity) {
+    protected JsonArray readMessageBody(int responseCode, Object entity) {
         return (JsonArray)entity;
         /* TODO The simple cast works, or we'd need something like this:
         if (entity instanceof JreJsonObject) {

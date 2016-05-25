@@ -17,28 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin.navigation;
+package org.openremote.manager.shared.http;
 
-import com.google.gwt.user.client.ui.IsWidget;
-import org.openremote.manager.client.admin.AdminPlace;
+import jsinterop.annotations.JsType;
 
-public interface AdminNavigation extends IsWidget {
+@JsType
+public interface EntityWriter<T> {
 
-    interface Presenter {
-
-        AdminNavigation getView();
-
-        String getAdminOverviewPlaceToken();
-
-        String getAdminRealmsPlaceToken();
-
-        String getAdminUsersPlaceToken(String userId);
-
-        void setActivePlace(AdminPlace place);
-    }
-
-    void setPresenter(Presenter presenter);
-
-    void onPlaceChange(AdminPlace adminPlace);
+    String write(T value);
 
 }

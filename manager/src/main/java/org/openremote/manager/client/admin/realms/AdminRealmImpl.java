@@ -22,10 +22,13 @@ package org.openremote.manager.client.admin.realms;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.LabelElement;
+import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
+import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.*;
 import org.keycloak.representations.idm.RealmRepresentation;
+import org.openremote.manager.client.widget.PushButton;
 
 import javax.inject.Inject;
 
@@ -36,7 +39,10 @@ public class AdminRealmImpl extends Composite implements AdminRealm {
 
     private UI ui = GWT.create(UI.class);
 
-    Presenter presenter;
+    @UiField
+    LabelElement realmDisplayNameInputLabel;
+    @UiField
+    TextBox realmDisplayNameInput;
 
     @UiField
     LabelElement realmNameInputLabel;
@@ -51,20 +57,33 @@ public class AdminRealmImpl extends Composite implements AdminRealm {
     @UiField
     SimplePanel cellTableContainer;
 
+    @UiField
+    PushButton updateRealmButton;
+
+    @UiField
+    PushButton createRealmButton;
+
+    @UiField
+    PushButton deleteRealmButton;
+
+    @UiField
+    PushButton cancelButton;
+
+    protected Presenter presenter;
     protected RealmRepresentation realm;
 
     @Inject
     public AdminRealmImpl() {
         initWidget(ui.createAndBindUi(this));
 
+        realmDisplayNameInputLabel.setHtmlFor(Document.get().createUniqueId());
+        realmDisplayNameInput.getElement().setId(realmDisplayNameInputLabel.getHtmlFor());
+
         realmNameInputLabel.setHtmlFor(Document.get().createUniqueId());
         realmNameInput.getElement().setId(realmNameInputLabel.getHtmlFor());
 
         realmEnabledLabel.setHtmlFor(Document.get().createUniqueId());
         realmEnabledCheckBox.getElement().setId(realmEnabledLabel.getHtmlFor());
-
-        realmEnabledCheckBox.setValue(true);
-        realmEnabledCheckBox.setEnabled(false);
     }
 
     @Override
@@ -75,7 +94,59 @@ public class AdminRealmImpl extends Composite implements AdminRealm {
     @Override
     public void setRealm(RealmRepresentation realm) {
         this.realm = realm;
-        realmNameInput.setText(realm.getDisplayName());
+        writeForm();
+    }
+
+    @UiHandler("updateRealmButton")
+    void updateRealmClicked(ClickEvent e) {
+        readForm();
+        presenter.updateRealm(realm);
+    }
+
+    @UiHandler("createRealmButton")
+    void createRealmClicked(ClickEvent e) {
+        readForm();
+        presenter.createRealm(realm);
+    }
+
+    @UiHandler("deleteRealmButton")
+    void deleteClicked(ClickEvent e) {
+        presenter.deleteRealm(realm);
+        realm = null;
+        writeForm();
+    }
+
+    @UiHandler("cancelButton")
+    void cancelClicked(ClickEvent e) {
+        realm = null;
+        writeForm();
+        presenter.cancel();
+    }
+
+    void writeForm() {
+        updateRealmButton.setVisible(false);
+        deleteRealmButton.setVisible(false);
+        createRealmButton.setVisible(false);
+        if (realm != null) {
+            if (realm.getId() != null) {
+                updateRealmButton.setVisible(true);
+                deleteRealmButton.setVisible(true);
+            } else {
+                createRealmButton.setVisible(true);
+            }
+            realmDisplayNameInput.setText(realm.getDisplayName());
+            realmNameInput.setText(realm.getRealm());
+            realmEnabledCheckBox.setValue(realm.isEnabled());
+        } else {
+            realmDisplayNameInput.setText(null);
+            realmEnabledCheckBox.setValue(false);
+        }
+    }
+
+    void readForm() {
+        realm.setDisplayName(realmDisplayNameInput.getText());
+        realm.setRealm(realmNameInput.getText());
+        realm.setEnabled(realmEnabledCheckBox.getValue());
     }
 
 }

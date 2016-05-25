@@ -24,6 +24,7 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.manager.client.admin.AbstractAdminActivity;
 import org.openremote.manager.client.admin.AdminView;
+import org.openremote.manager.client.admin.RealmArrayMapper;
 import org.openremote.manager.client.admin.RealmMapper;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.event.bus.EventBus;
@@ -32,7 +33,9 @@ import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.shared.event.ui.ShowFailureEvent;
+import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 import org.openremote.manager.shared.http.ObjectMapperCallback;
+import org.openremote.manager.shared.http.StatusCallback;
 import org.openremote.manager.shared.security.RealmsResource;
 
 import javax.inject.Inject;
@@ -52,7 +55,7 @@ public class AdminRealmActivity
     final protected RealmsResource realmsResource;
     final protected RealmMapper realmMapper;
 
-    protected String realmId;
+    protected String realmName;
 
     @Inject
     public AdminRealmActivity(AdminView adminView,
@@ -75,12 +78,12 @@ public class AdminRealmActivity
 
     @Override
     protected String[] getRequiredRoles() {
-        return new String[]{"read:admin"};
+        return new String[]{"read:admin", "write:admin"};
     }
 
     @Override
     protected AppActivity<AdminRealmPlace> init(AdminRealmPlace place) {
-        realmId = place.getRealmId();
+        realmName = place.getRealmName();
         return super.init(place);
     }
 
@@ -89,7 +92,7 @@ public class AdminRealmActivity
         super.start(container, eventBus, registrations);
         adminContent.setPresenter(this);
 
-        if (realmId != null) {
+        if (realmName != null) {
             loadRealm();
         } else {
             adminContent.setRealm(new RealmRepresentation());
@@ -98,17 +101,77 @@ public class AdminRealmActivity
 
     @Override
     public void createRealm(RealmRepresentation realm) {
-
+        if (this.realmName != null)
+            return;
+        realmsResource.createRealm(
+            requestService.createRequestParams(new StatusCallback(
+                    204,
+                    result -> {
+                        eventBus.dispatch(new ShowInfoEvent(
+                            managerMessages.resourceCreated(realm.getDisplayName())
+                        ));
+                        placeController.goTo(new AdminRealmsPlace());
+                    },
+                    ex -> eventBus.dispatch(new ShowFailureEvent(
+                        managerMessages.failureUpdatingResource(ex.getMessage()),
+                        10000
+                    ))
+                ), realmMapper
+            ),
+            realm
+        );
     }
 
     @Override
     public void updateRealm(RealmRepresentation realm) {
-
+        if (this.realmName == null)
+            return;
+        realmsResource.updateRealm(
+            requestService.createRequestParams(new StatusCallback(
+                    204,
+                    result -> {
+                        eventBus.dispatch(new ShowInfoEvent(
+                            managerMessages.resourceUpdated(realm.getDisplayName())
+                        ));
+                        placeController.goTo(new AdminRealmsPlace());
+                    },
+                    ex -> eventBus.dispatch(new ShowFailureEvent(
+                        managerMessages.failureUpdatingResource(ex.getMessage()),
+                        10000
+                    ))
+                ), realmMapper
+            ),
+            this.realmName,
+            realm
+        );
     }
 
     @Override
     public void deleteRealm(RealmRepresentation realm) {
+        if (this.realmName == null)
+            return;
+        realmsResource.deleteRealm(
+            requestService.createRequestParams(new StatusCallback(
+                    204,
+                    result -> {
+                        eventBus.dispatch(new ShowInfoEvent(
+                            managerMessages.resourceDeleted(realm.getDisplayName())
+                        ));
+                        placeController.goTo(new AdminRealmsPlace());
+                    },
+                    ex -> eventBus.dispatch(new ShowFailureEvent(
+                        managerMessages.failureUpdatingResource(ex.getMessage()),
+                        10000
+                    ))
+                )
+            ),
+            this.realmName
+        );
+    }
 
+    @Override
+    public void cancel() {
+        placeController.goTo(new AdminRealmsPlace());
     }
 
     protected void loadRealm() {
@@ -123,7 +186,7 @@ public class AdminRealmActivity
                     ))
                 )
             ),
-            realmId
+            realmName
         );
     }
 }

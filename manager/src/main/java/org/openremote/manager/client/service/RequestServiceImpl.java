@@ -26,6 +26,7 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import org.openremote.manager.shared.http.Callback;
+import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.manager.shared.http.Request;
 import org.openremote.manager.shared.http.RequestParams;
 
@@ -70,4 +71,8 @@ public class RequestServiceImpl implements RequestService {
             .withBearerAuth(securityService.getToken());
     }
 
+    @Override
+    public <T, E> RequestParams<T> createRequestParams(Callback<T> callback, EntityWriter<E> entityWriter) {
+        return createRequestParams(callback).setEntityWriter(entityWriter);
+    }
 }

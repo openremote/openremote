@@ -31,6 +31,8 @@ public interface AdminRealm extends AdminContent {
         void updateRealm(RealmRepresentation realm);
 
         void deleteRealm(RealmRepresentation realm);
+
+        void cancel();
     }
 
     void setPresenter(Presenter presenter);

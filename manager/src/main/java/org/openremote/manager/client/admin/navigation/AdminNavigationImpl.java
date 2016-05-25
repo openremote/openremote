@@ -67,7 +67,7 @@ public class AdminNavigationImpl extends Composite implements AdminNavigation {
         this.presenter = presenter;
 
         overviewLink.setTargetHistoryToken(presenter.getAdminOverviewPlaceToken());
-        realmsLink.setTargetHistoryToken(presenter.getAdminRealmsPlaceToken(""));
+        realmsLink.setTargetHistoryToken(presenter.getAdminRealmsPlaceToken());
         usersLink.setTargetHistoryToken(presenter.getAdminUsersPlaceToken(""));
     }
 

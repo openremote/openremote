@@ -24,6 +24,8 @@ import org.openremote.container.web.WebResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.security.RealmsResource;
 
+import javax.ws.rs.BeanParam;
+import javax.ws.rs.WebApplicationException;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -39,12 +41,47 @@ public class RealmsResourceImpl extends WebResource implements RealmsResource {
 
     @Override
     public RealmRepresentation[] getRealms(RequestParams requestParams) {
-        List<RealmRepresentation> realms =  managerIdentityService.getRealms(requestParams).findAll();
-        return realms.toArray(new RealmRepresentation[realms.size()]);
+        try {
+            List<RealmRepresentation> realms = managerIdentityService.getRealms(requestParams).findAll();
+            return realms.toArray(new RealmRepresentation[realms.size()]);
+        } catch (Exception ex) {
+            throw new WebApplicationException(ex);
+        }
     }
 
     @Override
-    public RealmRepresentation getRealm(RequestParams requestParams, String realmId) {
-        return managerIdentityService.getRealms(requestParams).realm(realmId).toRepresentation();
+    public RealmRepresentation getRealm(RequestParams requestParams, String realmName) {
+        try {
+            return managerIdentityService.getRealms(requestParams).realm(realmName).toRepresentation();
+        } catch (Exception ex) {
+            throw new WebApplicationException(ex);
+        }
+    }
+
+    @Override
+    public void updateRealm(@BeanParam RequestParams requestParams, String realmName, RealmRepresentation realm) {
+        try {
+            managerIdentityService.getRealms(requestParams).realm(realmName).update(realm);
+        } catch (Exception ex) {
+            throw new WebApplicationException(ex);
+        }
+    }
+
+    @Override
+    public void createRealm(@BeanParam RequestParams requestParams, RealmRepresentation realm) {
+        try {
+            managerIdentityService.getRealms(requestParams).create(realm);
+        } catch (Exception ex) {
+            throw new WebApplicationException(ex);
+        }
+    }
+
+    @Override
+    public void deleteRealm(@BeanParam RequestParams requestParams, String realmName) {
+        try {
+            managerIdentityService.getRealms(requestParams).realm(realmName).remove();
+        } catch (Exception ex) {
+            throw new WebApplicationException(ex);
+        }
     }
 }

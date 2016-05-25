@@ -22,6 +22,7 @@ package org.openremote.manager.shared.security;
 import jsinterop.annotations.JsType;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.manager.shared.http.RequestParams;
+import org.openremote.manager.shared.http.SuccessStatusCode;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -32,11 +33,29 @@ public interface RealmsResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
+    @SuccessStatusCode(200)
     RealmRepresentation[] getRealms(@BeanParam RequestParams requestParams);
 
     @GET
-    @Path("{realmId}")
+    @Path("{realmName}")
     @Produces(MediaType.APPLICATION_JSON)
-    RealmRepresentation getRealm(@BeanParam RequestParams requestParams, @PathParam("realmId") String realmId);
+    @SuccessStatusCode(200)
+    RealmRepresentation getRealm(@BeanParam RequestParams requestParams, @PathParam("realmName") String realmName);
 
+    @PUT
+    @Path("{realmName}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @SuccessStatusCode(204)
+    void updateRealm(@BeanParam RequestParams requestParams, @PathParam("realmName") String realmName, RealmRepresentation realm);
+
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @SuccessStatusCode(201)
+    void createRealm(@BeanParam RequestParams requestParams, RealmRepresentation realm);
+
+    @DELETE
+    @Path("{realmName}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    void deleteRealm(@BeanParam RequestParams requestParams, @PathParam("realmName") String realmName);
 }

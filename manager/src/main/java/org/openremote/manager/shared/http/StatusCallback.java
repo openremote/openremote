@@ -17,28 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin.navigation;
+package org.openremote.manager.shared.http;
 
-import com.google.gwt.user.client.ui.IsWidget;
-import org.openremote.manager.client.admin.AdminPlace;
+import org.openremote.manager.shared.Consumer;
 
-public interface AdminNavigation extends IsWidget {
+public class StatusCallback extends AbstractCallback<Integer> {
 
-    interface Presenter {
-
-        AdminNavigation getView();
-
-        String getAdminOverviewPlaceToken();
-
-        String getAdminRealmsPlaceToken();
-
-        String getAdminUsersPlaceToken(String userId);
-
-        void setActivePlace(AdminPlace place);
+    public StatusCallback(Consumer<Integer> onSuccess, Consumer<Exception> onFailure) {
+        super(onSuccess, onFailure);
     }
 
-    void setPresenter(Presenter presenter);
+    public StatusCallback(int expectedStatusCode, Consumer<Integer> onSuccess, Consumer<Exception> onFailure) {
+        super(expectedStatusCode, onSuccess, onFailure);
+    }
 
-    void onPlaceChange(AdminPlace adminPlace);
+    @Override
+    protected Integer readMessageBody(int responseCode, Object entity) {
+        return responseCode;
+    }
 
 }

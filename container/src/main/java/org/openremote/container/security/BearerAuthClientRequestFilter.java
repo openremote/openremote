@@ -24,6 +24,7 @@ import javax.ws.rs.client.ClientRequestFilter;
 import java.io.IOException;
 
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
+import static org.openremote.container.web.WebClient.REQUEST_PROPERTY_ACCESS_TOKEN;
 
 /**
  * Add Bearer authentication header if request context is configured with accessToken.
@@ -31,7 +32,7 @@ import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 public class BearerAuthClientRequestFilter implements ClientRequestFilter {
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
-        String accessToken = (String) requestContext.getConfiguration().getProperty("accessToken");
+        String accessToken = (String) requestContext.getConfiguration().getProperty(REQUEST_PROPERTY_ACCESS_TOKEN);
         if (accessToken != null) {
             String authorization = "Bearer " + accessToken;
             requestContext.getHeaders().add(AUTHORIZATION, authorization);

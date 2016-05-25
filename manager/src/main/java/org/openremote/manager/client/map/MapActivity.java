@@ -95,7 +95,7 @@ public class MapActivity extends AppActivity<MapPlace> implements MapView.Presen
                 200,
                 view::initialiseMap,
                 ex -> eventBus.dispatch(new ShowFailureEvent(
-                    managerMessages.failureLoadingMapSettings(ex.getMessage())
+                    managerMessages.failureLoadingResource(ex.getMessage())
                 ))
             )
         ));

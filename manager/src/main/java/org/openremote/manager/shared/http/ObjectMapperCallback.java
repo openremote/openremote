@@ -23,11 +23,7 @@ import com.github.nmorel.gwtjackson.client.ObjectMapper;
 import elemental.json.JsonValue;
 import org.openremote.manager.shared.Consumer;
 
-import java.util.logging.Logger;
-
 public class ObjectMapperCallback<T> extends AbstractCallback<T> {
-
-    private static final Logger LOG = Logger.getLogger(ObjectMapperCallback.class.getName());
 
     final protected ObjectMapper<T> objectMapper;
 
@@ -42,7 +38,7 @@ public class ObjectMapperCallback<T> extends AbstractCallback<T> {
     }
 
     @Override
-    protected T readMessageBody(Object entity) {
+    protected T readMessageBody(int responseCode, Object entity) {
         return objectMapper.read(((JsonValue) entity).toJson());
     }
 }

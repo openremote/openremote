@@ -61,8 +61,11 @@ public class RequestParams<T> {
     @JsProperty(name = HttpHeaders.AUTHORIZATION)
     public String authorization;
 
-    @JsProperty
+    @JsProperty(name = "$entity")
     public String entity;
+
+    @JsProperty(name = "$entityWriter")
+    public EntityWriter entityWriter;
 
     @JsProperty(name = "$contentType")
     public String contentType;
@@ -104,6 +107,11 @@ public class RequestParams<T> {
 
     public RequestParams<T> setEntity(String entity) {
         this.entity = entity;
+        return this;
+    }
+
+    public RequestParams<T> setEntityWriter(EntityWriter entityWriter) {
+        this.entityWriter = entityWriter;
         return this;
     }
 

@@ -116,7 +116,7 @@ public class ManagerActivityMapper implements AppActivityMapper {
                 return userProfileActivityProvider.get().init(securityService, (UserAccountPlace) place);
             }
         } catch (RoleRequiredException ex) {
-            LOG.warning("Access denied, missing required role for: " + place);
+            LOG.warning("Access denied, missing required role '" + ex.getRequiredRole() + "': " + place);
             eventBus.dispatch(new ShowFailureEvent(managerMessages.accessDenied(), 5000));
         }
         return null;

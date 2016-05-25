@@ -20,7 +20,10 @@
 package org.openremote.manager.client.admin;
 
 import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
 import org.keycloak.representations.idm.RealmRepresentation;
+import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
 
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = RealmRepresentation.class, mixIn = DefaultJsonMixin.class)})
 public interface RealmArrayMapper extends ObjectMapper<RealmRepresentation[]> {
 }

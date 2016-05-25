@@ -181,6 +181,7 @@ public class JSAPIWriter {
         writer.println("// " + httpMethod + " " + uri);
         writer.println(methodMetaData.getFunctionName() + " = function(_params");
         printURIParamsSignature(uri, writer);
+        printEntityParamsSignature(methodMetaData, writer);
         writer.println("){");
         writer.println(" var params = _params ? _params : {};");
         writer.println(" var request = new REST.Request();");
@@ -232,6 +233,15 @@ public class JSAPIWriter {
         writer.println("};");
     }
 
+    private void printEntityParamsSignature(MethodMetaData methodMetaData, PrintWriter writer) {
+        List<MethodParamMetaData> params = methodMetaData.getParameters();
+        for (MethodParamMetaData methodParamMetaData : params) {
+            if (methodParamMetaData.getParamType() == MethodParamMetaData.MethodParamType.ENTITY_PARAMETER) {
+                writer.println(", " + methodParamMetaData.getParamName());
+            }
+        }
+    }
+
     private void printOtherParams(MethodMetaData methodMetaData,
                                   PrintWriter writer) {
         List<MethodParamMetaData> params = methodMetaData.getParameters();
@@ -265,8 +275,20 @@ public class JSAPIWriter {
                 break;
             case ENTITY_PARAMETER:
                 // the entity
-                writer.println(" if(params.$entity)");
-                writer.println("  request.setEntity(params.$entity);");
+                writer.println(" if(" + metaData.getParamName() + ") {");
+                writer.println("   if(params.$entityWriter) {");
+                writer.println("      request.setEntity(params.$entityWriter.write("+metaData.getParamName()+"));");
+                writer.println("   } else {");
+                writer.println("      request.setEntity(" + metaData.getParamName() + ");");
+                writer.println("   }");
+                writer.println(" }");
+                writer.println(" if(params.$entity) {");
+                writer.println("   if(params.$entityWriter) {");
+                writer.println("      request.setEntity(params.$entityWriter.write(params.$entity));");
+                writer.println("   } else {");
+                writer.println("      request.setEntity(params.$entity);");
+                writer.println("   }");
+                writer.println(" }");
                 break;
         }
     }

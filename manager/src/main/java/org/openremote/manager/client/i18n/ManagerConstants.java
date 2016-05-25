@@ -59,7 +59,16 @@ public interface ManagerConstants extends Constants {
 
     String enabled();
 
+    String newRealm();
+
     String editRealm();
 
     String realmDisplayName();
+
+    String updateRealm();
+
+    String deleteRealm();
+
+    String cancel();
+
 }

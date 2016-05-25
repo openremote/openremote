@@ -131,6 +131,10 @@ public abstract class AbstractStyle {
         return getPrefix() + "FormButtonPrimary";
     }
 
+    public String FormButtonDanger() {
+        return getPrefix() + "FormButtonDanger";
+    }
+
     public String FormCheckBox() {
         return getPrefix() + "FormCheckBox";
     }

@@ -46,7 +46,7 @@ public abstract class AppActivity<T extends Place>  {
     public AppActivity<T> init(SecurityService securityService, T place) throws RoleRequiredException {
         for (String requiredRole : getRequiredRoles()) {
             if (!securityService.hasResourceRoleOrIsAdmin(requiredRole, Constants.MANAGER_CLIENT_ID)) {
-                throw new RoleRequiredException();
+                throw new RoleRequiredException(requiredRole);
             }
         }
         return init(place);

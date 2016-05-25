@@ -91,7 +91,7 @@ public class AdminRealmsActivity
 
     @Override
     public void onRealmSelected(RealmRepresentation realm) {
-        placeController.goTo(new AdminRealmPlace(realm.getId()));
+        placeController.goTo(new AdminRealmPlace(realm.getRealm()));
     }
 
     @Override

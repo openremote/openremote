@@ -26,6 +26,8 @@ import java.io.UnsupportedEncodingException;
 import java.util.Base64;
 
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
+import static org.openremote.container.web.WebClient.REQUEST_PROPERTY_CLIENT_ID;
+import static org.openremote.container.web.WebClient.REQUEST_PROPERTY_CLIENT_SECRET;
 
 /**
  * Add Basic authentication header if request context is configured with clientId and clientSecret.
@@ -34,8 +36,8 @@ public class ClientSecretRequestFilter implements ClientRequestFilter {
 
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
-        String clientId = (String) requestContext.getConfiguration().getProperty("clientId");
-        String clientSecret = (String) requestContext.getConfiguration().getProperty("clientSecret");
+        String clientId = (String) requestContext.getConfiguration().getProperty(REQUEST_PROPERTY_CLIENT_ID);
+        String clientSecret = (String) requestContext.getConfiguration().getProperty(REQUEST_PROPERTY_CLIENT_SECRET);
         if (clientSecret != null) {
             try {
                 String authorization = "Basic " + Base64.getEncoder().encodeToString(

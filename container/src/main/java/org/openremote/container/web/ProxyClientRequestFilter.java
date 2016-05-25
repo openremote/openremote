@@ -23,6 +23,8 @@ import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientRequestFilter;
 import java.io.IOException;
 
+import static org.openremote.container.web.WebClient.*;
+
 /**
  * Add X-Forwarded-For and X-Forwarded-Proto headers if request context is configured with values.
  */
@@ -30,13 +32,17 @@ public class ProxyClientRequestFilter implements ClientRequestFilter {
 
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
-        String forwardedFor = (String) requestContext.getConfiguration().getProperty("forwardedFor");
+        String forwardedFor = (String) requestContext.getConfiguration().getProperty(REQUEST_PROPERTY_X_FORWARDED_FOR);
         if (forwardedFor != null) {
             requestContext.getHeaders().add("X-Forwarded-For", forwardedFor);
         }
-        String forwardedProto = (String) requestContext.getConfiguration().getProperty("forwardedProto");
+        String forwardedProto = (String) requestContext.getConfiguration().getProperty(REQUEST_PROPERTY_X_FORWARDED_PROTO);
         if (forwardedProto != null) {
             requestContext.getHeaders().add("X-Forwarded-Proto", forwardedProto);
+        }
+        Integer forwardedPort = (Integer) requestContext.getConfiguration().getProperty(REQUEST_PROPERTY_X_FORWARDED_PORT);
+        if (forwardedPort != null) {
+            requestContext.getHeaders().add("X-Forwarded-Port", forwardedPort);
         }
     }
 }

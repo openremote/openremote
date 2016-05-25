@@ -32,6 +32,13 @@ import java.net.URI;
 
 public interface WebClient {
 
+    String REQUEST_PROPERTY_ACCESS_TOKEN = WebClient.class.getName() + ".accessToken";
+    String REQUEST_PROPERTY_CLIENT_ID = WebClient.class.getName() + ".clientId";
+    String REQUEST_PROPERTY_CLIENT_SECRET = WebClient.class.getName() + ".clientSecret";
+    String REQUEST_PROPERTY_X_FORWARDED_FOR = WebClient.class.getName() + ".xForwardedFor";
+    String REQUEST_PROPERTY_X_FORWARDED_PROTO = WebClient.class.getName() + ".xForwardedProto";
+    String REQUEST_PROPERTY_X_FORWARDED_PORT = WebClient.class.getName() + ".xForwardedPort";
+
     static ResteasyClientBuilder registerDefaults(Container container, ResteasyClientBuilder builder) {
         return builder
             .register(new JacksonConfig(container))
@@ -42,47 +49,51 @@ public interface WebClient {
     }
 
     static ResteasyWebTarget getTarget(Client client, URI uri) {
-        return getTarget(client, uri, null, null, null);
+        return getTarget(client, uri, null, null, null, null);
     }
 
     static ResteasyWebTarget getTarget(Client client, URI uri, String accessToken) {
-        return getTarget(client, uri, accessToken, null, null);
+        return getTarget(client, uri, accessToken, null, null, null);
     }
 
     /**
-     * @param enableProxyForward Set to <code>true</code> to add X-Forward-* headers on requests.
+     * @param enableProxyForward Set to <code>true</code> to add X-Forward-* headers on requests, using the given URI.
      */
-    static ResteasyWebTarget getTarget(Client client, URI uri, String accessToken, URI externalAuthServerUri, boolean enableProxyForward) {
+    static ResteasyWebTarget getTarget(Client client, URI uri, String accessToken, URI forwardUri, boolean enableProxyForward) {
         return getTarget(
             client,
             uri,
             accessToken,
-            enableProxyForward ? externalAuthServerUri.getHost() + ":" + externalAuthServerUri.getPort() : null,
-            enableProxyForward ? externalAuthServerUri.getScheme() : null
+            enableProxyForward ? forwardUri.getHost() : null,
+            enableProxyForward ? forwardUri.getScheme() : null,
+            enableProxyForward ? forwardUri.getPort() : null
         );
     }
 
-    static ResteasyWebTarget getTarget(Client client, URI uri, String accessToken, String forwardFor, String forwardProto) {
+    static ResteasyWebTarget getTarget(Client client, URI uri, String accessToken, String forwardFor, String forwardProto, Integer forwardPort) {
         ResteasyWebTarget target = ((ResteasyWebTarget) client.target(uri));
         if (accessToken != null) {
-            target.property("accessToken", accessToken);
+            target.property(REQUEST_PROPERTY_ACCESS_TOKEN, accessToken);
         }
         if (forwardFor != null) {
-            target.property("forwardedFor", forwardFor);
+            target.property(REQUEST_PROPERTY_X_FORWARDED_FOR, forwardFor);
         }
         if (forwardProto != null) {
-            target.property("forwardedProto", forwardProto);
+            target.property(REQUEST_PROPERTY_X_FORWARDED_PROTO, forwardProto);
+        }
+        if (forwardPort != null) {
+            target.property(REQUEST_PROPERTY_X_FORWARDED_PORT, forwardPort);
         }
         return target;
     }
 
     static ResteasyWebTarget getTarget(Client client, URI uri, String clientId, String clientSecret) {
-        ResteasyWebTarget target = getTarget(client, uri, null, null, null);
+        ResteasyWebTarget target = getTarget(client, uri, null, null, null, null);
         if (clientId != null) {
-            target.property("clientId", clientId);
+            target.property(REQUEST_PROPERTY_CLIENT_ID, clientId);
         }
         if (clientSecret != null) {
-            target.property("clientSecret", clientSecret);
+            target.property(REQUEST_PROPERTY_CLIENT_SECRET, clientSecret);
         }
         return target;
     }

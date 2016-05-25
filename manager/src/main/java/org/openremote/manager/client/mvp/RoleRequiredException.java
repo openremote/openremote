@@ -2,22 +2,17 @@ package org.openremote.manager.client.mvp;
 
 public class RoleRequiredException extends Exception {
 
+    final String requiredRole;
+
     public RoleRequiredException() {
+        this(null);
     }
 
-    public RoleRequiredException(String message) {
-        super(message);
+    public RoleRequiredException(String requiredRole) {
+        this.requiredRole = requiredRole;
     }
 
-    public RoleRequiredException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public RoleRequiredException(Throwable cause) {
-        super(cause);
-    }
-
-    public RoleRequiredException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
+    public String getRequiredRole() {
+        return requiredRole;
     }
 }
