@@ -20,6 +20,7 @@
 package org.openremote.manager.client.admin.realms;
 
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.dom.client.DivElement;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.LabelElement;
 import com.google.gwt.event.dom.client.ClickEvent;
@@ -28,6 +29,8 @@ import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.*;
 import org.keycloak.representations.idm.RealmRepresentation;
+import org.openremote.manager.client.style.ThemeStyle;
+import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.PushButton;
 
 import javax.inject.Inject;
@@ -38,6 +41,11 @@ public class AdminRealmImpl extends Composite implements AdminRealm {
     }
 
     private UI ui = GWT.create(UI.class);
+
+    @UiField
+    protected WidgetStyle widgetStyle;
+    @UiField
+    protected ThemeStyle themeStyle;
 
     @UiField
     LabelElement realmDisplayNameInputLabel;
@@ -68,6 +76,9 @@ public class AdminRealmImpl extends Composite implements AdminRealm {
 
     @UiField
     PushButton cancelButton;
+
+    @UiField
+    DivElement form;
 
     protected Presenter presenter;
     protected RealmRepresentation realm;
@@ -100,20 +111,25 @@ public class AdminRealmImpl extends Composite implements AdminRealm {
     @UiHandler("updateRealmButton")
     void updateRealmClicked(ClickEvent e) {
         readForm();
-        presenter.updateRealm(realm);
+        setFormBusy(true);
+        presenter.updateRealm(realm, () -> setFormBusy(false));
     }
 
     @UiHandler("createRealmButton")
     void createRealmClicked(ClickEvent e) {
         readForm();
-        presenter.createRealm(realm);
+        setFormBusy(true);
+        presenter.createRealm(realm, () -> setFormBusy(false));
     }
 
     @UiHandler("deleteRealmButton")
     void deleteClicked(ClickEvent e) {
-        presenter.deleteRealm(realm);
-        realm = null;
-        writeForm();
+        setFormBusy(true);
+        presenter.deleteRealm(realm, () -> {
+            realm = null;
+            writeForm();
+            setFormBusy(false);
+        });
     }
 
     @UiHandler("cancelButton")
@@ -147,6 +163,16 @@ public class AdminRealmImpl extends Composite implements AdminRealm {
         realm.setDisplayName(realmDisplayNameInput.getText());
         realm.setRealm(realmNameInput.getText());
         realm.setEnabled(realmEnabledCheckBox.getValue());
+    }
+
+    void setFormBusy(boolean busy) {
+        if (busy) {
+            form.addClassName(widgetStyle.FormBusy());
+            form.addClassName(themeStyle.FormBusy());
+        } else {
+            form.removeClassName(widgetStyle.FormBusy());
+            form.removeClassName(themeStyle.FormBusy());
+        }
     }
 
 }

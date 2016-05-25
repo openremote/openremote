@@ -24,7 +24,6 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.manager.client.admin.AbstractAdminActivity;
 import org.openremote.manager.client.admin.AdminView;
-import org.openremote.manager.client.admin.RealmArrayMapper;
 import org.openremote.manager.client.admin.RealmMapper;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.event.bus.EventBus;
@@ -32,6 +31,7 @@ import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.service.RequestService;
+import org.openremote.manager.shared.Runnable;
 import org.openremote.manager.shared.event.ui.ShowFailureEvent;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 import org.openremote.manager.shared.http.ObjectMapperCallback;
@@ -100,22 +100,26 @@ public class AdminRealmActivity
     }
 
     @Override
-    public void createRealm(RealmRepresentation realm) {
+    public void createRealm(RealmRepresentation realm, Runnable onComplete) {
         if (this.realmName != null)
             return;
         realmsResource.createRealm(
             requestService.createRequestParams(new StatusCallback(
                     204,
                     result -> {
+                        onComplete.run();
                         eventBus.dispatch(new ShowInfoEvent(
                             managerMessages.resourceCreated(realm.getDisplayName())
                         ));
                         placeController.goTo(new AdminRealmsPlace());
                     },
-                    ex -> eventBus.dispatch(new ShowFailureEvent(
-                        managerMessages.failureUpdatingResource(ex.getMessage()),
-                        10000
-                    ))
+                    ex -> {
+                        onComplete.run();
+                        eventBus.dispatch(new ShowFailureEvent(
+                            managerMessages.failureUpdatingResource(ex.getMessage()),
+                            10000
+                        ));
+                    }
                 ), realmMapper
             ),
             realm
@@ -123,22 +127,26 @@ public class AdminRealmActivity
     }
 
     @Override
-    public void updateRealm(RealmRepresentation realm) {
+    public void updateRealm(RealmRepresentation realm, Runnable onComplete) {
         if (this.realmName == null)
             return;
         realmsResource.updateRealm(
             requestService.createRequestParams(new StatusCallback(
                     204,
                     result -> {
+                        onComplete.run();
                         eventBus.dispatch(new ShowInfoEvent(
                             managerMessages.resourceUpdated(realm.getDisplayName())
                         ));
                         placeController.goTo(new AdminRealmsPlace());
                     },
-                    ex -> eventBus.dispatch(new ShowFailureEvent(
-                        managerMessages.failureUpdatingResource(ex.getMessage()),
-                        10000
-                    ))
+                    ex -> {
+                        onComplete.run();
+                        eventBus.dispatch(new ShowFailureEvent(
+                            managerMessages.failureUpdatingResource(ex.getMessage()),
+                            10000
+                        ));
+                    }
                 ), realmMapper
             ),
             this.realmName,
@@ -147,22 +155,26 @@ public class AdminRealmActivity
     }
 
     @Override
-    public void deleteRealm(RealmRepresentation realm) {
+    public void deleteRealm(RealmRepresentation realm, Runnable onComplete) {
         if (this.realmName == null)
             return;
         realmsResource.deleteRealm(
             requestService.createRequestParams(new StatusCallback(
                     204,
                     result -> {
+                        onComplete.run();
                         eventBus.dispatch(new ShowInfoEvent(
                             managerMessages.resourceDeleted(realm.getDisplayName())
                         ));
                         placeController.goTo(new AdminRealmsPlace());
                     },
-                    ex -> eventBus.dispatch(new ShowFailureEvent(
-                        managerMessages.failureUpdatingResource(ex.getMessage()),
-                        10000
-                    ))
+                    ex -> {
+                        onComplete.run();
+                        eventBus.dispatch(new ShowFailureEvent(
+                            managerMessages.failureUpdatingResource(ex.getMessage()),
+                            10000
+                        ));
+                    }
                 )
             ),
             this.realmName

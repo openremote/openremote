@@ -12,7 +12,7 @@
             <g:Label text="{constants.editRealm}"/>
         </div>
 
-        <div class="layout vertical {widgetStyle.Form} {themeStyle.Form}">
+        <div class="layout vertical {widgetStyle.Form} {themeStyle.Form}" ui:field="form">
 
             <g:SimplePanel ui:field="cellTableContainer"/>
 

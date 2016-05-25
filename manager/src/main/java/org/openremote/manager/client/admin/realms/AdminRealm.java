@@ -21,16 +21,17 @@ package org.openremote.manager.client.admin.realms;
 
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.manager.client.admin.AdminContent;
+import org.openremote.manager.shared.Runnable;
 
 public interface AdminRealm extends AdminContent {
 
     interface Presenter {
 
-        void createRealm(RealmRepresentation realm);
+        void createRealm(RealmRepresentation realm, Runnable onComplete);
 
-        void updateRealm(RealmRepresentation realm);
+        void updateRealm(RealmRepresentation realm, Runnable onComplete);
 
-        void deleteRealm(RealmRepresentation realm);
+        void deleteRealm(RealmRepresentation realm, Runnable onComplete);
 
         void cancel();
     }

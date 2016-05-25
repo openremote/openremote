@@ -99,6 +99,10 @@ public abstract class AbstractStyle {
         return getPrefix() + "Form";
     }
 
+    public String FormBusy() {
+        return getPrefix() + "FormBusy";
+    }
+
     public String FormGroup() {
         return getPrefix() + "FormGroup";
     }
