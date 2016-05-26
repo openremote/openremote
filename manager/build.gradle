@@ -1,136 +1,22 @@
-buildscript {
-    repositories {
-        jcenter()
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
-    dependencies {
-        classpath "de.richsource.gradle.plugins:gwt-gradle-plugin:$gwtGradlePluginVersion"
-        classpath "net.ltgt.gradle:gradle-apt-plugin:$aptGradlePluginVersion"
-    }
-}
-
-apply plugin: "java"
-apply plugin: "groovy"
-apply plugin: "application"
-apply plugin: "net.ltgt.apt"
-apply plugin: "gwt-compiler"
-
-mainClassName = "org.openremote.manager.server.Server"
-
-dependencies {
-
-    compile project(":container")
-
-    compile "org.codehaus.groovy:groovy-all:$groovyVersion"
-
-    compile "org.slf4j:slf4j-api:$slf4jVersion"
-    compile "org.slf4j:slf4j-jdk14:$slf4jVersion"
-    compile "org.slf4j:jcl-over-slf4j:$slf4jVersion"
-    compile "org.slf4j:log4j-over-slf4j:$slf4jVersion"
-
-    compile "org.xerial:sqlite-jdbc:$sqliteVersion"
-    apt "org.hibernate:hibernate-jpamodelgen:$hibernateVersion"
-
-    compile "com.google.gwt:gwt-user:$gwtVersion"
-    compile("com.google.gwt.inject:gin:$ginVersion") {
-        exclude module: "cglib"
-    }
-    compile "cglib:cglib:$cglibVersion"
-    compile "com.github.nmorel.gwtjackson:gwt-jackson:$gwtJacksonVersion"
-    compile "org.keycloak:keycloak-core:$keycloakVersion:sources"
-
-    testCompile "junit:junit:$junitVersion"
-    testCompile "org.spockframework:spock-core:$spockVersion"
-    testCompile "org.objenesis:objenesis:$objenesisVersion"
-    testCompile "org.glassfish.tyrus:tyrus-client:$tyrusVersion"
-    testCompile "org.glassfish.tyrus:tyrus-container-grizzly-client:$tyrusVersion"
-            
-    compile files('libs/orlibrary-0.3.0.jar')
-    compile files('libs/orentities-1.2.0.jar')
-}
-
-configurations {
-}
-
-gwt {
-    gwtVersion = project.properties.gwtVersion
-
-    sourceLevel = JavaVersion.VERSION_1_8
-    maxHeapSize = "1024M"
-
-    modules("org.openremote.manager.Manager")
-
-    test {
-        hasGwtTests = false
-    }
-
-    dependencies {
-      compile files('libs/jscore-1.0.jar')
-    }
-    
-    compiler {
-        style = "PRETTY"
-    }
-
-    superDev {
-
-        // Generate minimal JS launcher in the webapp source folder (you might commit this or not, doesn't matter)
-        launcherDir = file("src/main/webapp/gwt")
-
-        // Careful, this binds to all interfaces on your machine!
-        bindAddress = "0.0.0.0"
-    }
-}
-
-// TODO Why is this not configurable?
-tasks.withType(de.richsource.gradle.plugins.gwt.AbstractGwtActionTask) {
-
-    doFirst {
-        mkdir file("src/main/webapp/gwt")
-    }
-
-    //args "-logLevel", "TRACE"
-    args "-generateJsInteropExports"
-    args "-noincremental" // Incremental compilation in SDM causes problems with many generators (e.g. GwtJackson)
-
-    // I've had various problems with this cache and GWT snapshot updates, so it's a good idea to make it easily cleanable
-    jvmArgs("-Dgwt.persistentunitcachedir=$project.buildDir/gwt/cache")
-}
-
-distributions {
-    main {
-        contents {
-            from("sample") {
-                into "sample"
-            }
-            from("src/main/webapp") {
-                into "webapp"
-                exclude "gwt"
-            }
-            from(compileGwt.outputs) {
-                into "webapp/gwt"
-                exclude "WEB-INF"
-            }
-        }
-    }
-}
+evaluationDependsOnChildren()
 
 import com.bmuschko.gradle.docker.tasks.image.*
 
 task createDockerfile(type: Dockerfile) {
-    destFile = project.file("build/install/Dockerfile")
+    destFile = project.file("$project.buildDir/install/Dockerfile")
     from "java:8"
     environmentVariable "WEBSERVER_DOCROOT", "webapp"
-    addFile project.name, "/opt/app"
+    environmentVariable "MAP_TILES_PATH", "sample/mapdata.mbtiles"
+    environmentVariable "MAP_SETTINGS_PATH", "sample/mapsettings.json"
+    addFile project(':manager:server').distributions.main.baseName, "/opt/app"
+    addFile project(':manager:client').distributions.main.baseName, "/opt/app"
     exposePort 8080
     workingDir "/opt/app"
-    entryPoint "/opt/app/bin/$project.name"
+    entryPoint "/opt/app/bin/${project(":manager:server").name}"
 }
 
 task buildImage(type: DockerBuildImage) {
-    dependsOn installDist, createDockerfile
+    dependsOn ":manager:server:installDist", ":manager:client:installDist", createDockerfile
     inputDir = createDockerfile.destFile.parentFile
     tag = dockerImageName
 }

@@ -27,7 +27,10 @@ import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.resource.FileResourceManager;
 import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.servlet.Servlets;
-import io.undertow.servlet.api.*;
+import io.undertow.servlet.api.DeploymentInfo;
+import io.undertow.servlet.api.DeploymentManager;
+import io.undertow.servlet.api.LoginConfig;
+import io.undertow.servlet.api.ServletInfo;
 import io.undertow.util.HttpString;
 import io.undertow.util.MimeMappings;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
@@ -43,6 +46,7 @@ import org.openremote.container.security.AuthOverloadHandler;
 import org.openremote.container.security.SimpleKeycloakServletExtension;
 import org.openremote.container.web.jsapi.JSAPIServlet;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -218,9 +222,14 @@ public abstract class WebService implements ContainerService {
     }
 
     protected HttpHandler createStaticResourceHandler(Container container, Path docRoot) {
+        try {
+            docRoot = docRoot.toAbsolutePath().toRealPath();
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
         if (!Files.isDirectory(docRoot))
-            throw new ConfigurationException("Missing document root directory: " + docRoot.toAbsolutePath());
-        LOG.info("Static document root directory: " + docRoot.toAbsolutePath());
+            throw new ConfigurationException("Missing document root directory: " + docRoot);
+        LOG.info("Static document root directory: " + docRoot);
         ResourceManager staticResourcesManager = new FileResourceManager(docRoot.toFile(), 0, true, false);
 
         MimeMappings.Builder mimeBuilder = MimeMappings.builder(true);

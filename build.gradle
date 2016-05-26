@@ -1,9 +1,13 @@
 buildscript {
     repositories {
         jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
     }
     dependencies {
         classpath "com.bmuschko:gradle-docker-plugin:$dockerGradlePluginVersion"
+        classpath "net.ltgt.gradle:gradle-apt-plugin:$aptGradlePluginVersion"
     }
 }
 

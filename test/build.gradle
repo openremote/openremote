@@ -1,0 +1,21 @@
+apply plugin: "java"
+apply plugin: "groovy"
+
+dependencies {
+
+    compile "org.codehaus.groovy:groovy-all:$groovyVersion"
+
+    compile project(":manager:server")
+    compile project(":manager:client")
+    compile project(":agent")
+
+    compile "junit:junit:$junitVersion"
+    compile "org.spockframework:spock-core:$spockVersion"
+    compile "org.objenesis:objenesis:$objenesisVersion"
+    compile "org.glassfish.tyrus:tyrus-client:$tyrusVersion"
+    compile "org.glassfish.tyrus:tyrus-container-grizzly-client:$tyrusVersion"
+}
+
+test {
+    workingDir = project.rootProject.projectDir
+}

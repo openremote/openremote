@@ -1,13 +1,3 @@
-buildscript {
-    repositories {
-        jcenter()
-    }
-    dependencies {
-        classpath "com.bmuschko:gradle-docker-plugin:$dockerGradlePluginVersion"
-    }
-}
-
-
 import com.bmuschko.gradle.docker.tasks.image.*
 
 task buildImage(type: DockerBuildImage) {

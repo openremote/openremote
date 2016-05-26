@@ -1,0 +1,32 @@
+apply plugin: "java"
+apply plugin: "application"
+
+mainClassName = "org.openremote.manager.server.Server"
+
+dependencies {
+
+    compile project(":container")
+    compile project(":agent")
+    compile project(":manager:shared")
+
+    compile "org.slf4j:slf4j-api:$slf4jVersion"
+    compile "org.slf4j:slf4j-jdk14:$slf4jVersion"
+    compile "org.slf4j:jcl-over-slf4j:$slf4jVersion"
+    compile "org.slf4j:log4j-over-slf4j:$slf4jVersion"
+
+    compile "org.xerial:sqlite-jdbc:$sqliteVersion"
+}
+
+distributions {
+    main {
+        contents {
+            from("sample") {
+                into "sample"
+            }
+        }
+    }
+}
+
+installDist {
+    into "${project(":manager").buildDir}/install/$distributions.main.baseName"
+}

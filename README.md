@@ -49,13 +49,13 @@ The default configuration of all `*Service` classes is for host IP `192.168.99.1
 
 ### Run GWT code server
 
-The GWT compiler will listen for compilation requests and produce Javascript code from our Java code. Start and keep it running in the background with `./gradlew -p manager gwtSuperDev`.
+The GWT compiler will listen for compilation requests and produce Javascript code from our Java code. Start and keep it running in the background with `./gradlew -p manager/client gwtSuperDev`.
 
 ### Import into IntelliJ IDEA
 
 - Create a "New Project From Existing Sources" and import as a Gradle project
 
-### Import project to Eclipse
+### Import into Eclipse
 
 - Run `./gradlew eclipse`
 - In Eclipse go to File > Import and import the project as "Existing Projects into Workspace"
@@ -64,15 +64,17 @@ The GWT compiler will listen for compilation requests and produce Javascript cod
 
 Configure your IDE and set up a *Run Configuration*:
 
-- Module: `manager`
-- Working directory: `manager/`
+- Module: `manager/server`
+- Working directory: (Set to project root directory)
 - Main class: `org.openremote.manager.server.Server`
 
 You can now open http://localhost:8080/ in your browser.
 
 ### Running tests
 
-You can run the tests of the `manager` project with `./gradlew test` or run the individual test classes in your IDE directly. Note that some of these tests are end-to-end tests that require the whole environment to be running. This means your Keycloak and Orion containers will be used, and data will be inserted and deleted during a test run. You might want to start with clean containers before running tests and you might have to restart containers after (failed) tests.
+You can run the tests of the `manager` project with `./gradlew test` or run the individual test classes in your IDE directly. The working directory must always be set to the project root diretory.
+
+Note that some of these tests are end-to-end tests that require the whole environment to be running. This means your Keycloak and Orion containers will be used, and data will be inserted and deleted during a test run. You might want to start with clean containers before running tests and you might have to restart containers after (failed) tests.
 
 ### Updating map data
 
@@ -91,7 +93,8 @@ You can extract smaller tilesets with the following procedure:
 
 ### Publishing images
 
+Build Docker images with `./gradlew clean buildImage`. Remove old images before if you don't want to use the Docker build cache.
 
-Build Docker images with `./gradlew buildImage`, you might want to `clean` before.
+You can start and test these images with the `docker-compose-quickstart.yml` configuration.
 
-You can also directly build and push the image to our [Docker Hub Account](https://hub.docker.com/u/openremote/): `/gradlew pushImage -PdockerHubUsername=username -PdockerHubPassword=secret`
+You can also directly build and push the image to our [Docker Hub Account](https://hub.docker.com/u/openremote/): `/gradlew clean pushImage -PdockerHubUsername=username -PdockerHubPassword=secret`

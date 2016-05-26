@@ -167,7 +167,11 @@ public class JSAPIWriter {
 
     private void copyResource(String name, PrintWriter writer)
         throws IOException {
-        Reader reader = new InputStreamReader(getClass().getResourceAsStream(name));
+        InputStream is = getClass().getResourceAsStream(name);
+        if (is == null) {
+            throw new RuntimeException("Resource not found: " + name);
+        }
+        Reader reader = new InputStreamReader(is);
         char[] array = new char[1024];
         int read;
         while ((read = reader.read(array)) >= 0) {
