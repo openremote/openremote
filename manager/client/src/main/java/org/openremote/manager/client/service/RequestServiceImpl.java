@@ -25,15 +25,14 @@ import elemental.html.Location;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
-import org.openremote.manager.shared.http.Callback;
-import org.openremote.manager.shared.http.EntityWriter;
-import org.openremote.manager.shared.http.Request;
-import org.openremote.manager.shared.http.RequestParams;
+import org.openremote.manager.shared.Consumer;
+import org.openremote.manager.shared.http.*;
+import org.openremote.manager.shared.validation.ConstraintViolationReport;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
+import static org.openremote.manager.shared.validation.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
 
 public class RequestServiceImpl implements RequestService {
 
@@ -68,30 +67,126 @@ public class RequestServiceImpl implements RequestService {
     }
 
     final protected SecurityService securityService;
+    final protected EntityReader<ConstraintViolationReport> constraintViolationReader;
 
     @Inject
-    public RequestServiceImpl(SecurityService securityService) {
+    public RequestServiceImpl(SecurityService securityService,
+                              EntityReader<ConstraintViolationReport> constraintViolationReader) {
         this.securityService = securityService;
+        this.constraintViolationReader = constraintViolationReader;
     }
 
     @Override
-    public <T> Request<T> createRequest(boolean withBearerAuthorization) {
-        Request<T> request = new Request<>();
-        if (withBearerAuthorization) {
-            request.addHeader(AUTHORIZATION, "Bearer " + securityService.getToken());
-            // TODO xsrf?
-        }
-        return request;
+    public void execute(Consumer<RequestParams<Void>> onRequest,
+                        int expectedStatusCode,
+                        Runnable onComplete,
+                        Runnable onResponse,
+                        Consumer<RequestException> onException) {
+        execute(null, onRequest, expectedStatusCode, onComplete, onResponse, onException);
+
     }
 
     @Override
-    public <T> RequestParams<T> createRequestParams(Callback<T> callback) {
-        return new RequestParams<T>(callback)
-            .withBearerAuth(securityService.getToken());
+    public <OUT> void execute(EntityReader<OUT> entityReader,
+                              Consumer<RequestParams<OUT>> onRequest,
+                              int expectedStatusCode,
+                              Runnable onComplete,
+                              Consumer<OUT> onResponse,
+                              Consumer<RequestException> onException) {
+        execute(entityReader, null, onRequest, expectedStatusCode, onComplete, onResponse, onException);
     }
 
     @Override
-    public <T, E> RequestParams<T> createRequestParams(Callback<T> callback, EntityWriter<E> entityWriter) {
-        return createRequestParams(callback).setEntityWriter(entityWriter);
+    public <IN> void execute(EntityWriter<IN> entityWriter,
+                             Consumer<RequestParams<Void>> onRequest,
+                             int expectedStatusCode,
+                             Runnable onComplete,
+                             Runnable onResponse,
+                             Consumer<RequestException> onException) {
+        this.execute(null, entityWriter, onRequest, expectedStatusCode, onComplete, out -> onResponse.run(), onException);
+    }
+
+    @Override
+    public <IN, OUT> void execute(EntityReader<OUT> entityReader,
+                                  EntityWriter<IN> entityWriter,
+                                  Consumer<RequestParams<OUT>> onRequest,
+                                  int expectedStatusCode,
+                                  Runnable onComplete,
+                                  Consumer<OUT> onResponse,
+                                  Consumer<RequestException> onException) {
+
+        Consumer<Boolean> onValidAccessToken =
+            tokenRefreshed -> {
+                // If it wasn't refreshed, it was still valid, in both cases we can continue
+                RequestParams<OUT> requestParams = new RequestParams<>(
+                    (responseCode, request, responseText) -> {
+
+                        onComplete.run();
+
+                        if (responseCode == 0) {
+                            onException.accept(new NoResponseException());
+                            return;
+                        }
+
+                        if (responseCode == 400) {
+                            String validationException = request.getResponseHeader(VIOLATION_EXCEPTION_HEADER);
+                            if (validationException != null && validationException.equals("true")) {
+                                ConstraintViolationReport report = getConstraintViolationReport(responseText);
+                                onException.accept(new BadRequestException(400, report));
+                            } else {
+                                onException.accept(new BadRequestException(400));
+                            }
+                            return;
+                        }
+
+                        if (responseCode == 401) {
+                            securityService.logout();
+                            return;
+                        }
+
+                        if (responseCode == 409) {
+                            onException.accept(new ConflictRequestException());
+                            return;
+                        }
+
+                        if (expectedStatusCode != ANY_STATUS_CODE && responseCode != expectedStatusCode) {
+                            onException.accept(new UnexpectedStatusRequestException(responseCode, expectedStatusCode));
+                            return;
+                        }
+
+                        OUT out = null;
+                        if (responseText != null && responseText.length() > 0 && entityReader != null) {
+                            LOG.fine("Reading response text");
+                            try {
+                                out = entityReader.read(responseText);
+                            } catch (Exception ex) {
+                                onException.accept(new EntityMarshallingRequestException(ex));
+                                return;
+                            }
+                        } else {
+                            LOG.fine("No response text or response entity reader");
+                        }
+                        onResponse.accept(out);
+                    }
+                );
+
+                requestParams.withBearerAuth(securityService.getToken());
+
+                if (entityWriter != null) {
+                    requestParams.setEntityWriter(entityWriter);
+                }
+
+                onRequest.accept(requestParams);
+            };
+
+        securityService.updateToken(
+            SecurityService.MIN_VALIDITY_SECONDS,
+            onValidAccessToken,
+            securityService::logout
+        );
+    }
+
+    protected ConstraintViolationReport getConstraintViolationReport(String responseText) {
+        return constraintViolationReader.read(responseText);
     }
 }

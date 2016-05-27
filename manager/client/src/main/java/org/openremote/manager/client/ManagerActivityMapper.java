@@ -24,10 +24,10 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import org.openremote.manager.client.admin.overview.AdminOverviewActivity;
 import org.openremote.manager.client.admin.overview.AdminOverviewPlace;
-import org.openremote.manager.client.admin.realms.AdminRealmActivity;
-import org.openremote.manager.client.admin.realms.AdminRealmsActivity;
-import org.openremote.manager.client.admin.realms.AdminRealmPlace;
-import org.openremote.manager.client.admin.realms.AdminRealmsPlace;
+import org.openremote.manager.client.admin.tenant.AdminTenantActivity;
+import org.openremote.manager.client.admin.tenant.AdminTenantsActivity;
+import org.openremote.manager.client.admin.tenant.AdminTenantPlace;
+import org.openremote.manager.client.admin.tenant.AdminTenantsPlace;
 import org.openremote.manager.client.admin.users.AdminUsersActivity;
 import org.openremote.manager.client.admin.users.AdminUsersPlace;
 import org.openremote.manager.client.assets.AssetDetailActivity;
@@ -59,8 +59,8 @@ public class ManagerActivityMapper implements AppActivityMapper {
     protected final Provider<MapActivity> mapActivityProvider;
     protected final Provider<FlowsActivity> flowsActivityProvider;
     protected final Provider<AdminOverviewActivity> adminOverviewActivityProvider;
-    protected final Provider<AdminRealmsActivity> adminRealmsActivityProvider;
-    protected final Provider<AdminRealmActivity> adminRealmActivityProvider;
+    protected final Provider<AdminTenantsActivity> adminTenantsActivityProvider;
+    protected final Provider<AdminTenantActivity> adminTenantActivityProvider;
     protected final Provider<AdminUsersActivity> adminUsersActivityProvider;
     protected final Provider<UserAccountActivity> userProfileActivityProvider;
 
@@ -72,8 +72,8 @@ public class ManagerActivityMapper implements AppActivityMapper {
                                  Provider<MapActivity> mapActivityProvider,
                                  Provider<FlowsActivity> flowsActivityProvider,
                                  Provider<AdminOverviewActivity> adminOverviewActivityProvider,
-                                 Provider<AdminRealmsActivity> adminRealmsActivityProvider,
-                                 Provider<AdminRealmActivity> adminRealmActivityProvider,
+                                 Provider<AdminTenantsActivity> adminTenantsActivityProvider,
+                                 Provider<AdminTenantActivity> adminTenantActivityProvider,
                                  Provider<AdminUsersActivity> adminUsersActivityProvider,
                                  Provider<UserAccountActivity> userProfileActivityProvider) {
         this.securityService = securityService;
@@ -83,8 +83,8 @@ public class ManagerActivityMapper implements AppActivityMapper {
         this.mapActivityProvider = mapActivityProvider;
         this.flowsActivityProvider = flowsActivityProvider;
         this.adminOverviewActivityProvider = adminOverviewActivityProvider;
-        this.adminRealmsActivityProvider = adminRealmsActivityProvider;
-        this.adminRealmActivityProvider = adminRealmActivityProvider;
+        this.adminTenantsActivityProvider = adminTenantsActivityProvider;
+        this.adminTenantActivityProvider = adminTenantActivityProvider;
         this.adminUsersActivityProvider = adminUsersActivityProvider;
         this.userProfileActivityProvider = userProfileActivityProvider;
     }
@@ -103,11 +103,11 @@ public class ManagerActivityMapper implements AppActivityMapper {
             if (place instanceof AdminOverviewPlace) {
                 return adminOverviewActivityProvider.get().init(securityService, (AdminOverviewPlace) place);
             }
-            if (place instanceof AdminRealmsPlace) {
-                return adminRealmsActivityProvider.get().init(securityService, (AdminRealmsPlace) place);
+            if (place instanceof AdminTenantsPlace) {
+                return adminTenantsActivityProvider.get().init(securityService, (AdminTenantsPlace) place);
             }
-            if (place instanceof AdminRealmPlace) {
-                return adminRealmActivityProvider.get().init(securityService, (AdminRealmPlace) place);
+            if (place instanceof AdminTenantPlace) {
+                return adminTenantActivityProvider.get().init(securityService, (AdminTenantPlace) place);
             }
             if (place instanceof AdminUsersPlace) {
                 return adminUsersActivityProvider.get().init(securityService, (AdminUsersPlace) place);

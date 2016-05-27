@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin;
+package org.openremote.manager.shared.http;
 
-import com.github.nmorel.gwtjackson.client.ObjectMapper;
-import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
-import org.keycloak.representations.idm.RealmRepresentation;
-import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
+public class EntityMarshallingRequestException extends RequestException {
 
-@JsonMixIns({@JsonMixIns.JsonMixIn(target = RealmRepresentation.class, mixIn = DefaultJsonMixin.class)})
-public interface RealmArrayMapper extends ObjectMapper<RealmRepresentation[]> {
+    public EntityMarshallingRequestException() {
+    }
+
+    public EntityMarshallingRequestException(Throwable cause) {
+        super(cause);
+    }
 }

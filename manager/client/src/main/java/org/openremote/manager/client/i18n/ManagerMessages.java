@@ -27,15 +27,24 @@ public interface ManagerMessages extends Messages {
 
     String accessDenied();
 
-    String failureLoadingResource(String error);
+    String requestFailed(String error);
 
-    String resourceUpdated(String msg);
+    String noResponseFromServer();
 
-    String resourceCreated(String msg);
+    String badRequest();
 
-    String resourceDeleted(String msg);
+    String conflictRequest();
 
-    String failureUpdatingResource(String error);
+    String errorMarshallingResponse(String error);
 
-    String failureUpdatingResourceBadRequest();
+    String unknownError();
+
+    String tenantCreated(String displayName);
+
+    String tenantUpdated(String displayName);
+
+    String tenantDeleted(String displayName);
+
+    String unexpectedResponseStatus(int statusCode, int expectedStatusCode);
+
 }

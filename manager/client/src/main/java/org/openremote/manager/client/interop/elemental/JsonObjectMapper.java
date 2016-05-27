@@ -17,27 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.http;
+package org.openremote.manager.client.interop.elemental;
 
-import org.openremote.manager.shared.validation.ConstraintViolationReport;
+import elemental.json.Json;
+import elemental.json.JsonObject;
+import org.openremote.manager.shared.http.EntityReader;
+import org.openremote.manager.shared.http.EntityWriter;
 
-public class BadRequestException extends RequestException {
+public class JsonObjectMapper implements EntityReader<JsonObject>, EntityWriter<JsonObject> {
 
-    protected ConstraintViolationReport constraintViolationReport;
-
-    public BadRequestException() {
+    @Override
+    public JsonObject read(String value) {
+        return Json.parse(value);
     }
 
-    public BadRequestException(int statusCode, ConstraintViolationReport constraintViolationReport) {
-        super(statusCode);
-        this.constraintViolationReport = constraintViolationReport;
-    }
-
-    public BadRequestException(int statusCode) {
-        super(statusCode);
-    }
-
-    public ConstraintViolationReport getConstraintViolationReport() {
-        return constraintViolationReport;
+    @Override
+    public String write(JsonObject value) {
+        return value.toJson();
     }
 }

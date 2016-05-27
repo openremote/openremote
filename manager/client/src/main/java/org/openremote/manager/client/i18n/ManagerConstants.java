@@ -45,29 +45,29 @@ public interface ManagerConstants extends Constants {
 
     String editAccount();
 
-    String manageRealms();
+    String manageTenants();
 
     String manageUsers();
 
     String overview();
 
-    String createRealm();
+    String createTenant();
 
-    String realmName();
+    String tenantName();
 
     String realm();
 
     String enabled();
 
-    String newRealm();
+    String newTenant();
 
-    String editRealm();
+    String editTenant();
 
-    String realmDisplayName();
+    String tenantDisplayName();
 
-    String updateRealm();
+    String updateTenant();
 
-    String deleteRealm();
+    String deleteTenant();
 
     String cancel();
 

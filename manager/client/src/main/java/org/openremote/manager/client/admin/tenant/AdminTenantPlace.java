@@ -17,26 +17,39 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin.realms;
+package org.openremote.manager.client.admin.tenant;
 
 import com.google.gwt.place.shared.PlaceTokenizer;
 import com.google.gwt.place.shared.Prefix;
 import org.openremote.manager.client.admin.AdminPlace;
 
-public class AdminRealmsPlace extends AdminPlace {
+public class AdminTenantPlace extends AdminPlace {
 
+    final String realm;
 
-    @Prefix("realms")
-    public static class Tokenizer implements PlaceTokenizer<AdminRealmsPlace> {
+    public AdminTenantPlace() {
+        realm = null;
+    }
+
+    public AdminTenantPlace(String realm) {
+        this.realm = realm;
+    }
+
+    public String getRealm() {
+        return realm;
+    }
+
+    @Prefix("tenant")
+    public static class Tokenizer implements PlaceTokenizer<AdminTenantPlace> {
 
         @Override
-        public AdminRealmsPlace getPlace(String token) {
-            return new AdminRealmsPlace();
+        public AdminTenantPlace getPlace(String token) {
+            return new AdminTenantPlace(token != null && token.length() > 0 ? token : null);
         }
 
         @Override
-        public String getToken(AdminRealmsPlace place) {
-            return "";
+        public String getToken(AdminTenantPlace place) {
+            return place.getRealm() != null ? place.getRealm() : "";
         }
     }
 

@@ -27,35 +27,35 @@ import javax.validation.Valid;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 
-@Path("realm")
+@Path("tenant")
 @JsType(isNative = true)
-public interface RealmsResource {
+public interface TenantResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @SuccessStatusCode(200)
-    ValidatedRealmRepresentation[] getRealms(@BeanParam RequestParams requestParams);
+    Tenant[] getAll(@BeanParam RequestParams requestParams);
 
     @GET
-    @Path("{realmName}")
+    @Path("{realm}")
     @Produces(MediaType.APPLICATION_JSON)
     @SuccessStatusCode(200)
-    ValidatedRealmRepresentation getRealm(@BeanParam RequestParams requestParams, @PathParam("realmName") String realmName);
+    Tenant get(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     @PUT
-    @Path("{realmName}")
+    @Path("{realm}")
     @Consumes(MediaType.APPLICATION_JSON)
     @SuccessStatusCode(204)
-    void updateRealm(@BeanParam RequestParams requestParams, @PathParam("realmName") String realmName, @Valid ValidatedRealmRepresentation realm);
+    void update(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @Valid Tenant tenant);
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @SuccessStatusCode(201)
-    void createRealm(@BeanParam RequestParams requestParams, @Valid ValidatedRealmRepresentation realm);
+    void create(@BeanParam RequestParams requestParams, @Valid Tenant tenant);
 
     @DELETE
-    @Path("{realmName}")
+    @Path("{realm}")
     @Produces(MediaType.APPLICATION_JSON)
     @SuccessStatusCode(200)
-    void deleteRealm(@BeanParam RequestParams requestParams, @PathParam("realmName") String realmName);
+    void delete(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 }

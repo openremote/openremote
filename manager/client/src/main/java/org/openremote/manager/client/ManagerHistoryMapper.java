@@ -22,8 +22,8 @@ package org.openremote.manager.client;
 import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.gwt.place.shared.WithTokenizers;
 import org.openremote.manager.client.admin.overview.AdminOverviewPlace;
-import org.openremote.manager.client.admin.realms.AdminRealmPlace;
-import org.openremote.manager.client.admin.realms.AdminRealmsPlace;
+import org.openremote.manager.client.admin.tenant.AdminTenantPlace;
+import org.openremote.manager.client.admin.tenant.AdminTenantsPlace;
 import org.openremote.manager.client.admin.users.AdminUsersPlace;
 import org.openremote.manager.client.assets.AssetsPlace;
 import org.openremote.manager.client.flows.FlowsPlace;
@@ -36,8 +36,8 @@ import org.openremote.manager.client.user.UserAccountPlace;
         MapPlace.Tokenizer.class,
         FlowsPlace.Tokenizer.class,
         AdminOverviewPlace.Tokenizer.class,
-        AdminRealmsPlace.Tokenizer.class,
-        AdminRealmPlace.Tokenizer.class,
+        AdminTenantsPlace.Tokenizer.class,
+        AdminTenantPlace.Tokenizer.class,
         AdminUsersPlace.Tokenizer.class,
         UserAccountPlace.Tokenizer.class
     }

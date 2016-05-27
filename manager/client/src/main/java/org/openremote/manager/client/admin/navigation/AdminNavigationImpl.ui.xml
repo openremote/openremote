@@ -15,10 +15,10 @@
                              text="{constants.overview}"/>
             </li>
 
-            <li ui:field="realmsItem">
-                <w:Hyperlink ui:field="realmsLink"
+            <li ui:field="tenantsItem">
+                <w:Hyperlink ui:field="tenantsLink"
                              addStyleNames="{themeStyle.Hyperlink}"
-                             text="{constants.manageRealms}"/>
+                             text="{constants.manageTenants}"/>
             </li>
 
             <li ui:field="usersItem">

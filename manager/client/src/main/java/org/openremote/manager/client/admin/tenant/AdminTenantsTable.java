@@ -17,20 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin.realms;
+package org.openremote.manager.client.admin.tenant;
 
 import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.user.cellview.client.Column;
 import com.google.gwt.user.cellview.client.TextColumn;
 import com.google.gwt.user.client.ui.HasHorizontalAlignment;
 import com.google.gwt.view.client.SingleSelectionModel;
-import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.manager.client.i18n.ManagerConstants;
 import org.openremote.manager.client.style.FormTable;
 import org.openremote.manager.client.style.FormTableStyle;
 import org.openremote.manager.client.widget.IconCell;
+import org.openremote.manager.shared.security.Tenant;
 
-public class AdminRealmsTable extends FormTable<RealmRepresentation> {
+public class AdminTenantsTable extends FormTable<Tenant> {
 
     public interface Style extends CssResource {
         String nameColumn();
@@ -42,32 +42,32 @@ public class AdminRealmsTable extends FormTable<RealmRepresentation> {
 
     final protected Style style;
 
-    final protected SingleSelectionModel<RealmRepresentation> selectionModel = new SingleSelectionModel<>();
+    final protected SingleSelectionModel<Tenant> selectionModel = new SingleSelectionModel<>();
 
-    final protected TextColumn<RealmRepresentation> nameColumn = new TextColumn<RealmRepresentation>() {
+    final protected TextColumn<Tenant> nameColumn = new TextColumn<Tenant>() {
         @Override
-        public String getValue(RealmRepresentation realmRepresentation) {
-            return realmRepresentation.getDisplayName();
+        public String getValue(Tenant tenant) {
+            return tenant.getDisplayName();
         }
     };
 
-    final protected TextColumn<RealmRepresentation> realmColumn = new TextColumn<RealmRepresentation>() {
+    final protected TextColumn<Tenant> realmColumn = new TextColumn<Tenant>() {
         @Override
-        public String getValue(RealmRepresentation realmRepresentation) {
-            return realmRepresentation.getRealm();
+        public String getValue(Tenant tenant) {
+            return tenant.getRealm();
         }
     };
 
-    final protected Column<RealmRepresentation, String> enabledColumn = new Column<RealmRepresentation, String>(new IconCell()) {
+    final protected Column<Tenant, String> enabledColumn = new Column<Tenant, String>(new IconCell()) {
         @Override
-        public String getValue(RealmRepresentation realmRepresentation) {
-            return realmRepresentation.isEnabled() ? "check-circle" : "circle-thin";
+        public String getValue(Tenant tenant) {
+            return tenant.getEnabled() ? "check-circle" : "circle-thin";
         }
     };
 
-    public AdminRealmsTable(ManagerConstants managerConstants,
-                            Style style,
-                            FormTableStyle formTableStyle) {
+    public AdminTenantsTable(ManagerConstants managerConstants,
+                             Style style,
+                             FormTableStyle formTableStyle) {
         super(Integer.MAX_VALUE, formTableStyle);
 
         this.style = style;
@@ -75,7 +75,7 @@ public class AdminRealmsTable extends FormTable<RealmRepresentation> {
         setSelectionModel(selectionModel);
 
         applyStyleCellText(nameColumn);
-        addColumn(nameColumn, createHeader(managerConstants.realmName()));
+        addColumn(nameColumn, createHeader(managerConstants.tenantName()));
         addColumnStyleName(0, style.nameColumn());
 
         applyStyleCellText(realmColumn);
@@ -88,11 +88,11 @@ public class AdminRealmsTable extends FormTable<RealmRepresentation> {
     }
 
     @Override
-    public SingleSelectionModel<RealmRepresentation> getSelectionModel() {
+    public SingleSelectionModel<Tenant> getSelectionModel() {
         return selectionModel;
     }
 
-    public RealmRepresentation getSelectedObject() {
+    public Tenant getSelectedObject() {
         return getSelectionModel().getSelectedObject();
     }
 

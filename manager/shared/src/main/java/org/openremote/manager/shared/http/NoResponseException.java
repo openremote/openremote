@@ -17,29 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin.realms;
+package org.openremote.manager.shared.http;
 
-import org.openremote.manager.client.admin.AdminContent;
-import org.openremote.manager.shared.Runnable;
-import org.openremote.manager.shared.security.ValidatedRealmRepresentation;
-import org.openremote.manager.shared.validation.ConstraintViolation;
+public class NoResponseException extends RequestException {
 
-public interface AdminRealm extends AdminContent {
-
-    interface Presenter {
-
-        void createRealm(ValidatedRealmRepresentation realm, Runnable onComplete);
-
-        void updateRealm(ValidatedRealmRepresentation realm, Runnable onComplete);
-
-        void deleteRealm(ValidatedRealmRepresentation realm, Runnable onComplete);
-
-        void cancel();
+    public NoResponseException() {
     }
 
-    void setPresenter(Presenter presenter);
-
-    void setRealm(ValidatedRealmRepresentation realm);
-
-    void applyConstraintViolations(ConstraintViolation[] violations);
 }

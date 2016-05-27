@@ -30,7 +30,7 @@ public interface AdminNavigation extends IsWidget {
 
         String getAdminOverviewPlaceToken();
 
-        String getAdminRealmsPlaceToken();
+        String getAdminTenantsPlaceToken();
 
         String getAdminUsersPlaceToken(String userId);
 

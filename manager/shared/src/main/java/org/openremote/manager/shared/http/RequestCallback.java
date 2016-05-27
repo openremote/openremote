@@ -17,23 +17,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin.realms;
+package org.openremote.manager.shared.http;
 
-import org.keycloak.representations.idm.RealmRepresentation;
-import org.openremote.manager.client.admin.AdminContent;
-
-public interface AdminRealms extends AdminContent {
-
-    interface Presenter {
-
-        void onRealmSelected(RealmRepresentation realm);
-
-        void createRealm();
-
-    }
-
-    void setPresenter(Presenter presenter);
-
-    void setRealms(RealmRepresentation[] realms);
-
+public interface RequestCallback<T> {
+    void call(int responseCode, Request.XMLHttpRequest request, String entity);
 }

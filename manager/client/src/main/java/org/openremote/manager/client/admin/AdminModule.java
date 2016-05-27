@@ -28,11 +28,11 @@ import org.openremote.manager.client.admin.navigation.AdminNavigationPresenter;
 import org.openremote.manager.client.admin.overview.AdminOverview;
 import org.openremote.manager.client.admin.overview.AdminOverviewActivity;
 import org.openremote.manager.client.admin.overview.AdminOverviewImpl;
-import org.openremote.manager.client.admin.realms.*;
+import org.openremote.manager.client.admin.tenant.*;
 import org.openremote.manager.client.admin.users.AdminUsers;
 import org.openremote.manager.client.admin.users.AdminUsersActivity;
 import org.openremote.manager.client.admin.users.AdminUsersImpl;
-import org.openremote.manager.shared.security.RealmsResource;
+import org.openremote.manager.shared.security.TenantResource;
 
 public class AdminModule extends AbstractGinModule {
 
@@ -43,22 +43,22 @@ public class AdminModule extends AbstractGinModule {
         bind(AdminNavigation.Presenter.class).to(AdminNavigationPresenter.class);
         bind(AdminOverview.class).to(AdminOverviewImpl.class).in(Singleton.class);
         bind(AdminOverviewActivity.class);
-        bind(AdminRealms.class).to(AdminRealmsImpl.class).in(Singleton.class);
-        bind(AdminRealmsActivity.class);
-        bind(AdminRealm.class).to(AdminRealmImpl.class).in(Singleton.class);
-        bind(AdminRealmActivity.class);
+        bind(AdminTenants.class).to(AdminTenantsImpl.class).in(Singleton.class);
+        bind(AdminTenantsActivity.class);
+        bind(AdminTenant.class).to(AdminTenantImpl.class).in(Singleton.class);
+        bind(AdminTenantActivity.class);
         bind(AdminUsers.class).to(AdminUsersImpl.class).in(Singleton.class);
         bind(AdminUsersActivity.class);
     }
 
     @Provides
     @Singleton
-    public RealmsResource getRealmsResource() {
-        return getNativeRealmsResource();
+    public TenantResource getTenantResource() {
+        return getNativeTenantResource();
     }
 
-    public static native RealmsResource getNativeRealmsResource() /*-{
-        return $wnd.RealmsResource;
+    public static native TenantResource getNativeTenantResource() /*-{
+        return $wnd.TenantResource;
     }-*/;
 
 }

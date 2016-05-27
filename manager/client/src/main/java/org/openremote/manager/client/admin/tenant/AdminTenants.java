@@ -17,8 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.http;
+package org.openremote.manager.client.admin.tenant;
 
-public interface Callback<T> {
-    void call(int responseCode, Request.XMLHttpRequest request, Object entity);
+import org.openremote.manager.client.admin.AdminContent;
+import org.openremote.manager.shared.security.Tenant;
+
+public interface AdminTenants extends AdminContent {
+
+    interface Presenter {
+
+        void onTenantSelected(Tenant realm);
+
+        void createTenant();
+
+    }
+
+    void setPresenter(Presenter presenter);
+
+    void setTenants(Tenant[] tenants);
+
 }

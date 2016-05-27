@@ -17,54 +17,51 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin.realms;
+package org.openremote.manager.client.admin.tenant;
 
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
-import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.manager.client.admin.AbstractAdminActivity;
 import org.openremote.manager.client.admin.AdminView;
-import org.openremote.manager.client.admin.RealmArrayMapper;
+import org.openremote.manager.client.admin.TenantArrayMapper;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.service.RequestService;
-import org.openremote.manager.shared.event.ui.ShowFailureEvent;
-import org.openremote.manager.client.interop.jackson.ObjectMapperCallback;
-import org.openremote.manager.shared.security.RealmsResource;
+import org.openremote.manager.shared.security.TenantResource;
+import org.openremote.manager.shared.security.Tenant;
 
 import javax.inject.Inject;
 import java.util.Collection;
-import java.util.logging.Logger;
 
-public class AdminRealmsActivity
-    extends AbstractAdminActivity<AdminRealmsPlace, AdminRealms>
-    implements AdminRealms.Presenter {
+import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
-    private static final Logger LOG = Logger.getLogger(AdminRealmsActivity.class.getName());
+public class AdminTenantsActivity
+    extends AbstractAdminActivity<AdminTenantsPlace, AdminTenants>
+    implements AdminTenants.Presenter {
 
     final protected ManagerMessages managerMessages;
     final protected PlaceController placeController;
     final protected RequestService requestService;
-    final protected RealmsResource realmsResource;
-    final protected RealmArrayMapper realmArrayMapper;
+    final protected TenantResource tenantResource;
+    final protected TenantArrayMapper tenantArrayMapper;
 
     @Inject
-    public AdminRealmsActivity(AdminView adminView,
-                               AdminNavigation.Presenter adminNavigationPresenter,
-                               AdminRealms view,
-                               ManagerMessages managerMessages,
-                               PlaceController placeController,
-                               RequestService requestService,
-                               RealmsResource realmsResource,
-                               RealmArrayMapper realmArrayMapper) {
+    public AdminTenantsActivity(AdminView adminView,
+                                AdminNavigation.Presenter adminNavigationPresenter,
+                                AdminTenants view,
+                                ManagerMessages managerMessages,
+                                PlaceController placeController,
+                                RequestService requestService,
+                                TenantResource tenantResource,
+                                TenantArrayMapper tenantArrayMapper) {
         super(adminView, adminNavigationPresenter, view);
         this.managerMessages = managerMessages;
         this.placeController = placeController;
         this.requestService = requestService;
-        this.realmsResource = realmsResource;
-        this.realmArrayMapper = realmArrayMapper;
+        this.tenantResource = tenantResource;
+        this.tenantArrayMapper = tenantArrayMapper;
     }
 
     @Override
@@ -77,25 +74,24 @@ public class AdminRealmsActivity
         super.start(container, eventBus, registrations);
         adminContent.setPresenter(this);
 
-        realmsResource.getRealms(requestService.createRequestParams(new ObjectMapperCallback<>(
-                realmArrayMapper,
-                200,
-                adminContent::setRealms,
-                ex -> eventBus.dispatch(new ShowFailureEvent(
-                    managerMessages.failureLoadingResource(ex.getMessage()),
-                    10000
-                ))
-            )
-        ));
+        requestService.execute(
+            tenantArrayMapper,
+            tenantResource::getAll,
+            200,
+            () -> {
+            },
+            adminContent::setTenants,
+            ex -> handleRequestException(ex, eventBus, managerMessages)
+        );
     }
 
     @Override
-    public void onRealmSelected(RealmRepresentation realm) {
-        placeController.goTo(new AdminRealmPlace(realm.getRealm()));
+    public void onTenantSelected(Tenant tenant) {
+        placeController.goTo(new AdminTenantPlace(tenant.getRealm()));
     }
 
     @Override
-    public void createRealm() {
-        placeController.goTo(new AdminRealmPlace());
+    public void createTenant() {
+        placeController.goTo(new AdminTenantPlace());
     }
 }

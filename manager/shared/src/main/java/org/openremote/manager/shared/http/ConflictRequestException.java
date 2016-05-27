@@ -19,25 +19,9 @@
  */
 package org.openremote.manager.shared.http;
 
-import org.openremote.manager.shared.validation.ConstraintViolationReport;
+public class ConflictRequestException extends RequestException {
 
-public class BadRequestException extends RequestException {
-
-    protected ConstraintViolationReport constraintViolationReport;
-
-    public BadRequestException() {
+    public ConflictRequestException() {
     }
 
-    public BadRequestException(int statusCode, ConstraintViolationReport constraintViolationReport) {
-        super(statusCode);
-        this.constraintViolationReport = constraintViolationReport;
-    }
-
-    public BadRequestException(int statusCode) {
-        super(statusCode);
-    }
-
-    public ConstraintViolationReport getConstraintViolationReport() {
-        return constraintViolationReport;
-    }
 }

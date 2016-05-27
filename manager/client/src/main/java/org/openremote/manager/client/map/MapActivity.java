@@ -26,14 +26,15 @@ import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.i18n.ManagerMessages;
+import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.service.RequestService;
-import org.openremote.manager.shared.event.ui.ShowFailureEvent;
-import org.openremote.manager.shared.http.JsonObjectCallback;
 import org.openremote.manager.shared.map.MapResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
+
+import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
 public class MapActivity extends AppActivity<MapPlace> implements MapView.Presenter {
 
@@ -42,18 +43,21 @@ public class MapActivity extends AppActivity<MapPlace> implements MapView.Presen
     final ManagerMessages managerMessages;
     final RequestService requestService;
     final PlaceController placeController;
+    final JsonObjectMapper jsonObjectMapper;
 
     @Inject
     public MapActivity(MapView view,
                        MapResource mapResource,
                        ManagerMessages managerMessages,
                        RequestService requestService,
-                       PlaceController placeController) {
+                       PlaceController placeController,
+                       JsonObjectMapper jsonObjectMapper) {
         this.view = view;
         this.mapResource = mapResource;
         this.managerMessages = managerMessages;
         this.requestService = requestService;
         this.placeController = placeController;
+        this.jsonObjectMapper = jsonObjectMapper;
     }
 
     @Override
@@ -76,29 +80,14 @@ public class MapActivity extends AppActivity<MapPlace> implements MapView.Presen
         if (view.isMapInitialised())
             return;
 
-        /* TODO This is the generic resteasy client
-        Request<JsonObject> request = requestService.createRequest(true);
-        request.setURI("http://localhost:8080/master/map");
-        request.setMethod("GET");
-        request.setAccepts("application/json");
-        request.execute(new JsonObjectCallback(
+        requestService.execute(
+            jsonObjectMapper,
+            mapResource::getSettings,
             200,
+            view::refresh,
             view::initialiseMap,
-                ex -> eventBus.dispatch(new ShowFailureEvent(
-                    managerMessages.failureLoadingMapSettings(ex.getMessage())
-                ))
-        ));
-        */
-
-        // This is the strongly typed client
-        mapResource.getSettings(requestService.createRequestParams(new JsonObjectCallback(
-                200,
-                view::initialiseMap,
-                ex -> eventBus.dispatch(new ShowFailureEvent(
-                    managerMessages.failureLoadingResource(ex.getMessage())
-                ))
-            )
-        ));
+            ex -> handleRequestException(ex, eventBus, managerMessages)
+        );
     }
 
     @Override

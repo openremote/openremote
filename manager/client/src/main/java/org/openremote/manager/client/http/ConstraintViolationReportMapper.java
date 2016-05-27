@@ -26,5 +26,7 @@ import org.openremote.manager.shared.http.EntityReader;
 import org.openremote.manager.shared.validation.ConstraintViolationReport;
 
 @JsonMixIns({@JsonMixIns.JsonMixIn(target = ConstraintViolationReport.class, mixIn = DefaultJsonMixin.class)})
-public interface ConstraintViolationReportMapper extends ObjectMapper<ConstraintViolationReport>, EntityReader<ConstraintViolationReport> {
+public interface ConstraintViolationReportMapper
+    extends ObjectMapper<ConstraintViolationReport>,
+    EntityReader<ConstraintViolationReport> {
 }

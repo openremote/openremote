@@ -34,26 +34,26 @@ public class Request<T> {
     @FunctionalInterface
     @JsFunction
     interface InternalCallback {
-        void call(int responseCode, XMLHttpRequest xmlHttpRequest, Object entity);
+        void call(int responseCode, XMLHttpRequest xmlHttpRequest, String responseText);
     }
 
     public static class InternalCallbackImpl implements InternalCallback {
 
-        final protected Callback callback;
+        final protected RequestCallback requestCallback;
 
-        public InternalCallbackImpl(Callback callback) {
-            this.callback = callback;
+        public InternalCallbackImpl(RequestCallback requestCallback) {
+            this.requestCallback = requestCallback;
         }
 
         @Override
-        public void call(int responseCode, XMLHttpRequest xmlHttpRequest, Object entity) {
-            callback.call(responseCode, xmlHttpRequest, entity);
+        public void call(int responseCode, XMLHttpRequest xmlHttpRequest, String responseText) {
+            requestCallback.call(responseCode, xmlHttpRequest, responseText);
         }
     }
 
     @JsOverlay
-    final public void execute(Callback<T> callback) {
-        execute(new InternalCallbackImpl(callback));
+    final public void execute(RequestCallback<T> requestCallback) {
+        execute(new InternalCallbackImpl(requestCallback));
     }
 
     /**

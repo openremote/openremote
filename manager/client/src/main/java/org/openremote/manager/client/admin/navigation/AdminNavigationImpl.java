@@ -26,8 +26,8 @@ import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import org.openremote.manager.client.admin.AdminPlace;
-import org.openremote.manager.client.admin.realms.AdminRealmPlace;
-import org.openremote.manager.client.admin.realms.AdminRealmsPlace;
+import org.openremote.manager.client.admin.tenant.AdminTenantPlace;
+import org.openremote.manager.client.admin.tenant.AdminTenantsPlace;
 import org.openremote.manager.client.admin.users.AdminUsersPlace;
 import org.openremote.manager.client.widget.Hyperlink;
 
@@ -48,9 +48,9 @@ public class AdminNavigationImpl extends Composite implements AdminNavigation {
     Hyperlink overviewLink;
 
     @UiField
-    LIElement realmsItem;
+    LIElement tenantsItem;
     @UiField
-    Hyperlink realmsLink;
+    Hyperlink tenantsLink;
 
     @UiField
     LIElement usersItem;
@@ -67,20 +67,20 @@ public class AdminNavigationImpl extends Composite implements AdminNavigation {
         this.presenter = presenter;
 
         overviewLink.setTargetHistoryToken(presenter.getAdminOverviewPlaceToken());
-        realmsLink.setTargetHistoryToken(presenter.getAdminRealmsPlaceToken());
+        tenantsLink.setTargetHistoryToken(presenter.getAdminTenantsPlaceToken());
         usersLink.setTargetHistoryToken(presenter.getAdminUsersPlaceToken(""));
     }
 
     @Override
     public void onPlaceChange(AdminPlace adminPlace) {
         overviewLink.removeStyleName("active");
-        realmsLink.removeStyleName("active");
+        tenantsLink.removeStyleName("active");
         usersLink.removeStyleName("active");
 
-        if (adminPlace instanceof AdminRealmsPlace) {
-            realmsLink.addStyleName("active");
-        } else if (adminPlace instanceof AdminRealmPlace) {
-            realmsLink.addStyleName("active");
+        if (adminPlace instanceof AdminTenantsPlace) {
+            tenantsLink.addStyleName("active");
+        } else if (adminPlace instanceof AdminTenantPlace) {
+            tenantsLink.addStyleName("active");
         } else if (adminPlace instanceof AdminUsersPlace) {
             usersLink.addStyleName("active");
         } else {

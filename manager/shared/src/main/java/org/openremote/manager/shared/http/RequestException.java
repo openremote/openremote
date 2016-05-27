@@ -39,6 +39,10 @@ public class RequestException extends RuntimeException {
         this.statusCode = statusCode;
     }
 
+    public RequestException(Throwable cause) {
+        super(cause);
+    }
+
     public int getStatusCode() {
         return statusCode;
     }

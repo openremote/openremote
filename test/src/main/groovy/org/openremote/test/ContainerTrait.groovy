@@ -222,7 +222,7 @@ trait ContainerTrait {
             int statusCode = successStatusCode != null ? successStatusCode.value() : 200;
 
             // Call the proxy
-            def result = resourceProxy."$mockMethod.name"(args);
+            String result = resourceProxy."$mockMethod.name"(args);
 
             // Pass the result to the callback, so it looks asynchronous for client code
             requestParams.callback.call(statusCode, null, result);

@@ -17,14 +17,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.http;
+package org.openremote.manager.client.admin.tenant;
 
-public class UnauthorizedRequestException extends RequestException {
+import com.google.gwt.place.shared.PlaceTokenizer;
+import com.google.gwt.place.shared.Prefix;
+import org.openremote.manager.client.admin.AdminPlace;
 
-    public UnauthorizedRequestException() {
+public class AdminTenantsPlace extends AdminPlace {
+
+
+    @Prefix("realms")
+    public static class Tokenizer implements PlaceTokenizer<AdminTenantsPlace> {
+
+        @Override
+        public AdminTenantsPlace getPlace(String token) {
+            return new AdminTenantsPlace();
+        }
+
+        @Override
+        public String getToken(AdminTenantsPlace place) {
+            return "";
+        }
     }
 
-    public UnauthorizedRequestException(int statusCode) {
-        super(statusCode);
-    }
 }

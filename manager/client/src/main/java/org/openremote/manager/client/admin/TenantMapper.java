@@ -17,27 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.http;
+package org.openremote.manager.client.admin;
 
-import org.openremote.manager.shared.validation.ConstraintViolationReport;
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
+import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
+import org.openremote.manager.shared.http.EntityReader;
+import org.openremote.manager.shared.http.EntityWriter;
+import org.openremote.manager.shared.security.Tenant;
 
-public class BadRequestException extends RequestException {
-
-    protected ConstraintViolationReport constraintViolationReport;
-
-    public BadRequestException() {
-    }
-
-    public BadRequestException(int statusCode, ConstraintViolationReport constraintViolationReport) {
-        super(statusCode);
-        this.constraintViolationReport = constraintViolationReport;
-    }
-
-    public BadRequestException(int statusCode) {
-        super(statusCode);
-    }
-
-    public ConstraintViolationReport getConstraintViolationReport() {
-        return constraintViolationReport;
-    }
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = Tenant.class, mixIn = DefaultJsonMixin.class)})
+public interface TenantMapper
+    extends ObjectMapper<Tenant>,
+    EntityReader<Tenant>,
+    EntityWriter<Tenant> {
 }

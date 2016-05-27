@@ -13,7 +13,7 @@
              ui:field="formMessages"/>
 
         <div class="{widgetStyle.Headline1} {themeStyle.Headline1}">
-            <g:InlineLabel text="{constants.editRealm}"/>
+            <g:InlineLabel text="{constants.editTenant}"/>
         </div>
 
         <div class="{widgetStyle.HeadlineSub} {themeStyle.HeadlineSub}">
@@ -26,60 +26,60 @@
             <g:SimplePanel ui:field="cellTableContainer"/>
 
             <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}"
-                 ui:field="realmDisplayNameGroup">
+                 ui:field="displayNameGrou">
                 <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
-                    <label ui:field="realmDisplayNameInputLabel">
-                        <g:InlineLabel text="{constants.realmDisplayName}"/>
+                    <label ui:field="displayNameLabel">
+                        <g:InlineLabel text="{constants.tenantDisplayName}"/>
                     </label>
                     <span class="required">*</span>
                 </div>
                 <div class="{widgetStyle.FormField} {themeStyle.FormField}">
-                    <g:TextBox ui:field="realmDisplayNameInput"
+                    <g:TextBox ui:field="displayNameInput"
                                addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
                 </div>
             </div>
 
             <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}"
-                 ui:field="realmNameGroup">
+                 ui:field="realmGroup">
                 <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
-                    <label ui:field="realmNameInputLabel">
+                    <label ui:field="realmLabel">
                         <g:InlineLabel text="{constants.realm}"/>
                     </label>
                     <span class="required">*</span>
                 </div>
                 <div class="{widgetStyle.FormField} {themeStyle.FormField}">
-                    <g:TextBox ui:field="realmNameInput"
+                    <g:TextBox ui:field="realmInput"
                                addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
                 </div>
             </div>
 
             <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}">
                 <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
-                    <label ui:field="realmEnabledLabel">
+                    <label ui:field="enabledLabel">
                         <g:InlineLabel text="{constants.enabled}"/>
                     </label>
                 </div>
                 <div class="{widgetStyle.FormField} {themeStyle.FormField}">
-                    <g:SimpleCheckBox ui:field="realmEnabledCheckBox"
+                    <g:SimpleCheckBox ui:field="enabledCheckBox"
                                       addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormCheckBox} {themeStyle.FormCheckBox}"/>
                 </div>
             </div>
 
             <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}">
                 <div class="{widgetStyle.FormField} {themeStyle.FormField}">
-                    <w:PushButton ui:field="updateRealmButton"
+                    <w:PushButton ui:field="updateButton"
                                   addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                  text="{constants.updateRealm}"
+                                  text="{constants.updateTenant}"
                                   visible="false"
                                   icon="save"/>
-                    <w:PushButton ui:field="createRealmButton"
+                    <w:PushButton ui:field="createButton"
                                   addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                  text="{constants.createRealm}"
+                                  text="{constants.createTenant}"
                                   visible="false"
                                   icon="save"/>
-                    <w:PushButton ui:field="deleteRealmButton"
+                    <w:PushButton ui:field="deleteButton"
                                   addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonDanger} {themeStyle.FormButtonDanger} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                  text="{constants.deleteRealm}"
+                                  text="{constants.deleteTenant}"
                                   visible="false"
                                   icon="trash"/>
                     <w:PushButton ui:field="cancelButton"

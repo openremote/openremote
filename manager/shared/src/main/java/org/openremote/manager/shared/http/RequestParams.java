@@ -28,7 +28,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
 @JsType
-public class RequestParams<T> {
+public class RequestParams<OUT> {
 
     @HeaderParam(HttpHeaders.AUTHORIZATION)
     @JsProperty(name = HttpHeaders.AUTHORIZATION)
@@ -66,12 +66,12 @@ public class RequestParams<T> {
      * Defaults to "<code>Accept: application/json</code>" header, call {@link #setAccepts(String)} to override.
      */
     @JsIgnore
-    public RequestParams(Callback<T> callback) {
-        this.callback = new Request.InternalCallbackImpl(callback);
+    public RequestParams(RequestCallback<OUT> requestCallback) {
+        this.callback = new Request.InternalCallbackImpl(requestCallback);
         this.accepts = MediaType.APPLICATION_JSON;
     }
 
-    public RequestParams<T> withBearerAuth(String authorization) {
+    public RequestParams<OUT> withBearerAuth(String authorization) {
         this.authorization = "Bearer " + authorization;
         return this;
     }
@@ -82,37 +82,37 @@ public class RequestParams<T> {
         return authorization.split(" ")[1];
     }
 
-    public RequestParams<T> setEntity(String entity) {
+    public RequestParams<OUT> setEntity(String entity) {
         this.entity = entity;
         return this;
     }
 
-    public RequestParams<T> setEntityWriter(EntityWriter entityWriter) {
+    public RequestParams<OUT> setEntityWriter(EntityWriter entityWriter) {
         this.entityWriter = entityWriter;
         return this;
     }
 
-    public RequestParams<T> setContentType(String contentType) {
+    public RequestParams<OUT> setContentType(String contentType) {
         this.contentType = contentType;
         return this;
     }
 
-    public RequestParams<T> setAccepts(String accepts) {
+    public RequestParams<OUT> setAccepts(String accepts) {
         this.accepts = accepts;
         return this;
     }
 
-    public RequestParams<T> setApiURL(String apiURL) {
+    public RequestParams<OUT> setApiURL(String apiURL) {
         this.apiURL = apiURL;
         return this;
     }
 
-    public RequestParams<T> setUsername(String username) {
+    public RequestParams<OUT> setUsername(String username) {
         this.username = username;
         return this;
     }
 
-    public RequestParams<T> setPassword(String password) {
+    public RequestParams<OUT> setPassword(String password) {
         this.password = password;
         return this;
     }

@@ -41,7 +41,7 @@ public class ManagerIdentityService extends IdentityService {
         super.configure(container);
 
         container.getService(WebService.class).getApiSingletons().add(
-            new RealmsResourceImpl(this)
+            new TenantResourceImpl(this)
         );
     }
 

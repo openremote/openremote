@@ -19,17 +19,41 @@
  */
 package org.openremote.manager.client.service;
 
-import org.openremote.manager.shared.http.Callback;
+import org.openremote.manager.shared.Consumer;
+import org.openremote.manager.shared.http.EntityReader;
 import org.openremote.manager.shared.http.EntityWriter;
-import org.openremote.manager.shared.http.Request;
+import org.openremote.manager.shared.http.RequestException;
 import org.openremote.manager.shared.http.RequestParams;
 
 public interface RequestService {
 
-    <T> Request<T> createRequest(boolean withBearerAuthorization);
+    int ANY_STATUS_CODE = -1;
 
-    <T> RequestParams<T> createRequestParams(Callback<T> callback);
+    void execute(Consumer<RequestParams<Void>> onRequest,
+                 int expectedStatusCode,
+                 Runnable onComplete,
+                 Runnable onResponse,
+                 Consumer<RequestException> onException);
 
-    <T, E> RequestParams<T> createRequestParams(Callback<T> callback, EntityWriter<E> entityWriter);
+    <OUT> void execute(EntityReader<OUT> entityReader,
+                       Consumer<RequestParams<OUT>> onRequest,
+                       int expectedStatusCode,
+                       Runnable onComplete,
+                       Consumer<OUT> onResponse,
+                       Consumer<RequestException> onException);
 
+    <IN> void execute(EntityWriter<IN> entityWriter,
+                      Consumer<RequestParams<Void>> onRequest,
+                      int expectedStatusCode,
+                      Runnable onComplete,
+                      Runnable onResponse,
+                      Consumer<RequestException> onException);
+
+    <IN, OUT> void execute(EntityReader<OUT> entityReader,
+                           EntityWriter<IN> entityWriter,
+                           Consumer<RequestParams<OUT>> onRequest,
+                           int expectedStatusCode,
+                           Runnable onComplete,
+                           Consumer<OUT> onResponse,
+                           Consumer<RequestException> onException);
 }

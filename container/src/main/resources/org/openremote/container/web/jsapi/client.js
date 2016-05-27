@@ -273,6 +273,7 @@ REST._complete = function (request, callback) {
 };
 
 REST._readResponseEntity= function (request) {
+    /* TODO: we marshall in GWT
     var contentType = request.getResponseHeader("Content-Type");
     if (contentType != null) {
         if (REST._isXMLMIME(contentType))
@@ -284,6 +285,8 @@ REST._readResponseEntity= function (request) {
     } else {
         return request.responseText;
     }
+    */
+    return request.responseText;
 };
 
 REST._isXMLMIME = function (contentType) {

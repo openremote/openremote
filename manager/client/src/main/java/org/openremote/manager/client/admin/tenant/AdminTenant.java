@@ -17,23 +17,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.http;
+package org.openremote.manager.client.admin.tenant;
 
-import org.openremote.manager.shared.Consumer;
+import org.openremote.manager.client.admin.AdminContent;
+import org.openremote.manager.shared.Runnable;
+import org.openremote.manager.shared.security.Tenant;
+import org.openremote.manager.shared.validation.ConstraintViolation;
 
-public class StatusCallback extends AbstractCallback<Integer> {
+public interface AdminTenant extends AdminContent {
 
-    public StatusCallback(Consumer<Integer> onSuccess, Consumer<RequestException> onFailure) {
-        super(onSuccess, onFailure);
+    interface Presenter {
+
+        void createTenant(Tenant realm, Runnable onComplete);
+
+        void updateTenant(Tenant realm, Runnable onComplete);
+
+        void deleteTenant(Tenant realm, Runnable onComplete);
+
+        void cancel();
     }
 
-    public StatusCallback(int expectedStatusCode, Consumer<Integer> onSuccess, Consumer<RequestException> onFailure) {
-        super(expectedStatusCode, onSuccess, onFailure);
-    }
+    void setPresenter(Presenter presenter);
 
-    @Override
-    protected Integer readMessageBody(int responseCode, Object entity) {
-        return responseCode;
-    }
+    void setTenant(Tenant realm);
 
+    void showErrors(ConstraintViolation[] violations);
+
+    void showSuccess(String message);
 }

@@ -73,7 +73,6 @@ public class AppPlaceController extends PlaceController {
 
     @Override
     public void goTo(Place newPlace) {
-        // TODO Should we also update access token before every API call?
         securityService.updateToken(
             SecurityService.MIN_VALIDITY_SECONDS,
             refreshed -> {

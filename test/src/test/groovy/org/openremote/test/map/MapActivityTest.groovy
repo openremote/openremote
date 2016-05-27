@@ -5,11 +5,16 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget
 import elemental.json.JsonObject
 import org.openremote.manager.client.event.bus.EventBus
 import org.openremote.manager.client.i18n.ManagerMessages
+import org.openremote.manager.client.interop.elemental.JsonObjectMapper
 import org.openremote.manager.client.map.MapActivity
 import org.openremote.manager.client.map.MapView
 import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.service.SecurityService
+import org.openremote.manager.shared.Consumer
+import org.openremote.manager.shared.Runnable
+import org.openremote.manager.shared.http.EntityReader
 import org.openremote.manager.shared.map.MapResource
+import org.openremote.manager.shared.validation.ConstraintViolationReport
 import org.openremote.test.ContainerTrait
 import spock.lang.Specification
 
@@ -25,6 +30,8 @@ class MapActivityTest extends Specification implements ContainerTrait {
         def activityBus = Mock(EventBus)
         def managerMessages = Mock(ManagerMessages)
         def activityRegistrations = []
+        def jsonObjectMapper = new JsonObjectMapper();
+        def constraintViolationReader = Mock(EntityReader)
 
         and: "the server container is started"
         def serverPort = findEphemeralPort();
@@ -35,10 +42,13 @@ class MapActivityTest extends Specification implements ContainerTrait {
         def accessTokenResponse = authenticate(container, realm, MANAGER_CLIENT_ID, "test", "test")
         def securityService = Stub(SecurityService) {
             getRealm() >> realm;
-            getToken() >> accessTokenResponse.getToken()
+            getToken() >> accessTokenResponse.getToken();
+            updateToken(_, _, _) >> { int minValiditySeconds, Consumer<Boolean> successFn, Runnable errorFn ->
+               successFn.accept(true);
+            };
             getXsrfToken() >> "TODO: NOT ENABLED" // TODO
         }
-        def requestService = new RequestServiceImpl(securityService)
+        def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
 
         and: "a test client target"
         def client = createClient(container).build();
@@ -54,7 +64,7 @@ class MapActivityTest extends Specification implements ContainerTrait {
             _(_) >> { callResourceProxy(clientTarget, getDelegate()) }
         }
         def mapActivity = new MapActivity(
-                mapView, mapResource, managerMessages, requestService, placeController
+                mapView, mapResource, managerMessages, requestService, placeController, jsonObjectMapper
         )
 
         and: "The expected map settings"

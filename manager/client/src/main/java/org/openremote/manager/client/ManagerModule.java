@@ -27,6 +27,7 @@ import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import org.openremote.manager.client.event.bus.EventBus;
+import org.openremote.manager.client.http.ConstraintViolationReportMapper;
 import org.openremote.manager.client.i18n.ManagerConstants;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.interop.keycloak.Keycloak;
@@ -57,9 +58,10 @@ public class ManagerModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    public RequestService getRequestService(SecurityService securityService) {
+    public RequestService getRequestService(SecurityService securityService,
+                                            ConstraintViolationReportMapper constraintViolationReportMapper) {
         RequestServiceImpl.Configuration.setDefaults(securityService.getRealm());
-        return new RequestServiceImpl(securityService);
+        return new RequestServiceImpl(securityService, constraintViolationReportMapper);
     }
 
     @Provides
