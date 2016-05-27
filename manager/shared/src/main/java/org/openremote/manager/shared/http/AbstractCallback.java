@@ -20,6 +20,9 @@
 package org.openremote.manager.shared.http;
 
 import org.openremote.manager.shared.Consumer;
+import org.openremote.manager.shared.validation.ConstraintViolationReport;
+
+import static org.openremote.manager.shared.validation.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
 
 public abstract class AbstractCallback<T> implements Callback<T> {
 
@@ -27,43 +30,73 @@ public abstract class AbstractCallback<T> implements Callback<T> {
 
     final protected int expectedStatusCode;
     final protected Consumer<T> onSuccess;
-    final protected Consumer<Exception> onFailure;
+    final protected Consumer<RequestException> onFailure;
 
-    public AbstractCallback(Consumer<T> onSuccess, Consumer<Exception> onFailure) {
+    public AbstractCallback(Consumer<T> onSuccess, Consumer<RequestException> onFailure) {
         this(ANY_STATUS_CODE, onSuccess, onFailure);
     }
 
-    public AbstractCallback(int expectedStatusCode, Consumer<T> onSuccess, Consumer<Exception> onFailure) {
+    public AbstractCallback(int expectedStatusCode, Consumer<T> onSuccess, Consumer<RequestException> onFailure) {
         this.expectedStatusCode = expectedStatusCode;
         this.onSuccess = onSuccess;
         this.onFailure = onFailure;
     }
 
     @Override
-    public void call(int responseCode, Object entity) {
+    public void call(int responseCode, Request.XMLHttpRequest request, Object entity) {
         if (responseCode == 0) {
-            onFailure.accept(new RequestParams.Failure(0, "No response"));
+            onFailure.accept(new RequestException(0, "No response"));
             return;
         }
+
+        if (handleUnauthorizedRequest() && responseCode == 401) {
+            onFailure.accept(new UnauthorizedRequestException(401));
+            return;
+        }
+
+        if (handleBadRequest() && responseCode == 400) {
+            String validationException = request.getResponseHeader(VIOLATION_EXCEPTION_HEADER);
+            if (validationException != null && validationException.equals("true")) {
+                ConstraintViolationReport report = getConstraintViolationReport(entity);
+                onFailure.accept(new BadRequestException(400, report));
+            } else {
+                onFailure.accept(new BadRequestException(400));
+            }
+            return;
+        }
+
         if (expectedStatusCode != ANY_STATUS_CODE && responseCode != expectedStatusCode) {
-            onFailure.accept(new RequestParams.Failure(
+            onFailure.accept(new RequestException(
                 responseCode,
                 "Expected response status code " + expectedStatusCode + " but received " + responseCode + ".")
             );
             return;
         }
+
         onSuccess.accept(readMessageBody(responseCode, entity));
+    }
+
+    protected boolean handleUnauthorizedRequest() {
+        return true;
+    }
+
+    protected boolean handleBadRequest() {
+        return true;
+    }
+
+    protected ConstraintViolationReport getConstraintViolationReport(Object entity) {
+        return null;
     }
 
     /**
      * The object returned by RESTEasy JavaScript API is either
-     *
+     * <p>
      * <ul>
      * <li>a JavascriptObject if the content type is JSON</li>
      * <li>a Document if the content type is XML</li>
      * <li>or a String</li>
      * </ul>
-     *
+     * <p>
      * This method converts to the desired type.
      */
     protected abstract T readMessageBody(int responseCode, Object entity);

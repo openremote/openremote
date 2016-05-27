@@ -23,17 +23,22 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.DivElement;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.LabelElement;
+import com.google.gwt.dom.client.Style;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.*;
-import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
+import org.openremote.manager.client.widget.MessagesIcon;
 import org.openremote.manager.client.widget.PushButton;
+import org.openremote.manager.shared.security.ValidatedRealmRepresentation;
+import org.openremote.manager.shared.validation.ConstraintViolation;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AdminRealmImpl extends Composite implements AdminRealm {
 
@@ -48,10 +53,14 @@ public class AdminRealmImpl extends Composite implements AdminRealm {
     protected ThemeStyle themeStyle;
 
     @UiField
+    DivElement realmDisplayNameGroup;
+    @UiField
     LabelElement realmDisplayNameInputLabel;
     @UiField
     TextBox realmDisplayNameInput;
 
+    @UiField
+    DivElement realmNameGroup;
     @UiField
     LabelElement realmNameInputLabel;
     @UiField
@@ -80,8 +89,11 @@ public class AdminRealmImpl extends Composite implements AdminRealm {
     @UiField
     DivElement form;
 
+    @UiField
+    DivElement formMessages;
+
     protected Presenter presenter;
-    protected RealmRepresentation realm;
+    protected ValidatedRealmRepresentation realm;
 
     @Inject
     public AdminRealmImpl() {
@@ -103,9 +115,38 @@ public class AdminRealmImpl extends Composite implements AdminRealm {
     }
 
     @Override
-    public void setRealm(RealmRepresentation realm) {
+    public void setRealm(ValidatedRealmRepresentation realm) {
         this.realm = realm;
+        removeConstraintViolations();
         writeForm();
+    }
+
+    @Override
+    public void applyConstraintViolations(ConstraintViolation[] violations) {
+        removeConstraintViolations();
+        List<String> errorMessages = new ArrayList<>();
+        for (ConstraintViolation violation : violations) {
+            errorMessages.add(violation.getMessage());
+
+            if (violation.getPath().endsWith("displayName")) {
+                realmDisplayNameGroup.addClassName("error");
+            }
+            if (violation.getPath().endsWith("realm")) {
+                realmNameGroup.addClassName("error");
+            }
+
+        }
+        if (errorMessages.size() > 0) {
+            formMessages.getStyle().clearDisplay();
+            formMessages.addClassName("error");
+            formMessages.appendChild(new MessagesIcon(false).getElement());
+            FlowPanel messagesPanel = new FlowPanel();
+            formMessages.appendChild(messagesPanel.getElement());
+            for (String errorMessage : errorMessages) {
+                messagesPanel.add(new InlineLabel(errorMessage));
+                messagesPanel.getElement().appendChild(Document.get().createBRElement());
+            }
+        }
     }
 
     @UiHandler("updateRealmButton")
@@ -136,6 +177,7 @@ public class AdminRealmImpl extends Composite implements AdminRealm {
     void cancelClicked(ClickEvent e) {
         realm = null;
         writeForm();
+        removeConstraintViolations();
         presenter.cancel();
     }
 
@@ -160,8 +202,8 @@ public class AdminRealmImpl extends Composite implements AdminRealm {
     }
 
     void readForm() {
-        realm.setDisplayName(realmDisplayNameInput.getText());
-        realm.setRealm(realmNameInput.getText());
+        realm.setDisplayName(realmDisplayNameInput.getText().length() > 0 ? realmDisplayNameInput.getText() : null);
+        realm.setRealm(realmNameInput.getText().length() > 0 ? realmNameInput.getText() : null);
         realm.setEnabled(realmEnabledCheckBox.getValue());
     }
 
@@ -175,4 +217,11 @@ public class AdminRealmImpl extends Composite implements AdminRealm {
         }
     }
 
+    void removeConstraintViolations() {
+        formMessages.getStyle().setDisplay(Style.Display.NONE);
+        formMessages.removeClassName("error");
+        formMessages.removeAllChildren();
+        realmDisplayNameGroup.removeClassName("error");
+        realmNameGroup.removeClassName("error");
+    }
 }

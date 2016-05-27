@@ -17,15 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin;
+package org.openremote.manager.client.widget;
 
-import com.github.nmorel.gwtjackson.client.ObjectMapper;
-import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
-import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
-import org.openremote.manager.shared.http.EntityWriter;
-import org.openremote.manager.shared.security.ValidatedRealmRepresentation;
+import com.google.gwt.user.client.ui.InlineLabel;
 
-@JsonMixIns({@JsonMixIns.JsonMixIn(target = ValidatedRealmRepresentation.class, mixIn = DefaultJsonMixin.class)})
-public interface RealmMapper extends ObjectMapper<ValidatedRealmRepresentation>, EntityWriter<ValidatedRealmRepresentation> {
+public class MessagesIcon extends InlineLabel {
 
+    public MessagesIcon(boolean isInfo) {
+        setStyleName("fa fa-" + (isInfo ? "check" : "warning"));
+        addStyleName("or-MessagesIcon");
+        addStyleName("theme-MessagesIcon");
+    }
 }

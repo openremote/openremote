@@ -21,6 +21,6 @@ package org.openremote.manager.client.interop.jackson;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-@JsonInclude(JsonInclude.Include.NON_EMPTY)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public interface DefaultJsonMixin {
 }

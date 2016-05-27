@@ -37,4 +37,5 @@ public interface ManagerMessages extends Messages {
 
     String failureUpdatingResource(String error);
 
+    String failureUpdatingResourceBadRequest();
 }

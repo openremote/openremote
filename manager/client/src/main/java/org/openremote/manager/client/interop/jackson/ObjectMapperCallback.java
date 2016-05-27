@@ -23,17 +23,23 @@ import com.github.nmorel.gwtjackson.client.ObjectMapper;
 import elemental.json.JsonValue;
 import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.http.AbstractCallback;
+import org.openremote.manager.shared.http.RequestException;
 
 public class ObjectMapperCallback<T> extends AbstractCallback<T> {
 
     final protected ObjectMapper<T> objectMapper;
 
-    public ObjectMapperCallback(ObjectMapper<T> objectMapper, Consumer<T> onSuccess, Consumer<Exception> onFailure) {
+    public ObjectMapperCallback(ObjectMapper<T> objectMapper,
+                                Consumer<T> onSuccess,
+                                Consumer<RequestException> onFailure) {
         super(onSuccess, onFailure);
         this.objectMapper = objectMapper;
     }
 
-    public ObjectMapperCallback(ObjectMapper<T> objectMapper, int expectedStatusCode, Consumer<T> onSuccess, Consumer<Exception> onFailure) {
+    public ObjectMapperCallback(ObjectMapper<T> objectMapper,
+                                int expectedStatusCode,
+                                Consumer<T> onSuccess,
+                                Consumer<RequestException> onFailure) {
         super(expectedStatusCode, onSuccess, onFailure);
         this.objectMapper = objectMapper;
     }

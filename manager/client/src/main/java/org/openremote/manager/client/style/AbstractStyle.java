@@ -95,8 +95,16 @@ public abstract class AbstractStyle {
         return getPrefix() + "Headline1";
     }
 
+    public String HeadlineSub() {
+        return getPrefix() + "HeadlineSub";
+    }
+
     public String Form() {
         return getPrefix() + "Form";
+    }
+
+    public String FormMessages() {
+        return getPrefix() + "FormMessages";
     }
 
     public String FormBusy() {

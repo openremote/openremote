@@ -26,10 +26,15 @@ import jsinterop.annotations.JsType;
 @JsType(isNative = true, namespace = "REST")
 public class Request<T> {
 
+    @JsType(isNative = true)
+    public interface XMLHttpRequest {
+        String getResponseHeader(String header);
+    }
+
     @FunctionalInterface
     @JsFunction
     interface InternalCallback {
-        void call(int responseCode, Object xmlHttpRequest, Object entity);
+        void call(int responseCode, XMLHttpRequest xmlHttpRequest, Object entity);
     }
 
     public static class InternalCallbackImpl implements InternalCallback {
@@ -41,8 +46,8 @@ public class Request<T> {
         }
 
         @Override
-        public void call(int responseCode, Object xmlHttpRequest, Object entity) {
-            callback.call(responseCode, entity);
+        public void call(int responseCode, XMLHttpRequest xmlHttpRequest, Object entity) {
+            callback.call(responseCode, xmlHttpRequest, entity);
         }
     }
 

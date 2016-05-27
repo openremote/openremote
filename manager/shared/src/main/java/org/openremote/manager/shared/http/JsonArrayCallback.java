@@ -24,11 +24,11 @@ import org.openremote.manager.shared.Consumer;
 
 public class JsonArrayCallback extends AbstractCallback<JsonArray> {
 
-    public JsonArrayCallback(Consumer<JsonArray> onSuccess, Consumer<Exception> onFailure) {
+    public JsonArrayCallback(Consumer<JsonArray> onSuccess, Consumer<RequestException> onFailure) {
         super(onSuccess, onFailure);
     }
 
-    public JsonArrayCallback(int expectedStatusCode, Consumer<JsonArray> onSuccess, Consumer<Exception> onFailure) {
+    public JsonArrayCallback(int expectedStatusCode, Consumer<JsonArray> onSuccess, Consumer<RequestException> onFailure) {
         super(expectedStatusCode, onSuccess, onFailure);
     }
 

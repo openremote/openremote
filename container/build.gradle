@@ -18,6 +18,7 @@ dependencies {
     compile "org.jboss.resteasy:resteasy-jackson2-provider:$resteasyVersion"
     compile "org.jboss.resteasy:resteasy-multipart-provider:$resteasyVersion"
     compile "org.jboss.resteasy:resteasy-cache-core:$resteasyVersion"
+    compile "org.jboss.resteasy:resteasy-validator-provider-11:$resteasyVersion"
     compile "org.jboss.resteasy:async-http-servlet-3.0:$resteasyVersion"
 
     compile "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
@@ -31,6 +32,7 @@ dependencies {
     compile "org.hibernate:hibernate-entitymanager:$hibernateVersion"
     compile "org.hibernate:hibernate-java8:$hibernateVersion"
     compile "org.hibernate:hibernate-validator:$hibernateValidatorVersion"
+    compile "org.glassfish.web:javax.el:$javaxELVersion"
 
     compile "org.apache.camel:camel-core:$camelVersion"
     compile "org.apache.camel:camel-servlet:$camelVersion"

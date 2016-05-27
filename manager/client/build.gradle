@@ -1,3 +1,5 @@
+evaluationDependsOn(":manager:shared")
+
 apply plugin: "java"
 apply plugin: "distribution"
 
@@ -72,7 +74,7 @@ task compileGwt(dependsOn: classes, type: JavaExec) {
      */
 
     args = [
-            "org.openremote.manager.client.ManagerClient", // Your GWT module
+            "org.openremote.manager.Manager", // Your GWT module
             "-war", gwtOutputDir,
             "-logLevel", "INFO",
             "-localWorkers", "2",
@@ -118,9 +120,10 @@ task gwtSuperDev(dependsOn: classes, type: JavaExec) {
       -X[no]closureFormattedOutput   EXPERIMENTAL: Enables Javascript output suitable for post-compilation by Closure Compiler (defaults to OFF)
      */
     args = [
-            "org.openremote.manager.client.ManagerClient", // Your GWT module
+            "org.openremote.manager.Manager", // Your GWT module
             "-workDir", gwtWorkDir,
             "-launcherDir", gwtLauncherDir,
+            "-src", project(":manager:shared").sourceSets.main.java.srcDirs[0], // Help code server detect source changes
             "-logLevel", "INFO",
             "-noincremental",
             "-noprecompile",

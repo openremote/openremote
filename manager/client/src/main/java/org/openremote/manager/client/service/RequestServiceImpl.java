@@ -30,9 +30,14 @@ import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.manager.shared.http.Request;
 import org.openremote.manager.shared.http.RequestParams;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 
 public class RequestServiceImpl implements RequestService {
+
+    private static final Logger LOG = Logger.getLogger(RequestServiceImpl.class.getName());
 
     public static class Configuration {
 
@@ -40,11 +45,25 @@ public class RequestServiceImpl implements RequestService {
         public static class REST {
             @JsProperty
             public static String apiURL;
+
+            @JsProperty
+            public static boolean debug;
+
+            @JsProperty
+            public static boolean antiBrowserCache;
+
+            @JsProperty
+            public static int loglevel;
+
+            // Enable debug to fill this value
+            @JsProperty
+            public static Request.XMLHttpRequest lastRequest;
         }
 
         public static void setDefaults(String realm) {
             Location location = Browser.getWindow().getLocation();
             REST.apiURL = "//" + location.getHostname() + ":" + location.getPort() + "/" + realm;
+            REST.loglevel = LOG.isLoggable(Level.FINE) ? 1 : 0;
         }
     }
 

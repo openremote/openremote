@@ -20,6 +20,7 @@
 package org.openremote.manager.client.map;
 
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Composite;
@@ -61,10 +62,12 @@ public class MapViewImpl extends Composite implements MapView {
 
     @Override
     public void initialiseMap(JsonObject mapOptions) {
-        mapWidget.initialise(mapOptions);
         mapLoadingLabel.setVisible(false);
-        mapWidget.setVisible(true);
-        mapWidget.refresh();
+        Scheduler.get().scheduleDeferred(() -> {
+            mapWidget.initialise(mapOptions);
+            mapWidget.setVisible(true);
+            mapWidget.refresh();
+        });
     }
 
     @Override

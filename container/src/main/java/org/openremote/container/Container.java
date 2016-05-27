@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.CompletableFuture;
@@ -55,6 +56,9 @@ public class Container {
         }
 
         LOG = Logger.getLogger(Container.class.getName());
+
+        // TODO configurable per user session
+        Locale.setDefault(Locale.US);
     }
 
     public static final String DEV_MODE = "DEV_MODE";
@@ -93,7 +97,7 @@ public class Container {
 
     public Container(Map<String, String> config, Stream<ContainerService> servicesStream) {
         JSON = new ObjectMapper();
-        JSON.setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
+        JSON.setSerializationInclusion(JsonInclude.Include.NON_NULL)
             .configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false)
             .configure(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS, false)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)

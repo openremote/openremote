@@ -25,37 +25,10 @@ import jsinterop.annotations.JsType;
 
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 
-/**
- * TODO https://issues.jboss.org/browse/RESTEASY-1315
- */
 @JsType
 public class RequestParams<T> {
-
-    public static class Failure extends RuntimeException {
-
-        public int statusCode;
-
-        public Failure() {
-        }
-
-        public Failure(String message) {
-            super(message);
-        }
-
-        public Failure(int statusCode) {
-            this.statusCode = statusCode;
-        }
-
-        public Failure(int statusCode, String message) {
-            super(message);
-            this.statusCode = statusCode;
-        }
-
-        public int getStatusCode() {
-            return statusCode;
-        }
-    }
 
     @HeaderParam(HttpHeaders.AUTHORIZATION)
     @JsProperty(name = HttpHeaders.AUTHORIZATION)
@@ -89,9 +62,13 @@ public class RequestParams<T> {
     public RequestParams() {
     }
 
+    /**
+     * Defaults to "<code>Accept: application/json</code>" header, call {@link #setAccepts(String)} to override.
+     */
     @JsIgnore
     public RequestParams(Callback<T> callback) {
         this.callback = new Request.InternalCallbackImpl(callback);
+        this.accepts = MediaType.APPLICATION_JSON;
     }
 
     public RequestParams<T> withBearerAuth(String authorization) {

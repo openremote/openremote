@@ -27,6 +27,7 @@ import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.util.Point;
 import org.openremote.manager.client.util.Rectangle;
+import org.openremote.manager.client.widget.MessagesIcon;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -100,11 +101,7 @@ public class PopupToastDisplay implements ToastDisplay {
                 content.addStyleName(themeStyle.ToastFailure());
             }
 
-            Label icon = new Label();
-            icon.setStyleName("fa fa-" + (isInfo ? "check" : "warning"));
-            icon.addStyleName(widgetStyle.MessagesIcon());
-            icon.addStyleName(themeStyle.MessagesIcon());
-            content.add(icon);
+            content.add(new MessagesIcon(isInfo));
 
             Label text = new Label(toast.getText());
             content.add(text);

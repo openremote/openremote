@@ -15,10 +15,12 @@
                 <div class="or-FormField theme-FormField">
                     <#if usernameEditDisabled??>
                         <input id="username"
+                               autofocus
                                class="or-FormControl theme-FormControl or-FormInputText theme-FormInputText"
                                name="username" value="${(login.username!'')?html}" type="text" disabled/>
                     <#else>
                         <input id="username"
+                               autofocus
                                class="or-FormControl theme-FormControl or-FormInputText theme-FormInputText"
                                name="username" value="${(login.username!'')?html}" type="text" autofocus/>
                     </#if>

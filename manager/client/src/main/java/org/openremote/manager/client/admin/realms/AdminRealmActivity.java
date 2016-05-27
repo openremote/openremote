@@ -21,22 +21,26 @@ package org.openremote.manager.client.admin.realms;
 
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
-import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.manager.client.admin.AbstractAdminActivity;
 import org.openremote.manager.client.admin.AdminView;
 import org.openremote.manager.client.admin.RealmMapper;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
+import org.openremote.manager.client.http.ConstraintViolationReportMapper;
+import org.openremote.manager.client.http.ResourceUpdateExceptionHandler;
 import org.openremote.manager.client.i18n.ManagerMessages;
+import org.openremote.manager.client.interop.jackson.ObjectMapperCallback;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.service.RequestService;
+import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.shared.Runnable;
 import org.openremote.manager.shared.event.ui.ShowFailureEvent;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
-import org.openremote.manager.client.interop.jackson.ObjectMapperCallback;
 import org.openremote.manager.shared.http.StatusCallback;
+import org.openremote.manager.shared.http.ValidationStatusCallback;
 import org.openremote.manager.shared.security.RealmsResource;
+import org.openremote.manager.shared.security.ValidatedRealmRepresentation;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -51,7 +55,9 @@ public class AdminRealmActivity
     final protected ManagerMessages managerMessages;
     final protected PlaceController placeController;
     final protected EventBus eventBus;
+    final protected SecurityService securityService;
     final protected RequestService requestService;
+    final protected ConstraintViolationReportMapper constraintViolationReportMapper;
     final protected RealmsResource realmsResource;
     final protected RealmMapper realmMapper;
 
@@ -64,14 +70,18 @@ public class AdminRealmActivity
                               ManagerMessages managerMessages,
                               PlaceController placeController,
                               EventBus eventBus,
+                              SecurityService securityService,
                               RequestService requestService,
+                              ConstraintViolationReportMapper constraintViolationReportMapper,
                               RealmsResource realmsResource,
                               RealmMapper realmMapper) {
         super(adminView, adminNavigationPresenter, view);
         this.managerMessages = managerMessages;
         this.placeController = placeController;
         this.eventBus = eventBus;
+        this.securityService = securityService;
         this.requestService = requestService;
+        this.constraintViolationReportMapper = constraintViolationReportMapper;
         this.realmsResource = realmsResource;
         this.realmMapper = realmMapper;
     }
@@ -95,16 +105,17 @@ public class AdminRealmActivity
         if (realmName != null) {
             loadRealm();
         } else {
-            adminContent.setRealm(new RealmRepresentation());
+            adminContent.setRealm(new ValidatedRealmRepresentation());
         }
     }
 
     @Override
-    public void createRealm(RealmRepresentation realm, Runnable onComplete) {
+    public void createRealm(ValidatedRealmRepresentation realm, Runnable onComplete) {
         if (this.realmName != null)
             return;
         realmsResource.createRealm(
-            requestService.createRequestParams(new StatusCallback(
+            requestService.createRequestParams(new ValidationStatusCallback(
+                    constraintViolationReportMapper,
                     204,
                     result -> {
                         onComplete.run();
@@ -113,13 +124,9 @@ public class AdminRealmActivity
                         ));
                         placeController.goTo(new AdminRealmsPlace());
                     },
-                    ex -> {
-                        onComplete.run();
-                        eventBus.dispatch(new ShowFailureEvent(
-                            managerMessages.failureUpdatingResource(ex.getMessage()),
-                            10000
-                        ));
-                    }
+                    new ResourceUpdateExceptionHandler(
+                        eventBus, securityService, managerMessages, onComplete, adminContent::applyConstraintViolations
+                    )
                 ), realmMapper
             ),
             realm
@@ -127,11 +134,12 @@ public class AdminRealmActivity
     }
 
     @Override
-    public void updateRealm(RealmRepresentation realm, Runnable onComplete) {
+    public void updateRealm(ValidatedRealmRepresentation realm, Runnable onComplete) {
         if (this.realmName == null)
             return;
         realmsResource.updateRealm(
-            requestService.createRequestParams(new StatusCallback(
+            requestService.createRequestParams(new ValidationStatusCallback(
+                    constraintViolationReportMapper,
                     204,
                     result -> {
                         onComplete.run();
@@ -140,13 +148,9 @@ public class AdminRealmActivity
                         ));
                         placeController.goTo(new AdminRealmsPlace());
                     },
-                    ex -> {
-                        onComplete.run();
-                        eventBus.dispatch(new ShowFailureEvent(
-                            managerMessages.failureUpdatingResource(ex.getMessage()),
-                            10000
-                        ));
-                    }
+                    new ResourceUpdateExceptionHandler(
+                        eventBus, securityService, managerMessages, onComplete, adminContent::applyConstraintViolations
+                    )
                 ), realmMapper
             ),
             this.realmName,
@@ -155,7 +159,7 @@ public class AdminRealmActivity
     }
 
     @Override
-    public void deleteRealm(RealmRepresentation realm, Runnable onComplete) {
+    public void deleteRealm(ValidatedRealmRepresentation realm, Runnable onComplete) {
         if (this.realmName == null)
             return;
         realmsResource.deleteRealm(
@@ -168,13 +172,9 @@ public class AdminRealmActivity
                         ));
                         placeController.goTo(new AdminRealmsPlace());
                     },
-                    ex -> {
-                        onComplete.run();
-                        eventBus.dispatch(new ShowFailureEvent(
-                            managerMessages.failureUpdatingResource(ex.getMessage()),
-                            10000
-                        ));
-                    }
+                    new ResourceUpdateExceptionHandler(
+                        eventBus, securityService, managerMessages, onComplete, adminContent::applyConstraintViolations
+                    )
                 )
             ),
             this.realmName

@@ -24,11 +24,11 @@ import org.openremote.manager.shared.Consumer;
 
 public class JsonObjectCallback extends AbstractCallback<JsonObject> {
 
-    public JsonObjectCallback(Consumer<JsonObject> onSuccess, Consumer<Exception> onFailure) {
+    public JsonObjectCallback(Consumer<JsonObject> onSuccess, Consumer<RequestException> onFailure) {
         super(onSuccess, onFailure);
     }
 
-    public JsonObjectCallback(int expectedStatusCode, Consumer<JsonObject> onSuccess, Consumer<Exception> onFailure) {
+    public JsonObjectCallback(int expectedStatusCode, Consumer<JsonObject> onSuccess, Consumer<RequestException> onFailure) {
         super(expectedStatusCode, onSuccess, onFailure);
     }
 

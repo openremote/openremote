@@ -20,5 +20,5 @@
 package org.openremote.manager.shared.http;
 
 public interface Callback<T> {
-    void call(int responseCode, Object entity);
+    void call(int responseCode, Request.XMLHttpRequest request, Object entity);
 }

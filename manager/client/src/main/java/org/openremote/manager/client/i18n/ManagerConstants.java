@@ -71,4 +71,5 @@ public interface ManagerConstants extends Constants {
 
     String cancel();
 
+    String requiredFields();
 }

@@ -19,25 +19,27 @@
  */
 package org.openremote.manager.client.admin.realms;
 
-import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.manager.client.admin.AdminContent;
 import org.openremote.manager.shared.Runnable;
+import org.openremote.manager.shared.security.ValidatedRealmRepresentation;
+import org.openremote.manager.shared.validation.ConstraintViolation;
 
 public interface AdminRealm extends AdminContent {
 
     interface Presenter {
 
-        void createRealm(RealmRepresentation realm, Runnable onComplete);
+        void createRealm(ValidatedRealmRepresentation realm, Runnable onComplete);
 
-        void updateRealm(RealmRepresentation realm, Runnable onComplete);
+        void updateRealm(ValidatedRealmRepresentation realm, Runnable onComplete);
 
-        void deleteRealm(RealmRepresentation realm, Runnable onComplete);
+        void deleteRealm(ValidatedRealmRepresentation realm, Runnable onComplete);
 
         void cancel();
     }
 
     void setPresenter(Presenter presenter);
 
-    void setRealm(RealmRepresentation realm);
+    void setRealm(ValidatedRealmRepresentation realm);
 
+    void applyConstraintViolations(ConstraintViolation[] violations);
 }

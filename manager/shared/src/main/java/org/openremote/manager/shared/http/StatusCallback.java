@@ -23,11 +23,11 @@ import org.openremote.manager.shared.Consumer;
 
 public class StatusCallback extends AbstractCallback<Integer> {
 
-    public StatusCallback(Consumer<Integer> onSuccess, Consumer<Exception> onFailure) {
+    public StatusCallback(Consumer<Integer> onSuccess, Consumer<RequestException> onFailure) {
         super(onSuccess, onFailure);
     }
 
-    public StatusCallback(int expectedStatusCode, Consumer<Integer> onSuccess, Consumer<Exception> onFailure) {
+    public StatusCallback(int expectedStatusCode, Consumer<Integer> onSuccess, Consumer<RequestException> onFailure) {
         super(expectedStatusCode, onSuccess, onFailure);
     }
 

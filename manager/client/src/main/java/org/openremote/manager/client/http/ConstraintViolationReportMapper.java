@@ -17,15 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin;
+package org.openremote.manager.client.http;
 
 import com.github.nmorel.gwtjackson.client.ObjectMapper;
 import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
 import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
-import org.openremote.manager.shared.http.EntityWriter;
-import org.openremote.manager.shared.security.ValidatedRealmRepresentation;
+import org.openremote.manager.shared.http.EntityReader;
+import org.openremote.manager.shared.validation.ConstraintViolationReport;
 
-@JsonMixIns({@JsonMixIns.JsonMixIn(target = ValidatedRealmRepresentation.class, mixIn = DefaultJsonMixin.class)})
-public interface RealmMapper extends ObjectMapper<ValidatedRealmRepresentation>, EntityWriter<ValidatedRealmRepresentation> {
-
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = ConstraintViolationReport.class, mixIn = DefaultJsonMixin.class)})
+public interface ConstraintViolationReportMapper extends ObjectMapper<ConstraintViolationReport>, EntityReader<ConstraintViolationReport> {
 }

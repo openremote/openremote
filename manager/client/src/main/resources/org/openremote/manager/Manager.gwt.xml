@@ -1,11 +1,10 @@
 <!DOCTYPE module PUBLIC "-//Google Inc.//DTD Google Web Toolkit 2.0//EN"
         "http://google-web-toolkit.googlecode.com/svn/releases/2.0/distro-source/core/src/gwt-module.dtd">
 
-<module rename-to="ManagerClient">
+<module rename-to="Manager">
 
     <!-- ##################################################################### -->
 
-    <inherits name="org.openremote.manager.shared.ManagerShared"/>
     <inherits name="com.google.gwt.user.User"/>
     <inherits name="elemental.Elemental"/>
     <inherits name="com.google.gwt.resources.Resources"/>
@@ -16,6 +15,7 @@
     <inherits name="com.google.gwt.i18n.I18N"/>
     <inherits name="com.google.gwt.http.HTTP"/>
     <inherits name="com.github.nmorel.gwtjackson.GwtJackson"/>
+    <inherits name="org.jboss.resteasy.api.validation.ResteasyValidation"/>
     <inherits name="org.keycloak.representations.idm.KeycloakIDM"/>
 
     <!-- ##################################################################### -->
@@ -43,7 +43,8 @@
 
     <!-- ##################################################################### -->
 
-    <source path=""/>
+    <source path="shared"/>
+    <source path="client"/>
 
     <!-- ##################################################################### -->
 

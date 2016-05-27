@@ -19,14 +19,17 @@
  */
 package org.openremote.manager.server.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.security.RealmsResource;
+import org.openremote.manager.shared.security.ValidatedRealmRepresentation;
 
-import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 public class RealmsResourceImpl extends WebResource implements RealmsResource {
@@ -40,26 +43,30 @@ public class RealmsResourceImpl extends WebResource implements RealmsResource {
     }
 
     @Override
-    public RealmRepresentation[] getRealms(RequestParams requestParams) {
+    public ValidatedRealmRepresentation[] getRealms(RequestParams requestParams) {
         try {
             List<RealmRepresentation> realms = managerIdentityService.getRealms(requestParams).findAll();
-            return realms.toArray(new RealmRepresentation[realms.size()]);
+            List<ValidatedRealmRepresentation> validatedRealms = new ArrayList<>();
+            for (RealmRepresentation realm : realms) {
+                validatedRealms.add(convert(realm));
+            }
+            return validatedRealms.toArray(new ValidatedRealmRepresentation[validatedRealms.size()]);
         } catch (Exception ex) {
             throw new WebApplicationException(ex);
         }
     }
 
     @Override
-    public RealmRepresentation getRealm(RequestParams requestParams, String realmName) {
+    public ValidatedRealmRepresentation getRealm(RequestParams requestParams, String realmName) {
         try {
-            return managerIdentityService.getRealms(requestParams).realm(realmName).toRepresentation();
+            return convert(managerIdentityService.getRealms(requestParams).realm(realmName).toRepresentation());
         } catch (Exception ex) {
             throw new WebApplicationException(ex);
         }
     }
 
     @Override
-    public void updateRealm(@BeanParam RequestParams requestParams, String realmName, RealmRepresentation realm) {
+    public void updateRealm(RequestParams requestParams, String realmName, ValidatedRealmRepresentation realm) {
         try {
             managerIdentityService.getRealms(requestParams).realm(realmName).update(realm);
         } catch (Exception ex) {
@@ -68,7 +75,7 @@ public class RealmsResourceImpl extends WebResource implements RealmsResource {
     }
 
     @Override
-    public void createRealm(@BeanParam RequestParams requestParams, RealmRepresentation realm) {
+    public void createRealm(RequestParams requestParams, ValidatedRealmRepresentation realm) {
         try {
             managerIdentityService.getRealms(requestParams).create(realm);
         } catch (Exception ex) {
@@ -77,11 +84,17 @@ public class RealmsResourceImpl extends WebResource implements RealmsResource {
     }
 
     @Override
-    public void deleteRealm(@BeanParam RequestParams requestParams, String realmName) {
+    public void deleteRealm(RequestParams requestParams, String realmName) {
         try {
             managerIdentityService.getRealms(requestParams).realm(realmName).remove();
         } catch (Exception ex) {
             throw new WebApplicationException(ex);
         }
+    }
+
+    protected ValidatedRealmRepresentation convert(RealmRepresentation realm) {
+        ObjectMapper json = getContainer().JSON;
+        Map<String,Object> props = json.convertValue(realm, Map.class);
+        return json.convertValue(props, ValidatedRealmRepresentation.class);
     }
 }
