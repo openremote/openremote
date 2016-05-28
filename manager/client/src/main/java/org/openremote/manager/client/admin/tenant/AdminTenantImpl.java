@@ -67,6 +67,8 @@ public class AdminTenantImpl extends Composite implements AdminTenant {
     TextBox realmInput;
 
     @UiField
+    DivElement enabledGroup;
+    @UiField
     LabelElement enabledLabel;
     @UiField
     SimpleCheckBox enabledCheckBox;
@@ -128,11 +130,16 @@ public class AdminTenantImpl extends Composite implements AdminTenant {
         for (ConstraintViolation violation : violations) {
             errorMessages.add(violation.getMessage());
 
-            if (violation.getPath().endsWith("displayName")) {
-                displayNameGrou.addClassName("error");
-            }
-            if (violation.getPath().endsWith("realm")) {
-                realmGroup.addClassName("error");
+            if (violation.getPath() != null) {
+                if (violation.getPath().endsWith("displayName")) {
+                    displayNameGrou.addClassName("error");
+                }
+                if (violation.getPath().endsWith("realm")) {
+                    realmGroup.addClassName("error");
+                }
+                if (violation.getPath().endsWith("enabled")) {
+                    enabledGroup.addClassName("error");
+                }
             }
 
         }
@@ -162,11 +169,7 @@ public class AdminTenantImpl extends Composite implements AdminTenant {
     @UiHandler("deleteButton")
     void deleteClicked(ClickEvent e) {
         setFormBusy(true);
-        presenter.deleteTenant(tenant, () -> {
-            tenant = null;
-            writeForm();
-            setFormBusy(false);
-        });
+        presenter.deleteTenant(tenant, () -> setFormBusy(false));
     }
 
     @UiHandler("cancelButton")
@@ -236,5 +239,6 @@ public class AdminTenantImpl extends Composite implements AdminTenant {
 
         displayNameGrou.removeClassName("error");
         realmGroup.removeClassName("error");
+        enabledGroup.removeClassName("error");
     }
 }

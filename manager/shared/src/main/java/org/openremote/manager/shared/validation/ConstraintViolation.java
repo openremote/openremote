@@ -30,6 +30,20 @@ public class ConstraintViolation implements Serializable {
     protected String message;
     protected String value;
 
+    public ConstraintViolation() {
+    }
+
+    public ConstraintViolation(Type constraintType, String path, String message) {
+        this.constraintType = constraintType;
+        this.path = path;
+        this.message = message;
+    }
+
+    public ConstraintViolation(Type constraintType, String message) {
+        this.constraintType = constraintType;
+        this.message = message;
+    }
+
     public Type getConstraintType() {
         return constraintType;
     }

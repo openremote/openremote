@@ -161,7 +161,7 @@ public class AdminTenantActivity
                 ));
                 placeController.goTo(new AdminTenantsPlace());
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages)
+            ex -> handleRequestException(ex, eventBus, managerMessages, adminContent::showErrors)
         );
     }
 

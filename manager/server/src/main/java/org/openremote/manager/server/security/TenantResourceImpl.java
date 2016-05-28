@@ -22,16 +22,25 @@ package org.openremote.manager.server.security;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.container.web.WebResource;
+import org.openremote.manager.server.i18n.I18NService;
 import org.openremote.manager.shared.http.RequestParams;
-import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.manager.shared.security.Tenant;
+import org.openremote.manager.shared.security.TenantResource;
+import org.openremote.manager.shared.validation.ConstraintViolation;
+import org.openremote.manager.shared.validation.ConstraintViolationReport;
 
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.ResourceBundle;
 import java.util.logging.Logger;
+
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static org.openremote.manager.shared.Constants.MASTER_REALM;
+import static org.openremote.manager.shared.validation.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
 
 public class TenantResourceImpl extends WebResource implements TenantResource {
 
@@ -72,6 +81,15 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
 
     @Override
     public void update(RequestParams requestParams, String realm, Tenant tenant) {
+        ConstraintViolationReport violationReport;
+        if ((violationReport = isIllegalMasterRealmMutation(realm, tenant)) != null) {
+            throw new WebApplicationException(
+                Response.status(BAD_REQUEST)
+                    .header(VIOLATION_EXCEPTION_HEADER, "true")
+                    .entity(violationReport)
+                    .build()
+            );
+        }
         try {
             managerIdentityService.getRealms(requestParams).realm(realm).update(convertFrom(tenant));
         } catch (ClientErrorException ex) {
@@ -94,6 +112,15 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
 
     @Override
     public void delete(RequestParams requestParams, String realm) {
+        ConstraintViolationReport violationReport;
+        if ((violationReport = isIllegalMasterRealmDeletion(realm)) != null) {
+            throw new WebApplicationException(
+                Response.status(BAD_REQUEST)
+                    .header(VIOLATION_EXCEPTION_HEADER, "true")
+                    .entity(violationReport)
+                    .build()
+            );
+        }
         try {
             managerIdentityService.getRealms(requestParams).realm(realm).remove();
         } catch (ClientErrorException ex) {
@@ -105,14 +132,60 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
 
     protected Tenant convertTo(RealmRepresentation realm) {
         ObjectMapper json = getContainer().JSON;
-        Map<String,Object> props = json.convertValue(realm, Map.class);
+        Map<String, Object> props = json.convertValue(realm, Map.class);
         return json.convertValue(props, Tenant.class);
     }
 
     protected RealmRepresentation convertFrom(Tenant tenant) {
         ObjectMapper json = getContainer().JSON;
-        Map<String,Object> props = json.convertValue(tenant, Map.class);
+        Map<String, Object> props = json.convertValue(tenant, Map.class);
         return json.convertValue(props, RealmRepresentation.class);
+    }
+
+    protected ConstraintViolationReport isIllegalMasterRealmDeletion(String realm) {
+        if (!realm.equals(MASTER_REALM))
+            return null;
+
+        ResourceBundle validationMessages = getContainer().getService(I18NService.class).getValidationMessages();
+        List<ConstraintViolation> violations = new ArrayList<>();
+        violations.add(new ConstraintViolation(
+            ConstraintViolation.Type.PARAMETER,
+            validationMessages.getString("Tenant.masterDeleted")
+        ));
+        ConstraintViolationReport report = new ConstraintViolationReport();
+        report.setParameterViolations(violations.toArray(new ConstraintViolation[violations.size()]));
+        return report;
+    }
+
+    protected ConstraintViolationReport isIllegalMasterRealmMutation(String realm, Tenant tenant) {
+        if (!realm.equals(MASTER_REALM))
+            return null;
+
+        ResourceBundle validationMessages = getContainer().getService(I18NService.class).getValidationMessages();
+
+        List<ConstraintViolation> violations = new ArrayList<>();
+        if (tenant.getEnabled() == null || !tenant.getEnabled()) {
+            ConstraintViolation violation = new ConstraintViolation(
+                ConstraintViolation.Type.PARAMETER,
+                "Tenant.enabled",
+                validationMessages.getString("Tenant.masterDisabled")
+            );
+            violations.add(violation);
+        }
+        if (tenant.getRealm() == null || !tenant.getRealm().equals(MASTER_REALM)) {
+            ConstraintViolation violation = new ConstraintViolation(
+                ConstraintViolation.Type.PARAMETER,
+                "Tenant.realm",
+                validationMessages.getString("Tenant.masterRealmChanged")
+            );
+            violations.add(violation);
+        }
+        if (violations.size() > 0) {
+            ConstraintViolationReport report = new ConstraintViolationReport();
+            report.setParameterViolations(violations.toArray(new ConstraintViolation[violations.size()]));
+            return report;
+        }
+        return null;
     }
 
 }

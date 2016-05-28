@@ -148,6 +148,7 @@ public class SampleDataService implements ContainerService {
         RealmResource realmResource = identityService.getRealms(accessToken, false).realm(MASTER_REALM);
         RealmRepresentation masterRealm = realmResource.toRepresentation();
 
+        masterRealm.setDisplayName("OpenRemote");
         masterRealm.setDisplayNameHtml("<div class=\"kc-logo-text\"><span>OpenRemote</span></div>");
 
         masterRealm.setLoginTheme("openremote");

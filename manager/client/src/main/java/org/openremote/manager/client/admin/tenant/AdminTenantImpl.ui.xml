@@ -53,7 +53,8 @@
                 </div>
             </div>
 
-            <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}">
+            <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}"
+                 ui:field="enabledGroup">
                 <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
                     <label ui:field="enabledLabel">
                         <g:InlineLabel text="{constants.enabled}"/>

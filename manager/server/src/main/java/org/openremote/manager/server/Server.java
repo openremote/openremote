@@ -23,6 +23,7 @@ import org.openremote.container.Container;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.manager.server.assets.AssetsService;
 import org.openremote.manager.server.event.EventService;
+import org.openremote.manager.server.i18n.I18NService;
 import org.openremote.manager.server.map.MapService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebService;
@@ -31,6 +32,7 @@ public class Server {
 
     public static void main(String[] args) throws Exception {
         new Container(
+            new I18NService(),
             new ManagerWebService(),
             new ManagerIdentityService(),
             new MessageBrokerService(),

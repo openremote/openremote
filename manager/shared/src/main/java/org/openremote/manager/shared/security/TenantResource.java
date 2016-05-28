@@ -27,35 +27,39 @@ import javax.validation.Valid;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+
 @Path("tenant")
 @JsType(isNative = true)
 public interface TenantResource {
 
     @GET
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     Tenant[] getAll(@BeanParam RequestParams requestParams);
 
     @GET
     @Path("{realm}")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     Tenant get(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     @PUT
     @Path("{realm}")
-    @Consumes(MediaType.APPLICATION_JSON)
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     void update(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @Valid Tenant tenant);
 
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
     @SuccessStatusCode(201)
     void create(@BeanParam RequestParams requestParams, @Valid Tenant tenant);
 
     @DELETE
     @Path("{realm}")
-    @Produces(MediaType.APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     void delete(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 }

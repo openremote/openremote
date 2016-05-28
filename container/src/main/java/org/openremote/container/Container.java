@@ -56,9 +56,6 @@ public class Container {
         }
 
         LOG = Logger.getLogger(Container.class.getName());
-
-        // TODO configurable per user session
-        Locale.setDefault(Locale.US);
     }
 
     public static final String DEV_MODE = "DEV_MODE";
