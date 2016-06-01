@@ -43,6 +43,9 @@ public class ManagerIdentityService extends IdentityService {
         container.getService(WebService.class).getApiSingletons().add(
             new TenantResourceImpl(this)
         );
+        container.getService(WebService.class).getApiSingletons().add(
+            new UserResourceImpl(this)
+        );
     }
 
     /**

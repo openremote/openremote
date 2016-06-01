@@ -28,6 +28,7 @@ import com.google.gwt.user.client.ui.HTMLPanel;
 import org.openremote.manager.client.admin.AdminPlace;
 import org.openremote.manager.client.admin.tenant.AdminTenantPlace;
 import org.openremote.manager.client.admin.tenant.AdminTenantsPlace;
+import org.openremote.manager.client.admin.users.AdminUserPlace;
 import org.openremote.manager.client.admin.users.AdminUsersPlace;
 import org.openremote.manager.client.widget.Hyperlink;
 
@@ -68,7 +69,7 @@ public class AdminNavigationImpl extends Composite implements AdminNavigation {
 
         overviewLink.setTargetHistoryToken(presenter.getAdminOverviewPlaceToken());
         tenantsLink.setTargetHistoryToken(presenter.getAdminTenantsPlaceToken());
-        usersLink.setTargetHistoryToken(presenter.getAdminUsersPlaceToken(""));
+        usersLink.setTargetHistoryToken(presenter.getAdminUsersPlaceToken());
     }
 
     @Override
@@ -82,6 +83,8 @@ public class AdminNavigationImpl extends Composite implements AdminNavigation {
         } else if (adminPlace instanceof AdminTenantPlace) {
             tenantsLink.addStyleName("active");
         } else if (adminPlace instanceof AdminUsersPlace) {
+            usersLink.addStyleName("active");
+        } else if (adminPlace instanceof AdminUserPlace) {
             usersLink.addStyleName("active");
         } else {
             overviewLink.addStyleName("active");

@@ -84,7 +84,6 @@ public class MapActivity extends AppActivity<MapPlace> implements MapView.Presen
             jsonObjectMapper,
             mapResource::getSettings,
             200,
-            view::refresh,
             view::initialiseMap,
             ex -> handleRequestException(ex, eventBus, managerMessages)
         );

@@ -14,7 +14,8 @@
 
     <g:HTMLPanel styleName="flex layout vertical">
 
-        <g:FlowPanel styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} {themeStyle.FormMessages} success"
+        <g:FlowPanel
+                styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} {themeStyle.FormMessages} success"
                 visible="false">
             <w:IconLabel icon="check" addStyleNames="{widgetStyle.MessagesIcon} {themeStyle.MessagesIcon}"/>
             <g:FlowPanel ui:field="formMessagesSuccess"/>
@@ -28,7 +29,7 @@
         </g:FlowPanel>
 
         <div class="{widgetStyle.Headline1} {themeStyle.Headline1}">
-            <g:InlineLabel text="{constants.editTenant}"/>
+            <g:InlineLabel text="{constants.editUser}"/>
         </div>
 
         <div class="{widgetStyle.HeadlineSub} {themeStyle.HeadlineSub}">
@@ -39,29 +40,54 @@
         <div class="layout vertical {widgetStyle.Form} {themeStyle.Form}" ui:field="form">
 
             <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}"
-                 ui:field="displayNameGroup">
+                 ui:field="usernameGroup">
                 <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
-                    <label ui:field="displayNameLabel">
-                        <g:InlineLabel text="{constants.tenantDisplayName}"/>
+                    <label ui:field="usernameLabel">
+                        <g:InlineLabel text="{constants.username}"/>
                     </label>
                     <span class="required">*</span>
                 </div>
                 <div class="{widgetStyle.FormField} {themeStyle.FormField}">
-                    <g:TextBox ui:field="displayNameInput"
+                    <g:TextBox ui:field="usernameInput"
                                addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
                 </div>
             </div>
 
             <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}"
-                 ui:field="realmGroup">
+                 ui:field="firstNameGroup">
                 <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
-                    <label ui:field="realmLabel">
-                        <g:InlineLabel text="{constants.realm}"/>
+                    <label ui:field="firstNameLabel">
+                        <g:InlineLabel text="{constants.firstName}"/>
                     </label>
-                    <span class="required">*</span>
                 </div>
                 <div class="{widgetStyle.FormField} {themeStyle.FormField}">
-                    <g:TextBox ui:field="realmInput"
+                    <g:TextBox ui:field="firstNameInput"
+                               addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                </div>
+            </div>
+
+            <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}"
+                 ui:field="lastNameGroup">
+                <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
+                    <label ui:field="lastNameLabel">
+                        <g:InlineLabel text="{constants.lastName}"/>
+                    </label>
+                </div>
+                <div class="{widgetStyle.FormField} {themeStyle.FormField}">
+                    <g:TextBox ui:field="lastNameInput"
+                               addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                </div>
+            </div>
+
+            <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}"
+                 ui:field="emailGroup">
+                <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
+                    <label ui:field="emailLabel">
+                        <g:InlineLabel text="{constants.email}"/>
+                    </label>
+                </div>
+                <div class="{widgetStyle.FormField} {themeStyle.FormField}">
+                    <g:TextBox ui:field="emailInput"
                                addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
                 </div>
             </div>
@@ -79,21 +105,55 @@
                 </div>
             </div>
 
+            <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}"
+                 ui:field="resetPasswordNoteGroup">
+                <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
+                    <g:InlineLabel text="{constants.notePasswordAfterCreate}"/>
+                </div>
+            </div>
+
+            <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}"
+                 ui:field="resetPasswordGroup">
+                <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
+                    <label ui:field="resetPasswordLabel">
+                        <g:InlineLabel text="{constants.resetPassword}"/>
+                    </label>
+                </div>
+                <div class="{widgetStyle.FormField} {themeStyle.FormField}">
+                    <!-- TODO: autocomplete="new-password" to disable browser saving password popup-->
+                    <g:PasswordTextBox ui:field="resetPasswordInput"
+                                       addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                </div>
+            </div>
+
+            <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}"
+                 ui:field="resetPasswordControlGroup">
+                <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
+                    <label ui:field="resetPasswordControlLabel">
+                        <g:InlineLabel text="{constants.repeatPassword}"/>
+                    </label>
+                </div>
+                <div class="{widgetStyle.FormField} {themeStyle.FormField}">
+                    <g:PasswordTextBox ui:field="resetPasswordControlInput"
+                                       addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                </div>
+            </div>
+
             <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}">
                 <div class="{widgetStyle.FormField} {themeStyle.FormField}">
                     <w:PushButton ui:field="updateButton"
                                   addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                  text="{constants.updateTenant}"
+                                  text="{constants.updateUser}"
                                   visible="false"
                                   icon="save"/>
                     <w:PushButton ui:field="createButton"
                                   addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                  text="{constants.createTenant}"
+                                  text="{constants.createUser}"
                                   visible="false"
                                   icon="save"/>
                     <w:PushButton ui:field="deleteButton"
                                   addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonDanger} {themeStyle.FormButtonDanger} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                  text="{constants.deleteTenant}"
+                                  text="{constants.deleteUser}"
                                   visible="false"
                                   icon="trash"/>
                     <w:PushButton ui:field="cancelButton"

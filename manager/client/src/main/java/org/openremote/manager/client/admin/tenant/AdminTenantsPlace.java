@@ -25,7 +25,6 @@ import org.openremote.manager.client.admin.AdminPlace;
 
 public class AdminTenantsPlace extends AdminPlace {
 
-
     @Prefix("tenants")
     public static class Tokenizer implements PlaceTokenizer<AdminTenantsPlace> {
 

@@ -53,4 +53,10 @@ public class AdminTenantPlace extends AdminPlace {
         }
     }
 
+    @Override
+    public String toString() {
+        return "AdminTenantPlace{" +
+            "realm='" + realm + '\'' +
+            "}";
+    }
 }

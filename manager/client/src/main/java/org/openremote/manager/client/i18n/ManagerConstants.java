@@ -72,4 +72,30 @@ public interface ManagerConstants extends Constants {
     String cancel();
 
     String requiredFields();
+
+    String newUser();
+
+    String selectTenant();
+
+    String username();
+
+    String firstName();
+
+    String lastName();
+
+    String editUser();
+
+    String updateUser();
+
+    String createUser();
+
+    String deleteUser();
+
+    String email();
+
+    String resetPassword();
+
+    String repeatPassword();
+
+    String notePasswordAfterCreate();
 }

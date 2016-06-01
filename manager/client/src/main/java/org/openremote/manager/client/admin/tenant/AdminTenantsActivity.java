@@ -78,8 +78,6 @@ public class AdminTenantsActivity
             tenantArrayMapper,
             tenantResource::getAll,
             200,
-            () -> {
-            },
             adminContent::setTenants,
             ex -> handleRequestException(ex, eventBus, managerMessages)
         );

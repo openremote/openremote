@@ -17,11 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared;
+package org.openremote.manager.client.widget;
 
-public interface Constants {
+import com.google.gwt.user.client.ui.InlineLabel;
 
-    String MANAGER_CLIENT_ID = "or-manager";
-    String MASTER_REALM = "master";
-    String MASTER_REALM_ADMIN_USER = "admin";
+public class IconLabel extends InlineLabel {
+
+    protected String icon;
+
+    public String getIcon() {
+        return icon;
+    }
+
+    public void setIcon(String icon) {
+        if (this.icon != null) {
+            removeStyleName("fa");
+            removeStyleName("fa-" + this.icon);
+        }
+        this.icon = icon;
+        addStyleName("fa");
+        addStyleName("fa-" + icon);
+    }
+
 }

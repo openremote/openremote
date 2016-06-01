@@ -79,10 +79,9 @@ public class RequestServiceImpl implements RequestService {
     @Override
     public void execute(Consumer<RequestParams<Void>> onRequest,
                         int expectedStatusCode,
-                        Runnable onComplete,
                         Runnable onResponse,
                         Consumer<RequestException> onException) {
-        execute(null, onRequest, expectedStatusCode, onComplete, onResponse, onException);
+        execute(null, onRequest, expectedStatusCode, onResponse, onException);
 
     }
 
@@ -90,20 +89,18 @@ public class RequestServiceImpl implements RequestService {
     public <OUT> void execute(EntityReader<OUT> entityReader,
                               Consumer<RequestParams<OUT>> onRequest,
                               int expectedStatusCode,
-                              Runnable onComplete,
                               Consumer<OUT> onResponse,
                               Consumer<RequestException> onException) {
-        execute(entityReader, null, onRequest, expectedStatusCode, onComplete, onResponse, onException);
+        execute(entityReader, null, onRequest, expectedStatusCode, onResponse, onException);
     }
 
     @Override
     public <IN> void execute(EntityWriter<IN> entityWriter,
                              Consumer<RequestParams<Void>> onRequest,
                              int expectedStatusCode,
-                             Runnable onComplete,
                              Runnable onResponse,
                              Consumer<RequestException> onException) {
-        this.execute(null, entityWriter, onRequest, expectedStatusCode, onComplete, out -> onResponse.run(), onException);
+        this.execute(null, entityWriter, onRequest, expectedStatusCode, out -> onResponse.run(), onException);
     }
 
     @Override
@@ -111,7 +108,6 @@ public class RequestServiceImpl implements RequestService {
                                   EntityWriter<IN> entityWriter,
                                   Consumer<RequestParams<OUT>> onRequest,
                                   int expectedStatusCode,
-                                  Runnable onComplete,
                                   Consumer<OUT> onResponse,
                                   Consumer<RequestException> onException) {
 
@@ -120,8 +116,6 @@ public class RequestServiceImpl implements RequestService {
                 // If it wasn't refreshed, it was still valid, in both cases we can continue
                 RequestParams<OUT> requestParams = new RequestParams<>(
                     (responseCode, request, responseText) -> {
-
-                        onComplete.run();
 
                         if (responseCode == 0) {
                             onException.accept(new NoResponseException());

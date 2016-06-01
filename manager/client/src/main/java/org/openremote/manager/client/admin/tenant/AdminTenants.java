@@ -26,7 +26,7 @@ public interface AdminTenants extends AdminContent {
 
     interface Presenter {
 
-        void onTenantSelected(Tenant realm);
+        void onTenantSelected(Tenant tenant);
 
         void createTenant();
 

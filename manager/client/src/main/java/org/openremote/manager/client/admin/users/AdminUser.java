@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin.tenant;
+package org.openremote.manager.client.admin.users;
 
 import org.openremote.manager.client.admin.AdminContent;
 
-public interface AdminTenant extends AdminContent {
+public interface AdminUser extends AdminContent {
 
     interface Presenter {
 
@@ -46,27 +46,52 @@ public interface AdminTenant extends AdminContent {
 
     void clearFormMessagesSuccess();
 
-    void setTenantDisplayName(String displayName);
+    void setUsername(String username);
 
-    String getTenantDisplayName();
+    String getUsername();
 
-    void setTenantDisplayNameError(boolean error);
+    void setUsernameError(boolean error);
 
-    void setTenantRealm(String realm);
+    void setFirstName(String firstName);
 
-    String getTenantRealm();
+    String getFirstName();
 
-    void setTenantRealmError(boolean error);
+    void setFirstNameError(boolean error);
 
-    void setTenantEnabled(Boolean enabled);
+    void setLastName(String lastName);
 
-    boolean getTenantEnabled();
+    String getLastName();
 
-    void setTenantEnabledError(boolean error);
+    void setLastNameError(boolean error);
+
+    void setEmail(String email);
+
+    String getEmail();
+
+    void setEmailError(boolean error);
+
+    void setUserEnabled(Boolean enabled);
+
+    boolean getUserEnabled();
+
+    void setUserEnabledError(boolean error);
+
+    void enableResetPassword(boolean enable);
+
+    String getPassword();
+
+    void clearPassword();
+
+    String getPasswordControl();
+
+    void clearPasswordControl();
+
+    void setPasswordError(boolean error);
 
     void enableCreate(boolean enable);
 
     void enableUpdate(boolean enable);
 
     void enableDelete(boolean enable);
+
 }

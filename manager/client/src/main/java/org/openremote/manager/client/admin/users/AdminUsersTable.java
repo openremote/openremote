@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin.tenant;
+package org.openremote.manager.client.admin.users;
 
 import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.user.cellview.client.Column;
@@ -28,71 +28,84 @@ import org.openremote.manager.client.i18n.ManagerConstants;
 import org.openremote.manager.client.widget.FormTable;
 import org.openremote.manager.client.style.FormTableStyle;
 import org.openremote.manager.client.widget.IconCell;
-import org.openremote.manager.shared.security.Tenant;
+import org.openremote.manager.shared.security.User;
 
-public class AdminTenantsTable extends FormTable<Tenant> {
+public class AdminUsersTable extends FormTable<User> {
 
     public interface Style extends CssResource {
-        String nameColumn();
+        String usernameColumn();
 
-        String realmColumn();
+        String firstNameColumn();
+
+        String lastNameColumn();
 
         String enabledColumn();
     }
 
     final protected Style style;
 
-    final protected SingleSelectionModel<Tenant> selectionModel = new SingleSelectionModel<>();
+    final protected SingleSelectionModel<User> selectionModel = new SingleSelectionModel<>();
 
-    final protected TextColumn<Tenant> nameColumn = new TextColumn<Tenant>() {
+    final protected TextColumn<User> usernameColumn = new TextColumn<User>() {
         @Override
-        public String getValue(Tenant tenant) {
-            return tenant.getDisplayName();
+        public String getValue(User user) {
+            return user.getUsername();
         }
     };
 
-    final protected TextColumn<Tenant> realmColumn = new TextColumn<Tenant>() {
+    final protected TextColumn<User> firstNameColumn = new TextColumn<User>() {
         @Override
-        public String getValue(Tenant tenant) {
-            return tenant.getRealm();
+        public String getValue(User user) {
+            return user.getFirstName();
         }
     };
 
-    final protected Column<Tenant, String> enabledColumn = new Column<Tenant, String>(new IconCell()) {
+    final protected TextColumn<User> lastNameColumn = new TextColumn<User>() {
         @Override
-        public String getValue(Tenant tenant) {
-            return tenant.getEnabled() ? "check-circle" : "circle-thin";
+        public String getValue(User user) {
+            return user.getLastName();
         }
     };
 
-    public AdminTenantsTable(ManagerConstants managerConstants,
-                             Style style,
-                             FormTableStyle formTableStyle) {
+    final protected Column<User, String> enabledColumn = new Column<User, String>(new IconCell()) {
+        @Override
+        public String getValue(User user) {
+            return user.getEnabled() ? "check-circle" : "circle-thin";
+        }
+    };
+
+    public AdminUsersTable(ManagerConstants managerConstants,
+                           Style style,
+                           FormTableStyle formTableStyle) {
         super(Integer.MAX_VALUE, formTableStyle);
 
         this.style = style;
 
         setSelectionModel(selectionModel);
 
-        applyStyleCellText(nameColumn);
-        addColumn(nameColumn, createHeader(managerConstants.tenantName()));
-        addColumnStyleName(0, style.nameColumn());
+        applyStyleCellText(usernameColumn);
+        addColumn(usernameColumn, createHeader(managerConstants.username()));
+        addColumnStyleName(0, style.usernameColumn());
 
-        applyStyleCellText(realmColumn);
-        addColumn(realmColumn, createHeader(managerConstants.realm()));
-        addColumnStyleName(1, style.realmColumn());
+        applyStyleCellText(firstNameColumn);
+        addColumn(firstNameColumn, createHeader(managerConstants.firstName()));
+        addColumnStyleName(1, style.firstNameColumn());
+
+        applyStyleCellText(lastNameColumn);
+        addColumn(lastNameColumn, createHeader(managerConstants.lastName()));
+        addColumnStyleName(2, style.lastNameColumn());
 
         addColumn(enabledColumn, createHeader(managerConstants.enabled()));
-        addColumnStyleName(2, style.enabledColumn());
+        addColumnStyleName(3, style.enabledColumn());
         enabledColumn.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_CENTER);
     }
 
     @Override
-    public SingleSelectionModel<Tenant> getSelectionModel() {
+    public SingleSelectionModel<User> getSelectionModel() {
         return selectionModel;
     }
 
-    public Tenant getSelectedObject() {
+    public User getSelectedObject() {
         return getSelectionModel().getSelectedObject();
     }
 

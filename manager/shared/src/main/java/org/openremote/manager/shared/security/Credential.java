@@ -17,11 +17,39 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared;
+package org.openremote.manager.shared.security;
 
-public interface Constants {
+public class Credential {
 
-    String MANAGER_CLIENT_ID = "or-manager";
-    String MASTER_REALM = "master";
-    String MASTER_REALM_ADMIN_USER = "admin";
+    final protected String type = "password";
+    protected String value;
+    protected Boolean temporary;
+
+    public Credential() {
+    }
+
+    public Credential(String value, Boolean temporary) {
+        this.value = value;
+        this.temporary = temporary;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
+    }
+
+    public Boolean getTemporary() {
+        return temporary;
+    }
+
+    public void setTemporary(Boolean temporary) {
+        this.temporary = temporary;
+    }
 }

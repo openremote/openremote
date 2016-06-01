@@ -31,21 +31,18 @@ public interface RequestService {
 
     void execute(Consumer<RequestParams<Void>> onRequest,
                  int expectedStatusCode,
-                 Runnable onComplete,
                  Runnable onResponse,
                  Consumer<RequestException> onException);
 
     <OUT> void execute(EntityReader<OUT> entityReader,
                        Consumer<RequestParams<OUT>> onRequest,
                        int expectedStatusCode,
-                       Runnable onComplete,
                        Consumer<OUT> onResponse,
                        Consumer<RequestException> onException);
 
     <IN> void execute(EntityWriter<IN> entityWriter,
                       Consumer<RequestParams<Void>> onRequest,
                       int expectedStatusCode,
-                      Runnable onComplete,
                       Runnable onResponse,
                       Consumer<RequestException> onException);
 
@@ -53,7 +50,6 @@ public interface RequestService {
                            EntityWriter<IN> entityWriter,
                            Consumer<RequestParams<OUT>> onRequest,
                            int expectedStatusCode,
-                           Runnable onComplete,
                            Consumer<OUT> onResponse,
                            Consumer<RequestException> onException);
 }

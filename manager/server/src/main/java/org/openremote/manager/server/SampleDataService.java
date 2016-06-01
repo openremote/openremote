@@ -42,6 +42,7 @@ import java.util.List;
 
 import static org.openremote.manager.shared.Constants.MANAGER_CLIENT_ID;
 import static org.openremote.manager.shared.Constants.MASTER_REALM;
+import static org.openremote.manager.shared.Constants.MASTER_REALM_ADMIN_USER;
 import static rx.Observable.fromCallable;
 
 public class SampleDataService implements ContainerService {
@@ -52,7 +53,6 @@ public class SampleDataService implements ContainerService {
     public static final boolean IMPORT_SAMPLE_DATA_DEFAULT = false;
 
     public static final String ADMIN_CLI_CLIENT_ID = "admin-cli";
-    public static final String ADMIN_USERNAME = "admin";
     public static final String ADMIN_PASSWORD = "admin";
 
     protected IdentityService identityService;
@@ -82,7 +82,7 @@ public class SampleDataService implements ContainerService {
 
         // Use a non-proxy client to get the access token
         String accessToken = identityService.getKeycloak().getAccessToken(
-            MASTER_REALM, new AuthForm(ADMIN_CLI_CLIENT_ID, ADMIN_USERNAME, ADMIN_PASSWORD)
+            MASTER_REALM, new AuthForm(ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, ADMIN_PASSWORD)
         ).getToken();
 
         configureMasterRealm(identityService, accessToken);
@@ -252,6 +252,10 @@ public class SampleDataService implements ContainerService {
                         writeRole
                     ));
                     LOG.info("Assigned all application roles to 'admin' user");
+                    UserRepresentation adminRep = adminUser.toRepresentation();
+                    adminRep.setFirstName("System");
+                    adminRep.setLastName("Administrator");
+                    adminUser.update(adminRep);
                 }
             );
 

@@ -37,6 +37,8 @@ public interface ManagerMessages extends Messages {
 
     String errorMarshallingResponse(String error);
 
+    String unexpectedResponseStatus(int statusCode, int expectedStatusCode);
+
     String unknownError();
 
     String tenantCreated(String displayName);
@@ -45,6 +47,13 @@ public interface ManagerMessages extends Messages {
 
     String tenantDeleted(String displayName);
 
-    String unexpectedResponseStatus(int statusCode, int expectedStatusCode);
+    String userDeleted(String username);
 
+    String userCreated(String username);
+
+    String userUpdated(String username);
+
+    String passwordUpdated();
+
+    String passwordsMustMatch();
 }

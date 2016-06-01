@@ -10,6 +10,7 @@ dependencies {
     compile "org.hibernate.javax.persistence:hibernate-jpa-2.1-api:$javaxPersistenceVersion"
     compile "org.keycloak:keycloak-core:$keycloakVersion"
     compile "org.keycloak:keycloak-core:$keycloakVersion:sources"
+    compile "org.hibernate:hibernate-validator:$hibernateValidatorVersion"
 
     apt "org.hibernate:hibernate-jpamodelgen:$hibernateVersion"
 }

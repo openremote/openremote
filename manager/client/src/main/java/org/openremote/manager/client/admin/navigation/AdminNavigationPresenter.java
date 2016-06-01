@@ -56,8 +56,8 @@ public class AdminNavigationPresenter implements AdminNavigation.Presenter {
     }
 
     @Override
-    public String getAdminUsersPlaceToken(String userId) {
-        return managerHistoryMapper.getToken(new AdminUsersPlace(userId));
+    public String getAdminUsersPlaceToken() {
+        return managerHistoryMapper.getToken(new AdminUsersPlace());
     }
 
     @Override

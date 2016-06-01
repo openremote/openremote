@@ -23,7 +23,7 @@
     <g:HTMLPanel styleName="flex layout vertical">
 
         <div class="{widgetStyle.Headline1} {themeStyle.Headline1}">
-            <g:Label text="{constants.manageTenants}"/>
+            <g:InlineLabel text="{constants.manageTenants}"/>
         </div>
 
         <div class="layout vertical {widgetStyle.Form} {themeStyle.Form}">

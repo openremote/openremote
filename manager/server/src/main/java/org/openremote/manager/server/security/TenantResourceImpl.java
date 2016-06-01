@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.server.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.server.i18n.I18NService;
@@ -34,17 +33,14 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.ResourceBundle;
-import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static org.openremote.container.util.JsonUtil.convert;
 import static org.openremote.manager.shared.Constants.MASTER_REALM;
 import static org.openremote.manager.shared.validation.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
 
 public class TenantResourceImpl extends WebResource implements TenantResource {
-
-    private static final Logger LOG = Logger.getLogger(TenantResourceImpl.class.getName());
 
     protected final ManagerIdentityService managerIdentityService;
 
@@ -58,7 +54,7 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
             List<RealmRepresentation> realms = managerIdentityService.getRealms(requestParams).findAll();
             List<Tenant> validatedRealms = new ArrayList<>();
             for (RealmRepresentation realm : realms) {
-                validatedRealms.add(convertTo(realm));
+                validatedRealms.add(convert(getContainer().JSON, Tenant.class, realm));
             }
             return validatedRealms.toArray(new Tenant[validatedRealms.size()]);
         } catch (ClientErrorException ex) {
@@ -71,7 +67,11 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
     @Override
     public Tenant get(RequestParams requestParams, String realm) {
         try {
-            return convertTo(managerIdentityService.getRealms(requestParams).realm(realm).toRepresentation());
+            return convert(
+                getContainer().JSON,
+                Tenant.class,
+                managerIdentityService.getRealms(requestParams).realm(realm).toRepresentation()
+            );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -91,7 +91,9 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
             );
         }
         try {
-            managerIdentityService.getRealms(requestParams).realm(realm).update(convertFrom(tenant));
+            managerIdentityService.getRealms(requestParams).realm(realm).update(
+                convert(getContainer().JSON, RealmRepresentation.class, tenant)
+            );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -102,7 +104,9 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
     @Override
     public void create(RequestParams requestParams, Tenant tenant) {
         try {
-            managerIdentityService.getRealms(requestParams).create(convertFrom(tenant));
+            managerIdentityService.getRealms(requestParams).create(
+                convert(getContainer().JSON, RealmRepresentation.class, tenant)
+            );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -128,18 +132,6 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
         } catch (Exception ex) {
             throw new WebApplicationException(ex);
         }
-    }
-
-    protected Tenant convertTo(RealmRepresentation realm) {
-        ObjectMapper json = getContainer().JSON;
-        Map<String, Object> props = json.convertValue(realm, Map.class);
-        return json.convertValue(props, Tenant.class);
-    }
-
-    protected RealmRepresentation convertFrom(Tenant tenant) {
-        ObjectMapper json = getContainer().JSON;
-        Map<String, Object> props = json.convertValue(tenant, Map.class);
-        return json.convertValue(props, RealmRepresentation.class);
     }
 
     protected ConstraintViolationReport isIllegalMasterRealmDeletion(String realm) {

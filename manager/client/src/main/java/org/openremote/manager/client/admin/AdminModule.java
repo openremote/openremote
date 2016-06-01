@@ -29,26 +29,31 @@ import org.openremote.manager.client.admin.overview.AdminOverview;
 import org.openremote.manager.client.admin.overview.AdminOverviewActivity;
 import org.openremote.manager.client.admin.overview.AdminOverviewImpl;
 import org.openremote.manager.client.admin.tenant.*;
-import org.openremote.manager.client.admin.users.AdminUsers;
-import org.openremote.manager.client.admin.users.AdminUsersActivity;
-import org.openremote.manager.client.admin.users.AdminUsersImpl;
+import org.openremote.manager.client.admin.users.*;
 import org.openremote.manager.shared.security.TenantResource;
+import org.openremote.manager.shared.security.UserResource;
 
 public class AdminModule extends AbstractGinModule {
 
     @Override
     protected void configure() {
         bind(AdminView.class).to(AdminViewImpl.class).in(Singleton.class);
+
         bind(AdminNavigation.class).to(AdminNavigationImpl.class).in(Singleton.class);
         bind(AdminNavigation.Presenter.class).to(AdminNavigationPresenter.class);
+
         bind(AdminOverview.class).to(AdminOverviewImpl.class).in(Singleton.class);
         bind(AdminOverviewActivity.class);
+
         bind(AdminTenants.class).to(AdminTenantsImpl.class).in(Singleton.class);
         bind(AdminTenantsActivity.class);
         bind(AdminTenant.class).to(AdminTenantImpl.class).in(Singleton.class);
         bind(AdminTenantActivity.class);
+
         bind(AdminUsers.class).to(AdminUsersImpl.class).in(Singleton.class);
         bind(AdminUsersActivity.class);
+        bind(AdminUser.class).to(AdminUserImpl.class).in(Singleton.class);
+        bind(AdminUserActivity.class);
     }
 
     @Provides
@@ -59,6 +64,16 @@ public class AdminModule extends AbstractGinModule {
 
     public static native TenantResource getNativeTenantResource() /*-{
         return $wnd.TenantResource;
+    }-*/;
+
+    @Provides
+    @Singleton
+    public UserResource getUserResource() {
+        return getNativeUserResource();
+    }
+
+    public static native UserResource getNativeUserResource() /*-{
+        return $wnd.UserResource;
     }-*/;
 
 }

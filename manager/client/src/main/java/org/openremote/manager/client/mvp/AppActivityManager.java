@@ -19,9 +19,11 @@
  */
 package org.openremote.manager.client.mvp;
 
+import com.google.gwt.dom.client.Style;
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.gwt.user.client.ui.IsWidget;
+import com.google.gwt.user.client.ui.Label;
 import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.WillGoToPlaceEvent;
 import org.openremote.manager.client.event.bus.EventBus;
@@ -136,7 +138,10 @@ public class AppActivityManager {
         currentActivity = nextActivity;
 
         if (currentActivity.equals(NULL_ACTIVITY)) {
-            showWidget(null);
+            Label nullLabel = new Label("No activity available for given place.");
+            nullLabel.getElement().getStyle().setColor("red");
+            nullLabel.getElement().getStyle().setFontWeight(Style.FontWeight.BOLD);
+            showWidget(nullLabel);
         } else {
             startingNext = true;
             tryStart();
@@ -194,10 +199,14 @@ public class AppActivityManager {
     }
 
     protected void tryStart() {
-        Throwable caughtOnStart = null;
         if (LOG.isLoggable(Level.FINE))
             LOG.fine(name + " - starting activity: " + currentActivity);
-        currentActivity.start(new ProtectedDisplay(currentActivity), eventBus, activityRegistrations);
+        try {
+            currentActivity.start(new ProtectedDisplay(currentActivity), eventBus, activityRegistrations);
+        } catch (RuntimeException ex) {
+            LOG.log(Level.SEVERE, "Starting activity failed: " + currentActivity, ex);
+            throw ex;
+        }
     }
 
     protected void tryStopOrCancel(boolean stop) {

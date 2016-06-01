@@ -20,13 +20,25 @@
 package org.openremote.manager.client.admin.users;
 
 import org.openremote.manager.client.admin.AdminContent;
+import org.openremote.manager.shared.security.Tenant;
+import org.openremote.manager.shared.security.User;
 
 public interface AdminUsers extends AdminContent {
 
     interface Presenter {
 
+        void onTenantSelected(String realm);
+
+        void onUserSelected(User user);
+
+        void createUser();
+
     }
 
     void setPresenter(Presenter presenter);
+
+    void setTenants(Tenant[] tenants, String selectedRealm);
+
+    void setUsers(User[] users);
 
 }

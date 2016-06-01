@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin.tenant;
+package org.openremote.manager.client.admin.users;
 
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.admin.AbstractAdminActivity;
 import org.openremote.manager.client.admin.AdminView;
-import org.openremote.manager.client.admin.TenantMapper;
+import org.openremote.manager.client.admin.CredentialMapper;
+import org.openremote.manager.client.admin.UserMapper;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
@@ -33,41 +34,49 @@ import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
-import org.openremote.manager.shared.security.Tenant;
-import org.openremote.manager.shared.security.TenantResource;
+import org.openremote.manager.shared.security.Credential;
+import org.openremote.manager.shared.security.User;
+import org.openremote.manager.shared.security.UserResource;
 import org.openremote.manager.shared.validation.ConstraintViolation;
 
 import javax.inject.Inject;
 import java.util.Collection;
-import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
-public class AdminTenantActivity
-    extends AbstractAdminActivity<AdminTenantPlace, AdminTenant>
-    implements AdminTenant.Presenter {
-
-    private static final Logger LOG = Logger.getLogger(AdminTenantActivity.class.getName());
+public class AdminUserActivity
+    extends AbstractAdminActivity<AdminUserPlace, AdminUser>
+    implements AdminUser.Presenter {
 
     final protected ManagerMessages managerMessages;
     final protected PlaceController placeController;
     final protected EventBus eventBus;
     final protected SecurityService securityService;
     final protected RequestService requestService;
-    final protected TenantResource tenantResource;
-    final protected TenantMapper tenantMapper;
+    final protected UserResource userResource;
+    final protected UserMapper userMapper;
+    final protected CredentialMapper credentialMapper;
 
     final protected Consumer<ConstraintViolation[]> validationErrorHandler = violations -> {
         for (ConstraintViolation violation : violations) {
             if (violation.getPath() != null) {
-                if (violation.getPath().endsWith("displayName")) {
-                    adminContent.setTenantDisplayNameError(true);
+                if (violation.getPath().endsWith("username")) {
+                    adminContent.setUsernameError(true);
                 }
-                if (violation.getPath().endsWith("realm")) {
-                    adminContent.setTenantRealmError(true);
+                if (violation.getPath().endsWith("firstName")) {
+                    adminContent.setFirstNameError(true);
+                }
+                if (violation.getPath().endsWith("lastName")) {
+                    adminContent.setLastNameError(true);
+                }
+                if (violation.getPath().endsWith("email")) {
+                    adminContent.setEmailError(true);
                 }
                 if (violation.getPath().endsWith("enabled")) {
-                    adminContent.setTenantEnabledError(true);
+                    adminContent.setUserEnabledError(true);
+                }
+                if (violation.getPath().endsWith("password")) {
+                    adminContent.setPasswordError(true);
                 }
             }
             adminContent.addFormMessageError(violation.getMessage());
@@ -76,27 +85,30 @@ public class AdminTenantActivity
     };
 
     protected String realm;
-    protected Tenant tenant;
+    protected String userId;
+    protected User user;
 
     @Inject
-    public AdminTenantActivity(AdminView adminView,
-                               AdminNavigation.Presenter adminNavigationPresenter,
-                               AdminTenant view,
-                               ManagerMessages managerMessages,
-                               PlaceController placeController,
-                               EventBus eventBus,
-                               SecurityService securityService,
-                               RequestService requestService,
-                               TenantResource tenantResource,
-                               TenantMapper tenantMapper) {
+    public AdminUserActivity(AdminView adminView,
+                             AdminNavigation.Presenter adminNavigationPresenter,
+                             AdminUser view,
+                             ManagerMessages managerMessages,
+                             PlaceController placeController,
+                             EventBus eventBus,
+                             SecurityService securityService,
+                             RequestService requestService,
+                             UserResource userResource,
+                             UserMapper userMapper,
+                             CredentialMapper credentialMapper) {
         super(adminView, adminNavigationPresenter, view);
         this.managerMessages = managerMessages;
         this.placeController = placeController;
         this.eventBus = eventBus;
         this.securityService = securityService;
         this.requestService = requestService;
-        this.tenantResource = tenantResource;
-        this.tenantMapper = tenantMapper;
+        this.userResource = userResource;
+        this.userMapper = userMapper;
+        this.credentialMapper = credentialMapper;
     }
 
     @Override
@@ -105,8 +117,9 @@ public class AdminTenantActivity
     }
 
     @Override
-    protected AppActivity<AdminTenantPlace> init(AdminTenantPlace place) {
+    protected AppActivity<AdminUserPlace> init(AdminUserPlace place) {
         realm = place.getRealm();
+        userId = place.getUserId();
         return super.init(place);
     }
 
@@ -122,11 +135,13 @@ public class AdminTenantActivity
         adminContent.enableCreate(false);
         adminContent.enableUpdate(false);
         adminContent.enableDelete(false);
+        adminContent.enableResetPassword(false);
 
-        if (realm != null) {
-            loadTenant();
+        if (userId != null) {
+            loadUser();
         } else {
-            tenant = new Tenant();
+            user = new User();
+            user.setRealm(realm);
             writeToView();
             adminContent.enableCreate(true);
         }
@@ -139,18 +154,19 @@ public class AdminTenantActivity
         adminContent.clearFormMessagesError();
         clearViewFieldErrors();
         readFromView();
+        handlePasswordReset();
         requestService.execute(
-            tenantMapper,
+            userMapper,
             requestParams -> {
-                tenantResource.create(requestParams, tenant);
+                userResource.create(requestParams, realm, user);
             },
             204,
             () -> {
                 adminContent.setFormBusy(false);
                 eventBus.dispatch(new ShowInfoEvent(
-                    managerMessages.tenantCreated(tenant.getDisplayName())
+                    managerMessages.userCreated(user.getUsername())
                 ));
-                placeController.goTo(new AdminTenantsPlace());
+                placeController.goTo(new AdminUsersPlace(realm));
             },
             ex -> handleRequestException(ex, eventBus, managerMessages, validationErrorHandler)
         );
@@ -163,16 +179,49 @@ public class AdminTenantActivity
         adminContent.clearFormMessagesError();
         clearViewFieldErrors();
         readFromView();
+        handlePasswordReset();
+        updateUser();
+    }
+
+    protected void handlePasswordReset() {
+        String password = adminContent.getPassword();
+        String passwordControl = adminContent.getPasswordControl();
+        adminContent.clearPassword();
+        adminContent.clearPasswordControl();
+        if (password == null)
+            return;
+        if (!password.equals(passwordControl)) {
+            validationErrorHandler.accept(new ConstraintViolation[]{
+                new ConstraintViolation(
+                    ConstraintViolation.Type.FIELD, "password", managerMessages.passwordsMustMatch()
+                )
+            });
+            return;
+        }
+        Credential credential = new Credential(password, false);
         requestService.execute(
-            tenantMapper,
+            credentialMapper,
             requestParams -> {
-                tenantResource.update(requestParams, realm, tenant);
+                userResource.resetPassword(requestParams, realm, userId, credential);
+            },
+            204,
+            () -> {
+                adminContent.addFormMessageSuccess(managerMessages.passwordUpdated());
+            },
+            ex -> handleRequestException(ex, eventBus, managerMessages, validationErrorHandler)
+        );
+    }
+
+    protected void updateUser() {
+        requestService.execute(
+            userMapper,
+            requestParams -> {
+                userResource.update(requestParams, realm, userId, user);
             },
             204,
             () -> {
                 adminContent.setFormBusy(false);
-                adminContent.addFormMessageSuccess(managerMessages.tenantUpdated(tenant.getDisplayName()));
-                this.realm = tenant.getRealm();
+                adminContent.addFormMessageSuccess(managerMessages.userUpdated(user.getUsername()));
             },
             ex -> handleRequestException(ex, eventBus, managerMessages, validationErrorHandler)
         );
@@ -186,15 +235,15 @@ public class AdminTenantActivity
         clearViewFieldErrors();
         requestService.execute(
             requestParams -> {
-                tenantResource.delete(requestParams, this.realm);
+                userResource.delete(requestParams, realm, userId);
             },
             204,
             () -> {
                 adminContent.setFormBusy(false);
                 eventBus.dispatch(new ShowInfoEvent(
-                    managerMessages.tenantDeleted(tenant.getDisplayName())
+                    managerMessages.userDeleted(user.getUsername())
                 ));
-                placeController.goTo(new AdminTenantsPlace());
+                placeController.goTo(new AdminUsersPlace(realm));
             },
             ex -> handleRequestException(ex, eventBus, managerMessages, validationErrorHandler)
         );
@@ -202,43 +251,52 @@ public class AdminTenantActivity
 
     @Override
     public void cancel() {
-        placeController.goTo(new AdminTenantsPlace());
+        placeController.goTo(new AdminUsersPlace(realm));
     }
 
-    protected void loadTenant() {
+    protected void loadUser() {
         adminContent.setFormBusy(true);
         requestService.execute(
-            tenantMapper,
-            requestParams -> tenantResource.get(requestParams, realm),
+            userMapper,
+            requestParams -> userResource.get(requestParams, realm, userId),
             200,
-            tenant -> {
-                this.tenant = tenant;
-                this.realm = tenant.getRealm();
+            user -> {
+                this.user = user;
+                this.realm = user.getRealm();
                 writeToView();
                 adminContent.setFormBusy(false);
                 adminContent.enableCreate(false);
                 adminContent.enableUpdate(true);
                 adminContent.enableDelete(true);
+                adminContent.enableResetPassword(true);
             },
             ex -> handleRequestException(ex, eventBus, managerMessages)
         );
     }
 
     protected void writeToView() {
-        adminContent.setTenantDisplayName(tenant.getDisplayName());
-        adminContent.setTenantRealm(tenant.getRealm());
-        adminContent.setTenantEnabled(tenant.getEnabled());
+        adminContent.setUsername(user.getUsername());
+        adminContent.setFirstName(user.getFirstName());
+        adminContent.setLastName(user.getLastName());
+        adminContent.setEmail(user.getEmail());
+        adminContent.setUserEnabled(user.getEnabled());
     }
 
     protected void readFromView() {
-        tenant.setDisplayName(adminContent.getTenantDisplayName());
-        tenant.setRealm(adminContent.getTenantRealm());
-        tenant.setEnabled(adminContent.getTenantEnabled());
+        user.setUsername(adminContent.getUsername());
+        user.setFirstName(adminContent.getFirstName());
+        user.setLastName(adminContent.getLastName());
+        user.setEmail(adminContent.getEmail());
+        user.setEnabled(adminContent.getUserEnabled());
     }
 
     protected void clearViewFieldErrors() {
-        adminContent.setTenantDisplayNameError(false);
-        adminContent.setTenantRealmError(false);
-        adminContent.setTenantEnabledError(false);
+        adminContent.setUsernameError(false);
+        adminContent.setFirstNameError(false);
+        adminContent.setLastNameError(false);
+        adminContent.setEmailError(false);
+        adminContent.setUserEnabledError(false);
+        adminContent.setPasswordError(false);
     }
+
 }

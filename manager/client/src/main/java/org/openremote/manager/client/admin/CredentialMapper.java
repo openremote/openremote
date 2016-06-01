@@ -17,11 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared;
+package org.openremote.manager.client.admin;
 
-public interface Constants {
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
+import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
+import org.openremote.manager.shared.http.EntityReader;
+import org.openremote.manager.shared.http.EntityWriter;
+import org.openremote.manager.shared.security.Credential;
 
-    String MANAGER_CLIENT_ID = "or-manager";
-    String MASTER_REALM = "master";
-    String MASTER_REALM_ADMIN_USER = "admin";
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = Credential.class, mixIn = DefaultJsonMixin.class)})
+public interface CredentialMapper
+    extends ObjectMapper<Credential>,
+    EntityReader<Credential>,
+    EntityWriter<Credential> {
 }

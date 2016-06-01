@@ -28,6 +28,8 @@ import org.openremote.manager.client.admin.tenant.AdminTenantActivity;
 import org.openremote.manager.client.admin.tenant.AdminTenantsActivity;
 import org.openremote.manager.client.admin.tenant.AdminTenantPlace;
 import org.openremote.manager.client.admin.tenant.AdminTenantsPlace;
+import org.openremote.manager.client.admin.users.AdminUserActivity;
+import org.openremote.manager.client.admin.users.AdminUserPlace;
 import org.openremote.manager.client.admin.users.AdminUsersActivity;
 import org.openremote.manager.client.admin.users.AdminUsersPlace;
 import org.openremote.manager.client.assets.AssetDetailActivity;
@@ -62,6 +64,7 @@ public class ManagerActivityMapper implements AppActivityMapper {
     protected final Provider<AdminTenantsActivity> adminTenantsActivityProvider;
     protected final Provider<AdminTenantActivity> adminTenantActivityProvider;
     protected final Provider<AdminUsersActivity> adminUsersActivityProvider;
+    protected final Provider<AdminUserActivity> adminUserActivityProvider;
     protected final Provider<UserAccountActivity> userProfileActivityProvider;
 
     @Inject
@@ -75,6 +78,7 @@ public class ManagerActivityMapper implements AppActivityMapper {
                                  Provider<AdminTenantsActivity> adminTenantsActivityProvider,
                                  Provider<AdminTenantActivity> adminTenantActivityProvider,
                                  Provider<AdminUsersActivity> adminUsersActivityProvider,
+                                 Provider<AdminUserActivity> adminUserActivityProvider,
                                  Provider<UserAccountActivity> userProfileActivityProvider) {
         this.securityService = securityService;
         this.eventBus = eventBus;
@@ -86,6 +90,7 @@ public class ManagerActivityMapper implements AppActivityMapper {
         this.adminTenantsActivityProvider = adminTenantsActivityProvider;
         this.adminTenantActivityProvider = adminTenantActivityProvider;
         this.adminUsersActivityProvider = adminUsersActivityProvider;
+        this.adminUserActivityProvider = adminUserActivityProvider;
         this.userProfileActivityProvider = userProfileActivityProvider;
     }
 
@@ -112,9 +117,15 @@ public class ManagerActivityMapper implements AppActivityMapper {
             if (place instanceof AdminUsersPlace) {
                 return adminUsersActivityProvider.get().init(securityService, (AdminUsersPlace) place);
             }
+            if (place instanceof AdminUserPlace) {
+                return adminUserActivityProvider.get().init(securityService, (AdminUserPlace) place);
+            }
             if (place instanceof UserAccountPlace) {
                 return userProfileActivityProvider.get().init(securityService, (UserAccountPlace) place);
             }
+
+            LOG.severe("No activity available for place: " + place);
+
         } catch (RoleRequiredException ex) {
             LOG.warning("Access denied, missing required role '" + ex.getRequiredRole() + "': " + place);
             eventBus.dispatch(new ShowFailureEvent(managerMessages.accessDenied(), 5000));
