@@ -91,6 +91,12 @@ public class AdminUsersActivity
     }
 
     @Override
+    public void onStop() {
+        super.onStop();
+        adminContent.setPresenter(null);
+    }
+
+    @Override
     protected AppActivity<AdminUsersPlace> init(AdminUsersPlace place) {
         realm = place.getRealm();
 

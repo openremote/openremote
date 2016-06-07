@@ -24,9 +24,9 @@ import com.google.gwt.user.cellview.client.Column;
 import com.google.gwt.user.cellview.client.TextColumn;
 import com.google.gwt.user.client.ui.HasHorizontalAlignment;
 import com.google.gwt.view.client.SingleSelectionModel;
-import org.openremote.manager.client.i18n.ManagerConstants;
-import org.openremote.manager.client.widget.FormTable;
+import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTableStyle;
+import org.openremote.manager.client.widget.FormTable;
 import org.openremote.manager.client.widget.IconCell;
 import org.openremote.manager.shared.security.Tenant;
 
@@ -65,7 +65,7 @@ public class AdminTenantsTable extends FormTable<Tenant> {
         }
     };
 
-    public AdminTenantsTable(ManagerConstants managerConstants,
+    public AdminTenantsTable(ManagerMessages managerMessages,
                              Style style,
                              FormTableStyle formTableStyle) {
         super(Integer.MAX_VALUE, formTableStyle);
@@ -75,14 +75,14 @@ public class AdminTenantsTable extends FormTable<Tenant> {
         setSelectionModel(selectionModel);
 
         applyStyleCellText(nameColumn);
-        addColumn(nameColumn, createHeader(managerConstants.tenantName()));
+        addColumn(nameColumn, createHeader(managerMessages.tenantName()));
         addColumnStyleName(0, style.nameColumn());
 
         applyStyleCellText(realmColumn);
-        addColumn(realmColumn, createHeader(managerConstants.realm()));
+        addColumn(realmColumn, createHeader(managerMessages.realm()));
         addColumnStyleName(1, style.realmColumn());
 
-        addColumn(enabledColumn, createHeader(managerConstants.enabled()));
+        addColumn(enabledColumn, createHeader(managerMessages.enabled()));
         addColumnStyleName(2, style.enabledColumn());
         enabledColumn.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_CENTER);
     }

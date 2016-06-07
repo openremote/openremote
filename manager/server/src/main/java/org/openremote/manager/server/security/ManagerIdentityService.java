@@ -20,12 +20,24 @@
 package org.openremote.manager.server.security;
 
 import org.keycloak.admin.client.resource.RealmsResource;
+import org.keycloak.admin.client.resource.RolesResource;
+import org.keycloak.representations.idm.ClientRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
 import org.openremote.container.Container;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.KeycloakResource;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.Constants;
 import org.openremote.manager.shared.http.RequestParams;
+
+import javax.ws.rs.core.UriBuilder;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import static org.openremote.manager.shared.Constants.MANAGER_CLIENT_ID;
+import static org.openremote.manager.shared.Constants.MANAGE_NAME;
+import static org.openremote.manager.shared.Constants.MASTER_REALM;
 
 public class ManagerIdentityService extends IdentityService {
 
@@ -60,5 +72,39 @@ public class ManagerIdentityService extends IdentityService {
      */
     public RealmsResource getRealms(RequestParams requestParams) {
         return getRealms(requestParams.getBearerAuth(), true);
+    }
+
+    public ClientRepresentation createManagerClient() {
+        ClientRepresentation managerClient = new ClientRepresentation();
+        managerClient.setClientId(MANAGER_CLIENT_ID);
+        managerClient.setName(MANAGE_NAME);
+        managerClient.setPublicClient(true);
+        String callbackUrl = UriBuilder.fromUri("/").path(MASTER_REALM).path("*").build().toString();
+
+        List<String> redirectUrls = new ArrayList<>();
+        redirectUrls.add(callbackUrl);
+        managerClient.setRedirectUris(redirectUrls);
+
+        String baseUrl = UriBuilder.fromUri("/").path(MASTER_REALM).build().toString();
+        managerClient.setBaseUrl(baseUrl);
+
+        return managerClient;
+    }
+
+    public void addDefaultRoles(RolesResource rolesResource) {
+        rolesResource.create(new RoleRepresentation("read", "Read all data", false));
+        rolesResource.create(new RoleRepresentation("write", "Write all data", false));
+
+        rolesResource.create(new RoleRepresentation("read:map", "View map", false));
+        rolesResource.create(new RoleRepresentation("read:assets", "Read context broker assets", false));
+        rolesResource.get("read").addComposites(Arrays.asList(
+            rolesResource.get("read:map").toRepresentation(),
+            rolesResource.get("read:assets").toRepresentation()
+        ));
+
+        rolesResource.create(new RoleRepresentation("write:assets", "Write context broker assets", false));
+        rolesResource.get("write").addComposites(Arrays.asList(
+            rolesResource.get("write:assets").toRepresentation()
+        ));
     }
 }

@@ -2,7 +2,7 @@
              xmlns:g="urn:import:com.google.gwt.user.client.ui"
              xmlns:w="urn:import:org.openremote.manager.client.widget">
 
-    <ui:with field="constants" type="org.openremote.manager.client.i18n.ManagerConstants"/>
+    <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
     <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
@@ -28,12 +28,12 @@
         </g:FlowPanel>
 
         <div class="{widgetStyle.Headline1} {themeStyle.Headline1}">
-            <g:InlineLabel text="{constants.editTenant}"/>
+            <g:InlineLabel text="{managerMessages.editTenant}"/>
         </div>
 
         <div class="{widgetStyle.HeadlineSub} {themeStyle.HeadlineSub}">
             <span class="required">*</span>
-            <g:InlineLabel text="{constants.requiredFields}"/>
+            <g:InlineLabel text="{managerMessages.requiredFields}"/>
         </div>
 
         <div class="layout vertical {widgetStyle.Form} {themeStyle.Form}" ui:field="form">
@@ -42,7 +42,7 @@
                  ui:field="displayNameGroup">
                 <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
                     <label ui:field="displayNameLabel">
-                        <g:InlineLabel text="{constants.tenantDisplayName}"/>
+                        <g:InlineLabel text="{managerMessages.tenantDisplayName}"/>
                     </label>
                     <span class="required">*</span>
                 </div>
@@ -56,7 +56,7 @@
                  ui:field="realmGroup">
                 <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
                     <label ui:field="realmLabel">
-                        <g:InlineLabel text="{constants.realm}"/>
+                        <g:InlineLabel text="{managerMessages.realm}"/>
                     </label>
                     <span class="required">*</span>
                 </div>
@@ -70,7 +70,7 @@
                  ui:field="enabledGroup">
                 <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
                     <label ui:field="enabledLabel">
-                        <g:InlineLabel text="{constants.enabled}"/>
+                        <g:InlineLabel text="{managerMessages.enabled}"/>
                     </label>
                 </div>
                 <div class="{widgetStyle.FormField} {themeStyle.FormField}">
@@ -83,22 +83,22 @@
                 <div class="{widgetStyle.FormField} {themeStyle.FormField}">
                     <w:PushButton ui:field="updateButton"
                                   addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                  text="{constants.updateTenant}"
+                                  text="{managerMessages.updateTenant}"
                                   visible="false"
                                   icon="save"/>
                     <w:PushButton ui:field="createButton"
                                   addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                  text="{constants.createTenant}"
+                                  text="{managerMessages.createTenant}"
                                   visible="false"
                                   icon="save"/>
                     <w:PushButton ui:field="deleteButton"
                                   addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonDanger} {themeStyle.FormButtonDanger} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                  text="{constants.deleteTenant}"
+                                  text="{managerMessages.deleteTenant}"
                                   visible="false"
                                   icon="trash"/>
                     <w:PushButton ui:field="cancelButton"
                                   addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButton} {themeStyle.FormButton} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                  text="{constants.cancel}"
+                                  text="{managerMessages.cancel}"
                                   icon="close"/>
                 </div>
             </div>

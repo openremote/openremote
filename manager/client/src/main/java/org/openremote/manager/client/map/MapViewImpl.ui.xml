@@ -2,7 +2,8 @@
              xmlns:map="urn:import:org.openremote.manager.client.map"
              xmlns:g="urn:import:com.google.gwt.user.client.ui">
 
-    <ui:with field="constants" type="org.openremote.manager.client.i18n.ManagerConstants"/>
+    <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
+    <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
     <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
     <ui:style>
@@ -19,7 +20,7 @@
 
     <g:HTMLPanel ui:field="mapContainer" styleName="flex layout vertical" addStyleNames="{style.mapContainer}">
         <g:Label ui:field="mapLoadingLabel"
-                 text="{constants.mapLoading}"
+                 text="{managerMessages.mapLoading}"
                  addStyleNames="{style.mapLoadingLabel}"/>
         <map:MapWidget ui:field="mapWidget"
                        styleName="flex layout vertical"

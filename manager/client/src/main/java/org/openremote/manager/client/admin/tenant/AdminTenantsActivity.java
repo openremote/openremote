@@ -84,6 +84,12 @@ public class AdminTenantsActivity
     }
 
     @Override
+    public void onStop() {
+        super.onStop();
+        adminContent.setPresenter(null);
+    }
+
+    @Override
     public void onTenantSelected(Tenant tenant) {
         placeController.goTo(new AdminTenantPlace(tenant.getRealm()));
     }

@@ -39,8 +39,6 @@ public class AdminNavigationImpl extends Composite implements AdminNavigation {
     interface UI extends UiBinder<HTMLPanel, AdminNavigationImpl> {
     }
 
-    private UI ui = GWT.create(UI.class);
-
     Presenter presenter;
 
     @UiField
@@ -60,6 +58,7 @@ public class AdminNavigationImpl extends Composite implements AdminNavigation {
 
     @Inject
     public AdminNavigationImpl() {
+        UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
     }
 

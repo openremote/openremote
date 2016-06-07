@@ -30,8 +30,7 @@ import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.SimplePanel;
-import org.openremote.manager.client.admin.tenant.AdminTenantsTable;
-import org.openremote.manager.client.i18n.ManagerConstants;
+import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTableStyle;
 import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
@@ -40,7 +39,9 @@ import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.User;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.logging.Logger;
 
 public class AdminUsersImpl extends Composite implements AdminUsers {
@@ -50,12 +51,8 @@ public class AdminUsersImpl extends Composite implements AdminUsers {
     interface UI extends UiBinder<HTMLPanel, AdminUsersImpl> {
     }
 
-    private UI ui = GWT.create(UI.class);
-
-    Presenter presenter;
-
     @UiField
-    protected ManagerConstants constants;
+    protected ManagerMessages managerMessages;
 
     @UiField
     protected WidgetStyle widgetStyle;
@@ -78,10 +75,11 @@ public class AdminUsersImpl extends Composite implements AdminUsers {
     SimplePanel cellTableContainer;
 
     final AdminUsersTable table;
+    Presenter presenter;
 
     @Inject
-    public AdminUsersImpl(ManagerConstants managerConstants,
-                          FormTableStyle formTableStyle) {
+    public AdminUsersImpl(FormTableStyle formTableStyle) {
+        UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
 
         hideUsersForm();
@@ -90,14 +88,16 @@ public class AdminUsersImpl extends Composite implements AdminUsers {
             String realm = tenantListBox.getSelectedValue();
             if (realm == null || realm.length() == 0) {
                 hideUsersForm();
-                presenter.onTenantSelected(null);
+                if (presenter != null)
+                    presenter.onTenantSelected(null);
             } else {
                 showUsersForm();
-                presenter.onTenantSelected(realm);
+                if (presenter != null)
+                    presenter.onTenantSelected(realm);
             }
         });
 
-        table = new AdminUsersTable(managerConstants, usersTableStyle, formTableStyle);
+        table = new AdminUsersTable(managerMessages, usersTableStyle, formTableStyle);
         table.getSelectionModel().addSelectionChangeHandler(event -> {
                 User selected;
                 if ((selected = table.getSelectedObject()) != null
@@ -113,6 +113,13 @@ public class AdminUsersImpl extends Composite implements AdminUsers {
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
+        if (presenter == null) {
+            hideUsersForm();
+            tenantListBox.clear();
+            tenantListBox.addItem(managerMessages.loadingDotdotdot());
+            table.setRowData(new ArrayList<>());
+            table.flush();
+        }
     }
 
     @Override
@@ -120,7 +127,7 @@ public class AdminUsersImpl extends Composite implements AdminUsers {
         hideUsersForm();
 
         tenantListBox.clear();
-        tenantListBox.addItem(constants.selectTenant(), "");
+        tenantListBox.addItem(managerMessages.selectTenant(), "");
         for (Tenant tenant : tenants) {
             tenantListBox.addItem(tenant.getDisplayName(), tenant.getRealm());
         }
@@ -139,13 +146,15 @@ public class AdminUsersImpl extends Composite implements AdminUsers {
 
     @Override
     public void setUsers(User[] users) {
-        table.setRowData(Arrays.asList(users));
         cellTableContainer.setVisible(users.length > 0);
+        table.setRowData(Arrays.asList(users));
+        table.flush();
     }
 
     @UiHandler("createButton")
     void createClicked(ClickEvent e) {
-        presenter.createUser();
+        if (presenter != null)
+            presenter.createUser();
     }
 
     protected void showUsersForm() {

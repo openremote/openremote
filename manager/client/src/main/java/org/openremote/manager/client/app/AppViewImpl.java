@@ -24,7 +24,9 @@ import com.google.gwt.place.shared.Place;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.*;
-import org.openremote.manager.client.i18n.ManagerConstants;
+import org.openremote.manager.client.i18n.ManagerMessages;
+import org.openremote.manager.client.style.ThemeStyle;
+import org.openremote.manager.client.style.WidgetStyle;
 
 import javax.inject.Inject;
 
@@ -35,8 +37,14 @@ public class AppViewImpl extends Composite implements AppView {
 
     private UI ui = GWT.create(UI.class);
 
-    @UiField(provided = true)
-    ManagerConstants constants;
+    @UiField
+    ManagerMessages managerMessages;
+
+    @UiField
+    WidgetStyle widgetStyle;
+
+    @UiField
+    ThemeStyle themeStyle;
 
     @UiField
     SimplePanel header;
@@ -50,8 +58,7 @@ public class AppViewImpl extends Composite implements AppView {
     Presenter presenter;
 
     @Inject
-    public AppViewImpl(ManagerConstants constants) {
-        this.constants = constants;
+    public AppViewImpl() {
         initWidget(ui.createAndBindUi(this));
     }
 

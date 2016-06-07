@@ -25,7 +25,6 @@ import org.openremote.manager.shared.http.SuccessStatusCode;
 
 import javax.validation.Valid;
 import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 

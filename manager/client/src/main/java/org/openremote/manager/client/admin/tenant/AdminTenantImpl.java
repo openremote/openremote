@@ -93,6 +93,11 @@ public class AdminTenantImpl extends FormView implements AdminTenant {
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
+        if (presenter == null) {
+            displayNameInput.setValue(null);
+            realmInput.setValue(null);
+            enabledCheckBox.setValue(false);
+        }
     }
 
     @Override
@@ -166,21 +171,25 @@ public class AdminTenantImpl extends FormView implements AdminTenant {
 
     @UiHandler("updateButton")
     void updateClicked(ClickEvent e) {
-        presenter.update();
+        if (presenter != null)
+            presenter.update();
     }
 
     @UiHandler("createButton")
     void createClicked(ClickEvent e) {
-        presenter.create();
+        if (presenter != null)
+            presenter.create();
     }
 
     @UiHandler("deleteButton")
     void deleteClicked(ClickEvent e) {
-        presenter.delete();
+        if (presenter != null)
+            presenter.delete();
     }
 
     @UiHandler("cancelButton")
     void cancelClicked(ClickEvent e) {
-        presenter.cancel();
+        if (presenter != null)
+            presenter.cancel();
     }
 }

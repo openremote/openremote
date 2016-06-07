@@ -99,4 +99,17 @@ public class User {
     public void setEnabled(Boolean enabled) {
         this.enabled = enabled;
     }
+
+    @Override
+    public String toString() {
+        return getClass().getName() + "{" +
+            "realm='" + realm + '\'' +
+            ", id='" + id + '\'' +
+            ", username='" + username + '\'' +
+            ", firstName='" + firstName + '\'' +
+            ", lastName='" + lastName + '\'' +
+            ", email='" + email + '\'' +
+            ", enabled=" + enabled +
+            '}';
+    }
 }

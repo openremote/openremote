@@ -34,8 +34,6 @@ public class AdminViewImpl extends Composite implements AdminView {
     interface UI extends UiBinder<HTMLPanel, AdminViewImpl> {
     }
 
-    private UI ui = GWT.create(UI.class);
-
     @UiField(provided = true)
     final AdminNavigation adminNavigation;
 
@@ -46,6 +44,7 @@ public class AdminViewImpl extends Composite implements AdminView {
     public AdminViewImpl(AdminNavigation adminNavigation) {
         this.adminNavigation = adminNavigation;
 
+        UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
     }
 

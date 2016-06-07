@@ -19,12 +19,17 @@
  */
 package org.openremote.manager.server.security;
 
+import org.keycloak.admin.client.resource.ClientsResource;
+import org.keycloak.admin.client.resource.RoleMappingResource;
+import org.keycloak.admin.client.resource.RolesResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.server.i18n.I18NService;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.security.Credential;
+import org.openremote.manager.shared.security.Role;
 import org.openremote.manager.shared.security.User;
 import org.openremote.manager.shared.security.UserResource;
 import org.openremote.manager.shared.validation.ConstraintViolation;
@@ -35,14 +40,14 @@ import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.openremote.container.util.JsonUtil.convert;
-import static org.openremote.manager.shared.Constants.MASTER_REALM;
-import static org.openremote.manager.shared.Constants.MASTER_REALM_ADMIN_USER;
+import static org.openremote.manager.shared.Constants.*;
 import static org.openremote.manager.shared.validation.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
 
 public class UserResourceImpl extends WebResource implements UserResource {
@@ -166,6 +171,81 @@ public class UserResourceImpl extends WebResource implements UserResource {
                 convert(getContainer().JSON, CredentialRepresentation.class, credential)
             );
         } catch (ClientErrorException ex) {
+            throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
+        } catch (Exception ex) {
+            throw new WebApplicationException(ex);
+        }
+    }
+
+    @Override
+    public Role[] getRoles(@BeanParam RequestParams requestParams, String realm, String userId) {
+        try {
+            RoleMappingResource roleMappingResource =
+                managerIdentityService.getRealms(requestParams).realm(realm).users().get(userId).roles();
+            ClientsResource clientsResource =
+                managerIdentityService.getRealms(requestParams).realm(realm).clients();
+            String clientId = clientsResource.findByClientId(MANAGER_CLIENT_ID).get(0).getId();
+            RolesResource rolesResource = clientsResource.get(clientId).roles();
+
+            List<RoleRepresentation> allRoles = rolesResource.list();
+            List<RoleRepresentation> effectiveRoles = roleMappingResource.clientLevel(clientId).listEffective();
+
+            List<Role> roles = new ArrayList<>();
+            for (RoleRepresentation roleRepresentation : allRoles) {
+                boolean isAssigned = false;
+
+                for (RoleRepresentation effectiveRole : effectiveRoles) {
+                    if (effectiveRole.getId().equals(roleRepresentation.getId()))
+                        isAssigned = true;
+                }
+
+                roles.add(new Role(
+                    roleRepresentation.getId(),
+                    roleRepresentation.getName(),
+                    roleRepresentation.isComposite(),
+                    isAssigned
+                ));
+            }
+
+            Collections.sort(roles, (o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName()));
+
+            return roles.toArray(new Role[roles.size()]);
+
+        } catch (ClientErrorException ex) {
+            throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
+        } catch (Exception ex) {
+            throw new WebApplicationException(ex);
+        }
+    }
+
+    @Override
+    public void updateRoles(@BeanParam RequestParams requestParams, String realm, String userId, Role[] roles) {
+        try {
+            RoleMappingResource roleMappingResource =
+                managerIdentityService.getRealms(requestParams).realm(realm).users().get(userId).roles();
+            ClientsResource clientsResource =
+                managerIdentityService.getRealms(requestParams).realm(realm).clients();
+            String clientId = clientsResource.findByClientId(MANAGER_CLIENT_ID).get(0).getId();
+
+            List<RoleRepresentation> rolesToAdd = new ArrayList<>();
+            List<RoleRepresentation> rolesToRemove = new ArrayList<>();
+
+            for (Role role : roles) {
+                RoleRepresentation roleRepresentation = new RoleRepresentation();
+                roleRepresentation.setId(role.getId());
+                roleRepresentation.setName(role.getName());
+                if (role.isAssigned()) {
+                    rolesToAdd.add(roleRepresentation);
+                } else {
+                    rolesToRemove.add(roleRepresentation);
+                }
+            }
+
+            roleMappingResource.clientLevel(clientId).add(rolesToAdd);
+            roleMappingResource.clientLevel(clientId).remove(rolesToRemove);
+
+        } catch (ClientErrorException ex) {
+            ex.printStackTrace(System.out);
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
             throw new WebApplicationException(ex);

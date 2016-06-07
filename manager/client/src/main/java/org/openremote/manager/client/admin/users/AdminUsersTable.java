@@ -24,9 +24,9 @@ import com.google.gwt.user.cellview.client.Column;
 import com.google.gwt.user.cellview.client.TextColumn;
 import com.google.gwt.user.client.ui.HasHorizontalAlignment;
 import com.google.gwt.view.client.SingleSelectionModel;
-import org.openremote.manager.client.i18n.ManagerConstants;
-import org.openremote.manager.client.widget.FormTable;
+import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTableStyle;
+import org.openremote.manager.client.widget.FormTable;
 import org.openremote.manager.client.widget.IconCell;
 import org.openremote.manager.shared.security.User;
 
@@ -74,7 +74,7 @@ public class AdminUsersTable extends FormTable<User> {
         }
     };
 
-    public AdminUsersTable(ManagerConstants managerConstants,
+    public AdminUsersTable(ManagerMessages managerMessages,
                            Style style,
                            FormTableStyle formTableStyle) {
         super(Integer.MAX_VALUE, formTableStyle);
@@ -84,18 +84,18 @@ public class AdminUsersTable extends FormTable<User> {
         setSelectionModel(selectionModel);
 
         applyStyleCellText(usernameColumn);
-        addColumn(usernameColumn, createHeader(managerConstants.username()));
+        addColumn(usernameColumn, createHeader(managerMessages.username()));
         addColumnStyleName(0, style.usernameColumn());
 
         applyStyleCellText(firstNameColumn);
-        addColumn(firstNameColumn, createHeader(managerConstants.firstName()));
+        addColumn(firstNameColumn, createHeader(managerMessages.firstName()));
         addColumnStyleName(1, style.firstNameColumn());
 
         applyStyleCellText(lastNameColumn);
-        addColumn(lastNameColumn, createHeader(managerConstants.lastName()));
+        addColumn(lastNameColumn, createHeader(managerMessages.lastName()));
         addColumnStyleName(2, style.lastNameColumn());
 
-        addColumn(enabledColumn, createHeader(managerConstants.enabled()));
+        addColumn(enabledColumn, createHeader(managerMessages.enabled()));
         addColumnStyleName(3, style.enabledColumn());
         enabledColumn.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_CENTER);
     }

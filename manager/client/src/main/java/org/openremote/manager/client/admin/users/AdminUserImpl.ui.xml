@@ -2,7 +2,7 @@
              xmlns:g="urn:import:com.google.gwt.user.client.ui"
              xmlns:w="urn:import:org.openremote.manager.client.widget">
 
-    <ui:with field="constants" type="org.openremote.manager.client.i18n.ManagerConstants"/>
+    <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
     <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
@@ -29,12 +29,12 @@
         </g:FlowPanel>
 
         <div class="{widgetStyle.Headline1} {themeStyle.Headline1}">
-            <g:InlineLabel text="{constants.editUser}"/>
+            <g:InlineLabel text="{managerMessages.editUser}"/>
         </div>
 
         <div class="{widgetStyle.HeadlineSub} {themeStyle.HeadlineSub}">
             <span class="required">*</span>
-            <g:InlineLabel text="{constants.requiredFields}"/>
+            <g:InlineLabel text="{managerMessages.requiredFields}"/>
         </div>
 
         <div class="layout vertical {widgetStyle.Form} {themeStyle.Form}" ui:field="form">
@@ -43,7 +43,7 @@
                  ui:field="usernameGroup">
                 <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
                     <label ui:field="usernameLabel">
-                        <g:InlineLabel text="{constants.username}"/>
+                        <g:InlineLabel text="{managerMessages.username}"/>
                     </label>
                     <span class="required">*</span>
                 </div>
@@ -57,7 +57,7 @@
                  ui:field="firstNameGroup">
                 <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
                     <label ui:field="firstNameLabel">
-                        <g:InlineLabel text="{constants.firstName}"/>
+                        <g:InlineLabel text="{managerMessages.firstName}"/>
                     </label>
                 </div>
                 <div class="{widgetStyle.FormField} {themeStyle.FormField}">
@@ -70,7 +70,7 @@
                  ui:field="lastNameGroup">
                 <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
                     <label ui:field="lastNameLabel">
-                        <g:InlineLabel text="{constants.lastName}"/>
+                        <g:InlineLabel text="{managerMessages.lastName}"/>
                     </label>
                 </div>
                 <div class="{widgetStyle.FormField} {themeStyle.FormField}">
@@ -83,7 +83,7 @@
                  ui:field="emailGroup">
                 <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
                     <label ui:field="emailLabel">
-                        <g:InlineLabel text="{constants.email}"/>
+                        <g:InlineLabel text="{managerMessages.email}"/>
                     </label>
                 </div>
                 <div class="{widgetStyle.FormField} {themeStyle.FormField}">
@@ -96,7 +96,7 @@
                  ui:field="enabledGroup">
                 <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
                     <label ui:field="enabledLabel">
-                        <g:InlineLabel text="{constants.enabled}"/>
+                        <g:InlineLabel text="{managerMessages.enabled}"/>
                     </label>
                 </div>
                 <div class="{widgetStyle.FormField} {themeStyle.FormField}">
@@ -108,7 +108,7 @@
             <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}"
                  ui:field="resetPasswordNoteGroup">
                 <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
-                    <g:InlineLabel text="{constants.notePasswordAfterCreate}"/>
+                    <g:InlineLabel text="{managerMessages.notePasswordAfterCreate}"/>
                 </div>
             </div>
 
@@ -116,7 +116,7 @@
                  ui:field="resetPasswordGroup">
                 <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
                     <label ui:field="resetPasswordLabel">
-                        <g:InlineLabel text="{constants.resetPassword}"/>
+                        <g:InlineLabel text="{managerMessages.resetPassword}"/>
                     </label>
                 </div>
                 <div class="{widgetStyle.FormField} {themeStyle.FormField}">
@@ -130,7 +130,7 @@
                  ui:field="resetPasswordControlGroup">
                 <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
                     <label ui:field="resetPasswordControlLabel">
-                        <g:InlineLabel text="{constants.repeatPassword}"/>
+                        <g:InlineLabel text="{managerMessages.repeatPassword}"/>
                     </label>
                 </div>
                 <div class="{widgetStyle.FormField} {themeStyle.FormField}">
@@ -139,26 +139,44 @@
                 </div>
             </div>
 
+            <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}"
+                 ui:field="rolesNoteGroup">
+                <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
+                    <g:InlineLabel text="{managerMessages.noteRolesAfterCreate}"/>
+                </div>
+            </div>
+
+            <div class="layout horizontal start {widgetStyle.FormGroup} {themeStyle.FormGroup}"
+                 ui:field="rolesGroup">
+                <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
+                    <g:InlineLabel text="{managerMessages.assignedRoles}"/>
+                </div>
+                <div class="{widgetStyle.FormField} {themeStyle.FormField}">
+                    <g:FlowPanel styleName="layout vertical"
+                                 ui:field="rolesPanel"/>
+                </div>
+            </div>
+
             <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}">
                 <div class="{widgetStyle.FormField} {themeStyle.FormField}">
                     <w:PushButton ui:field="updateButton"
                                   addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                  text="{constants.updateUser}"
+                                  text="{managerMessages.updateUser}"
                                   visible="false"
                                   icon="save"/>
                     <w:PushButton ui:field="createButton"
                                   addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                  text="{constants.createUser}"
+                                  text="{managerMessages.createUser}"
                                   visible="false"
                                   icon="save"/>
                     <w:PushButton ui:field="deleteButton"
                                   addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonDanger} {themeStyle.FormButtonDanger} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                  text="{constants.deleteUser}"
+                                  text="{managerMessages.deleteUser}"
                                   visible="false"
                                   icon="trash"/>
                     <w:PushButton ui:field="cancelButton"
                                   addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButton} {themeStyle.FormButton} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                  text="{constants.cancel}"
+                                  text="{managerMessages.cancel}"
                                   icon="close"/>
                 </div>
             </div>

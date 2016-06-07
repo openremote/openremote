@@ -21,10 +21,7 @@ package org.openremote.manager.client.admin.users;
 
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
-import org.openremote.manager.client.admin.AbstractAdminActivity;
-import org.openremote.manager.client.admin.AdminView;
-import org.openremote.manager.client.admin.CredentialMapper;
-import org.openremote.manager.client.admin.UserMapper;
+import org.openremote.manager.client.admin.*;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
@@ -33,8 +30,10 @@ import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.shared.Consumer;
+import org.openremote.manager.shared.Runnable;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 import org.openremote.manager.shared.security.Credential;
+import org.openremote.manager.shared.security.Role;
 import org.openremote.manager.shared.security.User;
 import org.openremote.manager.shared.security.UserResource;
 import org.openremote.manager.shared.validation.ConstraintViolation;
@@ -56,6 +55,7 @@ public class AdminUserActivity
     final protected UserResource userResource;
     final protected UserMapper userMapper;
     final protected CredentialMapper credentialMapper;
+    final protected RoleArrayMapper roleArrayMapper;
 
     final protected Consumer<ConstraintViolation[]> validationErrorHandler = violations -> {
         for (ConstraintViolation violation : violations) {
@@ -87,6 +87,7 @@ public class AdminUserActivity
     protected String realm;
     protected String userId;
     protected User user;
+    protected Role[] roles = new Role[0];
 
     @Inject
     public AdminUserActivity(AdminView adminView,
@@ -99,7 +100,8 @@ public class AdminUserActivity
                              RequestService requestService,
                              UserResource userResource,
                              UserMapper userMapper,
-                             CredentialMapper credentialMapper) {
+                             CredentialMapper credentialMapper,
+                             RoleArrayMapper roleArrayMapper) {
         super(adminView, adminNavigationPresenter, view);
         this.managerMessages = managerMessages;
         this.placeController = placeController;
@@ -109,6 +111,7 @@ public class AdminUserActivity
         this.userResource = userResource;
         this.userMapper = userMapper;
         this.credentialMapper = credentialMapper;
+        this.roleArrayMapper = roleArrayMapper;
     }
 
     @Override
@@ -129,6 +132,7 @@ public class AdminUserActivity
 
         adminContent.setPresenter(this);
 
+        adminContent.clearRoles();
         adminContent.clearFormMessagesSuccess();
         adminContent.clearFormMessagesError();
         clearViewFieldErrors();
@@ -136,6 +140,7 @@ public class AdminUserActivity
         adminContent.enableUpdate(false);
         adminContent.enableDelete(false);
         adminContent.enableResetPassword(false);
+        adminContent.enableRoles(false);
 
         if (userId != null) {
             loadUser();
@@ -144,6 +149,45 @@ public class AdminUserActivity
             user.setRealm(realm);
             writeToView();
             adminContent.enableCreate(true);
+        }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        adminContent.setPresenter(null);
+        adminContent.clearRoles();
+        adminContent.clearFormMessagesSuccess();
+        adminContent.clearFormMessagesError();
+        clearViewFieldErrors();
+    }
+
+    @Override
+    public void onRoleAssigned(String id, boolean assigned) {
+        for (Role role : roles) {
+            if (role.getId().equals(id)) {
+                role.setAssigned(assigned);
+
+                // A composite role switches all other roles with same name prefix
+                if (role.isComposite()) {
+                    for (Role otherRole : roles) {
+                        if (otherRole.getName().startsWith(role.getName() + ":")) {
+                            otherRole.setAssigned(assigned);
+                            adminContent.toggleRoleAssigned(otherRole.getId(), assigned);
+                        }
+                    }
+                    // A non-composite role disables its composite parent
+                } else if (!assigned) {
+                    int colonIndex = role.getName().indexOf(":");
+                    String prefix = role.getName().substring(0, colonIndex != -1 ? colonIndex : role.getName().length() - 1);
+                    for (Role otherRole : roles) {
+                        if (otherRole.getName().equals(prefix)) {
+                            otherRole.setAssigned(false);
+                            adminContent.toggleRoleAssigned(otherRole.getId(), false);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -220,10 +264,24 @@ public class AdminUserActivity
             },
             204,
             () -> {
-                adminContent.setFormBusy(false);
-                adminContent.addFormMessageSuccess(managerMessages.userUpdated(user.getUsername()));
+                updateRoles(() -> {
+                    adminContent.setFormBusy(false);
+                    adminContent.addFormMessageSuccess(managerMessages.userUpdated(user.getUsername()));
+                });
             },
             ex -> handleRequestException(ex, eventBus, managerMessages, validationErrorHandler)
+        );
+    }
+
+    protected void updateRoles(Runnable onComplete) {
+        requestService.execute(
+            roleArrayMapper,
+            requestParams -> {
+                userResource.updateRoles(requestParams, realm, userId, roles);
+            },
+            204,
+            onComplete::run,
+            ex -> handleRequestException(ex, eventBus, managerMessages)
         );
     }
 
@@ -263,12 +321,28 @@ public class AdminUserActivity
             user -> {
                 this.user = user;
                 this.realm = user.getRealm();
-                writeToView();
-                adminContent.setFormBusy(false);
-                adminContent.enableCreate(false);
-                adminContent.enableUpdate(true);
-                adminContent.enableDelete(true);
-                adminContent.enableResetPassword(true);
+                loadRoles(() -> {
+                    writeToView();
+                    adminContent.setFormBusy(false);
+                    adminContent.enableCreate(false);
+                    adminContent.enableUpdate(true);
+                    adminContent.enableDelete(true);
+                    adminContent.enableResetPassword(true);
+                });
+            },
+            ex -> handleRequestException(ex, eventBus, managerMessages)
+        );
+    }
+
+    protected void loadRoles(Runnable onComplete) {
+        requestService.execute(
+            roleArrayMapper,
+            requestParams -> userResource.getRoles(requestParams, realm, userId),
+            200,
+            roles -> {
+                this.roles = roles;
+                adminContent.enableRoles(true);
+                onComplete.run();
             },
             ex -> handleRequestException(ex, eventBus, managerMessages)
         );
@@ -280,6 +354,14 @@ public class AdminUserActivity
         adminContent.setLastName(user.getLastName());
         adminContent.setEmail(user.getEmail());
         adminContent.setUserEnabled(user.getEnabled());
+        for (Role role : roles) {
+            adminContent.addRole(
+                role.getId(),
+                managerMessages.roleLabel(role.getName().replaceAll(":", "-")),
+                role.isComposite(),
+                role.isAssigned()
+            );
+        }
     }
 
     protected void readFromView() {

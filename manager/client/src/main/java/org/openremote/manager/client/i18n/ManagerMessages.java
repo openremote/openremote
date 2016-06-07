@@ -25,6 +25,78 @@ import com.google.gwt.i18n.client.Messages;
 @LocalizableResource.DefaultLocale("en")
 public interface ManagerMessages extends Messages {
 
+    String logout();
+
+    String map();
+
+    String assets();
+
+    String rules();
+
+    String flows();
+
+    String admin();
+
+    String mapLoading();
+
+    String loadingDotdotdot();
+
+    String editAccount();
+
+    String manageTenants();
+
+    String manageUsers();
+
+    String overview();
+
+    String createTenant();
+
+    String tenantName();
+
+    String realm();
+
+    String enabled();
+
+    String newTenant();
+
+    String editTenant();
+
+    String tenantDisplayName();
+
+    String updateTenant();
+
+    String deleteTenant();
+
+    String cancel();
+
+    String requiredFields();
+
+    String newUser();
+
+    String selectTenant();
+
+    String username();
+
+    String firstName();
+
+    String lastName();
+
+    String editUser();
+
+    String updateUser();
+
+    String createUser();
+
+    String deleteUser();
+
+    String email();
+
+    String resetPassword();
+
+    String repeatPassword();
+
+    String notePasswordAfterCreate();
+
     String accessDenied();
 
     String requestFailed(String error);
@@ -56,4 +128,10 @@ public interface ManagerMessages extends Messages {
     String passwordUpdated();
 
     String passwordsMustMatch();
+
+    String roleLabel(@Select String roleName);
+
+    String assignedRoles();
+
+    String noteRolesAfterCreate();
 }

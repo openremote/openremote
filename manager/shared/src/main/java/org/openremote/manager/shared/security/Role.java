@@ -19,16 +19,22 @@
  */
 package org.openremote.manager.shared.security;
 
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
-
-public class Tenant {
+public class Role {
 
     protected String id;
-    protected String realm;
-    protected String displayName;
-    protected Boolean enabled;
+    protected String name;
+    protected boolean composite;
+    protected boolean assigned;
+
+    public Role() {
+    }
+
+    public Role(String id, String name, boolean composite, boolean assigned) {
+        this.id = id;
+        this.name = name;
+        this.composite = composite;
+        this.assigned = assigned;
+    }
 
     public String getId() {
         return id;
@@ -38,42 +44,37 @@ public class Tenant {
         this.id = id;
     }
 
-    @NotNull(message = "{Tenant.realm.NotNull}")
-    @Size(min = 3, max = 255, message = "{Tenant.realm.Size}")
-    @Pattern(regexp = "[a-z0-9]+", message = "{Tenant.realm.Pattern}")
-    public String getRealm() {
-        return realm;
+    public String getName() {
+        return name;
     }
 
-    public void setRealm(String realm) {
-        this.realm = realm;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    @NotNull(message = "{Tenant.displayName.NotNull}")
-    @Size(min = 3, max = 255, message = "{Tenant.displayName.Size}")
-    public String getDisplayName() {
-        return displayName;
+    public boolean isAssigned() {
+        return assigned;
     }
 
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
+    public void setAssigned(boolean assigned) {
+        this.assigned = assigned;
     }
 
-    public Boolean getEnabled() {
-        return enabled;
+    public boolean isComposite() {
+        return composite;
     }
 
-    public void setEnabled(Boolean enabled) {
-        this.enabled = enabled;
+    public void setComposite(boolean composite) {
+        this.composite = composite;
     }
 
     @Override
     public String toString() {
         return getClass().getName() + "{" +
             "id='" + id + '\'' +
-            ", realm='" + realm + '\'' +
-            ", displayName='" + displayName + '\'' +
-            ", enabled=" + enabled +
+            ", name='" + name + '\'' +
+            ", composite=" + composite +
+            ", assigned=" + assigned +
             '}';
     }
 }

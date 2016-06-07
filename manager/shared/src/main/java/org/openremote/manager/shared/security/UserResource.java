@@ -20,11 +20,14 @@
 package org.openremote.manager.shared.security;
 
 import jsinterop.annotations.JsType;
+import org.keycloak.representations.idm.RoleRepresentation;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.http.SuccessStatusCode;
 
 import javax.validation.Valid;
 import javax.ws.rs.*;
+
+import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -71,4 +74,15 @@ public interface UserResource {
     @Produces(APPLICATION_JSON)
     void resetPassword(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Credential credential);
 
+    @GET
+    @Path("{realm}/{userId}/role")
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    Role[] getRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
+
+    @PUT
+    @Path("{realm}/{userId}/role")
+    @Consumes(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    void updateRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Role[] roles);
 }

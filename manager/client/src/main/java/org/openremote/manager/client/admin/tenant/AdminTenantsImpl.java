@@ -25,12 +25,15 @@ import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.*;
-import org.openremote.manager.client.i18n.ManagerConstants;
+import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTableStyle;
+import org.openremote.manager.client.style.ThemeStyle;
+import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.PushButton;
 import org.openremote.manager.shared.security.Tenant;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class AdminTenantsImpl extends Composite implements AdminTenants {
@@ -38,9 +41,14 @@ public class AdminTenantsImpl extends Composite implements AdminTenants {
     interface UI extends UiBinder<HTMLPanel, AdminTenantsImpl> {
     }
 
-    private UI ui = GWT.create(UI.class);
+    @UiField
+    ManagerMessages managerMessages;
 
-    Presenter presenter;
+    @UiField
+    WidgetStyle widgetStyle;
+
+    @UiField
+    ThemeStyle themeStyle;
 
     @UiField
     AdminTenantsTable.Style tenantsTableStyle;
@@ -52,13 +60,14 @@ public class AdminTenantsImpl extends Composite implements AdminTenants {
     SimplePanel cellTableContainer;
 
     final AdminTenantsTable table;
+    Presenter presenter;
 
     @Inject
-    public AdminTenantsImpl(ManagerConstants managerConstants,
-                            FormTableStyle formTableStyle) {
+    public AdminTenantsImpl(FormTableStyle formTableStyle) {
+        UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
 
-        table = new AdminTenantsTable(managerConstants, tenantsTableStyle, formTableStyle);
+        table = new AdminTenantsTable(managerMessages, tenantsTableStyle, formTableStyle);
         table.getSelectionModel().addSelectionChangeHandler(event -> {
                 Tenant selected;
                 if ((selected = table.getSelectedObject()) != null
@@ -73,11 +82,17 @@ public class AdminTenantsImpl extends Composite implements AdminTenants {
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
+        if (presenter == null) {
+            table.setRowData(new ArrayList<>());
+            table.flush();
+        }
     }
 
     @Override
     public void setTenants(Tenant[] tenants) {
+        cellTableContainer.setVisible(tenants.length > 0);
         table.setRowData(Arrays.asList(tenants));
+        table.flush();
     }
 
     @UiHandler("createButton")

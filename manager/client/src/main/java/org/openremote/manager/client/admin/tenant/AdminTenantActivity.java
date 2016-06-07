@@ -133,6 +133,15 @@ public class AdminTenantActivity
     }
 
     @Override
+    public void onStop() {
+        super.onStop();
+        adminContent.setPresenter(null);
+        adminContent.clearFormMessagesSuccess();
+        adminContent.clearFormMessagesError();
+        clearViewFieldErrors();
+    }
+
+    @Override
     public void create() {
         adminContent.setFormBusy(true);
         adminContent.clearFormMessagesSuccess();

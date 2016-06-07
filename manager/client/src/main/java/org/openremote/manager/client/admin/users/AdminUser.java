@@ -25,6 +25,8 @@ public interface AdminUser extends AdminContent {
 
     interface Presenter {
 
+        void onRoleAssigned(String id, boolean assigned);
+
         void create();
 
         void update();
@@ -78,6 +80,8 @@ public interface AdminUser extends AdminContent {
 
     void enableResetPassword(boolean enable);
 
+    void enableRoles(boolean enable);
+
     String getPassword();
 
     void clearPassword();
@@ -87,6 +91,12 @@ public interface AdminUser extends AdminContent {
     void clearPasswordControl();
 
     void setPasswordError(boolean error);
+
+    void clearRoles();
+
+    void addRole(String id, String label, boolean composite, boolean assigned);
+
+    void toggleRoleAssigned(String id, boolean assigned);
 
     void enableCreate(boolean enable);
 

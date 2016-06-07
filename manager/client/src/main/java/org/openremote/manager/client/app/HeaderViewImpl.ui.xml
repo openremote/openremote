@@ -26,7 +26,7 @@
 
     </ui:style>
 
-    <ui:with field="constants" type="org.openremote.manager.client.i18n.ManagerConstants"/>
+    <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
     <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
@@ -51,29 +51,29 @@
         <w:PushButton ui:field="mapButton"
                       addStyleNames="{style.navItem} {widgetStyle.NavItem} {themeStyle.NavItem}"
                       icon="map"
-                      text="{constants.map}"/>
+                      text="{managerMessages.map}"/>
 
         <w:PushButton ui:field="assetsButton"
                       addStyleNames="{style.navItem} {widgetStyle.NavItem} {themeStyle.NavItem}"
                       icon="cubes"
-                      text="{constants.assets}"/>
+                      text="{managerMessages.assets}"/>
 
         <w:PushButton ui:field="rulesButton"
                       addStyleNames="{style.navItem} {widgetStyle.NavItem} {themeStyle.NavItem}"
                       icon="chain"
-                      text="{constants.rules}"/>
+                      text="{managerMessages.rules}"/>
 
         <w:PushButton ui:field="flowsButton"
                       addStyleNames="{style.navItem} {widgetStyle.NavItem} {themeStyle.NavItem}"
                       icon="connectdevelop"
-                      text="{constants.flows}"/>
+                      text="{managerMessages.flows}"/>
 
         <g:HTMLPanel styleName="flex"/>
 
         <w:PushButton ui:field="adminButton"
                       addStyleNames="{style.navItem} {widgetStyle.NavItem} {themeStyle.NavItem}"
                       icon="gears"
-                      text="{constants.admin}"/>
+                      text="{managerMessages.admin}"/>
 
         <w:PushButton ui:field="userButton"
                       icon="user"

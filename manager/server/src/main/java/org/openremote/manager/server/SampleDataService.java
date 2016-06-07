@@ -55,7 +55,7 @@ public class SampleDataService implements ContainerService {
     public static final String ADMIN_CLI_CLIENT_ID = "admin-cli";
     public static final String ADMIN_PASSWORD = "admin";
 
-    protected IdentityService identityService;
+    protected ManagerIdentityService identityService;
     protected AssetsService assetsService;
     /* TODO
     protected PersistenceService persistenceService
@@ -203,13 +203,12 @@ public class SampleDataService implements ContainerService {
         LOG.info("Registered client application '" + MANAGER_CLIENT_ID + "' with identity provider: " + clientResourceLocation);
     }
 
-    protected void addRolesAndTestUsers(IdentityService identityService, String accessToken) {
+    protected void addRolesAndTestUsers(ManagerIdentityService identityService, String accessToken) {
         ClientsResource clientsResource = identityService.getRealms(accessToken, false).realm(MASTER_REALM).clients();
         UsersResource usersResource = identityService.getRealms(accessToken, false).realm(MASTER_REALM).users();
 
-        String clientObjectId = fromCallable(clientsResource::findAll)
+        String clientObjectId = fromCallable(() -> clientsResource.findByClientId(MANAGER_CLIENT_ID))
             .flatMap(Observable::from)
-            .filter(clientRepresentation -> clientRepresentation.getClientId().equals(MANAGER_CLIENT_ID))
             .map(ClientRepresentation::getId)
             .toBlocking().singleOrDefault(null);
 
@@ -217,32 +216,12 @@ public class SampleDataService implements ContainerService {
         ClientResource clientResource = clientsResource.get(clientObjectId);
         RolesResource rolesResource = clientResource.roles();
 
-        rolesResource.create(new RoleRepresentation("read", "Read all data", false));
-        RoleRepresentation readRole = rolesResource.get("read").toRepresentation();
-        LOG.info("Added role '" + readRole.getName() + "'");
-
-        rolesResource.create(new RoleRepresentation("read:map", "View map", false));
-        RoleRepresentation readMapRole = rolesResource.get("read:map").toRepresentation();
-        LOG.info("Added role '" + readMapRole.getName() + "'");
-
-        rolesResource.create(new RoleRepresentation("read:assets", "Read context broker assets", false));
-        RoleRepresentation readAssetsRole = rolesResource.get("read:assets").toRepresentation();
-        LOG.info("Added role '" + readAssetsRole.getName() + "'");
-
-        rolesResource.get("read").addComposites(Arrays.asList(readMapRole, readAssetsRole));
-
-        rolesResource.create(new RoleRepresentation("write", "Write all data", false));
-        RoleRepresentation writeRole = rolesResource.get("write").toRepresentation();
-        LOG.info("Added role '" + writeRole.getName() + "'");
-
-        rolesResource.create(new RoleRepresentation("write:assets", "Write context broker assets", false));
-        RoleRepresentation writeAssetsRole = rolesResource.get("write:assets").toRepresentation();
-        LOG.info("Added role '" + writeAssetsRole.getName() + "'");
-
-        rolesResource.get("write").addComposites(Arrays.asList(writeAssetsRole));
-
+        identityService.addDefaultRoles(rolesResource);
 
         // Give admin all roles (we can only check realm _or_ application roles in @RolesAllowed)!
+        RoleRepresentation readRole = rolesResource.get("read").toRepresentation();
+        RoleRepresentation writeRole = rolesResource.get("write").toRepresentation();
+
         fromCallable(() -> usersResource.search("admin", null, null, null, null, null))
             .flatMap(Observable::from)
             .map(userRepresentation -> usersResource.get(userRepresentation.getId()))

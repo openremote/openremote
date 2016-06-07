@@ -23,18 +23,18 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.DivElement;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.LabelElement;
+import com.google.gwt.dom.client.Style;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
-import com.google.gwt.user.client.ui.HTMLPanel;
-import com.google.gwt.user.client.ui.PasswordTextBox;
-import com.google.gwt.user.client.ui.SimpleCheckBox;
-import com.google.gwt.user.client.ui.TextBox;
+import com.google.gwt.user.client.ui.*;
 import org.openremote.manager.client.widget.FormView;
 import org.openremote.manager.client.widget.PushButton;
 
 import javax.inject.Inject;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static com.google.gwt.dom.client.Style.Display.NONE;
 
@@ -96,6 +96,14 @@ public class AdminUserImpl extends FormView implements AdminUser {
     PasswordTextBox resetPasswordControlInput;
 
     @UiField
+    DivElement rolesNoteGroup;
+
+    @UiField
+    DivElement rolesGroup;
+    @UiField
+    FlowPanel rolesPanel;
+
+    @UiField
     PushButton updateButton;
 
     @UiField
@@ -107,6 +115,7 @@ public class AdminUserImpl extends FormView implements AdminUser {
     @UiField
     PushButton cancelButton;
 
+    final protected Map<String, SimpleCheckBox> roles = new LinkedHashMap<>();
     protected Presenter presenter;
 
     @Inject
@@ -139,6 +148,15 @@ public class AdminUserImpl extends FormView implements AdminUser {
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
+        if (presenter == null) {
+            usernameInput.setValue(null);
+            firstNameInput.setValue(null);
+            lastNameInput.setValue(null);
+            emailInput.setValue(null);
+            enabledCheckBox.setValue(false);
+            resetPasswordInput.setValue(null);
+            resetPasswordControlInput.setValue(null);
+        }
     }
 
     @Override
@@ -245,6 +263,17 @@ public class AdminUserImpl extends FormView implements AdminUser {
     }
 
     @Override
+    public void enableRoles(boolean enable) {
+        rolesGroup.getStyle().clearDisplay();
+        if (enable) {
+            rolesNoteGroup.getStyle().setDisplay(NONE);
+        } else {
+            rolesNoteGroup.getStyle().clearDisplay();
+            rolesGroup.getStyle().setDisplay(NONE);
+        }
+    }
+
+    @Override
     public String getPassword() {
         return resetPasswordInput.getValue().length() > 0 ? resetPasswordInput.getValue() : null;
     }
@@ -275,6 +304,45 @@ public class AdminUserImpl extends FormView implements AdminUser {
     }
 
     @Override
+    public void clearRoles() {
+        rolesPanel.clear();
+        roles.clear();
+    }
+
+    @Override
+    public void addRole(String id, String label, boolean composite, boolean assigned) {
+        FlowPanel rolePanel = new FlowPanel();
+        rolePanel.setStyleName("layout horizontal center");
+
+        InlineLabel roleLabel = new InlineLabel(label);
+        if (composite) {
+            roleLabel.getElement().getStyle().setFontWeight(Style.FontWeight.BOLD);
+        }
+
+        SimpleCheckBox assignedCheckBox = new SimpleCheckBox();
+        assignedCheckBox.setValue(assigned);
+
+        assignedCheckBox.addValueChangeHandler(event -> {
+            if (presenter != null) {
+                presenter.onRoleAssigned(id, assignedCheckBox.getValue());
+            }
+        });
+
+        rolePanel.add(assignedCheckBox);
+        rolePanel.add(roleLabel);
+
+        roles.put(id, assignedCheckBox);
+        rolesPanel.add(rolePanel);
+    }
+
+    @Override
+    public void toggleRoleAssigned(String id, boolean assigned) {
+        if (roles.containsKey(id)) {
+            roles.get(id).setValue(assigned);
+        }
+    }
+
+    @Override
     public void enableCreate(boolean enable) {
         createButton.setVisible(enable);
     }
@@ -291,21 +359,25 @@ public class AdminUserImpl extends FormView implements AdminUser {
 
     @UiHandler("updateButton")
     void updateClicked(ClickEvent e) {
-        presenter.update();
+        if (presenter != null)
+            presenter.update();
     }
 
     @UiHandler("createButton")
     void createClicked(ClickEvent e) {
-        presenter.create();
+        if (presenter != null)
+            presenter.create();
     }
 
     @UiHandler("deleteButton")
     void deleteClicked(ClickEvent e) {
-        presenter.delete();
+        if (presenter != null)
+            presenter.delete();
     }
 
     @UiHandler("cancelButton")
     void cancelClicked(ClickEvent e) {
-        presenter.cancel();
+        if (presenter != null)
+            presenter.cancel();
     }
 }

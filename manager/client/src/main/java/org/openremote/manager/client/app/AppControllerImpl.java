@@ -27,9 +27,9 @@ import com.google.gwt.user.client.ui.RootPanel;
 import com.google.inject.Provider;
 import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.bus.EventBus;
-import org.openremote.manager.client.i18n.ManagerConstants;
 import org.openremote.manager.client.toast.Toast;
 import org.openremote.manager.client.toast.Toasts;
+import org.openremote.manager.shared.Constants;
 import org.openremote.manager.shared.event.ui.ShowFailureEvent;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 
@@ -40,7 +40,6 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
     private final AppView appView;
     private final PlaceController placeController;
     private final PlaceHistoryHandler placeHistoryHandler;
-    private ManagerConstants constants;
 
     @Inject
     public AppControllerImpl(PlaceController placeController,
@@ -50,13 +49,11 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
                              EventBus eventBus,
                              AppView appView,
                              Toasts toasts,
-                             ManagerConstants constants,
                              AppInitializer appInitializer) { // AppInitializer is needed so that activities are mapped to views
 
         this.appView = appView;
         this.placeController = placeController;
         this.placeHistoryHandler = placeHistoryHandler;
-        this.constants = constants;
 
         // Configure the header/footer as not using activity mapper for header (it's static)
         HeaderPresenter headerPresenter = headerPresenterProvider.get();
@@ -100,7 +97,7 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
 
     @Override
     public void start() {
-        Window.setTitle(constants.appTitle());
+        Window.setTitle(Constants.MANAGE_NAME);
         RootPanel.get().add(appView);
         appView.setPresenter(this);
         placeHistoryHandler.handleCurrentHistory();

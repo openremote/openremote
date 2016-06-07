@@ -2,7 +2,7 @@
              xmlns:g="urn:import:com.google.gwt.user.client.ui"
              xmlns:w="urn:import:org.openremote.manager.client.widget">
 
-    <ui:with field="constants" type="org.openremote.manager.client.i18n.ManagerConstants"/>
+    <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
     <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
