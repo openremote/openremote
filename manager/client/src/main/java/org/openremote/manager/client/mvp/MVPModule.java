@@ -34,21 +34,20 @@ public class MVPModule extends AbstractGinModule {
 
     @Override
     protected void configure() {
+        bind(PlaceController.Delegate.class).to(PlaceController.DefaultDelegate.class);
         bind(com.google.web.bindery.event.shared.EventBus.class).to(com.google.web.bindery.event.shared.SimpleEventBus.class).in(Singleton.class);
         bind(EventBus.class).in(Singleton.class);
     }
 
-
-
     @Provides
     @Singleton
-    public AppActivityManager getAppActivityMapper(ManagerActivityMapper activityMapper, EventBus eventBus) {
+    public AppActivityManager getActivityManager(ManagerActivityMapper activityMapper, EventBus eventBus) {
         return new AppActivityManager("AppActivityManager", activityMapper, eventBus);
     }
 
     @Provides
     @Singleton
-    public EventService getEventBus(SecurityService securityService, EventBus eventBus, EventMapper eventMapper) {
+    public EventService getEventService(SecurityService securityService, EventBus eventBus, EventMapper eventMapper) {
         EventService eventService = EventServiceImpl.create(securityService, eventBus, eventMapper);
         eventService.connect();
         return eventService;
@@ -59,8 +58,9 @@ public class MVPModule extends AbstractGinModule {
     public PlaceController getPlaceController(SecurityService securityService,
                                               EventService eventService,
                                               EventBus eventBus,
-                                              com.google.web.bindery.event.shared.EventBus legacyEventBus) {
-        return new AppPlaceController(securityService, eventBus, legacyEventBus);
+                                              com.google.web.bindery.event.shared.EventBus legacyEventBus,
+                                              PlaceController.Delegate delegate) {
+        return new AppPlaceController(securityService, eventBus, legacyEventBus, delegate);
     }
 
 

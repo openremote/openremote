@@ -85,6 +85,7 @@ public class SampleDataService implements ContainerService {
             MASTER_REALM, new AuthForm(ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, ADMIN_PASSWORD)
         ).getToken();
 
+        deleteRealms(identityService, accessToken);
         configureMasterRealm(identityService, accessToken);
         registerClientApplications(identityService, accessToken);
         addRolesAndTestUsers(identityService, accessToken);
@@ -142,6 +143,16 @@ public class SampleDataService implements ContainerService {
 
         ngsiService.postEntity(room1);
         ngsiService.postEntity(room2);
+    }
+
+    protected void deleteRealms(IdentityService identityService, String accessToken) {
+        RealmsResource realmsResource = identityService.getRealms(accessToken, false);
+        List<RealmRepresentation> realms = realmsResource.findAll();
+        for (RealmRepresentation realmRepresentation : realms) {
+            if (!realmRepresentation.getRealm().equals(MASTER_REALM)) {
+                identityService.getRealms(accessToken, false).realm(realmRepresentation.getRealm()).remove();
+            }
+        }
     }
 
     protected void configureMasterRealm(IdentityService identityService, String accessToken) {

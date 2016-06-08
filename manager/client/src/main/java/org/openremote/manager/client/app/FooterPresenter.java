@@ -41,7 +41,7 @@ public class FooterPresenter implements FooterView.Presenter {
 
         eventBus.register(
             GoToPlaceEvent.class,
-            event -> view.onPlaceChange(event.getNewPlace())
+            event -> view.onPlaceChange(event.getPlace())
         );
     }
 

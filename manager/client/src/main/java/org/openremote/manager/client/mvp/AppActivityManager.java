@@ -166,7 +166,7 @@ public class AppActivityManager {
             if (willBeActive) {
                 managerRegistrations.add(eventBus.register(
                     GoToPlaceEvent.class,
-                    event -> onPlaceChange(event.getNewPlace()))
+                    event -> onPlaceChange(event.getPlace()))
                 );
                 // Reject the place change if the current activity is not willing to stop.
                 managerRegistrations.add(eventBus.register(

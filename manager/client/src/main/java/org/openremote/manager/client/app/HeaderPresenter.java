@@ -29,8 +29,6 @@ import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.user.UserControls;
 import org.openremote.manager.shared.Constants;
 
-import static org.openremote.manager.shared.Constants.MANAGER_CLIENT_ID;
-
 public class HeaderPresenter implements HeaderView.Presenter {
 
     final protected HeaderView view;
@@ -53,7 +51,7 @@ public class HeaderPresenter implements HeaderView.Presenter {
 
         eventBus.register(
             GoToPlaceEvent.class,
-            event -> view.onPlaceChange(event.getNewPlace())
+            event -> view.onPlaceChange(event.getPlace())
         );
 
         view.setUsername(securityService.getParsedToken().getPreferredUsername());

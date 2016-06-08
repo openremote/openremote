@@ -125,20 +125,32 @@ public class RequestServiceImpl implements RequestService {
                         if (responseCode == 400) {
                             String validationException = request.getResponseHeader(VIOLATION_EXCEPTION_HEADER);
                             if (validationException != null && validationException.equals("true")) {
+                                if (LOG.isLoggable(Level.FINE)) {
+                                    LOG.fine("Received 400 status with constraint violation report: " + responseText);
+                                }
                                 ConstraintViolationReport report = getConstraintViolationReport(responseText);
                                 onException.accept(new BadRequestException(400, report));
                             } else {
+                                if (LOG.isLoggable(Level.FINE)) {
+                                    LOG.fine("Received 400 status without constraint violation report");
+                                }
                                 onException.accept(new BadRequestException(400));
                             }
                             return;
                         }
 
                         if (responseCode == 401) {
+                            if (LOG.isLoggable(Level.FINE)) {
+                                LOG.fine("Received 401, logging out...");
+                            }
                             securityService.logout();
                             return;
                         }
 
                         if (responseCode == 409) {
+                            if (LOG.isLoggable(Level.FINE)) {
+                                LOG.fine("Received 409 conflict");
+                            }
                             onException.accept(new ConflictRequestException());
                             return;
                         }
@@ -150,10 +162,13 @@ public class RequestServiceImpl implements RequestService {
 
                         OUT out = null;
                         if (responseText != null && responseText.length() > 0 && entityReader != null) {
-                            LOG.fine("Reading response text");
+                            if (LOG.isLoggable(Level.FINE))
+                                LOG.fine("Reading response text: " + responseText);
                             try {
                                 out = entityReader.read(responseText);
                             } catch (Exception ex) {
+                                if (LOG.isLoggable(Level.FINE))
+                                    LOG.log(Level.FINE, "Response marshalling error", ex);
                                 onException.accept(new EntityMarshallingRequestException(ex));
                                 return;
                             }

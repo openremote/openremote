@@ -40,12 +40,15 @@ public class AppPlaceController extends PlaceController {
 
     private static final Logger LOG = Logger.getLogger(AppPlaceController.class.getName());
 
-    private SecurityService securityService;
+    protected final com.google.web.bindery.event.shared.EventBus legacyEventBus;
+    protected final SecurityService securityService;
 
     public AppPlaceController(SecurityService securityService,
                               EventBus eventBus,
-                              com.google.web.bindery.event.shared.EventBus legacyEventBus) {
-        super(legacyEventBus);
+                              com.google.web.bindery.event.shared.EventBus legacyEventBus,
+                              Delegate delegate) {
+        super(legacyEventBus, delegate);
+        this.legacyEventBus = legacyEventBus;
         this.securityService = securityService;
 
         legacyEventBus.addHandler(PlaceChangeEvent.TYPE, event -> {
@@ -67,6 +70,11 @@ public class AppPlaceController extends PlaceController {
                 public void setWarning(String warning) {
                     event.setWarning(warning);
                 }
+
+                @Override
+                public String toString() {
+                    return "WillGoToPlaceEvent";
+                }
             });
         });
     }
@@ -79,9 +87,15 @@ public class AppPlaceController extends PlaceController {
                 // If it wasn't refreshed, it was still valid, in both cases we can continue
                 super.goTo(newPlace);
             },
-            () -> {
-                securityService.logout();
-            }
+            securityService::logout
         );
+    }
+
+    public SecurityService getSecurityService() {
+        return securityService;
+    }
+
+    public com.google.web.bindery.event.shared.EventBus getLegacyEventBus() {
+        return legacyEventBus;
     }
 }

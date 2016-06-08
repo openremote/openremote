@@ -30,7 +30,6 @@ class MapActivityTest extends Specification implements ContainerTrait {
         def activityBus = Mock(EventBus)
         def managerMessages = Mock(ManagerMessages)
         def activityRegistrations = []
-        def jsonObjectMapper = new JsonObjectMapper();
         def constraintViolationReader = Mock(EntityReader)
 
         and: "the server container is started"
@@ -61,8 +60,11 @@ class MapActivityTest extends Specification implements ContainerTrait {
         }
         def mapResource = Stub(MapResource) {
             // This matches all methods with any parameters, of the MapResource class
-            _(_) >> { callResourceProxy(clientTarget, getDelegate()) }
+            _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
         }
+
+        def jsonObjectMapper = new JsonObjectMapper();
+
         def mapActivity = new MapActivity(
                 mapView, mapResource, managerMessages, requestService, placeController, jsonObjectMapper
         )

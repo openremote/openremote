@@ -19,8 +19,8 @@
  */
 package org.openremote.manager.client.admin.navigation;
 
+import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.inject.Inject;
-import org.openremote.manager.client.ManagerHistoryMapper;
 import org.openremote.manager.client.admin.AdminPlace;
 import org.openremote.manager.client.admin.overview.AdminOverviewPlace;
 import org.openremote.manager.client.admin.tenant.AdminTenantsPlace;
@@ -29,13 +29,13 @@ import org.openremote.manager.client.admin.users.AdminUsersPlace;
 public class AdminNavigationPresenter implements AdminNavigation.Presenter {
 
     final protected AdminNavigation view;
-    final protected ManagerHistoryMapper managerHistoryMapper;
+    final protected PlaceHistoryMapper historyMapper;
 
     @Inject
     public AdminNavigationPresenter(AdminNavigation view,
-                                    ManagerHistoryMapper managerHistoryMapper) {
+                                    PlaceHistoryMapper historyMapper) {
         this.view = view;
-        this.managerHistoryMapper = managerHistoryMapper;
+        this.historyMapper = historyMapper;
 
         view.setPresenter(this);
     }
@@ -47,17 +47,17 @@ public class AdminNavigationPresenter implements AdminNavigation.Presenter {
 
     @Override
     public String getAdminOverviewPlaceToken() {
-        return managerHistoryMapper.getToken(new AdminOverviewPlace());
+        return historyMapper.getToken(new AdminOverviewPlace());
     }
 
     @Override
     public String getAdminTenantsPlaceToken() {
-        return managerHistoryMapper.getToken(new AdminTenantsPlace());
+        return historyMapper.getToken(new AdminTenantsPlace());
     }
 
     @Override
     public String getAdminUsersPlaceToken() {
-        return managerHistoryMapper.getToken(new AdminUsersPlace());
+        return historyMapper.getToken(new AdminUsersPlace());
     }
 
     @Override

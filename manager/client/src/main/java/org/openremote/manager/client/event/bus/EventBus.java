@@ -24,69 +24,80 @@ import org.openremote.manager.shared.event.Event;
 import java.util.*;
 
 /**
- * Simple observer/observable implementation.
+ * Simple observer/observable implementation, not thread-safe!
  */
 public class EventBus {
 
     final protected List<EventRegistration> registrations = new ArrayList<>();
 
-    synchronized public List<EventRegistration> getRegistrations() {
+    public List<EventRegistration> getRegistrations() {
         return Collections.unmodifiableList(registrations);
     }
 
-    synchronized public <E extends Event> EventRegistration<E> register(Class<E> eventClass, org.openremote.manager.client.event.bus.EventListener<E> listener) {
+    public <E extends Event> EventRegistration<E> register(Class<E> eventClass, org.openremote.manager.client.event.bus.EventListener<E> listener) {
         return register(false, eventClass, listener);
     }
 
-    synchronized public <E extends Event> EventRegistration<E> register(boolean prepare, Class<E> eventClass, org.openremote.manager.client.event.bus.EventListener<E> listener) {
+    public <E extends Event> EventRegistration<E> register(boolean prepare, Class<E> eventClass, org.openremote.manager.client.event.bus.EventListener<E> listener) {
         EventRegistration<E> registration = new EventRegistration<E>(prepare, eventClass, listener);
         add(registration);
         return registration;
     }
 
-    synchronized public void addAll(List<EventRegistration> registrations) {
+    public void addAll(List<EventRegistration> registrations) {
         this.registrations.addAll(registrations);
     }
 
-    synchronized public void add(EventRegistration registration) {
+    public void add(EventRegistration registration) {
         this.registrations.add(registration);
     }
 
-    synchronized public void removeAll(Collection<EventRegistration> registrations) {
+    public void removeAll(Collection<EventRegistration> registrations) {
         this.registrations.removeAll(registrations);
     }
 
-    synchronized public void remove(EventRegistration registration) {
+    public void remove(EventRegistration registration) {
         this.registrations.remove(registration);
     }
 
     @SuppressWarnings("unchecked")
-    synchronized public void dispatch(Event event, EventRegistration... skipRegistrations) {
+    public void dispatch(Event event, EventRegistration... skipRegistrations) {
         boolean vetoed = false;
         List<EventRegistration> skips = skipRegistrations != null ? Arrays.asList(skipRegistrations) : Collections.EMPTY_LIST;
 
         // Call all "prepare" phase listeners, find out if any event is vetoed
+        List<EventRegistration> activePrepareRegistrations = new ArrayList<>();
         for (EventRegistration registration : registrations) {
             if (skips.contains(registration))
                 continue;
 
             if (!registration.isMatching(event) || !registration.isPrepare())
                 continue;
+            activePrepareRegistrations.add(registration);
+        }
+        // Only notify listeners after iterating registrations, some listeners might modify registrations!
+        for (EventRegistration activePrepareRegistration : activePrepareRegistrations) {
             try {
-                registration.getListener().on(event);
+                activePrepareRegistration.getListener().on(event);
             } catch (VetoEventException ex) {
                 vetoed = true;
                 break;
             }
         }
+
         // If event is not vetoed, call all "non-prepare" listeners
         if (!vetoed) {
+            List<EventRegistration> activeRegistrations = new ArrayList<>();
             for (EventRegistration registration : registrations) {
                 if (skips.contains(registration))
                     continue;
                 if (!registration.isMatching(event) || registration.isPrepare())
                     continue;
-                registration.getListener().on(event);
+                activeRegistrations.add(registration);
+            }
+            // Only notify listeners after iterating registrations, some listeners might modify registrations!
+            for (EventRegistration activeRegistration : activeRegistrations) {
+                activeRegistration.getListener().on(event);
             }
         }
     }

@@ -20,6 +20,7 @@
 package org.openremote.test
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import elemental.json.JsonValue
 import org.glassfish.tyrus.client.ClientManager
 import org.jboss.resteasy.client.jaxrs.ResteasyClient
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder
@@ -44,19 +45,23 @@ import org.openremote.manager.server.security.ManagerIdentityService
 import org.openremote.manager.server.web.ManagerWebService
 import org.openremote.manager.shared.event.Event
 import org.openremote.manager.shared.event.Message
+import org.openremote.manager.shared.http.Request
 import org.openremote.manager.shared.http.RequestParams
 import org.openremote.manager.shared.http.SuccessStatusCode
 import org.spockframework.mock.IMockMethod
 
 import javax.websocket.*
+import javax.ws.rs.ClientErrorException
+import javax.ws.rs.Produces
 import javax.ws.rs.client.WebTarget
+import javax.ws.rs.core.Response
 import javax.ws.rs.core.UriBuilder
 import java.lang.reflect.Method
 import java.util.stream.Stream
 
 import static java.util.concurrent.TimeUnit.SECONDS
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON
 
-// TODO We should migrate all tests to use this init technique instead of the @Before etc. setup
 trait ContainerTrait {
 
     static class EventEndpoint extends Endpoint {
@@ -105,6 +110,26 @@ trait ContainerTrait {
                 session.close()
                 Thread.sleep 250 // Give the server a chance to end the session before we move on to the next test
             }
+        }
+    }
+
+    static class UnsupportedXMLHttpRequest implements Request.XMLHttpRequest {
+        @Override
+        String getResponseHeader(String header) {
+            throw new UnsupportedOperationException("Can't access response headers in test framework")
+        }
+    }
+
+    static class ResponseWrapperXMLHttpRequest implements Request.XMLHttpRequest {
+        final Response response;
+
+        ResponseWrapperXMLHttpRequest(Response response) {
+            this.response = response
+        }
+
+        @Override
+        String getResponseHeader(String header) {
+            return response.getHeaderString(header);
         }
     }
 
@@ -203,7 +228,8 @@ trait ContainerTrait {
         websocketContainer.connectToServer(endpoint, config, websocketUrl.build());
     }
 
-    static def void callResourceProxy(ResteasyWebTarget clientTarget, def mockInvocation) {
+    // This emulates how a GWT client calls a REST service, we intercept and route through  Resteasy Client proxy
+    static def void callResourceProxy(ObjectMapper jsonMapper, ResteasyWebTarget clientTarget, def mockInvocation) {
         // If the first parameter of the method we want to call is RequestParams
         List<Object> args = mockInvocation.getArguments();
         IMockMethod mockMethod = mockInvocation.getMethod();
@@ -224,10 +250,40 @@ trait ContainerTrait {
             int statusCode = successStatusCode != null ? successStatusCode.value() : 200;
 
             // Call the proxy
-            String result = resourceProxy."$mockMethod.name"(args);
+            Object result;
+            boolean resultPassthrough = false;
+            // Fake an XMLHttpRequest for later (we can only access headers if there is an exception...)
+            Request.XMLHttpRequest xmlHttpRequest = new UnsupportedXMLHttpRequest();
+            try {
+                result = resourceProxy."$mockMethod.name"(args);
+            } catch (ClientErrorException ex) {
+                statusCode = ex.getResponse().getStatus();
+                result = ex.getResponse().readEntity(String.class);
+                xmlHttpRequest = new ResponseWrapperXMLHttpRequest(ex.getResponse());
+                resultPassthrough = true;
+            }
+
+            String responseText;
+
+            // If the method produces JSON, we need to turn whatever the proxy delivered back into JSON string
+            Produces producesAnnotation = mockedResourceMethod.getDeclaredAnnotation(Produces.class);
+            if (!resultPassthrough
+                    && producesAnnotation != null
+                    && producesAnnotation.value()[0] != null
+                    && producesAnnotation.value()[0].equals(APPLICATION_JSON)) {
+                // Handle elemental JsonValue special, don't use Jackson
+                if (result instanceof JsonValue) {
+                    JsonValue jsonValue = (JsonValue) result;
+                    responseText = jsonValue.toJson();
+                } else {
+                    responseText = jsonMapper.writeValueAsString(result);
+                }
+            } else {
+                responseText = result.toString();
+            }
 
             // Pass the result to the callback, so it looks asynchronous for client code
-            requestParams.callback.call(statusCode, null, result);
+            requestParams.callback.call(statusCode, xmlHttpRequest, responseText);
         }
     }
 

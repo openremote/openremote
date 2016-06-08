@@ -63,7 +63,7 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
 
         eventBus.register(
             GoToPlaceEvent.class,
-            event -> appView.updateLayout(event.getNewPlace())
+            event -> appView.updateLayout(event.getPlace())
         );
 
         eventBus.register(

@@ -51,6 +51,7 @@ public class AdminViewImpl extends Composite implements AdminView {
     @Override
     public void setContent(AdminContent adminContent) {
         adminContentContainer.clear();
-        adminContentContainer.add(adminContent);
+        if (adminContent != null)
+            adminContentContainer.add(adminContent);
     }
 }

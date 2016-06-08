@@ -24,13 +24,13 @@ import org.openremote.manager.shared.event.Event;
 
 public class GoToPlaceEvent extends Event {
 
-    private final Place newPlace;
+    private final Place place;
 
-    public GoToPlaceEvent(Place newPlace) {
-        this.newPlace = newPlace;
+    public GoToPlaceEvent(Place place) {
+        this.place = place;
     }
 
-    public Place getNewPlace() {
-        return newPlace;
+    public Place getPlace() {
+        return place;
     }
 }

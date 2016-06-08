@@ -24,14 +24,14 @@ import org.openremote.manager.shared.event.Event;
 
 public abstract class WillGoToPlaceEvent extends Event {
 
-    final protected Place newPlace;
+    final protected Place place;
 
-    public WillGoToPlaceEvent(Place newPlace) {
-        this.newPlace = newPlace;
+    public WillGoToPlaceEvent(Place place) {
+        this.place = place;
     }
 
-    public Place getNewPlace() {
-        return newPlace;
+    public Place getPlace() {
+        return place;
     }
 
     abstract public String getWarning();

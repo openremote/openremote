@@ -53,7 +53,7 @@ public interface TenantResource {
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(201)
+    @SuccessStatusCode(204)
     void create(@BeanParam RequestParams requestParams, @Valid Tenant tenant);
 
     @DELETE

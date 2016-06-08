@@ -21,7 +21,6 @@ package org.openremote.manager.client.admin;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
-import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
@@ -41,27 +40,23 @@ public abstract class AbstractAdminActivity<P extends AdminPlace, AC extends Adm
         this.adminView = adminView;
         this.adminNavigationPresenter = adminNavigationPresenter;
         this.adminContent = adminContent;
-
-        adminView.setContent(adminContent);
     }
 
     @Override
     protected AppActivity<P> init(P place) {
+        adminNavigationPresenter.setActivePlace(place);
         return this;
     }
 
     @Override
     public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
         container.setWidget(adminView.asWidget());
+        adminView.setContent(adminContent);
+    }
 
-        registrations.add(eventBus.register(
-            GoToPlaceEvent.class,
-            event -> {
-                if (event.getNewPlace() instanceof AdminPlace) {
-                    AdminPlace adminPlace = (AdminPlace) event.getNewPlace();
-                    adminNavigationPresenter.setActivePlace(adminPlace);
-                }
-            }
-        ));
+    @Override
+    public void onStop() {
+        adminView.setContent(null);
+        super.onStop();
     }
 }
