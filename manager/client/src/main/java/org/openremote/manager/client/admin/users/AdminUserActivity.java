@@ -39,7 +39,7 @@ import org.openremote.manager.shared.security.UserResource;
 import org.openremote.manager.shared.validation.ConstraintViolation;
 
 import javax.inject.Inject;
-import java.util.Collection;
+import java.util.*;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
@@ -141,6 +141,7 @@ public class AdminUserActivity
         adminContent.enableDelete(false);
         adminContent.enableResetPassword(false);
         adminContent.enableRoles(false);
+        adminContent.setUsernameEditEnabled(false);
 
         if (userId != null) {
             loadUser();
@@ -149,6 +150,7 @@ public class AdminUserActivity
             user.setRealm(realm);
             writeToView();
             adminContent.enableCreate(true);
+            adminContent.setUsernameEditEnabled(true);
         }
     }
 
@@ -165,26 +167,27 @@ public class AdminUserActivity
     @Override
     public void onRoleAssigned(String id, boolean assigned) {
         for (Role role : roles) {
-            if (role.getId().equals(id)) {
-                role.setAssigned(assigned);
+            if (!role.getId().equals(id)) {
+                continue;
+            }
+            role.setAssigned(assigned);
 
-                // A composite role switches all other roles with same name prefix
-                if (role.isComposite()) {
-                    for (Role otherRole : roles) {
-                        if (otherRole.getName().startsWith(role.getName() + ":")) {
-                            otherRole.setAssigned(assigned);
-                            adminContent.toggleRoleAssigned(otherRole.getId(), assigned);
-                        }
+            // A composite role switches all other roles with same name prefix
+            if (role.isComposite()) {
+                for (Role otherRole : roles) {
+                    if (otherRole.getName().startsWith(role.getName() + ":")) {
+                        otherRole.setAssigned(assigned);
+                        adminContent.toggleRoleAssigned(otherRole.getId(), assigned);
                     }
-                    // A non-composite role disables its composite parent
-                } else if (!assigned) {
-                    int colonIndex = role.getName().indexOf(":");
-                    String prefix = role.getName().substring(0, colonIndex != -1 ? colonIndex : role.getName().length() - 1);
-                    for (Role otherRole : roles) {
-                        if (otherRole.getName().equals(prefix)) {
-                            otherRole.setAssigned(false);
-                            adminContent.toggleRoleAssigned(otherRole.getId(), false);
-                        }
+                }
+                // A non-composite role disables its composite parent
+            } else if (!assigned) {
+                int colonIndex = role.getName().indexOf(":");
+                String prefix = role.getName().substring(0, colonIndex != -1 ? colonIndex : role.getName().length() - 1);
+                for (Role otherRole : roles) {
+                    if (otherRole.getName().equals(prefix)) {
+                        otherRole.setAssigned(false);
+                        adminContent.toggleRoleAssigned(otherRole.getId(), false);
                     }
                 }
             }
@@ -198,7 +201,6 @@ public class AdminUserActivity
         adminContent.clearFormMessagesError();
         clearViewFieldErrors();
         readFromView();
-        handlePasswordReset();
         requestService.execute(
             userMapper,
             requestParams -> {
@@ -328,6 +330,7 @@ public class AdminUserActivity
                     adminContent.enableUpdate(true);
                     adminContent.enableDelete(true);
                     adminContent.enableResetPassword(true);
+                    adminContent.setUsernameEditEnabled(false);
                 });
             },
             ex -> handleRequestException(ex, eventBus, managerMessages)
@@ -340,7 +343,10 @@ public class AdminUserActivity
             requestParams -> userResource.getRoles(requestParams, realm, userId),
             200,
             roles -> {
-                this.roles = roles;
+                List<Role> roleList = new ArrayList<>();
+                roleList.addAll(Arrays.asList(roles));
+                Collections.sort(roleList, (o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName()));
+                this.roles = roleList.toArray(new Role[roleList.size()]);
                 adminContent.enableRoles(true);
                 onComplete.run();
             },

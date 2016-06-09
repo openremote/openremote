@@ -54,6 +54,8 @@ public interface AdminUser extends AdminContent {
 
     void setUsernameError(boolean error);
 
+    void setUsernameEditEnabled(boolean enabled);
+
     void setFirstName(String firstName);
 
     String getFirstName();

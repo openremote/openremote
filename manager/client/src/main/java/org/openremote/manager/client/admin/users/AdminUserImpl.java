@@ -178,6 +178,11 @@ public class AdminUserImpl extends FormView implements AdminUser {
     }
 
     @Override
+    public void setUsernameEditEnabled(boolean enabled) {
+        usernameInput.setEnabled(enabled);
+    }
+
+    @Override
     public void setFirstName(String firstName) {
         firstNameInput.setValue(firstName);
     }

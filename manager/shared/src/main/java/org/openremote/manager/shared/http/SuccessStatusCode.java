@@ -21,6 +21,9 @@ package org.openremote.manager.shared.http;
 
 import java.lang.annotation.*;
 
+/**
+ * Mostly used in tests to indicate the expected outcome.
+ */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented

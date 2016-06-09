@@ -85,20 +85,16 @@ public class AdminUsersActivity
     }
 
     @Override
-    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
-        super.start(container, eventBus, registrations);
-        adminContent.setPresenter(this);
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        adminContent.setPresenter(null);
-    }
-
-    @Override
     protected AppActivity<AdminUsersPlace> init(AdminUsersPlace place) {
         realm = place.getRealm();
+        return super.init(place);
+    }
+
+    @Override
+    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
+        super.start(container, eventBus, registrations);
+
+        adminContent.setPresenter(this);
 
         requestService.execute(
             tenantArrayMapper,
@@ -119,8 +115,12 @@ public class AdminUsersActivity
                 ex -> handleRequestException(ex, eventBus, managerMessages)
             );
         }
+    }
 
-        return super.init(place);
+    @Override
+    public void onStop() {
+        super.onStop();
+        adminContent.setPresenter(null);
     }
 
     @Override

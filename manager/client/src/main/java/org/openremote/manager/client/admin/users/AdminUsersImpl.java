@@ -41,12 +41,8 @@ import org.openremote.manager.shared.security.User;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.logging.Logger;
 
 public class AdminUsersImpl extends Composite implements AdminUsers {
-
-    private static final Logger LOG = Logger.getLogger(AdminUsersImpl.class.getName());
 
     interface UI extends UiBinder<HTMLPanel, AdminUsersImpl> {
     }

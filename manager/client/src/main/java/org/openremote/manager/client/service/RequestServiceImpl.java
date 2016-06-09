@@ -155,6 +155,10 @@ public class RequestServiceImpl implements RequestService {
                             return;
                         }
 
+                        if (LOG.isLoggable(Level.FINE)) {
+                            LOG.fine("Received response status: " + responseCode);
+                        }
+
                         if (expectedStatusCode != ANY_STATUS_CODE && responseCode != expectedStatusCode) {
                             onException.accept(new UnexpectedStatusRequestException(responseCode, expectedStatusCode));
                             return;

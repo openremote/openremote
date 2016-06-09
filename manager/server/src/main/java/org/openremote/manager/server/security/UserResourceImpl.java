@@ -207,8 +207,6 @@ public class UserResourceImpl extends WebResource implements UserResource {
                 ));
             }
 
-            Collections.sort(roles, (o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName()));
-
             return roles.toArray(new Role[roles.size()]);
 
         } catch (ClientErrorException ex) {
@@ -293,14 +291,6 @@ public class UserResourceImpl extends WebResource implements UserResource {
                 ConstraintViolation.Type.PARAMETER,
                 "User.enabled",
                 validationMessages.getString("User.masterAdminDisabled")
-            );
-            violations.add(violation);
-        }
-        if (user.getUsername() == null || !user.getUsername().equals(MASTER_REALM_ADMIN_USER)) {
-            ConstraintViolation violation = new ConstraintViolation(
-                ConstraintViolation.Type.PARAMETER,
-                "User.username",
-                validationMessages.getString("User.masterAdminUsernameChanged")
             );
             violations.add(violation);
         }

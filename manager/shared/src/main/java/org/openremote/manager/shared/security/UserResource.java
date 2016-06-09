@@ -58,13 +58,13 @@ public interface UserResource {
     @Path("{realm}")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(201)
+    @SuccessStatusCode(204)
     void create(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @Valid User user);
 
     @DELETE
     @Path("{realm}/{userId}")
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
+    @SuccessStatusCode(204)
     void delete(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId);
 
     @PUT
@@ -83,6 +83,6 @@ public interface UserResource {
     @PUT
     @Path("{realm}/{userId}/role")
     @Consumes(APPLICATION_JSON)
-    @SuccessStatusCode(200)
+    @SuccessStatusCode(204)
     void updateRoles(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @PathParam("userId") String userId, Role[] roles);
 }

@@ -233,7 +233,7 @@ public class SampleDataService implements ContainerService {
         RoleRepresentation readRole = rolesResource.get("read").toRepresentation();
         RoleRepresentation writeRole = rolesResource.get("write").toRepresentation();
 
-        fromCallable(() -> usersResource.search("admin", null, null, null, null, null))
+        fromCallable(() -> usersResource.search(MASTER_REALM_ADMIN_USER, null, null, null, null, null))
             .flatMap(Observable::from)
             .map(userRepresentation -> usersResource.get(userRepresentation.getId()))
             .subscribe(adminUser -> {
@@ -249,9 +249,10 @@ public class SampleDataService implements ContainerService {
                 }
             );
 
-        // Find out if there is a 'test' user already present, delete it
-        fromCallable(() -> usersResource.search("test", null, null, null, null, null))
+        // Find out if there are any users except the admin, delete them
+        fromCallable(() -> usersResource.search(null, null, null))
             .flatMap(Observable::from)
+            .filter(userRepresentation-> !userRepresentation.getUsername().equals(MASTER_REALM_ADMIN_USER))
             .map(userRepresentation -> usersResource.get(userRepresentation.getId()))
             .subscribe(UserResource::remove);
 
