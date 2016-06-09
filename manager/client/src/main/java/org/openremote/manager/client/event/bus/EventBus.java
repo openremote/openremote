@@ -22,11 +22,15 @@ package org.openremote.manager.client.event.bus;
 import org.openremote.manager.shared.event.Event;
 
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Simple observer/observable implementation, not thread-safe!
  */
 public class EventBus {
+
+    private static final Logger LOG = Logger.getLogger(EventBus.class.getName());
 
     final protected List<EventRegistration> registrations = new ArrayList<>();
 
@@ -87,6 +91,9 @@ public class EventBus {
 
         // If event is not vetoed, call all "non-prepare" listeners
         if (!vetoed) {
+            if (LOG.isLoggable(Level.FINE)) {
+                LOG.fine("Dispatching event: " + event);
+            }
             List<EventRegistration> activeRegistrations = new ArrayList<>();
             for (EventRegistration registration : registrations) {
                 if (skips.contains(registration))
@@ -99,6 +106,8 @@ public class EventBus {
             for (EventRegistration activeRegistration : activeRegistrations) {
                 activeRegistration.getListener().on(event);
             }
+        } else if (LOG.isLoggable(Level.FINE)) {
+            LOG.fine("Dropping vetoed event: " + event);
         }
     }
 

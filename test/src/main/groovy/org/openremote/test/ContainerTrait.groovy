@@ -258,28 +258,34 @@ trait ContainerTrait {
                 result = resourceProxy."$mockMethod.name"(args);
             } catch (ClientErrorException ex) {
                 statusCode = ex.getResponse().getStatus();
-                result = ex.getResponse().readEntity(String.class);
                 xmlHttpRequest = new ResponseWrapperXMLHttpRequest(ex.getResponse());
+                try {
+                    result = ex.getResponse().readEntity(String.class);
+                } catch (IllegalStateException ise) {
+                    // Ignore, this happens when the response is closed already
+                }
                 resultPassthrough = true;
             }
 
-            String responseText;
+            String responseText = null;
 
-            // If the method produces JSON, we need to turn whatever the proxy delivered back into JSON string
-            Produces producesAnnotation = mockedResourceMethod.getDeclaredAnnotation(Produces.class);
-            if (!resultPassthrough
-                    && producesAnnotation != null
-                    && producesAnnotation.value()[0] != null
-                    && producesAnnotation.value()[0].equals(APPLICATION_JSON)) {
-                // Handle elemental JsonValue special, don't use Jackson
-                if (result instanceof JsonValue) {
-                    JsonValue jsonValue = (JsonValue) result;
-                    responseText = jsonValue.toJson();
+            if (result != null) {
+                // If the method produces JSON, we need to turn whatever the proxy delivered back into JSON string
+                Produces producesAnnotation = mockedResourceMethod.getDeclaredAnnotation(Produces.class);
+                if (!resultPassthrough
+                        && producesAnnotation != null
+                        && producesAnnotation.value()[0] != null
+                        && producesAnnotation.value()[0].equals(APPLICATION_JSON)) {
+                    // Handle elemental JsonValue special, don't use Jackson
+                    if (result instanceof JsonValue) {
+                        JsonValue jsonValue = (JsonValue) result;
+                        responseText = jsonValue.toJson();
+                    } else {
+                        responseText = jsonMapper.writeValueAsString(result);
+                    }
                 } else {
-                    responseText = jsonMapper.writeValueAsString(result);
+                    responseText = result.toString();
                 }
-            } else {
-                responseText = result.toString();
             }
 
             // Pass the result to the callback, so it looks asynchronous for client code

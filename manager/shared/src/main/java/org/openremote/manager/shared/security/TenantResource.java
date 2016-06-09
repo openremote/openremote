@@ -59,6 +59,6 @@ public interface TenantResource {
     @DELETE
     @Path("{realm}")
     @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
+    @SuccessStatusCode(204)
     void delete(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 }

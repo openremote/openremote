@@ -21,6 +21,7 @@ import org.openremote.manager.client.service.SecurityService
 import org.openremote.manager.shared.Consumer
 import org.openremote.manager.shared.Runnable
 import org.openremote.manager.shared.event.Event
+import org.openremote.manager.shared.event.ui.ShowFailureEvent
 import org.openremote.manager.shared.event.ui.ShowInfoEvent
 import org.openremote.manager.shared.http.EntityReader
 import org.openremote.manager.shared.security.Tenant
@@ -37,7 +38,7 @@ import static org.openremote.manager.shared.Constants.MASTER_REALM
 
 class AdminTenantsActivityTest extends Specification implements ContainerTrait, ClientTrait {
 
-    def "List tenants and create a tenant"() {
+    def "List all, create, update, delete tenant"() {
 
         given: "The server container is started"
         def serverPort = findEphemeralPort()
@@ -62,14 +63,29 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
         def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
         def clientTarget = getClientTarget(createClient(container).build(), serverUri(serverPort), realm)
 
-        and: "The expected asynchronous result"
-        def result = new BlockingVariables(5)
+        and: "The expected result"
+        def result = new BlockingVariables(10)
         result.appEvents = []
+        result.tenants = []
 
         and: "The fake client MVP environment"
         GWTMockUtilities.disarm()
         def managerMessages = Mock(ManagerMessages) {
-            _(*_) >> { "TestMessage" }
+            tenantCreated(_) >> {
+                "TestMessageTenantCreated:" + it[0]
+            }
+            tenantUpdated(_) >> {
+                "TestMessageTenantUpdated:" + it[0]
+            }
+            tenantDeleted(_) >> {
+                "TestMessageTenantDeleted:" + it[0]
+            }
+            requestFailed(_) >> {
+                "TestMessageRequestFailed:" + it[0]
+            }
+            conflictRequest() >> {
+                "TestMessageConflictRequest"
+            }
         }
         def eventBus = createEventBus()
         eventBus.register(null, new EventListener<Event>() {
@@ -91,30 +107,22 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
 
         def adminNavigationView = Mock(AdminNavigation)
         def adminNavigationPresenter = new AdminNavigationPresenter(adminNavigationView, placeHistoryMapper)
+
+        def tenantResource = Stub(TenantResource) {
+            _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
+        }
+
         def adminTenantsView = Mock(AdminTenants) {
             setTenants(_) >> {
                 result.tenants = it[0];
             }
         }
-        def tenantResource = Stub(TenantResource) {
-            _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
-        }
-
         def tenantArrayMapper = new ClientObjectMapper(container.JSON, Tenant[].class) as TenantArrayMapper
-        def adminTenantsActivity = new AdminTenantsActivity(
-                adminView, adminNavigationPresenter, adminTenantsView, managerMessages,
-                placeController, requestService, tenantResource, tenantArrayMapper
-        )
+        AdminTenantsActivity adminTenantsActivity
 
-        def adminTenantView = Mock(AdminTenant) {
-
-        }
-
+        def adminTenantView = Mock(AdminTenant)
         def tenantMapper = new ClientObjectMapper(container.JSON, Tenant.class) as TenantMapper
-        def adminTenantActivity = new AdminTenantActivity(
-                adminView, adminNavigationPresenter, adminTenantView, managerMessages,
-                placeController, eventBus, securityService, requestService, tenantResource, tenantMapper
-        )
+        AdminTenantActivity adminTenantActivity
 
         and: "An activity management configuration"
         def activityDisplay = Mock(AcceptsOneWidget)
@@ -126,15 +134,27 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
                 {},
                 {},
                 {},
-                { return adminTenantsActivity },
-                { return adminTenantActivity },
+                {
+                    adminTenantsActivity = new AdminTenantsActivity(
+                            adminView, adminNavigationPresenter, adminTenantsView, managerMessages,
+                            placeController, requestService, tenantResource, tenantArrayMapper
+                    )
+                    return adminTenantsActivity
+                },
+                {
+                    adminTenantActivity = new AdminTenantActivity(
+                            adminView, adminNavigationPresenter, adminTenantView, managerMessages,
+                            placeController, eventBus, securityService, requestService, tenantResource, tenantMapper
+                    )
+                    return adminTenantActivity
+                },
                 {},
                 {},
                 {}
         )
         startActivityManager(activityDisplay, activityMapper, eventBus)
 
-        when: "Navigating to the default place"
+        when: "Navigating to a default place"
         def placeHistoryHandler = createPlaceHistoryHandler(placeController, placeHistoryMapper, new AdminTenantsPlace())
         placeHistoryHandler.handleCurrentHistory()
 
@@ -148,7 +168,7 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
         1 * adminView.setContent(adminTenantsView)
 
         and: "The admin tenants view should have the right activity set as presenter"
-        1 * adminTenantsView.setPresenter(adminTenantsActivity)
+        1 * adminTenantsView.setPresenter(_ as AdminTenantsActivity)
 
         and: "The view should have received the tenants"
         result.tenants.length == 1
@@ -156,6 +176,7 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
         result.tenants[0].enabled
 
         when: "The user clicks Create Tenant"
+        adminTenantsActivity != null
         adminTenantsActivity.createTenant()
 
         then: "The activity should be stopped"
@@ -165,14 +186,14 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
         and: "The admin navigation view should have the right place set"
         1 * adminNavigationView.onPlaceChange(_ as AdminTenantPlace)
 
-        and : "The activity display should be set to admin view"
+        and: "The activity display should be set to admin view"
         1 * activityDisplay.setWidget(adminViewWidget)
 
         and: "The admin view should have content set"
         1 * adminView.setContent(adminTenantView)
 
         and: "The admin tenant view should have the right activity set as presenter"
-        1 * adminTenantView.setPresenter(adminTenantActivity)
+        1 * adminTenantView.setPresenter(_ as AdminTenantActivity)
 
         and: "The admin tenant form should be cleared"
         1 * adminTenantView.clearFormMessagesSuccess()
@@ -190,6 +211,7 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
 
         when: "The user clicks the Create button"
         result.appEvents.clear()
+        adminTenantActivity != null
         adminTenantActivity.create()
 
         then: "The activity reads the tenant form"
@@ -237,7 +259,7 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
 
         and: "The success toast should be shown"
         result.appEvents[0] instanceof ShowInfoEvent
-        result.appEvents[0].text == "TestMessage"
+        result.appEvents[0].text == "TestMessageTenantCreated:Test Name"
 
         and: "The form should be cleared the activity stopped"
         1 * adminTenantView.setFormBusy(false)
@@ -254,8 +276,130 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
         result.appEvents[2] instanceof GoToPlaceEvent
         result.appEvents[2].place instanceof AdminTenantsPlace
 
-        then : "The view should have received the tenants"
+        and: "The view should have received the tenants"
         result.tenants.length == 2
+
+        when: "The new tenant is selected"
+        result.appEvents.clear()
+        def selectedTenant
+        result.tenants.each {
+            if (it.realm == "testrealm") {
+                selectedTenant = it
+                return
+            }
+        }
+        adminTenantsActivity.onTenantSelected(selectedTenant)
+
+        then: "The admin tenant activity should be shown"
+        result.appEvents[0] instanceof WillGoToPlaceEvent
+        result.appEvents[0].place instanceof AdminTenantPlace
+        result.appEvents[1] instanceof GoToPlaceEvent
+        result.appEvents[1].place instanceof AdminTenantPlace
+        result.appEvents[1].place.realm == "testrealm"
+
+        and: "The admin tenant form should be cleared"
+        1 * adminTenantView.clearFormMessagesSuccess()
+        1 * adminTenantView.clearFormMessagesError()
+        1 * adminTenantView.setTenantDisplayNameError(false)
+        1 * adminTenantView.setTenantRealmError(false)
+        1 * adminTenantView.setTenantEnabledError(false)
+        1 * adminTenantView.enableCreate(false)
+        1 * adminTenantView.enableUpdate(false)
+        1 * adminTenantView.enableDelete(false)
+
+        and: "The tenant should be loaded"
+        1 * adminTenantView.setTenantDisplayName("Test Name")
+        1 * adminTenantView.setTenantRealm("testrealm")
+        1 * adminTenantView.setTenantEnabled(true)
+        1 * adminTenantView.setFormBusy(false)
+        1 * adminTenantView.enableCreate(false)
+        1 * adminTenantView.enableUpdate(true)
+        1 * adminTenantView.enableDelete(true)
+
+        when: "The user clicks the Update button"
+        result.appEvents.clear()
+        adminTenantActivity.update()
+
+        then: "The activity reads the tenant form"
+        1 * adminTenantView.setFormBusy(true)
+        1 * adminTenantView.clearFormMessagesSuccess()
+        1 * adminTenantView.clearFormMessagesError()
+        1 * adminTenantView.setTenantDisplayNameError(false)
+        1 * adminTenantView.setTenantRealmError(false)
+        1 * adminTenantView.setTenantEnabledError(false)
+        1 * adminTenantView.getTenantDisplayName() >> {
+            "Test Name2"
+        }
+        1 * adminTenantView.getTenantRealm() >> {
+            return "master" // Note: This should be a conflict
+        }
+        1 * adminTenantView.getTenantEnabled() >> {
+            return true;
+        }
+
+        and: "The conflict toast should be shown"
+        result.appEvents[0] instanceof ShowFailureEvent
+        result.appEvents[0].text == "TestMessageRequestFailed:TestMessageConflictRequest"
+
+        when: "The user clicks the Update button"
+        result.appEvents.clear()
+        adminTenantActivity.update()
+
+        then: "The activity reads the tenant form"
+        1 * adminTenantView.setFormBusy(true)
+        1 * adminTenantView.clearFormMessagesSuccess()
+        1 * adminTenantView.clearFormMessagesError()
+        1 * adminTenantView.setTenantDisplayNameError(false)
+        1 * adminTenantView.setTenantRealmError(false)
+        1 * adminTenantView.setTenantEnabledError(false)
+        1 * adminTenantView.getTenantDisplayName() >> {
+            "Test Name2"
+        }
+        1 * adminTenantView.getTenantRealm() >> {
+            return "testrealm2"
+        }
+        1 * adminTenantView.getTenantEnabled() >> {
+            return true;
+        }
+
+        and: "The form success should be shown"
+        1 * adminTenantView.setFormBusy(false)
+        1 * adminTenantView.addFormMessageSuccess("TestMessageTenantUpdated:Test Name2")
+
+        when: "The user clicks the Delete button"
+        result.appEvents.clear()
+        adminTenantActivity.delete()
+
+        then: "The activity clears the tenant form messages"
+        1 * adminTenantView.setFormBusy(true)
+        1 * adminTenantView.clearFormMessagesSuccess()
+        1 * adminTenantView.clearFormMessagesError()
+        1 * adminTenantView.setTenantDisplayNameError(false)
+        1 * adminTenantView.setTenantRealmError(false)
+        1 * adminTenantView.setTenantEnabledError(false)
+
+        and: "The success toast should be shown"
+        result.appEvents[0] instanceof ShowInfoEvent
+        result.appEvents[0].text == "TestMessageTenantDeleted:Test Name2"
+
+        and: "The form should be cleared the activity stopped"
+        1 * adminTenantView.setFormBusy(false)
+        1 * adminTenantView.setPresenter(null)
+        1 * adminTenantView.clearFormMessagesSuccess()
+        1 * adminTenantView.clearFormMessagesError()
+        1 * adminTenantView.setTenantDisplayNameError(false)
+        1 * adminTenantView.setTenantRealmError(false)
+        1 * adminTenantView.setTenantEnabledError(false)
+
+        and: "The admin tenants activity should be shown"
+        result.appEvents[1] instanceof WillGoToPlaceEvent
+        result.appEvents[1].place instanceof AdminTenantsPlace
+        result.appEvents[2] instanceof GoToPlaceEvent
+        result.appEvents[2].place instanceof AdminTenantsPlace
+
+        and: "The view should have received the tenants"
+        result.tenants.length == 1
+        result.tenants[0].realm == MASTER_REALM
 
         and: "The server should be stopped"
         stopContainer(container);
