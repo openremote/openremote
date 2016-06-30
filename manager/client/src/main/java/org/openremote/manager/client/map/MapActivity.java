@@ -33,10 +33,13 @@ import org.openremote.manager.shared.map.MapResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
+import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
 public class MapActivity extends AppActivity<MapPlace> implements MapView.Presenter {
+
+    private static final Logger LOG = Logger.getLogger(MapActivity.class.getName());
 
     final MapView view;
     final MapResource mapResource;
@@ -77,8 +80,10 @@ public class MapActivity extends AppActivity<MapPlace> implements MapView.Presen
 
         registrations.add(eventBus.register(GoToPlaceEvent.class, event -> view.refresh()));
 
-        if (view.isMapInitialised())
+        if (view.isMapInitialised()) {
+            view.refresh();
             return;
+        }
 
         requestService.execute(
             jsonObjectMapper,
