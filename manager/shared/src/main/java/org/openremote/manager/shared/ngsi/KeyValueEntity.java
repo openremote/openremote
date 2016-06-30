@@ -76,6 +76,13 @@ public class KeyValueEntity extends AbstractEntity<KeyValueAttribute> {
     }
 
     @Override
+    public void clearAttributes() {
+        for (KeyValueAttribute attribute : getAttributes()) {
+            removeAttribute(attribute.getName());
+        }
+    }
+
+    @Override
     protected void validateAttributes(Set<ModelValidationError> errors) {
         for (KeyValueAttribute attribute : getAttributes()) {
             ModelProblem[] problems = Model.validateField(attribute.getName());

@@ -69,14 +69,14 @@ services:
 
   # MongoDB is the storage backend of Orion.
   mongo:
-    image: mongo:2.6
+    image: mongo:3.2
     command: --smallfiles
     environment:
         TZ: "Europe/Zurich"
 
   # Orion is the context broker, it holds the current state of all IoT assets and devices.
   orion:
-    image: fiware/orion:0.28
+    image: fiware/orion:1.2.1
     links:
       - mongo
     command: -dbhost mongo

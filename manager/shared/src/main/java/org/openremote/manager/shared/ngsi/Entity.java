@@ -76,6 +76,13 @@ public class Entity extends AbstractEntity<Attribute> {
     }
 
     @Override
+    public void clearAttributes() {
+        for (Attribute attribute : getAttributes()) {
+            removeAttribute(attribute.getName());
+        }
+    }
+
+    @Override
     protected void validateAttributes(Set<ModelValidationError> errors) {
         for (Attribute attribute : getAttributes()) {
             ModelProblem[] problems = Model.validateField(attribute.getName());

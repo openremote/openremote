@@ -69,17 +69,17 @@ public interface AssetsResource {
     void deleteEntity(@BeanParam RequestParams requestParams, @PathParam("entityId") String entityId);
 
     @PUT
-    @Path("entities/{entityId}")
+    @Path("entities/{entityId}/attrs")
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:assets"})
-    void putEntity(@BeanParam RequestParams requestParams, @PathParam("entityId") String entityId, Entity entity);
+    void putEntityAttributes(@BeanParam RequestParams requestParams, @PathParam("entityId") String entityId, Entity entity);
 
     @PATCH
-    @Path("entities/{entityId}")
+    @Path("entities/{entityId}/attrs")
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:assets"})
-    void patchEntity(@BeanParam RequestParams requestParams, @PathParam("entityId") String entityId, Entity entity);
+    void patchEntityAttributes(@BeanParam RequestParams requestParams, @PathParam("entityId") String entityId, Entity entity);
 
 }

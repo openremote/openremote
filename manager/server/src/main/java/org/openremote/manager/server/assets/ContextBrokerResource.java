@@ -33,7 +33,7 @@ import javax.ws.rs.core.Response;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 /**
- * http://telefonicaid.github.io/fiware-orion/api/v2/
+ * http://telefonicaid.github.io/fiware-orion/api/v2/stable/
  */
 @Path("v2")
 public interface ContextBrokerResource {
@@ -62,13 +62,13 @@ public interface ContextBrokerResource {
     Response deleteEntity(@PathParam("entityId") String entityId);
 
     @PUT
-    @Path("entities/{entityId}")
+    @Path("entities/{entityId}/attrs")
     @Consumes(APPLICATION_JSON)
-    Response putEntity(@PathParam("entityId") String entityId, Entity entity);
+    Response putEntityAttributes(@PathParam("entityId") String entityId, Entity entity);
 
     @PATCH
-    @Path("entities/{entityId}")
+    @Path("entities/{entityId}/attrs")
     @Consumes(APPLICATION_JSON)
-    Response patchEntity(@PathParam("entityId") String entityId, Entity entity);
+    Response patchEntityAttributes(@PathParam("entityId") String entityId, Entity entity);
 
 }

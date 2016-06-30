@@ -150,6 +150,11 @@ class AssetsResourceTest extends Specification implements ContainerTrait {
         room.setId("Room123");
         room.setType("Room");
         room.addAttribute(
+                new Attribute("label", Json.createObject())
+                        .setType("string")
+                        .setValue(Json.create("Office 123"))
+        )
+        room.addAttribute(
                 new Attribute("temperature", Json.createObject())
                         .setType("float")
                         .setValue(Json.create(20.5))
@@ -167,14 +172,17 @@ class AssetsResourceTest extends Specification implements ContainerTrait {
 
         when: "the temperature is changed"
         temperature.setValue(Json.create(20.6))
+        def roomPatch = new Entity(Json.createObject())
+        roomPatch.addAttribute(temperature)
         and: "the room is updated"
-        assetsResource.putEntity(null, createdRoom.getId(), createdRoom);
+        assetsResource.patchEntityAttributes(null, createdRoom.getId(), roomPatch);
         and: "the updated room has been retrieved"
         def updatedRoom = Entity.from(assetsResource.getEntity(null, room.getId(), null));
         def updatedTemperature = updatedRoom.getAttribute("temperature");
         then: "the room details should match"
         updatedRoom.getId() == room.getId()
         updatedRoom.getType() == room.getType()
+        updatedRoom.getAttribute("label").getValue().asString() == "Office 123"
         updatedTemperature.getValue().asNumber() == new Double(20.6)
 
         when: "the room is deleted"

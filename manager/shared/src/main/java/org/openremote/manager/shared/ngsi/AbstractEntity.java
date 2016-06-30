@@ -87,6 +87,8 @@ public abstract class AbstractEntity<A extends AbstractAttribute> {
 
     public abstract AbstractEntity<A> removeAttribute(String name);
 
+    public abstract void clearAttributes();
+
     protected abstract void validateAttributes(Set<ModelValidationError> errors);
 
     protected void validateId(Set<ModelValidationError> errors) {

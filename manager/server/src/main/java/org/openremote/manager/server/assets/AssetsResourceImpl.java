@@ -64,15 +64,15 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource {
     }
 
     @Override
-    public void putEntity(RequestParams requestParams, String entityId, Entity entity) {
+    public void putEntityAttributes(RequestParams requestParams, String entityId, Entity entity) {
         entity = new Entity(fixForUpdate(entity.getJsonObject()));
-        checkSuccessResponse(assetsService.getContextBroker().putEntity(entityId, entity));
+        checkSuccessResponse(assetsService.getContextBroker().putEntityAttributes(entityId, entity));
     }
 
     @Override
-    public void patchEntity(RequestParams requestParams, String entityId, Entity entity) {
+    public void patchEntityAttributes(RequestParams requestParams, String entityId, Entity entity) {
         entity = new Entity(fixForUpdate(entity.getJsonObject()));
-        checkSuccessResponse(assetsService.getContextBroker().patchEntity(entityId, entity));
+        checkSuccessResponse(assetsService.getContextBroker().patchEntityAttributes(entityId, entity));
     }
 
     protected Response checkSuccessResponse(Response response) {

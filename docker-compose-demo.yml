@@ -28,12 +28,12 @@ services:
       KEYCLOAK_PASSWORD: admin
       KEYCLOAK_LOGLEVEL: DEBUG
   mongo:
-    image: mongo:2.6
+    image: mongo:3.2
     command: --smallfiles
     environment:
         TZ: "Europe/Zurich"
   orion:
-    image: fiware/orion:0.28
+    image: fiware/orion:1.2.1
     links:
       - mongo
     command: -dbhost mongo

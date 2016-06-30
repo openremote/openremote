@@ -3,8 +3,8 @@
 
     <ui:style>
         .footer {
-            flex-shrink: 0;
-            flex-basis: auto;
+            font-size: smaller;
+            padding: 0.4em;
         }
     </ui:style>
 
@@ -12,8 +12,8 @@
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
     <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
-    <g:HTMLPanel styleName="flex layout horizontal" addStyleNames="{style.footer} {widgetStyle.Footer} {themeStyle.Footer}">
-        Footer
+    <g:HTMLPanel styleName="flex layout end-justified horizontal" addStyleNames="{style.footer} {widgetStyle.Footer} {themeStyle.Footer}">
+        &#169; OpenRemote Inc.
     </g:HTMLPanel>
 
 </ui:UiBinder>

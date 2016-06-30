@@ -45,6 +45,9 @@ public class Query {
                 sb.append(statement).append(STATEMENT_SEPARATOR);
             }
         }
+        if (sb.length()>0) {
+            sb.deleteCharAt(sb.length()-1);
+        }
         return sb.toString();
     }
 
