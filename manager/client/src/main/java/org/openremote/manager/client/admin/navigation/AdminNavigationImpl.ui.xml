@@ -6,28 +6,24 @@
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
     <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
-    <g:HTMLPanel styleName="layout vertical {widgetStyle.SidebarContent} {themeStyle.SidebarContent}">
-        <ul class="{widgetStyle.UnorderedList} {themeStyle.UnorderedList}">
+    <ui:style>
+        .navItem {
+            margin: 0 1em;
+        }
+    </ui:style>
 
-            <li ui:field="overview">
-                <w:Hyperlink ui:field="overviewLink"
-                             addStyleNames="{themeStyle.Hyperlink}"
-                             text="{managerMessages.overview}"/>
-            </li>
+    <g:HTMLPanel styleName="layout horizontal end-justified {widgetStyle.SecondaryNav} {themeStyle.SecondaryNav}">
+        <g:Hyperlink ui:field="overviewLink"
+                     addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                     text="{managerMessages.overview}"/>
 
-            <li ui:field="tenantsItem">
-                <w:Hyperlink ui:field="tenantsLink"
-                             addStyleNames="{themeStyle.Hyperlink}"
-                             text="{managerMessages.manageTenants}"/>
-            </li>
+        <g:Hyperlink ui:field="tenantsLink"
+                     addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                     text="{managerMessages.manageTenants}"/>
 
-            <li ui:field="usersItem">
-                <w:Hyperlink ui:field="usersLink"
-                             addStyleNames="{themeStyle.Hyperlink}"
-                             text="{managerMessages.manageUsers}"/>
-            </li>
-
-        </ul>
+        <g:Hyperlink ui:field="usersLink"
+                     addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                     text="{managerMessages.manageUsers}"/>
     </g:HTMLPanel>
 
 </ui:UiBinder>

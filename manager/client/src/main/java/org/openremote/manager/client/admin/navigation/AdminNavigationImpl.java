@@ -20,17 +20,17 @@
 package org.openremote.manager.client.admin.navigation;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.dom.client.LIElement;
+import com.google.gwt.dom.client.DivElement;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
+import com.google.gwt.user.client.ui.Hyperlink;
 import org.openremote.manager.client.admin.AdminPlace;
 import org.openremote.manager.client.admin.tenant.AdminTenantPlace;
 import org.openremote.manager.client.admin.tenant.AdminTenantsPlace;
 import org.openremote.manager.client.admin.users.AdminUserPlace;
 import org.openremote.manager.client.admin.users.AdminUsersPlace;
-import org.openremote.manager.client.widget.Hyperlink;
 
 import javax.inject.Inject;
 
@@ -42,17 +42,11 @@ public class AdminNavigationImpl extends Composite implements AdminNavigation {
     Presenter presenter;
 
     @UiField
-    LIElement overview;
-    @UiField
     Hyperlink overviewLink;
 
     @UiField
-    LIElement tenantsItem;
-    @UiField
     Hyperlink tenantsLink;
 
-    @UiField
-    LIElement usersItem;
     @UiField
     Hyperlink usersLink;
 

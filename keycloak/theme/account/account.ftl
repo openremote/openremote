@@ -56,7 +56,7 @@
             </div>
         </div>
 
-        <div class="layout horizontal center-center or-FormGroup theme-FormGroup">
+        <div class="layout horizontal or-FormGroup theme-FormGroup">
             <div class="or-FormField theme-FormField">
                 <#if url.referrerURI??><a href="${url.referrerURI}">${msg("backToApplication")}/a></#if>
                 <button type="submit"

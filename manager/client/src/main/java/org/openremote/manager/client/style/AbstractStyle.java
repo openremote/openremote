@@ -23,6 +23,10 @@ public abstract class AbstractStyle {
 
     abstract String getPrefix();
 
+    public String Viewport() {
+        return getPrefix() + "Viewport";
+    }
+
     public String Header() {
         return getPrefix() + "Header";
     }
@@ -35,8 +39,12 @@ public abstract class AbstractStyle {
         return getPrefix() + "NavItem";
     }
 
-    public String NavItemActive() {
-        return getPrefix() + "NavItemActive";
+    public String SecondaryNav() {
+        return getPrefix() + "SecondaryNav";
+    }
+
+    public String SecondaryNavItem() {
+        return getPrefix() + "SecondaryNavItem";
     }
 
     public String SidebarContent() {

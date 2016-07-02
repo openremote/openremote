@@ -32,7 +32,7 @@ import org.openremote.manager.client.admin.users.AdminUserActivity;
 import org.openremote.manager.client.admin.users.AdminUserPlace;
 import org.openremote.manager.client.admin.users.AdminUsersActivity;
 import org.openremote.manager.client.admin.users.AdminUsersPlace;
-import org.openremote.manager.client.assets.AssetDetailActivity;
+import org.openremote.manager.client.assets.AssetsActivity;
 import org.openremote.manager.client.assets.AssetsPlace;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.flows.FlowsActivity;
@@ -57,7 +57,7 @@ public class ManagerActivityMapper implements AppActivityMapper {
     protected final SecurityService securityService;
     protected final EventBus eventBus;
     protected final ManagerMessages managerMessages;
-    protected final Provider<AssetDetailActivity> assetsActivityProvider;
+    protected final Provider<AssetsActivity> assetsActivityProvider;
     protected final Provider<MapActivity> mapActivityProvider;
     protected final Provider<FlowsActivity> flowsActivityProvider;
     protected final Provider<AdminOverviewActivity> adminOverviewActivityProvider;
@@ -71,7 +71,7 @@ public class ManagerActivityMapper implements AppActivityMapper {
     public ManagerActivityMapper(SecurityService securityService,
                                  EventBus eventBus,
                                  ManagerMessages managerMessages,
-                                 Provider<AssetDetailActivity> assetsActivityProvider,
+                                 Provider<AssetsActivity> assetsActivityProvider,
                                  Provider<MapActivity> mapActivityProvider,
                                  Provider<FlowsActivity> flowsActivityProvider,
                                  Provider<AdminOverviewActivity> adminOverviewActivityProvider,

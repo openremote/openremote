@@ -40,24 +40,21 @@
 </head>
 <body class="layout vertical">
 
-    <div class="flex layout horizontal">
-        <div class="or-SidebarContent theme-SidebarContent">
-            <ul class="or-UnorderedList theme-UnorderedList">
-                <li><div class="or-Hyperlink theme-Hyperlink <#if active=='account'>active</#if>"><a href="${url.accountUrl}">${msg("account")}</a></div></li>
-                <#if features.passwordUpdateSupported><li><div class="or-Hyperlink theme-Hyperlink <#if active=='password'>active</#if>"><a href="${url.passwordUrl}">${msg("password")}</a></div></li></#if>
-            </ul>
-        </div>
-        <div class="or-MainContent theme-MainContent">
-            <#if message?has_content>
-                <div class="layout horizontal or-FormMessages theme-FormMessages ${message.type}">
-                    <#if message.type=='success' ><div class="or-MessagesIcon theme-MessagesIcon fa fa-check"></div></#if>
-                    <#if message.type=='error' ><div class="or-MessagesIcon theme-MessagesIcon fa fa-warning"></div></#if>
-                    ${message.summary}
-                </div>
-            </#if>
+    <div class="layout horizontal end-justified or-SecondaryNav theme-SecondaryNav">
+        <div style="margin: 0 1em;" class="or-SecondaryNavItem theme-SecondaryNavItem <#if active=='account'>active</#if>"><a href="${url.accountUrl}">${msg("account")}</a></div>
+        <#if features.passwordUpdateSupported><div style="margin: 0 1em;" class="or-SecondaryNavItem theme-SecondaryNavItem <#if active=='password'>active</#if>"><a href="${url.passwordUrl}">${msg("password")}</a></div></#if>
+    </div>
 
-            <#nested "content">
-        </div>
+    <div class="or-MainContent theme-MainContent">
+        <#if message?has_content>
+            <div style="max-width: 30em;" class="layout horizontal or-FormMessages theme-FormMessages ${message.type}">
+                <#if message.type=='success' ><div class="or-MessagesIcon theme-MessagesIcon fa fa-check"></div></#if>
+                <#if message.type=='error' ><div class="or-MessagesIcon theme-MessagesIcon fa fa-warning"></div></#if>
+                ${message.summary}
+            </div>
+        </#if>
+
+        <#nested "content">
     </div>
 
 </body>

@@ -1,18 +1,24 @@
 <ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
              xmlns:g="urn:import:com.google.gwt.user.client.ui"
-             xmlns:w="urn:import:org.openremote.manager.client.widget"
-             xmlns:an="urn:import:org.openremote.manager.client.admin.navigation">
+             xmlns:w="urn:import:org.openremote.manager.client.widget">
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
     <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
-    <g:HTMLPanel styleName="flex layout vertical">
+    <ui:style>
+        .sidebarContent {
+            width: 20em;
+        }
+    </ui:style>
 
-        <an:AdminNavigation ui:field="adminNavigation"/>
+    <g:HTMLPanel styleName="flex layout horizontal">
+
+        <g:SimplePanel ui:field="assetTreeContainer"
+                       addStyleNames="{style.sidebarContent} {widgetStyle.SidebarContent} {themeStyle.SidebarContent}"/>
 
         <div class="flex {widgetStyle.MainContent} {themeStyle.MainContent}">
-            <g:SimplePanel ui:field="adminContentContainer"/>
+            <g:SimplePanel ui:field="assetsContentContainer"/>
         </div>
 
     </g:HTMLPanel>

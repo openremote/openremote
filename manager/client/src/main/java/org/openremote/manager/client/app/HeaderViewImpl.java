@@ -87,26 +87,26 @@ public class HeaderViewImpl extends Composite implements HeaderView {
 
     @Override
     public void onPlaceChange(Place place) {
-        mapButton.removeStyleName(themeStyle.NavItemActive());
-        assetsButton.removeStyleName(themeStyle.NavItemActive());
-        flowsButton.removeStyleName(themeStyle.NavItemActive());
-        adminButton.removeStyleName(themeStyle.NavItemActive());
-        userButton.removeStyleName(themeStyle.NavItemActive());
+        mapButton.removeStyleName("active");
+        assetsButton.removeStyleName("active");
+        flowsButton.removeStyleName("active");
+        adminButton.removeStyleName("active");
+        userButton.removeStyleName("active");
 
         if (place instanceof MapPlace) {
-            mapButton.addStyleName(themeStyle.NavItemActive());
+            mapButton.addStyleName("active");
         }
         if (place instanceof AssetsPlace) {
-            assetsButton.addStyleName(themeStyle.NavItemActive());
+            assetsButton.addStyleName("active");
         }
         if (place instanceof FlowsPlace) {
-            flowsButton.addStyleName(themeStyle.NavItemActive());
+            flowsButton.addStyleName("active");
         }
         if (place instanceof AdminPlace) {
-            adminButton.addStyleName(themeStyle.NavItemActive());
+            adminButton.addStyleName("active");
         }
         if (place instanceof UserAccountPlace) {
-            userButton.addStyleName(themeStyle.NavItemActive());
+            userButton.addStyleName("active");
         }
     }
 

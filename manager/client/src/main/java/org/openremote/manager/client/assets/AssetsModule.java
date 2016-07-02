@@ -26,9 +26,8 @@ public class AssetsModule extends AbstractGinModule {
 
     @Override
     protected void configure() {
-        bind(AssetListView.class).to(AssetListViewImpl.class).in(Singleton.class);
-        bind(AssetDetailView.class).to(AssetDetailViewImpl.class).in(Singleton.class);
-        bind(AssetDetailActivity.class);
+        bind(AssetsView.class).to(AssetsViewImpl.class).in(Singleton.class);
+        bind(AssetsActivity.class);
     }
 
 }

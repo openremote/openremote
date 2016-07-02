@@ -46,7 +46,7 @@
             </div>
         </div>
 
-        <div class="layout horizontal center-center or-FormGroup theme-FormGroup">
+        <div class="layout horizontal or-FormGroup theme-FormGroup">
             <div class="or-FormField theme-FormField">
                 <button type="submit" class="or-FormControl theme-FormControl or-FormButtonPrimary theme-FormButtonPrimary or-PushButton theme-PushButton"
                         name="submitAction" value="Save">
