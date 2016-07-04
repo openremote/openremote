@@ -35,6 +35,7 @@
         font-size: larger;
         border-radius: 0 !important;
         border-bottom: 0.4em solid transparent;
+        border-top: 0.2em solid transparent;
     }
 
     .or-SecondaryNav {
@@ -161,10 +162,14 @@
     }
 
     .or-Form {
+        opacity: 1;
+        transition: opacity 0.1s ease-in-out;
+        -moz-transition: opacity 0.1s ease-in-out;
+        -webkit-transition: opacity 0.1s ease-in-out;
     }
 
     .or-FormBusy {
-        opacity: 0.2;
+        opacity: 0;
         pointer-events: none;
         user-select: none;
         -webkit-user-select: none; /* Chrome/Safari/Opera */
@@ -242,6 +247,52 @@
 
     .or-FormTableCell {
         padding: 0.4em;
+    }
+
+    .or-FormTreeEmptyMessage {
+        padding: 0.4em;
+    }
+
+    .or-FormTreeItem {
+        cursor: pointer;
+    }
+
+    .or-FormTreeItemImage {
+        padding: 0.4em;
+    }
+
+    .or-FormTreeItemImageValue {
+    }
+
+    .or-FormTreeItemValue {
+        padding: 7px 0.8em;
+        outline: none;
+    }
+
+    .or-FormTreeOpenItem {
+
+    }
+
+    .or-FormTreeTopItem {
+        font-weight: 600;
+        border-radius: 0.8em;
+        margin: 1em;
+    }
+
+    .or-FormTreeTopItemImage {
+        padding: 0.4em;
+    }
+
+    .or-FormTreeTopItemImageValue {
+    }
+
+    .or-FormTreeKeyboardSelectedItem {
+        outline: none;
+    }
+
+    .or-FormTreeSelectedItem {
+        height: auto;
+        overflow: visible;
     }
 
     .or-FormMessages,

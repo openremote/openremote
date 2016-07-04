@@ -69,6 +69,10 @@ public interface ManagerMessages extends Messages {
 
     String cancel();
 
+    String filter();
+
+    String search();
+
     String requiredFields();
 
     String newUser();

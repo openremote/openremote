@@ -266,4 +266,57 @@ public abstract class AbstractStyle {
     public String FormTableWidget() {
         return getPrefix() + "FormTableWidget";
     }
+
+    public String FormTreeEmptyMessage() {
+        return getPrefix() + "FormTreeEmptyMessage";
+    }
+
+    public String FormTreeItem(){
+        return getPrefix() + "FormTreeItem";
+    }
+
+    public String FormTreeItemImage(){
+        return getPrefix() + "FormTreeItemImage";
+    }
+
+    public String FormTreeItemImageValue(){
+        return getPrefix() + "FormTreeItemImageValue";
+    }
+
+    public String FormTreeItemValue(){
+        return getPrefix() + "FormTreeItemValue";
+    }
+
+    public String FormTreeKeyboardSelectedItem(){
+        return getPrefix() + "FormTreeKeyboardSelectedItem";
+    }
+
+    public String FormTreeSelectedItem(){
+        return getPrefix() + "FormTreeSelectedItem";
+    }
+
+    public String FormTreeOpenItem(){
+        return getPrefix() + "FormTreeOpenItem";
+    }
+
+    public String FormTreeShowMoreButton(){
+        return getPrefix() + "FormTreeShowMoreButton";
+    }
+
+    public String FormTreeTopItem(){
+        return getPrefix() + "FormTreeTopItem";
+    }
+
+    public String FormTreeTopItemImage(){
+        return getPrefix() + "FormTreeTopItemImage";
+    }
+
+    public String FormTreeTopItemImageValue(){
+        return getPrefix() + "FormTreeTopItemImageValue";
+    }
+
+    public String FormTreeWidget(){
+        return getPrefix() + "FormTreeWidget";
+    }
+
 }

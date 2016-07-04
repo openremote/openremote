@@ -3,7 +3,7 @@
 
     <ui:style>
         .footer {
-            font-size: smaller;
+            font-size: x-small;
             padding: 0.4em;
         }
     </ui:style>
@@ -13,7 +13,9 @@
     <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
     <g:HTMLPanel styleName="flex layout end-justified horizontal" addStyleNames="{style.footer} {widgetStyle.Footer} {themeStyle.Footer}">
-        &#169; OpenRemote Inc.
+        <div class="{widgetStyle.Hyperlink} {themeStyle.Hyperlink}">
+            <g:Anchor href="http://openremote.com/">&#169; OpenRemote Inc.</g:Anchor>
+        </div>
     </g:HTMLPanel>
 
 </ui:UiBinder>

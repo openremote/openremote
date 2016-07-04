@@ -23,6 +23,7 @@ import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceChangeEvent;
 import com.google.gwt.place.shared.PlaceChangeRequestEvent;
 import com.google.gwt.place.shared.PlaceController;
+import com.google.web.bindery.event.shared.UmbrellaException;
 import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.WillGoToPlaceEvent;
 import org.openremote.manager.client.event.bus.EventBus;
@@ -85,7 +86,12 @@ public class AppPlaceController extends PlaceController {
             SecurityService.MIN_VALIDITY_SECONDS,
             refreshed -> {
                 // If it wasn't refreshed, it was still valid, in both cases we can continue
-                super.goTo(newPlace);
+                // YOU HAVE MADE A GWT ERROR. THIS HELPS YOU FIND IT.
+                try {
+                    super.goTo(newPlace);
+                } catch (UmbrellaException ex) {
+                    LOG.log(Level.SEVERE, "Error handling place change to: " + newPlace, ex);
+                }
             },
             securityService::logout
         );

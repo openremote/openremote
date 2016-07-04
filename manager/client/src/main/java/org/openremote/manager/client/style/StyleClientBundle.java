@@ -27,4 +27,18 @@ public interface StyleClientBundle extends ClientBundle {
     @Source("FormTableLoading.gif")
     ImageResource FormTableLoading();
 
+    @Source("FormTreeClosedArrow.png")
+    ImageResource FormTreeClosedArrow();
+
+    @Source("FormTreeClosedItem.png")
+    ImageResource FormTreeClosedItem();
+
+    @Source("FormTreeLoading.gif")
+    ImageResource FormTreeLoading();
+
+    @Source("FormTreeOpenArrow.png")
+    ImageResource FormTreeOpenArrow();
+
+    @Source("FormTreeOpenItem.png")
+    ImageResource FormTreeOpenItem();
 }

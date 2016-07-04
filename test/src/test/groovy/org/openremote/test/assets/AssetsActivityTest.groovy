@@ -14,9 +14,10 @@ import spock.util.concurrent.BlockingVariables
 import static org.openremote.manager.shared.Constants.MANAGER_CLIENT_ID
 import static org.openremote.manager.shared.Constants.MASTER_REALM
 
-class AssetsActivityTest extends Specification implements ContainerTrait {
+class AssetsActivityTest
+{/* TODO remove outdated test
+        extends Specification implements ContainerTrait {
 
-/* TODO remove outdated test
     def "Send/receive hello messages"() {
         given: "The fake client environment"
         def placeController = Mock(PlaceController)

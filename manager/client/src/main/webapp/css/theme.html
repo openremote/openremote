@@ -16,10 +16,18 @@
         --theme-purple: #660092; /* rgb(102, 0, 146) */
     }
 
-    .theme-Header,
-    .theme-Footer {
-        background-color: var(--theme-darkgrey);
+    .theme-Header {
         color: var(--theme-white);
+        background-color: var(--theme-darkgrey);
+    }
+
+    .theme-Footer {
+        color: var(--theme-white);
+        background-color: var(--theme-black);
+    }
+
+    .theme-Footer a {
+        color: var(--theme-white) !important;
     }
 
     .theme-NavItem {
@@ -30,6 +38,7 @@
     .theme-NavItem.active {
         background: var(--theme-black) !important;
         color: var(--theme-lightgreen) !important;
+        border-top-color: var(--theme-lightgreen) !important;
     }
 
     .theme-SecondaryNav {
@@ -53,7 +62,7 @@
     }
 
     .theme-SidebarContent {
-        background-color: var(--theme-brightgrey);
+        background-color: var(--theme-black);
     }
 
     .theme-MainContent {
@@ -143,7 +152,7 @@
         background: var(--theme-lightgreen);
     }
 
-    .theme-FormButtonDanger{
+    .theme-FormButtonDanger {
         color: var(--theme-white);
         background: var(--theme-red);
     }
@@ -175,6 +184,27 @@
 
     .theme-FormTableOddRow {
         background-color: var(--theme-white);
+    }
+
+    .theme-FormTreeItem {
+        color: var(--theme-white);
+    }
+
+    .theme-FormTreeTopItem{
+        color: var(--theme-white);
+        background-color: var(--theme-darkgrey);
+    }
+
+    .theme-FormTreeKeyboardSelectedItem {
+        background-color: var(--theme-mediumgrey);
+    }
+
+    .theme-FormTreeSelectedItem {
+        background-color: var(--theme-lightgreen);
+    }
+
+    .theme-FormTreeSelectedItem .theme-FormTreeItem {
+        color: var(--theme-black);
     }
 
     .theme-ToastInfo {

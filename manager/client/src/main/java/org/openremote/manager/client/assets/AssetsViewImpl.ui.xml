@@ -8,19 +8,54 @@
 
     <ui:style>
         .sidebarContent {
-            width: 20em;
+            width: 22em;
+        }
+
+        .navItem {
+            margin-right: 1.2em;
+        }
+
+        .navItemFirst {
+            margin-left: 1.2em !important;
+        }
+
+        .formInputText {
+            border-radius: 0.4em;
+            font-size: smaller !important;
+            padding: 1em !important;
         }
     </ui:style>
 
-    <g:HTMLPanel styleName="flex layout horizontal">
+    <g:HTMLPanel styleName="flex layout vertical">
 
-        <g:SimplePanel ui:field="assetTreeContainer"
-                       addStyleNames="{style.sidebarContent} {widgetStyle.SidebarContent} {themeStyle.SidebarContent}"/>
+        <g:HTMLPanel
+                styleName="layout horizontal start-justified {widgetStyle.SecondaryNav} {themeStyle.SecondaryNav}">
+            <w:FormInputText ui:field="searchInput"
+                             addStyleNames="{style.navItemFirst} {style.formInputText} {widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"
+                             autofocus="true"
+                             placeholder="{managerMessages.search}..."/>
 
-        <div class="flex {widgetStyle.MainContent} {themeStyle.MainContent}">
-            <g:SimplePanel ui:field="assetsContentContainer"/>
-        </div>
+            <w:PushButton ui:field="searchButton"
+                          addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                          icon="search"/>
 
+            <w:PushButton ui:field="filterButton"
+                          addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                          text="{managerMessages.filter}"
+                          icon="filter"/>
+
+        </g:HTMLPanel>
+
+        <g:HTMLPanel styleName="flex layout horizontal">
+
+            <g:SimplePanel ui:field="assetTreeContainer"
+                           addStyleNames="{style.sidebarContent} {widgetStyle.SidebarContent} {themeStyle.SidebarContent}"/>
+
+            <div class="flex {widgetStyle.MainContent} {themeStyle.MainContent}">
+                <g:SimplePanel ui:field="assetsContentContainer"/>
+            </div>
+
+        </g:HTMLPanel>
     </g:HTMLPanel>
 
 </ui:UiBinder>

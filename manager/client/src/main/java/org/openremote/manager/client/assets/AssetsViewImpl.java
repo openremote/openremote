@@ -24,13 +24,13 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.cellview.client.CellTree;
-import com.google.gwt.user.client.ui.Composite;
-import com.google.gwt.user.client.ui.HTMLPanel;
-import com.google.gwt.user.client.ui.Label;
-import com.google.gwt.user.client.ui.SimplePanel;
+import com.google.gwt.user.client.ui.*;
 import com.google.gwt.view.client.ListDataProvider;
 import com.google.gwt.view.client.SingleSelectionModel;
 import com.google.gwt.view.client.TreeViewModel;
+import org.openremote.manager.client.style.FormTreeStyle;
+import org.openremote.manager.client.widget.FormTree;
+import org.openremote.manager.client.widget.PushButton;
 
 import javax.inject.Inject;
 import java.util.logging.Logger;
@@ -56,7 +56,7 @@ public class AssetsViewImpl extends Composite implements AssetsView {
            * for the next level.
            */
             ListDataProvider<String> dataProvider = new ListDataProvider<String>();
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < 20; i++) {
                 dataProvider.getList().add(value + "." + String.valueOf(i));
             }
 
@@ -77,7 +77,7 @@ public class AssetsViewImpl extends Composite implements AssetsView {
          */
         public boolean isLeaf(Object value) {
             // The maximum length of a value is ten characters.
-            return value.toString().length() > 10;
+            return value.toString().length() > 15;
         }
     }
 
@@ -86,18 +86,23 @@ public class AssetsViewImpl extends Composite implements AssetsView {
 
     @UiField
     SimplePanel assetsContentContainer;
+    @UiField
+    TextBox searchInput;
+    @UiField
+    PushButton searchButton;
 
     Presenter presenter;
 
     @Inject
-    public AssetsViewImpl() {
+    public AssetsViewImpl(FormTreeStyle formTreeStyle) {
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
 
         assetsContentContainer.add(new Label("CONTENT"));
 
         TreeViewModel treeModel = new CustomTreeModel();
-        CellTree tree = new CellTree(treeModel, "Item 1");
+        CellTree tree = new FormTree(treeModel, "Gateway 1", formTreeStyle);
+
 
         assetTreeContainer.add(tree);
 
