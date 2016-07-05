@@ -1,6 +1,5 @@
 package org.openremote.manager.client.widget;
 
-import com.google.gwt.resources.client.ImageResource;
 import com.google.gwt.user.cellview.client.CellTree;
 import com.google.gwt.view.client.TreeViewModel;
 import org.openremote.manager.client.style.FormTreeStyle;
@@ -17,8 +16,8 @@ public class FormTree extends CellTree {
     final protected WidgetStyle widgetStyle;
     final protected ThemeStyle themeStyle;
 
-    public <T> FormTree(TreeViewModel viewModel, T rootValue, FormTreeStyle formTreeStyle) {
-        super(viewModel, rootValue, formTreeStyle.getCellTreeResources());
+    public <T> FormTree(TreeViewModel viewModel, T rootValue, FormTreeStyle formTreeStyle, CellTreeMessages messages) {
+        super(viewModel, rootValue, formTreeStyle.getCellTreeResources(), messages);
         this.widgetStyle = formTreeStyle.getWidgetStyle();
         this.themeStyle = formTreeStyle.getThemeStyle();
     }

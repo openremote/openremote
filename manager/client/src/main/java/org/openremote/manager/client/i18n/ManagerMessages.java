@@ -138,4 +138,8 @@ public interface ManagerMessages extends Messages {
     String assignedRoles();
 
     String noteRolesAfterCreate();
+
+    String showMoreAssets();
+
+    String emptyCompositeAsset();
 }

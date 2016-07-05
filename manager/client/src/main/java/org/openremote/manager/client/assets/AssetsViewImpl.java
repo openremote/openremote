@@ -19,15 +19,19 @@
  */
 package org.openremote.manager.client.assets;
 
-import com.google.gwt.cell.client.TextCell;
+import com.google.gwt.cell.client.AbstractSafeHtmlCell;
+import com.google.gwt.cell.client.Cell;
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.safehtml.shared.SafeHtml;
+import com.google.gwt.safehtml.shared.SafeHtmlBuilder;
+import com.google.gwt.safehtml.shared.SafeHtmlUtils;
+import com.google.gwt.text.shared.SafeHtmlRenderer;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.cellview.client.CellTree;
 import com.google.gwt.user.client.ui.*;
-import com.google.gwt.view.client.ListDataProvider;
-import com.google.gwt.view.client.SingleSelectionModel;
-import com.google.gwt.view.client.TreeViewModel;
+import com.google.gwt.view.client.*;
+import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTreeStyle;
 import org.openremote.manager.client.widget.FormTree;
 import org.openremote.manager.client.widget.PushButton;
@@ -42,44 +46,86 @@ public class AssetsViewImpl extends Composite implements AssetsView {
     interface UI extends UiBinder<HTMLPanel, AssetsViewImpl> {
     }
 
-    private static class CustomTreeModel implements TreeViewModel {
+    static class AssetCell extends AbstractSafeHtmlCell<Asset> {
 
-        private final SingleSelectionModel<String> selectionModel = new SingleSelectionModel<>();
-
-        /**
-         * Get the {@link NodeInfo} that provides the children of the specified
-         * value.
-         */
-        public <T> NodeInfo<?> getNodeInfo(T value) {
-          /*
-           * Create some data in a data provider. Use the parent value as a prefix
-           * for the next level.
-           */
-            ListDataProvider<String> dataProvider = new ListDataProvider<String>();
-            for (int i = 0; i < 20; i++) {
-                dataProvider.getList().add(value + "." + String.valueOf(i));
+        static final SafeHtmlRenderer<Asset> assetRenderer = new SafeHtmlRenderer<Asset>() {
+            public SafeHtml render(Asset object) {
+                return (object == null)
+                    ? SafeHtmlUtils.EMPTY_SAFE_HTML
+                    : SafeHtmlUtils.fromString(object.getDisplayName()
+                );
             }
 
-            // Return a node info that pairs the data with a cell.
-            DefaultNodeInfo<String> nodeInfo = new DefaultNodeInfo<>(dataProvider, new TextCell(), selectionModel, null);
+            public void render(Asset object, SafeHtmlBuilder appendable) {
+                appendable.append(SafeHtmlUtils.fromString(object.getDisplayName()));
+            }
+        };
 
-            selectionModel.addSelectionChangeHandler(selectionChangeEvent -> {
-
-                LOG.info("### SELECT: " +selectionModel.getSelectedObject());
-            });
-
-            return nodeInfo;
+        public AssetCell() {
+            super(assetRenderer);
         }
 
-        /**
-         * Check if the specified value represents a leaf node. Leaf nodes cannot be
-         * opened.
-         */
-        public boolean isLeaf(Object value) {
-            // The maximum length of a value is ten characters.
-            return value.toString().length() > 15;
+        @Override
+        public void render(Cell.Context context, SafeHtml value, SafeHtmlBuilder sb) {
+            if (value != null) {
+                sb.append(value);
+            }
         }
     }
+
+    static class AssetTreeModel implements TreeViewModel {
+
+        final Presenter presenter;
+        final SingleSelectionModel<Asset> selectionModel = new SingleSelectionModel<>();
+
+        public AssetTreeModel(Presenter presenter) {
+            this.presenter = presenter;
+            selectionModel.addSelectionChangeHandler(selectionChangeEvent -> {
+                presenter.onAssetSelected(selectionModel.getSelectedObject());
+            });
+        }
+
+        public <T> NodeInfo<?> getNodeInfo(T value) {
+            return new DefaultNodeInfo<>(
+                new AssetDataProvider(presenter, (Asset) value),
+                new AssetCell(),
+                selectionModel,
+                null);
+        }
+
+        public boolean isLeaf(Object value) {
+            if (value instanceof Asset) {
+                Asset asset = (Asset) value;
+                return !asset.getType().equals("Composite");
+            }
+            return true;
+        }
+    }
+
+    static class AssetDataProvider extends AsyncDataProvider<Asset> {
+
+        final protected Presenter presenter;
+        final protected Asset parent;
+
+        public AssetDataProvider(Presenter presenter, Asset parent) {
+            this.presenter = presenter;
+            this.parent = parent;
+        }
+
+        @Override
+        protected void onRangeChanged(HasData<Asset> display) {
+            final Range range = display.getVisibleRange();
+            presenter.loadAssetChildren(parent, assetList -> {
+                int start = range.getStart();
+                updateRowCount(assetList.size(), true);
+                updateRowData(start, assetList);
+            });
+        }
+    }
+
+
+    @UiField
+    ManagerMessages managerMessages;
 
     @UiField
     SimplePanel assetTreeContainer;
@@ -91,26 +137,46 @@ public class AssetsViewImpl extends Composite implements AssetsView {
     @UiField
     PushButton searchButton;
 
+    final FormTreeStyle formTreeStyle;
+
     Presenter presenter;
 
     @Inject
     public AssetsViewImpl(FormTreeStyle formTreeStyle) {
+        this.formTreeStyle = formTreeStyle;
+
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
 
-        assetsContentContainer.add(new Label("CONTENT"));
-
-        TreeViewModel treeModel = new CustomTreeModel();
-        CellTree tree = new FormTree(treeModel, "Gateway 1", formTreeStyle);
-
-
-        assetTreeContainer.add(tree);
-
+        assetsContentContainer.add(new Label("TODO: Asset Editors"));
     }
 
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
+        FormTree tree = new FormTree(
+            new AssetTreeModel(presenter),
+            new Asset(null, "Composite", "ROOT", null),
+            formTreeStyle,
+            new CellTree.CellTreeMessages() {
+                @Override
+                public String showMore() {
+                    return managerMessages.showMoreAssets();
+                }
+
+                @Override
+                public String emptyTree() {
+                    return managerMessages.emptyCompositeAsset();
+                }
+            }
+        );
+        assetTreeContainer.clear();
+        assetTreeContainer.add(tree);
     }
 
+    @Override
+    public void setAssetDisplayName(String name) {
+        assetsContentContainer.clear();
+        assetsContentContainer.add(new Label("TODO: Selected " + name));
+    }
 }

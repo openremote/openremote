@@ -319,4 +319,19 @@ public abstract class AbstractStyle {
         return getPrefix() + "FormTreeWidget";
     }
 
+    public String StatusIndicator() {
+        return getPrefix() + "StatusIndicator";
+    }
+
+    public String StatusIndicatorOK() {
+        return getPrefix() + "StatusIndicatorOK";
+    }
+
+    public String StatusIndicatorATT() {
+        return getPrefix() + "StatusIndicatorATT";
+    }
+
+    public String StatusIndicatorERROR() {
+        return getPrefix() + "StatusIndicatorERROR";
+    }
 }

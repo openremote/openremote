@@ -8,7 +8,7 @@
         }
 
         .navItemFirst {
-            margin-left: 0.4em;
+            margin-left: 0.2em !important;
         }
 
         .navItemLast {

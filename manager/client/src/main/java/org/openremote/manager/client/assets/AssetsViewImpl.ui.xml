@@ -8,7 +8,7 @@
 
     <ui:style>
         .sidebarContent {
-            width: 22em;
+            width: 21em;
         }
 
         .navItem {
@@ -16,13 +16,14 @@
         }
 
         .navItemFirst {
-            margin-left: 1.2em !important;
+            margin-left: 0.2em !important;
         }
 
         .formInputText {
             border-radius: 0.4em;
             font-size: smaller !important;
-            padding: 1em !important;
+            padding: 0.4em !important;
+            height: 1.08em;
         }
     </ui:style>
 
