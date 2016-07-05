@@ -20,67 +20,14 @@
 package org.openremote.manager.client.assets;
 
 import com.google.gwt.user.client.ui.IsWidget;
-import org.openremote.manager.shared.Consumer;
-
-import java.util.List;
+import org.openremote.manager.client.assets.browser.AssetBrowser;
 
 public interface AssetsView extends IsWidget {
 
     interface Presenter {
-        void loadAssetChildren(Asset parent, Consumer<List<Asset>> consumer);
-        void onAssetSelected(Asset asset);
-    }
-
-    class Asset {
-        public String id;
-        public String type;
-        public String displayName;
-        public String location;
-
-        public Asset() {
-        }
-
-        public Asset(String id, String type, String displayName, String location) {
-            this.id = id;
-            this.type = type;
-            this.displayName = displayName;
-            this.location = location;
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public void setId(String id) {
-            this.id = id;
-        }
-
-        public String getDisplayName() {
-            return displayName;
-        }
-
-        public void setDisplayName(String displayName) {
-            this.displayName = displayName;
-        }
-
-        public String getLocation() {
-            return location;
-        }
-
-        public void setLocation(String location) {
-            this.location = location;
-        }
-
-        public String getType() {
-            return type;
-        }
-
-        public void setType(String type) {
-            this.type = type;
-        }
+        AssetBrowser getAssetBrowser();
     }
 
     void setPresenter(Presenter presenter);
 
-    void setAssetDisplayName(String name);
 }

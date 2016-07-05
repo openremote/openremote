@@ -7,56 +7,43 @@
     <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
     <ui:style>
-        .sidebarContent {
-            width: 21em;
+        .assetBrowser {
+            width: 35em;
+        }
+
+        .assetsControls {
+
         }
 
         .navItem {
-            margin-right: 1.2em;
-        }
-
-        .navItemFirst {
-            margin-left: 0.2em !important;
-        }
-
-        .formInputText {
-            border-radius: 0.4em;
-            font-size: smaller !important;
-            padding: 0.4em !important;
-            height: 1.08em;
+            margin: 0 1em;
         }
     </ui:style>
 
-    <g:HTMLPanel styleName="flex layout vertical">
+    <g:HTMLPanel styleName="flex layout horizontal">
 
-        <g:HTMLPanel
-                styleName="layout horizontal start-justified {widgetStyle.SecondaryNav} {themeStyle.SecondaryNav}">
-            <w:FormInputText ui:field="searchInput"
-                             addStyleNames="{style.navItemFirst} {style.formInputText} {widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"
-                             autofocus="true"
-                             placeholder="{managerMessages.search}..."/>
+        <g:SimplePanel ui:field="assetBrowserContainer"
+                       styleName="layout vertical"
+                       addStyleNames="{style.assetBrowser}"/>
 
-            <w:PushButton ui:field="searchButton"
-                          addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
-                          icon="search"/>
 
-            <w:PushButton ui:field="filterButton"
-                          addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
-                          text="{managerMessages.filter}"
-                          icon="filter"/>
+        <g:HTMLPanel styleName="flex layout vertical">
+            <g:HTMLPanel
+                    styleName="layout horizontal center end-justified {style.assetsControls} {widgetStyle.SecondaryNav} {themeStyle.SecondaryNav}">
 
-        </g:HTMLPanel>
+                <w:Hyperlink addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                             icon="copy"
+                             targetHistoryToken="assets:"
+                             text="Copy/Create Asset"/>
 
-        <g:HTMLPanel styleName="flex layout horizontal">
-
-            <g:SimplePanel ui:field="assetTreeContainer"
-                           addStyleNames="{style.sidebarContent} {widgetStyle.SidebarContent} {themeStyle.SidebarContent}"/>
+            </g:HTMLPanel>
 
             <div class="flex {widgetStyle.MainContent} {themeStyle.MainContent}">
+                <div>TODO: Asset browser switches to an advanced UI that needs more space on the left</div>
                 <g:SimplePanel ui:field="assetsContentContainer"/>
             </div>
-
         </g:HTMLPanel>
+
     </g:HTMLPanel>
 
 </ui:UiBinder>

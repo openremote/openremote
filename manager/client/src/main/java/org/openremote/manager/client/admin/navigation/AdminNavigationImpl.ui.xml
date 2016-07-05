@@ -13,16 +13,19 @@
     </ui:style>
 
     <g:HTMLPanel styleName="layout horizontal end-justified {widgetStyle.SecondaryNav} {themeStyle.SecondaryNav}">
-        <g:Hyperlink ui:field="overviewLink"
+        <w:Hyperlink ui:field="overviewLink"
                      addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                     icon="dashboard"
                      text="{managerMessages.overview}"/>
 
-        <g:Hyperlink ui:field="tenantsLink"
+        <w:Hyperlink ui:field="tenantsLink"
                      addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                     icon="group"
                      text="{managerMessages.manageTenants}"/>
 
-        <g:Hyperlink ui:field="usersLink"
+        <w:Hyperlink ui:field="usersLink"
                      addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                     icon="user"
                      text="{managerMessages.manageUsers}"/>
     </g:HTMLPanel>
 

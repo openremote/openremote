@@ -17,57 +17,79 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.assets;
+package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
-import com.google.gwt.user.client.ui.Composite;
-import com.google.gwt.user.client.ui.HTMLPanel;
-import com.google.gwt.user.client.ui.Label;
-import com.google.gwt.user.client.ui.SimplePanel;
-import org.openremote.manager.client.assets.browser.AssetBrowser;
+import com.google.gwt.user.cellview.client.CellTree;
+import com.google.gwt.user.client.ui.*;
+import org.openremote.manager.client.assets.Asset;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTreeStyle;
+import org.openremote.manager.client.widget.FormTree;
+import org.openremote.manager.client.widget.PushButton;
 
 import javax.inject.Inject;
 import java.util.logging.Logger;
 
-public class AssetsViewImpl extends Composite implements AssetsView {
+public class AssetBrowserImpl extends Composite implements AssetBrowser {
 
-    private static final Logger LOG = Logger.getLogger(AssetsViewImpl.class.getName());
+    private static final Logger LOG = Logger.getLogger(AssetBrowserImpl.class.getName());
 
-    interface UI extends UiBinder<HTMLPanel, AssetsViewImpl> {
+    interface UI extends UiBinder<HTMLPanel, AssetBrowserImpl> {
     }
 
     @UiField
     ManagerMessages managerMessages;
 
     @UiField
-    SimplePanel assetBrowserContainer;
+    SimplePanel assetTreeContainer;
 
     @UiField
-    SimplePanel assetsContentContainer;
+    TextBox searchInput;
+
+    @UiField
+    PushButton filterButton;
 
     final FormTreeStyle formTreeStyle;
 
     Presenter presenter;
 
     @Inject
-    public AssetsViewImpl(FormTreeStyle formTreeStyle) {
+    public AssetBrowserImpl(FormTreeStyle formTreeStyle) {
         this.formTreeStyle = formTreeStyle;
 
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
-
-        assetsContentContainer.add(new Label("TODO: Asset editors on the right side"));
     }
 
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
 
-        assetBrowserContainer.clear();
-        assetBrowserContainer.add(presenter.getAssetBrowser());
+        FormTree tree = new FormTree(
+            new AssetTreeModel(presenter),
+            new Asset(Asset.ROOT_ID, Asset.ROOT_TYPE, Asset.ROOT_LABEL, Asset.ROOT_LOCATION),
+            formTreeStyle,
+            new CellTree.CellTreeMessages() {
+                @Override
+                public String showMore() {
+                    return managerMessages.showMoreAssets();
+                }
+
+                @Override
+                public String emptyTree() {
+                    return managerMessages.emptyCompositeAsset();
+                }
+            }
+        );
+        assetTreeContainer.clear();
+        assetTreeContainer.add(tree);
+    }
+
+    @Override
+    public void setSelectedAsset(String id) {
+        // TODO expand tree to item
     }
 }

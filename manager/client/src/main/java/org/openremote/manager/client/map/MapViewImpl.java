@@ -26,6 +26,7 @@ import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.SimplePanel;
 import elemental.json.JsonObject;
 
 import javax.inject.Inject;
@@ -48,6 +49,9 @@ public class MapViewImpl extends Composite implements MapView {
     @UiField
     MapWidget mapWidget;
 
+    @UiField
+    SimplePanel assetBrowserContainer;
+
     @Inject
     public MapViewImpl() {
         initWidget(ui.createAndBindUi(this));
@@ -58,6 +62,9 @@ public class MapViewImpl extends Composite implements MapView {
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
+
+        assetBrowserContainer.clear();
+        assetBrowserContainer.add(presenter.getAssetBrowser());
     }
 
     @Override

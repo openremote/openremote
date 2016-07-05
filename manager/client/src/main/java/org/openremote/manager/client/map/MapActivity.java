@@ -22,6 +22,7 @@ package org.openremote.manager.client.map;
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
@@ -41,6 +42,7 @@ public class MapActivity extends AppActivity<MapPlace> implements MapView.Presen
 
     private static final Logger LOG = Logger.getLogger(MapActivity.class.getName());
 
+    final AssetBrowser.Presenter assetBrowserPresenter;
     final MapView view;
     final MapResource mapResource;
     final ManagerMessages managerMessages;
@@ -49,12 +51,14 @@ public class MapActivity extends AppActivity<MapPlace> implements MapView.Presen
     final JsonObjectMapper jsonObjectMapper;
 
     @Inject
-    public MapActivity(MapView view,
+    public MapActivity(AssetBrowser.Presenter assetBrowserPresenter,
+                       MapView view,
                        MapResource mapResource,
                        ManagerMessages managerMessages,
                        RequestService requestService,
                        PlaceController placeController,
                        JsonObjectMapper jsonObjectMapper) {
+        this.assetBrowserPresenter = assetBrowserPresenter;
         this.view = view;
         this.mapResource = mapResource;
         this.managerMessages = managerMessages;
@@ -97,5 +101,10 @@ public class MapActivity extends AppActivity<MapPlace> implements MapView.Presen
     @Override
     public void goTo(Place place) {
         placeController.goTo(place);
+    }
+
+    @Override
+    public AssetBrowser getAssetBrowser() {
+        return assetBrowserPresenter.getView();
     }
 }

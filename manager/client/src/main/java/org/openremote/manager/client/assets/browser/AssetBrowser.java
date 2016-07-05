@@ -17,25 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.map;
+package org.openremote.manager.client.assets.browser;
 
-import com.google.gwt.place.shared.Place;
 import com.google.gwt.user.client.ui.IsWidget;
-import elemental.json.JsonObject;
-import org.openremote.manager.client.assets.browser.AssetBrowser;
+import org.openremote.manager.client.assets.Asset;
+import org.openremote.manager.shared.Consumer;
 
-public interface MapView extends IsWidget {
+import java.util.List;
+
+public interface AssetBrowser extends IsWidget {
 
     interface Presenter {
-        AssetBrowser getAssetBrowser();
-        void goTo(Place place);
+
+        AssetBrowser getView();
+
+        void loadAssetChildren(Asset parent, Consumer<List<Asset>> consumer);
+
+        void onAssetSelected(Asset asset);
     }
 
     void setPresenter(Presenter presenter);
 
-    void initialiseMap(JsonObject mapOptions);
-
-    boolean isMapInitialised();
-
-    void refresh();
+    void setSelectedAsset(String id);
 }

@@ -165,6 +165,8 @@ public class SampleDataService implements ContainerService {
         masterRealm.setLoginTheme("openremote");
         masterRealm.setAccountTheme("openremote");
 
+        masterRealm.setSsoSessionIdleTimeout(10800); // 3 hours
+
         // TODO: Make SSL setup configurable
         masterRealm.setSslRequired(SslRequired.NONE.toString());
 

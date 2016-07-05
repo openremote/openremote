@@ -125,7 +125,7 @@
     .or-Hyperlink a,
     .or-Hyperlink a:visited {
         cursor: pointer;
-        font-weight: bold;
+        font-weight: 600;
         text-decoration: none;
         display: inline-block;
         padding: 0.4em;
@@ -135,6 +135,16 @@
     .or-Hyperlink a:hover,
     .or-Hyperlink a:focus {
         text-decoration: underline;
+    }
+
+    .or-SecondaryNav .or-Hyperlink {
+        padding: 0;
+        border-radius: 0
+    }
+
+    .or-SecondaryNav .or-Hyperlink a:hover,
+    .or-SecondaryNav .or-Hyperlink a:focus {
+        text-decoration: none;
     }
 
     .or-Headline1 {
@@ -296,7 +306,8 @@
     .or-FormTreeEmptyMessage {
         font-size: smaller;
         font-style: italic;
-        margin: 0.2em 0 0.8em 2.4em;
+        text-align: center;
+        padding-bottom: 0.8em;
     }
 
     .or-FormMessages,
