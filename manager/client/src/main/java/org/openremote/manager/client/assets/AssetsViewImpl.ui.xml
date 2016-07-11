@@ -31,6 +31,16 @@
             <g:HTMLPanel
                     styleName="layout horizontal center end-justified {style.assetsControls} {widgetStyle.SecondaryNav} {themeStyle.SecondaryNav}">
 
+                <w:Hyperlink addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem} active"
+                             icon="dashboard"
+                             targetHistoryToken="assets:"
+                             text="Dashboard"/>
+
+                <w:Hyperlink addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                             icon="edit"
+                             targetHistoryToken="assets:"
+                             text="Edit Dashboard"/>
+
                 <w:Hyperlink addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
                              icon="copy"
                              targetHistoryToken="assets:"
@@ -40,7 +50,9 @@
 
             <div class="flex {widgetStyle.MainContent} {themeStyle.MainContent}">
                 <div>TODO: Asset browser switches to an advanced UI that needs more space on the left</div>
-                <g:SimplePanel ui:field="assetsContentContainer"/>
+                <g:SimplePanel ui:field="assetsContentContainer">
+                    <g:Label text="TODO: Asset Dashboard view is the starting view, it will an editable Dashboard App"/>
+                </g:SimplePanel>
             </div>
         </g:HTMLPanel>
 

@@ -59,8 +59,6 @@ public class AssetsViewImpl extends Composite implements AssetsView {
 
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
-
-        assetsContentContainer.add(new Label("TODO: Asset editors on the right side"));
     }
 
     @Override

@@ -15,7 +15,6 @@ public class Hyperlink extends com.google.gwt.user.client.ui.Hyperlink {
 
         getElement().addClassName("or-Hyperlink");
         Element anchor = getElement().getFirstChildElement();
-        JsUtil.log(anchor);
         // TODO Clickable icon?!
         DOM.insertBefore(getElement(), iconLabel.getElement(), anchor);
     }

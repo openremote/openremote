@@ -20,8 +20,15 @@
 package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.dom.client.Document;
+import com.google.gwt.dom.client.Element;
+import com.google.gwt.dom.client.NativeEvent;
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ScrollEvent;
+import com.google.gwt.event.dom.client.ScrollHandler;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
+import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.cellview.client.CellTree;
 import com.google.gwt.user.client.ui.*;
 import org.openremote.manager.client.assets.Asset;
@@ -52,9 +59,15 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
     @UiField
     PushButton filterButton;
 
+/*
+    @UiField
+    PushButton expandButton;
+*/
+
     final FormTreeStyle formTreeStyle;
 
     Presenter presenter;
+    FormTree assetTree;
 
     @Inject
     public AssetBrowserImpl(FormTreeStyle formTreeStyle) {
@@ -68,7 +81,7 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
 
-        FormTree tree = new FormTree(
+        assetTree = new FormTree(
             new AssetTreeModel(presenter),
             new Asset(Asset.ROOT_ID, Asset.ROOT_TYPE, Asset.ROOT_LABEL, Asset.ROOT_LOCATION),
             formTreeStyle,
@@ -84,12 +97,28 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
                 }
             }
         );
+
+        // TODO Page size and paging is not good, do something with onhover autoscroll
+        assetTree.setDefaultNodeSize(1000);
+
         assetTreeContainer.clear();
-        assetTreeContainer.add(tree);
+        assetTreeContainer.add(assetTree);
     }
 
     @Override
     public void setSelectedAsset(String id) {
         // TODO expand tree to item
     }
+
+/*
+    @UiHandler("expandButton")
+    public void expandClicked(final ClickEvent event) {
+        if (assetTree != null) {
+            LOG.info("### CLICK");
+            NativeEvent clickEvent = Document.get().createMouseDownEvent(0, 0, 0, 0, 0, false, false, false, false, 0);
+            Element target = (Element) assetTree.getElement().getLastChild().getFirstChild().getLastChild();
+            target.dispatchEvent(clickEvent);
+        }
+    }
+*/
 }

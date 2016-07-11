@@ -20,9 +20,11 @@
 package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.place.shared.PlaceController;
+import com.google.gwt.user.client.Timer;
+import com.google.gwt.view.client.HasData;
+import com.google.gwt.view.client.Range;
 import org.openremote.manager.client.assets.Asset;
 import org.openremote.manager.client.event.bus.EventBus;
-import org.openremote.manager.shared.Consumer;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -55,37 +57,58 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     }
 
     @Override
-    public void loadAssetChildren(Asset parent, Consumer<List<Asset>> consumer) {
+    public void loadAssetChildren(Asset parent, HasData<Asset> display) {
+        final Range range = display.getVisibleRange();
+        Timer t = null;
         if (Asset.isRoot(parent)) {
-            consumer.accept(Arrays.asList(
-                new Asset("composite:gateways", Asset.Type.COMPOSITE.name(), "Gateways", null),
-                new Asset("composite:buildings", Asset.Type.COMPOSITE.name(), "Buildings", null),
-                new Asset("composite:rooms", Asset.Type.COMPOSITE.name(), "Rooms", null),
-                new Asset("composite:thermostats", Asset.Type.COMPOSITE.name(), "Thermostats", null)
-            ));
-            return;
+            t = new Timer() {
+                public void run() {
+                    display.setRowData(0, Arrays.asList(
+                        new Asset("composite:gateways", Asset.Type.COMPOSITE.name(), "Gateways", null),
+                        new Asset("composite:buildings", Asset.Type.COMPOSITE.name(), "Buildings", null),
+                        new Asset("composite:rooms", Asset.Type.COMPOSITE.name(), "Rooms", null),
+                        new Asset("composite:thermostats", Asset.Type.COMPOSITE.name(), "Thermostats", null)
+                    ));
+                }
+            };
         } else if (parent.getType().equals(Asset.Type.COMPOSITE.name())) {
             if (parent.getId().equals("composite:gateways")) {
-                consumer.accept(Arrays.asList(
-                    new Asset("1", Asset.Type.COMPOSITE.name(), "Gateway A", "123.123"),
-                    new Asset("2", Asset.Type.COMPOSITE.name(), "Gateway B", "123.123"),
-                    new Asset("3", Asset.Type.COMPOSITE.name(), "Gateway C", "123.123"),
-                    new Asset("4", Asset.Type.COMPOSITE.name(), "Gateway D", "123.123"),
-                    new Asset("5", Asset.Type.COMPOSITE.name(), "Gateway E", "123.123")
-                ));
-                return;
+                t = new Timer() {
+                    public void run() {
+                        List<Asset> list = new ArrayList<>();
+                        for (int i = 0; i < 1000; i++) {
+                            list.add(
+                                new Asset(Integer.toString(i), Asset.Type.COMPOSITE.name(), "Gateway " + i, "123.123")
+                            );
+                        }
+                        display.setRowData(0, list);
+                    }
+                };
             }
 
             if (parent.getId().equals("1")) {
-                consumer.accept(Arrays.asList(
-                    new Asset("11", Asset.Type.SENSOR.name(), "Sensor 1", "123.123"),
-                    new Asset("22", Asset.Type.SENSOR.name(), "Sensor 2", "123.123"),
-                    new Asset("33", Asset.Type.SENSOR.name(), "Sensor 3", "123.123")
-                ));
-                return;
+                t = new Timer() {
+                    public void run() {
+                        display.setRowData(0, Arrays.asList(
+                            new Asset("11", Asset.Type.SENSOR.name(), "Sensor 1", "123.123"),
+                            new Asset("22", Asset.Type.SENSOR.name(), "Sensor 2", "123.123"),
+                            new Asset("33", Asset.Type.SENSOR.name(), "Sensor 3", "123.123")
+                        ));
+                    }
+                };
             }
         }
-        consumer.accept(new ArrayList<>());
+
+        if (t != null) {
+
+            // TODO: Simulates network delay
+            //t.schedule(500);
+            t.run();
+
+        } else {
+            display.setRowData(0, new ArrayList<>());
+            display.setRowCount(0, true);
+        }
     }
 
     @Override

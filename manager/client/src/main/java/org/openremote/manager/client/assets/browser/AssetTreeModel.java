@@ -31,7 +31,9 @@ class AssetTreeModel implements TreeViewModel {
     public AssetTreeModel(AssetBrowser.Presenter presenter) {
         this.presenter = presenter;
         selectionModel.addSelectionChangeHandler(selectionChangeEvent -> {
-            presenter.onAssetSelected(selectionModel.getSelectedObject());
+            if (selectionModel.getSelectedObject() != null) {
+                presenter.onAssetSelected(selectionModel.getSelectedObject());
+            }
         });
     }
 

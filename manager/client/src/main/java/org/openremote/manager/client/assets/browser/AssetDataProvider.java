@@ -21,10 +21,13 @@ package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.view.client.AsyncDataProvider;
 import com.google.gwt.view.client.HasData;
-import com.google.gwt.view.client.Range;
 import org.openremote.manager.client.assets.Asset;
 
+import java.util.logging.Logger;
+
 class AssetDataProvider extends AsyncDataProvider<Asset> {
+
+    private static final Logger LOG = Logger.getLogger(AssetDataProvider.class.getName());
 
     final protected AssetBrowser.Presenter presenter;
     final protected Asset parent;
@@ -36,11 +39,6 @@ class AssetDataProvider extends AsyncDataProvider<Asset> {
 
     @Override
     protected void onRangeChanged(HasData<Asset> display) {
-        final Range range = display.getVisibleRange();
-        presenter.loadAssetChildren(parent, assetList -> {
-            int start = range.getStart();
-            updateRowCount(assetList.size(), true);
-            updateRowData(start, assetList);
-        });
+        presenter.loadAssetChildren(parent, display);
     }
 }

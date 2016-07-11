@@ -20,10 +20,8 @@
 package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.user.client.ui.IsWidget;
+import com.google.gwt.view.client.HasData;
 import org.openremote.manager.client.assets.Asset;
-import org.openremote.manager.shared.Consumer;
-
-import java.util.List;
 
 public interface AssetBrowser extends IsWidget {
 
@@ -31,7 +29,7 @@ public interface AssetBrowser extends IsWidget {
 
         AssetBrowser getView();
 
-        void loadAssetChildren(Asset parent, Consumer<List<Asset>> consumer);
+        void loadAssetChildren(Asset parent, HasData<Asset> display);
 
         void onAssetSelected(Asset asset);
     }
