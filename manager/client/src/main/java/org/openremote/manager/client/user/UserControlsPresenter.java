@@ -24,7 +24,9 @@ import com.google.inject.Inject;
 import org.openremote.manager.client.ManagerHistoryMapper;
 import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.event.bus.EventBus;
+import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.service.SecurityService;
+import org.openremote.manager.shared.event.ui.ShowFailureEvent;
 
 import java.util.logging.Logger;
 
@@ -42,6 +44,7 @@ public class UserControlsPresenter implements UserControls.Presenter {
                                  SecurityService securityService,
                                  PlaceController placeController,
                                  ManagerHistoryMapper managerHistoryMapper,
+                                 ManagerMessages managerMessages,
                                  EventBus eventBus) {
         this.view = view;
         this.securityService = securityService;
@@ -52,7 +55,13 @@ public class UserControlsPresenter implements UserControls.Presenter {
 
         updateView();
 
-        eventBus.register(UserChangeEvent.class, event -> updateView());
+        eventBus.register(UserChangeEvent.class, event -> {
+            if (event.getUsername() == null) {
+                eventBus.dispatch(new ShowFailureEvent(managerMessages.sessionTimedOut()));
+            } else {
+                updateView();
+            }
+        });
     }
 
     @Override

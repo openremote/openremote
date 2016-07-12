@@ -1,19 +1,5 @@
 package org.openremote.test.assets
 
-import com.google.gwt.place.shared.PlaceController
-import com.google.gwt.user.client.ui.AcceptsOneWidget
-import org.openremote.container.web.WebClient
-import org.openremote.manager.client.assets.AssetsActivity
-import org.openremote.manager.client.assets.AssetsView
-import org.openremote.manager.client.event.bus.EventBus
-import org.openremote.manager.server.event.EventService
-import org.openremote.test.ContainerTrait
-import spock.lang.Specification
-import spock.util.concurrent.BlockingVariables
-
-import static org.openremote.manager.shared.Constants.MANAGER_CLIENT_ID
-import static org.openremote.manager.shared.Constants.MASTER_REALM
-
 class AssetsActivityTest
 {/* TODO remove outdated test
         extends Specification implements ContainerTrait {

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.assets;
+package org.openremote.manager.client.assets.asset;
 
 public class Asset {
 
@@ -80,5 +80,15 @@ public class Asset {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() +"{" +
+            "id='" + id + '\'' +
+            ", type='" + type + '\'' +
+            ", displayName='" + displayName + '\'' +
+            ", location='" + location + '\'' +
+            '}';
     }
 }

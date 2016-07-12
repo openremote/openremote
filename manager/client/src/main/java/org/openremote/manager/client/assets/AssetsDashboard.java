@@ -17,28 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.assets.browser;
+package org.openremote.manager.client.assets;
 
 import com.google.gwt.user.client.ui.IsWidget;
-import com.google.gwt.view.client.HasData;
-import org.openremote.manager.client.assets.asset.Asset;
+import org.openremote.manager.client.assets.browser.AssetBrowser;
 
-import java.util.List;
-
-public interface AssetBrowser extends IsWidget {
+public interface AssetsDashboard extends IsWidget {
 
     interface Presenter {
-
-        AssetBrowser getView();
-
-        void loadAssetChildren(Asset parent, HasData<Asset> display);
-
-        void onAssetSelected(Asset asset);
-
-        void selectAsset(String id);
+        AssetBrowser getAssetBrowser();
     }
 
     void setPresenter(Presenter presenter);
 
-    void showAndSelectAsset(List<String> path, String selectedAssetId);
 }

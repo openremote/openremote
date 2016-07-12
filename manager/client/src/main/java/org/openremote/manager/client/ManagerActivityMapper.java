@@ -32,8 +32,10 @@ import org.openremote.manager.client.admin.users.AdminUserActivity;
 import org.openremote.manager.client.admin.users.AdminUserPlace;
 import org.openremote.manager.client.admin.users.AdminUsersActivity;
 import org.openremote.manager.client.admin.users.AdminUsersPlace;
-import org.openremote.manager.client.assets.AssetsActivity;
-import org.openremote.manager.client.assets.AssetsPlace;
+import org.openremote.manager.client.assets.asset.AssetActivity;
+import org.openremote.manager.client.assets.asset.AssetPlace;
+import org.openremote.manager.client.assets.AssetsDashboardActivity;
+import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.flows.FlowsActivity;
 import org.openremote.manager.client.flows.FlowsPlace;
@@ -57,7 +59,8 @@ public class ManagerActivityMapper implements AppActivityMapper {
     protected final SecurityService securityService;
     protected final EventBus eventBus;
     protected final ManagerMessages managerMessages;
-    protected final Provider<AssetsActivity> assetsActivityProvider;
+    protected final Provider<AssetsDashboardActivity> assetsDashboardActivityProvider;
+    protected final Provider<AssetActivity> assetActivityProvider;
     protected final Provider<MapActivity> mapActivityProvider;
     protected final Provider<FlowsActivity> flowsActivityProvider;
     protected final Provider<AdminOverviewActivity> adminOverviewActivityProvider;
@@ -71,7 +74,8 @@ public class ManagerActivityMapper implements AppActivityMapper {
     public ManagerActivityMapper(SecurityService securityService,
                                  EventBus eventBus,
                                  ManagerMessages managerMessages,
-                                 Provider<AssetsActivity> assetsActivityProvider,
+                                 Provider<AssetsDashboardActivity> assetsDashboardActivityProvider,
+                                 Provider<AssetActivity> assetActivityProvider,
                                  Provider<MapActivity> mapActivityProvider,
                                  Provider<FlowsActivity> flowsActivityProvider,
                                  Provider<AdminOverviewActivity> adminOverviewActivityProvider,
@@ -83,7 +87,8 @@ public class ManagerActivityMapper implements AppActivityMapper {
         this.securityService = securityService;
         this.eventBus = eventBus;
         this.managerMessages = managerMessages;
-        this.assetsActivityProvider = assetsActivityProvider;
+        this.assetsDashboardActivityProvider = assetsDashboardActivityProvider;
+        this.assetActivityProvider = assetActivityProvider;
         this.mapActivityProvider = mapActivityProvider;
         this.flowsActivityProvider = flowsActivityProvider;
         this.adminOverviewActivityProvider = adminOverviewActivityProvider;
@@ -96,8 +101,11 @@ public class ManagerActivityMapper implements AppActivityMapper {
 
     public AppActivity getActivity(Place place) {
         try {
-            if (place instanceof AssetsPlace) {
-                return assetsActivityProvider.get().init(securityService, (AssetsPlace) place);
+            if (place instanceof AssetsDashboardPlace) {
+                return assetsDashboardActivityProvider.get().init(securityService, (AssetsDashboardPlace) place);
+            }
+            if (place instanceof AssetPlace) {
+                return assetActivityProvider.get().init(securityService, (AssetPlace) place);
             }
             if (place instanceof MapPlace) {
                 return mapActivityProvider.get().init(securityService, (MapPlace) place);

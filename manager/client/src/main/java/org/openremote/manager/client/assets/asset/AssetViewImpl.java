@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.assets;
+package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.uibinder.client.UiBinder;
@@ -26,18 +26,17 @@ import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.SimplePanel;
-import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTreeStyle;
 
 import javax.inject.Inject;
 import java.util.logging.Logger;
 
-public class AssetsViewImpl extends Composite implements AssetsView {
+public class AssetViewImpl extends Composite implements AssetView {
 
-    private static final Logger LOG = Logger.getLogger(AssetsViewImpl.class.getName());
+    private static final Logger LOG = Logger.getLogger(AssetViewImpl.class.getName());
 
-    interface UI extends UiBinder<HTMLPanel, AssetsViewImpl> {
+    interface UI extends UiBinder<HTMLPanel, AssetViewImpl> {
     }
 
     @UiField
@@ -47,14 +46,14 @@ public class AssetsViewImpl extends Composite implements AssetsView {
     SimplePanel assetBrowserContainer;
 
     @UiField
-    SimplePanel assetsContentContainer;
+    SimplePanel assetContentContainer;
 
     final FormTreeStyle formTreeStyle;
 
     Presenter presenter;
 
     @Inject
-    public AssetsViewImpl(FormTreeStyle formTreeStyle) {
+    public AssetViewImpl(FormTreeStyle formTreeStyle) {
         this.formTreeStyle = formTreeStyle;
 
         UI ui = GWT.create(UI.class);
@@ -67,5 +66,16 @@ public class AssetsViewImpl extends Composite implements AssetsView {
 
         assetBrowserContainer.clear();
         assetBrowserContainer.add(presenter.getAssetBrowser());
+    }
+
+    @Override
+    public void setFormBusy(boolean busy) {
+        // TODO
+    }
+
+    @Override
+    public void setDisplayName(String displayName) {
+        assetContentContainer.clear();
+        assetContentContainer.add(new Label("SELECTED: " + displayName));
     }
 }

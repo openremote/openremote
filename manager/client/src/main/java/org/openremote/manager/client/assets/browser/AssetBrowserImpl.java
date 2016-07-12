@@ -20,24 +20,17 @@
 package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.dom.client.Document;
-import com.google.gwt.dom.client.Element;
-import com.google.gwt.dom.client.NativeEvent;
-import com.google.gwt.event.dom.client.ClickEvent;
-import com.google.gwt.event.dom.client.ScrollEvent;
-import com.google.gwt.event.dom.client.ScrollHandler;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
-import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.cellview.client.CellTree;
 import com.google.gwt.user.client.ui.*;
-import org.openremote.manager.client.assets.Asset;
+import org.openremote.manager.client.assets.asset.Asset;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTreeStyle;
-import org.openremote.manager.client.widget.FormTree;
 import org.openremote.manager.client.widget.PushButton;
 
 import javax.inject.Inject;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class AssetBrowserImpl extends Composite implements AssetBrowser {
@@ -67,7 +60,7 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
     final FormTreeStyle formTreeStyle;
 
     Presenter presenter;
-    FormTree assetTree;
+    AssetTree assetTree;
 
     @Inject
     public AssetBrowserImpl(FormTreeStyle formTreeStyle) {
@@ -81,7 +74,7 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
 
-        assetTree = new FormTree(
+        assetTree = new AssetTree(
             new AssetTreeModel(presenter),
             new Asset(Asset.ROOT_ID, Asset.ROOT_TYPE, Asset.ROOT_LABEL, Asset.ROOT_LOCATION),
             formTreeStyle,
@@ -106,11 +99,15 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
     }
 
     @Override
-    public void setSelectedAsset(String id) {
-        // TODO expand tree to item
+    public void showAndSelectAsset(List<String> path, String selectedAssetId) {
+        List<Asset> selectedPath = new AssetTree.IdSearch().resolvePath(path, assetTree.getRootTreeNode());
+        if (selectedPath.size() > 0) {
+            Asset selectedAsset = selectedPath.get(selectedPath.size()-1);
+            assetTree.getTreeViewModel().getSelectionModel().setSelected(selectedAsset, true);
+        }
     }
 
-/*
+    /*
     @UiHandler("expandButton")
     public void expandClicked(final ClickEvent event) {
         if (assetTree != null) {

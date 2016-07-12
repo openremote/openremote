@@ -23,7 +23,8 @@ import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.view.client.HasData;
 import com.google.gwt.view.client.Range;
-import org.openremote.manager.client.assets.Asset;
+import org.openremote.manager.client.assets.asset.Asset;
+import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.event.bus.EventBus;
 
 import javax.inject.Inject;
@@ -40,6 +41,8 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     final PlaceController placeController;
     final EventBus eventBus;
 
+    String selectedAssetId;
+
     @Inject
     public AssetBrowserPresenter(AssetBrowser view,
                                  PlaceController placeController,
@@ -49,6 +52,60 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         this.eventBus = eventBus;
 
         view.setPresenter(this);
+
+        this.eventBus.register(AssetsRefreshedEvent.class, event -> {
+            // Find the last selected asset after a data refresh and select it again
+            if (selectedAssetId != null) {
+                // TODO: We must build the asset path here, by finding the asset first, then its parents recursively
+                List<String> path = new ArrayList<>();
+                switch (selectedAssetId) {
+                    case "composite:gateways":
+                        path.add("composite:gateways");
+                        break;
+                    case "composite:buildings":
+                        path.add("composite:buildings");
+                        break;
+                    case "composite:rooms":
+                        path.add("composite:rooms");
+                        break;
+                    case "composite:thermostats":
+                        path.add("composite:thermostats");
+                        break;
+                    case "0":
+                        path.add("composite:gateways");
+                        path.add("0");
+                        break;
+                    case "1":
+                        path.add("composite:gateways");
+                        path.add("1");
+                        break;
+                    case "2":
+                        path.add("composite:gateways");
+                        path.add("2");
+                        break;
+                    case "3":
+                        path.add("composite:gateways");
+                        path.add("3");
+                        break;
+                    case "11":
+                        path.add("composite:gateways");
+                        path.add("1");
+                        path.add("11");
+                        break;
+                    case "22":
+                        path.add("composite:gateways");
+                        path.add("1");
+                        path.add("22");
+                        break;
+                    case "33":
+                        path.add("composite:gateways");
+                        path.add("1");
+                        path.add("33");
+                        break;
+                }
+                view.showAndSelectAsset(path, selectedAssetId);
+            }
+        });
     }
 
     @Override
@@ -59,6 +116,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     @Override
     public void loadAssetChildren(Asset parent, HasData<Asset> display) {
         final Range range = display.getVisibleRange();
+        // TODO: Real assets query
         Timer t = null;
         if (Asset.isRoot(parent)) {
             t = new Timer() {
@@ -69,6 +127,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                         new Asset("composite:rooms", Asset.Type.COMPOSITE.name(), "Rooms", null),
                         new Asset("composite:thermostats", Asset.Type.COMPOSITE.name(), "Thermostats", null)
                     ));
+                    eventBus.dispatch(new AssetsRefreshedEvent(parent, display.getRowCount()));
                 }
             };
         } else if (parent.getType().equals(Asset.Type.COMPOSITE.name())) {
@@ -76,12 +135,13 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                 t = new Timer() {
                     public void run() {
                         List<Asset> list = new ArrayList<>();
-                        for (int i = 0; i < 1000; i++) {
+                        for (int i = 0; i < 100; i++) {
                             list.add(
                                 new Asset(Integer.toString(i), Asset.Type.COMPOSITE.name(), "Gateway " + i, "123.123")
                             );
                         }
                         display.setRowData(0, list);
+                        eventBus.dispatch(new AssetsRefreshedEvent(parent, display.getRowCount()));
                     }
                 };
             }
@@ -89,11 +149,13 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
             if (parent.getId().equals("1")) {
                 t = new Timer() {
                     public void run() {
-                        display.setRowData(0, Arrays.asList(
+                        List<Asset> assets = Arrays.asList(
                             new Asset("11", Asset.Type.SENSOR.name(), "Sensor 1", "123.123"),
                             new Asset("22", Asset.Type.SENSOR.name(), "Sensor 2", "123.123"),
                             new Asset("33", Asset.Type.SENSOR.name(), "Sensor 3", "123.123")
-                        ));
+                        );
+                        display.setRowData(0, assets);
+                        eventBus.dispatch(new AssetsRefreshedEvent(parent, display.getRowCount()));
                     }
                 };
             }
@@ -102,17 +164,26 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         if (t != null) {
 
             // TODO: Simulates network delay
-            //t.schedule(500);
-            t.run();
+            t.schedule(25);
+            //t.run();
 
         } else {
             display.setRowData(0, new ArrayList<>());
             display.setRowCount(0, true);
+            eventBus.dispatch(new AssetsRefreshedEvent(parent, display.getRowCount()));
         }
     }
 
     @Override
     public void onAssetSelected(Asset asset) {
-        view.setSelectedAsset(asset.getId());
+        if (!asset.getId().equals(selectedAssetId)) {
+            selectAsset(asset.getId());
+            placeController.goTo(new AssetPlace(asset.getId()));
+        }
+    }
+
+    @Override
+    public void selectAsset(String id) {
+        this.selectedAssetId = id;
     }
 }

@@ -134,6 +134,7 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
                 {},
                 {},
                 {},
+                {},
                 {
                     adminTenantsActivity = new AdminTenantsActivity(
                             adminView, adminNavigationPresenter, adminTenantsView, managerMessages,

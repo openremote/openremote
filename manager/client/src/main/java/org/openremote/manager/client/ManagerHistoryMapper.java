@@ -26,15 +26,17 @@ import org.openremote.manager.client.admin.tenant.AdminTenantPlace;
 import org.openremote.manager.client.admin.tenant.AdminTenantsPlace;
 import org.openremote.manager.client.admin.users.AdminUserPlace;
 import org.openremote.manager.client.admin.users.AdminUsersPlace;
-import org.openremote.manager.client.assets.AssetsPlace;
+import org.openremote.manager.client.assets.AssetsDashboardPlace;
+import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.flows.FlowsPlace;
 import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.user.UserAccountPlace;
 
 @WithTokenizers(
     { // You might have to restart SuperDevMode after changing tokenizers
-        AssetsPlace.Tokenizer.class,
         MapPlace.Tokenizer.class,
+        AssetsDashboardPlace.Tokenizer.class,
+        AssetPlace.Tokenizer.class,
         FlowsPlace.Tokenizer.class,
         AdminOverviewPlace.Tokenizer.class,
         AdminTenantsPlace.Tokenizer.class,

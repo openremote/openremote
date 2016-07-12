@@ -24,7 +24,7 @@ import com.google.gwt.safehtml.shared.SafeHtml;
 import com.google.gwt.safehtml.shared.SafeHtmlBuilder;
 import com.google.gwt.safehtml.shared.SafeHtmlUtils;
 import com.google.gwt.text.shared.SafeHtmlRenderer;
-import org.openremote.manager.client.assets.Asset;
+import org.openremote.manager.client.assets.asset.Asset;
 
 class AssetCell extends AbstractSafeHtmlCell<Asset> {
 

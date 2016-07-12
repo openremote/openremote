@@ -28,10 +28,11 @@ import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.inject.Inject;
+import org.openremote.manager.client.assets.AssetsPlace;
 import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.admin.AdminPlace;
 import org.openremote.manager.client.admin.overview.AdminOverviewPlace;
-import org.openremote.manager.client.assets.AssetsPlace;
+import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.flows.FlowsPlace;
 import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.user.UserAccountPlace;
@@ -123,7 +124,7 @@ public class HeaderViewImpl extends Composite implements HeaderView {
 
     @UiHandler("assetsButton")
     void assetsClicked(ClickEvent e) {
-        presenter.goTo(new AssetsPlace());
+        presenter.goTo(new AssetsDashboardPlace());
     }
 
     @UiHandler("adminButton")

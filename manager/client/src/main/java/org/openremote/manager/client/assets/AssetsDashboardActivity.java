@@ -25,31 +25,27 @@ import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
-import org.openremote.manager.shared.Consumer;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.logging.Logger;
 
-public class AssetsActivity
-    extends AppActivity<AssetsPlace>
-    implements AssetsView.Presenter {
+public class AssetsDashboardActivity
+    extends AppActivity<AssetsDashboardPlace>
+    implements AssetsDashboard.Presenter {
 
-    private static final Logger LOG = Logger.getLogger(AssetsActivity.class.getName());
+    private static final Logger LOG = Logger.getLogger(AssetsDashboardActivity.class.getName());
 
-    final AssetsView view;
+    final AssetsDashboard view;
     final AssetBrowser.Presenter assetBrowserPresenter;
     final PlaceController placeController;
     final EventBus eventBus;
 
     @Inject
-    public AssetsActivity(AssetsView view,
-                          AssetBrowser.Presenter assetBrowserPresenter,
-                          PlaceController placeController,
-                          EventBus eventBus) {
+    public AssetsDashboardActivity(AssetsDashboard view,
+                                   AssetBrowser.Presenter assetBrowserPresenter,
+                                   PlaceController placeController,
+                                   EventBus eventBus) {
         this.view = view;
         this.assetBrowserPresenter = assetBrowserPresenter;
         this.placeController = placeController;
@@ -57,7 +53,7 @@ public class AssetsActivity
     }
 
     @Override
-    protected AppActivity<AssetsPlace> init(AssetsPlace place) {
+    protected AppActivity<AssetsDashboardPlace> init(AssetsDashboardPlace place) {
         return this;
     }
 

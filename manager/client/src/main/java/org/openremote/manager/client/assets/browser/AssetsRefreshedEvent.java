@@ -19,26 +19,24 @@
  */
 package org.openremote.manager.client.assets.browser;
 
-import com.google.gwt.user.client.ui.IsWidget;
-import com.google.gwt.view.client.HasData;
 import org.openremote.manager.client.assets.asset.Asset;
+import org.openremote.manager.shared.event.Event;
 
-import java.util.List;
+public class AssetsRefreshedEvent extends Event {
 
-public interface AssetBrowser extends IsWidget {
+    final protected Asset parent;
+    final protected int childCount;
 
-    interface Presenter {
-
-        AssetBrowser getView();
-
-        void loadAssetChildren(Asset parent, HasData<Asset> display);
-
-        void onAssetSelected(Asset asset);
-
-        void selectAsset(String id);
+    public AssetsRefreshedEvent(Asset parent, int childCount) {
+        this.parent = parent;
+        this.childCount = childCount;
     }
 
-    void setPresenter(Presenter presenter);
+    public Asset getParent() {
+        return parent;
+    }
 
-    void showAndSelectAsset(List<String> path, String selectedAssetId);
+    public int getChildCount() {
+        return childCount;
+    }
 }

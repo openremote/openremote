@@ -26,11 +26,70 @@ import org.openremote.manager.client.style.FormTreeStyle;
 import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
 
-import java.util.logging.Logger;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class FormTree extends CellTree {
 
-    private static final Logger LOG = Logger.getLogger(FormTree.class.getName());
+    public abstract static class Search<T, P> {
+
+        /**
+         * Looks up every element in <code>path</code> and returns a list of node values, descending
+         * and loading/expanding the tree while resolving. The returned node values are the path that
+         * was taken while descending the tree, the starting node's value is first.
+         */
+        public List<T> resolvePath(List<P> path, TreeNode startingNode) {
+            List<T> entityPath = new ArrayList<>();
+            if (path.size() == 0)
+                return entityPath;
+            resolvePath(path, entityPath, 0, startingNode);
+
+            // If we have a computed path, we need to...
+            if (entityPath.size() > 0) {
+                // Check if we actually found all path elements, if not, bail out with empty result
+                if (entityPath.size() != path.size()) {
+                    entityPath.clear();
+                } else {
+                    // Otherwise, add the starting node value as the first element
+                    //noinspection unchecked
+                    entityPath.add(0, (T) startingNode.getValue());
+                }
+            }
+            return entityPath;
+        }
+
+        protected void resolvePath(List<P> path, List<T> entityPath, int level, TreeNode node) {
+            P pathElement = path.get(level);
+            // Look for the path element in the children
+            int count = node.getChildCount();
+            for (int i = 0; i < count; i++) {
+                @SuppressWarnings("unchecked")
+                T childEntity = (T)node.getChildValue(i);
+                if (isMatchingPathElement(pathElement, childEntity)) {
+                    // We found the path element, add the entity to the path list
+                    entityPath.add(childEntity);
+
+                    if (path.size() == entityPath.size()) {
+                        // Reached the end of our search
+                        break;
+                    }
+
+                    // Continue searching if we can descent
+                    if (!node.isChildLeaf(i)) {
+                        // Opening a node is the only way to load/access it
+                        TreeNode n = node.setChildOpen(i, true);
+                        if (n != null) {
+                            resolvePath(path, entityPath, ++level, n);
+                        }
+                    }
+                }
+            }
+        }
+
+        protected abstract boolean isMatchingPathElement(P pathElement, T value);
+    }
 
     final protected WidgetStyle widgetStyle;
     final protected ThemeStyle themeStyle;
@@ -41,20 +100,49 @@ public class FormTree extends CellTree {
         this.themeStyle = formTreeStyle.getThemeStyle();
     }
 
-    public void expandTreeNode(TreeNode node) {
-        for (int i = 0; i < node.getChildCount(); i++) {
-            if (!node.isChildLeaf(i)) {
-                expandTreeNode(node.setChildOpen(i, true));
+
+    public void refresh() {
+        Map<Object, Boolean> openMap = new HashMap<>();
+        TreeNode root = getRootTreeNode();
+        getNodeOpenMap(root, openMap);
+        openMap.put(root, true);
+        refresh(root, openMap);
+    }
+
+    public void refresh(TreeNode treeNode, Map<Object, Boolean> openMap) {
+        if (treeNode == null) {
+            return;
+        }
+        for (int i = 0, n = treeNode.getChildCount(); i < n; ++i) {
+            if (null == treeNode.getChildValue(i) ||
+                treeNode.isChildLeaf(i)) {
+                continue;
+            }
+            treeNode.setChildOpen(i, false);
+            Boolean open = openMap.get(treeNode.getChildValue(i));
+            if (open != null && open) {
+                TreeNode childNode = treeNode.setChildOpen(i, true);
+                refresh(childNode, openMap);
             }
         }
     }
 
-    public void collapseTreeNode(TreeNode node) {
-        for (int i = 0; i < node.getChildCount(); i++) {
-            if (!node.isChildLeaf(i)) {
-                collapseTreeNode(node.setChildOpen(i, false));
+    protected void getNodeOpenMap(TreeNode treeNode, Map<Object, Boolean> openMap) {
+        if (treeNode == null) {
+            return;
+        }
+        for (int i = 0, n = treeNode.getChildCount(); i < n; ++i) {
+            if (null == treeNode.getChildValue(i) ||
+                treeNode.isChildLeaf(i)) {
+                continue;
             }
+
+            openMap.put(treeNode.getChildValue(i), treeNode.isChildOpen(i));
+
+            /* This gets the child node, but doesn't change the open status (there 's no other way to get the child). */
+            TreeNode childNode = treeNode.setChildOpen(i, treeNode.isChildOpen(i));
+
+            getNodeOpenMap(childNode, openMap);
         }
     }
-
 }

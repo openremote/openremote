@@ -1,0 +1,54 @@
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+             xmlns:g="urn:import:com.google.gwt.user.client.ui"
+             xmlns:w="urn:import:org.openremote.manager.client.widget">
+
+    <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
+    <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
+    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
+
+    <ui:style>
+        .assetBrowser {
+            width: 35em;
+        }
+
+        .assetControls {
+
+        }
+
+        .navItem {
+            margin: 0 1em;
+        }
+    </ui:style>
+
+    <g:HTMLPanel styleName="flex layout horizontal">
+
+        <g:SimplePanel ui:field="assetBrowserContainer"
+                       styleName="layout vertical"
+                       addStyleNames="{style.assetBrowser}"/>
+
+
+        <g:HTMLPanel styleName="flex layout vertical">
+            <g:HTMLPanel
+                    styleName="layout horizontal center end-justified {style.assetControls} {widgetStyle.SecondaryNav} {themeStyle.SecondaryNav}">
+
+                <w:Hyperlink addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem} active"
+                             icon="dashboard"
+                             targetHistoryToken="assets:"
+                             text="Show Dashboard"/>
+
+                <w:Hyperlink addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                             icon="copy"
+                             targetHistoryToken="assets:"
+                             text="Copy/Create Asset"/>
+
+            </g:HTMLPanel>
+
+            <div class="flex {widgetStyle.MainContent} {themeStyle.MainContent}">
+                <div>TODO: Asset browser switches to an advanced UI that needs more space on the left</div>
+                <g:SimplePanel ui:field="assetContentContainer"/>
+            </div>
+        </g:HTMLPanel>
+
+    </g:HTMLPanel>
+
+</ui:UiBinder>

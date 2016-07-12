@@ -21,7 +21,7 @@ package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.view.client.SingleSelectionModel;
 import com.google.gwt.view.client.TreeViewModel;
-import org.openremote.manager.client.assets.Asset;
+import org.openremote.manager.client.assets.asset.Asset;
 
 class AssetTreeModel implements TreeViewModel {
 
@@ -37,12 +37,17 @@ class AssetTreeModel implements TreeViewModel {
         });
     }
 
+    @Override
     public <T> NodeInfo<?> getNodeInfo(T value) {
         return new DefaultNodeInfo<>(
             new AssetDataProvider(presenter, (Asset) value),
             new AssetCell(),
             selectionModel,
             null);
+    }
+
+    public SingleSelectionModel<Asset> getSelectionModel() {
+        return selectionModel;
     }
 
     public boolean isLeaf(Object value) {

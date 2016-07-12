@@ -21,13 +21,9 @@ package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.view.client.AsyncDataProvider;
 import com.google.gwt.view.client.HasData;
-import org.openremote.manager.client.assets.Asset;
-
-import java.util.logging.Logger;
+import org.openremote.manager.client.assets.asset.Asset;
 
 class AssetDataProvider extends AsyncDataProvider<Asset> {
-
-    private static final Logger LOG = Logger.getLogger(AssetDataProvider.class.getName());
 
     final protected AssetBrowser.Presenter presenter;
     final protected Asset parent;

@@ -19,15 +19,23 @@
  */
 package org.openremote.manager.client.assets;
 
-import com.google.gwt.user.client.ui.IsWidget;
-import org.openremote.manager.client.assets.browser.AssetBrowser;
+import com.google.gwt.place.shared.PlaceTokenizer;
+import com.google.gwt.place.shared.Prefix;
+import org.openremote.manager.client.assets.asset.AssetPlace;
 
-public interface AssetsView extends IsWidget {
+public class AssetsDashboardPlace extends AssetPlace {
 
-    interface Presenter {
-        AssetBrowser getAssetBrowser();
+    @Prefix("assets")
+    public static class Tokenizer implements PlaceTokenizer<AssetsDashboardPlace> {
+
+        @Override
+        public AssetsDashboardPlace getPlace(String token) {
+            return new AssetsDashboardPlace();
+        }
+
+        @Override
+        public String getToken(AssetsDashboardPlace place) {
+            return "";
+        }
     }
-
-    void setPresenter(Presenter presenter);
-
 }

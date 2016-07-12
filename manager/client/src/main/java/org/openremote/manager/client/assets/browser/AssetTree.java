@@ -19,26 +19,27 @@
  */
 package org.openremote.manager.client.assets.browser;
 
-import com.google.gwt.user.client.ui.IsWidget;
-import com.google.gwt.view.client.HasData;
 import org.openremote.manager.client.assets.asset.Asset;
+import org.openremote.manager.client.style.FormTreeStyle;
+import org.openremote.manager.client.widget.FormTree;
 
-import java.util.List;
+public class AssetTree extends FormTree {
 
-public interface AssetBrowser extends IsWidget {
+    public static class IdSearch extends Search<Asset, String> {
 
-    interface Presenter {
-
-        AssetBrowser getView();
-
-        void loadAssetChildren(Asset parent, HasData<Asset> display);
-
-        void onAssetSelected(Asset asset);
-
-        void selectAsset(String id);
+        @Override
+        protected boolean isMatchingPathElement(String pathElement, Asset value) {
+            return value.getId().equals(pathElement);
+        }
     }
 
-    void setPresenter(Presenter presenter);
+    public AssetTree(AssetTreeModel viewModel, Asset rootValue, FormTreeStyle formTreeStyle, CellTreeMessages messages) {
+        super(viewModel, rootValue, formTreeStyle, messages);
+    }
 
-    void showAndSelectAsset(List<String> path, String selectedAssetId);
+    @Override
+    public AssetTreeModel getTreeViewModel() {
+        return (AssetTreeModel) super.getTreeViewModel();
+    }
+
 }

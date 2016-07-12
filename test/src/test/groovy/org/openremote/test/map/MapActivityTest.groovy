@@ -3,6 +3,7 @@ package org.openremote.test.map
 import com.google.gwt.place.shared.PlaceController
 import com.google.gwt.user.client.ui.AcceptsOneWidget
 import elemental.json.JsonObject
+import org.openremote.manager.client.assets.browser.AssetBrowser
 import org.openremote.manager.client.event.bus.EventBus
 import org.openremote.manager.client.i18n.ManagerMessages
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper
@@ -58,6 +59,7 @@ class MapActivityTest extends Specification implements ContainerTrait {
         def mapView = Mock(MapView) {
             isMapInitialised() >> false
         }
+        def assetBrowserPresenter = Mock(AssetBrowser.Presenter)
         def mapResource = Stub(MapResource) {
             // This matches all methods with any parameters, of the MapResource class
             _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
@@ -66,7 +68,7 @@ class MapActivityTest extends Specification implements ContainerTrait {
         def jsonObjectMapper = new JsonObjectMapper();
 
         def mapActivity = new MapActivity(
-                mapView, mapResource, managerMessages, requestService, placeController, jsonObjectMapper
+                assetBrowserPresenter, mapView, mapResource, managerMessages, requestService, placeController, jsonObjectMapper
         )
 
         and: "The expected map settings"
