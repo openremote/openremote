@@ -22,9 +22,16 @@ package org.openremote.manager.client.app;
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.inject.Inject;
+import org.openremote.manager.client.admin.overview.AdminOverviewPlace;
+import org.openremote.manager.client.assets.AssetsDashboardPlace;
+import org.openremote.manager.client.assets.asset.Asset;
+import org.openremote.manager.client.assets.asset.AssetPlace;
+import org.openremote.manager.client.assets.browser.AssetSelectedEvent;
 import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.event.bus.EventBus;
+import org.openremote.manager.client.flows.FlowsPlace;
+import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.user.UserControls;
 import org.openremote.manager.shared.Constants;
@@ -35,6 +42,8 @@ public class HeaderPresenter implements HeaderView.Presenter {
     final protected UserControls.Presenter userControlsPresenter;
     final protected PlaceController placeController;
     final protected SecurityService securityService;
+
+    protected Asset selectedAsset;
 
     @Inject
     public HeaderPresenter(HeaderView view,
@@ -54,6 +63,11 @@ public class HeaderPresenter implements HeaderView.Presenter {
             event -> view.onPlaceChange(event.getPlace())
         );
 
+        eventBus.register(
+            AssetSelectedEvent.class,
+            event -> selectedAsset = event.getAsset()
+        );
+
         view.setUsername(securityService.getParsedToken().getPreferredUsername());
         eventBus.register(
             UserChangeEvent.class,
@@ -67,8 +81,33 @@ public class HeaderPresenter implements HeaderView.Presenter {
     }
 
     @Override
-    public void goTo(Place place) {
-        placeController.goTo(place);
+    public void navigateMap() {
+        if (selectedAsset != null) {
+            placeController.goTo(new MapPlace());
+        } else {
+            placeController.goTo(new MapPlace());
+        }
+    }
+
+    @Override
+    public void navigateAssets() {
+        if (selectedAsset != null) {
+            placeController.goTo(new AssetPlace(selectedAsset.getId()));
+        } else {
+            placeController.goTo(new AssetsDashboardPlace());
+        }
+    }
+
+    @Override
+    public void navigateFlows() {
+        placeController.goTo(new FlowsPlace());
+
+    }
+
+    @Override
+    public void navigateAdmin() {
+        placeController.goTo(new AdminOverviewPlace());
+
     }
 
     @Override

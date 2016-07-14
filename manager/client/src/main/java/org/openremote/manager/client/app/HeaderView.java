@@ -26,9 +26,16 @@ import org.openremote.manager.client.user.UserControls;
 public interface HeaderView extends IsWidget {
 
     interface Presenter {
+
         HeaderView getView();
 
-        void goTo(Place place);
+        void navigateMap();
+
+        void navigateAssets();
+
+        void navigateFlows();
+
+        void navigateAdmin();
 
         UserControls getUserControls();
 

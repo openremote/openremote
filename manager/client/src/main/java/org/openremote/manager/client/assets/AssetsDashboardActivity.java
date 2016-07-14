@@ -66,6 +66,8 @@ public class AssetsDashboardActivity
     public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
         view.setPresenter(this);
         container.setWidget(view.asWidget());
+
+        assetBrowserPresenter.selectAsset(null);
     }
 
     @Override

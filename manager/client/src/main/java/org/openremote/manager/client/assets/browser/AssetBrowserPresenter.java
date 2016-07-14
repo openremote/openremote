@@ -54,57 +54,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         view.setPresenter(this);
 
         this.eventBus.register(AssetsRefreshedEvent.class, event -> {
-            // Find the last selected asset after a data refresh and select it again
-            if (selectedAssetId != null) {
-                // TODO: We must build the asset path here, by finding the asset first, then its parents recursively
-                List<String> path = new ArrayList<>();
-                switch (selectedAssetId) {
-                    case "composite:gateways":
-                        path.add("composite:gateways");
-                        break;
-                    case "composite:buildings":
-                        path.add("composite:buildings");
-                        break;
-                    case "composite:rooms":
-                        path.add("composite:rooms");
-                        break;
-                    case "composite:thermostats":
-                        path.add("composite:thermostats");
-                        break;
-                    case "0":
-                        path.add("composite:gateways");
-                        path.add("0");
-                        break;
-                    case "1":
-                        path.add("composite:gateways");
-                        path.add("1");
-                        break;
-                    case "2":
-                        path.add("composite:gateways");
-                        path.add("2");
-                        break;
-                    case "3":
-                        path.add("composite:gateways");
-                        path.add("3");
-                        break;
-                    case "11":
-                        path.add("composite:gateways");
-                        path.add("1");
-                        path.add("11");
-                        break;
-                    case "22":
-                        path.add("composite:gateways");
-                        path.add("1");
-                        path.add("22");
-                        break;
-                    case "33":
-                        path.add("composite:gateways");
-                        path.add("1");
-                        path.add("33");
-                        break;
-                }
-                view.showAndSelectAsset(path, selectedAssetId);
-            }
+            updateViewSelection();
         });
     }
 
@@ -177,7 +127,8 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     @Override
     public void onAssetSelected(Asset asset) {
         if (!asset.getId().equals(selectedAssetId)) {
-            selectAsset(asset.getId());
+            selectedAssetId = asset.getId();
+            eventBus.dispatch(new AssetSelectedEvent(asset));
             placeController.goTo(new AssetPlace(asset.getId()));
         }
     }
@@ -185,5 +136,63 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     @Override
     public void selectAsset(String id) {
         this.selectedAssetId = id;
+        updateViewSelection();
+    }
+
+    protected void updateViewSelection() {
+        // Find the last selected asset after a data refresh and select it again
+        if (selectedAssetId != null) {
+            // TODO: We must build the asset path here, by finding the asset first, then its parents recursively
+            List<String> path = new ArrayList<>();
+            switch (selectedAssetId) {
+                case "composite:gateways":
+                    path.add("composite:gateways");
+                    break;
+                case "composite:buildings":
+                    path.add("composite:buildings");
+                    break;
+                case "composite:rooms":
+                    path.add("composite:rooms");
+                    break;
+                case "composite:thermostats":
+                    path.add("composite:thermostats");
+                    break;
+                case "0":
+                    path.add("composite:gateways");
+                    path.add("0");
+                    break;
+                case "1":
+                    path.add("composite:gateways");
+                    path.add("1");
+                    break;
+                case "2":
+                    path.add("composite:gateways");
+                    path.add("2");
+                    break;
+                case "3":
+                    path.add("composite:gateways");
+                    path.add("3");
+                    break;
+                case "11":
+                    path.add("composite:gateways");
+                    path.add("1");
+                    path.add("11");
+                    break;
+                case "22":
+                    path.add("composite:gateways");
+                    path.add("1");
+                    path.add("22");
+                    break;
+                case "33":
+                    path.add("composite:gateways");
+                    path.add("1");
+                    path.add("33");
+                    break;
+            }
+            view.showAndSelectAsset(path, selectedAssetId);
+        } else {
+            eventBus.dispatch(new AssetSelectedEvent(null));
+            view.deselectAssets();
+        }
     }
 }

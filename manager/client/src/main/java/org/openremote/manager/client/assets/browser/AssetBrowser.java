@@ -41,4 +41,6 @@ public interface AssetBrowser extends IsWidget {
     void setPresenter(Presenter presenter);
 
     void showAndSelectAsset(List<String> path, String selectedAssetId);
+
+    void deselectAssets();
 }

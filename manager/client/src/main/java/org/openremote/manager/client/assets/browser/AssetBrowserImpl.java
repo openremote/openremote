@@ -107,15 +107,8 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
         }
     }
 
-    /*
-    @UiHandler("expandButton")
-    public void expandClicked(final ClickEvent event) {
-        if (assetTree != null) {
-            LOG.info("### CLICK");
-            NativeEvent clickEvent = Document.get().createMouseDownEvent(0, 0, 0, 0, 0, false, false, false, false, 0);
-            Element target = (Element) assetTree.getElement().getLastChild().getFirstChild().getLastChild();
-            target.dispatchEvent(clickEvent);
-        }
+    @Override
+    public void deselectAssets() {
+        assetTree.getTreeViewModel().getSelectionModel().clear();
     }
-*/
 }

@@ -31,8 +31,6 @@ import com.google.inject.Inject;
 import org.openremote.manager.client.assets.AssetsPlace;
 import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.admin.AdminPlace;
-import org.openremote.manager.client.admin.overview.AdminOverviewPlace;
-import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.flows.FlowsPlace;
 import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.user.UserAccountPlace;
@@ -119,22 +117,22 @@ public class HeaderViewImpl extends Composite implements HeaderView {
 
     @UiHandler("mapButton")
     void mapClicked(ClickEvent e) {
-        presenter.goTo(new MapPlace());
+        presenter.navigateMap();
     }
 
     @UiHandler("assetsButton")
     void assetsClicked(ClickEvent e) {
-        presenter.goTo(new AssetsDashboardPlace());
+        presenter.navigateAssets();
     }
 
     @UiHandler("adminButton")
     void adminClicked(ClickEvent e) {
-        presenter.goTo(new AdminOverviewPlace());
+        presenter.navigateAdmin();
     }
 
     @UiHandler("flowsButton")
     void flowsClicked(ClickEvent e) {
-        presenter.goTo(new FlowsPlace());
+        presenter.navigateFlows();
     }
 
     @UiHandler("userButton")
