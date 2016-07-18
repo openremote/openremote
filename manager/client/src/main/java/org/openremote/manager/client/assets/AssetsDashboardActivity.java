@@ -21,7 +21,9 @@ package org.openremote.manager.client.assets;
 
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
+import org.openremote.manager.client.assets.browser.AssetSelectedEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
@@ -40,6 +42,8 @@ public class AssetsDashboardActivity
     final AssetBrowser.Presenter assetBrowserPresenter;
     final PlaceController placeController;
     final EventBus eventBus;
+
+    protected EventRegistration<AssetSelectedEvent> assetSelectionRegistration;
 
     @Inject
     public AssetsDashboardActivity(AssetsDashboard view,
@@ -67,11 +71,23 @@ public class AssetsDashboardActivity
         view.setPresenter(this);
         container.setWidget(view.asWidget());
 
+        assetSelectionRegistration = assetBrowserPresenter.onSelection(
+            event -> {
+                if (event.getAsset() != null) {
+                    placeController.goTo(new AssetPlace(event.getAsset().getId()));
+                }
+                eventBus.dispatch(event);
+            }
+        );
+
         assetBrowserPresenter.selectAsset(null);
     }
 
     @Override
-    public AssetBrowser getAssetBrowser() {
-        return assetBrowserPresenter.getView();
+    public void onStop() {
+        if (assetSelectionRegistration != null) {
+            assetBrowserPresenter.removeRegistration(assetSelectionRegistration);
+        }
+        super.onStop();
     }
 }

@@ -43,9 +43,6 @@ public class AssetViewImpl extends Composite implements AssetView {
     ManagerMessages managerMessages;
 
     @UiField
-    SimplePanel assetBrowserContainer;
-
-    @UiField
     SimplePanel assetContentContainer;
 
     final FormTreeStyle formTreeStyle;
@@ -63,9 +60,6 @@ public class AssetViewImpl extends Composite implements AssetView {
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
-
-        assetBrowserContainer.clear();
-        assetBrowserContainer.add(presenter.getAssetBrowser());
     }
 
     @Override

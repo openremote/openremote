@@ -24,8 +24,9 @@ import com.google.gwt.user.client.Timer;
 import com.google.gwt.view.client.HasData;
 import com.google.gwt.view.client.Range;
 import org.openremote.manager.client.assets.asset.Asset;
-import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.event.bus.EventBus;
+import org.openremote.manager.client.event.bus.EventListener;
+import org.openremote.manager.client.event.bus.EventRegistration;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -37,25 +38,22 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
 
     private static final Logger LOG = Logger.getLogger(AssetBrowserPresenter.class.getName());
 
+    final EventBus internalEventbus;
     final AssetBrowser view;
     final PlaceController placeController;
-    final EventBus eventBus;
 
-    String selectedAssetId;
+    protected Asset selectedAsset;
 
     @Inject
     public AssetBrowserPresenter(AssetBrowser view,
-                                 PlaceController placeController,
-                                 EventBus eventBus) {
+                                 PlaceController placeController) {
+
+        this.internalEventbus = new EventBus();
+
         this.view = view;
         this.placeController = placeController;
-        this.eventBus = eventBus;
 
         view.setPresenter(this);
-
-        this.eventBus.register(AssetsRefreshedEvent.class, event -> {
-            updateViewSelection();
-        });
     }
 
     @Override
@@ -71,32 +69,33 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         if (Asset.isRoot(parent)) {
             t = new Timer() {
                 public void run() {
-                    display.setRowData(0, Arrays.asList(
+                    List<Asset> assets = Arrays.asList(
                         new Asset("composite:gateways", Asset.Type.COMPOSITE.name(), "Gateways", null),
                         new Asset("composite:buildings", Asset.Type.COMPOSITE.name(), "Buildings", null),
                         new Asset("composite:rooms", Asset.Type.COMPOSITE.name(), "Rooms", null),
                         new Asset("composite:thermostats", Asset.Type.COMPOSITE.name(), "Thermostats", null)
-                    ));
-                    eventBus.dispatch(new AssetsRefreshedEvent(parent, display.getRowCount()));
+                    );
+                    display.setRowData(0, assets);
+                    onAssetsRefreshed(parent, assets);
                 }
             };
         } else if (parent.getType().equals(Asset.Type.COMPOSITE.name())) {
             if (parent.getId().equals("composite:gateways")) {
                 t = new Timer() {
                     public void run() {
-                        List<Asset> list = new ArrayList<>();
-                        for (int i = 0; i < 100; i++) {
-                            list.add(
+                        List<Asset> assets = new ArrayList<>();
+                        for (int i = 1000; i < 1100; i++) {
+                            assets.add(
                                 new Asset(Integer.toString(i), Asset.Type.COMPOSITE.name(), "Gateway " + i, "123.123")
                             );
                         }
-                        display.setRowData(0, list);
-                        eventBus.dispatch(new AssetsRefreshedEvent(parent, display.getRowCount()));
+                        display.setRowData(0, assets);
+                        onAssetsRefreshed(parent, assets);
                     }
                 };
             }
 
-            if (parent.getId().equals("1")) {
+            if (parent.getId().equals("1000")) {
                 t = new Timer() {
                     public void run() {
                         List<Asset> assets = Arrays.asList(
@@ -105,7 +104,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                             new Asset("33", Asset.Type.SENSOR.name(), "Sensor 3", "123.123")
                         );
                         display.setRowData(0, assets);
-                        eventBus.dispatch(new AssetsRefreshedEvent(parent, display.getRowCount()));
+                        onAssetsRefreshed(parent, assets);
                     }
                 };
             }
@@ -120,79 +119,96 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         } else {
             display.setRowData(0, new ArrayList<>());
             display.setRowCount(0, true);
-            eventBus.dispatch(new AssetsRefreshedEvent(parent, display.getRowCount()));
+            onAssetsRefreshed(parent, new ArrayList<>());
         }
     }
 
     @Override
     public void onAssetSelected(Asset asset) {
-        if (!asset.getId().equals(selectedAssetId)) {
-            selectedAssetId = asset.getId();
-            eventBus.dispatch(new AssetSelectedEvent(asset));
-            placeController.goTo(new AssetPlace(asset.getId()));
+        if (asset == null) {
+            selectedAsset = null;
+            internalEventbus.dispatch(new AssetSelectedEvent(null));
+        } else if (selectedAsset == null || !selectedAsset.getId().equals(asset.getId())) {
+            selectedAsset = asset;
+            internalEventbus.dispatch(new AssetSelectedEvent(selectedAsset));
         }
     }
 
     @Override
-    public void selectAsset(String id) {
-        this.selectedAssetId = id;
-        updateViewSelection();
-    }
-
-    protected void updateViewSelection() {
-        // Find the last selected asset after a data refresh and select it again
-        if (selectedAssetId != null) {
-            // TODO: We must build the asset path here, by finding the asset first, then its parents recursively
-            List<String> path = new ArrayList<>();
-            switch (selectedAssetId) {
-                case "composite:gateways":
-                    path.add("composite:gateways");
-                    break;
-                case "composite:buildings":
-                    path.add("composite:buildings");
-                    break;
-                case "composite:rooms":
-                    path.add("composite:rooms");
-                    break;
-                case "composite:thermostats":
-                    path.add("composite:thermostats");
-                    break;
-                case "0":
-                    path.add("composite:gateways");
-                    path.add("0");
-                    break;
-                case "1":
-                    path.add("composite:gateways");
-                    path.add("1");
-                    break;
-                case "2":
-                    path.add("composite:gateways");
-                    path.add("2");
-                    break;
-                case "3":
-                    path.add("composite:gateways");
-                    path.add("3");
-                    break;
-                case "11":
-                    path.add("composite:gateways");
-                    path.add("1");
-                    path.add("11");
-                    break;
-                case "22":
-                    path.add("composite:gateways");
-                    path.add("1");
-                    path.add("22");
-                    break;
-                case "33":
-                    path.add("composite:gateways");
-                    path.add("1");
-                    path.add("33");
-                    break;
-            }
-            view.showAndSelectAsset(path, selectedAssetId);
+    public void selectAsset(Asset asset) {
+        onAssetSelected(asset);
+        if (selectedAsset != null) {
+            updateViewSelection(true);
         } else {
-            eventBus.dispatch(new AssetSelectedEvent(null));
             view.deselectAssets();
         }
+    }
+
+    @Override
+    public EventRegistration<AssetSelectedEvent> onSelection(EventListener<AssetSelectedEvent> listener) {
+        return internalEventbus.register(AssetSelectedEvent.class, listener);
+    }
+
+    @Override
+    public void removeRegistration(EventRegistration registration) {
+        internalEventbus.remove(registration);
+    }
+
+    protected void updateViewSelection(boolean scrollIntoView) {
+        // Find the last selected asset after a data refresh and select it again
+        if (selectedAsset != null) {
+            view.showAndSelectAsset(getSelectedAssetPath(), selectedAsset.getId(), scrollIntoView);
+        }
+    }
+
+    protected void onAssetsRefreshed(Asset parent, List<Asset> children) {
+        if (selectedAsset != null) {
+            // Only scroll the view if the selected asset was loaded
+            boolean scroll = false;
+            for (Asset childAsset : children) {
+                if (childAsset.getId().equals(selectedAsset.getId()))
+                    scroll = true;
+            }
+            updateViewSelection(scroll);
+        }
+    }
+
+    protected List<String> getSelectedAssetPath() {
+        List<String> path = new ArrayList<>();
+        // TODO: We must build the asset path here, by finding the asset first, then its parents recursively
+        switch (selectedAsset.getId()) {
+            case "composite:gateways":
+                path.add("composite:gateways");
+                break;
+            case "composite:buildings":
+                path.add("composite:buildings");
+                break;
+            case "composite:rooms":
+                path.add("composite:rooms");
+                break;
+            case "composite:thermostats":
+                path.add("composite:thermostats");
+                break;
+            case "11":
+                path.add("composite:gateways");
+                path.add("1000");
+                path.add("11");
+                break;
+            case "22":
+                path.add("composite:gateways");
+                path.add("1000");
+                path.add("22");
+                break;
+            case "33":
+                path.add("composite:gateways");
+                path.add("1000");
+                path.add("33");
+                break;
+            default:
+                path.add("composite:gateways");
+                path.add(selectedAsset.getId());
+                break;
+        }
+        return path;
     }
 }

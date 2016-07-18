@@ -19,39 +19,49 @@
  */
 package org.openremote.manager.client.app;
 
-import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.inject.Inject;
 import org.openremote.manager.client.admin.overview.AdminOverviewPlace;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.asset.Asset;
 import org.openremote.manager.client.assets.asset.AssetPlace;
+import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetSelectedEvent;
 import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.event.bus.EventBus;
+import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.flows.FlowsPlace;
 import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.user.UserControls;
 import org.openremote.manager.shared.Constants;
 
+import java.util.logging.Logger;
+
 public class HeaderPresenter implements HeaderView.Presenter {
 
+    private static final Logger LOG = Logger.getLogger(HeaderPresenter.class.getName());
+
     final protected HeaderView view;
+    final protected AssetBrowser.Presenter assetBrowserPresenter;
     final protected UserControls.Presenter userControlsPresenter;
     final protected PlaceController placeController;
     final protected SecurityService securityService;
 
     protected Asset selectedAsset;
 
+    protected EventRegistration<AssetSelectedEvent> assetSelectionRegistration;
+
     @Inject
     public HeaderPresenter(HeaderView view,
+                           AssetBrowser.Presenter assetBrowserPresenter,
                            UserControls.Presenter userControlsPresenter,
                            SecurityService securityService,
                            PlaceController placeController,
                            EventBus eventBus) {
         this.view = view;
+        this.assetBrowserPresenter = assetBrowserPresenter;
         this.userControlsPresenter = userControlsPresenter;
         this.placeController = placeController;
         this.securityService = securityService;
@@ -63,9 +73,10 @@ public class HeaderPresenter implements HeaderView.Presenter {
             event -> view.onPlaceChange(event.getPlace())
         );
 
-        eventBus.register(
-            AssetSelectedEvent.class,
-            event -> selectedAsset = event.getAsset()
+        assetSelectionRegistration = eventBus.register(AssetSelectedEvent.class,
+            event -> {
+                selectedAsset = event.getAsset();
+            }
         );
 
         view.setUsername(securityService.getParsedToken().getPreferredUsername());
@@ -83,7 +94,7 @@ public class HeaderPresenter implements HeaderView.Presenter {
     @Override
     public void navigateMap() {
         if (selectedAsset != null) {
-            placeController.goTo(new MapPlace());
+            placeController.goTo(new MapPlace(selectedAsset.getId()));
         } else {
             placeController.goTo(new MapPlace());
         }

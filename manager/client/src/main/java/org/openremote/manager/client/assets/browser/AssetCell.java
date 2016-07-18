@@ -20,6 +20,8 @@
 package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.cell.client.AbstractSafeHtmlCell;
+import com.google.gwt.core.client.GWT;
+import com.google.gwt.safehtml.client.SafeHtmlTemplates;
 import com.google.gwt.safehtml.shared.SafeHtml;
 import com.google.gwt.safehtml.shared.SafeHtmlBuilder;
 import com.google.gwt.safehtml.shared.SafeHtmlUtils;
@@ -28,22 +30,31 @@ import org.openremote.manager.client.assets.asset.Asset;
 
 class AssetCell extends AbstractSafeHtmlCell<Asset> {
 
+    public interface AssetTemplates extends SafeHtmlTemplates {
+        @Template("<div id=\"asset-{0}\">{1}</div>")
+        SafeHtml assetItem(String assetId, String displayName);
+    }
+
+    private static final AssetTemplates TEMPLATES = GWT.create(AssetTemplates.class);
+
     static final SafeHtmlRenderer<Asset> assetRenderer = new SafeHtmlRenderer<Asset>() {
-        public SafeHtml render(Asset object) {
-            return (object == null)
-                ? SafeHtmlUtils.EMPTY_SAFE_HTML
-                : SafeHtmlUtils.fromString(object.getDisplayName()
-            );
+        public SafeHtml render(Asset asset) {
+            if (asset == null)
+                return SafeHtmlUtils.EMPTY_SAFE_HTML;
+            SafeHtmlBuilder builder = new SafeHtmlBuilder();
+            render(asset, builder);
+            return builder.toSafeHtml();
         }
 
-        public void render(Asset object, SafeHtmlBuilder appendable) {
-            appendable.append(SafeHtmlUtils.fromString(object.getDisplayName()));
+        public void render(Asset asset, SafeHtmlBuilder appendable) {
+            appendable.append(TEMPLATES.assetItem(asset.getId(), asset.getDisplayName()));
         }
     };
 
     public AssetCell() {
         super(assetRenderer);
     }
+
 
     @Override
     public void render(Context context, SafeHtml value, SafeHtmlBuilder sb) {

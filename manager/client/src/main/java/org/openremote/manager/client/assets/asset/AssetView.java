@@ -20,12 +20,10 @@
 package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.user.client.ui.IsWidget;
-import org.openremote.manager.client.assets.browser.AssetBrowser;
 
 public interface AssetView extends IsWidget {
 
     interface Presenter {
-        AssetBrowser getAssetBrowser();
     }
 
     void setPresenter(Presenter presenter);

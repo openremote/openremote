@@ -7,10 +7,6 @@
     <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
     <ui:style>
-        .assetBrowser {
-            width: 35em;
-        }
-
         .assetControls {
 
         }
@@ -20,35 +16,27 @@
         }
     </ui:style>
 
-    <g:HTMLPanel styleName="flex layout horizontal">
+    <g:HTMLPanel styleName="flex layout vertical">
+        <g:HTMLPanel
+                styleName="layout horizontal center end-justified {style.assetControls} {widgetStyle.SecondaryNav} {themeStyle.SecondaryNav}">
 
-        <g:SimplePanel ui:field="assetBrowserContainer"
-                       styleName="layout vertical"
-                       addStyleNames="{style.assetBrowser}"/>
+            <w:Hyperlink addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                         icon="dashboard"
+                         targetHistoryToken="assets:"
+                         text="Show Dashboard"/>
 
+            <w:Hyperlink
+                    addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem} active"
+                    icon="edit"
+                    targetHistoryToken="assets:"
+                    text="Edit Asset"/>
 
-        <g:HTMLPanel styleName="flex layout vertical">
-            <g:HTMLPanel
-                    styleName="layout horizontal center end-justified {style.assetControls} {widgetStyle.SecondaryNav} {themeStyle.SecondaryNav}">
-
-                <w:Hyperlink addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
-                             icon="dashboard"
-                             targetHistoryToken="assets:"
-                             text="Show Dashboard"/>
-
-                <w:Hyperlink addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem} active"
-                             icon="edit"
-                             targetHistoryToken="assets:"
-                             text="Edit Asset"/>
-
-            </g:HTMLPanel>
-
-            <div class="flex {widgetStyle.MainContent} {themeStyle.MainContent}">
-                <div>TODO: Asset browser switches to an advanced UI that needs more space on the left</div>
-                <g:SimplePanel ui:field="assetContentContainer"/>
-            </div>
         </g:HTMLPanel>
 
+        <div class="flex {widgetStyle.MainContent} {themeStyle.MainContent}">
+            <div>TODO: Asset browser switches to an advanced UI that needs more space on the left</div>
+            <g:SimplePanel ui:field="assetContentContainer"/>
+        </div>
     </g:HTMLPanel>
 
 </ui:UiBinder>

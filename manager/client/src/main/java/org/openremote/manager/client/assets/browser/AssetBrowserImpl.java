@@ -20,10 +20,14 @@
 package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.dom.client.Element;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.cellview.client.CellTree;
-import com.google.gwt.user.client.ui.*;
+import com.google.gwt.user.client.ui.Composite;
+import com.google.gwt.user.client.ui.HTMLPanel;
+import com.google.gwt.user.client.ui.SimplePanel;
+import com.google.gwt.user.client.ui.TextBox;
 import org.openremote.manager.client.assets.asset.Asset;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTreeStyle;
@@ -51,11 +55,6 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
 
     @UiField
     PushButton filterButton;
-
-/*
-    @UiField
-    PushButton expandButton;
-*/
 
     final FormTreeStyle formTreeStyle;
 
@@ -99,11 +98,29 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
     }
 
     @Override
-    public void showAndSelectAsset(List<String> path, String selectedAssetId) {
+    public void showAndSelectAsset(List<String> path, String selectedAssetId, boolean scrollIntoView) {
         List<Asset> selectedPath = new AssetTree.IdSearch().resolvePath(path, assetTree.getRootTreeNode());
         if (selectedPath.size() > 0) {
-            Asset selectedAsset = selectedPath.get(selectedPath.size()-1);
+            Asset selectedAsset = selectedPath.get(selectedPath.size() - 1);
             assetTree.getTreeViewModel().getSelectionModel().setSelected(selectedAsset, true);
+
+            if (!scrollIntoView)
+                return;
+
+            // We place the selected asset in the middle of the tree container
+            elemental.dom.Element treeElement = (elemental.dom.Element) assetTree.getElement();
+            String selector = "#asset-" + selectedAssetId.replaceAll(":", "\\\\:");
+            elemental.dom.Element assetElement = treeElement.querySelector(selector);
+            int offsetTop = 0;
+            if (assetElement != null && assetElement.getOffsetParent() != null) {
+                elemental.dom.Element el = assetElement.getOffsetParent();
+                do {
+                    offsetTop += el.getOffsetTop();
+                } while ((el = el.getOffsetParent()) != null);
+                Element treeContainerElement = assetTreeContainer.getElement();
+                int middleOffset = offsetTop - treeContainerElement.getClientHeight()/2 - treeContainerElement.getOffsetTop();
+                treeContainerElement.setScrollTop(middleOffset);
+            }
         }
     }
 

@@ -7,10 +7,6 @@
     <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
     <ui:style>
-        .assetBrowser {
-            width: 35em;
-        }
-
         .assetsControls {
 
         }
@@ -21,11 +17,6 @@
     </ui:style>
 
     <g:HTMLPanel styleName="flex layout horizontal">
-
-        <g:SimplePanel ui:field="assetBrowserContainer"
-                       styleName="layout vertical"
-                       addStyleNames="{style.assetBrowser}"/>
-
 
         <g:HTMLPanel styleName="flex layout vertical">
             <g:HTMLPanel

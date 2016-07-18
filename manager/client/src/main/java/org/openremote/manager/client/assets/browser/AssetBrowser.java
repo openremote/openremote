@@ -22,6 +22,8 @@ package org.openremote.manager.client.assets.browser;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.view.client.HasData;
 import org.openremote.manager.client.assets.asset.Asset;
+import org.openremote.manager.client.event.bus.EventListener;
+import org.openremote.manager.client.event.bus.EventRegistration;
 
 import java.util.List;
 
@@ -35,12 +37,16 @@ public interface AssetBrowser extends IsWidget {
 
         void onAssetSelected(Asset asset);
 
-        void selectAsset(String id);
+        void selectAsset(Asset asset);
+
+        EventRegistration<AssetSelectedEvent> onSelection(EventListener<AssetSelectedEvent> listener);
+
+        void removeRegistration(EventRegistration registration);
     }
 
     void setPresenter(Presenter presenter);
 
-    void showAndSelectAsset(List<String> path, String selectedAssetId);
+    void showAndSelectAsset(List<String> path, String selectedAssetId, boolean scrollIntoView);
 
     void deselectAssets();
 }

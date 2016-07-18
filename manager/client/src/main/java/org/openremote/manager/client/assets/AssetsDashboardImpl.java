@@ -42,9 +42,6 @@ public class AssetsDashboardImpl extends Composite implements AssetsDashboard {
     ManagerMessages managerMessages;
 
     @UiField
-    SimplePanel assetBrowserContainer;
-
-    @UiField
     SimplePanel assetsContentContainer;
 
     final FormTreeStyle formTreeStyle;
@@ -62,8 +59,5 @@ public class AssetsDashboardImpl extends Composite implements AssetsDashboard {
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
-
-        assetBrowserContainer.clear();
-        assetBrowserContainer.add(presenter.getAssetBrowser());
     }
 }

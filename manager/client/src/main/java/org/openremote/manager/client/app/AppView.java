@@ -35,6 +35,8 @@ public interface AppView extends IsWidget {
 
     AcceptsOneWidget getHeaderPanel();
 
+    AcceptsOneWidget getSidebarPanel();
+
     AcceptsOneWidget getContentPanel();
 
     AcceptsOneWidget getFooterPanel();

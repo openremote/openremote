@@ -25,17 +25,30 @@ import com.google.gwt.place.shared.Prefix;
 
 public class MapPlace extends Place {
 
+    protected String assetId;
+
+    public MapPlace(String assetId) {
+        this.assetId = assetId;
+    }
+
+    public MapPlace() {
+    }
+
+    public String getAssetId() {
+        return assetId;
+    }
+
     @Prefix("map")
     public static class Tokenizer implements PlaceTokenizer<MapPlace> {
 
         @Override
         public MapPlace getPlace(String token) {
-            return new MapPlace();
+            return new MapPlace(token != null && token.length() > 0 ? token : null);
         }
 
         @Override
         public String getToken(MapPlace place) {
-            return "";
+            return place.getAssetId() != null ? place.getAssetId() : "";
         }
     }
 }

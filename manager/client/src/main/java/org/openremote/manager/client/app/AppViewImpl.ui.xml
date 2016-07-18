@@ -7,7 +7,10 @@
 
     <g:FlowPanel styleName="layout vertical" addStyleNames="{widgetStyle.Viewport} {themeStyle.Viewport}">
         <g:SimplePanel ui:field="header" styleName="layout horizontal"/>
-        <g:SimplePanel ui:field="content" styleName="flex layout vertical"/>
+        <g:FlowPanel styleName="flex layout horizontal">
+            <g:SimplePanel ui:field="sidebar" styleName="layout vertical"/>
+            <g:SimplePanel ui:field="content" styleName="flex layout vertical"/>
+        </g:FlowPanel>
         <g:SimplePanel ui:field="footer" styleName="layout horizontal"/>
     </g:FlowPanel>
 

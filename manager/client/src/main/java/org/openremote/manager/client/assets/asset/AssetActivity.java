@@ -20,8 +20,11 @@
 package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.place.shared.PlaceController;
+import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
+import org.openremote.manager.client.assets.browser.AssetSelectedEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
@@ -43,6 +46,7 @@ public class AssetActivity
     final EventBus eventBus;
     final RequestService requestService;
 
+    protected EventRegistration<AssetSelectedEvent> assetSelectionRegistration;
     protected String assetId;
     protected Asset asset;
 
@@ -75,6 +79,19 @@ public class AssetActivity
         view.setPresenter(this);
         container.setWidget(view.asWidget());
 
+        assetSelectionRegistration = assetBrowserPresenter.onSelection(
+            event -> {
+                if (event.getAsset() == null) {
+                    placeController.goTo(new AssetsDashboardPlace());
+                } else {
+                    if (assetId == null || !assetId.equals(event.getAsset().getId())) {
+                        placeController.goTo(new AssetPlace(event.getAsset().getId()));
+                    }
+                }
+                eventBus.dispatch(event);
+            }
+        );
+
         if (assetId != null) {
             loadAsset();
         } else {
@@ -85,16 +102,25 @@ public class AssetActivity
     }
 
     @Override
-    public AssetBrowser getAssetBrowser() {
-        return assetBrowserPresenter.getView();
+    public void onStop() {
+        if (assetSelectionRegistration != null) {
+            assetBrowserPresenter.removeRegistration(assetSelectionRegistration);
+        }
+        super.onStop();
     }
 
     protected void loadAsset() {
         view.setFormBusy(true);
 
-        LOG.info("### TODO: Load Asset");
-        this.asset = new Asset(assetId, "DUMMY", "DUMMY FOR ID " + assetId, null);
-        writeToView();
+        new Timer() {
+            public void run() {
+                LOG.info("### TODO: Load Asset");
+                asset = new Asset(assetId, "DUMMY", "DUMMY FOR ID " + assetId, null);
+                assetBrowserPresenter.selectAsset(asset);
+                writeToView();
+            }
+        }.schedule(100);
+
 
         /* TODO query
         requestService.execute(
@@ -118,7 +144,6 @@ public class AssetActivity
     }
 
     protected void writeToView() {
-        assetBrowserPresenter.selectAsset(assetId);
         view.setDisplayName(asset.getDisplayName());
         // TODO Write data
     }

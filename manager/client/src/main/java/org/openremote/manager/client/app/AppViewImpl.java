@@ -24,7 +24,9 @@ import com.google.gwt.place.shared.Place;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.*;
+import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.i18n.ManagerMessages;
+import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
 
@@ -50,6 +52,9 @@ public class AppViewImpl extends Composite implements AppView {
     SimplePanel header;
 
     @UiField
+    SimplePanel sidebar;
+
+    @UiField
     SimplePanel content;
 
     @UiField
@@ -73,6 +78,11 @@ public class AppViewImpl extends Composite implements AppView {
     }
 
     @Override
+    public AcceptsOneWidget getSidebarPanel() {
+        return sidebar;
+    }
+
+    @Override
     public AcceptsOneWidget getContentPanel() {
         return content;
     }
@@ -84,13 +94,13 @@ public class AppViewImpl extends Composite implements AppView {
 
     @Override
     public void updateLayout(Place place) {
-/*
-        bodyPanel.setWidgetHidden(leftSidePanel, true);
-        bodyPanel.setWidgetHidden(contentPanel, false);
-
-        if (place instanceof AssetsPlace) {
-            bodyPanel.setWidgetHidden(leftSidePanel, false);
+        // TODO ugly sidebar selection
+        sidebar.setVisible(false);
+        if (place instanceof AssetPlace) {
+            sidebar.setVisible(true);
         }
-*/
+        if (place instanceof MapPlace) {
+            sidebar.setVisible(true);
+        }
     }
 }

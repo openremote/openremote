@@ -21,13 +21,17 @@ package org.openremote.manager.client.map;
 
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
+import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import org.openremote.manager.client.assets.asset.Asset;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
+import org.openremote.manager.client.assets.browser.AssetSelectedEvent;
 import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
+import org.openremote.manager.client.interop.mapbox.LngLat;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.shared.map.MapResource;
@@ -42,13 +46,17 @@ public class MapActivity extends AppActivity<MapPlace> implements MapView.Presen
 
     private static final Logger LOG = Logger.getLogger(MapActivity.class.getName());
 
-    final AssetBrowser.Presenter assetBrowserPresenter;
     final MapView view;
+    final AssetBrowser.Presenter assetBrowserPresenter;
     final MapResource mapResource;
     final ManagerMessages managerMessages;
     final RequestService requestService;
     final PlaceController placeController;
     final JsonObjectMapper jsonObjectMapper;
+
+    protected EventRegistration<AssetSelectedEvent> assetSelectionRegistration;
+    protected String assetId;
+    protected Asset asset;
 
     @Inject
     public MapActivity(AssetBrowser.Presenter assetBrowserPresenter,
@@ -69,6 +77,7 @@ public class MapActivity extends AppActivity<MapPlace> implements MapView.Presen
 
     @Override
     protected AppActivity<MapPlace> init(MapPlace place) {
+        this.assetId = place.getAssetId();
         return this;
     }
 
@@ -81,6 +90,24 @@ public class MapActivity extends AppActivity<MapPlace> implements MapView.Presen
     public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
         view.setPresenter(this);
         container.setWidget(view.asWidget());
+
+        assetSelectionRegistration = assetBrowserPresenter.onSelection(
+            event -> {
+                if (event.getAsset() == null) {
+                    placeController.goTo(new MapPlace());
+                } else {
+                    if (assetId == null || !assetId.equals(event.getAsset().getId())) {
+                        placeController.goTo(new MapPlace(event.getAsset().getId()));
+                    }
+                }
+                eventBus.dispatch(event);
+            }
+        );
+
+        asset = null;
+        if (assetId != null) {
+            loadAsset();
+        }
 
         registrations.add(eventBus.register(GoToPlaceEvent.class, event -> view.refresh()));
 
@@ -99,12 +126,48 @@ public class MapActivity extends AppActivity<MapPlace> implements MapView.Presen
     }
 
     @Override
+    public void onStop() {
+        if (assetSelectionRegistration != null) {
+            assetBrowserPresenter.removeRegistration(assetSelectionRegistration);
+        }
+        super.onStop();
+    }
+
+    @Override
     public void goTo(Place place) {
         placeController.goTo(place);
     }
 
-    @Override
-    public AssetBrowser getAssetBrowser() {
-        return assetBrowserPresenter.getView();
+    protected void loadAsset() {
+        new Timer() {
+            public void run() {
+                LOG.info("### TODO: Load Asset");
+                asset = new Asset(assetId, "DUMMY", "DUMMY FOR ID " + assetId, null);
+                assetBrowserPresenter.selectAsset(asset);
+                writeToView();
+            }
+        }.schedule(100);
+
+        /* TODO query
+        requestService.execute(
+            assetMapper,
+            requestParams -> assetResource.get(requestParams, assetId),
+            200,
+            user -> {
+                this.user = user;
+                this.realm = user.getRealm();
+                loadRoles(() -> {
+                    writeToView();
+                });
+            },
+            ex -> handleRequestException(ex, eventBus, managerMessages)
+        );
+        */
     }
+
+    protected void writeToView() {
+        view.addPopup(asset.getDisplayName(), new LngLat(5.460315214821094, 51.44541688237109));
+        // TODO Write data
+    }
+
 }

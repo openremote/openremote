@@ -36,6 +36,7 @@ public class MapWidget extends ComplexPanel {
     protected FlowPanel host;
     protected String id;
     protected Map map;
+    protected Popup popup;
 
     public MapWidget(JsonObject mapOptions) {
         this();
@@ -78,10 +79,7 @@ public class MapWidget extends ComplexPanel {
 
         JsMapFromStringTo<Object> popupOptions = JsMapFromStringTo.create();
         popupOptions.put("closeOnClick", false);
-        new Popup(popupOptions.cast())
-            .setHTML("Videolab")
-            .setText("This is the Videolab.")
-            .setLngLat(new LngLat(5.460315214821094, 51.44541688237109))
+        popup = new Popup(popupOptions.cast())
             .addTo(map);
 
         map.on(EventType.CLICK, eventData -> {
@@ -94,6 +92,12 @@ public class MapWidget extends ComplexPanel {
         // TODO: we might want to further define what "refresh" means, currently it's triggered on GoToPlaceEvent
         if (map != null) {
             map.resize();
+        }
+    }
+
+    public void addPopup(String text, LngLat location) {
+        if (popup != null) {
+            popup.setText(text).setLngLat(location);
         }
     }
 }

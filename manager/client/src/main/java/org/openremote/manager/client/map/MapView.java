@@ -22,12 +22,11 @@ package org.openremote.manager.client.map;
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.user.client.ui.IsWidget;
 import elemental.json.JsonObject;
-import org.openremote.manager.client.assets.browser.AssetBrowser;
+import org.openremote.manager.client.interop.mapbox.LngLat;
 
 public interface MapView extends IsWidget {
 
     interface Presenter {
-        AssetBrowser getAssetBrowser();
         void goTo(Place place);
     }
 
@@ -38,4 +37,7 @@ public interface MapView extends IsWidget {
     boolean isMapInitialised();
 
     void refresh();
+
+    void addPopup(String text, LngLat location);
+
 }

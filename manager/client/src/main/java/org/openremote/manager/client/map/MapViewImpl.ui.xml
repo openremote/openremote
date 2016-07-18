@@ -11,12 +11,6 @@
             position: relative;
         }
 
-        .assetBrowser {
-            z-index: 1;
-            width: 16em;
-            height: 40vh;
-        }
-
         .mapWidget {
             position: absolute;
             top: 0;
@@ -37,9 +31,6 @@
     </ui:style>
 
     <g:HTMLPanel ui:field="mapContainer" styleName="flex layout horizontal" addStyleNames="{style.view}">
-        <g:SimplePanel ui:field="assetBrowserContainer"
-                       styleName="layout vertical"
-                       addStyleNames="{style.assetBrowser}"/>
 
         <g:HTMLPanel
                 styleName="flex layout horizontal center end-justified {style.mapControls} {widgetStyle.SecondaryNav} {themeStyle.SecondaryNav}">
