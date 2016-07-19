@@ -17,28 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.assets;
+package org.openremote.manager.client.assets.browser;
 
-import com.google.gwt.place.shared.PlaceTokenizer;
-import com.google.gwt.place.shared.Prefix;
-import org.openremote.manager.client.assets.browser.AssetBrowsingPlace;
+import com.google.gwt.place.shared.Place;
 
-public class AssetsDashboardPlace extends AssetBrowsingPlace implements AssetsPlace {
+public class AssetBrowsingPlace extends Place {
 
-    public AssetsDashboardPlace() {
+    protected String assetId;
+
+    public AssetBrowsingPlace(String assetId) {
+        this.assetId = assetId;
     }
 
-    @Prefix("assets")
-    public static class Tokenizer implements PlaceTokenizer<AssetsDashboardPlace> {
-
-        @Override
-        public AssetsDashboardPlace getPlace(String token) {
-            return new AssetsDashboardPlace();
-        }
-
-        @Override
-        public String getToken(AssetsDashboardPlace place) {
-            return "";
-        }
+    public AssetBrowsingPlace() {
     }
+
+    public String getAssetId() {
+        return assetId;
+    }
+
 }

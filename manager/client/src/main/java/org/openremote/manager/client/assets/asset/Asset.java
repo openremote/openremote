@@ -19,6 +19,8 @@
  */
 package org.openremote.manager.client.assets.asset;
 
+import org.openremote.manager.client.interop.mapbox.LngLat;
+
 public class Asset {
 
     public enum Type {
@@ -33,17 +35,17 @@ public class Asset {
     public static final String ROOT_ID = null;
     public static final String ROOT_TYPE = Type.COMPOSITE.name();
     public static final String ROOT_LABEL = "ROOT";
-    public static final String ROOT_LOCATION = null;
+    public static final LngLat ROOT_LOCATION = new LngLat(0, 0);
 
     public String id;
     public String type;
     public String displayName;
-    public String location;
+    public LngLat location;
 
     public Asset() {
     }
 
-    public Asset(String id, String type, String displayName, String location) {
+    public Asset(String id, String type, String displayName, LngLat location) {
         this.id = id;
         this.type = type;
         this.displayName = displayName;
@@ -66,11 +68,11 @@ public class Asset {
         this.displayName = displayName;
     }
 
-    public String getLocation() {
+    public LngLat getLocation() {
         return location;
     }
 
-    public void setLocation(String location) {
+    public void setLocation(LngLat location) {
         this.location = location;
     }
 

@@ -19,23 +19,17 @@
  */
 package org.openremote.manager.client.map;
 
-import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceTokenizer;
 import com.google.gwt.place.shared.Prefix;
+import org.openremote.manager.client.assets.browser.AssetBrowsingPlace;
 
-public class MapPlace extends Place {
-
-    protected String assetId;
+public class MapPlace extends AssetBrowsingPlace {
 
     public MapPlace(String assetId) {
-        this.assetId = assetId;
+        super(assetId);
     }
 
     public MapPlace() {
-    }
-
-    public String getAssetId() {
-        return assetId;
     }
 
     @Prefix("map")

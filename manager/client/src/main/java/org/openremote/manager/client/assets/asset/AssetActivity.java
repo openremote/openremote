@@ -20,14 +20,12 @@
 package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.place.shared.PlaceController;
-import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
-import org.openremote.manager.client.assets.browser.AssetSelectedEvent;
+import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
-import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.service.RequestService;
 
 import javax.inject.Inject;
@@ -35,20 +33,14 @@ import java.util.Collection;
 import java.util.logging.Logger;
 
 public class AssetActivity
-    extends AppActivity<AssetPlace>
+    extends AssetBrowsingActivity<AssetView, AssetPlace>
     implements AssetView.Presenter {
 
     private static final Logger LOG = Logger.getLogger(AssetActivity.class.getName());
 
-    final AssetView view;
-    final AssetBrowser.Presenter assetBrowserPresenter;
     final PlaceController placeController;
     final EventBus eventBus;
     final RequestService requestService;
-
-    protected EventRegistration<AssetSelectedEvent> assetSelectionRegistration;
-    protected String assetId;
-    protected Asset asset;
 
     @Inject
     public AssetActivity(AssetView view,
@@ -56,96 +48,42 @@ public class AssetActivity
                          PlaceController placeController,
                          EventBus eventBus,
                          RequestService requestService) {
-        this.view = view;
-        this.assetBrowserPresenter = assetBrowserPresenter;
+        super(view, assetBrowserPresenter);
         this.placeController = placeController;
         this.eventBus = eventBus;
         this.requestService = requestService;
     }
 
     @Override
-    protected String[] getRequiredRoles() {
-        return new String[]{"read:assets"};
-    }
-
-    @Override
-    protected AppActivity<AssetPlace> init(AssetPlace place) {
-        this.assetId = place.getAssetId();
-        return this;
-    }
-
-    @Override
     public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
-        view.setPresenter(this);
-        container.setWidget(view.asWidget());
-
-        assetSelectionRegistration = assetBrowserPresenter.onSelection(
-            event -> {
-                if (event.getAsset() == null) {
-                    placeController.goTo(new AssetsDashboardPlace());
-                } else {
-                    if (assetId == null || !assetId.equals(event.getAsset().getId())) {
-                        placeController.goTo(new AssetPlace(event.getAsset().getId()));
-                    }
-                }
-                eventBus.dispatch(event);
-            }
-        );
-
-        if (assetId != null) {
-            loadAsset();
-        } else {
-            asset = new Asset();
-            asset.setDisplayName("My New Asset");
-            writeToView();
-        }
+        super.start(container, eventBus, registrations);
     }
 
     @Override
-    public void onStop() {
-        if (assetSelectionRegistration != null) {
-            assetBrowserPresenter.removeRegistration(assetSelectionRegistration);
-        }
-        super.onStop();
+    protected void startCreateAsset() {
+        asset = new Asset();
+        asset.setDisplayName("My New Asset");
+        onAssetReady();
     }
 
-    protected void loadAsset() {
-        view.setFormBusy(true);
-
-        new Timer() {
-            public void run() {
-                LOG.info("### TODO: Load Asset");
-                asset = new Asset(assetId, "DUMMY", "DUMMY FOR ID " + assetId, null);
-                assetBrowserPresenter.selectAsset(asset);
-                writeToView();
-            }
-        }.schedule(100);
-
-
-        /* TODO query
-        requestService.execute(
-            assetMapper,
-            requestParams -> assetResource.get(requestParams, assetId),
-            200,
-            user -> {
-                this.user = user;
-                this.realm = user.getRealm();
-                loadRoles(() -> {
-                    writeToView();
-                    view.setFormBusy(false);
-                    view.enableCreate(false);
-                    view.enableUpdate(true);
-                    view.enableDelete(true);
-                });
-            },
-            ex -> handleRequestException(ex, eventBus, managerMessages)
-        );
-        */
-    }
-
-    protected void writeToView() {
+    @Override
+    protected void onAssetReady() {
         view.setDisplayName(asset.getDisplayName());
         // TODO Write data
     }
 
+    @Override
+    protected void onAssetsDeselected() {
+        placeController.goTo(new AssetsDashboardPlace());
+    }
+
+    @Override
+    protected void onAssetSelectionChange(Asset newSelection) {
+        placeController.goTo(new AssetPlace(newSelection.getId()));
+    }
+
+    @Override
+    protected void onBeforeAssetLoad() {
+        view.setFormBusy(true);
+    }
 }

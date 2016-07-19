@@ -23,10 +23,12 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
-import com.google.gwt.user.client.ui.*;
-import org.openremote.manager.client.assets.asset.AssetPlace;
+import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import com.google.gwt.user.client.ui.Composite;
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.SimplePanel;
+import org.openremote.manager.client.assets.browser.AssetBrowsingPlace;
 import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
 
@@ -94,13 +96,6 @@ public class AppViewImpl extends Composite implements AppView {
 
     @Override
     public void updateLayout(Place place) {
-        // TODO ugly sidebar selection
-        sidebar.setVisible(false);
-        if (place instanceof AssetPlace) {
-            sidebar.setVisible(true);
-        }
-        if (place instanceof MapPlace) {
-            sidebar.setVisible(true);
-        }
+        sidebar.setVisible(place instanceof AssetBrowsingPlace);
     }
 }

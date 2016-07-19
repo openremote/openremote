@@ -22,20 +22,15 @@ package org.openremote.manager.client.assets.asset;
 import com.google.gwt.place.shared.PlaceTokenizer;
 import com.google.gwt.place.shared.Prefix;
 import org.openremote.manager.client.assets.AssetsPlace;
+import org.openremote.manager.client.assets.browser.AssetBrowsingPlace;
 
-public class AssetPlace extends AssetsPlace {
-
-    protected String assetId;
+public class AssetPlace extends AssetBrowsingPlace implements AssetsPlace {
 
     public AssetPlace(String assetId) {
-        this.assetId = assetId;
+        super(assetId);
     }
 
     public AssetPlace() {
-    }
-
-    public String getAssetId() {
-        return assetId;
     }
 
     @Prefix("asset")

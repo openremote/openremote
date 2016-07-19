@@ -56,6 +56,7 @@ public class MapViewImpl extends Composite implements MapView {
         mapWidget.setVisible(false);
     }
 
+
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;

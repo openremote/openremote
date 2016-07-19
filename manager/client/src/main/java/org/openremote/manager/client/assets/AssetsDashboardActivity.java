@@ -20,74 +20,46 @@
 package org.openremote.manager.client.assets;
 
 import com.google.gwt.place.shared.PlaceController;
-import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import org.openremote.manager.client.assets.asset.Asset;
 import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
-import org.openremote.manager.client.assets.browser.AssetSelectedEvent;
+import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
 import org.openremote.manager.client.event.bus.EventBus;
-import org.openremote.manager.client.event.bus.EventRegistration;
-import org.openremote.manager.client.mvp.AppActivity;
 
 import javax.inject.Inject;
-import java.util.Collection;
-import java.util.logging.Logger;
 
 public class AssetsDashboardActivity
-    extends AppActivity<AssetsDashboardPlace>
+    extends AssetBrowsingActivity<AssetsDashboard, AssetsDashboardPlace>
     implements AssetsDashboard.Presenter {
 
-    private static final Logger LOG = Logger.getLogger(AssetsDashboardActivity.class.getName());
-
-    final AssetsDashboard view;
-    final AssetBrowser.Presenter assetBrowserPresenter;
     final PlaceController placeController;
     final EventBus eventBus;
-
-    protected EventRegistration<AssetSelectedEvent> assetSelectionRegistration;
 
     @Inject
     public AssetsDashboardActivity(AssetsDashboard view,
                                    AssetBrowser.Presenter assetBrowserPresenter,
                                    PlaceController placeController,
                                    EventBus eventBus) {
-        this.view = view;
-        this.assetBrowserPresenter = assetBrowserPresenter;
+        super(view, assetBrowserPresenter);
         this.placeController = placeController;
         this.eventBus = eventBus;
     }
 
     @Override
-    protected AppActivity<AssetsDashboardPlace> init(AssetsDashboardPlace place) {
-        return this;
-    }
-
-    @Override
-    protected String[] getRequiredRoles() {
-        return new String[]{"read:assets"};
-    }
-
-    @Override
-    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
-        view.setPresenter(this);
-        container.setWidget(view.asWidget());
-
-        assetSelectionRegistration = assetBrowserPresenter.onSelection(
-            event -> {
-                if (event.getAsset() != null) {
-                    placeController.goTo(new AssetPlace(event.getAsset().getId()));
-                }
-                eventBus.dispatch(event);
-            }
-        );
-
+    protected void startCreateAsset() {
         assetBrowserPresenter.selectAsset(null);
     }
 
     @Override
-    public void onStop() {
-        if (assetSelectionRegistration != null) {
-            assetBrowserPresenter.removeRegistration(assetSelectionRegistration);
-        }
-        super.onStop();
+    protected void onAssetReady() {
+    }
+
+    @Override
+    protected void onAssetsDeselected() {
+    }
+
+    @Override
+    protected void onAssetSelectionChange(Asset newSelection) {
+        placeController.goTo(new AssetPlace(newSelection.getId()));
     }
 }

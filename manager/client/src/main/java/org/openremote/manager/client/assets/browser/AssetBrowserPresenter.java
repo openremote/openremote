@@ -27,6 +27,7 @@ import org.openremote.manager.client.assets.asset.Asset;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventListener;
 import org.openremote.manager.client.event.bus.EventRegistration;
+import org.openremote.manager.client.interop.mapbox.LngLat;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -38,7 +39,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
 
     private static final Logger LOG = Logger.getLogger(AssetBrowserPresenter.class.getName());
 
-    final EventBus internalEventbus;
+    final EventBus internalEventBus;
     final AssetBrowser view;
     final PlaceController placeController;
 
@@ -48,7 +49,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     public AssetBrowserPresenter(AssetBrowser view,
                                  PlaceController placeController) {
 
-        this.internalEventbus = new EventBus();
+        this.internalEventBus = new EventBus();
 
         this.view = view;
         this.placeController = placeController;
@@ -70,10 +71,10 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
             t = new Timer() {
                 public void run() {
                     List<Asset> assets = Arrays.asList(
-                        new Asset("composite:gateways", Asset.Type.COMPOSITE.name(), "Gateways", null),
-                        new Asset("composite:buildings", Asset.Type.COMPOSITE.name(), "Buildings", null),
-                        new Asset("composite:rooms", Asset.Type.COMPOSITE.name(), "Rooms", null),
-                        new Asset("composite:thermostats", Asset.Type.COMPOSITE.name(), "Thermostats", null)
+                        new Asset("composite:gateways", Asset.Type.COMPOSITE.name(), "Gateways", new LngLat(5.460315214821094, 51.44541688237109)),
+                        new Asset("composite:buildings", Asset.Type.COMPOSITE.name(), "Buildings", new LngLat(5.460315214821094, 51.44541688237109)),
+                        new Asset("composite:rooms", Asset.Type.COMPOSITE.name(), "Rooms", new LngLat(5.460315214821094, 51.44541688237109)),
+                        new Asset("composite:thermostats", Asset.Type.COMPOSITE.name(), "Thermostats", new LngLat(5.460315214821094, 51.44541688237109))
                     );
                     display.setRowData(0, assets);
                     onAssetsRefreshed(parent, assets);
@@ -86,7 +87,12 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                         List<Asset> assets = new ArrayList<>();
                         for (int i = 1000; i < 1100; i++) {
                             assets.add(
-                                new Asset(Integer.toString(i), Asset.Type.COMPOSITE.name(), "Gateway " + i, "123.123")
+                                new Asset(
+                                    Integer.toString(i),
+                                    Asset.Type.COMPOSITE.name(),
+                                    "Gateway " + i,
+                                    new LngLat(5.460315214821094, 51.44541688237109)
+                                )
                             );
                         }
                         display.setRowData(0, assets);
@@ -99,9 +105,9 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                 t = new Timer() {
                     public void run() {
                         List<Asset> assets = Arrays.asList(
-                            new Asset("11", Asset.Type.SENSOR.name(), "Sensor 1", "123.123"),
-                            new Asset("22", Asset.Type.SENSOR.name(), "Sensor 2", "123.123"),
-                            new Asset("33", Asset.Type.SENSOR.name(), "Sensor 3", "123.123")
+                            new Asset("11", Asset.Type.SENSOR.name(), "Sensor 1", new LngLat(5.460315214821094, 51.44541688237109)),
+                            new Asset("22", Asset.Type.SENSOR.name(), "Sensor 2", new LngLat(5.460315214821094, 51.44541688237109)),
+                            new Asset("33", Asset.Type.SENSOR.name(), "Sensor 3", new LngLat(5.460315214821094, 51.44541688237109))
                         );
                         display.setRowData(0, assets);
                         onAssetsRefreshed(parent, assets);
@@ -127,10 +133,10 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     public void onAssetSelected(Asset asset) {
         if (asset == null) {
             selectedAsset = null;
-            internalEventbus.dispatch(new AssetSelectedEvent(null));
+            internalEventBus.dispatch(new AssetSelectedEvent(null));
         } else if (selectedAsset == null || !selectedAsset.getId().equals(asset.getId())) {
             selectedAsset = asset;
-            internalEventbus.dispatch(new AssetSelectedEvent(selectedAsset));
+            internalEventBus.dispatch(new AssetSelectedEvent(selectedAsset));
         }
     }
 
@@ -146,12 +152,12 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
 
     @Override
     public EventRegistration<AssetSelectedEvent> onSelection(EventListener<AssetSelectedEvent> listener) {
-        return internalEventbus.register(AssetSelectedEvent.class, listener);
+        return internalEventBus.register(AssetSelectedEvent.class, listener);
     }
 
     @Override
     public void removeRegistration(EventRegistration registration) {
-        internalEventbus.remove(registration);
+        internalEventBus.remove(registration);
     }
 
     protected void updateViewSelection(boolean scrollIntoView) {

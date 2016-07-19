@@ -19,8 +19,6 @@
  */
 package org.openremote.manager.client.assets;
 
-import com.google.gwt.place.shared.Place;
-
-public abstract class AssetsPlace extends Place {
+public interface AssetsPlace {
 
 }

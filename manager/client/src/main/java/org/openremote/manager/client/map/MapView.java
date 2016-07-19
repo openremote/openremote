@@ -19,18 +19,14 @@
  */
 package org.openremote.manager.client.map;
 
-import com.google.gwt.place.shared.Place;
-import com.google.gwt.user.client.ui.IsWidget;
 import elemental.json.JsonObject;
+import org.openremote.manager.client.assets.browser.AssetBrowsingView;
 import org.openremote.manager.client.interop.mapbox.LngLat;
 
-public interface MapView extends IsWidget {
+public interface MapView extends AssetBrowsingView<MapView.Presenter> {
 
-    interface Presenter {
-        void goTo(Place place);
+    interface Presenter extends AssetBrowsingView.Presenter {
     }
-
-    void setPresenter(Presenter presenter);
 
     void initialiseMap(JsonObject mapOptions);
 
