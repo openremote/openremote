@@ -167,7 +167,7 @@ public class RequestServiceImpl implements RequestService {
                         OUT out = null;
                         if (responseText != null && responseText.length() > 0 && entityReader != null) {
                             if (LOG.isLoggable(Level.FINE))
-                                LOG.fine("Reading response text: " + responseText);
+                                LOG.fine("Reading response text, length: " + responseText.length());
                             try {
                                 out = entityReader.read(responseText);
                             } catch (Exception ex) {

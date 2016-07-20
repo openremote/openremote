@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.client.assets.asset;
 
-import org.openremote.manager.client.interop.mapbox.LngLat;
+import org.geojson.Point;
 
 public class Asset {
 
@@ -35,21 +35,21 @@ public class Asset {
     public static final String ROOT_ID = null;
     public static final String ROOT_TYPE = Type.COMPOSITE.name();
     public static final String ROOT_LABEL = "ROOT";
-    public static final LngLat ROOT_LOCATION = new LngLat(0, 0);
+    public static final Point ROOT_LOCATION = new Point(0, 0, 0);
 
     public String id;
     public String type;
     public String displayName;
-    public LngLat location;
+    public String mapFeatures;
 
     public Asset() {
     }
 
-    public Asset(String id, String type, String displayName, LngLat location) {
+    public Asset(String id, String type, String displayName, String mapFeatures) {
         this.id = id;
         this.type = type;
         this.displayName = displayName;
-        this.location = location;
+        this.mapFeatures = mapFeatures;
     }
 
     public String getId() {
@@ -68,12 +68,12 @@ public class Asset {
         this.displayName = displayName;
     }
 
-    public LngLat getLocation() {
-        return location;
+    public String getMapFeatures() {
+        return mapFeatures;
     }
 
-    public void setLocation(LngLat location) {
-        this.location = location;
+    public void setMapFeatures(String mapFeatures) {
+        this.mapFeatures = mapFeatures;
     }
 
     public String getType() {
@@ -90,7 +90,7 @@ public class Asset {
             "id='" + id + '\'' +
             ", type='" + type + '\'' +
             ", displayName='" + displayName + '\'' +
-            ", location='" + location + '\'' +
+            ", mapFeatures ='" + mapFeatures + '\'' +
             '}';
     }
 }

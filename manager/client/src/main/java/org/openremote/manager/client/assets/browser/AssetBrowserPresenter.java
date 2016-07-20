@@ -23,15 +23,13 @@ import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.view.client.HasData;
 import com.google.gwt.view.client.Range;
+import org.openremote.manager.client.assets.SampleAssets;
 import org.openremote.manager.client.assets.asset.Asset;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventListener;
 import org.openremote.manager.client.event.bus.EventRegistration;
-import org.openremote.manager.client.interop.mapbox.LngLat;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -46,11 +44,8 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     protected Asset selectedAsset;
 
     @Inject
-    public AssetBrowserPresenter(AssetBrowser view,
-                                 PlaceController placeController) {
-
+    public AssetBrowserPresenter(AssetBrowser view, PlaceController placeController) {
         this.internalEventBus = new EventBus();
-
         this.view = view;
         this.placeController = placeController;
 
@@ -66,67 +61,17 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     public void loadAssetChildren(Asset parent, HasData<Asset> display) {
         final Range range = display.getVisibleRange();
         // TODO: Real assets query
-        Timer t = null;
-        if (Asset.isRoot(parent)) {
-            t = new Timer() {
-                public void run() {
-                    List<Asset> assets = Arrays.asList(
-                        new Asset("composite:gateways", Asset.Type.COMPOSITE.name(), "Gateways", new LngLat(5.460315214821094, 51.44541688237109)),
-                        new Asset("composite:buildings", Asset.Type.COMPOSITE.name(), "Buildings", new LngLat(5.460315214821094, 51.44541688237109)),
-                        new Asset("composite:rooms", Asset.Type.COMPOSITE.name(), "Rooms", new LngLat(5.460315214821094, 51.44541688237109)),
-                        new Asset("composite:thermostats", Asset.Type.COMPOSITE.name(), "Thermostats", new LngLat(5.460315214821094, 51.44541688237109))
-                    );
-                    display.setRowData(0, assets);
-                    onAssetsRefreshed(parent, assets);
-                }
-            };
-        } else if (parent.getType().equals(Asset.Type.COMPOSITE.name())) {
-            if (parent.getId().equals("composite:gateways")) {
-                t = new Timer() {
-                    public void run() {
-                        List<Asset> assets = new ArrayList<>();
-                        for (int i = 1000; i < 1100; i++) {
-                            assets.add(
-                                new Asset(
-                                    Integer.toString(i),
-                                    Asset.Type.COMPOSITE.name(),
-                                    "Gateway " + i,
-                                    new LngLat(5.460315214821094, 51.44541688237109)
-                                )
-                            );
-                        }
-                        display.setRowData(0, assets);
-                        onAssetsRefreshed(parent, assets);
-                    }
-                };
+        List<Asset> result = SampleAssets.queryAll(parent);
+        Timer t = new Timer() {
+            public void run() {
+                display.setRowData(0, result);
+                display.setRowCount(result.size(), true);
+                onAssetsRefreshed(parent, result);
             }
-
-            if (parent.getId().equals("1000")) {
-                t = new Timer() {
-                    public void run() {
-                        List<Asset> assets = Arrays.asList(
-                            new Asset("11", Asset.Type.SENSOR.name(), "Sensor 1", new LngLat(5.460315214821094, 51.44541688237109)),
-                            new Asset("22", Asset.Type.SENSOR.name(), "Sensor 2", new LngLat(5.460315214821094, 51.44541688237109)),
-                            new Asset("33", Asset.Type.SENSOR.name(), "Sensor 3", new LngLat(5.460315214821094, 51.44541688237109))
-                        );
-                        display.setRowData(0, assets);
-                        onAssetsRefreshed(parent, assets);
-                    }
-                };
-            }
-        }
-
-        if (t != null) {
-
-            // TODO: Simulates network delay
-            t.schedule(25);
-            //t.run();
-
-        } else {
-            display.setRowData(0, new ArrayList<>());
-            display.setRowCount(0, true);
-            onAssetsRefreshed(parent, new ArrayList<>());
-        }
+        };
+        // TODO: Simulates network delay
+        t.schedule(25);
+        //t.run();
     }
 
     @Override
@@ -163,7 +108,11 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     protected void updateViewSelection(boolean scrollIntoView) {
         // Find the last selected asset after a data refresh and select it again
         if (selectedAsset != null) {
-            view.showAndSelectAsset(getSelectedAssetPath(), selectedAsset.getId(), scrollIntoView);
+            view.showAndSelectAsset(
+                SampleAssets.getSelectedAssetPath(selectedAsset.getId()),
+                selectedAsset.getId(),
+                scrollIntoView
+            );
         }
     }
 
@@ -177,44 +126,5 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
             }
             updateViewSelection(scroll);
         }
-    }
-
-    protected List<String> getSelectedAssetPath() {
-        List<String> path = new ArrayList<>();
-        // TODO: We must build the asset path here, by finding the asset first, then its parents recursively
-        switch (selectedAsset.getId()) {
-            case "composite:gateways":
-                path.add("composite:gateways");
-                break;
-            case "composite:buildings":
-                path.add("composite:buildings");
-                break;
-            case "composite:rooms":
-                path.add("composite:rooms");
-                break;
-            case "composite:thermostats":
-                path.add("composite:thermostats");
-                break;
-            case "11":
-                path.add("composite:gateways");
-                path.add("1000");
-                path.add("11");
-                break;
-            case "22":
-                path.add("composite:gateways");
-                path.add("1000");
-                path.add("22");
-                break;
-            case "33":
-                path.add("composite:gateways");
-                path.add("1000");
-                path.add("33");
-                break;
-            default:
-                path.add("composite:gateways");
-                path.add(selectedAsset.getId());
-                break;
-        }
-        return path;
     }
 }

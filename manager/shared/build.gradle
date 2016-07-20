@@ -11,6 +11,8 @@ dependencies {
     compile "org.keycloak:keycloak-core:$keycloakVersion"
     compile "org.keycloak:keycloak-core:$keycloakVersion:sources"
     compile "org.hibernate:hibernate-validator:$hibernateValidatorVersion"
+    compile "de.grundid.opendatalab:geojson-jackson:$geojsonJacksonVersion"
+    compile "de.grundid.opendatalab:geojson-jackson:$geojsonJacksonVersion:sources"
 
     apt "org.hibernate:hibernate-jpamodelgen:$hibernateVersion"
 }

@@ -27,7 +27,6 @@ import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.Label;
 import elemental.json.JsonObject;
-import org.openremote.manager.client.interop.mapbox.LngLat;
 
 import javax.inject.Inject;
 
@@ -63,6 +62,12 @@ public class MapViewImpl extends Composite implements MapView {
     }
 
     @Override
+    public void hideFeatures() {
+        // TODO ugly
+        showFeatures("{ \"type\": \"FeatureCollection\", \"features\": [] }");
+    }
+
+    @Override
     public void initialiseMap(JsonObject mapOptions) {
         mapLoadingLabel.setVisible(false);
         Scheduler.get().scheduleDeferred(() -> {
@@ -84,9 +89,8 @@ public class MapViewImpl extends Composite implements MapView {
         mapWidget.refresh();
     }
 
-    public void addPopup(String text, LngLat location) {
-        if (isMapInitialised()) {
-            mapWidget.addPopup(text, location);
-        }
+    @Override
+    public void showFeatures(String mapFeaturesJson) {
+        mapWidget.showFeatures(mapFeaturesJson);
     }
 }

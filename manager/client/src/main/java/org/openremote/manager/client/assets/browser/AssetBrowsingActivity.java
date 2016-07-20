@@ -21,10 +21,10 @@ package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import org.openremote.manager.client.assets.SampleAssets;
 import org.openremote.manager.client.assets.asset.Asset;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
-import org.openremote.manager.client.interop.mapbox.LngLat;
 import org.openremote.manager.client.mvp.AppActivity;
 
 import java.util.Collection;
@@ -114,7 +114,7 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
         onBeforeAssetLoad();
         new Timer() {
             public void run() {
-                asset = new Asset(assetId, "DUMMY", "DUMMY FOR ID " + assetId, new LngLat(5.460315214821094, 51.44541688237109));
+                asset = SampleAssets.ALL_BY_ID.get(assetId);
                 assetBrowserPresenter.selectAsset(asset);
                 onAssetReady();
             }

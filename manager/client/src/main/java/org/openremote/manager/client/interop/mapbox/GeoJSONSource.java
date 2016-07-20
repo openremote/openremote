@@ -17,24 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.map;
+package org.openremote.manager.client.interop.mapbox;
 
 import elemental.json.JsonObject;
-import org.openremote.manager.client.assets.browser.AssetBrowsingView;
+import jsinterop.annotations.JsType;
 
-public interface MapView extends AssetBrowsingView<MapView.Presenter> {
+@JsType(isNative = true, namespace = "mapboxgl")
+public class GeoJSONSource {
 
-    interface Presenter extends AssetBrowsingView.Presenter {
-    }
+    public GeoJSONSource(JsonObject options) {}
 
-    void initialiseMap(JsonObject mapOptions);
-
-    boolean isMapInitialised();
-
-    void refresh();
-
-    void showFeatures(String mapFeaturesJson);
-
-    void hideFeatures();
-
+    public native void setData(JsonObject data);
 }

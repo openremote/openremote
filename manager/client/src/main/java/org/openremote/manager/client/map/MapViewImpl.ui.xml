@@ -1,6 +1,7 @@
 <ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
              xmlns:map="urn:import:org.openremote.manager.client.map"
-             xmlns:g="urn:import:com.google.gwt.user.client.ui">
+             xmlns:g="urn:import:com.google.gwt.user.client.ui"
+             xmlns:w="urn:import:org.openremote.manager.client.widget">
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
@@ -9,6 +10,10 @@
     <ui:style>
         .view {
             position: relative;
+        }
+
+        .navItem {
+            margin: 0 1em;
         }
 
         .mapWidget {
@@ -34,6 +39,13 @@
 
         <g:HTMLPanel
                 styleName="flex layout horizontal center end-justified {style.mapControls} {widgetStyle.SecondaryNav} {themeStyle.SecondaryNav}">
+
+            <w:Hyperlink addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                         icon="map"
+                         targetHistoryToken="map:"
+                         text="Show all assets"/>
+
+
             <div>TODO: Move map navigation action items here</div>
         </g:HTMLPanel>
 

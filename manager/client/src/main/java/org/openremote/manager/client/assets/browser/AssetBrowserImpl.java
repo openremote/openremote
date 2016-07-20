@@ -28,6 +28,7 @@ import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.SimplePanel;
 import com.google.gwt.user.client.ui.TextBox;
+import org.openremote.manager.client.assets.SampleAssets;
 import org.openremote.manager.client.assets.asset.Asset;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTreeStyle;
@@ -75,7 +76,7 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
 
         assetTree = new AssetTree(
             new AssetTreeModel(presenter),
-            new Asset(Asset.ROOT_ID, Asset.ROOT_TYPE, Asset.ROOT_LABEL, Asset.ROOT_LOCATION),
+            SampleAssets.ROOT,
             formTreeStyle,
             new CellTree.CellTreeMessages() {
                 @Override

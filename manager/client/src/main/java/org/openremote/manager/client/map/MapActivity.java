@@ -34,10 +34,13 @@ import org.openremote.manager.shared.map.MapResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
+import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
 public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implements MapView.Presenter {
+
+    private static final Logger LOG = Logger.getLogger(MapActivity.class.getName());
 
     final MapResource mapResource;
     final ManagerMessages managerMessages;
@@ -82,13 +85,18 @@ public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implem
     }
 
     @Override
+    protected void startCreateAsset() {
+        getView().hideFeatures();
+    }
+
+    @Override
     protected void onAssetReady() {
-        getView().addPopup(asset.getDisplayName(), asset.getLocation());
-        // TODO Write data
+        getView().showFeatures(asset.getMapFeatures());
     }
 
     @Override
     protected void onAssetsDeselected() {
+        getView().hideFeatures();
         placeController.goTo(new MapPlace());
     }
 

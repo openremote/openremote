@@ -254,8 +254,7 @@ REST._complete = function (request, callback) {
     REST.log("Request ready state: " + request.readyState);
     if (request.readyState == 4) {
         var entity;
-        REST.log("Request status: " + request.status);
-        REST.log("Request response: " + request.responseText);
+        REST.log("Request response status: " + request.status);
 
         if (request.status >= 200 && request.status < 300) {
             request.onreadystatechange = null;

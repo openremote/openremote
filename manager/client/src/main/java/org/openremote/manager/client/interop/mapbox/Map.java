@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.client.interop.mapbox;
 
+import com.google.gwt.core.client.JavaScriptObject;
 import elemental.dom.Node;
 import elemental.json.JsonArray;
 import elemental.json.JsonObject;
@@ -42,10 +43,10 @@ public class Map {
 
     public native Map addControl(Control control);
 
-    public native Map addLayer(Object layer);
-    public native Map addLayer(Object layer, String beforeLayerId);
+    public native Map addLayer(JavaScriptObject layer);
+    public native Map addLayer(JavaScriptObject layer, String beforeLayerId);
 
-    public native Map addSource(String id, Object source);
+    public native Map addSource(String id, GeoJSONSource source);
 
     // TODO: add batch method fucntionality to map
 //    public native void batch(WorkFn work);
@@ -84,7 +85,7 @@ public class Map {
 
     public native JsonArray getFilter(String layerId);
 
-    public native JsonObject getLayer(String layerId);
+    public native JavaScriptObject getLayer(String layerId);
 
     public native JsonValue getLayoutProperty(String layerId, String propertyName);
     public native JsonValue getLayoutProperty(String layerId, String propertyName, String className);
@@ -120,7 +121,7 @@ public class Map {
 
     public native Map removeLayer(String layerId);
 
-    public native Map removeSource(String layerId);
+    public native Map removeSource(String sourceId);
 
     public native void repaint();
 
