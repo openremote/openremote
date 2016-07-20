@@ -33,8 +33,12 @@ public interface MapView extends AssetBrowsingView<MapView.Presenter> {
 
     void refresh();
 
-    void showFeatures(String mapFeaturesJson);
+    void showFeaturesAll(String mapFeaturesJson);
 
-    void hideFeatures();
+    void hideFeaturesAll();
+
+    void showFeaturesSelection(String mapFeaturesJson);
+
+    void hideFeaturesSelection();
 
 }

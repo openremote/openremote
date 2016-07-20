@@ -86,17 +86,17 @@ public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implem
 
     @Override
     protected void startCreateAsset() {
-        getView().hideFeatures();
+        getView().hideFeaturesSelection();
     }
 
     @Override
     protected void onAssetReady() {
-        getView().showFeatures(asset.getMapFeatures());
+        getView().showFeaturesSelection(asset.getMapFeatures());
     }
 
     @Override
     protected void onAssetsDeselected() {
-        getView().hideFeatures();
+        getView().hideFeaturesSelection();
         placeController.goTo(new MapPlace());
     }
 

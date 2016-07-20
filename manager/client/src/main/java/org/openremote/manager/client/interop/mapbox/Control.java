@@ -24,7 +24,7 @@ import jsinterop.annotations.JsType;
 @JsType(isNative = true, name = "Control")
 public abstract class Control<T> {
 
-    public native T addTo(Map map);
+    public native T addTo(MapboxMap mapboxMap);
 
     public native void remove();
 }

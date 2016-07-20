@@ -133,14 +133,15 @@
           "text-font": ["Open Sans Semibold"],
           "text-transform": "uppercase",
           "text-size": {
-            "base": 4,
-            "stops": [[10, 10], [20, 30]]
+            "base": 5,
+            "stops": [[10, 15], [20, 30]]
           }
         },
         "paint": {
           "text-color": "#3B7BE7",
           "text-halo-color": "rgba(255,255,255,0.2)",
-          "text-halo-width": 2
+          "text-halo-width": 2,
+          "text-halo-blur": 2
         }
       },
       {
@@ -282,7 +283,7 @@
           "line-join": "round"
         },
         "paint": {
-          "line-color": "#a0a0a0",
+          "line-color": "#b0b0b0",
           "line-width": {
             "base": 1.4,
             "stops": [[6, 0.5], [20, 30]]
@@ -432,9 +433,9 @@
           }
         },
         "paint": {
-          "text-color": "#333",
+          "text-color": "#666",
           "text-halo-color": "rgba(255,255,255,0.6)",
-          "text-halo-width": 10
+          "text-halo-width": 5
         }
       },
       {
@@ -454,7 +455,7 @@
           }
         },
         "paint": {
-          "text-color": "#bbbbbb"
+          "text-color": "#aaa"
         }
       },
       {
@@ -474,9 +475,10 @@
           }
         },
         "paint": {
-          "text-color": "#666",
+          "text-color": "rgba(110,110,110,0.9)",
           "text-halo-color": "rgba(255,255,255,0.6)",
-          "text-halo-width": 5
+          "text-halo-width": 5,
+          "text-halo-blur": 5
         }
       },      {
         "id": "place_label_other",
@@ -496,10 +498,10 @@
           }
         },
         "paint": {
-          "text-color": "#666",
+          "text-color": "rgba(110,110,110,0.9)",
           "text-halo-color": "rgba(255,255,255,0.4)",
-          "text-halo-width": 10,
-          "text-halo-blur": 20
+          "text-halo-width": 2,
+          "text-halo-blur": 1
         }
       },
       {
@@ -518,9 +520,9 @@
           }
         },
         "paint": {
-          "text-color": "#666",
+          "text-color": "rgba(110,110,110,0.9)",
           "text-halo-color": "rgba(255,255,255,0.7)",
-          "text-halo-width": 5,
+          "text-halo-width": 2,
           "text-halo-blur": 1
         }
       },
@@ -540,7 +542,7 @@
           }
         },
         "paint": {
-          "text-color": "#666",
+          "text-color": "rgba(110,110,110,0.9)",
           "text-halo-color": "rgba(255,255,255,0.75)",
           "text-halo-width": 1,
           "text-halo-blur": 1

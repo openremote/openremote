@@ -62,12 +62,6 @@ public class MapViewImpl extends Composite implements MapView {
     }
 
     @Override
-    public void hideFeatures() {
-        // TODO ugly
-        showFeatures("{ \"type\": \"FeatureCollection\", \"features\": [] }");
-    }
-
-    @Override
     public void initialiseMap(JsonObject mapOptions) {
         mapLoadingLabel.setVisible(false);
         Scheduler.get().scheduleDeferred(() -> {
@@ -90,7 +84,24 @@ public class MapViewImpl extends Composite implements MapView {
     }
 
     @Override
-    public void showFeatures(String mapFeaturesJson) {
-        mapWidget.showFeatures(mapFeaturesJson);
+    public void showFeaturesAll(String mapFeaturesJson) {
+        mapWidget.showFeatures(MapWidget.FEATURES_SOURCE_ALL, mapFeaturesJson);
+    }
+
+    @Override
+    public void hideFeaturesAll() {
+        // TODO ugly
+        showFeaturesAll("{ \"type\": \"FeatureCollection\", \"features\": [] }");
+    }
+
+    @Override
+    public void showFeaturesSelection(String mapFeaturesJson) {
+        mapWidget.showFeatures(MapWidget.FEATURES_SOURCE_SELECTION, mapFeaturesJson);
+    }
+
+    @Override
+    public void hideFeaturesSelection() {
+        // TODO ugly
+        showFeaturesSelection("{ \"type\": \"FeatureCollection\", \"features\": [] }");
     }
 }
