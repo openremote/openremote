@@ -4,6 +4,7 @@
   "zoom": 12,
   "maxZoom": 18,
   "style": {
+    "sprite": "/static/sprites/bright-v9",
     "layers": [
       {
         "id": "background",

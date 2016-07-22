@@ -30,7 +30,6 @@ import org.openremote.manager.client.interop.mapbox.EventType;
 import org.openremote.manager.client.interop.mapbox.GeoJSONSource;
 import org.openremote.manager.client.interop.mapbox.MapboxMap;
 import org.openremote.manager.client.interop.mapbox.Navigation;
-import org.openremote.manager.client.util.JsUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -42,22 +41,17 @@ public class MapWidget extends ComplexPanel {
 
     // Feature IDs
     public static final String FEATURES_SOURCE_ALL = "features-source-all";
-    public static final String FEATURES_SOURCE_SELECTION = "features-source-selection";
     public static final String FEATURES_LAYER_ALL = "features-layer-all";
-    public static final String FEATURES_LAYER_SELECTION_TEXT = "features-layer-selection-text";
-    public static final String FEATURES_LAYER_SELECTION_CIRCLE = "features-layer-selection-circle";
+    public static final String FEATURES_SOURCE_SELECTION = "features-source-selection";
+    public static final String FEATURES_LAYER_SELECTION = "features-layer-selection";
 
     // Render a circle on location
     @SuppressWarnings("GwtInconsistentSerializableClass")
     static final public JsMapFromStringTo<Object> LAYER_ALL = JsMapFromStringTo.create();
 
-    // Render feature title as label on location
+    // Render a dropped pin and feature title on location
     @SuppressWarnings("GwtInconsistentSerializableClass")
-    static final public JsMapFromStringTo<Object> LAYER_SELECTION_TEXT = JsMapFromStringTo.create();
-
-    // Render a circle on location
-    @SuppressWarnings("GwtInconsistentSerializableClass")
-    static final public JsMapFromStringTo<Object> LAYER_SELECTION_CIRCLE = JsMapFromStringTo.create();
+    static final public JsMapFromStringTo<Object> LAYER_SELECTION = JsMapFromStringTo.create();
 
     static {
         {
@@ -79,6 +73,7 @@ public class MapWidget extends ComplexPanel {
         {
             JsMapFromStringTo<Object> layout = JsMapFromStringTo.create();
             layout.put("visibility", "visible");
+
             layout.put("text-field", "{title}");
             JsArrayOfString textFont = JsArrayOfString.create();
             textFont.push("Open Sans Semibold");
@@ -98,37 +93,28 @@ public class MapWidget extends ComplexPanel {
             layout.put("text-allow-overlap", true);
             JsArrayOfNumber offset = JsArrayOfNumber.create();
             offset.push(0);
-            offset.push(1.2);
+            offset.push(0.8);
             layout.put("text-offset", offset);
+
+            layout.put("icon-image", "marker-15");
+            offset = JsArrayOfNumber.create();
+            offset.push(0);
+            offset.push(-4);
+            layout.put("icon-offset", offset);
 
             JsMapFromStringTo<Object> paint = JsMapFromStringTo.create();
             // TODO Add color to theme settings
+            //paint.put("icon-color", "rgb(193, 215, 47)");
             paint.put("text-color", "#000");
             paint.put("text-halo-color", "#fff");
             paint.put("text-halo-width", 4.0);
-            paint.put("text-halo-blur", 40.0);
+            paint.put("text-halo-blur", 4.0);
 
-            LAYER_SELECTION_TEXT.put("id", FEATURES_LAYER_SELECTION_TEXT);
-            LAYER_SELECTION_TEXT.put("type", "symbol");
-            LAYER_SELECTION_TEXT.put("source", FEATURES_SOURCE_SELECTION);
-            LAYER_SELECTION_TEXT.put("layout", layout);
-            LAYER_SELECTION_TEXT.put("paint", paint);
-        }
-        {
-            JsMapFromStringTo<Object> layout = JsMapFromStringTo.create();
-            layout.put("visibility", "visible");
-
-            JsMapFromStringTo<Object> paint = JsMapFromStringTo.create();
-            paint.put("circle-radius", 15.0); // This MUST be double!
-            paint.put("circle-opacity", 0.9);
-            // TODO Add color to theme settings
-            paint.put("circle-color", "rgb(193, 215, 47)");
-
-            LAYER_SELECTION_CIRCLE.put("id", FEATURES_LAYER_SELECTION_CIRCLE);
-            LAYER_SELECTION_CIRCLE.put("type", "circle");
-            LAYER_SELECTION_CIRCLE.put("source", FEATURES_SOURCE_SELECTION);
-            LAYER_SELECTION_CIRCLE.put("layout", layout);
-            LAYER_SELECTION_CIRCLE.put("paint", paint);
+            LAYER_SELECTION.put("id", FEATURES_LAYER_SELECTION);
+            LAYER_SELECTION.put("type", "symbol");
+            LAYER_SELECTION.put("source", FEATURES_SOURCE_SELECTION);
+            LAYER_SELECTION.put("layout", layout);
+            LAYER_SELECTION.put("paint", paint);
         }
 
     }
@@ -140,9 +126,8 @@ public class MapWidget extends ComplexPanel {
 
     // These sources can be initialized late, as we have to consider async arriving currentFeaturesData
     protected boolean featuresReady = false;
-    protected GeoJSONSource sourceAll;
-    protected GeoJSONSource sourceSelection;
-    protected Map<String, JsonObject> currentFeatureSourceData = new HashMap<>(); // We hold GeoJSON data, keyed by feature ID
+    protected Map<String, GeoJSONSource> featureSources = new HashMap<>(); // Holds the displayed GeoJSON data
+    protected Map<String, JsonObject> currentFeatureSourceData = new HashMap<>(); // We also hold received GeoJSON data, keyed by feature ID
 
     public MapWidget(JsonObject mapOptions) {
         this();
@@ -216,7 +201,6 @@ public class MapWidget extends ComplexPanel {
             currentFeatureData = Json.parse("{\"type\":\"FeatureCollection\",\"features\":[]}");
         }
         LOG.fine("Preparing data on feature source: " + featureSourceId);
-        JsUtil.log(currentFeatureData);
         sourceOptions.put("data", currentFeatureData);
         return sourceOptions;
     }
@@ -225,10 +209,10 @@ public class MapWidget extends ComplexPanel {
         LOG.fine("Adding GeoJSON feature sources and layers on map load");
 
         JsonObject sourceOptionsSelection = prepareSourceOptions(FEATURES_SOURCE_SELECTION);
-        sourceSelection = new GeoJSONSource(sourceOptionsSelection);
+        GeoJSONSource sourceSelection = new GeoJSONSource(sourceOptionsSelection);
+        featureSources.put(FEATURES_SOURCE_SELECTION, sourceSelection);
         mapboxMap.addSource(FEATURES_SOURCE_SELECTION, sourceSelection);
-        mapboxMap.addLayer(LAYER_SELECTION_CIRCLE);
-        mapboxMap.addLayer(LAYER_SELECTION_TEXT);
+        mapboxMap.addLayer(LAYER_SELECTION);
 
         JsonObject sourceOptionsAll = prepareSourceOptions(FEATURES_SOURCE_ALL);
         sourceOptionsAll.put("maxzoom", 20);
@@ -237,9 +221,10 @@ public class MapWidget extends ComplexPanel {
         sourceOptionsAll.put("cluster", false);
         sourceOptionsAll.put("clusterRadius", 50);
         sourceOptionsAll.put("clusterMaxZoom", 15);
-        sourceAll = new GeoJSONSource(sourceOptionsAll);
+        GeoJSONSource sourceAll = new GeoJSONSource(sourceOptionsAll);
+        featureSources.put(FEATURES_SOURCE_ALL, sourceAll);
         mapboxMap.addSource(FEATURES_SOURCE_ALL, sourceAll);
-        mapboxMap.addLayer(LAYER_ALL, FEATURES_LAYER_SELECTION_TEXT);
+        mapboxMap.addLayer(LAYER_ALL, FEATURES_LAYER_SELECTION);
 
         featuresReady = true;
     }
@@ -247,21 +232,11 @@ public class MapWidget extends ComplexPanel {
     public void showFeatures(String featureSourceId, String featuresJson) {
         LOG.fine("Showing features on source " + featureSourceId + ": " + featuresJson);
         JsonObject data = Json.parse(featuresJson);
-        JsUtil.log(data);
         currentFeatureSourceData.put(featureSourceId, data);
         if (featuresReady) {
-            LOG.fine("Feature layers are ready, setting data directly");
-            switch (featureSourceId) {
-                case FEATURES_SOURCE_ALL:
-                    data = currentFeatureSourceData.remove(featureSourceId);
-                    if (data != null)
-                        sourceAll.setData(data);
-                    break;
-                case FEATURES_SOURCE_SELECTION:
-                    data = currentFeatureSourceData.remove(featureSourceId);
-                    if (data != null)
-                        sourceSelection.setData(data);
-                    break;
+            data = currentFeatureSourceData.remove(featureSourceId);
+            if (data != null && featureSources.containsKey(featureSourceId)) {
+                featureSources.get(featureSourceId).setData(data);
             }
         }
     }
