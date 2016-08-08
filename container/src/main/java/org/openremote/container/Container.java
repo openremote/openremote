@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.openremote.container.util.ElementalJsonModule;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -101,7 +102,8 @@ public class Container {
             .setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE)
             .setVisibility(PropertyAccessor.SETTER, JsonAutoDetect.Visibility.NONE)
             .setVisibility(PropertyAccessor.IS_GETTER, JsonAutoDetect.Visibility.NONE)
-            .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.NONE);
+            .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.NONE)
+            .registerModule(new ElementalJsonModule());
 
         this.config = JSON.createObjectNode();
         for (Map.Entry<String, String> entry : config.entrySet()) {
