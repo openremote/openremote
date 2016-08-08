@@ -80,6 +80,8 @@ Configure your IDE and set up a *Run Configuration*:
 
 You can now open http://localhost:8080/ in your browser.
 
+** NOTE: Please be aware that currently by default the web server binds to all interfaces (i.e. "0.0.0.0") **
+
 ### Running tests
 
 You can run the tests of the `manager` project with `./gradlew test` or run the individual test classes in your IDE directly. The working directory must always be set to the project root diretory.

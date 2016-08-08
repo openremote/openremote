@@ -46,11 +46,15 @@ import org.openremote.container.security.AuthOverloadHandler;
 import org.openremote.container.security.SimpleKeycloakServletExtension;
 import org.openremote.container.web.jsapi.JSAPIServlet;
 
+import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
+import java.net.Inet4Address;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -63,7 +67,7 @@ public abstract class WebService implements ContainerService {
     private static final Logger LOG = Logger.getLogger(WebService.class.getName());
 
     public static final String WEBSERVER_LISTEN_HOST = "WEBSERVER_LISTEN_HOST";
-    public static final String WEBSERVER_LISTEN_HOST_DEFAULT = "localhost";
+    public static final String WEBSERVER_LISTEN_HOST_DEFAULT = "0.0.0.0";
     public static final String WEBSERVER_LISTEN_PORT = "WEBSERVER_LISTEN_PORT";
     public static final int WEBSERVER_LISTEN_PORT_DEFAULT = 8080;
 
@@ -84,11 +88,20 @@ public abstract class WebService implements ContainerService {
     protected Collection<Class<?>> apiClasses = new HashSet<>();
     protected Collection<Object> apiSingletons = new HashSet<>();
     protected KeycloakConfigResolver keycloakConfigResolver;
+    protected URI containerHostUri;
+
 
     @Override
     public void init(Container container) throws Exception {
         host = container.getConfig(WEBSERVER_LISTEN_HOST, WEBSERVER_LISTEN_HOST_DEFAULT);
         port = container.getConfigInteger(WEBSERVER_LISTEN_PORT, WEBSERVER_LISTEN_PORT_DEFAULT);
+        String containerHost = host.equalsIgnoreCase("localhost") || host.indexOf("127") == 0 || host.indexOf("0.0.0.0") == 0 ? getLocalIpAddress() : host;
+
+        containerHostUri =
+                UriBuilder.fromPath("/")
+                        .scheme("http")
+                        .host(containerHost)
+                        .port(port).build();
     }
 
     @Override
@@ -395,4 +408,18 @@ public abstract class WebService implements ContainerService {
         this.staticResourceDocRoot = staticResourceDocRoot;
     }
 
+
+    /**
+     * Provides the LAN IPv4 address the container is bound to so it can be
+     * used in the context provider callbacks; if CB is on the other side of some sort
+     * of NAT then this won't work also assumes HTTP
+     * @return
+     */
+    public URI getHostUri() {
+        return containerHostUri;
+    }
+
+    protected static String getLocalIpAddress() throws Exception {
+        return Inet4Address.getLocalHost().getHostAddress();
+    }
 }
