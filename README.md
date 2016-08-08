@@ -35,6 +35,16 @@ NOTE: For Docker volume mapping to work correctly on Windows and OS X ensure tha
 
 NOTE: The Docker virtual machine's time will drift when you are using VirtualBox. You will see "token is not active" verification errors if the time skew is too large. Until this is [fixed](https://github.com/boot2docker/boot2docker/issues/69), periodically run `docker-machine ssh default 'sudo ntpclient -s -h pool.ntp.org'` to update the virtual machine's clock.
 
+NOTE: Working with Docker might leave exited containers, untagged images, and dangling volumes. The following bash function can be used to clean up:
+
+```
+function dcleanup(){
+    docker rm -v $(docker ps --filter status=exited -q 2>/dev/null) 2>/dev/null
+    docker rmi $(docker images --filter dangling=true -q 2>/dev/null) 2>/dev/null
+    docker volume rm $(docker volume ls -qf dangling=true 2>/dev/null) 2>/dev/null
+}
+```
+
 We are using the [Orion Context Broker](https://fiware-orion.readthedocs.org/en/develop/) with a MongoDB backend. For development, this is an instance with a non-persistent data store.
 
 For authentication and authorization we are using [Keycloak](http://keycloak.jboss.org/) with a non-persistent data store.
