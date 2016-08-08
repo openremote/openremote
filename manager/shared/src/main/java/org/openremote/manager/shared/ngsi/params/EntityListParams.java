@@ -39,6 +39,9 @@ public class EntityListParams {
     @QueryParam("idPattern")
     public String idPattern;
 
+    @QueryParam("typePattern")
+    public String typePattern;
+
     @QueryParam("q")
     public Query query;
 
@@ -83,6 +86,12 @@ public class EntityListParams {
     public EntityListParams idPattern(String idPattern) {
         this.id = null;
         this.idPattern = idPattern;
+        return this;
+    }
+
+    public EntityListParams typePattern(String typePattern) {
+        this.type = null;
+        this.typePattern = typePattern;
         return this;
     }
 

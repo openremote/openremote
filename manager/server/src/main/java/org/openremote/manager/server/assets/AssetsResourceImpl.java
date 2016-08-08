@@ -44,7 +44,7 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource {
     }
 
     @Override
-    public JsonArray getEntities(RequestParams requestParams, EntityListParams entityListParams) {
+    public Entity[] getEntities(RequestParams requestParams, EntityListParams entityListParams) {
         return assetsService.getContextBroker().getEntities(entityListParams);
     }
 
@@ -54,7 +54,7 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource {
     }
 
     @Override
-    public JsonObject getEntity(RequestParams requestParams, String entityId, EntityParams entityParams) {
+    public Entity getEntity(RequestParams requestParams, String entityId, EntityParams entityParams) {
         return assetsService.getContextBroker().getEntity(entityId, entityParams);
     }
 

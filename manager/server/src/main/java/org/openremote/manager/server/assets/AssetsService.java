@@ -26,12 +26,14 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.observable.RetryWithDelay;
 import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebService;
-import org.openremote.manager.shared.ngsi.EntryPoint;
+import org.openremote.manager.shared.ngsi.*;
 import rx.Observable;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.UriBuilder;
+import java.net.URI;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -54,6 +56,8 @@ public class AssetsService implements ContainerService {
 
     protected UriBuilder contextBrokerHostUri;
     protected Client httpClient;
+    protected URI hostUri;
+    protected ContextProvider contextProvider;
 
     @Override
     public void init(Container container) throws Exception {
@@ -85,6 +89,10 @@ public class AssetsService implements ContainerService {
             .register(EntityMessageBodyConverter.class)
             .register(EntityArrayMessageBodyConverter.class)
             .build();
+
+        hostUri = container.getService(WebService.class).getHostUri();
+
+        contextProvider = new ContextBrokerV1ResourceImpl(httpClient, contextBrokerHostUri);
     }
 
     @Override
@@ -93,6 +101,9 @@ public class AssetsService implements ContainerService {
         container.getService(WebService.class).getApiSingletons().add(new EntityMessageBodyConverter());
         container.getService(WebService.class).getApiSingletons().add(new EntityArrayMessageBodyConverter());
         container.getService(WebService.class).getApiSingletons().add(new AssetsResourceImpl(this));
+
+        // Configure the context provider
+        contextProvider.configure(container);
     }
 
     @Override
@@ -106,18 +117,31 @@ public class AssetsService implements ContainerService {
     public void stop(Container container) throws Exception {
         if (httpClient != null)
             httpClient.close();
+
+        if (contextProvider != null)
+            contextProvider.stop();
     }
 
     public Client getHttpClient() {
         return httpClient;
     }
 
-    public ContextBrokerResource getContextBroker() {
+    public ContextProvider getContextProvider() { return contextProvider; }
+
+    public ContextBrokerV2Resource getContextBroker() {
         return getContextBroker(getTarget(httpClient, contextBrokerHostUri.build()));
     }
 
-    public ContextBrokerResource getContextBroker(ResteasyWebTarget target) {
-        return target.proxy(ContextBrokerResource.class);
+    public ContextBrokerV2Resource getContextBroker(ResteasyWebTarget target) {
+        return target.proxy(ContextBrokerV2Resource.class);
+    }
+
+    public ContextBrokerV1Resource getContextBrokerV1() {
+        return getContextBrokerV1(getTarget(httpClient, contextBrokerHostUri.build()));
+    }
+
+    public ContextBrokerV1Resource getContextBrokerV1(ResteasyWebTarget target) {
+        return target.proxy(ContextBrokerV1Resource.class);
     }
 
     public void pingContextBroker() {
@@ -131,4 +155,11 @@ public class AssetsService implements ContainerService {
         ).toBlocking().singleOrDefault(false);
     }
 
+    public boolean registerAssetProvider(String assetType, String assetId, List<Attribute> attributes, AssetProvider provider) {
+        return contextProvider.registerAssetProvider(assetType, assetId, attributes, provider);
+    }
+
+    public void unregisterAssetProvider(String assetType, String assetId, AssetProvider provider) {
+        contextProvider.unregisterAssetProvider(assetType, assetId, provider);
+    }
 }

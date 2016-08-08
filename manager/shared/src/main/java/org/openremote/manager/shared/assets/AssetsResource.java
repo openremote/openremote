@@ -46,7 +46,7 @@ public interface AssetsResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
-    JsonArray getEntities(@BeanParam RequestParams requestParams, @BeanParam EntityListParams entityListParams);
+    Entity[] getEntities(@BeanParam RequestParams requestParams, @BeanParam EntityListParams entityListParams);
 
     @POST
     @Path("entities")
@@ -60,7 +60,7 @@ public interface AssetsResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
-    JsonObject getEntity(@BeanParam RequestParams requestParams, @PathParam("entityId") String entityId, @BeanParam EntityParams entityParams);
+    Entity getEntity(@BeanParam RequestParams requestParams, @PathParam("entityId") String entityId, @BeanParam EntityParams entityParams);
 
     @DELETE
     @Path("entities/{entityId}")

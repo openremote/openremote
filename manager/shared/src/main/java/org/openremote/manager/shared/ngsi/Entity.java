@@ -43,6 +43,10 @@ public class Entity extends AbstractEntity<Attribute> {
         super(jsonObject);
     }
 
+    public Entity() {
+        super(elemental.json.Json.createObject());
+    }
+
     @Override
     public Attribute[] getAttributes() {
         Set<Attribute> attributes = new LinkedHashSet<>();
@@ -90,5 +94,15 @@ public class Entity extends AbstractEntity<Attribute> {
                 errors.add(new ModelValidationError("attributeName", problem));
             }
         }
+    }
+
+    public String getAttributeValueAsString(String name) {
+        Attribute attr = getAttribute(name);
+        return attr != null ? attr.getValue().asString() : null;
+    }
+
+    public boolean getAttributeValueAsBoolean(String name) {
+        Attribute attr = getAttribute(name);
+        return attr != null ? attr.getValue().asBoolean() : false;
     }
 }

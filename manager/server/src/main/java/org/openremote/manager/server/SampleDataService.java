@@ -29,9 +29,10 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.security.AuthForm;
 import org.openremote.container.security.IdentityService;
 import org.openremote.manager.server.assets.AssetsService;
-import org.openremote.manager.server.assets.ContextBrokerResource;
+import org.openremote.manager.server.assets.ContextBrokerV2Resource;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.ngsi.Attribute;
+import org.openremote.manager.shared.ngsi.AttributeType;
 import org.openremote.manager.shared.ngsi.Entity;
 import rx.Observable;
 
@@ -111,32 +112,23 @@ public class SampleDataService implements ContainerService {
         room1.setId("Room1");
         room1.setType("Room");
         room1.addAttribute(
-            new Attribute("temperature", Json.createObject())
-                .setType("float")
-                .setValue(Json.create(21.3))
+            new Attribute("temperature", AttributeType.FLOAT, Json.create(21.3))
         ).addAttribute(
-            new Attribute("label", Json.createObject())
-                .setType("string")
-                .setValue(Json.create("Office 123"))
+            new Attribute("label", AttributeType.STRING, Json.create("Office 123"))
         );
 
         Entity room2 = new Entity(Json.createObject());
         room2.setId("Room2");
         room2.setType("Room");
         room2.addAttribute(
-            new Attribute("temperature", Json.createObject())
-                .setType("float")
-                .setValue(Json.create(22.1))
+            new Attribute("temperature", AttributeType.FLOAT, Json.create(22.1))
         ).addAttribute(
-            new Attribute("label", Json.createObject())
-                .setType("string")
-                .setValue(Json.create("Office 456"))
+            new Attribute("label", AttributeType.STRING, Json.create("Office 456"))
         );
 
-        ContextBrokerResource ngsiService = assetsService.getContextBroker();
+        ContextBrokerV2Resource ngsiService = assetsService.getContextBroker();
 
         fromCallable(() -> ngsiService.getEntities(null))
-            .map(Entity::from)
             .flatMap(Observable::from)
             .flatMap(entity -> fromCallable(() -> ngsiService.deleteEntity(entity.getId())))
             .toList().toBlocking().single();

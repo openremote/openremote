@@ -19,11 +19,8 @@
  */
 package org.openremote.manager.server.assets;
 
-import elemental.json.JsonArray;
-import elemental.json.JsonObject;
 import org.openremote.manager.shared.http.PATCH;
-import org.openremote.manager.shared.ngsi.Entity;
-import org.openremote.manager.shared.ngsi.EntryPoint;
+import org.openremote.manager.shared.ngsi.*;
 import org.openremote.manager.shared.ngsi.params.EntityListParams;
 import org.openremote.manager.shared.ngsi.params.EntityParams;
 
@@ -36,7 +33,12 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * http://telefonicaid.github.io/fiware-orion/api/v2/stable/
  */
 @Path("v2")
-public interface ContextBrokerResource {
+public interface ContextBrokerV2Resource {
+    /*
+    * ***************************************
+    * NGSI10
+    * ***************************************
+     */
 
     @GET
     @Produces(APPLICATION_JSON)
@@ -45,7 +47,7 @@ public interface ContextBrokerResource {
     @GET
     @Path("entities")
     @Produces(APPLICATION_JSON)
-    JsonArray getEntities(@BeanParam EntityListParams entityListParams);
+    Entity[] getEntities(@BeanParam EntityListParams entityListParams);
 
     @POST
     @Path("entities")
@@ -55,7 +57,7 @@ public interface ContextBrokerResource {
     @GET
     @Path("entities/{entityId}")
     @Produces(APPLICATION_JSON)
-    JsonObject getEntity(@PathParam("entityId") String entityId, @BeanParam EntityParams entityParams);
+    Entity getEntity(@PathParam("entityId") String entityId, @BeanParam EntityParams entityParams);
 
     @DELETE
     @Path("entities/{entityId}")
@@ -71,4 +73,28 @@ public interface ContextBrokerResource {
     @Consumes(APPLICATION_JSON)
     Response patchEntityAttributes(@PathParam("entityId") String entityId, Entity entity);
 
+    /*
+    * ***************************************
+    * NGSI9
+    * ***************************************
+     */
+
+    @POST
+    @Path("registrations")
+    @Consumes(APPLICATION_JSON)
+    Response createRegistration(ContextRegistrationV2 registration);
+
+    @PATCH
+    @Path("registrations/{registrationId}")
+    @Consumes(APPLICATION_JSON)
+    Response updateRegistration(@PathParam("registrationId") String registrationId, Duration duration);
+
+    @DELETE
+    @Path("registrations/{registrationId}")
+    Response deleteRegistration(@PathParam("registrationId") String registrationId);
+
+    @POST
+    @Path("op/register")
+    @Consumes(APPLICATION_JSON)
+    Response batchRegistration(BatchContextRegistrationV2 registrations);
 }

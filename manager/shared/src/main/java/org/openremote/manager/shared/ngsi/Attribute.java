@@ -19,11 +19,16 @@
  */
 package org.openremote.manager.shared.ngsi;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 
 public class Attribute extends AbstractAttribute {
 
+    @JsonIgnore
     final protected JsonObject jsonObject;
 
     public Attribute(String name, JsonObject jsonObject) {
@@ -31,10 +36,18 @@ public class Attribute extends AbstractAttribute {
         this.jsonObject = jsonObject;
     }
 
+    public Attribute(@JsonProperty("name") String name, @JsonProperty("type") AttributeType type, @JsonProperty("value") JsonValue value) {
+        super(name);
+        jsonObject = elemental.json.Json.createObject();
+        setType(type);
+        setValue(value);
+    }
+
     public JsonObject getJsonObject() {
         return jsonObject;
     }
 
+    @JsonProperty("value")
     @Override
     public JsonValue getValue() {
         return jsonObject.hasKey("value") ? jsonObject.get("value") : null;
@@ -46,12 +59,14 @@ public class Attribute extends AbstractAttribute {
         return this;
     }
 
-    public String getType() {
-        return jsonObject.hasKey("type") ? jsonObject.getString("type") : null;
+    @JsonProperty("type")
+    public AttributeType getType() {
+        String keyValue = jsonObject.hasKey("type") ? jsonObject.getString("type") : null;
+        return keyValue != null ? AttributeType.fromName(keyValue) : null;
     }
 
-    public Attribute setType(String type) {
-        jsonObject.put("type", type);
+    public Attribute setType(AttributeType type) {
+        jsonObject.put("type", type.getName());
         return this;
     }
 

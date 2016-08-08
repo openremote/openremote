@@ -11,6 +11,7 @@ import org.openremote.manager.shared.ngsi.params.EntityListParams
 import org.openremote.manager.shared.ngsi.simplequery.BinaryStatement
 import org.openremote.manager.shared.ngsi.simplequery.Query
 import org.openremote.manager.shared.ngsi.simplequery.QueryValue
+import org.openremote.manager.shared.ngsi.AttributeType;
 import org.openremote.test.ContainerTrait
 import spock.lang.Specification
 
@@ -43,58 +44,58 @@ class AssetsResourceTest extends Specification implements ContainerTrait {
         def assetsResource = clientTarget.proxy(AssetsResource.class);
 
         when: "query with no restrictions"
-        def entities = Entity.from(assetsResource.getEntities(null, null));
+        def entities = assetsResource.getEntities(null, null);
         then: "the result should match"
         entities.length == 2
         assertRoom(entities[0], null, null, null);
         assertRoom(entities[1], null, null, null);
 
         when: "query with id restriction"
-        entities = Entity.from(assetsResource.getEntities(
+        entities = assetsResource.getEntities(
                 null,
                 new EntityListParams().id("Room1")
-        ));
+        );
         then: "the result should match"
         entities.length == 1
         assertRoom(entities[0], "Room1", 21.3, "Office 123")
 
         when: "query with id pattern restriction"
-        entities = Entity.from(assetsResource.getEntities(
+        entities = assetsResource.getEntities(
                 null,
                 new EntityListParams().idPattern("Room1.*")
-        ));
+        );
         then: "the result should match"
         assertRoom(entities[0], "Room1", 21.3, "Office 123")
 
         when: "query with type restrictions"
-        entities = Entity.from(assetsResource.getEntities(
+        entities = assetsResource.getEntities(
                 null,
                 new EntityListParams().type("Room")
-        ));
+        );
         then: "the result should match"
         entities.length == 2
         assertRoom(entities[0], null, null, null);
         assertRoom(entities[1], null, null, null);
 
         when: "query with type restrictions"
-        entities = Entity.from(assetsResource.getEntities(
+        entities = assetsResource.getEntities(
                 null,
                 new EntityListParams().type("Room")
-        ));
+        );
         then: "the result should match"
         entities.length == 2
         assertRoom(entities[0], null, null, null);
         assertRoom(entities[1], null, null, null);
 
         when: "query with query restrictions"
-        entities = Entity.from(assetsResource.getEntities(
+        entities = assetsResource.getEntities(
                 null,
                 new EntityListParams().query(
                         new Query(
                                 new BinaryStatement("label", BinaryStatement.Operator.EQUAL, QueryValue.exact("Office 123"))
                         )
                 )
-        ));
+        );
         then: "the result should match"
         entities.length == 1
         assertRoom(entities[0], "Room1", 21.3, "Office 123")
@@ -109,14 +110,14 @@ class AssetsResourceTest extends Specification implements ContainerTrait {
         assert room.getType() == "Room"
 
         def temperature = room.getAttribute("temperature");
-        assert temperature.getType() == "float"
+        assert temperature.getType() == AttributeType.FLOAT
         assert temperature.getMetadata() != null
         assert temperature.getMetadata().getElements().length == 0
         if (expectedTemperature)
             assert temperature.getValue().asNumber() == expectedTemperature
 
         def label = room.getAttribute("label")
-        assert label.getType() == "string"
+        assert label.getType() == AttributeType.STRING
         assert label.getMetadata() != null
         assert label.getMetadata().getElements().length == 0
         if (expectedLabel)
@@ -151,19 +152,19 @@ class AssetsResourceTest extends Specification implements ContainerTrait {
         room.setType("Room");
         room.addAttribute(
                 new Attribute("label", Json.createObject())
-                        .setType("string")
+                        .setType(AttributeType.STRING)
                         .setValue(Json.create("Office 123"))
         )
         room.addAttribute(
                 new Attribute("temperature", Json.createObject())
-                        .setType("float")
+                        .setType(AttributeType.FLOAT)
                         .setValue(Json.create(20.5))
         );
 
         when: "the room is posted"
         assetsResource.postEntity(null, room);
         and: "the new room has been retrieved"
-        def createdRoom = Entity.from(assetsResource.getEntity(null, room.getId(), null));
+        def createdRoom = assetsResource.getEntity(null, room.getId(), null);
         Attribute temperature = createdRoom.getAttribute("temperature");
         then: "the room details should match"
         createdRoom.getId() == room.getId()
@@ -177,7 +178,7 @@ class AssetsResourceTest extends Specification implements ContainerTrait {
         and: "the room is updated"
         assetsResource.patchEntityAttributes(null, createdRoom.getId(), roomPatch);
         and: "the updated room has been retrieved"
-        def updatedRoom = Entity.from(assetsResource.getEntity(null, room.getId(), null));
+        def updatedRoom = assetsResource.getEntity(null, room.getId(), null);
         def updatedTemperature = updatedRoom.getAttribute("temperature");
         then: "the room details should match"
         updatedRoom.getId() == room.getId()
@@ -188,7 +189,7 @@ class AssetsResourceTest extends Specification implements ContainerTrait {
         when: "the room is deleted"
         assetsResource.deleteEntity(null, room.getId());
         and: "the deleted room has been retrieved"
-        Entity.from(assetsResource.getEntity(null, room.getId(), null));
+        assetsResource.getEntity(null, room.getId(), null);
         then: "the room shouldn't exist"
         thrown NotFoundException
 

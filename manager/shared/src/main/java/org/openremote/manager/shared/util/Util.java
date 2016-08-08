@@ -52,4 +52,21 @@ public class Util {
         return name;
     }
 
+    /**
+     * Get an enum value from a string without throwing exception.
+     * Enum should be in uppercase to use this method.
+     *
+     * @param c
+     * @param string
+     * @return
+     */
+    public static <T extends Enum<T>> T getEnumFromString(Class<T> c, String string) {
+        if (c != null && string != null) {
+            try {
+                return Enum.valueOf(c, string.trim().toUpperCase());
+            } catch (IllegalArgumentException ex) {
+            }
+        }
+        return null;
+    }
 }
