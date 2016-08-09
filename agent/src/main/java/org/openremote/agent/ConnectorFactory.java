@@ -23,9 +23,10 @@ import org.jboss.marshalling.Pair;
 import org.openremote.manager.shared.agent.Agent;
 
 /**
- * Singleton factory for creating instrances of a particular agent connector type
+ * Singleton factory for creating instances of a particular agent connector type
  */
 public interface ConnectorFactory {
+
     Connector createConnector(Agent agent);
 
     Pair<Boolean, String> validateAgent(Agent agent);

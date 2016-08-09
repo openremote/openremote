@@ -68,7 +68,7 @@ public class Controller2Connector implements Connector {
     }
 
     @Override
-    public void removeValueListener(long handerId) {
+    public void removeValueListener(long handlerId) {
 
     }
 }

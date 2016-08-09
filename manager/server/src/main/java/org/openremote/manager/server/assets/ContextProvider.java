@@ -25,6 +25,7 @@ import org.openremote.manager.shared.ngsi.Attribute;
 import java.util.List;
 
 public interface ContextProvider {
+
     void configure(Container container) throws Exception;
 
     void stop();
@@ -43,7 +44,6 @@ public interface ContextProvider {
 
     /**
      * Set the refresh interval of this context providers registrations
-     * @param seconds
      */
     void setRefreshInterval(int seconds);
 }

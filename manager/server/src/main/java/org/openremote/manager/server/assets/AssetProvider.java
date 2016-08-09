@@ -24,6 +24,7 @@ import org.openremote.manager.shared.ngsi.Attribute;
 import java.util.List;
 
 public interface AssetProvider {
+
     Attribute getAssetAttributeValue(String assetId, String attribute);
 
     List<Attribute> getAssetAttributeValues(String assetId);

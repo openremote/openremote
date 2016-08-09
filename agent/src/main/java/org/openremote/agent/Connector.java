@@ -30,67 +30,48 @@ import java.util.function.Consumer;
 public interface Connector {
     /**
      * Write a value to a specific device resource
-     * @param deviceUri
-     * @param resourceUri
-     * @param value
-     * @return
      */
     CompletableFuture<Boolean> writeValue(String deviceUri, String resourceUri, String value);
 
     /**
      * Async read value from a specific device resource
-     * @param deviceUri
-     * @param resourceUri
-     * @return
      */
     CompletableFuture<String> readValue(String deviceUri, String resourceUri);
 
     /**
      * Async read values of multiple resources from a specific device
-     * @param deviceUri
-     * @param resourceUris
-     * @return
      */
     CompletableFuture<Map<String,String>> readValues(String deviceUri, String[] resourceUris);
 
     /**
-     * Async availability check (doesn't mean that the agent is connected but it is available
-     * @return
+     * Async availability check (doesn't mean that the agent is connected but it is available)
      */
     CompletableFuture<Boolean> getAvailability();
 
     /**
      * Get the current connection state
-     * @return
      */
     CompletableFuture<ConnectionState> getConnectionState();
 
     /**
      * Add a connection state change listener
-     * @param callback
-     * @return
      */
     long addConnectionListener(Consumer<ConnectionState> callback);
 
     /**
      * Remove an existing connection listerner
-     * @param listenerId
      */
     void removeConnectionListener(long listenerId);
 
     /**
      * Add a value listener for a specific device resource; requires the resource to actively push
      * value changes; support is agent/protocol/resource dependent
-     * @param deviceUri
-     * @param resourceUri
-     * @param callback
      * @return Handler ID (needed for removing the listener)
      */
     long addValueListener(String deviceUri, String resourceUri, Consumer<String> callback);
 
     /**
      * Remove an existing value listener
-     * @param handerId
      */
-    void removeValueListener(long handerId);
+    void removeValueListener(long handlerId);
 }
