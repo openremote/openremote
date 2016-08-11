@@ -26,4 +26,28 @@ public class SubscriptionParams {
     protected BasicEntityParams entities;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     protected Condition condition;
+
+    public SubscriptionParams() {
+    }
+
+    public SubscriptionParams(BasicEntityParams entities, Condition condition) {
+        this.entities = entities;
+        this.condition = condition;
+    }
+
+    public BasicEntityParams getEntities() {
+        return entities;
+    }
+
+    public void setEntities(BasicEntityParams entities) {
+        this.entities = entities;
+    }
+
+    public Condition getCondition() {
+        return condition;
+    }
+
+    public void setCondition(Condition condition) {
+        this.condition = condition;
+    }
 }

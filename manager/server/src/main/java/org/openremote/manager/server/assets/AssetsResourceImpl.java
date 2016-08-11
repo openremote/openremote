@@ -25,6 +25,7 @@ import elemental.json.JsonObject;
 import org.openremote.container.Container;
 import org.openremote.container.web.WebResource;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.assets.AssetsResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.ngsi.Entity;
@@ -36,7 +37,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.logging.Logger;
 
 import static org.openremote.manager.shared.Constants.MASTER_REALM;
@@ -47,7 +47,7 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
     public static final int SUBSCRIPTION_REFRESH_INTERVAL = 180;
     protected URI hostUri;
     protected ObjectMapper mapper;
-    protected Map<Callable<Entity[]>, SubscribeRequestV2> subscribers = new HashMap<>();
+    protected Map<Consumer<Entity[]>, SubscribeRequestV2> subscribers = new HashMap<>();
     protected Calendar calendar;
 
     protected final AssetsService assetsService;
@@ -122,7 +122,7 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
     }
 
     @Override
-    public boolean register(Callable<Entity[]> listener, SubscriptionParams subscription) {
+    public boolean register(Consumer<Entity[]> listener, SubscriptionParams subscription) {
         // Find existing subscription for this listener (if it exists)
         SubscribeRequestV2 storedSubscription = subscribers.get(listener);
 
@@ -155,13 +155,13 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
     }
 
     @Override
-    public SubscriptionParams getSubscription(Callable<Entity[]> listener) {
+    public SubscriptionParams getSubscription(Consumer<Entity[]> listener) {
         SubscribeRequestV2 subscriber = subscribers.get(listener);
         return subscriber != null ? subscriber.getSubject() : null;
     }
 
     @Override
-    public synchronized void unregister(Callable<Entity[]> listener) {
+    public synchronized void unregister(Consumer<Entity[]> listener) {
         SubscribeRequestV2 subscriber = subscribers.get(listener);
 
         if (subscriber != null) {

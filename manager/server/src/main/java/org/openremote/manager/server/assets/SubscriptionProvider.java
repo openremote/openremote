@@ -19,17 +19,16 @@
  */
 package org.openremote.manager.server.assets;
 
+import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.ngsi.Entity;
 import org.openremote.manager.shared.ngsi.params.SubscriptionParams;
 
-import java.util.concurrent.Callable;
-
 public interface SubscriptionProvider {
-    boolean register(Callable<Entity[]> listener, SubscriptionParams subscription);
+    boolean register(Consumer<Entity[]> listener, SubscriptionParams subscription);
 
-    SubscriptionParams getSubscription(Callable<Entity[]> listener);
+    SubscriptionParams getSubscription(Consumer<Entity[]> listener);
 
-    void unregister(Callable<Entity[]> listener);
+    void unregister(Consumer<Entity[]> listener);
 
     String getSubscriptionCallbackUri();
 }

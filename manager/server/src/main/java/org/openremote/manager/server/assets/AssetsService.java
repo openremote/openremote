@@ -26,6 +26,7 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.observable.RetryWithDelay;
 import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.assets.AssetsResource;
 import org.openremote.manager.shared.ngsi.*;
 import org.openremote.manager.shared.ngsi.params.SubscriptionParams;
@@ -174,15 +175,15 @@ public class AssetsService implements ContainerService {
         registrationProvider.unregisterAssetProvider(provider);
     }
 
-    public boolean registerAssetListener(Callable<Entity[]> listener, SubscriptionParams subscription) {
+    public boolean registerAssetListener(Consumer<Entity[]> listener, SubscriptionParams subscription) {
         return subscriptionProvider.register(listener, subscription);
     }
 
-    public SubscriptionParams getAssetListenerSubscription(Callable<Entity[]> listener) {
+    public SubscriptionParams getAssetListenerSubscription(Consumer<Entity[]> listener) {
         return subscriptionProvider.getSubscription(listener);
     }
 
-    public void unregisterAssetListener(Callable<Entity[]> listener) {
+    public void unregisterAssetListener(Consumer<Entity[]> listener) {
         subscriptionProvider.unregister(listener);
     }
 }

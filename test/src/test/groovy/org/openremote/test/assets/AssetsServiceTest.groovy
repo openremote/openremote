@@ -22,15 +22,25 @@ package org.openremote.test.assets
 import elemental.json.Json
 import org.openremote.manager.server.assets.AssetProvider
 import org.openremote.manager.server.assets.AssetsService
+import org.openremote.manager.shared.Consumer
 import org.openremote.manager.shared.ngsi.Attribute
 import org.openremote.manager.shared.ngsi.AttributeType
 import org.openremote.manager.shared.ngsi.ContextEntity
+import org.openremote.manager.shared.ngsi.Entity
 import org.openremote.manager.shared.ngsi.EntityAttributeQuery
+import org.openremote.manager.shared.ngsi.params.BasicEntityParams
+import org.openremote.manager.shared.assets.AssetsResource
+import org.openremote.manager.shared.ngsi.params.SubscriptionParams
+import org.openremote.manager.server.assets.*
 import org.openremote.test.ContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import javax.ws.rs.NotFoundException
+import java.util.concurrent.Callable
+
+import static org.openremote.manager.shared.Constants.MANAGER_CLIENT_ID
+import static org.openremote.manager.shared.Constants.MASTER_REALM
 
 class AssetsServiceTest extends Specification implements ContainerTrait {
 
@@ -199,6 +209,112 @@ class AssetsServiceTest extends Specification implements ContainerTrait {
 
         cleanup: "ensure mock provider is unregistered"
         assetsService.unregisterAssetProvider("Car", "Car1", assetProvider);
+
+        and: "the server should be stopped"
+        stopContainer(container);
+    }
+
+    def "Register Asset Listener"() {
+        def receivedEntities = [];
+
+        given: "the server container is started"
+        def serverPort = findEphemeralPort();
+        def container = startContainer(defaultConfig(serverPort), defaultServices())
+
+        and: "an authenticated user"
+        def realm = MASTER_REALM;
+        def accessTokenResponse = authenticate(container, realm, MANAGER_CLIENT_ID, "test", "test")
+
+        and: "a test client target"
+        def client = createClient(container)
+                .register(EntryPointMessageBodyConverter.class)
+                .register(EntityMessageBodyConverter.class)
+                .register(EntityArrayMessageBodyConverter.class)
+                .build();
+        def serverUri = serverUri(serverPort);
+        def clientTarget = getClientTarget(client, serverUri, realm, accessTokenResponse.getToken());
+
+        and: "the assets resource"
+        def assetsResource = clientTarget.proxy(AssetsResource.class);
+
+        and: "the assets service"
+        def assetsService = container.getService(AssetsService.class);
+
+        and: "a sample asset"
+        Entity car = new Entity(Json.createObject());
+        car.setId("Car123");
+        car.setType("Car");
+        car.addAttribute(
+                new Attribute("make", Json.createObject())
+                        .setType(AttributeType.STRING)
+                        .setValue(Json.create("AUDI"))
+        )
+        car.addAttribute(
+                new Attribute("model", Json.createObject())
+                        .setType(AttributeType.STRING)
+                        .setValue(Json.create("RS6"))
+        );
+        car.addAttribute(
+                new Attribute("speed", Json.createObject())
+                        .setType(AttributeType.INTEGER)
+                        .setValue(Json.create(250))
+        );
+
+        when: "the asset is posted"
+        assetsResource.postEntity(null, car);
+
+        and: "a mock asset listener is created"
+        def listener = new Consumer<Entity[]>() {
+            @Override
+            void accept(Entity[] entities) throws Exception {
+                receivedEntities.addAll(entities);
+            }
+        }
+
+        and: "the mock listener registers with the assets service for all IDs starting with Car"
+        def subscription = new SubscriptionParams();
+        subscription.setEntities(
+                new BasicEntityParams("Car.*", true)
+        );
+        def result = assetsService.registerAssetListener(listener, subscription);
+
+        then: "the mock listener is registered"
+        result == true;
+
+        when: "the car speed is modified"
+        def speed = car.getAttribute("speed");
+        speed.setValue(Json.create(0))
+        def carPatch = new Entity(Json.createObject())
+        carPatch.addAttribute(speed)
+
+        and: "the car is updated"
+        assetsResource.patchEntityAttributes(null, car.getId(), carPatch);
+
+        then: "the mock listener should have been notified"
+        def conditions = new PollingConditions(timeout: 10)
+
+        conditions.eventually {
+            assert receivedEntities.size() == 1;
+        }
+
+        when: "the mock listener is unregistered"
+        assetsService.unregisterAssetListener(listener);
+
+        and: "the car speed is modified"
+        speed.setValue(Json.create(60))
+        carPatch = new Entity(Json.createObject())
+        carPatch.addAttribute(speed)
+
+        and: "the car is updated"
+        assetsResource.patchEntityAttributes(null, car.getId(), carPatch);
+
+        then: "the mock listener should not have been notified"
+        Thread.sleep(5000);
+        receivedEntities.size() == 1;
+
+        cleanup: "ensure mock listener is unregistered"
+        if (assetsService != null)
+            assetsService.unregisterAssetListener(listener);
 
         and: "the server should be stopped"
         stopContainer(container);
