@@ -40,7 +40,6 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 @Path("assets")
 @JsType(isNative = true)
 public interface AssetsResource {
-
     @GET
     @Path("entities")
     @Produces(APPLICATION_JSON)
@@ -82,4 +81,8 @@ public interface AssetsResource {
     @RolesAllowed({"write:assets"})
     void patchEntityAttributes(@BeanParam RequestParams requestParams, @PathParam("entityId") String entityId, Entity entity);
 
+    @POST
+    @Path("subscriber")
+    @Consumes(APPLICATION_JSON)
+    void subscriberCallback(Entity[] entities);
 }

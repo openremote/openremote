@@ -24,9 +24,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import elemental.json.JsonObject;
 
-public class ContextRegistrationV2 {
+public class RegistrationRequestV2 {
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    protected EntityAttributeRegistrationV2 subject;
+    protected EntityAttributeListV2 subject;
     @JsonProperty(value = "callback")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     protected String providerUri;
@@ -37,18 +37,18 @@ public class ContextRegistrationV2 {
     @JsonIgnore
     protected String registrationId;
 
-    public ContextRegistrationV2(EntityAttributeRegistrationV2 subject, String providerUri, JsonObject metadata, String duration) {
+    public RegistrationRequestV2(EntityAttributeListV2 subject, String providerUri, JsonObject metadata, String duration) {
         this.subject = subject;
         this.providerUri = providerUri;
         this.metadata = metadata;
         this.duration = duration;
     }
 
-    public ContextRegistrationV2(String duration) {
+    public RegistrationRequestV2(String duration) {
         this.duration = duration;
     }
 
-    public EntityAttributeRegistrationV2 getSubject() {
+    public EntityAttributeListV2 getSubject() {
         return subject;
     }
 

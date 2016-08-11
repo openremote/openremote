@@ -19,12 +19,17 @@
  */
 package org.openremote.manager.server.assets;
 
-import org.openremote.manager.shared.ngsi.Attribute;
+import org.openremote.manager.shared.ngsi.Entity;
+import org.openremote.manager.shared.ngsi.params.SubscriptionParams;
 
-import java.util.List;
+import java.util.concurrent.Callable;
 
-public interface AssetProvider {
-    List<Attribute> getAssetAttributeValues(String assetId, List<String> attributes);
+public interface SubscriptionProvider {
+    boolean register(Callable<Entity[]> listener, SubscriptionParams subscription);
 
-    boolean setAssetAttributeValues(String assetId, List<Attribute> attributes);
+    SubscriptionParams getSubscription(Callable<Entity[]> listener);
+
+    void unregister(Callable<Entity[]> listener);
+
+    String getSubscriptionCallbackUri();
 }

@@ -22,13 +22,13 @@ package org.openremote.manager.shared.ngsi;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class ContextResponse {
+public class QueryResponse {
     @JsonInclude
     protected ContextElement contextElement;
     @JsonInclude
     protected StatusCode statusCode;
 
-    public ContextResponse(@JsonProperty("contextElement") ContextElement contextElement, @JsonProperty("statusCode") StatusCode statusCode) {
+    public QueryResponse(@JsonProperty("contextElement") ContextElement contextElement, @JsonProperty("statusCode") StatusCode statusCode) {
         this.contextElement = contextElement;
         this.statusCode = statusCode;
     }

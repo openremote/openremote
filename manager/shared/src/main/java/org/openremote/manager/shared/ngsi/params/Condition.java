@@ -17,14 +17,37 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.assets;
+package org.openremote.manager.shared.ngsi.params;
 
-import org.openremote.manager.shared.ngsi.Attribute;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.openremote.manager.shared.ngsi.simplequery.Query;
 
 import java.util.List;
 
-public interface AssetProvider {
-    List<Attribute> getAssetAttributeValues(String assetId, List<String> attributes);
+public class Condition {
+    @JsonProperty("attrs")
+    protected List<String> attributes;
+    @JsonProperty("expression")
+    protected Query query;
 
-    boolean setAssetAttributeValues(String assetId, List<Attribute> attributes);
+    public Condition(List<String> attributes) {
+        this.attributes = attributes;
+    }
+
+    public Condition(Query query) {
+        this.query = query;
+    }
+
+    public Condition(List<String> attributes, Query query) {
+        this.attributes = attributes;
+        this.query = query;
+    }
+
+    public List<String> getAttributes() {
+        return attributes;
+    }
+
+    public Query getQuery() {
+        return query;
+    }
 }

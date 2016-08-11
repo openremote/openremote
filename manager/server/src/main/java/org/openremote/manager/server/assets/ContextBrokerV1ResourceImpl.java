@@ -21,8 +21,9 @@ package org.openremote.manager.server.assets;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.jboss.marshalling.Pair;
+import elemental.json.Json;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
+import org.jgroups.util.Tuple;
 import org.openremote.container.Container;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.ngsi.*;
@@ -51,7 +52,7 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
     protected URI hostUri;
     protected ObjectMapper mapper;
     protected Client httpClient;
-    protected ContextRegistrationV1 providerRegistration = new ContextRegistrationV1(new ArrayList<>(), null);
+    protected RegistrationRequestV1 providerRegistration = new RegistrationRequestV1(new ArrayList<>(), null);
     protected Timer updateTimer;
 
     ContextBrokerV1ResourceImpl(Client httpClient, UriBuilder contextBrokerHostUri) {
@@ -74,27 +75,32 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
     }
 
     @Override
-    public ContextResponseWrapper queryContext(EntityAttributeQuery query) {
-        List<ContextResponse> responses = query.getEntities()
+    public QueryResponseWrapper queryContext(EntityAttributeQuery query) {
+        List<QueryResponse> responses = query.getEntities()
                 .stream()
-                .map(e -> getContextResponse(e, query.getAttributes()))
+                .map(e -> getContextResponse(e, query.getAttributes().stream().map(attr -> new Tuple<String, String>(attr, null)).collect(Collectors.toList()), false))
                 .filter(cr -> cr != null)
                 .collect(Collectors.toList());
 
         if (responses.size() == 0) {
-            return new ContextResponseWrapper(null, new StatusCode("404", "No context element found"));
+            return new QueryResponseWrapper(null, new StatusCode("404", "No context element found"));
         } else {
-            return new ContextResponseWrapper(responses);
+            return new QueryResponseWrapper(responses);
         }
     }
 
     @Override
-    public ContextRegistrationV1Response registerContext(ContextRegistrationV1 registration) {
+    public QueryResponseWrapper updateContext(UpdateRequestV1 updateRequest) {
         return null;
     }
 
     @Override
-    public String getContextProviderUri() {
+    public RegistrationResponseV1 registerContext(RegistrationRequestV1 registration) {
+        return null;
+    }
+
+    @Override
+    public String getRegistrationCallbackUri() {
         return UriBuilder.fromUri(hostUri)
                 .path(MASTER_REALM)
                 .path(CONTEXT_PROVIDER_V1_ENDPOINT_PATH)
@@ -110,37 +116,37 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
         return target.proxy(ContextBrokerV1Resource.class);
     }
 
-    protected synchronized ContextResponse getContextResponse(ContextEntity entityQuery, List<String> attributeNames) {
-        Map.Entry<Pair<String, String>, Map<Attribute, AssetProvider>> providerEntry = providers
+    protected synchronized QueryResponse getContextResponse(ContextEntity entityQuery, List<Tuple<String,String>> attributesAndValues, boolean isUpdate) {
+        Map.Entry<Tuple<String, String>, Map<Attribute, AssetProvider>> providerEntry = providers
                 .entrySet()
                 .stream()
-                .filter(es -> es.getKey().getA().equalsIgnoreCase(entityQuery.getId()))
+                .filter(es -> es.getKey().getVal1().equalsIgnoreCase(entityQuery.getId()))
                 .findFirst()
                 .orElse(null);
         Map<Attribute, AssetProvider> providerInfo = providerEntry != null ? providerEntry.getValue() : null;
-        Map<AssetProvider, List<String>> attributeProviders = null;
+        Map<AssetProvider, List<Attribute>> attributeProviders = null;
 
         if (providerInfo != null) {
-            if (attributeNames == null || attributeNames.isEmpty()) {
-                // Get all attribute providers
+            if (attributesAndValues == null || attributesAndValues.isEmpty()) {
+                // Get all attribute providers for these attributes
                 attributeProviders = providerInfo
                         .entrySet()
                         .stream()
-                        .collect(Collectors.groupingBy(es -> es.getValue(), Collectors.mapping(es -> es.getKey().getName(), Collectors.toList())));
+                        .collect(Collectors.groupingBy(es -> es.getValue(), Collectors.mapping(es -> es.getKey(), Collectors.toList())));
             } else {
-                attributeProviders = attributeNames
+                attributeProviders = attributesAndValues
                         .stream()
                         .map(attr -> {
                             Map.Entry<Attribute, AssetProvider> entry = providerInfo
                                     .entrySet()
                                     .stream()
-                                    .filter(es -> es.getKey().getName().equals(attr))
+                                    .filter(es -> es.getKey().getName().equals(attr.getVal1()))
                                     .findFirst()
                                     .orElse(null);
-                            return new Pair<>(entry.getValue(), attr);
+                            return new Tuple<>(entry.getValue(), entry.getKey());
                         })
-                        .filter(p -> p.getA() != null)
-                        .collect(Collectors.groupingBy(Pair::getA, Collectors.mapping(Pair::getB, Collectors.toList())));
+                        .filter(p -> p.getVal1() != null)
+                        .collect(Collectors.groupingBy(Tuple::getVal1, Collectors.mapping(Tuple::getVal2, Collectors.toList())));
             }
         }
 
@@ -149,18 +155,41 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
             return null;
         }
 
-        List<Attribute> attributes = attributeProviders.entrySet()
-                .stream()
-                .filter(es -> !es.getValue().isEmpty())
-                .flatMap(es -> es.getKey().getAssetAttributeValues(entityQuery.getId(), es.getValue()).stream())
-                .collect(Collectors.toList());
+        List<Attribute> attributes;
+
+        if (isUpdate) {
+            attributes = attributeProviders.entrySet()
+                    .stream()
+                    .filter(es -> !es.getValue().isEmpty())
+                    .flatMap(es -> {
+                        List<Attribute> attrs = attributesAndValues
+                                .stream()
+                                .filter(attrVal ->
+                                        es.getValue()
+                                                .stream()
+                                                .anyMatch(attr -> attr.getName().equalsIgnoreCase(attrVal.getVal1())))
+                                .map(attrValue -> new Attribute(attrValue.getVal1(), null, Json.create(attrValue.getVal2())))
+                                .collect(Collectors.toList());
+                        // Call set attributes on provider
+
+                        es.getKey().setAssetAttributeValues(entityQuery.getId(), attrs);
+                        return attrs.stream();
+                    })
+                    .collect(Collectors.toList());
+        } else {
+            attributes = attributeProviders.entrySet()
+                    .stream()
+                    .filter(es -> !es.getValue().isEmpty())
+                    .flatMap(es -> es.getKey().getAssetAttributeValues(entityQuery.getId(), es.getValue().stream().map(Attribute::getName).collect(Collectors.toList())).stream())
+                    .collect(Collectors.toList());
+        }
 
         if (attributes.isEmpty()) {
             LOG.info("Asset provider returned no attributes when asked for the value of one or more attributes");
             return null;
         }
 
-        return new ContextResponse(
+        return new QueryResponse(
                 new ContextElement(entityQuery.getType(),entityQuery.getId(), false, attributes),
                 new StatusCode("200", "OK"));
     }
@@ -168,7 +197,7 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
     @Override
     protected synchronized void updateRegistration(String assetType, String assetId, List<Attribute> attributes) {
         // Check if this asset ID is already registered
-        EntityAttributeRegistrationV1 existingReg = providerRegistration.getRegistrations()
+        EntityAttributeListV1 existingReg = providerRegistration.getRegistrations()
                 .stream()
                 .filter(reg ->
                         reg.getEntities()
@@ -214,7 +243,7 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
         }
 
         if (!attributes.isEmpty()) {
-            EntityAttributeRegistrationV1 newReg = providerRegistration.getRegistrations()
+            EntityAttributeListV1 newReg = providerRegistration.getRegistrations()
                     .stream()
                     .filter(reg ->
                             attributes
@@ -236,7 +265,7 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
                 List<ContextAttribute> attrs = new ArrayList<>();
                 entities.add(entity);
                 attributes.forEach(attr -> attrs.add(new ContextAttribute(attr.getName(), attr.getType().getName(), false)));
-                newReg = new EntityAttributeRegistrationV1(entities, attrs, getContextProviderUri());
+                newReg = new EntityAttributeListV1(entities, attrs, getRegistrationCallbackUri());
                 providerRegistration.getRegistrations().add(newReg);
             }
         }
@@ -258,16 +287,16 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
 
     private synchronized void refreshRegistration() {
         // If registration is set to 0s then we need to provide a dummy entity - WTF?
-        ContextRegistrationV1 reg = providerRegistration;
+        RegistrationRequestV1 reg = providerRegistration;
 
         if (reg.getDuration().equalsIgnoreCase("PT0S")) {
-            reg = new ContextRegistrationV1(new ArrayList<>(), reg.getDuration(), reg.getRegistrationId());
+            reg = new RegistrationRequestV1(new ArrayList<>(), reg.getDuration(), reg.getRegistrationId());
             List<ContextEntity> dummyEntities = new ArrayList<>();
             dummyEntities.add(new ContextEntity("##############","##############", false));
-            reg.getRegistrations().add(new EntityAttributeRegistrationV1(dummyEntities, null, getContextProviderUri()));
+            reg.getRegistrations().add(new EntityAttributeListV1(dummyEntities, null, getRegistrationCallbackUri()));
         }
 
-        ContextRegistrationV1Response response = getContextBrokerV1().registerContext(reg);
+        RegistrationResponseV1 response = getContextBrokerV1().registerContext(reg);
         boolean success = false;
 
         if (response == null) {

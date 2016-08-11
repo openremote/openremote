@@ -26,7 +26,9 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.observable.RetryWithDelay;
 import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.shared.assets.AssetsResource;
 import org.openremote.manager.shared.ngsi.*;
+import org.openremote.manager.shared.ngsi.params.SubscriptionParams;
 import rx.Observable;
 
 import javax.ws.rs.WebApplicationException;
@@ -34,6 +36,7 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -57,7 +60,8 @@ public class AssetsService implements ContainerService {
     protected UriBuilder contextBrokerHostUri;
     protected Client httpClient;
     protected URI hostUri;
-    protected ContextProvider contextProvider;
+    protected RegistrationProvider registrationProvider;
+    protected SubscriptionProvider subscriptionProvider;
 
     @Override
     public void init(Container container) throws Exception {
@@ -91,19 +95,22 @@ public class AssetsService implements ContainerService {
             .build();
 
         hostUri = container.getService(WebService.class).getHostUri();
-
-        contextProvider = new ContextBrokerV1ResourceImpl(httpClient, contextBrokerHostUri);
     }
 
     @Override
     public void configure(Container container) throws Exception {
+        AssetsResourceImpl assetsResource = new AssetsResourceImpl(this);
+
         container.getService(WebService.class).getApiSingletons().add(new EntryPointMessageBodyConverter());
         container.getService(WebService.class).getApiSingletons().add(new EntityMessageBodyConverter());
         container.getService(WebService.class).getApiSingletons().add(new EntityArrayMessageBodyConverter());
-        container.getService(WebService.class).getApiSingletons().add(new AssetsResourceImpl(this));
+        container.getService(WebService.class).getApiSingletons().add(assetsResource);
 
-        // Configure the context provider
-        contextProvider.configure(container);
+        subscriptionProvider = assetsResource;
+        registrationProvider = new ContextBrokerV1ResourceImpl(httpClient, contextBrokerHostUri);
+
+        // Configure the registration provider
+        registrationProvider.configure(container);
     }
 
     @Override
@@ -118,15 +125,15 @@ public class AssetsService implements ContainerService {
         if (httpClient != null)
             httpClient.close();
 
-        if (contextProvider != null)
-            contextProvider.stop();
+        if (registrationProvider != null)
+            registrationProvider.stop();
     }
 
     public Client getHttpClient() {
         return httpClient;
     }
 
-    public ContextProvider getContextProvider() { return contextProvider; }
+    public RegistrationProvider getRegistrationProvider() { return registrationProvider; }
 
     public ContextBrokerV2Resource getContextBroker() {
         return getContextBroker(getTarget(httpClient, contextBrokerHostUri.build()));
@@ -156,10 +163,26 @@ public class AssetsService implements ContainerService {
     }
 
     public boolean registerAssetProvider(String assetType, String assetId, List<Attribute> attributes, AssetProvider provider) {
-        return contextProvider.registerAssetProvider(assetType, assetId, attributes, provider);
+        return registrationProvider.registerAssetProvider(assetType, assetId, attributes, provider);
     }
 
     public void unregisterAssetProvider(String assetType, String assetId, AssetProvider provider) {
-        contextProvider.unregisterAssetProvider(assetType, assetId, provider);
+        registrationProvider.unregisterAssetProvider(assetType, assetId, provider);
+    }
+
+    public void unregisterAssetProvider(AssetProvider provider) {
+        registrationProvider.unregisterAssetProvider(provider);
+    }
+
+    public boolean registerAssetListener(Callable<Entity[]> listener, SubscriptionParams subscription) {
+        return subscriptionProvider.register(listener, subscription);
+    }
+
+    public SubscriptionParams getAssetListenerSubscription(Callable<Entity[]> listener) {
+        return subscriptionProvider.getSubscription(listener);
+    }
+
+    public void unregisterAssetListener(Callable<Entity[]> listener) {
+        subscriptionProvider.unregister(listener);
     }
 }

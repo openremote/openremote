@@ -21,13 +21,14 @@ package org.openremote.manager.server.assets;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.jboss.marshalling.Pair;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
+import org.jgroups.util.Tuple;
 import org.openremote.container.Container;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.ngsi.*;
 import org.openremote.manager.shared.ngsi.params.EntityListParams;
 import org.openremote.manager.shared.ngsi.params.EntityParams;
+import org.openremote.manager.shared.ngsi.params.SubscriptionParams;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.NotSupportedException;
@@ -37,6 +38,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -59,7 +61,7 @@ public class ContextBrokerV2ResourceImpl extends AbstractContextBrokerResourceIm
     protected ObjectMapper mapper;
     protected Client httpClient;
     protected Timer updateTimer;
-    protected BatchContextRegistrationV2 providerRegistration;
+    protected BatchRegistrationRequestV2 providerRegistration;
 
     ContextBrokerV2ResourceImpl(Client httpClient, UriBuilder contextBrokerHostUri) {
         this.httpClient = httpClient;
@@ -129,7 +131,32 @@ public class ContextBrokerV2ResourceImpl extends AbstractContextBrokerResourceIm
     }
 
     @Override
-    public Response createRegistration(ContextRegistrationV2 registration) {
+    public SubscribeRequestV2[] getSubscriptions() {
+        throw new NotSupportedException("NGSI v2 Provider doesn't support this method");
+    }
+
+    @Override
+    public Response createSubscription(SubscribeRequestV2 subscription) {
+        throw new NotSupportedException("NGSI v2 Provider doesn't support this method");
+    }
+
+    @Override
+    public Response updateSubscription(String subscriptionId, SubscribeRequestV2 subscription) {
+        throw new NotSupportedException("NGSI v2 Provider doesn't support this method");
+    }
+
+    @Override
+    public Response deleteSubscription(String subscriptionId) {
+        throw new NotSupportedException("NGSI v2 Provider doesn't support this method");
+    }
+
+    @Override
+    public Response createRegistration(RegistrationRequestV2 registration) {
+        throw new NotSupportedException("NGSI v2 Provider doesn't support this method");
+    }
+
+    @Override
+    public SubscribeRequestV2 getSubscription(String subscriptionId) {
         throw new NotSupportedException("NGSI v2 Provider doesn't support this method");
     }
 
@@ -144,12 +171,12 @@ public class ContextBrokerV2ResourceImpl extends AbstractContextBrokerResourceIm
     }
 
     @Override
-    public Response batchRegistration(BatchContextRegistrationV2 registrations) {
+    public Response batchRegistration(BatchRegistrationRequestV2 registrations) {
         throw new NotSupportedException("NGSI v2 Provider doesn't support this method");
     }
 
     @Override
-    public String getContextProviderUri() {
+    public String getRegistrationCallbackUri() {
         return UriBuilder.fromUri(hostUri)
                 .path(MASTER_REALM)
                 .path(CONTEXT_PROVIDER_V2_ENDPOINT_PATH)
@@ -167,7 +194,7 @@ public class ContextBrokerV2ResourceImpl extends AbstractContextBrokerResourceIm
 
     protected synchronized String[] resolveIds(EntityListParams entityListParams) {
         // TODO: Add support for non entity ID/type based queries
-        Stream<Map.Entry<Pair<String, String>, Map<Attribute, AssetProvider>>> filteredProviders = providers
+        Stream<Map.Entry<Tuple<String, String>, Map<Attribute, AssetProvider>>> filteredProviders = providers
                 .entrySet()
                 .stream();
 
@@ -177,13 +204,13 @@ public class ContextBrokerV2ResourceImpl extends AbstractContextBrokerResourceIm
                     .filter(
                             es -> Arrays
                                 .stream(entityListParams.id)
-                                .anyMatch(id -> id.equalsIgnoreCase(es.getKey().getA())));
+                                .anyMatch(id -> id.equalsIgnoreCase(es.getKey().getVal1())));
         } else if (entityListParams.idPattern != null) {
             // Filter by ID (regex)
             Pattern idRegex = Pattern.compile(entityListParams.idPattern);
             filteredProviders = filteredProviders
                     .filter(
-                        es -> idRegex.matcher(es.getKey().getA()).matches()
+                        es -> idRegex.matcher(es.getKey().getVal1()).matches()
                     );
         }
 
@@ -193,25 +220,25 @@ public class ContextBrokerV2ResourceImpl extends AbstractContextBrokerResourceIm
                     .filter(
                             es -> Arrays
                                 .stream(entityListParams.type)
-                                .anyMatch(type -> type.equalsIgnoreCase(es.getKey().getB())));
+                                .anyMatch(type -> type.equalsIgnoreCase(es.getKey().getVal2())));
         } else if (entityListParams.typePattern != null) {
             // Further filter by type (regex)
             Pattern typeRegex = Pattern.compile(entityListParams.typePattern);
             filteredProviders = filteredProviders.filter(
-                    es -> typeRegex.matcher(es.getKey().getB()).matches()
+                    es -> typeRegex.matcher(es.getKey().getVal2()).matches()
             );
         }
 
-        return filteredProviders.map(es -> es.getKey().getA()).toArray(size -> new String[size]);
+        return filteredProviders.map(es -> es.getKey().getVal1()).toArray(size -> new String[size]);
     }
 
     protected synchronized Entity getEntityResponse(String entityId, List<String> attributeNames) {
         Map<AssetProvider, List<String>> attributeProviders = null;
 
-        Map.Entry<Pair<String, String>, Map<Attribute, AssetProvider>> providerEntry = providers
+        Map.Entry<Tuple<String, String>, Map<Attribute, AssetProvider>> providerEntry = providers
                 .entrySet()
                 .stream()
-                .filter(es -> es.getKey().getA().equalsIgnoreCase(entityId))
+                .filter(es -> es.getKey().getVal1().equalsIgnoreCase(entityId))
                 .findFirst()
                 .orElse(null);
 
@@ -234,10 +261,10 @@ public class ContextBrokerV2ResourceImpl extends AbstractContextBrokerResourceIm
                                     .filter(es -> es.getKey().getName().equals(attr))
                                     .findFirst()
                                     .orElse(null);
-                            return new Pair<>(entry.getValue(), attr);
+                            return new Tuple<>(entry.getValue(), attr);
                         })
-                        .filter(p -> p.getA() != null)
-                        .collect(Collectors.groupingBy(Pair::getA, Collectors.mapping(Pair::getB, Collectors.toList())));
+                        .filter(p -> p.getVal1() != null)
+                        .collect(Collectors.groupingBy(Tuple::getVal1, Collectors.mapping(Tuple::getVal2, Collectors.toList())));
             }
         }
 
@@ -259,18 +286,18 @@ public class ContextBrokerV2ResourceImpl extends AbstractContextBrokerResourceIm
 
         // Construct the entity object
         Entity entity = new Entity();
-        entity.setType(providerEntry.getKey().getB());
-        entity.setId(providerEntry.getKey().getA());
+        entity.setType(providerEntry.getKey().getVal2());
+        entity.setId(providerEntry.getKey().getVal1());
         attributes.forEach(entity::addAttribute);
 
         return entity;
     }
 
     @Override
-    // TODO: Update registration code cnce NGSI9 v2 is finalised
+    // TODO: Update registration code once NGSI9 v2 is finalised
     protected synchronized void updateRegistration(String assetType, String assetId, List<Attribute> attributes) {
         // Check if this asset ID is already registered
-        ContextRegistrationV2 existingReg = providerRegistration.getRegistrations()
+        RegistrationRequestV2 existingReg = providerRegistration.getRegistrations()
                 .stream()
                 .filter(reg ->
                         reg.getSubject().getEntities()
@@ -314,7 +341,7 @@ public class ContextBrokerV2ResourceImpl extends AbstractContextBrokerResourceIm
             }
         }
 
-        ContextRegistrationV2 newReg = providerRegistration.getRegistrations()
+        RegistrationRequestV2 newReg = providerRegistration.getRegistrations()
                 .stream()
                 .filter(reg ->
                         attributes
@@ -335,8 +362,8 @@ public class ContextBrokerV2ResourceImpl extends AbstractContextBrokerResourceIm
             List<ContextAttribute> attrs = new ArrayList<>();
             entities.add(entity);
             attributes.forEach(attr -> attrs.add(new ContextAttribute(attr.getName())));
-            EntityAttributeRegistrationV2 subject = new EntityAttributeRegistrationV2(entities,attrs);
-            newReg = new ContextRegistrationV2(subject, getContextProviderUri(), null, null);
+            EntityAttributeListV2 subject = new EntityAttributeListV2(entities,attrs);
+            newReg = new RegistrationRequestV2(subject, getRegistrationCallbackUri(), null, null);
             newReg.setDuration("PT" + getRefreshInterval() + "S");
             providerRegistration.getRegistrations().add(newReg);
         }
@@ -359,7 +386,7 @@ public class ContextBrokerV2ResourceImpl extends AbstractContextBrokerResourceIm
         refreshRegistration();
     }
 
-    // TODO: Update registration code cnce NGSI9 v2 is finalised
+    // TODO: Update registration code once NGSI9 v2 is finalised
     private synchronized void refreshRegistration() {
         Response response = getContextBroker().batchRegistration(providerRegistration);
         boolean success = false;

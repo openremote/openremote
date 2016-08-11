@@ -24,26 +24,26 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
-public class ContextResponseWrapper {
+public class QueryResponseWrapper {
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    protected List<ContextResponse> contextResponses;
+    protected List<QueryResponse> contextResponses;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     protected StatusCode errorCode;
 
-    public ContextResponseWrapper(@JsonProperty("contextResponses") List<ContextResponse> contextResponses, @JsonProperty("errorCode") StatusCode errorCode) {
+    public QueryResponseWrapper(@JsonProperty("contextResponses") List<QueryResponse> contextResponses, @JsonProperty("errorCode") StatusCode errorCode) {
         this.contextResponses = contextResponses;
         this.errorCode = errorCode;
     }
 
-    public ContextResponseWrapper(List<ContextResponse> contextResponses) {
+    public QueryResponseWrapper(List<QueryResponse> contextResponses) {
         this.contextResponses = contextResponses;
     }
 
-    public ContextResponseWrapper(StatusCode errorCode) {
+    public QueryResponseWrapper(StatusCode errorCode) {
         this.errorCode = errorCode;
     }
 
-    public List<ContextResponse> getContextResponses() {
+    public List<QueryResponse> getContextResponses() {
         return contextResponses;
     }
 

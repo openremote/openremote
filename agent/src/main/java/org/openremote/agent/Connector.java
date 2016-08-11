@@ -59,7 +59,7 @@ public interface Connector {
     long addConnectionListener(Consumer<ConnectionState> callback);
 
     /**
-     * Remove an existing connection listerner
+     * Remove an existing connection listener
      */
     void removeConnectionListener(long listenerId);
 

@@ -19,12 +19,33 @@
  */
 package org.openremote.manager.server.assets;
 
+import org.openremote.container.Container;
 import org.openremote.manager.shared.ngsi.Attribute;
 
 import java.util.List;
 
-public interface AssetProvider {
-    List<Attribute> getAssetAttributeValues(String assetId, List<String> attributes);
+public interface RegistrationProvider {
 
-    boolean setAssetAttributeValues(String assetId, List<Attribute> attributes);
+    void configure(Container container) throws Exception;
+
+    void stop();
+
+    String getRegistrationCallbackUri();
+
+    boolean registerAssetProvider(String assetType, String assetId, List<Attribute> attributes, AssetProvider provider);
+
+    void unregisterAssetProvider(String assetType, String assetId, AssetProvider provider);
+
+    void unregisterAssetProvider(AssetProvider provider);
+
+    /**
+     * Get the refresh interval duration of this context providers registrations
+     * @return Registration refresh interval in seconds
+     */
+    int getRefreshInterval();
+
+    /**
+     * Set the refresh interval of this context providers registrations
+     */
+    void setRefreshInterval(int seconds);
 }

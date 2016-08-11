@@ -40,7 +40,13 @@ public interface ContextBrokerV1Resource {
     @Path("queryContext")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    ContextResponseWrapper queryContext(EntityAttributeQuery query);
+    QueryResponseWrapper queryContext(EntityAttributeQuery query);
+
+    @POST
+    @Path("updateContext")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    QueryResponseWrapper updateContext(UpdateRequestV1 updateRequest);
 
     /*
     * ***************************************
@@ -52,5 +58,5 @@ public interface ContextBrokerV1Resource {
     @Path("registry/registerContext")
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
-    ContextRegistrationV1Response registerContext(ContextRegistrationV1 registration);
+    RegistrationResponseV1 registerContext(RegistrationRequestV1 registration);
 }

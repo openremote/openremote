@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.server.assets;
 
-import org.jboss.marshalling.Pair;
+import org.jgroups.util.Tuple;
 import org.openremote.manager.shared.ngsi.*;
 
 import java.util.ArrayList;
@@ -30,22 +30,22 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public abstract class AbstractContextBrokerResourceImpl implements ContextProvider {
+public abstract class AbstractContextBrokerResourceImpl implements RegistrationProvider {
     protected static final Logger LOG = Logger.getLogger(AbstractContextBrokerResourceImpl.class.getName());
     public static final int REFRESH_INTERVAL = 180;
     // Key = ENTITY_ID
     // Value = MAP<ATTRIBUTE, PROVIDER>
-    protected Map<Pair<String,String>, Map<Attribute, AssetProvider>> providers = new HashMap<>();
+    protected Map<Tuple<String,String>, Map<Attribute, AssetProvider>> providers = new HashMap<>();
     protected int refreshInterval = REFRESH_INTERVAL;
 
     @Override
     public synchronized boolean registerAssetProvider(String assetType, String assetId, List<Attribute> attributes, AssetProvider provider) {
         LOG.fine("Registering Asset Provider for '" + assetId + "'");
         List<Attribute> regAttributes = new ArrayList<>(attributes);
-        Map.Entry<Pair<String, String>, Map<Attribute, AssetProvider>> providerEntry = providers
+        Map.Entry<Tuple<String, String>, Map<Attribute, AssetProvider>> providerEntry = providers
                 .entrySet()
                 .stream()
-                .filter(es -> es.getKey().getA().equalsIgnoreCase(assetId))
+                .filter(es -> es.getKey().getVal1().equalsIgnoreCase(assetId))
                 .findFirst()
                 .orElse(null);
         Map<Attribute, AssetProvider> providerInfo = providerEntry != null ? providerEntry.getValue() : null;
@@ -71,16 +71,25 @@ public abstract class AbstractContextBrokerResourceImpl implements ContextProvid
             providerInfo.put(attr, provider);
         }
 
-        providers.putIfAbsent(new Pair<>(assetId, assetType), providerInfo);
+        providers.putIfAbsent(new Tuple<>(assetId, assetType), providerInfo);
         return true;
     }
 
     @Override
-    public synchronized void unregisterAssetProvider(String assetType, String assetId, AssetProvider provider) {
-        Map.Entry<Pair<String, String>, Map<Attribute, AssetProvider>> providerEntry = providers
+    public synchronized void unregisterAssetProvider(AssetProvider provider) {
+        providers
                 .entrySet()
                 .stream()
-                .filter(es -> es.getKey().getA().equalsIgnoreCase(assetId))
+                .filter(es -> es.getValue().containsValue(provider))
+                .forEach(es -> unregisterAssetProvider(es.getKey().getVal1(), es.getKey().getVal2(), provider));
+    }
+
+    @Override
+    public synchronized void unregisterAssetProvider(String assetType, String assetId, AssetProvider provider) {
+        Map.Entry<Tuple<String, String>, Map<Attribute, AssetProvider>> providerEntry = providers
+                .entrySet()
+                .stream()
+                .filter(es -> es.getKey().getVal1().equalsIgnoreCase(assetId))
                 .findFirst()
                 .orElse(null);
         Map<Attribute, AssetProvider> providerInfo = providerEntry != null ? providerEntry.getValue() : null;

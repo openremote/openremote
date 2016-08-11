@@ -21,20 +21,21 @@ package org.openremote.manager.shared.ngsi;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import elemental.json.JsonObject;
 
 import java.util.List;
 
-public class EntityAttributeRegistrationV2 {
+public class EntityAttributeListV1 {
     @JsonInclude
     protected List<ContextEntity> entities;
     @JsonInclude
     protected List<ContextAttribute> attributes;
+    @JsonProperty(value = "providingApplication")
+    protected String providerUri;
 
-
-    public EntityAttributeRegistrationV2(@JsonProperty("entities") List<ContextEntity> entities, @JsonProperty("attributes") List<ContextAttribute> attributes) {
+    public EntityAttributeListV1(@JsonProperty("entities") List<ContextEntity> entities, @JsonProperty("attributes") List<ContextAttribute> attributes, @JsonProperty("providingApplication") String providerUri) {
         this.entities = entities;
         this.attributes = attributes;
+        this.providerUri = providerUri;
     }
 
     public List<ContextEntity> getEntities() {
@@ -43,5 +44,9 @@ public class EntityAttributeRegistrationV2 {
 
     public List<ContextAttribute> getAttributes() {
         return attributes;
+    }
+
+    public String getProviderUri() {
+        return providerUri;
     }
 }

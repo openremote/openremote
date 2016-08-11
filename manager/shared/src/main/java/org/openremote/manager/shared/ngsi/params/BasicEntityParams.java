@@ -17,28 +17,40 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.ngsi;
+package org.openremote.manager.shared.ngsi.params;
 
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
-public class BatchContextRegistrationV2 {
-    protected List<ContextRegistrationV2> registrations;
-    protected ActionType actionType;
+public class BasicEntityParams {
+    @JsonInclude
+    protected String id;
+    @JsonInclude
+    protected String idPattern;
+    @JsonInclude
+    protected String type;
 
-    public BatchContextRegistrationV2(List<ContextRegistrationV2> registrations, ActionType actionType) {
-        this.registrations = registrations;
-        this.actionType = actionType;
+    public BasicEntityParams(String idParam, boolean isPattern) {
+        if (isPattern) {
+            this.idPattern = idParam;
+        } else {
+            this.id = idParam;
+        }
     }
 
-    public List<ContextRegistrationV2> getRegistrations() {
-        return registrations;
+    public BasicEntityParams(String idParam, boolean isPattern, String type) {
+        this(idParam, isPattern);
+        this.type = type;
     }
 
-    public ActionType getActionType() {
-        return actionType;
+    public String getId() {
+        return id;
     }
 
-    public void setActionType(ActionType actionType) {
-        this.actionType = actionType;
+    public String getIdPattern() {
+        return idPattern;
+    }
+
+    public String getType() {
+        return type;
     }
 }

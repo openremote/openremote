@@ -17,14 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.assets;
+package org.openremote.manager.shared.ngsi.params;
 
-import org.openremote.manager.shared.ngsi.Attribute;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
-import java.util.List;
+public class HttpParams {
+    @JsonInclude
+    protected String url;
 
-public interface AssetProvider {
-    List<Attribute> getAssetAttributeValues(String assetId, List<String> attributes);
+    public HttpParams(String url) {
+        this.url = url;
+    }
 
-    boolean setAssetAttributeValues(String assetId, List<Attribute> attributes);
+    public String getUrl() {
+        return url;
+    }
 }

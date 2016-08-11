@@ -17,14 +17,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.assets;
-
-import org.openremote.manager.shared.ngsi.Attribute;
+package org.openremote.manager.shared.ngsi;
 
 import java.util.List;
 
-public interface AssetProvider {
-    List<Attribute> getAssetAttributeValues(String assetId, List<String> attributes);
+public class BatchRegistrationRequestV2 {
+    protected List<RegistrationRequestV2> registrations;
+    protected ActionType actionType;
 
-    boolean setAssetAttributeValues(String assetId, List<Attribute> attributes);
+    public BatchRegistrationRequestV2(List<RegistrationRequestV2> registrations, ActionType actionType) {
+        this.registrations = registrations;
+        this.actionType = actionType;
+    }
+
+    public List<RegistrationRequestV2> getRegistrations() {
+        return registrations;
+    }
+
+    public ActionType getActionType() {
+        return actionType;
+    }
+
+    public void setActionType(ActionType actionType) {
+        this.actionType = actionType;
+    }
 }

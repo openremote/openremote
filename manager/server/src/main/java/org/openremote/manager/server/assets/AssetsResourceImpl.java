@@ -19,28 +19,46 @@
  */
 package org.openremote.manager.server.assets;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import elemental.json.Json;
-import elemental.json.JsonArray;
 import elemental.json.JsonObject;
+import org.openremote.container.Container;
 import org.openremote.container.web.WebResource;
+import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.assets.AssetsResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.ngsi.Entity;
-import org.openremote.manager.shared.ngsi.params.EntityListParams;
-import org.openremote.manager.shared.ngsi.params.EntityParams;
+import org.openremote.manager.shared.ngsi.params.*;
+import org.openremote.manager.shared.ngsi.SubscribeRequestV2;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
+import java.net.URI;
+import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.logging.Logger;
 
-public class AssetsResourceImpl extends WebResource implements AssetsResource {
+import static org.openremote.manager.shared.Constants.MASTER_REALM;
 
+public class AssetsResourceImpl extends WebResource implements AssetsResource, SubscriptionProvider {
+    public static final String SUBSCRIBER_ENDPOINT_PATH = "assets/subscriber";
     private static final Logger LOG = Logger.getLogger(AssetsResourceImpl.class.getName());
+    public static final int SUBSCRIPTION_REFRESH_INTERVAL = 180;
+    protected URI hostUri;
+    protected ObjectMapper mapper;
+    protected Map<Callable<Entity[]>, SubscribeRequestV2> subscribers = new HashMap<>();
+    protected Calendar calendar;
 
     protected final AssetsService assetsService;
 
     public AssetsResourceImpl(AssetsService assetsService) {
         this.assetsService = assetsService;
+    }
+
+    public void configure(Container container) {
+        hostUri = container.getService(WebService.class).getHostUri();
+        mapper = container.JSON;
     }
 
     @Override
@@ -75,6 +93,13 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource {
         checkSuccessResponse(assetsService.getContextBroker().patchEntityAttributes(entityId, entity));
     }
 
+    @Override
+    public void subscriberCallback(Entity[] entities) {
+        // We get here when Orion detects a change to a currently subscribed entity
+        // TODO: Notify the listeners interested in this asset
+
+    }
+
     protected Response checkSuccessResponse(Response response) {
         if (response.getStatusInfo().getFamily() == Response.Status.Family.SUCCESSFUL)
             return response;
@@ -94,5 +119,79 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource {
         if (copy.hasKey("type"))
             copy.remove("type");
         return copy;
+    }
+
+    @Override
+    public boolean register(Callable<Entity[]> listener, SubscriptionParams subscription) {
+        // Find existing subscription for this listener (if it exists)
+        SubscribeRequestV2 storedSubscription = subscribers.get(listener);
+
+        if (storedSubscription != null) {
+            String id = storedSubscription.getId();
+            storedSubscription.setSubject(subscription);
+            storedSubscription.setExpires(createNewExpiryDate());
+            Response response = assetsService.getContextBroker().updateSubscription(id, storedSubscription);
+            // TODO: Handle failed subscription update
+            return response.getStatus() == 204;
+        }
+
+        // Create a new subscription
+        storedSubscription = new SubscribeRequestV2();
+        storedSubscription.setNotification(createNotificationParams());
+        storedSubscription.setSubject(subscription);
+        storedSubscription.setExpires(createNewExpiryDate());
+
+        Response response = assetsService.getContextBroker().createSubscription(storedSubscription);
+
+        if (response.getStatus() == 204) {
+            String locationHeader = response.getHeaderString("Location");
+            String id = locationHeader.split("/")[3];
+            storedSubscription.setId(id);
+            subscribers.put(listener, storedSubscription);
+            return true;
+        }
+
+        return false;
+    }
+
+    @Override
+    public SubscriptionParams getSubscription(Callable<Entity[]> listener) {
+        SubscribeRequestV2 subscriber = subscribers.get(listener);
+        return subscriber != null ? subscriber.getSubject() : null;
+    }
+
+    @Override
+    public synchronized void unregister(Callable<Entity[]> listener) {
+        SubscribeRequestV2 subscriber = subscribers.get(listener);
+
+        if (subscriber != null) {
+            assetsService.getContextBroker().deleteSubscription(subscriber.getId());
+            subscribers.remove(subscriber);
+        }
+    }
+
+    @Override
+    public String getSubscriptionCallbackUri() {
+        return UriBuilder.fromUri(hostUri)
+                .path(MASTER_REALM)
+                .path(SUBSCRIBER_ENDPOINT_PATH)
+                .build()
+                .toString();
+    }
+
+    protected synchronized void notifySubscribers(Entity[] modifiedEntities) {
+
+    }
+
+    protected Date createNewExpiryDate() {
+        calendar.setTime(new Date());
+        calendar.add(Calendar.MINUTE, 3);
+        return calendar.getTime();
+    }
+
+    protected NotificationParams createNotificationParams() {
+        NotificationParams params = new NotificationParams();
+        params.setHttp(new HttpParams(getSubscriptionCallbackUri()));
+        return params;
     }
 }

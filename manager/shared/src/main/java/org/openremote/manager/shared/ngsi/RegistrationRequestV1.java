@@ -24,26 +24,26 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
-public class ContextRegistrationV1 {
+public class RegistrationRequestV1 {
     @JsonProperty(value = "contextRegistrations")
-    protected List<EntityAttributeRegistrationV1> registrations;
+    protected List<EntityAttributeListV1> registrations;
     @JsonInclude
     protected String duration;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     protected String registrationId;
 
-    public ContextRegistrationV1(List<EntityAttributeRegistrationV1> registrations, String duration) {
+    public RegistrationRequestV1(List<EntityAttributeListV1> registrations, String duration) {
         this.registrations = registrations;
         this.duration = duration;
     }
 
-    public ContextRegistrationV1(@JsonProperty("registrations") List<EntityAttributeRegistrationV1> registrations, @JsonProperty("duration") String duration, @JsonProperty("registrationId") String registrationId) {
+    public RegistrationRequestV1(@JsonProperty("registrations") List<EntityAttributeListV1> registrations, @JsonProperty("duration") String duration, @JsonProperty("registrationId") String registrationId) {
         this.registrations = registrations;
         this.duration = duration;
         this.registrationId = registrationId;
     }
 
-    public List<EntityAttributeRegistrationV1> getRegistrations() {
+    public List<EntityAttributeListV1> getRegistrations() {
         return registrations;
     }
 
@@ -63,7 +63,7 @@ public class ContextRegistrationV1 {
         this.registrationId = registrationId;
     }
 
-    public void setRegistrations(List<EntityAttributeRegistrationV1> registrations) {
+    public void setRegistrations(List<EntityAttributeListV1> registrations) {
         this.registrations = registrations;
     }
 }

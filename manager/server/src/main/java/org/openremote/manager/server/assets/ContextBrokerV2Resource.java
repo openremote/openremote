@@ -20,9 +20,11 @@
 package org.openremote.manager.server.assets;
 
 import org.openremote.manager.shared.http.PATCH;
+import org.openremote.manager.shared.http.SuccessStatusCode;
 import org.openremote.manager.shared.ngsi.*;
 import org.openremote.manager.shared.ngsi.params.EntityListParams;
 import org.openremote.manager.shared.ngsi.params.EntityParams;
+import org.openremote.manager.shared.ngsi.params.SubscriptionParams;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
@@ -73,6 +75,33 @@ public interface ContextBrokerV2Resource {
     @Consumes(APPLICATION_JSON)
     Response patchEntityAttributes(@PathParam("entityId") String entityId, Entity entity);
 
+    @GET
+    @Path("subscriptions")
+    @Produces(APPLICATION_JSON)
+    SubscribeRequestV2[] getSubscriptions();
+
+    @GET
+    @Path("subscriptions/{subscriptionId}")
+    @Produces(APPLICATION_JSON)
+    SubscribeRequestV2 getSubscription(@PathParam("subscriptionId")String subscriptionId);
+
+    @POST
+    @Path("subscriptions")
+    @Consumes(APPLICATION_JSON)
+    Response createSubscription(SubscribeRequestV2 subscription);
+
+    @PATCH
+    @Path("subscriptions/{subscriptionId}")
+    @Consumes(APPLICATION_JSON)
+    @SuccessStatusCode(204)
+    Response updateSubscription(@PathParam("subscriptionId")String subscriptionId, SubscribeRequestV2 subscription);
+
+    @DELETE
+    @Path("subscriptions/{subscriptionId}")
+    @Consumes(APPLICATION_JSON)
+    @SuccessStatusCode(204)
+    Response deleteSubscription(@PathParam("subscriptionId")String subscriptionId);
+
     /*
     * ***************************************
     * NGSI9
@@ -82,7 +111,7 @@ public interface ContextBrokerV2Resource {
     @POST
     @Path("registrations")
     @Consumes(APPLICATION_JSON)
-    Response createRegistration(ContextRegistrationV2 registration);
+    Response createRegistration(RegistrationRequestV2 registration);
 
     @PATCH
     @Path("registrations/{registrationId}")
@@ -96,5 +125,5 @@ public interface ContextBrokerV2Resource {
     @POST
     @Path("op/register")
     @Consumes(APPLICATION_JSON)
-    Response batchRegistration(BatchContextRegistrationV2 registrations);
+    Response batchRegistration(BatchRegistrationRequestV2 registrations);
 }

@@ -17,34 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.ngsi;
+package org.openremote.manager.shared.ngsi.params;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class ContextRegistrationV1Response {
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    protected String duration;
+public class SubscriptionParams {
     @JsonInclude
-    protected String registrationId;
+    protected BasicEntityParams entities;
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    protected StatusCode errorCode;
-
-    public ContextRegistrationV1Response(@JsonProperty("duration")String duration, @JsonProperty("registrationId")String registrationId, @JsonProperty("errorCode")StatusCode errorCode) {
-        this.duration = duration;
-        this.errorCode = errorCode;
-        this.registrationId = registrationId;
-    }
-
-    public String getDuration() {
-        return duration;
-    }
-
-    public String getRegistrationId() {
-        return registrationId;
-    }
-
-    public StatusCode getErrorCode() {
-        return errorCode;
-    }
+    protected Condition condition;
 }

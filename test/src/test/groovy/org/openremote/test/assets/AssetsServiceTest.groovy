@@ -30,6 +30,8 @@ import org.openremote.test.ContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import javax.ws.rs.NotFoundException
+
 class AssetsServiceTest extends Specification implements ContainerTrait {
 
     def "Register Asset Provider"() {
@@ -50,19 +52,6 @@ class AssetsServiceTest extends Specification implements ContainerTrait {
 
         def assetProvider = new AssetProvider() {
             @Override
-            Attribute getAssetAttributeValue(String assetId, String attribute) {
-                requestedAttributes.add(attribute);
-                return attribute.equals("temperature") ?
-                        fakeAttributes[0]
-                    :   fakeAttributes[1];
-            }
-
-            @Override
-            List<Attribute> getAssetAttributeValues(String assetId) {
-                return fakeAttributes;
-            }
-
-            @Override
             List<Attribute> getAssetAttributeValues(String assetId, List<String> attributes) {
                 if (attributes.size() != 2 || !attributes.contains("temperature") || !attributes.contains("speed")) {
                     return null;
@@ -71,6 +60,11 @@ class AssetsServiceTest extends Specification implements ContainerTrait {
                 requestedAttributes.addAll(attributes);
 
                 return fakeAttributes;
+            }
+
+            @Override
+            boolean setAssetAttributeValues(String assetId, List<Attribute> attributes) {
+                return false
             }
         }
 
@@ -81,29 +75,24 @@ class AssetsServiceTest extends Specification implements ContainerTrait {
         result == true;
 
         when: "an asset registered with the mock provider is requested"
-        def response = assetsService.getContextBrokerV1().queryContext(
-                new EntityAttributeQuery([new ContextEntity("Car", "Car1", false)], null)
-        );
+        def entity = assetsService.getContextBroker().getEntity("Car1", null);
 
         then: "the mock asset provider should have resolved the request"
         def conditions = new PollingConditions(timeout: 10)
 
         conditions.eventually {
-            assert response.contextResponses != null;
+            assert entity != null;
         }
 
         requestedAttributes.size() == 2;
-        response.contextResponses.size() == 1;
-        response.contextResponses.get(0).getContextElement().getId() == "Car1";
-        response.contextResponses.get(0).getContextElement().getType() == "Car";
-        response.contextResponses.get(0).getContextElement().getAttributes().size() == 2;
-        Attribute tempAttr = response.contextResponses.get(0).getContextElement().getAttributes()
-                .stream()
+        entity.getId() == "Car1";
+        entity.getType() == "Car";
+        entity.getAttributes().length == 2;
+        Attribute tempAttr = Arrays.stream(entity.getAttributes())
                 .filter({ a -> a.getName().equals("temperature") })
                 .findFirst()
                 .get();
-        Attribute speedAttr = response.contextResponses.get(0).getContextElement().getAttributes()
-                .stream()
+        Attribute speedAttr = Arrays.stream(entity.getAttributes())
                 .filter({ a -> a.getName().equals("speed") })
                 .findFirst()
                 .get();
@@ -116,15 +105,10 @@ class AssetsServiceTest extends Specification implements ContainerTrait {
 
         when: "provider is unregistered and previously registered asset is requested"
         assetsService.unregisterAssetProvider("Car", "Car1", assetProvider);
-        response = assetsService.getContextBrokerV1().queryContext(
-                new EntityAttributeQuery([new ContextEntity("Car", "Car1", false)], null)
-        );
+        entity = assetsService.getContextBroker().getEntity("Car1", null);
 
         then: "a 404 response should be received"
-        conditions.eventually {
-            assert response.getErrorCode() != null;
-            assert response.getErrorCode().code == "404"
-        }
+        thrown(NotFoundException)
 
         cleanup: "ensure mock provider is unregistered"
         assetsService.unregisterAssetProvider("Car", "Car1", assetProvider);
@@ -151,19 +135,6 @@ class AssetsServiceTest extends Specification implements ContainerTrait {
 
         def assetProvider = new AssetProvider() {
             @Override
-            Attribute getAssetAttributeValue(String assetId, String attribute) {
-                requestedAttributes.add(attribute);
-                return attribute.equals("temperature") ?
-                        fakeAttributes[0]
-                        :   fakeAttributes[1];
-            }
-
-            @Override
-            List<Attribute> getAssetAttributeValues(String assetId) {
-                return fakeAttributes;
-            }
-
-            @Override
             List<Attribute> getAssetAttributeValues(String assetId, List<String> attributes) {
                 if (attributes.size() != 2 || !attributes.contains("temperature") || !attributes.contains("speed")) {
                     return null;
@@ -173,10 +144,15 @@ class AssetsServiceTest extends Specification implements ContainerTrait {
 
                 return fakeAttributes;
             }
+
+            @Override
+            boolean setAssetAttributeValues(String assetId, List<Attribute> attributes) {
+                return false
+            }
         }
 
         and: "the context provider refresh interval is set to 30s (minimum)"
-        assetsService.getContextProvider().setRefreshInterval(30);
+        assetsService.getRegistrationProvider().setRefreshInterval(30);
 
         and: "the mock provider registers as a provider of a fake entity with the assets service"
         def result = assetsService.registerAssetProvider("Car", "Car1", fakeAttributes, assetProvider);

@@ -17,33 +17,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.assets;
+package org.openremote.manager.shared.ngsi;
 
-import org.openremote.container.Container;
-import org.openremote.manager.shared.ngsi.Attribute;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.List;
 
-public interface ContextProvider {
+public class UpdateRequestV1 {
+    @JsonInclude
+    protected List<ContextElement> contextElements;
 
-    void configure(Container container) throws Exception;
+    @JsonInclude
+    protected ActionType updateAction;
 
-    void stop();
+    public UpdateRequestV1(List<ContextElement> contextElements, ActionType updateAction) {
+        this.contextElements = contextElements;
+        this.updateAction = updateAction;
+    }
 
-    String getContextProviderUri();
+    public List<ContextElement> getContextElements() {
+        return contextElements;
+    }
 
-    boolean registerAssetProvider(String assetType, String assetId, List<Attribute> attributes, AssetProvider provider);
-
-    void unregisterAssetProvider(String assetType, String assetId, AssetProvider provider);
-
-    /**
-     * Get the refresh interval duration of this context providers registrations
-     * @return Registration refresh interval in seconds
-     */
-    int getRefreshInterval();
-
-    /**
-     * Set the refresh interval of this context providers registrations
-     */
-    void setRefreshInterval(int seconds);
+    public ActionType getUpdateAction() {
+        return updateAction;
+    }
 }
