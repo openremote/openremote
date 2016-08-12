@@ -21,25 +21,39 @@ package org.openremote.manager.shared.ngsi.params;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class SubscriptionParams {
     @JsonInclude
-    protected BasicEntityParams entities;
-    @JsonInclude(JsonInclude.Include.NON_NULL)
+    protected List<BasicEntityParams> entities;
+    @JsonInclude
     protected Condition condition;
 
     public SubscriptionParams() {
+        this.condition = new Condition();
     }
 
-    public SubscriptionParams(BasicEntityParams entities, Condition condition) {
+    public SubscriptionParams(BasicEntityParams entity) {
+        this(entity, new Condition());
+    }
+
+    public SubscriptionParams(BasicEntityParams entity, Condition condition) {
+        entities = new ArrayList<>();
+        entities.add(entity);
+        this.condition = condition;
+    }
+
+    public SubscriptionParams(List<BasicEntityParams> entities, Condition condition) {
         this.entities = entities;
         this.condition = condition;
     }
 
-    public BasicEntityParams getEntities() {
+    public List<BasicEntityParams> getEntities() {
         return entities;
     }
 
-    public void setEntities(BasicEntityParams entities) {
+    public void setEntities(List<BasicEntityParams> entities) {
         this.entities = entities;
     }
 

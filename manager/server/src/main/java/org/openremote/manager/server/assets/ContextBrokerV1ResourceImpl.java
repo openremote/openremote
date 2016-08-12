@@ -94,7 +94,7 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
         return null;
     }
 
-    @Override
+     @Override
     public RegistrationResponseV1 registerContext(RegistrationRequestV1 registration) {
         return null;
     }
@@ -275,12 +275,12 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
         String duration = providerRegistration.getRegistrations().isEmpty() ? "PT0S" : "PT" + getRefreshInterval() + "S";
         providerRegistration.setDuration(duration);
 
-        try {
-            String str = mapper.writeValueAsString(providerRegistration);
-            System.out.print(str);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            String str = mapper.writeValueAsString(providerRegistration);
+//            System.out.print(str);
+//        } catch (JsonProcessingException e) {
+//            e.printStackTrace();
+//        }
 
         refreshRegistration();
     }

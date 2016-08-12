@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.server.assets;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import elemental.json.Json;
 import elemental.json.JsonObject;
@@ -48,7 +49,7 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
     protected URI hostUri;
     protected ObjectMapper mapper;
     protected Map<Consumer<Entity[]>, SubscribeRequestV2> subscribers = new HashMap<>();
-    protected Calendar calendar;
+    protected Calendar calendar = Calendar.getInstance();
 
     protected final AssetsService assetsService;
 
@@ -59,6 +60,11 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
     public void configure(Container container) {
         hostUri = container.getService(WebService.class).getHostUri();
         mapper = container.JSON;
+    }
+
+    @Override
+    public void stop() {
+
     }
 
     @Override
@@ -140,6 +146,13 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
         storedSubscription.setNotification(createNotificationParams());
         storedSubscription.setSubject(subscription);
         storedSubscription.setExpires(createNewExpiryDate());
+
+        try {
+            String str = mapper.writeValueAsString(storedSubscription);
+            System.out.print(str);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
 
         Response response = assetsService.getContextBroker().createSubscription(storedSubscription);
 

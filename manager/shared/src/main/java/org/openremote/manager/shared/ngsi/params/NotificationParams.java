@@ -39,7 +39,7 @@ public class NotificationParams {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     protected Date lastNotification;
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    protected int timesSent;
+    protected Integer timesSent;
 
     public NotificationParams() {
     }

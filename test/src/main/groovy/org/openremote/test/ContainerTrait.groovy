@@ -178,7 +178,9 @@ trait ContainerTrait {
     }
 
     static void stopContainer(Container container) {
-        container.stop();
+        if (container != null) {
+            container.stop();
+        }
     }
 
     static ResteasyWebTarget getClientTarget(ResteasyClient client, UriBuilder serverUri) {

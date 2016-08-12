@@ -19,16 +19,25 @@
  */
 package org.openremote.manager.shared.ngsi.params;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.manager.shared.ngsi.simplequery.Query;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Condition {
-    @JsonProperty("attrs")
+    @JsonIgnore
     protected List<String> attributes;
     @JsonProperty("expression")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     protected Query query;
+
+    public Condition() {
+        attributes = new ArrayList<>();
+    }
 
     public Condition(List<String> attributes) {
         this.attributes = attributes;
@@ -49,5 +58,14 @@ public class Condition {
 
     public Query getQuery() {
         return query;
+    }
+
+    @JsonProperty("attrs")
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    protected String[] getAttributesArr() { return attributes == null ? new String[0] : attributes.toArray(new String[0]); }
+
+    @JsonProperty("attrs")
+    protected void setAttributesArr(String[] attributes) {
+        this.attributes = Arrays.asList(attributes);
     }
 }

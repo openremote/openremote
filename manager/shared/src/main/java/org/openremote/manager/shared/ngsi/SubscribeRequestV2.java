@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.shared.ngsi;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.openremote.manager.shared.ngsi.params.NotificationParams;
@@ -34,6 +35,7 @@ public class SubscribeRequestV2 {
     @JsonInclude
     protected NotificationParams notification;
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.S'Z'", timezone = "UTC")
     protected Date expires;
 
     public SubscribeRequestV2() {

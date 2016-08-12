@@ -22,11 +22,11 @@ package org.openremote.manager.shared.ngsi.params;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 public class BasicEntityParams {
-    @JsonInclude
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     protected String id;
-    @JsonInclude
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     protected String idPattern;
-    @JsonInclude
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     protected String type;
 
     public BasicEntityParams(String idParam, boolean isPattern) {

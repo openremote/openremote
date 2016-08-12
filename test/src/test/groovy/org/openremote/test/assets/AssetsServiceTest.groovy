@@ -30,6 +30,7 @@ import org.openremote.manager.shared.ngsi.Entity
 import org.openremote.manager.shared.ngsi.EntityAttributeQuery
 import org.openremote.manager.shared.ngsi.params.BasicEntityParams
 import org.openremote.manager.shared.assets.AssetsResource
+import org.openremote.manager.shared.ngsi.params.Condition
 import org.openremote.manager.shared.ngsi.params.SubscriptionParams
 import org.openremote.manager.server.assets.*
 import org.openremote.test.ContainerTrait
@@ -274,8 +275,9 @@ class AssetsServiceTest extends Specification implements ContainerTrait {
         and: "the mock listener registers with the assets service for all IDs starting with Car"
         def subscription = new SubscriptionParams();
         subscription.setEntities(
-                new BasicEntityParams("Car.*", true)
+                [new BasicEntityParams("Car.*", true)]
         );
+        subscription.setCondition(new Condition(["test"]))
         def result = assetsService.registerAssetListener(listener, subscription);
 
         then: "the mock listener is registered"

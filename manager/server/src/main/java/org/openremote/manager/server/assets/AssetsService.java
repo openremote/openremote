@@ -110,7 +110,8 @@ public class AssetsService implements ContainerService {
         subscriptionProvider = assetsResource;
         registrationProvider = new ContextBrokerV1ResourceImpl(httpClient, contextBrokerHostUri);
 
-        // Configure the registration provider
+        // Configure the providers
+        subscriptionProvider.configure(container);
         registrationProvider.configure(container);
     }
 

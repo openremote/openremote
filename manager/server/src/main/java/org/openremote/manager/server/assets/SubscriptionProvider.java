@@ -19,11 +19,16 @@
  */
 package org.openremote.manager.server.assets;
 
+import org.openremote.container.Container;
 import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.ngsi.Entity;
 import org.openremote.manager.shared.ngsi.params.SubscriptionParams;
 
 public interface SubscriptionProvider {
+    void configure(Container container) throws Exception;
+
+    void stop();
+
     boolean register(Consumer<Entity[]> listener, SubscriptionParams subscription);
 
     SubscriptionParams getSubscription(Consumer<Entity[]> listener);
