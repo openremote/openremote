@@ -1,0 +1,44 @@
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+             xmlns:g="urn:import:com.google.gwt.user.client.ui"
+             xmlns:w="urn:import:org.openremote.manager.client.widget">
+
+    <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
+    <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
+    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
+
+    <ui:style field="agentsTableStyle" type="org.openremote.manager.client.admin.agent.AdminAgentsTable.Style">
+        .nameColumn {
+            width: 15em;
+        }
+
+        .connectorColumn {
+            width: 30em;
+        }
+
+        .enabledColumn {
+            width: 4em;
+        }
+    </ui:style>
+
+    <g:HTMLPanel styleName="flex layout vertical">
+
+        <div class="{widgetStyle.Headline1} {themeStyle.Headline1}">
+            <g:InlineLabel text="{managerMessages.configureAgents}"/>
+        </div>
+
+        <div class="layout vertical {widgetStyle.Form} {themeStyle.Form}">
+
+            <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}">
+                <div class="{widgetStyle.FormField} {themeStyle.FormField}">
+                    <w:PushButton ui:field="createButton"
+                                  addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                  text="{managerMessages.newAgent}"
+                                  icon="gear"/>
+                </div>
+            </div>
+
+            <g:SimplePanel ui:field="cellTableContainer"/>
+        </div>
+    </g:HTMLPanel>
+
+</ui:UiBinder>

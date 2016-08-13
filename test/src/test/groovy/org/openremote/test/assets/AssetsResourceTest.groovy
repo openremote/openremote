@@ -45,10 +45,8 @@ class AssetsResourceTest extends Specification implements ContainerTrait {
 
         when: "query with no restrictions"
         def entities = assetsResource.getEntities(null, null);
-        then: "the result should match"
-        entities.length == 2
-        assertRoom(entities[0], null, null, null);
-        assertRoom(entities[1], null, null, null);
+        then: "there should be some result (we don't now how many entities total are in test data, at least 2)"
+        entities.length >= 2
 
         when: "query with id restriction"
         entities = assetsResource.getEntities(

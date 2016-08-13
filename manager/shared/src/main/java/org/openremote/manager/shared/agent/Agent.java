@@ -7,8 +7,9 @@ import org.openremote.manager.shared.ngsi.AttributeType;
 import org.openremote.manager.shared.ngsi.Entity;
 
 public class Agent extends Entity {
+
     // Persisted properties
-    public static final String TYPE = "Agent";
+    public static final String TYPE = "urn:openremote:agent";
     public static final String ATTRIBUTE_NAME = "name";
     public static final String ATTRIBUTE_DESCRIPTION = "description";
     public static final String ATTRIBUTE_CONNECTOR_TYPE = "connectorType";
@@ -29,7 +30,9 @@ public class Agent extends Entity {
         super(jsonObject);
     }
 
-    public String getName() { return getAttributeValueAsString(ATTRIBUTE_NAME); }
+    public String getName() {
+        return getAttributeValueAsString(ATTRIBUTE_NAME);
+    }
 
     public void setName(String name) {
         Attribute attr = new Attribute(ATTRIBUTE_NAME, AttributeType.STRING, Json.create(name));
@@ -45,7 +48,9 @@ public class Agent extends Entity {
         super.addAttribute(attr);
     }
 
-    public String getConnectorType() { return getAttributeValueAsString(ATTRIBUTE_CONNECTOR_TYPE); }
+    public String getConnectorType() {
+        return getAttributeValueAsString(ATTRIBUTE_CONNECTOR_TYPE);
+    }
 
     public void setConnectorType(String connectorType) {
         Attribute attr = new Attribute(ATTRIBUTE_CONNECTOR_TYPE, AttributeType.STRING, Json.create(connectorType));

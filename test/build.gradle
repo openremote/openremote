@@ -7,7 +7,7 @@ dependencies {
 
     compile project(":manager:server")
     compile project(":manager:client")
-    compile project(":agent")
+    compile project(":connector:controller2")
 
     compile "junit:junit:$junitVersion"
     compile "org.spockframework:spock-core:$spockVersion"

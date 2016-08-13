@@ -161,6 +161,8 @@ class AdminUsersActivityTest extends Specification implements ContainerTrait, Cl
                     placeController, eventBus, securityService, requestService, userResource, userMapper, credentialMapper, roleArrayMapper)
                     return adminUserActivity
                 },
+                {},
+                {},
                 {}
         )
         startActivityManager(activityDisplay, activityMapper, eventBus)

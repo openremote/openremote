@@ -6,8 +6,8 @@ mainClassName = "org.openremote.manager.server.Server"
 dependencies {
 
     compile project(":container")
-    compile project(":agent")
     compile project(":manager:shared")
+    compile project(":connector:controller2")
 
     compile "org.slf4j:slf4j-api:$slf4jVersion"
     compile "org.slf4j:slf4j-jdk14:$slf4jVersion"

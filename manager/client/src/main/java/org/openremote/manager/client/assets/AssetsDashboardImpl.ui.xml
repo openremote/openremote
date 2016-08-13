@@ -20,7 +20,7 @@
 
         <g:HTMLPanel styleName="flex layout vertical">
             <g:HTMLPanel
-                    styleName="layout horizontal center end-justified {style.assetsControls} {widgetStyle.SecondaryNav} {themeStyle.SecondaryNav}">
+                    styleName="layout horizontal center end-justified {style.assetsControls} {widgetStyle.SecondaryNavHorizontal} {themeStyle.SecondaryNavHorizontal}">
 
                 <w:Hyperlink addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem} active"
                              icon="dashboard"

@@ -43,6 +43,10 @@ public abstract class AbstractStyle {
         return getPrefix() + "SecondaryNav";
     }
 
+    public String SecondaryNavHorizontal() {
+        return getPrefix() + "SecondaryNavHorizontal";
+    }
+
     public String SecondaryNavItem() {
         return getPrefix() + "SecondaryNavItem";
     }

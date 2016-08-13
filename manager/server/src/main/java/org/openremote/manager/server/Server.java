@@ -21,6 +21,8 @@ package org.openremote.manager.server;
 
 import org.openremote.container.Container;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.manager.server.agent.AgentService;
+import org.openremote.manager.server.agent.ConnectorService;
 import org.openremote.manager.server.assets.AssetsService;
 import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.i18n.I18NService;
@@ -37,7 +39,9 @@ public class Server {
             new ManagerIdentityService(),
             new MessageBrokerService(),
             new EventService(),
+            new ConnectorService(),
             new AssetsService(),
+            new AgentService(),
             new MapService(),
             new SampleDataService()
         ).startBackground();

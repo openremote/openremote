@@ -35,10 +35,10 @@
         }
     </ui:style>
 
-    <g:HTMLPanel ui:field="mapContainer" styleName="flex layout horizontal" addStyleNames="{style.view}">
+    <g:HTMLPanel ui:field="mapContainer" styleName="flex layout vertical" addStyleNames="{style.view}">
 
         <g:HTMLPanel
-                styleName="flex layout horizontal center end-justified {style.mapControls} {widgetStyle.SecondaryNav} {themeStyle.SecondaryNav}">
+                styleName="layout horizontal center end-justified {style.mapControls} {widgetStyle.SecondaryNavHorizontal} {themeStyle.SecondaryNavHorizontal}">
 
             <w:Hyperlink addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
                          icon="map"
