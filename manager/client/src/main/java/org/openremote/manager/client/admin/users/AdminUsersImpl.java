@@ -20,7 +20,6 @@
 package org.openremote.manager.client.admin.users;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.dom.client.DivElement;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.uibinder.client.UiBinder;
@@ -34,6 +33,7 @@ import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTableStyle;
 import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
+import org.openremote.manager.client.widget.Form;
 import org.openremote.manager.client.widget.PushButton;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.User;
@@ -62,13 +62,13 @@ public class AdminUsersImpl extends Composite implements AdminUsers {
     ListBox tenantListBox;
 
     @UiField
-    DivElement usersForm;
+    Form usersForm;
 
     @UiField
     PushButton createButton;
 
     @UiField
-    SimplePanel cellTableContainer;
+    SimplePanel tableContainer;
 
     final AdminUsersTable table;
     Presenter presenter;
@@ -102,7 +102,7 @@ public class AdminUsersImpl extends Composite implements AdminUsers {
                 }
             }
         );
-        cellTableContainer.add(table);
+        tableContainer.add(table);
 
     }
 
@@ -142,7 +142,7 @@ public class AdminUsersImpl extends Composite implements AdminUsers {
 
     @Override
     public void setUsers(User[] users) {
-        cellTableContainer.setVisible(users.length > 0);
+        tableContainer.setVisible(users.length > 0);
         table.setRowData(Arrays.asList(users));
         table.flush();
     }
@@ -154,11 +154,11 @@ public class AdminUsersImpl extends Composite implements AdminUsers {
     }
 
     protected void showUsersForm() {
-        usersForm.getStyle().clearVisibility();
+        usersForm.setVisible(true);
     }
 
     protected void hideUsersForm() {
-        usersForm.getStyle().setVisibility(Style.Visibility.HIDDEN);
+        usersForm.setVisible(false);
     }
 
 }

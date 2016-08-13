@@ -35,6 +35,8 @@ public class AdminAgentsTable extends FormTable<Agent> {
     public interface Style extends CssResource {
         String nameColumn();
 
+        String descriptionColumn();
+
         String connectorColumn();
 
         String enabledColumn();
@@ -48,6 +50,13 @@ public class AdminAgentsTable extends FormTable<Agent> {
         @Override
         public String getValue(Agent agent) {
             return agent.getName();
+        }
+    };
+
+    final protected TextColumn<Agent> descriptionColumn = new TextColumn<Agent>() {
+        @Override
+        public String getValue(Agent agent) {
+            return agent.getDescription();
         }
     };
 
@@ -78,12 +87,16 @@ public class AdminAgentsTable extends FormTable<Agent> {
         addColumn(nameColumn, createHeader(managerMessages.agentName()));
         addColumnStyleName(0, style.nameColumn());
 
+        applyStyleCellText(descriptionColumn);
+        addColumn(descriptionColumn, createHeader(managerMessages.description()));
+        addColumnStyleName(1, style.descriptionColumn());
+
         applyStyleCellText(connectorColumn);
         addColumn(connectorColumn, createHeader(managerMessages.connectorType()));
-        addColumnStyleName(1, style.connectorColumn());
+        addColumnStyleName(2, style.connectorColumn());
 
         addColumn(enabledColumn, createHeader(managerMessages.enabled()));
-        addColumnStyleName(2, style.enabledColumn());
+        addColumnStyleName(3, style.enabledColumn());
         enabledColumn.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_CENTER);
     }
 

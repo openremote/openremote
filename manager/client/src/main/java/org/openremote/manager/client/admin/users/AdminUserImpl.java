@@ -20,15 +20,13 @@
 package org.openremote.manager.client.admin.users;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.dom.client.DivElement;
-import com.google.gwt.dom.client.Document;
-import com.google.gwt.dom.client.LabelElement;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.*;
+import org.openremote.manager.client.widget.FormGroup;
 import org.openremote.manager.client.widget.FormView;
 import org.openremote.manager.client.widget.PushButton;
 
@@ -44,62 +42,48 @@ public class AdminUserImpl extends FormView implements AdminUser {
     }
 
     @UiField
-    DivElement usernameGroup;
-    @UiField
-    LabelElement usernameLabel;
+    FormGroup usernameGroup;
     @UiField
     TextBox usernameInput;
 
     @UiField
-    DivElement firstNameGroup;
-    @UiField
-    LabelElement firstNameLabel;
+    FormGroup firstNameGroup;
     @UiField
     TextBox firstNameInput;
 
     @UiField
-    DivElement lastNameGroup;
-    @UiField
-    LabelElement lastNameLabel;
+    FormGroup lastNameGroup;
     @UiField
     TextBox lastNameInput;
 
     @UiField
-    DivElement emailGroup;
-    @UiField
-    LabelElement emailLabel;
+    FormGroup emailGroup;
     @UiField
     TextBox emailInput;
 
     @UiField
-    DivElement enabledGroup;
-    @UiField
-    LabelElement enabledLabel;
+    FormGroup enabledGroup;
     @UiField
     SimpleCheckBox enabledCheckBox;
 
     @UiField
-    DivElement resetPasswordNoteGroup;
+    FormGroup resetPasswordNoteGroup;
 
     @UiField
-    DivElement resetPasswordGroup;
-    @UiField
-    LabelElement resetPasswordLabel;
+    FormGroup resetPasswordGroup;
     @UiField
     PasswordTextBox resetPasswordInput;
 
     @UiField
-    DivElement resetPasswordControlGroup;
-    @UiField
-    LabelElement resetPasswordControlLabel;
+    FormGroup resetPasswordControlGroup;
     @UiField
     PasswordTextBox resetPasswordControlInput;
 
     @UiField
-    DivElement rolesNoteGroup;
+    FormGroup rolesNoteGroup;
 
     @UiField
-    DivElement rolesGroup;
+    FormGroup rolesGroup;
     @UiField
     FlowPanel rolesPanel;
 
@@ -122,27 +106,6 @@ public class AdminUserImpl extends FormView implements AdminUser {
     public AdminUserImpl() {
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
-
-        usernameLabel.setHtmlFor(Document.get().createUniqueId());
-        usernameInput.getElement().setId(usernameLabel.getHtmlFor());
-
-        firstNameLabel.setHtmlFor(Document.get().createUniqueId());
-        firstNameInput.getElement().setId(firstNameLabel.getHtmlFor());
-
-        lastNameLabel.setHtmlFor(Document.get().createUniqueId());
-        lastNameInput.getElement().setId(lastNameLabel.getHtmlFor());
-
-        emailLabel.setHtmlFor(Document.get().createUniqueId());
-        emailInput.getElement().setId(emailLabel.getHtmlFor());
-
-        enabledLabel.setHtmlFor(Document.get().createUniqueId());
-        enabledCheckBox.getElement().setId(enabledLabel.getHtmlFor());
-
-        resetPasswordLabel.setHtmlFor(Document.get().createUniqueId());
-        resetPasswordInput.getElement().setId(resetPasswordLabel.getHtmlFor());
-
-        resetPasswordControlLabel.setHtmlFor(Document.get().createUniqueId());
-        resetPasswordControlInput.getElement().setId(resetPasswordControlLabel.getHtmlFor());
     }
 
     @Override
@@ -171,10 +134,7 @@ public class AdminUserImpl extends FormView implements AdminUser {
 
     @Override
     public void setUsernameError(boolean error) {
-        usernameGroup.removeClassName("error");
-        if (error) {
-            usernameGroup.addClassName("error");
-        }
+        usernameGroup.setError(error);
     }
 
     @Override
@@ -194,10 +154,7 @@ public class AdminUserImpl extends FormView implements AdminUser {
 
     @Override
     public void setFirstNameError(boolean error) {
-        firstNameGroup.removeClassName("error");
-        if (error) {
-            firstNameGroup.addClassName("error");
-        }
+        firstNameGroup.setError(error);
     }
 
     @Override
@@ -212,10 +169,7 @@ public class AdminUserImpl extends FormView implements AdminUser {
 
     @Override
     public void setLastNameError(boolean error) {
-        lastNameGroup.removeClassName("error");
-        if (error) {
-            lastNameGroup.addClassName("error");
-        }
+        lastNameGroup.setError(error);
     }
 
     @Override
@@ -230,10 +184,7 @@ public class AdminUserImpl extends FormView implements AdminUser {
 
     @Override
     public void setEmailError(boolean error) {
-        emailGroup.removeClassName("error");
-        if (error) {
-            emailGroup.addClassName("error");
-        }
+        emailGroup.setError(error);
     }
 
     @Override
@@ -248,10 +199,7 @@ public class AdminUserImpl extends FormView implements AdminUser {
 
     @Override
     public void setUserEnabledError(boolean error) {
-        enabledGroup.removeClassName("error");
-        if (error) {
-            enabledGroup.addClassName("error");
-        }
+        enabledGroup.setError(error);
     }
 
     @Override
@@ -300,12 +248,8 @@ public class AdminUserImpl extends FormView implements AdminUser {
 
     @Override
     public void setPasswordError(boolean error) {
-        resetPasswordGroup.removeClassName("error");
-        resetPasswordControlGroup.removeClassName("error");
-        if (error) {
-            resetPasswordGroup.addClassName("error");
-            resetPasswordControlGroup.addClassName("error");
-        }
+        resetPasswordGroup.setError(error);
+        resetPasswordControlGroup.setError(error);
     }
 
     @Override

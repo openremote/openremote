@@ -10,6 +10,11 @@
         .formMessages {
             max-width: 30em;
         }
+
+        .nameTextBox,
+        .descriptionTextBox {
+            width: 30em;
+        }
     </ui:style>
 
     <g:HTMLPanel styleName="flex layout vertical">
@@ -37,85 +42,84 @@
             <g:InlineLabel text="{managerMessages.requiredFields}"/>
         </div>
 
-        <div class="layout vertical {widgetStyle.Form} {themeStyle.Form}" ui:field="form">
+        <w:Form ui:field="form">
+            <w:FormGroup ui:field="nameGroup">
+                <w:label>
+                    <w:FormLabel text="{managerMessages.agentName}" required="true"/>
+                </w:label>
+                <w:field>
+                    <w:FormField>
+                        <g:TextBox ui:field="nameInput"
+                                   addStyleNames="{style.nameTextBox} {widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                    </w:FormField>
+                </w:field>
+            </w:FormGroup>
 
-            <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}"
-                 ui:field="nameGroup">
-                <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
-                    <label ui:field="nameLabel">
-                        <g:InlineLabel text="{managerMessages.agentName}"/>
-                    </label>
-                    <span class="required">*</span>
-                </div>
-                <div class="{widgetStyle.FormField} {themeStyle.FormField}">
-                    <g:TextBox ui:field="nameInput"
-                               addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
-                </div>
-            </div>
+            <w:FormGroup ui:field="descriptionGroup">
+                <w:label>
+                    <w:FormLabel text="{managerMessages.description}" required="false"/>
+                </w:label>
+                <w:field>
+                    <w:FormField>
+                        <g:TextBox
+                                ui:field="descriptionInput"
+                                addStyleNames="{style.descriptionTextBox} {widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                    </w:FormField>
+                </w:field>
+            </w:FormGroup>
 
-            <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}"
-                 ui:field="descriptionGroup">
-                <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
-                    <label ui:field="descriptionLabel">
-                        <g:InlineLabel text="{managerMessages.description}"/>
-                    </label>
-                </div>
-                <div class="{widgetStyle.FormField} {themeStyle.FormField}">
-                    <g:TextBox ui:field="descriptionInput"
-                               addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
-                </div>
-            </div>
+            <w:FormGroup ui:field="enabledGroup">
+                <w:label>
+                    <w:FormLabel text="{managerMessages.enabled}"/>
+                </w:label>
+                <w:field>
+                    <w:FormField>
+                        <g:SimpleCheckBox ui:field="enabledCheckBox"
+                                          addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormCheckBox} {themeStyle.FormCheckBox}"/>
+                    </w:FormField>
+                </w:field>
+            </w:FormGroup>
 
-            <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}"
-                 ui:field="enabledGroup">
-                <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
-                    <label ui:field="enabledLabel">
-                        <g:InlineLabel text="{managerMessages.enabled}"/>
-                    </label>
-                </div>
-                <div class="{widgetStyle.FormField} {themeStyle.FormField}">
-                    <g:SimpleCheckBox ui:field="enabledCheckBox"
-                                      addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormCheckBox} {themeStyle.FormCheckBox}"/>
-                </div>
-            </div>
+            <w:FormGroup>
+                <w:label>
+                    <w:FormLabel text="{managerMessages.connectorType}"/>
+                </w:label>
+                <w:field>
+                    <w:FormField>
+                        <g:ValueListBox ui:field="connectorListBox"
+                                        addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormDropDown} {themeStyle.FormDropDown}"/>
+                    </w:FormField>
+                </w:field>
+            </w:FormGroup>
 
-            <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}">
-                <div class="larger {widgetStyle.FormLabel} {themeStyle.FormLabel}">
-                    <label ui:field="connectorLabel">
-                        <g:InlineLabel text="{managerMessages.connectorType}"/>
-                    </label>
-                </div>
-                <div class="{widgetStyle.FormField} {themeStyle.FormField}">
-                    <g:ValueListBox ui:field="connectorListBox"
-                                    addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormDropDown} {themeStyle.FormDropDown}"/>
-                </div>
-            </div>
+            <w:FormGroup>
+                <w:field>
+                    <w:FormField>
+                        <w:PushButton ui:field="updateButton"
+                                      addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                      text="{managerMessages.updateAgent}"
+                                      visible="false"
+                                      icon="save"/>
+                        <w:PushButton ui:field="createButton"
+                                      addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                      text="{managerMessages.createAgent}"
+                                      visible="false"
+                                      icon="save"/>
+                        <w:PushButton ui:field="deleteButton"
+                                      addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonDanger} {themeStyle.FormButtonDanger} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                      text="{managerMessages.deleteAgent}"
+                                      visible="false"
+                                      icon="trash"/>
+                        <w:PushButton ui:field="cancelButton"
+                                      addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButton} {themeStyle.FormButton} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                      text="{managerMessages.cancel}"
+                                      icon="close"/>
+                    </w:FormField>
+                </w:field>
+            </w:FormGroup>
 
-            <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}">
-                <div class="{widgetStyle.FormField} {themeStyle.FormField}">
-                    <w:PushButton ui:field="updateButton"
-                                  addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                  text="{managerMessages.updateAgent}"
-                                  visible="false"
-                                  icon="save"/>
-                    <w:PushButton ui:field="createButton"
-                                  addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                  text="{managerMessages.createAgent}"
-                                  visible="false"
-                                  icon="save"/>
-                    <w:PushButton ui:field="deleteButton"
-                                  addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonDanger} {themeStyle.FormButtonDanger} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                  text="{managerMessages.deleteAgent}"
-                                  visible="false"
-                                  icon="trash"/>
-                    <w:PushButton ui:field="cancelButton"
-                                  addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButton} {themeStyle.FormButton} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                  text="{managerMessages.cancel}"
-                                  icon="close"/>
-                </div>
-            </div>
+        </w:Form>
 
-        </div>
     </g:HTMLPanel>
 
 </ui:UiBinder>

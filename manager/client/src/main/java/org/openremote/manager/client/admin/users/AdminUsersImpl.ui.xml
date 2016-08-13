@@ -30,30 +30,33 @@
             <g:InlineLabel text="{managerMessages.manageUsers}"/>
         </div>
 
-        <div class="layout vertical {widgetStyle.Form} {themeStyle.Form}">
+        <w:Form>
+            <w:FormGroup>
+                <w:field>
+                    <w:FormField>
+                        <g:ListBox ui:field="tenantListBox"
+                                   addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormDropDown} {themeStyle.FormDropDown}"
+                                   visibleItemCount="1"/>
+                    </w:FormField>
+                </w:field>
+            </w:FormGroup>
 
-            <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}">
-                <div class="{widgetStyle.FormField} {themeStyle.FormField}">
-                    <g:ListBox ui:field="tenantListBox"
-                               addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormDropDown} {themeStyle.FormDropDown}"
-                               visibleItemCount="1"/>
-                </div>
-            </div>
-        </div>
+        </w:Form>
 
-        <div class="layout vertical {widgetStyle.Form} {themeStyle.Form}" ui:field="usersForm">
+        <w:Form ui:field="usersForm">
+            <w:FormGroup>
+                <w:field>
+                    <w:FormField>
+                        <w:PushButton ui:field="createButton"
+                                      addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                      text="{managerMessages.newUser}"
+                                      icon="user-plus"/>
+                    </w:FormField>
+                </w:field>
+            </w:FormGroup>
 
-            <div class="layout horizontal center {widgetStyle.FormGroup} {themeStyle.FormGroup}">
-                <div class="{widgetStyle.FormField} {themeStyle.FormField}">
-                    <w:PushButton ui:field="createButton"
-                                  addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                  text="{managerMessages.newUser}"
-                                  icon="user-plus"/>
-                </div>
-            </div>
-
-            <g:SimplePanel ui:field="cellTableContainer" visible="false"/>
-        </div>
+            <g:SimplePanel ui:field="tableContainer" visible="false"/>
+        </w:Form>
 
     </g:HTMLPanel>
 

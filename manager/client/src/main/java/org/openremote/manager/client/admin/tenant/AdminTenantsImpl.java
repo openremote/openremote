@@ -57,7 +57,7 @@ public class AdminTenantsImpl extends Composite implements AdminTenants {
     PushButton createButton;
 
     @UiField
-    SimplePanel cellTableContainer;
+    SimplePanel tableContainer;
 
     final AdminTenantsTable table;
     Presenter presenter;
@@ -76,7 +76,7 @@ public class AdminTenantsImpl extends Composite implements AdminTenants {
                 }
             }
         );
-        cellTableContainer.add(table);
+        tableContainer.add(table);
     }
 
     @Override
@@ -90,7 +90,7 @@ public class AdminTenantsImpl extends Composite implements AdminTenants {
 
     @Override
     public void setTenants(Tenant[] tenants) {
-        cellTableContainer.setVisible(tenants.length > 0);
+        tableContainer.setVisible(tenants.length > 0);
         table.setRowData(Arrays.asList(tenants));
         table.flush();
     }

@@ -20,9 +20,6 @@
 package org.openremote.manager.client.admin.agent;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.dom.client.DivElement;
-import com.google.gwt.dom.client.Document;
-import com.google.gwt.dom.client.LabelElement;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.text.shared.AbstractRenderer;
 import com.google.gwt.uibinder.client.UiBinder;
@@ -33,6 +30,7 @@ import com.google.gwt.user.client.ui.SimpleCheckBox;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.ValueListBox;
 import org.openremote.manager.client.i18n.ManagerMessages;
+import org.openremote.manager.client.widget.FormGroup;
 import org.openremote.manager.client.widget.FormView;
 import org.openremote.manager.client.widget.PushButton;
 import org.openremote.manager.shared.connector.Connector;
@@ -47,23 +45,17 @@ public class AdminAgentImpl extends FormView implements AdminAgent {
     }
 
     @UiField
-    DivElement nameGroup;
-    @UiField
-    LabelElement nameLabel;
+    FormGroup nameGroup;
     @UiField
     TextBox nameInput;
 
     @UiField
-    DivElement descriptionGroup;
-    @UiField
-    LabelElement descriptionLabel;
+    FormGroup descriptionGroup;
     @UiField
     TextBox descriptionInput;
 
     @UiField
-    DivElement enabledGroup;
-    @UiField
-    LabelElement enabledLabel;
+    FormGroup enabledGroup;
     @UiField
     SimpleCheckBox enabledCheckBox;
 
@@ -99,15 +91,6 @@ public class AdminAgentImpl extends FormView implements AdminAgent {
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
 
-        nameLabel.setHtmlFor(Document.get().createUniqueId());
-        nameInput.getElement().setId(nameLabel.getHtmlFor());
-
-        descriptionLabel.setHtmlFor(Document.get().createUniqueId());
-        descriptionInput.getElement().setId(descriptionLabel.getHtmlFor());
-
-        enabledLabel.setHtmlFor(Document.get().createUniqueId());
-        enabledCheckBox.getElement().setId(enabledLabel.getHtmlFor());
-
         connectorListBox.addValueChangeHandler(event -> {
             Connector connector= event.getValue();
             if (presenter != null) {
@@ -136,6 +119,9 @@ public class AdminAgentImpl extends FormView implements AdminAgent {
     @Override
     public void setAssignedConnector(Connector connector) {
         connectorListBox.setValue(connector);
+
+        if (connector != null) {
+        }
     }
 
     @Override
@@ -150,10 +136,7 @@ public class AdminAgentImpl extends FormView implements AdminAgent {
 
     @Override
     public void setNameError(boolean error) {
-        nameGroup.removeClassName("error");
-        if (error) {
-            nameGroup.addClassName("error");
-        }
+        nameGroup.setError(error);
     }
 
     @Override
@@ -168,10 +151,7 @@ public class AdminAgentImpl extends FormView implements AdminAgent {
 
     @Override
     public void setDescriptionError(boolean error) {
-        descriptionGroup.removeClassName("error");
-        if (error) {
-            descriptionGroup.addClassName("error");
-        }
+        descriptionGroup.setError(error);
     }
 
     @Override
@@ -186,10 +166,7 @@ public class AdminAgentImpl extends FormView implements AdminAgent {
 
     @Override
     public void setAgentEnabledError(boolean error) {
-        enabledGroup.removeClassName("error");
-        if (error) {
-            enabledGroup.addClassName("error");
-        }
+        enabledGroup.setError(error);
     }
 
     @Override

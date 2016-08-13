@@ -19,15 +19,12 @@
  */
 package org.openremote.manager.client.widget;
 
-import com.google.gwt.dom.client.DivElement;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.InlineLabel;
 import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.style.ThemeStyle;
-import org.openremote.manager.client.style.WidgetStyle;
 
 public class FormView extends Composite {
 
@@ -35,13 +32,7 @@ public class FormView extends Composite {
     public ManagerMessages managerMessages;
 
     @UiField
-    public WidgetStyle widgetStyle;
-
-    @UiField
-    public ThemeStyle themeStyle;
-
-    @UiField
-    public DivElement form;
+    public Form form;
 
     @UiField
     public FlowPanel formMessagesSuccess;
@@ -50,13 +41,7 @@ public class FormView extends Composite {
     public FlowPanel formMessagesError;
 
     public void setFormBusy(boolean busy) {
-        if (busy) {
-            form.addClassName(widgetStyle.FormBusy());
-            form.addClassName(themeStyle.FormBusy());
-        } else {
-            form.removeClassName(widgetStyle.FormBusy());
-            form.removeClassName(themeStyle.FormBusy());
-        }
+        form.setBusy(busy);
     }
 
     public void addFormMessageError(String message) {

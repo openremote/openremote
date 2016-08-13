@@ -59,7 +59,7 @@ public class AdminAgentsImpl extends Composite implements AdminAgents {
     PushButton createButton;
 
     @UiField
-    SimplePanel cellTableContainer;
+    SimplePanel tableContainer;
 
     final AdminAgentsTable table;
     Presenter presenter;
@@ -78,7 +78,7 @@ public class AdminAgentsImpl extends Composite implements AdminAgents {
                 }
             }
         );
-        cellTableContainer.add(table);
+        tableContainer.add(table);
     }
 
     @Override
@@ -92,7 +92,7 @@ public class AdminAgentsImpl extends Composite implements AdminAgents {
 
     @Override
     public void setAgents(Agent[] agents) {
-        cellTableContainer.setVisible(agents.length > 0);
+        tableContainer.setVisible(agents.length > 0);
         table.setRowData(Arrays.asList(agents));
         table.flush();
     }

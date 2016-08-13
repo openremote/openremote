@@ -64,12 +64,13 @@ public class AgentService implements ContainerService {
 
     }
 
-    public Response createAgent(String name, String connectorType) {
+    public Response createAgent(String name, String description, String connectorType) {
         Agent agent = new Agent();
 
         agent.setId(IdentifierUtil.generateGlobalUniqueId());
         agent.setEnabled(true);
         agent.setName(name);
+        agent.setDescription(description);
         agent.setConnectorType(connectorType);
 
         return assetsService.getContextBroker().postEntity(agent);

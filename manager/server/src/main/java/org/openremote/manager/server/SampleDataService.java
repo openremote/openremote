@@ -71,7 +71,7 @@ public class SampleDataService implements ContainerService {
     @Override
     public void init(Container container) throws Exception {
         identityService = container.getService(ManagerIdentityService.class);
-        connectorService= container.getService(ConnectorService.class);
+        connectorService = container.getService(ConnectorService.class);
         agentService = container.getService(AgentService.class);
         assetsService = container.getService(AssetsService.class);
     }
@@ -128,7 +128,10 @@ public class SampleDataService implements ContainerService {
 
     protected void createSampleAgent() {
         Connector controller2Connector = connectorService.getConnectors().get("controller2");
-        agentService.createAgent("Test Controller2", controller2Connector.getType());
+        agentService.createAgent(
+            "Test Controller2",
+            "A sample agent for OR Controller 2.x",
+            controller2Connector.getType());
     }
 
     protected void createSampleRooms() {
@@ -264,7 +267,7 @@ public class SampleDataService implements ContainerService {
         // Find out if there are any users except the admin, delete them
         fromCallable(() -> usersResource.search(null, null, null))
             .flatMap(Observable::from)
-            .filter(userRepresentation-> !userRepresentation.getUsername().equals(MASTER_REALM_ADMIN_USER))
+            .filter(userRepresentation -> !userRepresentation.getUsername().equals(MASTER_REALM_ADMIN_USER))
             .map(userRepresentation -> usersResource.get(userRepresentation.getId()))
             .subscribe(UserResource::remove);
 

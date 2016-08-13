@@ -20,9 +20,6 @@
 package org.openremote.manager.client.admin.tenant;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.dom.client.DivElement;
-import com.google.gwt.dom.client.Document;
-import com.google.gwt.dom.client.LabelElement;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
@@ -30,6 +27,7 @@ import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.SimpleCheckBox;
 import com.google.gwt.user.client.ui.TextBox;
+import org.openremote.manager.client.widget.FormGroup;
 import org.openremote.manager.client.widget.FormView;
 import org.openremote.manager.client.widget.PushButton;
 
@@ -41,23 +39,17 @@ public class AdminTenantImpl extends FormView implements AdminTenant {
     }
 
     @UiField
-    DivElement displayNameGroup;
-    @UiField
-    LabelElement displayNameLabel;
+    FormGroup displayNameGroup;
     @UiField
     TextBox displayNameInput;
 
     @UiField
-    DivElement realmGroup;
-    @UiField
-    LabelElement realmLabel;
+    FormGroup realmGroup;
     @UiField
     TextBox realmInput;
 
     @UiField
-    DivElement enabledGroup;
-    @UiField
-    LabelElement enabledLabel;
+    FormGroup enabledGroup;
     @UiField
     SimpleCheckBox enabledCheckBox;
 
@@ -79,15 +71,6 @@ public class AdminTenantImpl extends FormView implements AdminTenant {
     public AdminTenantImpl() {
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
-
-        displayNameLabel.setHtmlFor(Document.get().createUniqueId());
-        displayNameInput.getElement().setId(displayNameLabel.getHtmlFor());
-
-        realmLabel.setHtmlFor(Document.get().createUniqueId());
-        realmInput.getElement().setId(realmLabel.getHtmlFor());
-
-        enabledLabel.setHtmlFor(Document.get().createUniqueId());
-        enabledCheckBox.getElement().setId(enabledLabel.getHtmlFor());
     }
 
     @Override
@@ -112,10 +95,7 @@ public class AdminTenantImpl extends FormView implements AdminTenant {
 
     @Override
     public void setTenantDisplayNameError(boolean error) {
-        displayNameGroup.removeClassName("error");
-        if (error) {
-            displayNameGroup.addClassName("error");
-        }
+        displayNameGroup.setError(error);
     }
 
     @Override
@@ -130,10 +110,7 @@ public class AdminTenantImpl extends FormView implements AdminTenant {
 
     @Override
     public void setTenantRealmError(boolean error) {
-        realmGroup.removeClassName("error");
-        if (error) {
-            realmGroup.addClassName("error");
-        }
+        realmGroup.setError(error);
     }
 
     @Override
@@ -148,10 +125,7 @@ public class AdminTenantImpl extends FormView implements AdminTenant {
 
     @Override
     public void setTenantEnabledError(boolean error) {
-        enabledGroup.removeClassName("error");
-        if (error) {
-            enabledGroup.addClassName("error");
-        }
+        enabledGroup.setError(error);
     }
 
     @Override
