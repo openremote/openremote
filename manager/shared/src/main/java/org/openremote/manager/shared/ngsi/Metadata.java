@@ -56,6 +56,11 @@ public class Metadata {
         return jsonObject.hasKey(name);
     }
 
+    public Metadata addElement(MetadataElement element) {
+        jsonObject.put(element.getName(), element.getJsonObject());
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

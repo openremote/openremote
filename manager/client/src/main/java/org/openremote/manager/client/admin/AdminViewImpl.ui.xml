@@ -7,7 +7,7 @@
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
     <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
-    <g:HTMLPanel styleName="flex layout vertical">
+    <g:HTMLPanel styleName="flex layout horizontal">
 
         <an:AdminNavigation ui:field="adminNavigation"/>
 

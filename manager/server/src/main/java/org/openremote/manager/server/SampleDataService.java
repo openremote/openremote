@@ -28,14 +28,18 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.security.AuthForm;
 import org.openremote.container.security.IdentityService;
+import org.openremote.manager.server.agent.AgentService;
+import org.openremote.manager.server.agent.ConnectorService;
 import org.openremote.manager.server.assets.AssetsService;
 import org.openremote.manager.server.assets.ContextBrokerV2Resource;
 import org.openremote.manager.server.security.ManagerIdentityService;
+import org.openremote.manager.shared.connector.Connector;
 import org.openremote.manager.shared.ngsi.Attribute;
 import org.openremote.manager.shared.ngsi.AttributeType;
 import org.openremote.manager.shared.ngsi.Entity;
 import rx.Observable;
 
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,6 +61,8 @@ public class SampleDataService implements ContainerService {
     public static final String ADMIN_PASSWORD = "admin";
 
     protected ManagerIdentityService identityService;
+    protected ConnectorService connectorService;
+    protected AgentService agentService;
     protected AssetsService assetsService;
     /* TODO
     protected PersistenceService persistenceService
@@ -65,6 +71,8 @@ public class SampleDataService implements ContainerService {
     @Override
     public void init(Container container) throws Exception {
         identityService = container.getService(ManagerIdentityService.class);
+        connectorService= container.getService(ConnectorService.class);
+        agentService = container.getService(AgentService.class);
         assetsService = container.getService(AssetsService.class);
     }
 
@@ -86,12 +94,14 @@ public class SampleDataService implements ContainerService {
             MASTER_REALM, new AuthForm(ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, ADMIN_PASSWORD)
         ).getToken();
 
-        deleteRealms(identityService, accessToken);
-        configureMasterRealm(identityService, accessToken);
-        registerClientApplications(identityService, accessToken);
-        addRolesAndTestUsers(identityService, accessToken);
+        deleteRealms(accessToken);
+        configureMasterRealm(accessToken);
+        registerClientApplications(accessToken);
+        addRolesAndTestUsers(accessToken);
 
-        createSampleRooms(assetsService);
+        clearContextBroker();
+        createSampleAgent();
+        createSampleRooms();
 
         /* TODO
         persistenceService.createSchema();
@@ -107,7 +117,21 @@ public class SampleDataService implements ContainerService {
     public void stop(Container container) {
     }
 
-    protected void createSampleRooms(AssetsService assetsService) {
+    protected void clearContextBroker() {
+        ContextBrokerV2Resource ngsiService = assetsService.getContextBroker();
+        fromCallable(() -> ngsiService.getEntities(null))
+            .flatMap(Observable::from)
+            .flatMap(entity -> fromCallable(() -> ngsiService.deleteEntity(entity.getId())))
+            .toList().toBlocking().single();
+
+    }
+
+    protected void createSampleAgent() {
+        Connector controller2Connector = connectorService.getConnectors().get("controller2");
+        agentService.createAgent("Test Controller2", controller2Connector.getType());
+    }
+
+    protected void createSampleRooms() {
         Entity room1 = new Entity(Json.createObject());
         room1.setId("Room1");
         room1.setType("Room");
@@ -127,17 +151,11 @@ public class SampleDataService implements ContainerService {
         );
 
         ContextBrokerV2Resource ngsiService = assetsService.getContextBroker();
-
-        fromCallable(() -> ngsiService.getEntities(null))
-            .flatMap(Observable::from)
-            .flatMap(entity -> fromCallable(() -> ngsiService.deleteEntity(entity.getId())))
-            .toList().toBlocking().single();
-
         ngsiService.postEntity(room1);
         ngsiService.postEntity(room2);
     }
 
-    protected void deleteRealms(IdentityService identityService, String accessToken) {
+    protected void deleteRealms(String accessToken) {
         RealmsResource realmsResource = identityService.getRealms(accessToken, false);
         List<RealmRepresentation> realms = realmsResource.findAll();
         for (RealmRepresentation realmRepresentation : realms) {
@@ -147,7 +165,7 @@ public class SampleDataService implements ContainerService {
         }
     }
 
-    protected void configureMasterRealm(IdentityService identityService, String accessToken) {
+    protected void configureMasterRealm(String accessToken) {
         RealmResource realmResource = identityService.getRealms(accessToken, false).realm(MASTER_REALM);
         RealmRepresentation masterRealm = realmResource.toRepresentation();
 
@@ -168,7 +186,7 @@ public class SampleDataService implements ContainerService {
         realmResource.update(masterRealm);
     }
 
-    protected void registerClientApplications(IdentityService identityService, String accessToken) {
+    protected void registerClientApplications(String accessToken) {
         ClientsResource clientsResource = identityService.getRealms(accessToken, false).realm(MASTER_REALM).clients();
 
         // Find out if there is a client already present for this application, if so, delete it
@@ -208,7 +226,7 @@ public class SampleDataService implements ContainerService {
         LOG.info("Registered client application '" + MANAGER_CLIENT_ID + "' with identity provider: " + clientResourceLocation);
     }
 
-    protected void addRolesAndTestUsers(ManagerIdentityService identityService, String accessToken) {
+    protected void addRolesAndTestUsers(String accessToken) {
         ClientsResource clientsResource = identityService.getRealms(accessToken, false).realm(MASTER_REALM).clients();
         UsersResource usersResource = identityService.getRealms(accessToken, false).realm(MASTER_REALM).users();
 

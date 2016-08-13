@@ -22,6 +22,10 @@ package org.openremote.manager.client;
 import com.google.gwt.place.shared.Place;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import org.openremote.manager.client.admin.agent.AdminAgentActivity;
+import org.openremote.manager.client.admin.agent.AdminAgentPlace;
+import org.openremote.manager.client.admin.agent.AdminAgentsActivity;
+import org.openremote.manager.client.admin.agent.AdminAgentsPlace;
 import org.openremote.manager.client.admin.overview.AdminOverviewActivity;
 import org.openremote.manager.client.admin.overview.AdminOverviewPlace;
 import org.openremote.manager.client.admin.tenant.AdminTenantActivity;
@@ -68,6 +72,8 @@ public class ManagerActivityMapper implements AppActivityMapper {
     protected final Provider<AdminTenantActivity> adminTenantActivityProvider;
     protected final Provider<AdminUsersActivity> adminUsersActivityProvider;
     protected final Provider<AdminUserActivity> adminUserActivityProvider;
+    protected final Provider<AdminAgentsActivity> adminAgentsActivityProvider;
+    protected final Provider<AdminAgentActivity> adminAgentActivityProvider;
     protected final Provider<UserAccountActivity> userProfileActivityProvider;
 
     @Inject
@@ -83,6 +89,8 @@ public class ManagerActivityMapper implements AppActivityMapper {
                                  Provider<AdminTenantActivity> adminTenantActivityProvider,
                                  Provider<AdminUsersActivity> adminUsersActivityProvider,
                                  Provider<AdminUserActivity> adminUserActivityProvider,
+                                 Provider<AdminAgentsActivity> adminAgentsActivityProvider,
+                                 Provider<AdminAgentActivity> adminAgentActivityProvider,
                                  Provider<UserAccountActivity> userProfileActivityProvider) {
         this.securityService = securityService;
         this.eventBus = eventBus;
@@ -96,6 +104,8 @@ public class ManagerActivityMapper implements AppActivityMapper {
         this.adminTenantActivityProvider = adminTenantActivityProvider;
         this.adminUsersActivityProvider = adminUsersActivityProvider;
         this.adminUserActivityProvider = adminUserActivityProvider;
+        this.adminAgentsActivityProvider = adminAgentsActivityProvider;
+        this.adminAgentActivityProvider = adminAgentActivityProvider;
         this.userProfileActivityProvider = userProfileActivityProvider;
     }
 
@@ -127,6 +137,12 @@ public class ManagerActivityMapper implements AppActivityMapper {
             }
             if (place instanceof AdminUserPlace) {
                 return adminUserActivityProvider.get().init(securityService, (AdminUserPlace) place);
+            }
+            if (place instanceof AdminAgentsPlace) {
+                return adminAgentsActivityProvider.get().init(securityService, (AdminAgentsPlace) place);
+            }
+            if (place instanceof AdminAgentPlace) {
+                return adminAgentActivityProvider.get().init(securityService, (AdminAgentPlace) place);
             }
             if (place instanceof UserAccountPlace) {
                 return userProfileActivityProvider.get().init(securityService, (UserAccountPlace) place);

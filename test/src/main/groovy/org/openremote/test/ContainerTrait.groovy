@@ -37,6 +37,8 @@ import org.openremote.manager.client.event.MessageReceivedEvent
 import org.openremote.manager.client.event.ServerSendEvent
 import org.openremote.manager.client.event.bus.EventBus
 import org.openremote.manager.server.SampleDataService
+import org.openremote.manager.server.agent.AgentService
+import org.openremote.manager.server.agent.ConnectorService
 import org.openremote.manager.server.assets.AssetsService
 import org.openremote.manager.server.event.EventService
 import org.openremote.manager.server.i18n.I18NService
@@ -150,7 +152,9 @@ trait ContainerTrait {
                         new ManagerIdentityService(),
                         new MessageBrokerService(),
                         new EventService(),
+                        new ConnectorService(),
                         new AssetsService(),
+                        new AgentService(),
                         new MapService(),
                         new SampleDataService()
                 )

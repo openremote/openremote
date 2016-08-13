@@ -144,4 +144,24 @@ public interface ManagerMessages extends Messages {
     String showMoreAssets();
 
     String emptyCompositeAsset();
+
+    String agentName();
+
+    String connectorType();
+
+    String configureAgents();
+
+    String newAgent();
+
+    String editAgent();
+
+    String updateAgent();
+
+    String createAgent();
+
+    String deleteAgent();
+
+    String description();
+
+    String noConnectorAssigned();
 }

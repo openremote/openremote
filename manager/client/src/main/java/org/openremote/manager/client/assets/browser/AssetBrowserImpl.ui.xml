@@ -35,7 +35,7 @@
                  addStyleNames="{style.view} {widgetStyle.SidebarContent} {themeStyle.SidebarContent}">
 
         <g:HTMLPanel
-                styleName="layout horizontal center {widgetStyle.SecondaryNav} {themeStyle.SecondaryNav}">
+                styleName="layout horizontal center {widgetStyle.SecondaryNavHorizontal} {themeStyle.SecondaryNavHorizontal}">
 
             <div class="flex">
                 <w:FormInputText ui:field="searchInput"

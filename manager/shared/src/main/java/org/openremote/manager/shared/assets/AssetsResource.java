@@ -44,7 +44,7 @@ public interface AssetsResource {
     @Path("entities")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed({"read:assets"})
+    //@RolesAllowed({"read:assets"})
     Entity[] getEntities(@BeanParam RequestParams requestParams, @BeanParam EntityListParams entityListParams);
 
     @POST

@@ -20,6 +20,7 @@
 package org.openremote.manager.shared.ngsi;
 
 import elemental.json.JsonObject;
+import elemental.json.impl.JsonUtil;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -38,7 +39,7 @@ public abstract class AbstractEntity<A extends AbstractAttribute> {
 
 
     public String getId() {
-        return jsonObject.hasKey("id") ? jsonObject.getString("id") : null;
+        return jsonObject.hasKey("id") ? jsonObject.get("id").asString() : null;
     }
 
     public AbstractEntity<A> setId(String id) {
@@ -50,7 +51,7 @@ public abstract class AbstractEntity<A extends AbstractAttribute> {
     }
 
     public String getType() {
-        return jsonObject.hasKey("type") ? jsonObject.getString("type") : null;
+        return jsonObject.hasKey("type") ? jsonObject.get("type").asString() : null;
     }
 
     public AbstractEntity<A> setType(String type) {
