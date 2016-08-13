@@ -128,7 +128,7 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
 
         if (providerInfo != null) {
             if (attributesAndValues == null || attributesAndValues.isEmpty()) {
-                // Get all attribute providers for these attributes
+                // Get all attribute providers for these attrs
                 attributeProviders = providerInfo
                         .entrySet()
                         .stream()
@@ -170,7 +170,7 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
                                                 .anyMatch(attr -> attr.getName().equalsIgnoreCase(attrVal.getVal1())))
                                 .map(attrValue -> new Attribute(attrValue.getVal1(), null, Json.create(attrValue.getVal2())))
                                 .collect(Collectors.toList());
-                        // Call set attributes on provider
+                        // Call set attrs on provider
 
                         es.getKey().setAssetAttributeValues(entityQuery.getId(), attrs);
                         return attrs.stream();
@@ -185,7 +185,7 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
         }
 
         if (attributes.isEmpty()) {
-            LOG.info("Asset provider returned no attributes when asked for the value of one or more attributes");
+            LOG.info("Asset provider returned no attrs when asked for the value of one or more attrs");
             return null;
         }
 
@@ -217,9 +217,9 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
                 // Just remove this entity from the registration
                 existingReg.getEntities().remove(entity);
             } else {
-                // Check if attributes all match if so there is nothing to do otherwise
+                // Check if attrs all match if so there is nothing to do otherwise
                 // We have to remove from this registration and either add to another
-                // or create a new one to match these attributes
+                // or create a new one to match these attrs
                 boolean allMatch = attributes
                         .stream()
                         .allMatch(attr -> existingReg.getAttributes()

@@ -28,7 +28,7 @@ public class ContextElement extends ContextEntity {
     @JsonInclude
     protected List<Attribute> attributes;
 
-    public ContextElement(@JsonProperty("type") String type, @JsonProperty("id") String id, @JsonProperty("pattern") boolean pattern, @JsonProperty("attributes") List<Attribute> attributes) {
+    public ContextElement(@JsonProperty("type") String type, @JsonProperty("id") String id, @JsonProperty("pattern") boolean pattern, @JsonProperty("attrs") List<Attribute> attributes) {
         super(type, id, pattern);
         this.attributes = attributes;
     }

@@ -32,7 +32,7 @@ public class EntityAttributeListV1 {
     @JsonProperty(value = "providingApplication")
     protected String providerUri;
 
-    public EntityAttributeListV1(@JsonProperty("entities") List<ContextEntity> entities, @JsonProperty("attributes") List<ContextAttribute> attributes, @JsonProperty("providingApplication") String providerUri) {
+    public EntityAttributeListV1(@JsonProperty("entities") List<ContextEntity> entities, @JsonProperty("attrs") List<ContextAttribute> attributes, @JsonProperty("providingApplication") String providerUri) {
         this.entities = entities;
         this.attributes = attributes;
         this.providerUri = providerUri;

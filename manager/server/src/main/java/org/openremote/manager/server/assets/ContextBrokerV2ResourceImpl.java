@@ -280,7 +280,7 @@ public class ContextBrokerV2ResourceImpl extends AbstractContextBrokerResourceIm
                 .collect(Collectors.toList());
 
         if (attributes.isEmpty()) {
-            LOG.info("Asset provider returned no attributes when asked for the value of one or more attributes");
+            LOG.info("Asset provider returned no attrs when asked for the value of one or more attrs");
             return null;
         }
 
@@ -317,9 +317,9 @@ public class ContextBrokerV2ResourceImpl extends AbstractContextBrokerResourceIm
                 // Just remove this entity from the registration
                 existingReg.getSubject().getEntities().remove(entity);
             } else {
-                // Check if attributes all match if so there is nothing to do otherwise
+                // Check if attrs all match if so there is nothing to do otherwise
                 // We have to remove from this registration and either add to another
-                // or create a new one to match these attributes
+                // or create a new one to match these attrs
                 boolean allMatch = attributes
                         .stream()
                         .allMatch(attr -> existingReg.getSubject().getAttributes()

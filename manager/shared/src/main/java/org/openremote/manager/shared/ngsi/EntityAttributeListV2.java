@@ -32,7 +32,7 @@ public class EntityAttributeListV2 {
     protected List<ContextAttribute> attributes;
 
 
-    public EntityAttributeListV2(@JsonProperty("entities") List<ContextEntity> entities, @JsonProperty("attributes") List<ContextAttribute> attributes) {
+    public EntityAttributeListV2(@JsonProperty("entities") List<ContextEntity> entities, @JsonProperty("attrs") List<ContextAttribute> attributes) {
         this.entities = entities;
         this.attributes = attributes;
     }

@@ -21,16 +21,19 @@ package org.openremote.manager.shared.assets;
 
 import elemental.json.JsonArray;
 import elemental.json.JsonObject;
+import elemental.json.JsonValue;
 import jsinterop.annotations.JsType;
 import org.openremote.manager.shared.http.PATCH;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.http.SuccessStatusCode;
 import org.openremote.manager.shared.ngsi.Entity;
+import org.openremote.manager.shared.ngsi.NotificationFormat;
 import org.openremote.manager.shared.ngsi.params.EntityListParams;
 import org.openremote.manager.shared.ngsi.params.EntityParams;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
+import javax.ws.rs.core.Response;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -84,5 +87,6 @@ public interface AssetsResource {
     @POST
     @Path("subscriber")
     @Consumes(APPLICATION_JSON)
-    void subscriberCallback(Entity[] entities);
+    void subscriberCallback(@HeaderParam("Ngsiv2-AttrsFormat") NotificationFormat format, JsonObject notification);
+
 }

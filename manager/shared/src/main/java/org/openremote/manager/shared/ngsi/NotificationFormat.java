@@ -19,31 +19,17 @@
  */
 package org.openremote.manager.shared.ngsi;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
 
-import java.util.List;
+public enum NotificationFormat {
+    NORMALIZED,
+    KEYVALUES,
+    VALUES;
 
-public class ContextDiscovery {
-    @JsonInclude
-    protected List<ContextEntity> entities;
-    @JsonInclude
-    protected List<ContextAttribute> attributes;
-
-    public ContextDiscovery(List<ContextEntity> entities) {
-        this.entities = entities;
-    }
-
-    public ContextDiscovery(@JsonProperty("entities") List<ContextEntity> entities, @JsonProperty("attrs") List<ContextAttribute> attributes) {
-        this.entities = entities;
-        this.attributes = attributes;
-    }
-
-    public List<ContextEntity> getEntities() {
-        return entities;
-    }
-
-    public List<ContextAttribute> getAttributes() {
-        return attributes;
+    @JsonCreator
+    public static NotificationFormat fromString(String key) {
+        return key == null
+                ? null
+                : NotificationFormat.valueOf(key.toUpperCase());
     }
 }

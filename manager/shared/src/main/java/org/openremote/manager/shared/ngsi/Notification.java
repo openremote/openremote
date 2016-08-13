@@ -22,28 +22,22 @@ package org.openremote.manager.shared.ngsi;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.List;
-
-public class ContextDiscovery {
+public class Notification<T extends AbstractAttribute>  {
     @JsonInclude
-    protected List<ContextEntity> entities;
+    protected String subscriptionId;
     @JsonInclude
-    protected List<ContextAttribute> attributes;
+    protected AbstractEntity<T> data;
 
-    public ContextDiscovery(List<ContextEntity> entities) {
-        this.entities = entities;
+    public Notification(@JsonProperty String subscriptionId, @JsonProperty AbstractEntity<T> data) {
+        this.subscriptionId = subscriptionId;
+        this.data = data;
     }
 
-    public ContextDiscovery(@JsonProperty("entities") List<ContextEntity> entities, @JsonProperty("attrs") List<ContextAttribute> attributes) {
-        this.entities = entities;
-        this.attributes = attributes;
+    public String getSubscriptionId() {
+        return subscriptionId;
     }
 
-    public List<ContextEntity> getEntities() {
-        return entities;
-    }
-
-    public List<ContextAttribute> getAttributes() {
-        return attributes;
+    public AbstractEntity<T> getData() {
+        return data;
     }
 }

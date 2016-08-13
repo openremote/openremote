@@ -30,7 +30,7 @@ public class EntityAttributeQuery {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     protected List<String> attributes;
 
-    public EntityAttributeQuery(@JsonProperty("entities")List<ContextEntity> entities, @JsonProperty("attributes")List<String> attributes) {
+    public EntityAttributeQuery(@JsonProperty("entities")List<ContextEntity> entities, @JsonProperty("attrs")List<String> attributes) {
         this.entities = entities;
         this.attributes = attributes;
     }

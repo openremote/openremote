@@ -19,28 +19,59 @@
  */
 package org.openremote.manager.shared.ngsi.params;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import org.openremote.manager.shared.ngsi.simplequery.Query;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
+@JsonSerialize(using = Condition.ConditionSerialiser.class)
 public class Condition {
-    @JsonIgnore
-    protected List<String> attributes;
+    public static class ConditionSerialiser extends StdSerializer<Condition> {
+        public ConditionSerialiser() {
+            this(null);
+        }
+
+        public ConditionSerialiser(Class<Condition> t) {
+            super(t);
+        }
+
+        @Override
+        public void serialize(Condition value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+            gen.writeStartObject();
+            if (value.query != null) {
+                gen.writeObjectFieldStart("expression");
+                gen.writeObject(value.query);
+                gen.writeEndObject();
+            }
+            gen.writeArrayFieldStart("attrs");
+            for(String attr : value.attrs) {
+                gen.writeString(attr);
+            }
+            gen.writeEndArray();
+            gen.writeEndObject();
+        }
+    }
+
+    // Unfortunately Jackson doesn't honour the always include for empty list (bug in Jackson https://github.com/FasterXML/jackson-databind/issues/1327)
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    protected List<String> attrs;
     @JsonProperty("expression")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     protected Query query;
 
     public Condition() {
-        attributes = new ArrayList<>();
+        attrs = new ArrayList<>();
     }
 
     public Condition(List<String> attributes) {
-        this.attributes = attributes;
+        this.attrs = attributes;
     }
 
     public Condition(Query query) {
@@ -48,24 +79,23 @@ public class Condition {
     }
 
     public Condition(List<String> attributes, Query query) {
-        this.attributes = attributes;
+        this.attrs = attributes;
         this.query = query;
     }
 
     public List<String> getAttributes() {
-        return attributes;
+        return attrs;
     }
 
     public Query getQuery() {
         return query;
     }
 
-    @JsonProperty("attrs")
-    @JsonInclude(JsonInclude.Include.ALWAYS)
-    protected String[] getAttributesArr() { return attributes == null ? new String[0] : attributes.toArray(new String[0]); }
 
-    @JsonProperty("attrs")
-    protected void setAttributesArr(String[] attributes) {
-        this.attributes = Arrays.asList(attributes);
-    }
+//    protected String[] getAttributesArr() { return attrs == null ? new String[0] : attrs.toArray(new String[0]); }
+//
+//    @JsonProperty("attrs")
+//    protected void setAttributesArr(String[] attrs) {
+//        this.attrs = Arrays.asList(attrs);
+//    }
 }

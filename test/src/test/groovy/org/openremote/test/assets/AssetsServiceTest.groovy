@@ -55,7 +55,7 @@ class AssetsServiceTest extends Specification implements ContainerTrait {
         and: "the assets service is retrieved"
         def assetsService = container.getService(AssetsService.class);
 
-        when: "a mock asset provider with fake attributes is created"
+        when: "a mock asset provider with fake attrs is created"
         def fakeAttributes = [
                 new Attribute("temperature", AttributeType.FLOAT, Json.create(10.1)),
                 new Attribute("speed", AttributeType.INTEGER, Json.create(50))
@@ -138,7 +138,7 @@ class AssetsServiceTest extends Specification implements ContainerTrait {
         and: "the assets service is retrieved"
         def assetsService = container.getService(AssetsService.class);
 
-        when: "a mock asset provider with fake attributes is created"
+        when: "a mock asset provider with fake attrs is created"
         def fakeAttributes = [
                 new Attribute("temperature", AttributeType.FLOAT, Json.create(10.1)),
                 new Attribute("speed", AttributeType.INTEGER, Json.create(50))
@@ -277,11 +277,17 @@ class AssetsServiceTest extends Specification implements ContainerTrait {
         subscription.setEntities(
                 [new BasicEntityParams("Car.*", true)]
         );
-        subscription.setCondition(new Condition(["test"]))
         def result = assetsService.registerAssetListener(listener, subscription);
 
         then: "the mock listener is registered"
         result == true;
+
+        and: "the mock listener should have been notified"
+        def conditions = new PollingConditions(timeout: 10)
+
+        conditions.eventually {
+            assert receivedEntities.size() == 1;
+        }
 
         when: "the car speed is modified"
         def speed = car.getAttribute("speed");
@@ -293,10 +299,8 @@ class AssetsServiceTest extends Specification implements ContainerTrait {
         assetsResource.patchEntityAttributes(null, car.getId(), carPatch);
 
         then: "the mock listener should have been notified"
-        def conditions = new PollingConditions(timeout: 10)
-
         conditions.eventually {
-            assert receivedEntities.size() == 1;
+            assert receivedEntities.size() == 2;
         }
 
         when: "the mock listener is unregistered"
@@ -312,7 +316,7 @@ class AssetsServiceTest extends Specification implements ContainerTrait {
 
         then: "the mock listener should not have been notified"
         Thread.sleep(5000);
-        receivedEntities.size() == 1;
+        receivedEntities.size() == 2;
 
         cleanup: "ensure mock listener is unregistered"
         if (assetsService != null)

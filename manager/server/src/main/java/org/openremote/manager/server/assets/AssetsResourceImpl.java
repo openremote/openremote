@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import elemental.json.Json;
 import elemental.json.JsonObject;
+import elemental.json.JsonValue;
 import org.openremote.container.Container;
 import org.openremote.container.web.WebResource;
 import org.openremote.container.web.WebService;
@@ -30,6 +31,8 @@ import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.assets.AssetsResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.ngsi.Entity;
+import org.openremote.manager.shared.ngsi.KeyValueEntity;
+import org.openremote.manager.shared.ngsi.NotificationFormat;
 import org.openremote.manager.shared.ngsi.params.*;
 import org.openremote.manager.shared.ngsi.SubscribeRequestV2;
 
@@ -100,10 +103,34 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
     }
 
     @Override
-    public void subscriberCallback(Entity[] entities) {
+    public synchronized void subscriberCallback(NotificationFormat format, JsonObject notification) {
         // We get here when Orion detects a change to a currently subscribed entity
         // TODO: Notify the listeners interested in this asset
+        switch(format) {
+            case NORMALIZED:
+                Entity[] entities = Entity.from(notification.getArray("data"));
+                String id = notification.getString("subscriptionId");
+                Map.Entry<Consumer<Entity[]>, SubscribeRequestV2> subscriber = subscribers.entrySet()
+                        .stream()
+                        .filter(es -> es.getValue().getId().equals(id))
+                        .findFirst()
+                        .orElse(null);
 
+                if (subscriber != null) {
+                    subscriber.getKey().accept(entities);
+                }
+
+                break;
+            case KEYVALUES:
+                // TODO: Implement KeyValue Notification Support
+                KeyValueEntity[] entities2 = KeyValueEntity.from(notification.getArray("data"));
+                throw new RuntimeException("Unsupported notification format");
+            case VALUES:
+                // TODO: Implement Value Notification Support
+                throw new RuntimeException("Unsupported notification format");
+            default:
+                throw new RuntimeException("Unsupported notification format");
+        }
     }
 
     protected Response checkSuccessResponse(Response response) {
@@ -115,7 +142,7 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
     }
 
     /**
-     * You must strip out id and type attributes of an entity if it's a PATCH or POST.
+     * You must strip out id and type attrs of an entity if it's a PATCH or POST.
      * Why doesn't the NGSI server just ignore those fields? FU, that's why.
      */
     protected JsonObject fixForUpdate(JsonObject original) {
@@ -147,16 +174,16 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
         storedSubscription.setSubject(subscription);
         storedSubscription.setExpires(createNewExpiryDate());
 
-        try {
-            String str = mapper.writeValueAsString(storedSubscription);
-            System.out.print(str);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            String str = mapper.writeValueAsString(storedSubscription);
+//            System.out.print(str);
+//        } catch (JsonProcessingException e) {
+//            e.printStackTrace();
+//        }
 
         Response response = assetsService.getContextBroker().createSubscription(storedSubscription);
 
-        if (response.getStatus() == 204) {
+        if (response.getStatus() == 201) {
             String locationHeader = response.getHeaderString("Location");
             String id = locationHeader.split("/")[3];
             storedSubscription.setId(id);

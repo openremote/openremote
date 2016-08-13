@@ -51,11 +51,11 @@ public abstract class AbstractContextBrokerResourceImpl implements RegistrationP
         Map<Attribute, AssetProvider> providerInfo = providerEntry != null ? providerEntry.getValue() : null;
 
         if (providerInfo != null) {
-            // If any attributes are already registered with another provider then don't proceed
+            // If any attrs are already registered with another provider then don't proceed
             Stream<AssetProvider> providers = attributes.stream().filter(providerInfo::containsKey).map(providerInfo::get).distinct();
 
             if (providers.count() > 0 && providers.anyMatch(p -> p != provider)) {
-                LOG.info("Request failed because one or more attributes already registered with another provider");
+                LOG.info("Request failed because one or more attrs already registered with another provider");
                 return false;
             }
 
@@ -64,7 +64,7 @@ public abstract class AbstractContextBrokerResourceImpl implements RegistrationP
             providerInfo = new HashMap<>();
         }
 
-        // Register all asset attributes with the Context Broker (updates or creates registration)
+        // Register all asset attrs with the Context Broker (updates or creates registration)
         updateRegistration(assetType, assetId, regAttributes);
 
         for (Attribute attr : attributes) {
@@ -98,10 +98,10 @@ public abstract class AbstractContextBrokerResourceImpl implements RegistrationP
             return;
         }
 
-        // Split attributes into those to be removed and those to remain
+        // Split attrs into those to be removed and those to remain
         Map<Boolean, List<Map.Entry<Attribute, AssetProvider>>> splitAttributes = providerInfo.entrySet().stream().collect(Collectors.partitioningBy(es -> es.getValue() == provider));
 
-        // Remove obsolete attributes
+        // Remove obsolete attrs
         splitAttributes.get(true).forEach(es -> providerInfo.remove(es.getKey()));
 
         // Update context provider registration
