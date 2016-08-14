@@ -268,7 +268,7 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
                 public void run() {
                     refreshSubscription(subscriber, ActionType.UPDATE);
                 }
-            }, getRefreshInterval(), TimeUnit.SECONDS));
+            }, getRefreshInterval()-10, TimeUnit.SECONDS));
         }
 
         return response != null ? response.getStatus() : 500;
@@ -276,7 +276,7 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
 
     protected Date createNewExpiryDate() {
         calendar.setTime(new Date());
-        calendar.add(Calendar.MINUTE, 3);
+        calendar.add(Calendar.SECOND, getRefreshInterval());
         return calendar.getTime();
     }
 

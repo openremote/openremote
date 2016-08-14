@@ -400,7 +400,7 @@ class AssetsServiceTest extends Specification implements ContainerTrait {
         result == true;
 
         and: "the mock listener should have been notified"
-        def conditions = new PollingConditions(timeout: 10)
+        def conditions = new PollingConditions(timeout: 15)
 
         conditions.eventually {
             assert receivedEntities.size() == 1;
