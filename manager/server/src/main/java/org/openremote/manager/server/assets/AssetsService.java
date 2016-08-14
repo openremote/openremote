@@ -27,7 +27,6 @@ import org.openremote.container.observable.RetryWithDelay;
 import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.Consumer;
-import org.openremote.manager.shared.assets.AssetsResource;
 import org.openremote.manager.shared.ngsi.*;
 import org.openremote.manager.shared.ngsi.params.SubscriptionParams;
 import rx.Observable;
@@ -37,7 +36,6 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -137,6 +135,8 @@ public class AssetsService implements ContainerService {
 
     public RegistrationProvider getRegistrationProvider() { return registrationProvider; }
 
+    public SubscriptionProvider getSubscriptionProvider() { return subscriptionProvider; }
+
     public ContextBrokerV2Resource getContextBroker() {
         return getContextBroker(getTarget(httpClient, contextBrokerHostUri.build()));
     }
@@ -177,7 +177,7 @@ public class AssetsService implements ContainerService {
     }
 
     public boolean registerAssetListener(Consumer<Entity[]> listener, SubscriptionParams subscription) {
-        return subscriptionProvider.register(listener, subscription);
+        return subscriptionProvider.registerSubscriber(listener, subscription);
     }
 
     public SubscriptionParams getAssetListenerSubscription(Consumer<Entity[]> listener) {
@@ -185,6 +185,6 @@ public class AssetsService implements ContainerService {
     }
 
     public void unregisterAssetListener(Consumer<Entity[]> listener) {
-        subscriptionProvider.unregister(listener);
+        subscriptionProvider.unregisterSubscriber(listener);
     }
 }

@@ -30,17 +30,18 @@ import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.assets.AssetsResource;
 import org.openremote.manager.shared.http.RequestParams;
-import org.openremote.manager.shared.ngsi.Entity;
-import org.openremote.manager.shared.ngsi.KeyValueEntity;
-import org.openremote.manager.shared.ngsi.NotificationFormat;
+import org.openremote.manager.shared.ngsi.*;
 import org.openremote.manager.shared.ngsi.params.*;
-import org.openremote.manager.shared.ngsi.SubscribeRequestV2;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import static org.openremote.manager.shared.Constants.MASTER_REALM;
@@ -51,9 +52,11 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
     public static final int SUBSCRIPTION_REFRESH_INTERVAL = 180;
     protected URI hostUri;
     protected ObjectMapper mapper;
-    protected Map<Consumer<Entity[]>, SubscribeRequestV2> subscribers = new HashMap<>();
-    protected Calendar calendar = Calendar.getInstance();
-
+    protected final Map<Consumer<Entity[]>, SubscribeRequestV2> subscribers = new HashMap<>();
+    protected final Calendar calendar = Calendar.getInstance();
+    protected int refreshInterval = SUBSCRIPTION_REFRESH_INTERVAL;
+    protected final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    protected final Map<SubscribeRequestV2, ScheduledFuture<?>> refreshTasks = new HashMap<>();
     protected final AssetsService assetsService;
 
     public AssetsResourceImpl(AssetsService assetsService) {
@@ -66,8 +69,11 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
     }
 
     @Override
-    public void stop() {
-
+    public synchronized void stop() {
+        // Cancel all scheduled subscriber refreshes
+        refreshTasks.entrySet()
+                .stream()
+                .forEach(es -> es.getValue().cancel(true));
     }
 
     @Override
@@ -133,6 +139,17 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
         }
     }
 
+    @Override
+    public int getRefreshInterval() {
+        return refreshInterval;
+    }
+
+    @Override
+    public void setRefreshInterval(int seconds) {
+        seconds = Math.max(30, seconds);
+        this.refreshInterval = seconds;
+    }
+
     protected Response checkSuccessResponse(Response response) {
         if (response.getStatusInfo().getFamily() == Response.Status.Family.SUCCESSFUL)
             return response;
@@ -155,24 +172,22 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
     }
 
     @Override
-    public boolean register(Consumer<Entity[]> listener, SubscriptionParams subscription) {
+    public synchronized boolean registerSubscriber(Consumer<Entity[]> listener, SubscriptionParams subscription) {
         // Find existing subscription for this listener (if it exists)
         SubscribeRequestV2 storedSubscription = subscribers.get(listener);
 
         if (storedSubscription != null) {
             String id = storedSubscription.getId();
             storedSubscription.setSubject(subscription);
-            storedSubscription.setExpires(createNewExpiryDate());
-            Response response = assetsService.getContextBroker().updateSubscription(id, storedSubscription);
             // TODO: Handle failed subscription update
-            return response.getStatus() == 204;
+            int response = refreshSubscription(storedSubscription, ActionType.UPDATE);
+            return response == 204;
         }
 
         // Create a new subscription
         storedSubscription = new SubscribeRequestV2();
         storedSubscription.setNotification(createNotificationParams());
         storedSubscription.setSubject(subscription);
-        storedSubscription.setExpires(createNewExpiryDate());
 
 //        try {
 //            String str = mapper.writeValueAsString(storedSubscription);
@@ -181,12 +196,9 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
 //            e.printStackTrace();
 //        }
 
-        Response response = assetsService.getContextBroker().createSubscription(storedSubscription);
+        int response = refreshSubscription(storedSubscription, ActionType.CREATE);
 
-        if (response.getStatus() == 201) {
-            String locationHeader = response.getHeaderString("Location");
-            String id = locationHeader.split("/")[3];
-            storedSubscription.setId(id);
+        if (response == 201) {
             subscribers.put(listener, storedSubscription);
             return true;
         }
@@ -195,18 +207,20 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
     }
 
     @Override
-    public SubscriptionParams getSubscription(Consumer<Entity[]> listener) {
+    public synchronized SubscriptionParams getSubscription(Consumer<Entity[]> listener) {
         SubscribeRequestV2 subscriber = subscribers.get(listener);
         return subscriber != null ? subscriber.getSubject() : null;
     }
 
     @Override
-    public synchronized void unregister(Consumer<Entity[]> listener) {
+    public synchronized void unregisterSubscriber(Consumer<Entity[]> listener) {
         SubscribeRequestV2 subscriber = subscribers.get(listener);
 
         if (subscriber != null) {
-            assetsService.getContextBroker().deleteSubscription(subscriber.getId());
-            subscribers.remove(subscriber);
+            int response = refreshSubscription(subscriber, ActionType.DELETE);
+            if (response == 204) {
+                subscribers.remove(subscriber);
+            }
         }
     }
 
@@ -219,8 +233,45 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
                 .toString();
     }
 
-    protected synchronized void notifySubscribers(Entity[] modifiedEntities) {
+    protected synchronized int refreshSubscription(SubscribeRequestV2 subscriber, ActionType action) {
+        Response response = null;
 
+        switch(action) {
+            case CREATE:
+                subscriber.setExpires(createNewExpiryDate());
+                response = assetsService.getContextBroker().createSubscription(subscriber);
+                if (response.getStatus() == 201) {
+                    String locationHeader = response.getHeaderString("Location");
+                    String id = locationHeader.split("/")[3];
+                    subscriber.setId(id);
+                }
+                break;
+            case UPDATE:
+                // Cancel any existing refresh task
+                ScheduledFuture<?> task = refreshTasks.get(subscriber);
+                if (task != null) {
+                    task.cancel(true);
+                    refreshTasks.remove(task);
+                }
+                subscriber.setExpires(createNewExpiryDate());
+                response = assetsService.getContextBroker().updateSubscription(subscriber.getId(), subscriber);
+                break;
+            case DELETE:
+                response = assetsService.getContextBroker().deleteSubscription(subscriber.getId());
+                break;
+        }
+
+        if (action == ActionType.CREATE || action == ActionType.UPDATE) {
+            // Add scheduled task to refresh this subscription
+            refreshTasks.put(subscriber, scheduler.schedule(new Runnable() {
+                @Override
+                public void run() {
+                    refreshSubscription(subscriber, ActionType.UPDATE);
+                }
+            }, getRefreshInterval(), TimeUnit.SECONDS));
+        }
+
+        return response != null ? response.getStatus() : 500;
     }
 
     protected Date createNewExpiryDate() {

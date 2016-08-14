@@ -68,7 +68,7 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
     }
 
     @Override
-    public void stop() {
+    public synchronized void stop() {
         if (updateTimer != null) {
             updateTimer.cancel();
         }

@@ -123,7 +123,7 @@ public interface ContextBrokerV2Resource {
     Response deleteRegistration(@PathParam("registrationId") String registrationId);
 
     @POST
-    @Path("op/register")
+    @Path("op/registerSubscriber")
     @Consumes(APPLICATION_JSON)
     Response batchRegistration(BatchRegistrationRequestV2 registrations);
 }

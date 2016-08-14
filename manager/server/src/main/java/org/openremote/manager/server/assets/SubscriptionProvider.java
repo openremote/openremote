@@ -29,11 +29,15 @@ public interface SubscriptionProvider {
 
     void stop();
 
-    boolean register(Consumer<Entity[]> listener, SubscriptionParams subscription);
+    boolean registerSubscriber(Consumer<Entity[]> listener, SubscriptionParams subscription);
 
     SubscriptionParams getSubscription(Consumer<Entity[]> listener);
 
-    void unregister(Consumer<Entity[]> listener);
+    void unregisterSubscriber(Consumer<Entity[]> listener);
 
     String getSubscriptionCallbackUri();
+
+    int getRefreshInterval();
+
+    void setRefreshInterval(int seconds);
 }
