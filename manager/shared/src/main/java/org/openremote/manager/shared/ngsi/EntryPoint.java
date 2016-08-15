@@ -34,7 +34,7 @@ public class EntryPoint {
     }
 
     public String getEntitiesLocation() {
-        return jsonObject.hasKey("entities_url") ? jsonObject.getString("entities_url") : null;
+        return jsonObject.hasKey("entities_url") ? jsonObject.get("entities_url").asString() : null;
     }
 
     public void setEntitiesLocation(String entitiesLocation) {
@@ -42,7 +42,7 @@ public class EntryPoint {
     }
 
     public String getTypesLocation() {
-        return jsonObject.hasKey("types_url") ? jsonObject.getString("types_url") : null;
+        return jsonObject.hasKey("types_url") ? jsonObject.get("types_url").asString() : null;
     }
 
     public void setTypesLocation(String typesLocation) {
@@ -50,7 +50,7 @@ public class EntryPoint {
     }
 
     public String getSubscriptionsLocation() {
-        return jsonObject.hasKey("subscriptions_url") ? jsonObject.getString("subscriptions_url") : null;
+        return jsonObject.hasKey("subscriptions_url") ? jsonObject.get("subscriptions_url").asString() : null;
     }
 
     public void setSubscriptionsLocation(String subscriptionsLocation) {
@@ -58,7 +58,7 @@ public class EntryPoint {
     }
 
     public String getRegistrationsLocation() {
-        return jsonObject.hasKey("registrations_url") ? jsonObject.getString("registrations_url") : null;
+        return jsonObject.hasKey("registrations_url") ? jsonObject.get("registrations_url").asString() : null;
     }
 
     public void setRegistrationsLocation(String registrationsLocation) {

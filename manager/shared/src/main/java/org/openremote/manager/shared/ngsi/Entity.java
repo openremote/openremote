@@ -103,6 +103,11 @@ public class Entity extends AbstractEntity<Attribute> {
 
     public boolean getAttributeValueAsBoolean(String name) {
         Attribute attr = getAttribute(name);
-        return attr != null ? attr.getValue().asBoolean() : false;
+        return attr != null && attr.getValue().asBoolean();
+    }
+
+    public JsonObject getAttributeValueAsObject(String name) {
+        Attribute attr = getAttribute(name);
+        return attr != null ? attr.getValueAsObject () : null;
     }
 }

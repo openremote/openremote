@@ -21,9 +21,14 @@ package org.openremote.manager.shared.connector;
 
 import elemental.json.Json;
 import elemental.json.JsonObject;
+import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.ngsi.Attribute;
 import org.openremote.manager.shared.ngsi.AttributeType;
 import org.openremote.manager.shared.ngsi.Entity;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * Interface for agent connectors that is used to connect and communicate with agents
@@ -31,11 +36,15 @@ import org.openremote.manager.shared.ngsi.Entity;
  */
 public class Connector extends Entity {
 
+    private static final Logger LOG = Logger.getLogger(Connector.class.getName());
+
     // Camel components which are OR connectors must have this in component.properties
     public static final String PROPERTY_TYPE = "openremote-connector-type";
 
     public static final String ATTRIBUTE_NAME = "name";
     public static final String ATTRIBUTE_SYNTAX = "syntax";
+
+    public static final List<String> IMMUTABLE_ATTRIBUTES = Arrays.asList(ATTRIBUTE_NAME, ATTRIBUTE_SYNTAX);
 
     public Connector() {
     }
@@ -65,6 +74,36 @@ public class Connector extends Entity {
     public void setSyntax(String syntax) {
         Attribute attr = new Attribute(ATTRIBUTE_SYNTAX, AttributeType.STRING, Json.create(syntax));
         super.addAttribute(attr);
+    }
+
+    public void writeSettings(Agent agent) {
+        JsonObject settings = Json.createObject();
+        for (Attribute attribute : getAttributes()) {
+            if (IMMUTABLE_ATTRIBUTES.contains(attribute.getName()))
+                continue;
+            settings.put(attribute.getName(), attribute.getJsonObject());
+        }
+        agent.setConnectorSettings(settings);
+    }
+
+    public void readSettings(Agent agent) {
+        JsonObject settings = agent.getConnectorSettings();
+        if (settings == null)
+            return;
+
+        for (Attribute attribute : getAttributes()) {
+            if (IMMUTABLE_ATTRIBUTES.contains(attribute.getName()))
+                continue;
+
+            if (!settings.hasKey(attribute.getName()))
+                continue;
+
+            Attribute settingsAttribute =
+                new Attribute(attribute.getName(), settings.getObject(attribute.getName()));
+            if (settingsAttribute.getType().equals(attribute.getType())) {
+                attribute.setValue(settingsAttribute.getValue());
+            }
+        }
     }
 
 }

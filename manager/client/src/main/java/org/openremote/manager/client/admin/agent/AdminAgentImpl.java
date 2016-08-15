@@ -21,28 +21,43 @@ package org.openremote.manager.client.admin.agent;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.text.shared.AbstractRenderer;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
-import com.google.gwt.user.client.ui.HTMLPanel;
-import com.google.gwt.user.client.ui.SimpleCheckBox;
-import com.google.gwt.user.client.ui.TextBox;
-import com.google.gwt.user.client.ui.ValueListBox;
+import com.google.gwt.user.client.ui.*;
 import org.openremote.manager.client.i18n.ManagerMessages;
+import org.openremote.manager.client.widget.EntityFormView;
 import org.openremote.manager.client.widget.FormGroup;
-import org.openremote.manager.client.widget.FormView;
 import org.openremote.manager.client.widget.PushButton;
 import org.openremote.manager.shared.connector.Connector;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.logging.Logger;
 
-public class AdminAgentImpl extends FormView implements AdminAgent {
+public class AdminAgentImpl extends EntityFormView implements AdminAgent {
+
+    private static final Logger LOG = Logger.getLogger(AdminAgentImpl.class.getName());
 
     interface UI extends UiBinder<HTMLPanel, AdminAgentImpl> {
     }
+
+    interface Style extends CssResource {
+
+        String formMessages();
+
+        String nameTextBox();
+
+        String descriptionTextBox();
+
+        String connectorAttributeTextBox();
+    }
+
+    @UiField
+    Style style;
 
     @UiField
     FormGroup nameGroup;
@@ -61,6 +76,9 @@ public class AdminAgentImpl extends FormView implements AdminAgent {
 
     @UiField(provided = true)
     ValueListBox<Connector> connectorListBox;
+
+    @UiField
+    FlowPanel attributesContainer;
 
     @UiField
     PushButton createButton;
@@ -92,7 +110,7 @@ public class AdminAgentImpl extends FormView implements AdminAgent {
         initWidget(ui.createAndBindUi(this));
 
         connectorListBox.addValueChangeHandler(event -> {
-            Connector connector= event.getValue();
+            Connector connector = event.getValue();
             if (presenter != null) {
                 presenter.onConnectorSelected(connector);
             }
@@ -120,7 +138,16 @@ public class AdminAgentImpl extends FormView implements AdminAgent {
     public void setAssignedConnector(Connector connector) {
         connectorListBox.setValue(connector);
 
+        attributesContainer.clear();
+
         if (connector != null) {
+            FormGroup[] attributeFormGroups = createAttributeFormGroups(
+                style.connectorAttributeTextBox(),
+                connector.getAttributes()
+            );
+            for (FormGroup attributeFormGroup : attributeFormGroups) {
+                attributesContainer.add(attributeFormGroup);
+            }
         }
     }
 

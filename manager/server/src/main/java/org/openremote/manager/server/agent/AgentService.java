@@ -21,37 +21,19 @@ package org.openremote.manager.server.agent;
 
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.container.util.IdentifierUtil;
-import org.openremote.container.web.WebService;
 import org.openremote.manager.server.assets.AssetsService;
-import org.openremote.manager.shared.agent.Agent;
-import org.openremote.manager.shared.ngsi.Entity;
-import org.openremote.manager.shared.ngsi.params.EntityListParams;
-import org.openremote.manager.shared.ngsi.params.EntityParams;
-
-import javax.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Logger;
 
 public class AgentService implements ContainerService {
 
-    private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
-
-    protected ConnectorService connectorService;
     protected AssetsService assetsService;
 
     @Override
     public void init(Container container) throws Exception {
-        connectorService = container.getService(ConnectorService.class);
         assetsService = container.getService(AssetsService.class);
     }
 
     @Override
     public void configure(Container container) throws Exception {
-        container.getService(WebService.class).getApiSingletons().add(
-            new AgentResourceImpl(connectorService, this)
-        );
     }
 
     @Override
@@ -64,37 +46,4 @@ public class AgentService implements ContainerService {
 
     }
 
-    public Response createAgent(String name, String description, String connectorType) {
-        Agent agent = new Agent();
-
-        agent.setId(IdentifierUtil.generateGlobalUniqueId());
-        agent.setEnabled(true);
-        agent.setName(name);
-        agent.setDescription(description);
-        agent.setConnectorType(connectorType);
-
-        return assetsService.getContextBroker().postEntity(agent);
-    }
-
-    public Agent[] getAgents() {
-        Entity[] entities = assetsService.getContextBroker().getEntities(
-            new EntityListParams().type(Agent.TYPE)
-        );
-       List<Agent> agents = new ArrayList<>();
-        for (Entity entity : entities) {
-            Agent agent = new Agent(entity.getJsonObject());
-            agents.add(agent);
-        }
-        return agents.toArray(new Agent[agents.size()]);
-    }
-
-    public Agent getAgent(String id) {
-        return new Agent(
-            assetsService
-                .getContextBroker()
-                .getEntity(id, new EntityParams())
-                .getJsonObject()
-        );
-
-    }
 }

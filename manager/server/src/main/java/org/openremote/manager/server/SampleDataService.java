@@ -28,11 +28,13 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.security.AuthForm;
 import org.openremote.container.security.IdentityService;
+import org.openremote.container.util.IdentifierUtil;
 import org.openremote.manager.server.agent.AgentService;
 import org.openremote.manager.server.agent.ConnectorService;
 import org.openremote.manager.server.assets.AssetsService;
 import org.openremote.manager.server.assets.ContextBrokerV2Resource;
 import org.openremote.manager.server.security.ManagerIdentityService;
+import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.connector.Connector;
 import org.openremote.manager.shared.ngsi.Attribute;
 import org.openremote.manager.shared.ngsi.AttributeType;
@@ -128,10 +130,15 @@ public class SampleDataService implements ContainerService {
 
     protected void createSampleAgent() {
         Connector controller2Connector = connectorService.getConnectors().get("controller2");
-        agentService.createAgent(
-            "Test Controller2",
-            "A sample agent for OR Controller 2.x",
-            controller2Connector.getType());
+
+        Agent sampleAgent = new Agent();
+        sampleAgent.setId(IdentifierUtil.generateGlobalUniqueId());
+        sampleAgent.setEnabled(true);
+        sampleAgent.setName("Test Controller2");
+        sampleAgent.setDescription("A sample agent for OR Controller 2.x");
+        sampleAgent.setConnectorType(controller2Connector.getType());
+
+        assetsService.getContextBroker().postEntity(sampleAgent);
     }
 
     protected void createSampleRooms() {

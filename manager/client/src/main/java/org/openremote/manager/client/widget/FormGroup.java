@@ -54,6 +54,14 @@ public class FormGroup extends FlowPanel implements HasWidgets {
 
     }
 
+    public FormLabel getFormLabel() {
+        return formLabel;
+    }
+
+    public FormField getFormField() {
+        return formField;
+    }
+
     public Style getStyle() {
         return getElement().getStyle();
     }

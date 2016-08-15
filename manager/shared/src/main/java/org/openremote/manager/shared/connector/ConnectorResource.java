@@ -20,38 +20,25 @@
 package org.openremote.manager.shared.connector;
 
 import jsinterop.annotations.JsType;
-import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.http.SuccessStatusCode;
 
-import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.*;
+import javax.ws.rs.BeanParam;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
-@Path("agent")
+@Path("connector")
 @JsType(isNative = true)
-public interface AgentResource {
+public interface ConnectorResource {
 
     @GET
-    @Path("connector")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
+    // TODO Implement admin roles on server
     //@RolesAllowed({"read:admin"})
     Connector[] getConnectors(@BeanParam RequestParams requestParams);
-
-
-    @GET
-    @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
-    //@RolesAllowed({"read:admin"})
-    Agent[] getAll(@BeanParam RequestParams requestParams);
-
-    @GET
-    @Path("{id}")
-    @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
-    //@RolesAllowed({"read:admin"})
-    Agent get(@BeanParam RequestParams requestParams, @PathParam("id") String id);
 
 }

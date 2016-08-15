@@ -33,6 +33,6 @@ public class AgentMapper implements EntityReader<Agent>, EntityWriter<Agent> {
 
     @Override
     public String write(Agent value) {
-        return JsonUtil.stringify(value.getJsonObject());
+        return value.getJsonObject().toJson();
     }
 }

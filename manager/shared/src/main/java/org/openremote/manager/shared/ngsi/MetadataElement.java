@@ -50,7 +50,7 @@ public class MetadataElement {
     }
 
     public String getType() {
-        return jsonObject.hasKey("type") ? jsonObject.getString("type") : null;
+        return jsonObject.hasKey("type") ? jsonObject.get("type").asString() : null;
     }
 
     public MetadataElement setType(String type) {

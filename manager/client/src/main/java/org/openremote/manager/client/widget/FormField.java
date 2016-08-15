@@ -33,7 +33,7 @@ public class FormField extends FlowPanel implements HasWidgets {
 
     public void setFormFieldId(String formFieldId) {
         this.formFieldId = formFieldId;
-        if (getWidget(0) != null) {
+        if (getWidgetCount() > 0 && getWidget(0) != null) {
             getWidget(0).getElement().setId(formFieldId);
         }
     }

@@ -32,6 +32,7 @@ import org.apache.camel.util.CamelContextHelper;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.connector.Connector;
 import org.openremote.manager.shared.ngsi.Attribute;
 import org.openremote.manager.shared.ngsi.AttributeType;
@@ -59,7 +60,9 @@ public class ConnectorService implements ContainerService {
 
     @Override
     public void configure(Container container) throws Exception {
-
+        container.getService(WebService.class).getApiSingletons().add(
+            new ConnectorResourceImpl(this)
+        );
     }
 
     @Override

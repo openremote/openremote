@@ -13,13 +13,13 @@ public class Agent extends Entity {
     public static final String ATTRIBUTE_NAME = "name";
     public static final String ATTRIBUTE_DESCRIPTION = "description";
     public static final String ATTRIBUTE_CONNECTOR_TYPE = "connectorType";
+    public static final String ATTRIBUTE_CONNECTOR_SETTINGS = "connectorSettings";
     public static final String ATTRIBUTE_ENABLED = "enabled";
 
     // State properties that must be read from the agent (agent is context provider for these values)
     protected boolean valid;
     protected boolean available;
     protected boolean connected;
-    protected JsonObject settings;
 
     public Agent() {
         super();
@@ -57,12 +57,13 @@ public class Agent extends Entity {
         super.addAttribute(attr);
     }
 
-    public boolean isAvailable() {
-        return available;
+    public JsonObject getConnectorSettings() {
+        return getAttributeValueAsObject(ATTRIBUTE_CONNECTOR_SETTINGS);
     }
 
-    public void setAvailable(boolean available) {
-        this.available = available;
+    public void setConnectorSettings(JsonObject settings) {
+        Attribute attr = new Attribute(ATTRIBUTE_CONNECTOR_SETTINGS, AttributeType.OBJECT, settings);
+        super.addAttribute(attr);
     }
 
     public boolean isEnabled() {
@@ -72,6 +73,14 @@ public class Agent extends Entity {
     public void setEnabled(boolean enabled) {
         Attribute attr = new Attribute(ATTRIBUTE_ENABLED, AttributeType.BOOLEAN, Json.create(enabled));
         super.addAttribute(attr);
+    }
+
+    public boolean isAvailable() {
+        return available;
+    }
+
+    public void setAvailable(boolean available) {
+        this.available = available;
     }
 
     public boolean isValid() {
@@ -88,13 +97,5 @@ public class Agent extends Entity {
 
     public void setConnected(boolean connected) {
         this.connected = connected;
-    }
-
-    public JsonObject getSettings() {
-        return settings;
-    }
-
-    public void setSettings(JsonObject settings) {
-        this.settings = settings;
     }
 }

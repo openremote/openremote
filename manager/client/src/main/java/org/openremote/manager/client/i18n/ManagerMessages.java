@@ -164,4 +164,12 @@ public interface ManagerMessages extends Messages {
     String description();
 
     String noConnectorAssigned();
+
+    String connectorNotInstalled();
+
+    String agentUpdated(String name);
+
+    String agentCreated(String name);
+
+    String agentDeleted(String name);
 }

@@ -32,8 +32,10 @@ import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.shared.Runnable;
 import org.openremote.manager.shared.agent.Agent;
-import org.openremote.manager.shared.connector.AgentResource;
+import org.openremote.manager.shared.assets.AssetsResource;
+import org.openremote.manager.shared.connector.ConnectorResource;
 import org.openremote.manager.shared.connector.Connector;
+import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -52,33 +54,19 @@ public class AdminAgentActivity
     final protected EventBus eventBus;
     final protected SecurityService securityService;
     final protected RequestService requestService;
-    final protected AgentResource agentResource;
+    final protected AssetsResource assetsResource;
+    final protected ConnectorResource connectorResource;
     final protected AgentMapper agentMapper = new AgentMapper();
     final protected ConnectorArrayMapper connectorArrayMapper = new ConnectorArrayMapper();
-
-    /*
-    final protected Consumer<ConstraintViolation[]> validationErrorHandler = violations -> {
-        for (ConstraintViolation violation : violations) {
-            if (violation.getPath() != null) {
-                if (violation.getPath().endsWith("displayName")) {
-                    adminContent.setTenantDisplayNameError(true);
-                }
-                if (violation.getPath().endsWith("realm")) {
-                    adminContent.setTenantRealmError(true);
-                }
-                if (violation.getPath().endsWith("enabled")) {
-                    adminContent.setTenantEnabledError(true);
-                }
-            }
-            adminContent.addFormMessageError(violation.getMessage());
-        }
-        adminContent.setFormBusy(false);
-    };
-    */
 
     protected String id;
     protected Connector[] connectors;
     protected Agent agent;
+    protected Connector assignedConnector;
+
+    // This is a dummy we use when the Agent's assigned connector is not installed
+    protected final Connector notFoundConnector = new Connector();
+    protected final String notFoundConnectorId = "NOT_FOUND_CONNECTOR_ID";
 
     @Inject
     public AdminAgentActivity(AdminView adminView,
@@ -89,14 +77,18 @@ public class AdminAgentActivity
                               EventBus eventBus,
                               SecurityService securityService,
                               RequestService requestService,
-                              AgentResource agentResource) {
+                              AssetsResource assetsResource,
+                              ConnectorResource connectorResource) {
         super(adminView, adminNavigationPresenter, view);
         this.managerMessages = managerMessages;
         this.placeController = placeController;
         this.eventBus = eventBus;
         this.securityService = securityService;
         this.requestService = requestService;
-        this.agentResource = agentResource;
+        this.assetsResource = assetsResource;
+        this.connectorResource = connectorResource;
+
+        notFoundConnector.setId(notFoundConnectorId);
     }
 
     @Override
@@ -153,7 +145,6 @@ public class AdminAgentActivity
 
     @Override
     public void create() {
-/*
         adminContent.setFormBusy(true);
         adminContent.clearFormMessagesSuccess();
         adminContent.clearFormMessagesError();
@@ -162,67 +153,61 @@ public class AdminAgentActivity
         requestService.execute(
             agentMapper,
             requestParams -> {
-                tenantResource.create(requestParams, tenant);
+                assetsResource.postEntity(requestParams, agent);
             },
             204,
             () -> {
                 adminContent.setFormBusy(false);
                 eventBus.dispatch(new ShowInfoEvent(
-                    managerMessages.tenantCreated(tenant.getDisplayName())
+                    managerMessages.agentCreated(agent.getName())
                 ));
-                placeController.goTo(new AdminTenantsPlace());
+                placeController.goTo(new AdminAgentsPlace());
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages, validationErrorHandler)
+            ex -> handleRequestException(ex, eventBus, managerMessages)
         );
-*/
     }
 
     @Override
     public void update() {
-/*
         adminContent.setFormBusy(true);
         adminContent.clearFormMessagesSuccess();
         adminContent.clearFormMessagesError();
         clearViewFieldErrors();
         readFromView();
         requestService.execute(
-            tenantMapper,
+            agentMapper,
             requestParams -> {
-                tenantResource.update(requestParams, id, tenant);
+                assetsResource.putEntityAttributes(requestParams, id, agent);
             },
             204,
             () -> {
                 adminContent.setFormBusy(false);
-                adminContent.addFormMessageSuccess(managerMessages.tenantUpdated(tenant.getDisplayName()));
-                this.id = tenant.getRealm();
+                adminContent.addFormMessageSuccess(managerMessages.agentUpdated(agent.getName()));
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages, validationErrorHandler)
+            ex -> handleRequestException(ex, eventBus, managerMessages)
         );
-*/
     }
 
     @Override
     public void delete() {
-/*
         adminContent.setFormBusy(true);
         adminContent.clearFormMessagesSuccess();
         adminContent.clearFormMessagesError();
         clearViewFieldErrors();
         requestService.execute(
             requestParams -> {
-                tenantResource.delete(requestParams, this.id);
+                assetsResource.deleteEntity(requestParams, this.id);
             },
             204,
             () -> {
                 adminContent.setFormBusy(false);
                 eventBus.dispatch(new ShowInfoEvent(
-                    managerMessages.tenantDeleted(tenant.getDisplayName())
+                    managerMessages.agentDeleted(agent.getName())
                 ));
-                placeController.goTo(new AdminTenantsPlace());
+                placeController.goTo(new AdminAgentsPlace());
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages, validationErrorHandler)
+            ex -> handleRequestException(ex, eventBus, managerMessages)
         );
-*/
     }
 
     @Override
@@ -232,13 +217,14 @@ public class AdminAgentActivity
 
     @Override
     public void onConnectorSelected(Connector connector) {
-        LOG.info("### CONNECTOR SELECTED: " + connector);
+        assignedConnector = connector;
+        adminContent.setAssignedConnector(connector);
     }
 
     protected void loadConnectors(Runnable onSuccess) {
         requestService.execute(
             connectorArrayMapper,
-            agentResource::getConnectors,
+            connectorResource::getConnectors,
             200,
             connectors -> {
                 this.connectors = connectors;
@@ -251,7 +237,7 @@ public class AdminAgentActivity
     protected void loadAgent(Runnable onSuccess) {
         requestService.execute(
             agentMapper,
-            requestParams -> agentResource.get(requestParams, id),
+            requestParams -> assetsResource.getEntity(requestParams, id, null),
             200,
             agent -> {
                 this.agent = agent;
@@ -263,28 +249,51 @@ public class AdminAgentActivity
     }
 
     protected void writeToView() {
+        findAssignedConnector();
         adminContent.setConnectors(connectors);
-
-        Connector assignedConnector = null;
-        if (agent.getConnectorType() != null) {
-            for (Connector connector : connectors) {
-                if (connector.getType().equals(agent.getConnectorType())) {
-                    assignedConnector = connector;
-                    break;
-                }
-            }
-        }
         adminContent.setAssignedConnector(assignedConnector);
-
         adminContent.setName(agent.getName());
         adminContent.setDescription(agent.getDescription());
         adminContent.setAgentEnabled(agent.isEnabled());
     }
 
     protected void readFromView() {
+        setAssignedConnector();
         agent.setName(adminContent.getName());
         agent.setDescription(adminContent.getDescription());
         agent.setEnabled(adminContent.getAgentEnabled());
+    }
+
+    protected void findAssignedConnector() {
+        assignedConnector = null;
+        if (agent != null && agent.getConnectorType() != null) {
+            for (Connector connector : connectors) {
+                if (connector.getType().equals(agent.getConnectorType())) {
+                    assignedConnector = connector;
+                    break;
+                }
+            }
+            if (assignedConnector != null) {
+                assignedConnector.readSettings(agent);
+            } else {
+                notFoundConnector.setName(
+                    agent.getConnectorType() + " (" + managerMessages.connectorNotInstalled() + ")"
+                );
+                assignedConnector = notFoundConnector;
+            }
+        }
+    }
+
+    protected void setAssignedConnector() {
+        if (assignedConnector != null) {
+            if (!assignedConnector.getId().equals(notFoundConnectorId)) {
+                agent.setConnectorType(assignedConnector.getType());
+                assignedConnector.writeSettings(agent);
+            }
+        } else {
+            agent.setConnectorType(null);
+            agent.setConnectorSettings(null);
+        }
     }
 
     protected void clearViewFieldErrors() {

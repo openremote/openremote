@@ -6,13 +6,14 @@
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
     <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
-    <ui:style>
+    <ui:style type="org.openremote.manager.client.admin.agent.AdminAgentImpl.Style">
         .formMessages {
             max-width: 30em;
         }
 
         .nameTextBox,
-        .descriptionTextBox {
+        .descriptionTextBox,
+        .connectorAttributeTextBox {
             width: 30em;
         }
     </ui:style>
@@ -91,6 +92,8 @@
                     </w:FormField>
                 </w:field>
             </w:FormGroup>
+
+            <g:FlowPanel ui:field="attributesContainer"/>
 
             <w:FormGroup>
                 <w:field>

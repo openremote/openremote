@@ -34,7 +34,11 @@ public class AgentArrayMapper implements EntityReader<Agent[]> {
         JsonArray jsonArray = JsonUtil.parse(value);
         List<Agent> list = new ArrayList<>();
         for (int i = 0; i < jsonArray.length(); i++) {
-            list.add(new Agent(jsonArray.getObject(i)));
+            Agent agent = new Agent(jsonArray.getObject(i));
+            // TODO: URGENT FIX NEEDED! ENTITY TYPE QUERIES ARE NOT SUPPORTED SO HERE WE GET _ALL_ ENTITIES!
+            if (agent.getType().equals(Agent.TYPE)) {
+                list.add(agent);
+            }
         }
         return list.toArray(new Agent[list.size()]);
     }

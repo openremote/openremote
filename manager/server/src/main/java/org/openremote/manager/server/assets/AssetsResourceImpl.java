@@ -25,6 +25,7 @@ import elemental.json.Json;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 import org.openremote.container.Container;
+import org.openremote.container.util.IdentifierUtil;
 import org.openremote.container.web.WebResource;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.Consumer;
@@ -83,6 +84,9 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
 
     @Override
     public void postEntity(RequestParams requestParams, Entity entity) {
+        if (entity.getId() == null) {
+            entity.setId(IdentifierUtil.generateGlobalUniqueId());
+        }
         checkSuccessResponse(assetsService.getContextBroker().postEntity(entity));
     }
 

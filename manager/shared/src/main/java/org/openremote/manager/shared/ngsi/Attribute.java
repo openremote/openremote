@@ -53,6 +53,10 @@ public class Attribute extends AbstractAttribute {
         return jsonObject.hasKey("value") ? jsonObject.get("value") : null;
     }
 
+    public JsonObject getValueAsObject() {
+        return jsonObject.hasKey("value") ? jsonObject.getObject("value") : null;
+    }
+
     @Override
     public Attribute setValue(JsonValue value) {
         jsonObject.put("value", value);
@@ -61,7 +65,7 @@ public class Attribute extends AbstractAttribute {
 
     @JsonProperty("type")
     public AttributeType getType() {
-        String keyValue = jsonObject.hasKey("type") ? jsonObject.getString("type") : null;
+        String keyValue = jsonObject.hasKey("type") ? jsonObject.get("type").asString() : null;
         return keyValue != null ? AttributeType.fromName(keyValue) : null;
     }
 
@@ -96,6 +100,6 @@ public class Attribute extends AbstractAttribute {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + ": " + jsonObject.toJson();
+        return getName() + " => " + jsonObject.toJson();
     }
 }

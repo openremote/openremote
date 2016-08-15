@@ -25,8 +25,16 @@ import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.InlineLabel;
 import org.openremote.manager.client.i18n.ManagerMessages;
+import org.openremote.manager.client.style.ThemeStyle;
+import org.openremote.manager.client.style.WidgetStyle;
 
 public class FormView extends Composite {
+
+    @UiField
+    public WidgetStyle widgetStyle;
+
+    @UiField
+    public ThemeStyle themeStyle;
 
     @UiField
     public ManagerMessages managerMessages;

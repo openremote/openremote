@@ -31,7 +31,7 @@ import org.openremote.manager.client.admin.overview.AdminOverviewActivity;
 import org.openremote.manager.client.admin.overview.AdminOverviewImpl;
 import org.openremote.manager.client.admin.tenant.*;
 import org.openremote.manager.client.admin.users.*;
-import org.openremote.manager.shared.connector.AgentResource;
+import org.openremote.manager.shared.connector.ConnectorResource;
 import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.manager.shared.security.UserResource;
 
@@ -85,11 +85,11 @@ public class AdminModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    public AgentResource getAgentResource() {
-        return getNativeAgentResource();
+    public ConnectorResource getConnectorResource() {
+        return getNativeConnectorResource();
     }
 
-    public static native AgentResource getNativeAgentResource() /*-{
-        return $wnd.AgentResource;
+    public static native ConnectorResource getNativeConnectorResource() /*-{
+        return $wnd.ConnectorResource;
     }-*/;
 }

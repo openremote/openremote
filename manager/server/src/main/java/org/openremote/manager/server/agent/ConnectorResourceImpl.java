@@ -20,22 +20,19 @@
 package org.openremote.manager.server.agent;
 
 import org.openremote.container.web.WebResource;
-import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.connector.Connector;
-import org.openremote.manager.shared.connector.AgentResource;
+import org.openremote.manager.shared.connector.ConnectorResource;
 import org.openremote.manager.shared.http.RequestParams;
 
 import javax.ws.rs.BeanParam;
 import java.util.Collection;
 
-public class AgentResourceImpl extends WebResource implements AgentResource {
+public class ConnectorResourceImpl extends WebResource implements ConnectorResource {
 
     protected final ConnectorService connectorService;
-    protected final AgentService agentService;
 
-    public AgentResourceImpl(ConnectorService connectorService, AgentService agentService) {
+    public ConnectorResourceImpl(ConnectorService connectorService) {
         this.connectorService = connectorService;
-        this.agentService = agentService;
     }
 
     @Override
@@ -44,13 +41,4 @@ public class AgentResourceImpl extends WebResource implements AgentResource {
         return connectors.toArray(new Connector[connectors.size()]);
     }
 
-    @Override
-    public Agent[] getAll(@BeanParam RequestParams requestParams) {
-        return agentService.getAgents();
-    }
-
-    @Override
-    public Agent get(@BeanParam RequestParams requestParams, String id) {
-        return agentService.getAgent(id);
-    }
 }

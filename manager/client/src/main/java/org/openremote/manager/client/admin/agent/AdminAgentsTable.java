@@ -63,7 +63,7 @@ public class AdminAgentsTable extends FormTable<Agent> {
     final protected TextColumn<Agent> connectorColumn = new TextColumn<Agent>() {
         @Override
         public String getValue(Agent agent) {
-            return agent.getConnectorType();
+            return agent.getConnectorType() != null ? agent.getConnectorType() : "-";
         }
     };
 

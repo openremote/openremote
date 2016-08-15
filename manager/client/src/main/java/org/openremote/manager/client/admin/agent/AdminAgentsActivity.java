@@ -28,13 +28,12 @@ import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.service.RequestService;
-import org.openremote.manager.client.util.JsUtil;
 import org.openremote.manager.shared.agent.Agent;
-import org.openremote.manager.shared.connector.AgentResource;
+import org.openremote.manager.shared.assets.AssetsResource;
+import org.openremote.manager.shared.ngsi.params.EntityListParams;
 
 import javax.inject.Inject;
 import java.util.Collection;
-import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
@@ -42,12 +41,10 @@ public class AdminAgentsActivity
     extends AbstractAdminActivity<AdminAgentsPlace, AdminAgents>
     implements AdminAgents.Presenter {
 
-    private static final Logger LOG = Logger.getLogger(AdminAgentsActivity.class.getName());
-
     final protected ManagerMessages managerMessages;
     final protected PlaceController placeController;
     final protected RequestService requestService;
-    final protected AgentResource agentResource;
+    final protected AssetsResource assetsResource;
     final protected AgentArrayMapper agentArrayMapper = new AgentArrayMapper();
 
     @Inject
@@ -57,12 +54,12 @@ public class AdminAgentsActivity
                                ManagerMessages managerMessages,
                                PlaceController placeController,
                                RequestService requestService,
-                               AgentResource agentResource) {
+                               AssetsResource assetsResource) {
         super(adminView, adminNavigationPresenter, view);
         this.managerMessages = managerMessages;
         this.placeController = placeController;
         this.requestService = requestService;
-        this.agentResource = agentResource;
+        this.assetsResource = assetsResource;
     }
 
     @Override
@@ -77,7 +74,9 @@ public class AdminAgentsActivity
 
         requestService.execute(
             agentArrayMapper,
-            agentResource::getAll,
+            requestParams -> {
+                assetsResource.getEntities(requestParams, new EntityListParams().type(Agent.TYPE));
+            },
             200,
             adminContent::setAgents,
             ex -> handleRequestException(ex, eventBus, managerMessages)
