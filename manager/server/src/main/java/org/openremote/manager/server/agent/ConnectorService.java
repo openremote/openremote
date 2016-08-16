@@ -99,7 +99,10 @@ public class ConnectorService implements ContainerService {
     protected void findConnectors(CamelContext context) throws Exception {
         for (Map.Entry<String, Properties> entry : CamelContextHelper.findComponents(context).entrySet()) {
             String connectorComponentName = entry.getKey();
-            Object connectorType = entry.getValue().get(Connector.PROPERTY_TYPE);
+
+            Properties properties = entry.getValue();
+            Object connectorType = properties.get(Connector.PROPERTY_TYPE);
+
             if (connectorType != null) {
                 Component component = context.getComponent(connectorComponentName);
                 if (component == null) {
@@ -112,7 +115,7 @@ public class ConnectorService implements ContainerService {
 
                     Connector connector = createConnector(
                         connectorComponentName,
-                        connectorType.toString(),
+                        properties,
                         uriEndpointComponent
                     );
 
@@ -141,11 +144,13 @@ public class ConnectorService implements ContainerService {
     }
 
     protected Connector createConnector(String connectorComponentName,
-                                        String connectorType,
+                                        Properties componentProperties,
                                         UriEndpointComponent component) {
 
         LOG.fine("Creating connector: " + connectorComponentName);
-        Connector connector = new Connector(connectorType);
+        Connector connector = new Connector(
+            componentProperties.get(Connector.PROPERTY_TYPE).toString()
+        );
 
         UriEndpoint uriEndpoint = component.getEndpointClass().getAnnotation(UriEndpoint.class);
         if (uriEndpoint == null) {
@@ -164,6 +169,16 @@ public class ConnectorService implements ContainerService {
             connector.setSyntax(uriEndpoint.syntax());
         }
 
+        Object supportsDiscovery = componentProperties.get(Connector.PROPERTY_SUPPORTS_DISCOVERY);
+        if (supportsDiscovery != null) {
+            connector.setSupportsDiscovery(Boolean.valueOf(supportsDiscovery.toString()));
+        }
+
+        Object supportsInventory = componentProperties.get(Connector.PROPERTY_SUPPORTS_INVENTORY);
+        if (supportsInventory != null) {
+            connector.setSupportsInventory(Boolean.valueOf(supportsInventory.toString()));
+        }
+
         addConnectorAttributes(
             connector,
             connectorComponentName,
@@ -175,9 +190,9 @@ public class ConnectorService implements ContainerService {
     }
 
     protected void addConnectorAttributes(Connector connector,
-                                                String connectorComponentName,
-                                                ComponentConfiguration componentConfiguration,
-                                                Class<? extends Endpoint> endpointClass) {
+                                          String connectorComponentName,
+                                          ComponentConfiguration componentConfiguration,
+                                          Class<? extends Endpoint> endpointClass) {
 
         for (Map.Entry<String, ParameterConfiguration> configEntry : componentConfiguration.getParameterConfigurationMap().entrySet()) {
             try {

@@ -43,7 +43,7 @@ public class Controller2Service implements ContainerService {
         context.addRoutes(new RouteBuilder() {
             @Override
             public void configure() throws Exception {
-                from("mockController2:http://10.0.0.123:8080/inventory")
+                from("mockController2:10.0.0.123:8080/inventory")
                         .routeId("Device Inventory")
                         .choice()
                             .when(header(HEADER_DEVICE_ACTION).isEqualTo(ADD))
@@ -64,16 +64,16 @@ public class Controller2Service implements ContainerService {
 
                 from("direct:triggerDiscovery")
                     .routeId("Trigger discovery")
-                    .to("mockController2:http://10.0.0.123:8080/discovery");
+                    .to("mockController2:10.0.0.123:8080/discovery");
 
-                from("mockController2:http://10.0.0.123:8080/discovery")
+                from("mockController2:10.0.0.123:8080/discovery")
                     .routeId("Discovered devices")
                     .process(exchange -> {
                         List<String> discovered = exchange.getIn().getBody(List.class);
                         discoveredItems.addAll(discovered);
                     });
 
-                from("mockController2:http://10.0.0.123:8080")
+                from("mockController2:10.0.0.123:8080")
                     .routeId("Received sensor values")
                     .process(exchange -> {
                         receivedSensorData.add(exchange.getIn().getBody(String.class));
@@ -81,11 +81,11 @@ public class Controller2Service implements ContainerService {
 
                 from("direct:write")
                     .routeId("Write Resource")
-                    .to("mockController2:http://10.0.0.123:8080");
+                    .to("mockController2:10.0.0.123:8080");
 
                 from("direct:read")
                         .routeId("Read Resource")
-                        .to("mockController2:http://10.0.0.123:8080");
+                        .to("mockController2:10.0.0.123:8080");
             }
         });
     }

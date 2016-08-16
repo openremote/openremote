@@ -172,4 +172,6 @@ public interface ManagerMessages extends Messages {
     String agentCreated(String name);
 
     String agentDeleted(String name);
+
+    String unsupportedAttributeType(String name);
 }

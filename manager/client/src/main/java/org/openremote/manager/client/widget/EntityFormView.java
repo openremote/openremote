@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.client.widget;
 
+import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.TextBox;
 import elemental.json.Json;
 import org.openremote.manager.shared.connector.Connector;
@@ -37,13 +38,17 @@ public class EntityFormView extends FormView {
             if (Connector.IMMUTABLE_ATTRIBUTES.contains(attribute.getName()))
                 continue;
 
-            // TODO: Support editing non-string attributes
-            if (!attribute.getType().equals(AttributeType.STRING)) {
-                continue;
-            }
-
             FormGroup formGroup = createAttributeFormGroup(attribute);
-            formGroup.getFormField().add(createAttributeTextBox(formFieldStyleName, attribute));
+
+            if (attribute.getType().equals(AttributeType.STRING)) {
+                formGroup.getFormField().add(createStringEditor(formFieldStyleName, attribute));
+            } else if (attribute.getType().equals(AttributeType.INTEGER)) {
+                formGroup.getFormField().add(createIntegerEditor(formFieldStyleName, attribute));
+            } else {
+                formGroup.getFormField().add(
+                    new Label(managerMessages.unsupportedAttributeType(attribute.getType().getName()))
+                );
+            }
 
             list.add(formGroup);
         }
@@ -70,7 +75,7 @@ public class EntityFormView extends FormView {
         return formGroup;
     }
 
-    public TextBox createAttributeTextBox(String formFieldStyleName, Attribute attribute) {
+    protected TextBox createTextBoxEditor(String formFieldStyleName, Attribute attribute) {
         TextBox textBox = new TextBox();
 
         textBox.addStyleName(formFieldStyleName);
@@ -89,12 +94,33 @@ public class EntityFormView extends FormView {
         if (attribute.getValue() != null) {
             textBox.setValue(attribute.getValue().asString());
         }
+        return textBox;
+    }
 
-        textBox.addValueChangeHandler(event -> {
-            attribute.setValue(Json.create(event.getValue()));
-        });
+    protected TextBox createStringEditor(String formFieldStyleName, Attribute attribute) {
+        TextBox textBox = createTextBoxEditor(formFieldStyleName, attribute);
+
+        textBox.addValueChangeHandler(
+            event -> attribute.setValue(
+                Json.create(event.getValue())
+            )
+        );
 
         return textBox;
     }
 
+    protected TextBox createIntegerEditor(String formFieldStyleName, Attribute attribute) {
+        TextBox textBox = createTextBoxEditor(formFieldStyleName, attribute);
+
+        textBox.addValueChangeHandler(event -> {
+            try {
+                Integer value = Integer.valueOf(event.getValue());
+                attribute.setValue(Json.create(value));
+            } catch (NumberFormatException ex) {
+                // TODO Do nothing? can we hook this up into validation?
+            }
+        });
+
+        return textBox;
+    }
 }

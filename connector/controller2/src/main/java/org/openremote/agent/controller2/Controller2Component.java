@@ -23,7 +23,6 @@ import org.apache.camel.Endpoint;
 import org.apache.camel.impl.UriEndpointComponent;
 
 import java.net.URI;
-import java.net.URL;
 import java.util.Map;
 
 public class Controller2Component extends UriEndpointComponent {
@@ -48,15 +47,14 @@ public class Controller2Component extends UriEndpointComponent {
     @Override
     protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
         try {
-            URI endpointUri = URI.create(remaining);
-            if (endpointUri.getPort() <= 0) {
-                throw new Exception("Invalid port number");
-            }
+            URI parsedUri = URI.create(uri);
 
-            URL controllerUrl = new URL(endpointUri.getScheme(), endpointUri.getHost(), endpointUri.getPort(), "/controller");
-            Endpoint ep = new Controller2Endpoint(uri, this, adapterManager, controllerUrl, endpointUri.getPath());
-            setProperties(ep, parameters);
-            return ep;
+            parameters.put("host", parsedUri.getHost());
+            parameters.put("port", parsedUri.getPort());
+
+            String path = parsedUri.getPath();
+
+            return new Controller2Endpoint(uri, this, adapterManager, path);
         } catch (Exception ex) {
             throw new IllegalArgumentException("Required URL in format of " + URI_SYNTAX, ex);
         }

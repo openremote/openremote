@@ -40,11 +40,17 @@ public class Connector extends Entity {
 
     // Camel components which are OR connectors must have this in component.properties
     public static final String PROPERTY_TYPE = "openremote-connector-type";
+    public static final String PROPERTY_SUPPORTS_DISCOVERY = "openremote-connector-supports-discovery";
+    public static final String PROPERTY_SUPPORTS_INVENTORY = "openremote-connector-supports-inventory";
 
     public static final String ATTRIBUTE_NAME = "name";
     public static final String ATTRIBUTE_SYNTAX = "syntax";
+    public static final String ATTRIBUTE_SUPPORTS_DISCOVERY = "supportsDiscovery";
+    public static final String ATTRIBUTE_SUPPORTS_INVENTORY = "supportsInventory";
 
-    public static final List<String> IMMUTABLE_ATTRIBUTES = Arrays.asList(ATTRIBUTE_NAME, ATTRIBUTE_SYNTAX);
+    public static final List<String> IMMUTABLE_ATTRIBUTES = Arrays.asList(
+        ATTRIBUTE_NAME, ATTRIBUTE_SYNTAX, ATTRIBUTE_SUPPORTS_DISCOVERY, ATTRIBUTE_SUPPORTS_INVENTORY
+    );
 
     public Connector() {
     }
@@ -73,6 +79,24 @@ public class Connector extends Entity {
 
     public void setSyntax(String syntax) {
         Attribute attr = new Attribute(ATTRIBUTE_SYNTAX, AttributeType.STRING, Json.create(syntax));
+        super.addAttribute(attr);
+    }
+
+    public boolean isSupportsDiscovery() {
+        return getAttributeValueAsBoolean(ATTRIBUTE_SUPPORTS_DISCOVERY);
+    }
+
+    public void setSupportsDiscovery(boolean supportsDiscovery) {
+        Attribute attr = new Attribute(ATTRIBUTE_SUPPORTS_DISCOVERY, AttributeType.BOOLEAN, Json.create(supportsDiscovery));
+        super.addAttribute(attr);
+    }
+
+    public boolean isSupportsInventory() {
+        return getAttributeValueAsBoolean(ATTRIBUTE_SUPPORTS_INVENTORY);
+    }
+
+    public void setSupportsInventory(boolean supportsInventory) {
+        Attribute attr = new Attribute(ATTRIBUTE_SUPPORTS_INVENTORY, AttributeType.BOOLEAN, Json.create(supportsInventory));
         super.addAttribute(attr);
     }
 

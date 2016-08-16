@@ -24,7 +24,9 @@ import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.impl.DefaultEndpoint;
 import org.apache.camel.spi.UriEndpoint;
+import org.apache.camel.spi.UriParam;
 
+import java.net.MalformedURLException;
 import java.net.URL;
 
 @UriEndpoint(
@@ -38,15 +40,26 @@ public class Controller2Endpoint extends DefaultEndpoint {
     final protected Controller2Adapter.Manager adapterManager;
     final protected boolean isDiscovery;
     final protected boolean isInventory;
-    final protected URL controllerUrl;
 
-    @org.apache.camel.spi.UriParam(
+    @UriParam(
+        label = "Host/IP Address",
+        description = "The OR Controller 2 network hostname or IP address"
+    )
+    protected String host;
+
+    @UriParam(
+        label = "Port",
+        description = "The OR Controller 2 network port"
+    )
+    protected Integer port;
+
+    @UriParam(
         label = "Username",
         description = "The OR Controller 2 Username"
     )
     protected String username;
 
-    @org.apache.camel.spi.UriParam(
+    @UriParam(
         label = "Password",
         description = "The OR Controller 2 Password"
     )
@@ -57,24 +70,36 @@ public class Controller2Endpoint extends DefaultEndpoint {
 
     protected Controller2Adapter adapter;
 
-    public Controller2Endpoint(String endpointUri, Controller2Component component, Controller2Adapter.Manager adapterManager,
-                               URL controllerUrl, String path) {
+    public Controller2Endpoint(String endpointUri, Controller2Component component, Controller2Adapter.Manager adapterManager, String path) {
         super(endpointUri, component);
+
         this.adapterManager = adapterManager;
-        this.controllerUrl = controllerUrl;
         this.isDiscovery = "/discovery".equals(path);
         this.isInventory = "/inventory".equals(path);
 
         if (!isDiscovery && !isInventory && path != null) {
-            // See if we have device and resource URIs
-            // There must be a nicer way of dealing with this??
-            // maybe we should use params and let setProperties on component resolve the values
             String[] deviceResourceArr = path.split("//");
             if (deviceResourceArr.length == 2) {
                 deviceUri = deviceResourceArr[0];
                 resourceUri = deviceResourceArr[1];
             }
         }
+    }
+
+    public String getHost() {
+        return host;
+    }
+
+    public void setHost(String host) {
+        this.host = host;
+    }
+
+    public Integer getPort() {
+        return port;
+    }
+
+    public void setPort(Integer port) {
+        this.port = port;
     }
 
     public String getUsername() {
@@ -110,7 +135,6 @@ public class Controller2Endpoint extends DefaultEndpoint {
         if (isDiscovery) {
             return new Controller2DiscoveryProducer(this);
         }
-
         return new Controller2WriteProducer(this, deviceUri, resourceUri);
     }
 
@@ -127,7 +151,7 @@ public class Controller2Endpoint extends DefaultEndpoint {
         if (deviceUri == null || resourceUri == null) {
             return new Controller2ReadConsumer(this, processor, deviceUri, resourceUri);
         } else {
-           throw new UnsupportedOperationException("Read consumer requires deviceURI and resource URI");
+            throw new UnsupportedOperationException("Read consumer requires deviceURI and resource URI");
         }
     }
 
@@ -138,9 +162,15 @@ public class Controller2Endpoint extends DefaultEndpoint {
 
     public Controller2Adapter getAdapter() {
         if (adapter == null) {
-            adapter = adapterManager.openAdapter(controllerUrl, username, password);
-            if (adapter == null)
-                throw new IllegalStateException("Manager did not open adapter: " + controllerUrl);
+            try {
+                // TODO: HTTPS support should be implemented with a "?secure=true|false" Endpoint URL query param
+                URL controllerUrl = new URL("http", getHost(), getPort(), "/controller");
+                adapter = adapterManager.openAdapter(controllerUrl, username, password);
+                if (adapter == null)
+                    throw new IllegalStateException("Manager did not open adapter: " + controllerUrl);
+            } catch (MalformedURLException ex) {
+                throw new RuntimeException("Invalid controller URL: " + ex);
+            }
         }
         return adapter;
     }
