@@ -37,7 +37,7 @@ public interface ContainerService {
     void start(Container container) throws Exception;
 
     /**
-     * When the container is shutting down, it stops all services in the order they have been added to container.
+     * When the container is shutting down, it stops all services in the reverse order they have been added to container.
      */
     void stop(Container container) throws Exception;
 

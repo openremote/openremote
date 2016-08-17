@@ -30,9 +30,7 @@ import org.openremote.container.util.ElementalJsonModule;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.ServiceLoader;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.logging.LogManager;
@@ -165,7 +163,9 @@ public class Container {
 
     synchronized public void stop() {
         LOG.info("<<< Stopping runtime container...");
-        for (ContainerService service : getServices()) {
+        List<ContainerService> servicesToStop = Arrays.asList(getServices());
+        Collections.reverse(servicesToStop);
+        for (ContainerService service : servicesToStop) {
             LOG.fine("Stopping service: " + service);
             try {
                 service.stop(this);

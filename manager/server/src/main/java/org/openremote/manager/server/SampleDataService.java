@@ -120,6 +120,7 @@ public class SampleDataService implements ContainerService {
     }
 
     protected void clearContextBroker() {
+        LOG.info("Clearing all context broker data");
         ContextBrokerV2Resource ngsiService = assetsService.getContextBroker();
         fromCallable(() -> ngsiService.getEntities(null))
             .flatMap(Observable::from)
@@ -138,6 +139,7 @@ public class SampleDataService implements ContainerService {
         sampleAgent.setDescription("A sample agent for OR Controller 2.x");
         sampleAgent.setConnectorType(controller2Connector.getType());
 
+        LOG.info("Creating sample agent: " + sampleAgent);
         assetsService.getContextBroker().postEntity(sampleAgent);
     }
 
