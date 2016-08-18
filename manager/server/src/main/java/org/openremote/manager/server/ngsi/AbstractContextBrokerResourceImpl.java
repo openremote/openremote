@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.assets;
+package org.openremote.manager.server.ngsi;
 
 import org.jgroups.util.Tuple;
 import org.openremote.manager.shared.ngsi.*;
@@ -35,24 +35,24 @@ public abstract class AbstractContextBrokerResourceImpl implements RegistrationP
     public static final int REFRESH_INTERVAL = 180;
     // Key = ENTITY_ID
     // Value = MAP<ATTRIBUTE, PROVIDER>
-    protected Map<Tuple<String,String>, Map<Attribute, AssetProvider>> providers = new HashMap<>();
+    protected Map<Tuple<String,String>, Map<Attribute, EntityProvider>> providers = new HashMap<>();
     protected int refreshInterval = REFRESH_INTERVAL;
 
     @Override
-    public synchronized boolean registerAssetProvider(String assetType, String assetId, List<Attribute> attributes, AssetProvider provider) {
-        LOG.fine("Registering Asset Provider for '" + assetId + "'");
+    public synchronized boolean registerEntityProvider(String entityType, String entityId, List<Attribute> attributes, EntityProvider provider) {
+        LOG.fine("Registering EntityProvider for '" + entityId + "'");
         List<Attribute> regAttributes = new ArrayList<>(attributes);
-        Map.Entry<Tuple<String, String>, Map<Attribute, AssetProvider>> providerEntry = providers
+        Map.Entry<Tuple<String, String>, Map<Attribute, EntityProvider>> providerEntry = providers
                 .entrySet()
                 .stream()
-                .filter(es -> es.getKey().getVal1().equalsIgnoreCase(assetId))
+                .filter(es -> es.getKey().getVal1().equalsIgnoreCase(entityId))
                 .findFirst()
                 .orElse(null);
-        Map<Attribute, AssetProvider> providerInfo = providerEntry != null ? providerEntry.getValue() : null;
+        Map<Attribute, EntityProvider> providerInfo = providerEntry != null ? providerEntry.getValue() : null;
 
         if (providerInfo != null) {
             // If any attrs are already registered with another provider then don't proceed
-            Stream<AssetProvider> providers = attributes.stream().filter(providerInfo::containsKey).map(providerInfo::get).distinct();
+            Stream<EntityProvider> providers = attributes.stream().filter(providerInfo::containsKey).map(providerInfo::get).distinct();
 
             if (providers.count() > 0 && providers.anyMatch(p -> p != provider)) {
                 LOG.info("Request failed because one or more attrs already registered with another provider");
@@ -64,49 +64,49 @@ public abstract class AbstractContextBrokerResourceImpl implements RegistrationP
             providerInfo = new HashMap<>();
         }
 
-        // Register all asset attrs with the Context Broker (updates or creates registration)
-        updateRegistration(assetType, assetId, regAttributes);
+        // Register all entity attrs with the Context Broker (updates or creates registration)
+        updateRegistration(entityType, entityId, regAttributes);
 
         for (Attribute attr : attributes) {
             providerInfo.put(attr, provider);
         }
 
-        providers.putIfAbsent(new Tuple<>(assetId, assetType), providerInfo);
+        providers.putIfAbsent(new Tuple<>(entityId, entityType), providerInfo);
         return true;
     }
 
     @Override
-    public synchronized void unregisterAssetProvider(AssetProvider provider) {
+    public synchronized void unregisterEntityProvider(EntityProvider provider) {
         providers
                 .entrySet()
                 .stream()
                 .filter(es -> es.getValue().containsValue(provider))
-                .forEach(es -> unregisterAssetProvider(es.getKey().getVal1(), es.getKey().getVal2(), provider));
+                .forEach(es -> unregisterEntityProvider(es.getKey().getVal1(), es.getKey().getVal2(), provider));
     }
 
     @Override
-    public synchronized void unregisterAssetProvider(String assetType, String assetId, AssetProvider provider) {
-        Map.Entry<Tuple<String, String>, Map<Attribute, AssetProvider>> providerEntry = providers
+    public synchronized void unregisterEntityProvider(String entityType, String entityId, EntityProvider provider) {
+        Map.Entry<Tuple<String, String>, Map<Attribute, EntityProvider>> providerEntry = providers
                 .entrySet()
                 .stream()
-                .filter(es -> es.getKey().getVal1().equalsIgnoreCase(assetId))
+                .filter(es -> es.getKey().getVal1().equalsIgnoreCase(entityId))
                 .findFirst()
                 .orElse(null);
-        Map<Attribute, AssetProvider> providerInfo = providerEntry != null ? providerEntry.getValue() : null;
+        Map<Attribute, EntityProvider> providerInfo = providerEntry != null ? providerEntry.getValue() : null;
 
         if (providerInfo == null) {
             return;
         }
 
         // Split attrs into those to be removed and those to remain
-        Map<Boolean, List<Map.Entry<Attribute, AssetProvider>>> splitAttributes = providerInfo.entrySet().stream().collect(Collectors.partitioningBy(es -> es.getValue() == provider));
+        Map<Boolean, List<Map.Entry<Attribute, EntityProvider>>> splitAttributes = providerInfo.entrySet().stream().collect(Collectors.partitioningBy(es -> es.getValue() == provider));
 
         // Remove obsolete attrs
         splitAttributes.get(true).forEach(es -> providerInfo.remove(es.getKey()));
 
         // Update context provider registration
         List<Attribute> remainingAttributes = splitAttributes.get(false).stream().map(Map.Entry::getKey).collect(Collectors.toList());
-        updateRegistration(assetType, assetId, remainingAttributes);
+        updateRegistration(entityType, entityId, remainingAttributes);
 
         if (remainingAttributes.size() == 0) {
             providers.remove(providerEntry.getKey());
@@ -124,5 +124,5 @@ public abstract class AbstractContextBrokerResourceImpl implements RegistrationP
         this.refreshInterval = seconds;
     }
 
-    protected abstract void updateRegistration(String assetType, String assetId, List<Attribute> attributes);
+    protected abstract void updateRegistration(String entityType, String entityId, List<Attribute> attributes);
 }

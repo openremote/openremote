@@ -32,7 +32,7 @@ import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.shared.Runnable;
 import org.openremote.manager.shared.agent.Agent;
-import org.openremote.manager.shared.assets.AssetsResource;
+import org.openremote.manager.shared.ngsi.EntityResource;
 import org.openremote.manager.shared.connector.ConnectorResource;
 import org.openremote.manager.shared.connector.Connector;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
@@ -54,7 +54,7 @@ public class AdminAgentActivity
     final protected EventBus eventBus;
     final protected SecurityService securityService;
     final protected RequestService requestService;
-    final protected AssetsResource assetsResource;
+    final protected EntityResource assetsResource;
     final protected ConnectorResource connectorResource;
     final protected AgentMapper agentMapper = new AgentMapper();
     final protected ConnectorArrayMapper connectorArrayMapper = new ConnectorArrayMapper();
@@ -77,7 +77,7 @@ public class AdminAgentActivity
                               EventBus eventBus,
                               SecurityService securityService,
                               RequestService requestService,
-                              AssetsResource assetsResource,
+                              EntityResource assetsResource,
                               ConnectorResource connectorResource) {
         super(adminView, adminNavigationPresenter, view);
         this.managerMessages = managerMessages;

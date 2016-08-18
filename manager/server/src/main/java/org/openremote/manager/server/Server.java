@@ -23,7 +23,6 @@ import org.openremote.container.Container;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.manager.server.agent.AgentService;
 import org.openremote.manager.server.agent.ConnectorService;
-import org.openremote.manager.server.assets.AssetsService;
 import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.i18n.I18NService;
 import org.openremote.manager.server.map.MapService;
@@ -40,7 +39,6 @@ public class Server {
             new MessageBrokerService(),
             new EventService(),
             new ConnectorService(),
-            new AssetsService(),
             new AgentService(),
             new MapService(),
             new SampleDataService()

@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.assets;
+package org.openremote.manager.server.ngsi;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import elemental.json.Json;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
@@ -38,7 +37,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static org.openremote.container.web.WebClient.getTarget;
-import static org.openremote.manager.server.assets.ContextBrokerV1ResourceImpl.CONTEXT_PROVIDER_V1_ENDPOINT_PATH;
+import static org.openremote.manager.server.ngsi.ContextBrokerV1ResourceImpl.CONTEXT_PROVIDER_V1_ENDPOINT_PATH;
 import static org.openremote.manager.shared.Constants.MASTER_REALM;
 
 /**
@@ -117,14 +116,14 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
     }
 
     protected synchronized QueryResponse getContextResponse(ContextEntity entityQuery, List<Tuple<String,String>> attributesAndValues, boolean isUpdate) {
-        Map.Entry<Tuple<String, String>, Map<Attribute, AssetProvider>> providerEntry = providers
+        Map.Entry<Tuple<String, String>, Map<Attribute, EntityProvider>> providerEntry = providers
                 .entrySet()
                 .stream()
                 .filter(es -> es.getKey().getVal1().equalsIgnoreCase(entityQuery.getId()))
                 .findFirst()
                 .orElse(null);
-        Map<Attribute, AssetProvider> providerInfo = providerEntry != null ? providerEntry.getValue() : null;
-        Map<AssetProvider, List<Attribute>> attributeProviders = null;
+        Map<Attribute, EntityProvider> providerInfo = providerEntry != null ? providerEntry.getValue() : null;
+        Map<EntityProvider, List<Attribute>> attributeProviders = null;
 
         if (providerInfo != null) {
             if (attributesAndValues == null || attributesAndValues.isEmpty()) {
@@ -137,7 +136,7 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
                 attributeProviders = attributesAndValues
                         .stream()
                         .map(attr -> {
-                            Map.Entry<Attribute, AssetProvider> entry = providerInfo
+                            Map.Entry<Attribute, EntityProvider> entry = providerInfo
                                     .entrySet()
                                     .stream()
                                     .filter(es -> es.getKey().getName().equals(attr.getVal1()))
@@ -151,7 +150,7 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
         }
 
         if (attributeProviders == null || attributeProviders.isEmpty()) {
-            LOG.info("No asset providers found");
+            LOG.info("No EntityProvider found");
             return null;
         }
 
@@ -172,7 +171,7 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
                                 .collect(Collectors.toList());
                         // Call set attrs on provider
 
-                        es.getKey().setAssetAttributeValues(entityQuery.getId(), attrs);
+                        es.getKey().setAttributeValues(entityQuery.getId(), attrs);
                         return attrs.stream();
                     })
                     .collect(Collectors.toList());
@@ -180,12 +179,12 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
             attributes = attributeProviders.entrySet()
                     .stream()
                     .filter(es -> !es.getValue().isEmpty())
-                    .flatMap(es -> es.getKey().getAssetAttributeValues(entityQuery.getId(), es.getValue().stream().map(Attribute::getName).collect(Collectors.toList())).stream())
+                    .flatMap(es -> es.getKey().getAttributeValues(entityQuery.getId(), es.getValue().stream().map(Attribute::getName).collect(Collectors.toList())).stream())
                     .collect(Collectors.toList());
         }
 
         if (attributes.isEmpty()) {
-            LOG.info("Asset provider returned no attrs when asked for the value of one or more attrs");
+            LOG.info("EntityProvider returned no attrs when asked for the value of one or more attrs");
             return null;
         }
 
@@ -195,21 +194,21 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
     }
 
     @Override
-    protected synchronized void updateRegistration(String assetType, String assetId, List<Attribute> attributes) {
-        // Check if this asset ID is already registered
+    protected synchronized void updateRegistration(String entityType, String entityId, List<Attribute> attributes) {
+        // Check if this entity ID is already registered
         EntityAttributeListV1 existingReg = providerRegistration.getRegistrations()
                 .stream()
                 .filter(reg ->
                         reg.getEntities()
                                 .stream()
-                                .anyMatch(e -> e.getId().equalsIgnoreCase(assetId)))
+                                .anyMatch(e -> e.getId().equalsIgnoreCase(entityId)))
                 .findFirst()
                 .orElse(null);
 
         if (existingReg != null) {
             ContextEntity entity = existingReg.getEntities()
                     .stream()
-                    .filter(e -> e.getId().equalsIgnoreCase(assetId))
+                    .filter(e -> e.getId().equalsIgnoreCase(entityId))
                     .findFirst()
                     .orElse(null);
 
@@ -256,7 +255,7 @@ public class ContextBrokerV1ResourceImpl extends AbstractContextBrokerResourceIm
                     .findFirst()
                     .orElse(null);
 
-            ContextEntity entity = new ContextEntity(assetType, assetId, false);
+            ContextEntity entity = new ContextEntity(entityType, entityId, false);
 
             if (newReg != null) {
                 newReg.getEntities().add(entity);

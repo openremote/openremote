@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.assets;
+package org.openremote.manager.server.ngsi;
 
 import org.openremote.container.Container;
 import org.openremote.manager.shared.ngsi.Attribute;
@@ -32,11 +32,11 @@ public interface RegistrationProvider {
 
     String getRegistrationCallbackUri();
 
-    boolean registerAssetProvider(String assetType, String assetId, List<Attribute> attributes, AssetProvider provider);
+    boolean registerEntityProvider(String entityType, String entityId, List<Attribute> attributes, EntityProvider provider);
 
-    void unregisterAssetProvider(String assetType, String assetId, AssetProvider provider);
+    void unregisterEntityProvider(String entityType, String entityId, EntityProvider provider);
 
-    void unregisterAssetProvider(AssetProvider provider);
+    void unregisterEntityProvider(EntityProvider provider);
 
     /**
      * Get the refresh interval duration of this context providers registrations

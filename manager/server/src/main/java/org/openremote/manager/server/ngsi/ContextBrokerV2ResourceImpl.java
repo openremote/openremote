@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.assets;
+package org.openremote.manager.server.ngsi;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,7 +28,6 @@ import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.ngsi.*;
 import org.openremote.manager.shared.ngsi.params.EntityListParams;
 import org.openremote.manager.shared.ngsi.params.EntityParams;
-import org.openremote.manager.shared.ngsi.params.SubscriptionParams;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.NotSupportedException;
@@ -38,7 +37,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -46,7 +44,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.openremote.container.web.WebClient.getTarget;
-import static org.openremote.manager.server.assets.ContextBrokerV2ResourceImpl.CONTEXT_PROVIDER_V2_ENDPOINT_PATH;
+import static org.openremote.manager.server.ngsi.ContextBrokerV2ResourceImpl.CONTEXT_PROVIDER_V2_ENDPOINT_PATH;
 import static org.openremote.manager.shared.Constants.MASTER_REALM;
 
 /**
@@ -194,7 +192,7 @@ public class ContextBrokerV2ResourceImpl extends AbstractContextBrokerResourceIm
 
     protected synchronized String[] resolveIds(EntityListParams entityListParams) {
         // TODO: Add support for non entity ID/type based queries
-        Stream<Map.Entry<Tuple<String, String>, Map<Attribute, AssetProvider>>> filteredProviders = providers
+        Stream<Map.Entry<Tuple<String, String>, Map<Attribute, EntityProvider>>> filteredProviders = providers
                 .entrySet()
                 .stream();
 
@@ -233,9 +231,9 @@ public class ContextBrokerV2ResourceImpl extends AbstractContextBrokerResourceIm
     }
 
     protected synchronized Entity getEntityResponse(String entityId, List<String> attributeNames) {
-        Map<AssetProvider, List<String>> attributeProviders = null;
+        Map<EntityProvider, List<String>> attributeProviders = null;
 
-        Map.Entry<Tuple<String, String>, Map<Attribute, AssetProvider>> providerEntry = providers
+        Map.Entry<Tuple<String, String>, Map<Attribute, EntityProvider>> providerEntry = providers
                 .entrySet()
                 .stream()
                 .filter(es -> es.getKey().getVal1().equalsIgnoreCase(entityId))
@@ -254,7 +252,7 @@ public class ContextBrokerV2ResourceImpl extends AbstractContextBrokerResourceIm
                 attributeProviders = attributeNames
                         .stream()
                         .map(attr -> {
-                            Map.Entry<Attribute, AssetProvider> entry = providerEntry
+                            Map.Entry<Attribute, EntityProvider> entry = providerEntry
                                     .getValue()
                                     .entrySet()
                                     .stream()
@@ -269,18 +267,18 @@ public class ContextBrokerV2ResourceImpl extends AbstractContextBrokerResourceIm
         }
 
         if (attributeProviders == null || attributeProviders.isEmpty()) {
-            LOG.info("No asset providers found");
+            LOG.info("No entity providers found");
             return null;
         }
 
         List<Attribute> attributes = attributeProviders.entrySet()
                 .stream()
                 .filter(es -> !es.getValue().isEmpty())
-                .flatMap(es -> es.getKey().getAssetAttributeValues(entityId, es.getValue()).stream())
+                .flatMap(es -> es.getKey().getAttributeValues(entityId, es.getValue()).stream())
                 .collect(Collectors.toList());
 
         if (attributes.isEmpty()) {
-            LOG.info("Asset provider returned no attrs when asked for the value of one or more attrs");
+            LOG.info("EntityProvider returned no attrs when asked for the value of one or more attrs");
             return null;
         }
 
@@ -295,21 +293,21 @@ public class ContextBrokerV2ResourceImpl extends AbstractContextBrokerResourceIm
 
     @Override
     // TODO: Update registration code once NGSI9 v2 is finalised
-    protected synchronized void updateRegistration(String assetType, String assetId, List<Attribute> attributes) {
-        // Check if this asset ID is already registered
+    protected synchronized void updateRegistration(String entityType, String entityId, List<Attribute> attributes) {
+        // Check if this entity ID is already registered
         RegistrationRequestV2 existingReg = providerRegistration.getRegistrations()
                 .stream()
                 .filter(reg ->
                         reg.getSubject().getEntities()
                                 .stream()
-                                .anyMatch(e -> e.getId().equalsIgnoreCase(assetId)))
+                                .anyMatch(e -> e.getId().equalsIgnoreCase(entityId)))
                 .findFirst()
                 .orElse(null);
 
         if (existingReg != null) {
             ContextEntity entity = existingReg.getSubject().getEntities()
                     .stream()
-                    .filter(e -> e.getId().equalsIgnoreCase(assetId))
+                    .filter(e -> e.getId().equalsIgnoreCase(entityId))
                     .findFirst()
                     .orElse(null);
 
@@ -353,7 +351,7 @@ public class ContextBrokerV2ResourceImpl extends AbstractContextBrokerResourceIm
                 .findFirst()
                 .orElse(null);
 
-        ContextEntity entity = new ContextEntity(assetType, assetId, false);
+        ContextEntity entity = new ContextEntity(entityType, entityId, false);
 
         if (newReg != null) {
             newReg.getSubject().getEntities().add(entity);

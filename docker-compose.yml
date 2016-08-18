@@ -14,17 +14,3 @@ services:
       KEYCLOAK_LOGLEVEL: DEBUG
     ports:
       - "8081:8080"
-  mongo_dev:
-    image: mongo:3.2
-    command: --smallfiles
-    environment:
-        TZ: "Europe/Zurich"
-  orion_dev:
-    image: fiware/orion:1.2.1
-    links:
-      - mongo_dev
-    ports:
-      - "8082:1026"
-    command: -dbhost mongo_dev
-    environment:
-        TZ: "Europe/Zurich"

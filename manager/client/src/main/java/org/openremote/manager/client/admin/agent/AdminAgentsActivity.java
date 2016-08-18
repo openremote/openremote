@@ -29,7 +29,7 @@ import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.shared.agent.Agent;
-import org.openremote.manager.shared.assets.AssetsResource;
+import org.openremote.manager.shared.ngsi.EntityResource;
 import org.openremote.manager.shared.ngsi.params.EntityListParams;
 
 import javax.inject.Inject;
@@ -44,7 +44,7 @@ public class AdminAgentsActivity
     final protected ManagerMessages managerMessages;
     final protected PlaceController placeController;
     final protected RequestService requestService;
-    final protected AssetsResource assetsResource;
+    final protected EntityResource assetsResource;
     final protected AgentArrayMapper agentArrayMapper = new AgentArrayMapper();
 
     @Inject
@@ -54,7 +54,7 @@ public class AdminAgentsActivity
                                ManagerMessages managerMessages,
                                PlaceController placeController,
                                RequestService requestService,
-                               AssetsResource assetsResource) {
+                               EntityResource assetsResource) {
         super(adminView, adminNavigationPresenter, view);
         this.managerMessages = managerMessages;
         this.placeController = placeController;

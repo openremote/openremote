@@ -17,19 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.assets;
+package org.openremote.manager.server.ngsi;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import elemental.json.Json;
 import elemental.json.JsonObject;
-import elemental.json.JsonValue;
 import org.openremote.container.Container;
 import org.openremote.container.util.IdentifierUtil;
 import org.openremote.container.web.WebResource;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.Consumer;
-import org.openremote.manager.shared.assets.AssetsResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.ngsi.*;
 import org.openremote.manager.shared.ngsi.params.*;
@@ -38,19 +35,22 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 import static org.openremote.manager.shared.Constants.MASTER_REALM;
 
-public class AssetsResourceImpl extends WebResource implements AssetsResource, SubscriptionProvider {
-    public static final String SUBSCRIBER_ENDPOINT_PATH = "assets/subscriber";
-    private static final Logger LOG = Logger.getLogger(AssetsResourceImpl.class.getName());
+public class EntityResourceImpl extends WebResource implements EntityResource, SubscriptionProvider {
+
+    public static final String SUBSCRIBER_ENDPOINT_PATH = "entity/subscriber";
     public static final int SUBSCRIPTION_REFRESH_INTERVAL = 180;
+
     protected URI hostUri;
     protected ObjectMapper mapper;
     protected final Map<Consumer<Entity[]>, SubscribeRequestV2> subscribers = new HashMap<>();
@@ -58,10 +58,10 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
     protected int refreshInterval = SUBSCRIPTION_REFRESH_INTERVAL;
     protected final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     protected final Map<SubscribeRequestV2, ScheduledFuture<?>> refreshTasks = new HashMap<>();
-    protected final AssetsService assetsService;
+    protected final EntityService entityService;
 
-    public AssetsResourceImpl(AssetsService assetsService) {
-        this.assetsService = assetsService;
+    public EntityResourceImpl(EntityService entityService) {
+        this.entityService = entityService;
     }
 
     public void configure(Container container) {
@@ -79,7 +79,7 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
 
     @Override
     public Entity[] getEntities(RequestParams requestParams, EntityListParams entityListParams) {
-        return assetsService.getContextBroker().getEntities(entityListParams);
+        return entityService.getContextBroker().getEntities(entityListParams);
     }
 
     @Override
@@ -87,35 +87,35 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
         if (entity.getId() == null) {
             entity.setId(IdentifierUtil.generateGlobalUniqueId());
         }
-        checkSuccessResponse(assetsService.getContextBroker().postEntity(entity));
+        checkSuccessResponse(entityService.getContextBroker().postEntity(entity));
     }
 
     @Override
     public Entity getEntity(RequestParams requestParams, String entityId, EntityParams entityParams) {
-        return assetsService.getContextBroker().getEntity(entityId, entityParams);
+        return entityService.getContextBroker().getEntity(entityId, entityParams);
     }
 
     @Override
     public void deleteEntity(RequestParams requestParams, String entityId) {
-        checkSuccessResponse(assetsService.getContextBroker().deleteEntity(entityId));
+        checkSuccessResponse(entityService.getContextBroker().deleteEntity(entityId));
     }
 
     @Override
     public void putEntityAttributes(RequestParams requestParams, String entityId, Entity entity) {
         entity = new Entity(fixForUpdate(entity.getJsonObject()));
-        checkSuccessResponse(assetsService.getContextBroker().putEntityAttributes(entityId, entity));
+        checkSuccessResponse(entityService.getContextBroker().putEntityAttributes(entityId, entity));
     }
 
     @Override
     public void patchEntityAttributes(RequestParams requestParams, String entityId, Entity entity) {
         entity = new Entity(fixForUpdate(entity.getJsonObject()));
-        checkSuccessResponse(assetsService.getContextBroker().patchEntityAttributes(entityId, entity));
+        checkSuccessResponse(entityService.getContextBroker().patchEntityAttributes(entityId, entity));
     }
 
     @Override
     public synchronized void subscriberCallback(NotificationFormat format, JsonObject notification) {
         // We get here when Orion detects a change to a currently subscribed entity
-        // TODO: Notify the listeners interested in this asset
+        // TODO: Notify the listeners interested in this entity
         switch(format) {
             case NORMALIZED:
                 Entity[] entities = Entity.from(notification.getArray("data"));
@@ -243,7 +243,7 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
         switch(action) {
             case CREATE:
                 subscriber.setExpires(createNewExpiryDate());
-                response = assetsService.getContextBroker().createSubscription(subscriber);
+                response = entityService.getContextBroker().createSubscription(subscriber);
                 if (response.getStatus() == 201) {
                     String locationHeader = response.getHeaderString("Location");
                     String id = locationHeader.split("/")[3];
@@ -258,10 +258,10 @@ public class AssetsResourceImpl extends WebResource implements AssetsResource, S
                     refreshTasks.remove(task);
                 }
                 subscriber.setExpires(createNewExpiryDate());
-                response = assetsService.getContextBroker().updateSubscription(subscriber.getId(), subscriber);
+                response = entityService.getContextBroker().updateSubscription(subscriber.getId(), subscriber);
                 break;
             case DELETE:
-                response = assetsService.getContextBroker().deleteSubscription(subscriber.getId());
+                response = entityService.getContextBroker().deleteSubscription(subscriber.getId());
                 break;
         }
 

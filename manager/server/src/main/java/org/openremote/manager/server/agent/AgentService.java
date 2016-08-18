@@ -21,15 +21,12 @@ package org.openremote.manager.server.agent;
 
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.manager.server.assets.AssetsService;
 
 public class AgentService implements ContainerService {
 
-    protected AssetsService assetsService;
-
     @Override
     public void init(Container container) throws Exception {
-        assetsService = container.getService(AssetsService.class);
+
     }
 
     @Override

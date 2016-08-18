@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.server;
 
-import elemental.json.Json;
 import org.apache.log4j.Logger;
 import org.keycloak.admin.client.resource.*;
 import org.keycloak.common.enums.SslRequired;
@@ -27,29 +26,17 @@ import org.keycloak.representations.idm.*;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.security.AuthForm;
-import org.openremote.container.security.IdentityService;
-import org.openremote.container.util.IdentifierUtil;
 import org.openremote.manager.server.agent.AgentService;
 import org.openremote.manager.server.agent.ConnectorService;
-import org.openremote.manager.server.assets.AssetsService;
-import org.openremote.manager.server.assets.ContextBrokerV2Resource;
 import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.manager.shared.agent.Agent;
-import org.openremote.manager.shared.connector.Connector;
-import org.openremote.manager.shared.ngsi.Attribute;
-import org.openremote.manager.shared.ngsi.AttributeType;
-import org.openremote.manager.shared.ngsi.Entity;
 import rx.Observable;
 
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.openremote.manager.shared.Constants.MANAGER_CLIENT_ID;
-import static org.openremote.manager.shared.Constants.MASTER_REALM;
-import static org.openremote.manager.shared.Constants.MASTER_REALM_ADMIN_USER;
+import static org.openremote.manager.shared.Constants.*;
 import static rx.Observable.fromCallable;
 
 public class SampleDataService implements ContainerService {
@@ -65,7 +52,6 @@ public class SampleDataService implements ContainerService {
     protected ManagerIdentityService identityService;
     protected ConnectorService connectorService;
     protected AgentService agentService;
-    protected AssetsService assetsService;
     /* TODO
     protected PersistenceService persistenceService
     */
@@ -75,7 +61,6 @@ public class SampleDataService implements ContainerService {
         identityService = container.getService(ManagerIdentityService.class);
         connectorService = container.getService(ConnectorService.class);
         agentService = container.getService(AgentService.class);
-        assetsService = container.getService(AssetsService.class);
     }
 
     @Override
@@ -101,10 +86,6 @@ public class SampleDataService implements ContainerService {
         registerClientApplications(accessToken);
         addRolesAndTestUsers(accessToken);
 
-        clearContextBroker();
-        createSampleAgent();
-        createSampleRooms();
-
         /* TODO
         persistenceService.createSchema();
         EntityManager em = persistenceService.getEntityManagerFactory().createEntityManager();
@@ -117,54 +98,6 @@ public class SampleDataService implements ContainerService {
 
     @Override
     public void stop(Container container) {
-    }
-
-    protected void clearContextBroker() {
-        LOG.info("Clearing all context broker data");
-        ContextBrokerV2Resource ngsiService = assetsService.getContextBroker();
-        fromCallable(() -> ngsiService.getEntities(null))
-            .flatMap(Observable::from)
-            .flatMap(entity -> fromCallable(() -> ngsiService.deleteEntity(entity.getId())))
-            .toList().toBlocking().single();
-
-    }
-
-    protected void createSampleAgent() {
-        Connector controller2Connector = connectorService.getConnectors().get("controller2");
-
-        Agent sampleAgent = new Agent();
-        sampleAgent.setId(IdentifierUtil.generateGlobalUniqueId());
-        sampleAgent.setEnabled(true);
-        sampleAgent.setName("Test Controller2");
-        sampleAgent.setDescription("A sample agent for OR Controller 2.x");
-        sampleAgent.setConnectorType(controller2Connector.getType());
-
-        LOG.info("Creating sample agent: " + sampleAgent);
-        assetsService.getContextBroker().postEntity(sampleAgent);
-    }
-
-    protected void createSampleRooms() {
-        Entity room1 = new Entity(Json.createObject());
-        room1.setId("Room1");
-        room1.setType("Room");
-        room1.addAttribute(
-            new Attribute("temperature", AttributeType.FLOAT, Json.create(21.3))
-        ).addAttribute(
-            new Attribute("label", AttributeType.STRING, Json.create("Office 123"))
-        );
-
-        Entity room2 = new Entity(Json.createObject());
-        room2.setId("Room2");
-        room2.setType("Room");
-        room2.addAttribute(
-            new Attribute("temperature", AttributeType.FLOAT, Json.create(22.1))
-        ).addAttribute(
-            new Attribute("label", AttributeType.STRING, Json.create("Office 456"))
-        );
-
-        ContextBrokerV2Resource ngsiService = assetsService.getContextBroker();
-        ngsiService.postEntity(room1);
-        ngsiService.postEntity(room2);
     }
 
     protected void deleteRealms(String accessToken) {

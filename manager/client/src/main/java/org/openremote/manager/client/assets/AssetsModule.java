@@ -28,7 +28,7 @@ import org.openremote.manager.client.assets.asset.AssetViewImpl;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserImpl;
 import org.openremote.manager.client.assets.browser.AssetBrowserPresenter;
-import org.openremote.manager.shared.assets.AssetsResource;
+import org.openremote.manager.shared.ngsi.EntityResource;
 
 public class AssetsModule extends AbstractGinModule {
 
@@ -46,11 +46,11 @@ public class AssetsModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    public AssetsResource getAssetsResource() {
+    public EntityResource getAssetsResource() {
         return getNativeAssetsResource();
     }
 
-    public static native AssetsResource getNativeAssetsResource() /*-{
+    public static native EntityResource getNativeAssetsResource() /*-{
         return $wnd.AssetsResource;
     }-*/;
 }

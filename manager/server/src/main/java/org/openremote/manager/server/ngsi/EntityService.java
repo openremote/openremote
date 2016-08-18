@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.assets;
+package org.openremote.manager.server.ngsi;
 
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
@@ -41,9 +41,9 @@ import java.util.logging.Logger;
 
 import static org.openremote.container.web.WebClient.getTarget;
 
-public class AssetsService implements ContainerService {
+public class EntityService implements ContainerService {
 
-    private static final Logger LOG = Logger.getLogger(AssetsService.class.getName());
+    private static final Logger LOG = Logger.getLogger(EntityService.class.getName());
 
     public static final String CONTEXTBROKER_HOST = "CONTEXTBROKER_HOST";
     public static final String CONTEXTBROKER_HOST_DEFAULT = "192.168.99.100";
@@ -70,7 +70,7 @@ public class AssetsService implements ContainerService {
                 .host(container.getConfig(CONTEXTBROKER_HOST, CONTEXTBROKER_HOST_DEFAULT))
                 .port(container.getConfigInteger(CONTEXTBROKER_PORT, CONTEXTBROKER_PORT_DEFAULT));
 
-        LOG.info("Preparing assets service for broker host: " + contextBrokerHostUri.build());
+        LOG.info("Preparing entity service for broker host: " + contextBrokerHostUri.build());
 
         ResteasyClientBuilder clientBuilder =
             new ResteasyClientBuilder()
@@ -98,14 +98,14 @@ public class AssetsService implements ContainerService {
 
     @Override
     public void configure(Container container) throws Exception {
-        AssetsResourceImpl assetsResource = new AssetsResourceImpl(this);
+        EntityResourceImpl entityResource = new EntityResourceImpl(this);
 
         container.getService(WebService.class).getApiSingletons().add(new EntryPointMessageBodyConverter());
         container.getService(WebService.class).getApiSingletons().add(new EntityMessageBodyConverter());
         container.getService(WebService.class).getApiSingletons().add(new EntityArrayMessageBodyConverter());
-        container.getService(WebService.class).getApiSingletons().add(assetsResource);
+        container.getService(WebService.class).getApiSingletons().add(entityResource);
 
-        subscriptionProvider = assetsResource;
+        subscriptionProvider = entityResource;
         registrationProvider = new ContextBrokerV1ResourceImpl(httpClient, contextBrokerHostUri);
 
         // Configure the providers
@@ -164,27 +164,27 @@ public class AssetsService implements ContainerService {
         ).toBlocking().singleOrDefault(false);
     }
 
-    public boolean registerAssetProvider(String assetType, String assetId, List<Attribute> attributes, AssetProvider provider) {
-        return registrationProvider.registerAssetProvider(assetType, assetId, attributes, provider);
+    public boolean registerEntityProvider(String entityType, String entityId, List<Attribute> attributes, EntityProvider provider) {
+        return registrationProvider.registerEntityProvider(entityType, entityId, attributes, provider);
     }
 
-    public void unregisterAssetProvider(String assetType, String assetId, AssetProvider provider) {
-        registrationProvider.unregisterAssetProvider(assetType, assetId, provider);
+    public void unregisterEntityProvider(String entityType, String entityId, EntityProvider provider) {
+        registrationProvider.unregisterEntityProvider(entityType, entityId, provider);
     }
 
-    public void unregisterAssetProvider(AssetProvider provider) {
-        registrationProvider.unregisterAssetProvider(provider);
+    public void unregisterEntityProvider(EntityProvider provider) {
+        registrationProvider.unregisterEntityProvider(provider);
     }
 
-    public boolean registerAssetListener(Consumer<Entity[]> listener, SubscriptionParams subscription) {
+    public boolean registerEntityListener(Consumer<Entity[]> listener, SubscriptionParams subscription) {
         return subscriptionProvider.registerSubscriber(listener, subscription);
     }
 
-    public SubscriptionParams getAssetListenerSubscription(Consumer<Entity[]> listener) {
+    public SubscriptionParams getEntityListerSubscriptionParams(Consumer<Entity[]> listener) {
         return subscriptionProvider.getSubscription(listener);
     }
 
-    public void unregisterAssetListener(Consumer<Entity[]> listener) {
+    public void unregisterEntityListener(Consumer<Entity[]> listener) {
         subscriptionProvider.unregisterSubscriber(listener);
     }
 }
