@@ -9,9 +9,7 @@
 
         <class>org.openremote.container.persistence</class>
 
-        <!-- TODO
-        <class>org.openremote.manager.shared.model.Foo</class>
-        -->
+        <class>org.openremote.manager.shared.agent.PersistentAgent</class>
 
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
         <properties>

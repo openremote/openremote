@@ -25,4 +25,6 @@ public interface Constants {
     String MANAGER_CLIENT_ID = "or-manager";
     String MASTER_REALM = "master";
     String MASTER_REALM_ADMIN_USER = "admin";
+    String PERSISTENCE_SEQUENCE_ID_GENERATOR = "SEQUENCE_ID_GENERATOR";
+    String PERSISTENCE_UNIQUE_ID_GENERATOR = "UNIQUE_ID_GENERATOR";
 }

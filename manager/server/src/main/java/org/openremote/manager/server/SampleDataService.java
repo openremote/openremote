@@ -19,18 +19,24 @@
  */
 package org.openremote.manager.server;
 
+import elemental.json.Json;
+import elemental.json.JsonObject;
 import org.apache.log4j.Logger;
 import org.keycloak.admin.client.resource.*;
 import org.keycloak.common.enums.SslRequired;
 import org.keycloak.representations.idm.*;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthForm;
 import org.openremote.manager.server.agent.AgentService;
 import org.openremote.manager.server.agent.ConnectorService;
 import org.openremote.manager.server.security.ManagerIdentityService;
+import org.openremote.manager.shared.agent.PersistentAgent;
 import rx.Observable;
 
+import javax.persistence.EntityManager;
+import javax.persistence.EntityTransaction;
 import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,15 +55,14 @@ public class SampleDataService implements ContainerService {
     public static final String ADMIN_CLI_CLIENT_ID = "admin-cli";
     public static final String ADMIN_PASSWORD = "admin";
 
+    protected PersistenceService persistenceService;
     protected ManagerIdentityService identityService;
     protected ConnectorService connectorService;
     protected AgentService agentService;
-    /* TODO
-    protected PersistenceService persistenceService
-    */
 
     @Override
     public void init(Container container) throws Exception {
+        persistenceService = container.getService(PersistenceService.class);
         identityService = container.getService(ManagerIdentityService.class);
         connectorService = container.getService(ConnectorService.class);
         agentService = container.getService(AgentService.class);
@@ -86,14 +91,14 @@ public class SampleDataService implements ContainerService {
         registerClientApplications(accessToken);
         addRolesAndTestUsers(accessToken);
 
-        /* TODO
-        persistenceService.createSchema();
         EntityManager em = persistenceService.getEntityManagerFactory().createEntityManager();
         EntityTransaction tx = em.getTransaction();
         tx.begin();
-        em.persist(someSampleData);
+
+        storeSampleAgent(em);
+
         tx.commit();
-        */
+        em.close();
     }
 
     @Override
@@ -236,5 +241,31 @@ public class SampleDataService implements ContainerService {
             writeRole
         ));
 
+    }
+
+    protected void storeSampleAgent(EntityManager em) {
+        PersistentAgent controller2Agent = new PersistentAgent();
+        controller2Agent.setName("OpenRemote Controller2 Test Agent");
+        controller2Agent.setDescription("A test agent for OpenRemote Controller version 2.x");
+        controller2Agent.setEnabled(true);
+        controller2Agent.setConnectorType("urn:openremote:connector:controller2");
+
+        JsonObject connectorSettings = Json.createObject();
+        connectorSettings.put("host", Json.create("192.168.0.0"));
+        connectorSettings.put("port", Json.create(8080));
+        controller2Agent.setConnectorSettings(connectorSettings);
+
+        em.persist(controller2Agent);
+
+        // TODO Remove this test
+        List hosts = em.createNativeQuery(
+            "SELECT a.CONNECTOR_SETTINGS -> \"$.host\" " +
+                "FROM AGENT a " +
+                "WHERE JSON_EXTRACT(a.CONNECTOR_SETTINGS, \"$.port\") = 8080")
+            .getResultList();
+
+        for (Object host : hosts) {
+            LOG.info("### GOT: " + host);
+        }
     }
 }

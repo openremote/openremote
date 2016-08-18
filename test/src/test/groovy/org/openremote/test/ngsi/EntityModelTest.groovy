@@ -1,4 +1,4 @@
-package org.openremote.test.assets
+package org.openremote.test.ngsi
 
 import elemental.json.Json
 import elemental.json.JsonObject
@@ -9,7 +9,7 @@ import org.openremote.manager.shared.ngsi.Model
 import org.openremote.manager.shared.ngsi.ModelValidationError
 import spock.lang.Specification
 
-class AssetsModelTest extends Specification {
+class EntityModelTest extends Specification {
 
     def "Invalid characters in NGSI fields"() {
         expect: "number of validation errors"

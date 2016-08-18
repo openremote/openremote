@@ -17,10 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.container;
+package org.openremote.container.json;
 
-public interface Constants {
+import elemental.json.JsonValue;
+import org.hibernate.type.AbstractSingleColumnStandardBasicType;
 
-    String PERSISTENCE_SEQUENCE_ID_GENERATOR = "SEQUENCE_ID_GENERATOR";
-    String PERSISTENCE_UNIQUE_ID_GENERATOR = "UNIQUE_ID_GENERATOR";
+public class JsonStringType extends AbstractSingleColumnStandardBasicType<JsonValue> {
+
+    public JsonStringType() {
+        super(JsonStringSqlTypeDescriptor.INSTANCE, new JsonTypeDescriptor());
+    }
+
+    public String getName() {
+        return "json";
+    }
+
+    @Override
+    protected boolean registerUnderJavaType() {
+        return true;
+    }
+
 }

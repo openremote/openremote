@@ -46,6 +46,8 @@ public class PersistenceService implements ContainerService {
     public static final int DATABASE_MIN_POOL_SIZE_DEFAULT = 5;
     public static final String DATABASE_MAX_POOL_SIZE = "DATABASE_MAX_POOL_SIZE";
     public static final int DATABASE_MAX_POOL_SIZE_DEFAULT = 20;
+    public static final String DATABASE_CREATE_SCHEMA = "DATABASE_CREATE_SCHEMA";
+    public static final boolean DATABASE_CREATE_SCHEMA_DEFAULT = false;
 
     protected Database database;
     protected String persistenceUnitName;
@@ -78,6 +80,13 @@ public class PersistenceService implements ContainerService {
     public void start(Container container) throws Exception {
         this.entityManagerFactory =
             Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties);
+
+        if (container.isDevMode()
+            || container.getConfigBoolean(DATABASE_CREATE_SCHEMA, DATABASE_CREATE_SCHEMA_DEFAULT)) {
+            LOG.info("Dropping and re-creating database schema");
+            dropSchema();
+            createSchema();
+        }
     }
 
     @Override
