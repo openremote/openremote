@@ -1,11 +1,11 @@
-FROM jboss/keycloak:1.9.4.Final
+FROM jboss/keycloak:2.1.0.Final
 
-ADD theme /opt/jboss/keycloak/themes/openremote
-
-# Original setLoglevel.xsl is broken in Keycloak
-# TODO https://github.com/jboss-dockerfiles/keycloak/pull/50
-ADD setLogLevel.xsl /opt/jboss/keycloak/
-RUN java -jar /usr/share/java/saxon.jar -s:/opt/jboss/keycloak/standalone/configuration/standalone.xml -xsl:/opt/jboss/keycloak/setLogLevel.xsl -o:/opt/jboss/keycloak/standalone/configuration/standalone.xml
+ADD changeDatabase.xsl /opt/jboss/keycloak/
+RUN java -jar /usr/share/java/saxon.jar -s:/opt/jboss/keycloak/standalone/configuration/standalone.xml -xsl:/opt/jboss/keycloak/changeDatabase.xsl -o:/opt/jboss/keycloak/standalone/configuration/standalone.xml; java -jar /usr/share/java/saxon.jar -s:/opt/jboss/keycloak/standalone/configuration/standalone-ha.xml -xsl:/opt/jboss/keycloak/changeDatabase.xsl -o:/opt/jboss/keycloak/standalone/configuration/standalone-ha.xml; rm /opt/jboss/keycloak/changeDatabase.xsl
+RUN mkdir -p /opt/jboss/keycloak/modules/system/layers/base/com/mysql/jdbc/main; curl -o /opt/jboss/keycloak/modules/system/layers/base/com/mysql/jdbc/main/mysql-connector-java.jar http://central.maven.org/maven2/mysql/mysql-connector-java/5.1.39/mysql-connector-java-5.1.39.jar
+ADD module.xml /opt/jboss/keycloak/modules/system/layers/base/com/mysql/jdbc/main/
 
 ADD setProxyForwarding.xsl /opt/jboss/keycloak/
 RUN java -jar /usr/share/java/saxon.jar -s:/opt/jboss/keycloak/standalone/configuration/standalone.xml -xsl:/opt/jboss/keycloak/setProxyForwarding.xsl -o:/opt/jboss/keycloak/standalone/configuration/standalone.xml
+
+ADD theme /opt/jboss/keycloak/themes/openremote

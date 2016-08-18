@@ -34,7 +34,7 @@ com.google.guava:*: APACHE LICENSE, VERSION 2.0
 com.google.gwt:*: APACHE LICENSE, VERSION 2.0
 com.google.gwt.inject:*: APACHE LICENSE, VERSION 2.0
 com.google.j2objc:j2objc-annotations: APACHE LICENSE, VERSION 2.0
-com.h2database:h2: ECLIPSE PUBLIC LICENSE, VERSION 1.0
+org.mariadb.jdbc:mariadb-java-client: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 3
 com.ning:async-http-client: APACHE LICENSE, VERSION 2.0
 com.sun.xml.bind:*: GNU GENERAL PUBLIC LICENSE, VERSION 2.0 WITH CLASSPATH EXCEPTION
 com.zaxxer:HikariCP: APACHE LICENSE, VERSION 2.0

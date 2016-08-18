@@ -21,6 +21,7 @@ package org.openremote.manager.server;
 
 import org.openremote.container.Container;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.persistence.PersistenceService;
 import org.openremote.manager.server.agent.AgentService;
 import org.openremote.manager.server.agent.ConnectorService;
 import org.openremote.manager.server.event.EventService;
@@ -37,6 +38,7 @@ public class Server {
             new ManagerWebService(),
             new ManagerIdentityService(),
             new MessageBrokerService(),
+            new PersistenceService(),
             new EventService(),
             new ConnectorService(),
             new AgentService(),
