@@ -36,7 +36,7 @@ public class AgentResourceImpl extends WebResource implements AgentResource {
 
     @Override
     public Agent[] getAll(@BeanParam RequestParams requestParams) {
-        return agentService.getAll();
+        return agentService.getAll(false);
     }
 
     @Override

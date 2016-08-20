@@ -19,21 +19,49 @@
  */
 package org.openremote.manager.server.agent;
 
+import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.agent.Agent;
 
-import java.util.List;
+import java.util.*;
+import java.util.logging.Logger;
+
+import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_EVENT_HEADER;
+import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_EVENT_TOPIC;
 
 public class AgentService implements ContainerService {
 
+    private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
+
+    final protected Map<String, Agent> activeAgents = new LinkedHashMap<>();
+
+    protected MessageBrokerService messageBrokerService;
     protected PersistenceService persistenceService;
+    protected ConnectorService connectorService;
 
     @Override
     public void init(Container container) throws Exception {
+        messageBrokerService = container.getService(MessageBrokerService.class);
         persistenceService = container.getService(PersistenceService.class);
+        connectorService = container.getService(ConnectorService.class);
+
+        messageBrokerService.getContext().addRoutes(new RouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                from(PERSISTENCE_EVENT_TOPIC)
+                    .filter(body().isInstanceOf(Agent.class))
+                    .process(exchange -> {
+                        LOG.info("### AGENT PERSISTENCE EVENT: " + exchange.getIn().getHeader(PERSISTENCE_EVENT_HEADER));
+                        LOG.info("### AGENT: " + exchange.getIn().getBody());
+                        // TODO: Implement fine-grained life cycle changes
+                        reconfigureAgents();
+                    });
+            }
+        });
     }
 
     @Override
@@ -45,7 +73,7 @@ public class AgentService implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
-
+        reconfigureAgents();
     }
 
     @Override
@@ -53,11 +81,19 @@ public class AgentService implements ContainerService {
 
     }
 
-    public Agent[] getAll() {
+    public Agent[] getActive() {
+        synchronized (activeAgents) {
+            return activeAgents.values().toArray(new Agent[activeAgents.size()]);
+        }
+    }
+
+    public Agent[] getAll(boolean onlyEnabled) {
         return persistenceService.doTransaction(em -> {
             List<Agent> result =
                 em.createQuery(
-                    "select pa from Agent pa order by pa.createdOn desc"
+                    onlyEnabled
+                        ? "select a from Agent a where a.enabled = true order by a.createdOn desc"
+                        : "select a from Agent a order by a.createdOn desc"
                     , Agent.class
                 ).getResultList();
             return result.toArray(new Agent[result.size()]);
@@ -82,12 +118,19 @@ public class AgentService implements ContainerService {
         });
     }
 
-   public void delete(String agentId) {
+    public void delete(String agentId) {
         persistenceService.doTransaction(em -> {
             Agent agent = em.find(Agent.class, agentId);
             if (agent != null) {
                 em.remove(agent);
             }
         });
+    }
+
+    protected void reconfigureAgents() {
+        synchronized (activeAgents) {
+            // TODO Implement route restart etc.
+            LOG.info("### RECONFIGURE AGENTS");
+        }
     }
 }

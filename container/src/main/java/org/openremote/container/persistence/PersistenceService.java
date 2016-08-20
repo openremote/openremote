@@ -19,8 +19,11 @@
  */
 package org.openremote.container.persistence;
 
+import org.hibernate.Session;
+import org.hibernate.engine.spi.SessionImplementor;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.message.MessageBrokerService;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -54,6 +57,7 @@ public class PersistenceService implements ContainerService {
     public static final String DATABASE_CREATE_SCHEMA = "DATABASE_CREATE_SCHEMA";
     public static final boolean DATABASE_CREATE_SCHEMA_DEFAULT = false;
 
+    protected MessageBrokerService messageBrokerService;
     protected Database database;
     protected String persistenceUnitName;
     protected Map<String, Object> persistenceUnitProperties;
@@ -61,6 +65,8 @@ public class PersistenceService implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
+        this.messageBrokerService = container.getService(MessageBrokerService.class);
+
         String databaseProduct = container.getConfig(DATABASE_PRODUCT, DATABASE_PRODUCT_DEFAULT);
         LOG.info("Preparing persistence service for database: " + databaseProduct);
         database = Database.Product.valueOf(databaseProduct);
@@ -104,9 +110,21 @@ public class PersistenceService implements ContainerService {
             database.close();
         }
     }
-    
-    public EntityManagerFactory getEntityManagerFactory() {
-        return entityManagerFactory;
+
+    public EntityManager createEntityManager() {
+        Map<String, String> properties = new HashMap<>();
+        properties.put(
+            org.hibernate.jpa.AvailableSettings.SESSION_INTERCEPTOR,
+            PersistenceEventInterceptor.class.getName()
+        );
+        EntityManager entityManager = getEntityManagerFactory().createEntityManager(properties);
+
+        Session session = entityManager.unwrap(Session.class);
+        PersistenceEventInterceptor persistenceEventInterceptor =
+            (PersistenceEventInterceptor) ((SessionImplementor) session).getInterceptor();
+        persistenceEventInterceptor.setMessageBrokerService(messageBrokerService);
+
+        return entityManager;
     }
 
     public void createSchema() {
@@ -125,7 +143,7 @@ public class PersistenceService implements ContainerService {
     }
 
     public <R> R doTransaction(Function<EntityManager, R> entityManagerFunction) {
-        EntityManager em = getEntityManagerFactory().createEntityManager();
+        EntityManager em = createEntityManager();
         EntityTransaction tx = em.getTransaction();
         try {
             tx.begin();
@@ -146,6 +164,10 @@ public class PersistenceService implements ContainerService {
         } finally {
             em.close();
         }
+    }
+
+    protected EntityManagerFactory getEntityManagerFactory() {
+        return entityManagerFactory;
     }
 
     protected void generateSchema(String action) {
