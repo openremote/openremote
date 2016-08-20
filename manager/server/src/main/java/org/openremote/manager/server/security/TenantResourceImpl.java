@@ -21,10 +21,8 @@ package org.openremote.manager.server.security;
 
 import org.keycloak.admin.client.resource.ClientResource;
 import org.keycloak.admin.client.resource.ClientsResource;
-import org.keycloak.admin.client.resource.RolesResource;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.server.i18n.I18NService;
 import org.openremote.manager.shared.http.RequestParams;
@@ -33,19 +31,15 @@ import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.manager.shared.validation.ConstraintViolation;
 import org.openremote.manager.shared.validation.ConstraintViolationReport;
 
-import javax.ws.rs.BeanParam;
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static org.openremote.container.util.JsonUtil.convert;
-import static org.openremote.manager.shared.Constants.MANAGER_CLIENT_ID;
+import static org.openremote.container.json.JsonUtil.convert;
 import static org.openremote.manager.shared.Constants.MASTER_REALM;
 import static org.openremote.manager.shared.validation.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
 

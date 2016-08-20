@@ -28,9 +28,10 @@ import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.*;
 import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.widget.EntityFormView;
+import org.openremote.manager.client.widget.AttributesFormView;
 import org.openremote.manager.client.widget.FormGroup;
 import org.openremote.manager.client.widget.PushButton;
+import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.connector.Connector;
 
 import javax.inject.Inject;
@@ -38,7 +39,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
-public class AdminAgentImpl extends EntityFormView implements AdminAgent {
+public class AdminAgentImpl extends AttributesFormView implements AdminAgent {
 
     private static final Logger LOG = Logger.getLogger(AdminAgentImpl.class.getName());
 
@@ -143,7 +144,7 @@ public class AdminAgentImpl extends EntityFormView implements AdminAgent {
         if (connector != null) {
             FormGroup[] attributeFormGroups = createAttributeFormGroups(
                 style.connectorAttributeTextBox(),
-                connector.getAttributes()
+                new Attributes(connector.getSettings())
             );
             for (FormGroup attributeFormGroup : attributeFormGroups) {
                 attributesContainer.add(attributeFormGroup);

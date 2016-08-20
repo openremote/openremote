@@ -17,39 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.security;
+package org.openremote.manager.client.interop.jackson;
 
-public class Credential {
+import com.github.nmorel.gwtjackson.client.JsonSerializationContext;
+import com.github.nmorel.gwtjackson.client.JsonSerializer;
+import com.github.nmorel.gwtjackson.client.JsonSerializerParameters;
+import com.github.nmorel.gwtjackson.client.stream.JsonWriter;
+import elemental.json.JsonValue;
 
-    protected String type = "password";
-    protected String value;
-    protected Boolean temporary;
+import javax.annotation.Nonnull;
 
-    public Credential() {
-    }
+public class ElementalJsonSerializer extends JsonSerializer<JsonValue> {
 
-    public Credential(String value, Boolean temporary) {
-        this.value = value;
-        this.temporary = temporary;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public String getValue() {
-        return value;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
-    }
-
-    public Boolean getTemporary() {
-        return temporary;
-    }
-
-    public void setTemporary(Boolean temporary) {
-        this.temporary = temporary;
+    @Override
+    protected void doSerialize(JsonWriter writer, @Nonnull JsonValue value, JsonSerializationContext ctx, JsonSerializerParameters params) {
+        writer.rawValue(value.toJson());
     }
 }

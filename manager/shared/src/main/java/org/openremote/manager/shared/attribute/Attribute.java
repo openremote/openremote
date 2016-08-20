@@ -17,36 +17,55 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.ngsi;
+package org.openremote.manager.shared.attribute;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 
-public class Attribute extends AbstractAttribute {
+public class Attribute {
 
-    @JsonIgnore
+    final protected String name;
     final protected JsonObject jsonObject;
 
+    public Attribute(String name) {
+        this.name = name;
+        jsonObject = elemental.json.Json.createObject();
+    }
+
+    public Attribute(String name, AttributeType type) {
+        this(name);
+        setType(type);
+    }
+
     public Attribute(String name, JsonObject jsonObject) {
-        super(name);
+        this.name = name;
         this.jsonObject = jsonObject;
     }
 
-    public Attribute(@JsonProperty("name") String name, @JsonProperty("type") AttributeType type, @JsonProperty("value") JsonValue value) {
-        super(name);
-        jsonObject = elemental.json.Json.createObject();
+    public Attribute(String name, AttributeType type, JsonValue value) {
+        this(name, elemental.json.Json.createObject());
         setType(type);
         setValue(value);
+    }
+
+    public String getName() {
+        return name;
     }
 
     public JsonObject getJsonObject() {
         return jsonObject;
     }
 
-    @JsonProperty("value")
-    @Override
+    public AttributeType getType() {
+        String typeName = jsonObject.hasKey("type") ? jsonObject.get("type").asString() : null;
+        return typeName != null ? AttributeType.fromName(typeName) : null;
+    }
+
+    public Attribute setType(AttributeType type) {
+        jsonObject.put("type", type.getName());
+        return this;
+    }
+
     public JsonValue getValue() {
         return jsonObject.hasKey("value") ? jsonObject.get("value") : null;
     }
@@ -55,20 +74,8 @@ public class Attribute extends AbstractAttribute {
         return jsonObject.hasKey("value") ? jsonObject.getObject("value") : null;
     }
 
-    @Override
     public Attribute setValue(JsonValue value) {
         jsonObject.put("value", value);
-        return this;
-    }
-
-    @JsonProperty("type")
-    public AttributeType getType() {
-        String keyValue = jsonObject.hasKey("type") ? jsonObject.get("type").asString() : null;
-        return keyValue != null ? AttributeType.fromName(keyValue) : null;
-    }
-
-    public Attribute setType(AttributeType type) {
-        jsonObject.put("type", type.getName());
         return this;
     }
 
@@ -82,22 +89,8 @@ public class Attribute extends AbstractAttribute {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Attribute attribute = (Attribute) o;
-
-        return jsonObject.equals(attribute.jsonObject);
-    }
-
-    @Override
-    public int hashCode() {
-        return jsonObject.hashCode();
-    }
-
-    @Override
     public String toString() {
-        return getName() + " => " + jsonObject.toJson();
+        return jsonObject.toJson();
     }
+
 }

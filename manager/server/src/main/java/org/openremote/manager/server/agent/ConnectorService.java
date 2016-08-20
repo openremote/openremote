@@ -32,12 +32,10 @@ import org.apache.camel.util.CamelContextHelper;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.util.IdentifierUtil;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.shared.attribute.*;
 import org.openremote.manager.shared.connector.Connector;
-import org.openremote.manager.shared.ngsi.Attribute;
-import org.openremote.manager.shared.ngsi.AttributeType;
-import org.openremote.manager.shared.ngsi.Metadata;
-import org.openremote.manager.shared.ngsi.MetadataElement;
 
 import javax.validation.constraints.NotNull;
 import java.lang.reflect.Field;
@@ -148,9 +146,8 @@ public class ConnectorService implements ContainerService {
                                         UriEndpointComponent component) {
 
         LOG.fine("Creating connector: " + connectorComponentName);
-        Connector connector = new Connector(
-            componentProperties.get(Connector.PROPERTY_TYPE).toString()
-        );
+        Connector connector = new Connector(IdentifierUtil.generateGlobalUniqueId());
+        connector.setType(componentProperties.get(Connector.PROPERTY_TYPE).toString());
 
         UriEndpoint uriEndpoint = component.getEndpointClass().getAnnotation(UriEndpoint.class);
         if (uriEndpoint == null) {
@@ -179,94 +176,103 @@ public class ConnectorService implements ContainerService {
             connector.setSupportsInventory(Boolean.valueOf(supportsInventory.toString()));
         }
 
-        addConnectorAttributes(
-            connector,
+        Attributes settings = buildConnectorSettings(
             connectorComponentName,
             component.createComponentConfiguration(),
             component.getEndpointClass()
         );
 
+        connector.setSettings(settings.getJsonObject());
+
         return connector;
     }
 
-    protected void addConnectorAttributes(Connector connector,
-                                          String connectorComponentName,
-                                          ComponentConfiguration componentConfiguration,
-                                          Class<? extends Endpoint> endpointClass) {
+    protected Attributes buildConnectorSettings(String connectorComponentName,
+                                                ComponentConfiguration componentConfiguration,
+                                                Class<? extends Endpoint> endpointClass) {
+
+        Attributes settings = new Attributes();
 
         for (Map.Entry<String, ParameterConfiguration> configEntry : componentConfiguration.getParameterConfigurationMap().entrySet()) {
             try {
                 Field field = endpointClass.getDeclaredField(configEntry.getKey());
                 if (field.isAnnotationPresent(UriParam.class)) {
-                    UriParam uriParam = field.getAnnotation(UriParam.class);
-
-                    String attributeName = uriParam.name().length() != 0 ? uriParam.name() : field.getName();
-
-                    Attribute attribute = new Attribute(attributeName, Json.createObject());
-                    attribute.setMetadata(new Metadata(Json.createObject()));
-
-                    if (String.class.isAssignableFrom(field.getType())) {
-                        attribute.setType(AttributeType.STRING);
-                    } else if (Integer.class.isAssignableFrom(field.getType())) {
-                        attribute.setType(AttributeType.INTEGER);
-                    } else if (Double.class.isAssignableFrom(field.getType())) {
-                        attribute.setType(AttributeType.FLOAT);
-                    } else if (Boolean.class.isAssignableFrom(field.getType())) {
-                        attribute.setType(AttributeType.BOOLEAN);
-                    } else {
-                        throw new RuntimeException(
-                            "Unsupported endpoint attribute type of connector'" + connectorComponentName + "': " + field.getType()
-                        );
-                    }
-
-                    if (uriParam.label().length() > 0) {
-                        attribute.getMetadata().addElement(
-                            new MetadataElement("label", Json.createObject())
-                                .setType(AttributeType.STRING.getName())
-                                .setValue(Json.create(uriParam.label()))
-                        );
-                    }
-
-                    if (uriParam.description().length() > 0) {
-                        attribute.getMetadata().addElement(
-                            new MetadataElement("description", Json.createObject())
-                                .setType(AttributeType.STRING.getName())
-                                .setValue(Json.create(uriParam.description()))
-                        );
-                    }
-
-                    if (uriParam.defaultValue().length() > 0) {
-                        attribute.getMetadata().addElement(
-                            new MetadataElement("defaultValue", Json.createObject())
-                                .setType(AttributeType.STRING.getName())
-                                .setValue(Json.create(uriParam.defaultValue()))
-                        );
-                    }
-
-                    if (uriParam.defaultValueNote().length() > 0) {
-                        attribute.getMetadata().addElement(
-                            new MetadataElement("defaultValueNote", Json.createObject())
-                                .setType(AttributeType.STRING.getName())
-                                .setValue(Json.create(uriParam.defaultValueNote()))
-                        );
-                    }
-
-                    if (field.isAnnotationPresent(NotNull.class)) {
-                        attribute.getMetadata().addElement(
-                            new MetadataElement("required", Json.createObject())
-                                .setType(AttributeType.BOOLEAN.getName())
-                                .setValue(Json.create(true))
-                        );
-                    }
-
-                    LOG.fine("Adding connector attribute '" + attributeName + "': " + attribute);
-                    connector.addAttribute(attribute);
+                    Attribute setting = buildConnectorSetting(field, connectorComponentName);
+                    settings.add(setting);
+                    LOG.fine("Adding connector setting: " + setting);
                 }
             } catch (NoSuchFieldException ex) {
-                // Ignoring config parameter if there is no annotated field on endpoint class
+                // Ignoring setting if there is no annotated field on endpoint class
                 // TODO: Inheritance of endpoint classes? Do we care?
             }
         }
+
+        return settings;
+    }
+
+    protected Attribute buildConnectorSetting(Field field, String connectorComponentName) {
+        UriParam uriParam = field.getAnnotation(UriParam.class);
+
+        String attributeName = uriParam.name().length() != 0 ? uriParam.name() : field.getName();
+
+        Attribute attribute = new Attribute(attributeName, Json.createObject());
+        attribute.setMetadata(new Metadata(Json.createObject()));
+
+        if (String.class.isAssignableFrom(field.getType())) {
+            attribute.setType(AttributeType.STRING);
+        } else if (Integer.class.isAssignableFrom(field.getType())) {
+            attribute.setType(AttributeType.INTEGER);
+        } else if (Double.class.isAssignableFrom(field.getType())) {
+            attribute.setType(AttributeType.FLOAT);
+        } else if (Boolean.class.isAssignableFrom(field.getType())) {
+            attribute.setType(AttributeType.BOOLEAN);
+        } else {
+            throw new RuntimeException(
+                "Unsupported endpoint attribute type of connector'" + connectorComponentName + "': " + field.getType()
+            );
+        }
+
+        if (uriParam.label().length() > 0) {
+            attribute.getMetadata().addElement(
+                new MetadataElement("label", Json.createObject())
+                    .setType(AttributeType.STRING.getName())
+                    .setValue(Json.create(uriParam.label()))
+            );
+        }
+
+        if (uriParam.description().length() > 0) {
+            attribute.getMetadata().addElement(
+                new MetadataElement("description", Json.createObject())
+                    .setType(AttributeType.STRING.getName())
+                    .setValue(Json.create(uriParam.description()))
+            );
+        }
+
+        if (uriParam.defaultValue().length() > 0) {
+            attribute.getMetadata().addElement(
+                new MetadataElement("defaultValue", Json.createObject())
+                    .setType(AttributeType.STRING.getName())
+                    .setValue(Json.create(uriParam.defaultValue()))
+            );
+        }
+
+        if (uriParam.defaultValueNote().length() > 0) {
+            attribute.getMetadata().addElement(
+                new MetadataElement("defaultValueNote", Json.createObject())
+                    .setType(AttributeType.STRING.getName())
+                    .setValue(Json.create(uriParam.defaultValueNote()))
+            );
+        }
+
+        if (field.isAnnotationPresent(NotNull.class)) {
+            attribute.getMetadata().addElement(
+                new MetadataElement("required", Json.createObject())
+                    .setType(AttributeType.BOOLEAN.getName())
+                    .setValue(Json.create(true))
+            );
+        }
+
+        return attribute;
     }
 
 }

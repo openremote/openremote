@@ -19,20 +19,16 @@
  */
 package org.openremote.manager.client.admin.agent;
 
-import elemental.json.impl.JsonUtil;
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
+import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.http.EntityReader;
 import org.openremote.manager.shared.http.EntityWriter;
 
-public class AgentMapper implements EntityReader<Agent>, EntityWriter<Agent> {
-
-    @Override
-    public Agent read(String value) {
-        return new Agent(JsonUtil.parse(value));
-    }
-
-    @Override
-    public String write(Agent value) {
-        return value.getJsonObject().toJson();
-    }
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = Agent.class, mixIn = DefaultJsonMixin.class)})
+public interface AgentMapper
+    extends ObjectMapper<Agent>,
+    EntityReader<Agent>,
+    EntityWriter<Agent> {
 }

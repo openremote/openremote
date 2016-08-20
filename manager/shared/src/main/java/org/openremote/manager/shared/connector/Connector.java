@@ -19,22 +19,18 @@
  */
 package org.openremote.manager.shared.connector;
 
-import elemental.json.Json;
 import elemental.json.JsonObject;
 import org.openremote.manager.shared.agent.Agent;
-import org.openremote.manager.shared.ngsi.Attribute;
-import org.openremote.manager.shared.ngsi.AttributeType;
-import org.openremote.manager.shared.ngsi.Entity;
+import org.openremote.manager.shared.attribute.Attribute;
+import org.openremote.manager.shared.attribute.Attributes;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.logging.Logger;
 
 /**
  * Interface for agent connectors that is used to connect and communicate with agents
  * in an agnostic way. (That is, a Camel component with the required endpoints.)
  */
-public class Connector extends Entity {
+public class Connector {
 
     private static final Logger LOG = Logger.getLogger(Connector.class.getName());
 
@@ -43,89 +39,121 @@ public class Connector extends Entity {
     public static final String PROPERTY_SUPPORTS_DISCOVERY = "openremote-connector-supports-discovery";
     public static final String PROPERTY_SUPPORTS_INVENTORY = "openremote-connector-supports-inventory";
 
-    public static final String ATTRIBUTE_NAME = "name";
-    public static final String ATTRIBUTE_SYNTAX = "syntax";
-    public static final String ATTRIBUTE_SUPPORTS_DISCOVERY = "supportsDiscovery";
-    public static final String ATTRIBUTE_SUPPORTS_INVENTORY = "supportsInventory";
-
-    public static final List<String> IMMUTABLE_ATTRIBUTES = Arrays.asList(
-        ATTRIBUTE_NAME, ATTRIBUTE_SYNTAX, ATTRIBUTE_SUPPORTS_DISCOVERY, ATTRIBUTE_SUPPORTS_INVENTORY
-    );
+    protected String id;
+    protected String name;
+    protected String type;
+    protected String syntax;
+    protected boolean supportsDiscovery;
+    protected boolean supportsInventory;
+    protected JsonObject settings;
 
     public Connector() {
     }
 
-    public Connector(JsonObject jsonObject) {
-        super(jsonObject);
+    public Connector(String id) {
+        this.id = id;
     }
 
-    public Connector(String type) {
-        super();
-        setType(type);
+    public Connector(String id, String name, String type) {
+        this(id);
+        this.name = name;
+        this.type = type;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getName() {
-        return getAttributeValueAsString(ATTRIBUTE_NAME);
+        return name;
     }
 
     public void setName(String name) {
-        Attribute attr = new Attribute(ATTRIBUTE_NAME, AttributeType.STRING, Json.create(name));
-        super.addAttribute(attr);
+        this.name = name;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     public String getSyntax() {
-        return getAttributeValueAsString(ATTRIBUTE_SYNTAX);
+        return syntax;
     }
 
     public void setSyntax(String syntax) {
-        Attribute attr = new Attribute(ATTRIBUTE_SYNTAX, AttributeType.STRING, Json.create(syntax));
-        super.addAttribute(attr);
+        this.syntax = syntax;
     }
 
     public boolean isSupportsDiscovery() {
-        return getAttributeValueAsBoolean(ATTRIBUTE_SUPPORTS_DISCOVERY);
+        return supportsDiscovery;
     }
 
     public void setSupportsDiscovery(boolean supportsDiscovery) {
-        Attribute attr = new Attribute(ATTRIBUTE_SUPPORTS_DISCOVERY, AttributeType.BOOLEAN, Json.create(supportsDiscovery));
-        super.addAttribute(attr);
+        this.supportsDiscovery = supportsDiscovery;
     }
 
     public boolean isSupportsInventory() {
-        return getAttributeValueAsBoolean(ATTRIBUTE_SUPPORTS_INVENTORY);
+        return supportsInventory;
     }
 
     public void setSupportsInventory(boolean supportsInventory) {
-        Attribute attr = new Attribute(ATTRIBUTE_SUPPORTS_INVENTORY, AttributeType.BOOLEAN, Json.create(supportsInventory));
-        super.addAttribute(attr);
+        this.supportsInventory = supportsInventory;
     }
 
+    public JsonObject getSettings() {
+        return settings;
+    }
+
+    public void setSettings(JsonObject settings) {
+        this.settings = settings;
+    }
+
+    /**
+     * Copy all settings which have a value into the {@link Agent}, keeping the value
+     * of each attribute but not the attribute metadata.
+     */
     public void writeSettings(Agent agent) {
-        JsonObject settings = Json.createObject();
-        for (Attribute attribute : getAttributes()) {
-            if (IMMUTABLE_ATTRIBUTES.contains(attribute.getName()))
-                continue;
-            settings.put(attribute.getName(), attribute.getJsonObject());
+        if (getSettings() == null) {
+            agent.setConnectorSettings(null);
+            return;
         }
-        agent.setConnectorSettings(settings);
+        Attributes settings = new Attributes(getSettings());
+        Attributes agentConnectorSettings = new Attributes();
+        for (Attribute attribute : settings.get()) {
+            if (attribute.getValue() == null)
+                continue;
+            Attribute agentConnectorAttribute = new Attribute(attribute.getName(), attribute.getType());
+            agentConnectorAttribute.setValue(attribute.getValue());
+            agentConnectorSettings.add(agentConnectorAttribute);
+        }
+        agent.setConnectorSettings(agentConnectorSettings.getJsonObject());
     }
 
+    /**
+     * Read the value for each settings attribute from the {@link Agent}, skipping any
+     * unknown attribute or attribute that doesn't have the right type. The
+     * {@link Agent#connectorSettings} can be "cleaned up" so they match a {@link Connector}
+     * by calling {@link #readSettings(Agent)} followed by {@link #writeSettings(Agent)}.
+     */
     public void readSettings(Agent agent) {
-        JsonObject settings = agent.getConnectorSettings();
-        if (settings == null)
+        if (agent.getConnectorSettings() == null)
             return;
 
-        for (Attribute attribute : getAttributes()) {
-            if (IMMUTABLE_ATTRIBUTES.contains(attribute.getName()))
-                continue;
-
-            if (!settings.hasKey(attribute.getName()))
-                continue;
-
-            Attribute settingsAttribute =
-                new Attribute(attribute.getName(), settings.getObject(attribute.getName()));
-            if (settingsAttribute.getType().equals(attribute.getType())) {
-                attribute.setValue(settingsAttribute.getValue());
+        Attributes settings = new Attributes(getSettings());
+        Attributes agentConnectorSettings = new Attributes(agent.getConnectorSettings());
+        for (Attribute agentConnectorAttribute : agentConnectorSettings.get()) {
+            Attribute settingsAttribute = settings.get(agentConnectorAttribute.getName());
+            if (settingsAttribute != null
+                && settingsAttribute.getType().equals(agentConnectorAttribute.getType())) {
+                settingsAttribute.setValue(agentConnectorAttribute.getValue());
             }
         }
     }

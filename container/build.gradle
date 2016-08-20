@@ -10,6 +10,10 @@ dependencies {
     compile "io.reactivex:rxjava:$rxjavaVersion"
     compile "com.google.guava:guava:$guavaVersion"
 
+    compile "com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion"
+    compile "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:$jacksonVersion"
+
     compile "io.undertow:undertow-servlet:$undertowVersion"
     compile "io.undertow:undertow-websockets-jsr:$undertowVersion"
 

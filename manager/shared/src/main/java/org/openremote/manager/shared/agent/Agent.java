@@ -1,101 +1,140 @@
+/*
+ * Copyright 2016, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.openremote.manager.shared.agent;
 
-import elemental.json.Json;
 import elemental.json.JsonObject;
-import org.openremote.manager.shared.ngsi.Attribute;
-import org.openremote.manager.shared.ngsi.AttributeType;
-import org.openremote.manager.shared.ngsi.Entity;
 
-public class Agent extends Entity {
+import javax.persistence.*;
+import javax.validation.constraints.NotNull;
+import java.util.Date;
 
-    // Persisted properties
-    public static final String TYPE = "urn:openremote:agent";
-    public static final String ATTRIBUTE_NAME = "name";
-    public static final String ATTRIBUTE_DESCRIPTION = "description";
-    public static final String ATTRIBUTE_CONNECTOR_TYPE = "connectorType";
-    public static final String ATTRIBUTE_CONNECTOR_SETTINGS = "connectorSettings";
-    public static final String ATTRIBUTE_ENABLED = "enabled";
+import static org.openremote.manager.shared.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 
-    // State properties that must be read from the agent (agent is context provider for these values)
-    protected boolean valid;
-    protected boolean available;
-    protected boolean connected;
+@Entity
+@Table(name = "AGENT")
+public class Agent {
+
+    public static final String NO_CONNECTOR_ASSIGNED_TYPE = "urn:openremote:connector:none";
+    public static final String NO_DESCRIPTION = "-";
+
+    @Id
+    @Column(name = "ID", length = 22)
+    @GeneratedValue(generator = PERSISTENCE_UNIQUE_ID_GENERATOR)
+    protected String id;
+
+    @Version
+    @Column(name = "OBJ_VERSION")
+    protected long version;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "CREATED_ON", updatable = false, nullable = false)
+    @org.hibernate.annotations.CreationTimestamp
+    protected Date createdOn;
+
+    @NotNull
+    @Column(name = "NAME")
+    protected String name;
+
+    @NotNull
+    @Column(name = "DESCRIPTION")
+    protected String description = NO_DESCRIPTION;
+
+    @NotNull
+    @Column(name = "ENABLED")
+    protected boolean enabled;
+
+    @NotNull
+    @Column(name = "CONNECTOR_TYPE")
+    protected String connectorType = NO_CONNECTOR_ASSIGNED_TYPE;
+
+    @Column(name = "CONNECTOR_SETTINGS", columnDefinition = "json")
+    @org.hibernate.annotations.Type(type = "json")
+    protected JsonObject connectorSettings;
 
     public Agent() {
-        super();
-        setType(TYPE);
     }
 
-    public Agent(JsonObject jsonObject) {
-        super(jsonObject);
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public long getVersion() {
+        return version;
+    }
+
+    public Date getCreatedOn() {
+        return createdOn;
     }
 
     public String getName() {
-        return getAttributeValueAsString(ATTRIBUTE_NAME);
+        return name;
     }
 
     public void setName(String name) {
-        Attribute attr = new Attribute(ATTRIBUTE_NAME, AttributeType.STRING, Json.create(name));
-        super.addAttribute(attr);
+        this.name = name;
     }
 
     public String getDescription() {
-        return getAttributeValueAsString(ATTRIBUTE_DESCRIPTION);
+        return description;
     }
 
     public void setDescription(String description) {
-        Attribute attr = new Attribute(ATTRIBUTE_DESCRIPTION, AttributeType.STRING, Json.create(description));
-        super.addAttribute(attr);
-    }
-
-    public String getConnectorType() {
-        return getAttributeValueAsString(ATTRIBUTE_CONNECTOR_TYPE);
-    }
-
-    public void setConnectorType(String connectorType) {
-        Attribute attr = new Attribute(ATTRIBUTE_CONNECTOR_TYPE, AttributeType.STRING, Json.create(connectorType));
-        super.addAttribute(attr);
-    }
-
-    public JsonObject getConnectorSettings() {
-        return getAttributeValueAsObject(ATTRIBUTE_CONNECTOR_SETTINGS);
-    }
-
-    public void setConnectorSettings(JsonObject settings) {
-        Attribute attr = new Attribute(ATTRIBUTE_CONNECTOR_SETTINGS, AttributeType.OBJECT, settings);
-        super.addAttribute(attr);
+        this.description = description;
     }
 
     public boolean isEnabled() {
-        return getAttributeValueAsBoolean(ATTRIBUTE_ENABLED);
+        return enabled;
     }
 
     public void setEnabled(boolean enabled) {
-        Attribute attr = new Attribute(ATTRIBUTE_ENABLED, AttributeType.BOOLEAN, Json.create(enabled));
-        super.addAttribute(attr);
+        this.enabled = enabled;
     }
 
-    public boolean isAvailable() {
-        return available;
+    public String getConnectorType() {
+        return connectorType;
     }
 
-    public void setAvailable(boolean available) {
-        this.available = available;
+    public void setConnectorType(String connectorType) {
+        this.connectorType = connectorType;
     }
 
-    public boolean isValid() {
-        return valid;
+    public JsonObject getConnectorSettings() {
+        return connectorSettings;
     }
 
-    public void setValid(boolean valid) {
-        this.valid = valid;
+    public void setConnectorSettings(JsonObject connectorSettings) {
+        this.connectorSettings = connectorSettings;
     }
 
-    public boolean isConnected() {
-        return connected;
-    }
-
-    public void setConnected(boolean connected) {
-        this.connected = connected;
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "id='" + id + '\'' +
+            ", name='" + name + '\'' +
+            ", enabled=" + enabled +
+            ", connectorType='" + connectorType + '\'' +
+            ", connectorSettings='" + (connectorSettings != null ? connectorSettings.toJson() : "null") + '\'' +
+            '}';
     }
 }

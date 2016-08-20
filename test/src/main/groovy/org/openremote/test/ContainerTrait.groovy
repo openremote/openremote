@@ -29,6 +29,7 @@ import org.keycloak.representations.AccessTokenResponse
 import org.openremote.container.Container
 import org.openremote.container.ContainerService
 import org.openremote.container.message.MessageBrokerService
+import org.openremote.container.persistence.PersistenceService
 import org.openremote.container.security.AuthForm
 import org.openremote.container.security.IdentityService
 import org.openremote.container.web.WebClient
@@ -150,6 +151,7 @@ trait ContainerTrait {
                         new ManagerWebService(),
                         new ManagerIdentityService(),
                         new MessageBrokerService(),
+                        new PersistenceService(),
                         new EventService(),
                         new ConnectorService(),
                         new AgentService(),

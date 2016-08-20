@@ -17,21 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.container.util;
+package org.openremote.container.json;
 
 import com.fasterxml.jackson.core.*;
-import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import elemental.json.*;
 
-import javax.ws.rs.NotSupportedException;
 import java.io.IOException;
 
 public class ElementalJsonModule extends SimpleModule {
+
     private static class ElementalJsonDeserializer<T extends JsonValue> extends JsonDeserializer<T> {
         @Override
-        public T deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-            return (T)genDeserialise(p, ctxt);
+        public T deserialize(JsonParser p, DeserializationContext context) throws IOException, JsonProcessingException {
+            return (T)genDeserialise(p, context);
         }
     }
 //

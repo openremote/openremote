@@ -22,10 +22,15 @@ package org.openremote.container.persistence;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 
+import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.EntityTransaction;
 import javax.persistence.Persistence;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class PersistenceService implements ContainerService {
@@ -110,6 +115,37 @@ public class PersistenceService implements ContainerService {
 
     public void dropSchema() {
         generateSchema("drop");
+    }
+
+    public void doTransaction(Consumer<EntityManager> entityManagerConsumer) {
+        doTransaction(entityManager -> {
+            entityManagerConsumer.accept(entityManager);
+            return null;
+        });
+    }
+
+    public <R> R doTransaction(Function<EntityManager, R> entityManagerFunction) {
+        EntityManager em = getEntityManagerFactory().createEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        try {
+            tx.begin();
+            R result = entityManagerFunction.apply(em);
+            tx.commit();
+            return result;
+        } catch (RuntimeException ex) {
+            // TODO Check that this is good tx code, no idea how this stupid transaction API works. Should we use JTA?
+            if (tx != null && tx.isActive() && tx.getRollbackOnly()) {
+                try {
+                    LOG.log(Level.FINE, "Rolling back failed transaction, cause follows", ex);
+                    tx.rollback();
+                } catch (RuntimeException rbEx) {
+                    LOG.log(Level.SEVERE, "Rollback of transaction failed!", rbEx);
+                }
+            }
+            throw ex;
+        } finally {
+            em.close();
+        }
     }
 
     protected void generateSchema(String action) {

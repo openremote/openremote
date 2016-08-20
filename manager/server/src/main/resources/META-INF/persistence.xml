@@ -9,7 +9,7 @@
 
         <class>org.openremote.container.persistence</class>
 
-        <class>org.openremote.manager.shared.agent.PersistentAgent</class>
+        <class>org.openremote.manager.shared.agent.Agent</class>
 
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
         <properties>

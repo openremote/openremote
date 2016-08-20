@@ -17,39 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.security;
+package org.openremote.manager.client.interop.jackson;
 
-public class Credential {
+import com.github.nmorel.gwtjackson.client.JsonDeserializationContext;
+import com.github.nmorel.gwtjackson.client.JsonDeserializer;
+import com.github.nmorel.gwtjackson.client.JsonDeserializerParameters;
+import com.github.nmorel.gwtjackson.client.stream.JsonReader;
+import elemental.json.JsonValue;
 
-    protected String type = "password";
-    protected String value;
-    protected Boolean temporary;
+/**
+ * This can only (safely) deserialize JSON Objects and Arrays, not primitives.
+ */
+public class ElementalJsonDeserializer extends JsonDeserializer<JsonValue> {
 
-    public Credential() {
-    }
-
-    public Credential(String value, Boolean temporary) {
-        this.value = value;
-        this.temporary = temporary;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public String getValue() {
-        return value;
-    }
-
-    public void setValue(String value) {
-        this.value = value;
-    }
-
-    public Boolean getTemporary() {
-        return temporary;
-    }
-
-    public void setTemporary(Boolean temporary) {
-        this.temporary = temporary;
+    @Override
+    protected JsonValue doDeserialize(JsonReader reader, JsonDeserializationContext ctx, JsonDeserializerParameters params) {
+        if (reader.hasNext()) {
+            return (JsonValue) reader.nextJavaScriptObject(true);
+        }
+        return null;
     }
 }

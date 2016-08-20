@@ -22,21 +22,19 @@ package org.openremote.manager.client.widget;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.TextBox;
 import elemental.json.Json;
-import org.openremote.manager.shared.connector.Connector;
-import org.openremote.manager.shared.ngsi.Attribute;
-import org.openremote.manager.shared.ngsi.AttributeType;
-import org.openremote.manager.shared.ngsi.MetadataElement;
+import org.openremote.manager.shared.attribute.Attribute;
+import org.openremote.manager.shared.attribute.AttributeType;
+import org.openremote.manager.shared.attribute.Attributes;
+import org.openremote.manager.shared.attribute.MetadataElement;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class EntityFormView extends FormView {
+public class AttributesFormView extends FormView {
 
-    public FormGroup[] createAttributeFormGroups(String formFieldStyleName, Attribute[] attributes) {
+    public FormGroup[] createAttributeFormGroups(String formFieldStyleName, Attributes attributes) {
         List<FormGroup> list = new ArrayList<>();
-        for (Attribute attribute : attributes) {
-            if (Connector.IMMUTABLE_ATTRIBUTES.contains(attribute.getName()))
-                continue;
+        for (Attribute attribute : attributes.get()) {
 
             FormGroup formGroup = createAttributeFormGroup(attribute);
 

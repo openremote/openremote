@@ -32,11 +32,9 @@
     <extend-property name="locale" values="en"/>
 
     <!-- ##################################################################### -->
-<!--
 
     <extend-configuration-property name="gwtjackson.configuration.extension"
                                    value="org.openremote.manager.client.interop.jackson.SerializationConfiguration"/>
--->
 
     <replace-with class="org.openremote.manager.client.interop.jackson.JsonDeserializationContextBuilder">
         <when-type-assignable class="com.github.nmorel.gwtjackson.client.JsonDeserializationContext.Builder" />

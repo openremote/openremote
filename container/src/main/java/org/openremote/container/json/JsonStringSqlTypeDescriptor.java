@@ -48,17 +48,17 @@ public class JsonStringSqlTypeDescriptor implements SqlTypeDescriptor {
         return new BasicExtractor<X>(javaTypeDescriptor, this) {
             @Override
             protected X doExtract(ResultSet rs, String name, WrapperOptions options) throws SQLException {
-                return javaTypeDescriptor.wrap(rs.getObject(name), options);
+                return javaTypeDescriptor.wrap(rs.getString(name), options);
             }
 
             @Override
             protected X doExtract(CallableStatement statement, int index, WrapperOptions options) throws SQLException {
-                return javaTypeDescriptor.wrap(statement.getObject(index), options);
+                return javaTypeDescriptor.wrap(statement.getString(index), options);
             }
 
             @Override
             protected X doExtract(CallableStatement statement, String name, WrapperOptions options) throws SQLException {
-                return javaTypeDescriptor.wrap(statement.getObject(name), options);
+                return javaTypeDescriptor.wrap(statement.getString(name), options);
             }
         };
     }

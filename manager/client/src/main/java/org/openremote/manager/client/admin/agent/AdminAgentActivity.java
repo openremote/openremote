@@ -32,9 +32,9 @@ import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.shared.Runnable;
 import org.openremote.manager.shared.agent.Agent;
-import org.openremote.manager.shared.ngsi.EntityResource;
-import org.openremote.manager.shared.connector.ConnectorResource;
+import org.openremote.manager.shared.agent.AgentResource;
 import org.openremote.manager.shared.connector.Connector;
+import org.openremote.manager.shared.connector.ConnectorResource;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 
 import javax.inject.Inject;
@@ -54,10 +54,10 @@ public class AdminAgentActivity
     final protected EventBus eventBus;
     final protected SecurityService securityService;
     final protected RequestService requestService;
-    final protected EntityResource assetsResource;
     final protected ConnectorResource connectorResource;
-    final protected AgentMapper agentMapper = new AgentMapper();
-    final protected ConnectorArrayMapper connectorArrayMapper = new ConnectorArrayMapper();
+    final protected AgentResource agentResource;
+    final protected AgentMapper agentMapper;
+    final protected ConnectorArrayMapper connectorArrayMapper;
 
     protected String id;
     protected Connector[] connectors;
@@ -77,16 +77,20 @@ public class AdminAgentActivity
                               EventBus eventBus,
                               SecurityService securityService,
                               RequestService requestService,
-                              EntityResource assetsResource,
-                              ConnectorResource connectorResource) {
+                              ConnectorResource connectorResource,
+                              AgentResource agentResource,
+                              AgentMapper agentMapper,
+                              ConnectorArrayMapper connectorArrayMapper) {
         super(adminView, adminNavigationPresenter, view);
         this.managerMessages = managerMessages;
         this.placeController = placeController;
         this.eventBus = eventBus;
         this.securityService = securityService;
         this.requestService = requestService;
-        this.assetsResource = assetsResource;
         this.connectorResource = connectorResource;
+        this.agentResource = agentResource;
+        this.agentMapper = agentMapper;
+        this.connectorArrayMapper = connectorArrayMapper;
 
         notFoundConnector.setId(notFoundConnectorId);
     }
@@ -153,7 +157,7 @@ public class AdminAgentActivity
         requestService.execute(
             agentMapper,
             requestParams -> {
-                assetsResource.postEntity(requestParams, agent);
+                agentResource.create(requestParams, agent);
             },
             204,
             () -> {
@@ -177,7 +181,7 @@ public class AdminAgentActivity
         requestService.execute(
             agentMapper,
             requestParams -> {
-                assetsResource.putEntityAttributes(requestParams, id, agent);
+                agentResource.update(requestParams, id, agent);
             },
             204,
             () -> {
@@ -196,7 +200,7 @@ public class AdminAgentActivity
         clearViewFieldErrors();
         requestService.execute(
             requestParams -> {
-                assetsResource.deleteEntity(requestParams, this.id);
+                agentResource.delete(requestParams, this.id);
             },
             204,
             () -> {
@@ -237,7 +241,7 @@ public class AdminAgentActivity
     protected void loadAgent(Runnable onSuccess) {
         requestService.execute(
             agentMapper,
-            requestParams -> assetsResource.getEntity(requestParams, id, null),
+            requestParams -> agentResource.get(requestParams, id),
             200,
             agent -> {
                 this.agent = agent;
@@ -275,7 +279,7 @@ public class AdminAgentActivity
             }
             if (assignedConnector != null) {
                 assignedConnector.readSettings(agent);
-            } else {
+            } else if (!Agent.NO_CONNECTOR_ASSIGNED_TYPE.equals(agent.getConnectorType())){
                 notFoundConnector.setName(
                     agent.getConnectorType() + " (" + managerMessages.connectorNotInstalled() + ")"
                 );

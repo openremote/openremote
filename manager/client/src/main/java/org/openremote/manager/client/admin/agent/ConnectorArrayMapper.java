@@ -19,24 +19,16 @@
  */
 package org.openremote.manager.client.admin.agent;
 
-import elemental.json.JsonArray;
-import elemental.json.impl.JsonUtil;
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
+import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
 import org.openremote.manager.shared.connector.Connector;
 import org.openremote.manager.shared.http.EntityReader;
+import org.openremote.manager.shared.http.EntityWriter;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class ConnectorArrayMapper implements EntityReader<Connector[]> {
-
-    @Override
-    public Connector[] read(String value) {
-        JsonArray jsonArray = JsonUtil.parse(value);
-        List<Connector> list = new ArrayList<>();
-        for (int i = 0; i < jsonArray.length(); i++) {
-            list.add(new Connector(jsonArray.getObject(i)));
-        }
-        return list.toArray(new Connector[list.size()]);
-    }
-
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = Connector.class, mixIn = DefaultJsonMixin.class)})
+public interface ConnectorArrayMapper
+    extends ObjectMapper<Connector[]>,
+    EntityReader<Connector[]>,
+    EntityWriter<Connector[]> {
 }

@@ -19,17 +19,26 @@
  */
 package org.openremote.manager.client.interop.jackson;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.github.nmorel.gwtjackson.client.AbstractConfiguration;
+import elemental.json.JsonArray;
+import elemental.json.JsonObject;
 
+/**
+ * TODO: On my OS X I have to delete GWT temp files in /var/folders/vn/* every time I change this class and then restart SDM
+ */
 public class SerializationConfiguration extends AbstractConfiguration {
 
     @Override
     protected void configure() {
+        /* TODO https://github.com/nmorel/gwt-jackson/issues/90
         fieldVisibility(JsonAutoDetect.Visibility.ANY);
         getterVisibility(JsonAutoDetect.Visibility.NONE);
         setterVisibility(JsonAutoDetect.Visibility.NONE);
         isGetterVisibility(JsonAutoDetect.Visibility.NONE);
         creatorVisibility(JsonAutoDetect.Visibility.NONE);
+        */
+
+        type(JsonObject.class).serializer(ElementalJsonSerializer.class).deserializer(ElementalJsonDeserializer.class);
+        type(JsonArray.class).serializer(ElementalJsonSerializer.class).deserializer(ElementalJsonDeserializer.class);
     }
 }

@@ -20,7 +20,6 @@
 package org.openremote.manager.server;
 
 import elemental.json.Json;
-import elemental.json.JsonObject;
 import org.apache.log4j.Logger;
 import org.keycloak.admin.client.resource.*;
 import org.keycloak.common.enums.SslRequired;
@@ -32,17 +31,19 @@ import org.openremote.container.security.AuthForm;
 import org.openremote.manager.server.agent.AgentService;
 import org.openremote.manager.server.agent.ConnectorService;
 import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.manager.shared.agent.PersistentAgent;
+import org.openremote.manager.shared.agent.Agent;
+import org.openremote.manager.shared.attribute.Attribute;
+import org.openremote.manager.shared.attribute.Attributes;
 import rx.Observable;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityTransaction;
 import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.openremote.manager.shared.Constants.*;
+import static org.openremote.manager.shared.attribute.AttributeType.INTEGER;
+import static org.openremote.manager.shared.attribute.AttributeType.STRING;
 import static rx.Observable.fromCallable;
 
 public class SampleDataService implements ContainerService {
@@ -55,6 +56,7 @@ public class SampleDataService implements ContainerService {
     public static final String ADMIN_CLI_CLIENT_ID = "admin-cli";
     public static final String ADMIN_PASSWORD = "admin";
 
+    protected Container container;
     protected PersistenceService persistenceService;
     protected ManagerIdentityService identityService;
     protected ConnectorService connectorService;
@@ -62,6 +64,7 @@ public class SampleDataService implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
+        this.container = container;
         persistenceService = container.getService(PersistenceService.class);
         identityService = container.getService(ManagerIdentityService.class);
         connectorService = container.getService(ConnectorService.class);
@@ -90,15 +93,7 @@ public class SampleDataService implements ContainerService {
         configureMasterRealm(accessToken);
         registerClientApplications(accessToken);
         addRolesAndTestUsers(accessToken);
-
-        EntityManager em = persistenceService.getEntityManagerFactory().createEntityManager();
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
-
-        storeSampleAgent(em);
-
-        tx.commit();
-        em.close();
+        storeSampleAgent();
     }
 
     @Override
@@ -243,29 +238,33 @@ public class SampleDataService implements ContainerService {
 
     }
 
-    protected void storeSampleAgent(EntityManager em) {
-        PersistentAgent controller2Agent = new PersistentAgent();
+    protected void storeSampleAgent() {
+        Agent controller2Agent = new Agent();
         controller2Agent.setName("OpenRemote Controller2 Test Agent");
         controller2Agent.setDescription("A test agent for OpenRemote Controller version 2.x");
         controller2Agent.setEnabled(true);
         controller2Agent.setConnectorType("urn:openremote:connector:controller2");
 
-        JsonObject connectorSettings = Json.createObject();
-        connectorSettings.put("host", Json.create("192.168.0.0"));
-        connectorSettings.put("port", Json.create(8080));
-        controller2Agent.setConnectorSettings(connectorSettings);
+        Attributes connectorSettings = new Attributes();
+        connectorSettings.add(new Attribute("host", STRING, Json.create("192.168.0.0")));
+        connectorSettings.add(new Attribute("port", INTEGER, Json.create(8080)));
+        controller2Agent.setConnectorSettings(connectorSettings.getJsonObject());
 
-        em.persist(controller2Agent);
+        persistenceService.doTransaction(em -> {
+            em.persist(controller2Agent);
+        });
 
-        // TODO Remove this test
+        // TODO Remove tests
+/*
         List hosts = em.createNativeQuery(
             "SELECT a.CONNECTOR_SETTINGS -> \"$.host\" " +
                 "FROM AGENT a " +
-                "WHERE JSON_EXTRACT(a.CONNECTOR_SETTINGS, \"$.port\") = 8080")
+                "WHERE JSON_EXTRACT(a.CONNECTOR_SETTINGS, \"$.port.value\") = 8080")
             .getResultList();
 
         for (Object host : hosts) {
             LOG.info("### GOT: " + host);
         }
+*/
     }
 }

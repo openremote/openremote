@@ -19,28 +19,17 @@
  */
 package org.openremote.manager.client.admin.agent;
 
-import elemental.json.JsonArray;
-import elemental.json.impl.JsonUtil;
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
+import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.http.EntityReader;
+import org.openremote.manager.shared.http.EntityWriter;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class AgentArrayMapper implements EntityReader<Agent[]> {
-
-    @Override
-    public Agent[] read(String value) {
-        JsonArray jsonArray = JsonUtil.parse(value);
-        List<Agent> list = new ArrayList<>();
-        for (int i = 0; i < jsonArray.length(); i++) {
-            Agent agent = new Agent(jsonArray.getObject(i));
-            // TODO: URGENT FIX NEEDED! ENTITY TYPE QUERIES ARE NOT SUPPORTED SO HERE WE GET _ALL_ ENTITIES!
-            if (agent.getType().equals(Agent.TYPE)) {
-                list.add(agent);
-            }
-        }
-        return list.toArray(new Agent[list.size()]);
-    }
-
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = Agent.class, mixIn = DefaultJsonMixin.class)})
+public interface AgentArrayMapper
+    extends ObjectMapper<Agent[]>,
+    EntityReader<Agent[]>,
+    EntityWriter<Agent[]> {
 }
+
