@@ -15,8 +15,8 @@ services:
       - "8080:8080"
 
     # This service needs access to other services on the Docker network.
-    depends_on:
-      - orion
+    links:
+      - postgres
       - keycloak
 
     environment:
@@ -28,8 +28,12 @@ services:
       # If dev mode is enabled, caching and other performance-optimizations will be disabled.
       DEV_MODE: 'false'
 
-      # If this is the first time you are starting this stack, and/or with non-persistent
-      # context broker (the default), you might want to work with some automatically imported
+      # If this is the first time you are starting this stack, and/or with non-durable
+      # database (the default), you need to have the database schema created.
+      DATABASE_CREATE_SCHEMA: 'true'
+
+      # If this is the first time you are starting this stack, and/or with non-durable
+      # database (the default), you might want to work with some automatically imported
       # sample data.
       IMPORT_SAMPLE_DATA: 'true'
 
@@ -47,9 +51,8 @@ services:
       # port.
       IDENTITY_NETWORK_WEBSERVER_PORT: 8080
 
-      # The service-internal host name and port of the context broker, configured automatically.
-      CONTEXTBROKER_HOST: orion
-      CONTEXTBROKER_PORT: 1026
+      # The service-internal JDBC connection URL for the database service.
+      DATABASE_CONNECTION_URL: jdbc:postgresql://postgres/openremote
 
       # The service-internal host name and port of the identity provider, configured automatically.
       KEYCLOAK_HOST: keycloak
@@ -58,6 +61,8 @@ services:
   # The identity provider, we use OAuth2 and bearer tokens for all API access.
   keycloak:
     image: openremote/keycloak:latest
+    links:
+      - postgres:postgresql
     environment:
       TZ: "Europe/Zurich"
       KEYCLOAK_USER: admin
@@ -67,18 +72,20 @@ services:
       # not be imported in production.
       KEYCLOAK_PASSWORD: admin
 
-  # MongoDB is the storage backend of Orion.
-  mongo:
-    image: mongo:3.2
-    command: --smallfiles
-    environment:
-        TZ: "Europe/Zurich"
+      # Configure how Keycloak connects to the database
+      POSTGRES_DATABASE: openremote
+      POSTGRES_USER: openremote
+      POSTGRES_PASSWORD: secret
 
-  # Orion is the context broker, it holds the current state of all IoT assets and devices.
-  orion:
-    image: fiware/orion:1.2.1
-    links:
-      - mongo
-    command: -dbhost mongo
+  # The database service.
+  postgres:
+    image: openremote/postgres:latest
     environment:
-        TZ: "Europe/Zurich"
+      TZ: "Europe/Zurich"
+      # This is the database superuser and password. You should change this, especially if you
+      # expose the database port and make it accessible externally! Internally, we are using a
+      # different user/password combination to access the 'openremote' database (currently
+      # baked into the image).
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: openremote

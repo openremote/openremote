@@ -3,39 +3,39 @@ version: '2'
 services:
   manager:
     image: openremote/manager:latest
-    depends_on:
-      - orion
+    links:
+      - postgres
       - keycloak
     environment:
       TZ: "Europe/Zurich"
       DEV_MODE: 'false'
+      DATABASE_CREATE_SCHEMA: 'true'
       IMPORT_SAMPLE_DATA: 'true'
       WEBSERVER_LISTEN_HOST: 0.0.0.0
       WEBSERVER_LISTEN_PORT: 8080
       IDENTITY_NETWORK_HOST: demo2.openremote.com
       IDENTITY_NETWORK_WEBSERVER_PORT: 80
-      CONTEXTBROKER_HOST: orion
-      CONTEXTBROKER_PORT: 1026
+      DATABASE_CONNECTION_URL: jdbc:postgresql://postgres/openremote
       KEYCLOAK_HOST: keycloak
       KEYCLOAK_PORT: 8080
     ports:
       - "8090:8080"
   keycloak:
     image: openremote/keycloak:latest
+    links:
+      - postgres:postgresql
     environment:
       TZ: "Europe/Zurich"
       KEYCLOAK_USER: admin
       KEYCLOAK_PASSWORD: admin
       KEYCLOAK_LOGLEVEL: DEBUG
-  mongo:
-    image: mongo:3.2
-    command: --smallfiles
+      POSTGRES_DATABASE: openremote
+      POSTGRES_USER: openremote
+      POSTGRES_PASSWORD: secret
+  postgres:
+    image: openremote/postgres:latest
     environment:
-        TZ: "Europe/Zurich"
-  orion:
-    image: fiware/orion:1.2.1
-    links:
-      - mongo
-    command: -dbhost mongo
-    environment:
-        TZ: "Europe/Zurich"
+      TZ: "Europe/Zurich"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: openremote
