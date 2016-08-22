@@ -19,22 +19,27 @@
  */
 package org.openremote.container.json;
 
-import elemental.json.JsonValue;
-import org.hibernate.type.AbstractSingleColumnStandardBasicType;
+import elemental.json.JsonObject;
+import org.hibernate.HibernateException;
 
-public class JsonStringType extends AbstractSingleColumnStandardBasicType<JsonValue> {
+import java.io.Serializable;
 
-    public JsonStringType() {
-        super(JsonStringSqlTypeDescriptor.INSTANCE, new JsonTypeDescriptor());
-    }
+public class ElementalJsonObjectType extends PostgreSQLJsonType {
 
-    public String getName() {
-        return "json";
+    @Override
+    public Serializable disassemble(Object value) throws HibernateException {
+        return value == null ? null : ((JsonObject) value).toJson();
     }
 
     @Override
-    protected boolean registerUnderJavaType() {
-        return true;
+    public Object assemble(Serializable cached, Object owner) throws HibernateException {
+        return cached == null ? null : elemental.json.impl.JsonUtil.parse(cached.toString());
+    }
+
+    @Override
+    public Class returnedClass() {
+        return JsonObject.class;
     }
 
 }
+

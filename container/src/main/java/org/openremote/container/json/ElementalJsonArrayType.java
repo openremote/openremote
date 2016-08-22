@@ -17,12 +17,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.container;
+package org.openremote.container.json;
 
-public interface Constants {
+import elemental.json.JsonArray;
+import org.hibernate.HibernateException;
 
-    String PERSISTENCE_SEQUENCE_ID_GENERATOR = "SEQUENCE_ID_GENERATOR";
-    String PERSISTENCE_UNIQUE_ID_GENERATOR = "UNIQUE_ID_GENERATOR";
-    String PERSISTENCE_JSON_OBJECT_TYPE = "json_object";
-    String PERSISTENCE_JSON_ARRAY_TYPE = "json_array";
+import java.io.Serializable;
+
+public class ElementalJsonArrayType extends PostgreSQLJsonType {
+
+    @Override
+    public Serializable disassemble(Object value) throws HibernateException {
+        return value == null ? null : ((JsonArray) value).toJson();
+    }
+
+    @Override
+    public Object assemble(Serializable cached, Object owner) throws HibernateException {
+        return cached == null ? null : elemental.json.impl.JsonUtil.parse(cached.toString());
+    }
+
+    @Override
+    public Class returnedClass() {
+        return JsonArray.class;
+    }
+
 }
+

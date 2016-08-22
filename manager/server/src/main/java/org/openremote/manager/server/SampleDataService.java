@@ -255,16 +255,27 @@ public class SampleDataService implements ContainerService {
         });
 
         // TODO Remove tests
-/*
-        List hosts = em.createNativeQuery(
-            "SELECT a.CONNECTOR_SETTINGS -> \"$.host\" " +
-                "FROM AGENT a " +
-                "WHERE JSON_EXTRACT(a.CONNECTOR_SETTINGS, \"$.port.value\") = 8080")
-            .getResultList();
+        persistenceService.doTransaction(em -> {
+            List<String> hosts = em.createNativeQuery(
+                "SELECT text(a.CONNECTOR_SETTINGS #> '{host,value}') FROM AGENT a " +
+                    "WHERE a.CONNECTOR_SETTINGS #> '{port,value}' = '8080'"
+            ).getResultList();
 
-        for (Object host : hosts) {
-            LOG.info("### GOT: " + host);
-        }
-*/
+            if (hosts.size() == 0) {
+                throw new RuntimeException("Text query failed! TODO Remove this test...");
+            }
+
+            List<Agent> agents = em.createNativeQuery(
+                "SELECT a.* FROM AGENT a " +
+                    "WHERE a.CONNECTOR_SETTINGS #> '{port,value}' = '8080'",
+                Agent.class
+            ).getResultList();
+
+            if (agents.size() == 0) {
+                throw new RuntimeException("Text query failed! TODO Remove this test...");
+            }
+
+        });
+
     }
 }

@@ -8,24 +8,27 @@ services:
     volumes:
       - ./keycloak/theme:/opt/jboss/keycloak/themes/openremote
     links:
-      - mysql_dev:mysql
+      - postgres_dev:postgresql
     environment:
       TZ: "Europe/Zurich"
       KEYCLOAK_USER: admin
       KEYCLOAK_PASSWORD: admin
       KEYCLOAK_LOGLEVEL: DEBUG
-      MYSQL_DATABASE: openremote
-      MYSQL_USERNAME: openremote
-      MYSQL_PASSWORD: secret
+      POSTGRES_DATABASE: openremote
+      POSTGRES_USER: openremote
+      POSTGRES_PASSWORD: secret
     ports:
       - "8081:8080"
-  mysql_dev:
-    image: mysql:5.7
+  postgres_dev:
+    build:
+      context: ./postgres
+      dockerfile: Dockerfile-dev
     environment:
       TZ: "Europe/Zurich"
-      MYSQL_RANDOM_ROOT_PASSWORD: 'yes'
-      MYSQL_DATABASE: openremote
-      MYSQL_USER: openremote
-      MYSQL_PASSWORD: secret
+      # This is the database superuser
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
+      # Create default database when started (also see init.sh files)
+      POSTGRES_DB: openremote
     ports:
-      - "8082:3306"
+      - "8082:5432"

@@ -43,9 +43,9 @@ public class PersistenceService implements ContainerService {
     public static final String PERSISTENCE_UNIT_NAME = "PERSISTENCE_UNIT_NAME";
     public static final String PERSISTENCE_UNIT_NAME_DEFAULT = "OpenRemotePU";
     public static final String DATABASE_PRODUCT = "DATABASE_PRODUCT";
-    public static final String DATABASE_PRODUCT_DEFAULT = Database.Product.MYSQL.name();
+    public static final String DATABASE_PRODUCT_DEFAULT = Database.Product.POSTGRES.name();
     public static final String DATABASE_CONNECTION_URL = "DATABASE_CONNECTION_URL";
-    public static final String DATABASE_CONNECTION_URL_DEFAULT = "jdbc:mysql://192.168.99.100:8082/openremote?useSSL=false";
+    public static final String DATABASE_CONNECTION_URL_DEFAULT = "jdbc:postgresql://192.168.99.100:8082/openremote";
     public static final String DATABASE_USERNAME = "DATABASE_USERNAME";
     public static final String DATABASE_USERNAME_DEFAULT = "openremote";
     public static final String DATABASE_PASSWORD = "DATABASE_PASSWORD";

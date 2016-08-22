@@ -27,4 +27,6 @@ public interface Constants {
     String MASTER_REALM_ADMIN_USER = "admin";
     String PERSISTENCE_SEQUENCE_ID_GENERATOR = "SEQUENCE_ID_GENERATOR";
     String PERSISTENCE_UNIQUE_ID_GENERATOR = "UNIQUE_ID_GENERATOR";
+    String PERSISTENCE_JSON_OBJECT_TYPE = "json_object";
+    String PERSISTENCE_JSON_ARRAY_TYPE = "json_array";
 }

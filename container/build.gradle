@@ -31,7 +31,7 @@ dependencies {
 
     compile "com.google.gwt:gwt-elemental:$gwtVersion"
 
-    compile "org.mariadb.jdbc:mariadb-java-client:$mariadbConnectorVersion"
+    compile "org.postgresql:postgresql:$postgresJdbcVersion"
     compile "com.zaxxer:HikariCP:$hikaricpVersion"
     compile "org.hibernate:hibernate-entitymanager:$hibernateVersion"
     compile "org.hibernate:hibernate-java8:$hibernateVersion"

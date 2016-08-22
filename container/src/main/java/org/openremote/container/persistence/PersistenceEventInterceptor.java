@@ -23,18 +23,23 @@ import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
 import org.hibernate.CallbackException;
 import org.hibernate.EmptyInterceptor;
+import org.hibernate.Transaction;
 import org.hibernate.type.Type;
 import org.openremote.container.message.MessageBrokerService;
 
+import javax.transaction.Status;
+import javax.transaction.Synchronization;
 import java.io.Serializable;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  * Intercept Hibernate lifecycle events and publish a message.
  */
 public class PersistenceEventInterceptor extends EmptyInterceptor {
+
+    private static final Logger LOG = Logger.getLogger(PersistenceEventInterceptor.class.getName());
 
     protected MessageBrokerService messageBrokerService;
     protected Set<Object> inserts = new HashSet<>();
@@ -76,26 +81,42 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
         deletes.add(entity);
     }
 
-    public void postFlush(Iterator iterator) throws CallbackException {
-        try {
-            ProducerTemplate producerTemplate =
-                messageBrokerService.getContext().createProducerTemplate();
+    @Override
+    public void afterTransactionBegin(Transaction tx) {
+        tx.registerSynchronization(new Synchronization() {
+            @Override
+            public void beforeCompletion() {
+            }
 
-            for (Object insert : inserts) {
-                publishEvent(producerTemplate, insert, PersistenceEvent.INSERT);
-            }
-            for (Object update : updates) {
-                publishEvent(producerTemplate, update, PersistenceEvent.UPDATE);
-            }
-            for (Object delete : deletes) {
-                publishEvent(producerTemplate, delete, PersistenceEvent.DELETE);
+            @Override
+            public void afterCompletion(int status) {
+                try {
+                    if (status != Status.STATUS_COMMITTED)
+                        return;
+                    ProducerTemplate producerTemplate =
+                        messageBrokerService.getContext().createProducerTemplate();
 
+                    for (Object insert : inserts) {
+                        publishEvent(producerTemplate, insert, PersistenceEvent.INSERT);
+                    }
+                    for (Object update : updates) {
+                        publishEvent(producerTemplate, update, PersistenceEvent.UPDATE);
+                    }
+                    for (Object delete : deletes) {
+                        publishEvent(producerTemplate, delete, PersistenceEvent.DELETE);
+
+                    }
+                } finally {
+                    inserts.clear();
+                    updates.clear();
+                    deletes.clear();
+                }
             }
-        } finally {
-            inserts.clear();
-            updates.clear();
-            deletes.clear();
-        }
+        });
+    }
+
+    @Override
+    public void afterTransactionCompletion(Transaction tx) {
     }
 
     protected void publishEvent(ProducerTemplate producerTemplate, Object object, PersistenceEvent eventAction) {

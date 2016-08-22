@@ -7,12 +7,12 @@
     <xsl:output method="xml" indent="yes"/>
 
     <xsl:template match="//ds:subsystem/ds:datasources/ds:datasource[@jndi-name='java:jboss/datasources/KeycloakDS']">
-        <ds:datasource jndi-name="java:jboss/datasources/KeycloakDS" pool-name="KeycloakDS" enabled="true" use-java-context="true" use-ccm="true">
-            <ds:connection-url>jdbc:mysql://mysql:3306/${env.MYSQL_DATABASE:keycloak}?useSSL=false</ds:connection-url>
-            <ds:driver>mariadb</ds:driver>
+        <ds:datasource jndi-name="java:jboss/datasources/KeycloakDS" enabled="true" use-java-context="true" pool-name="KeycloakDS" use-ccm="true">
+            <ds:connection-url>jdbc:postgresql://postgresql:5432/${env.POSTGRES_DATABASE:keycloak}</ds:connection-url>
+            <ds:driver>postgresql</ds:driver>
             <ds:security>
-                <ds:user-name>${env.MYSQL_USERNAME:keycloak}</ds:user-name>
-                <ds:password>${env.MYSQL_PASSWORD:password}</ds:password>
+                <ds:user-name>${env.POSTGRES_USER:keycloak}</ds:user-name>
+                <ds:password>${env.POSTGRES_PASSWORD:password}</ds:password>
             </ds:security>
             <ds:validation>
                 <ds:check-valid-connection-sql>SELECT 1</ds:check-valid-connection-sql>
@@ -28,8 +28,8 @@
     <xsl:template match="//ds:subsystem/ds:datasources/ds:drivers">
         <xsl:copy>
             <xsl:apply-templates select="node()|@*"/>
-            <ds:driver name="mariadb" module="org.mariadb.jdbc">
-                <ds:xa-datasource-class>org.mariadb.jdbc.MariaDbDataSource</ds:xa-datasource-class>
+            <ds:driver name="postgresql" module="org.postgresql.jdbc">
+                <ds:xa-datasource-class>org.postgresql.xa.PGXADataSource</ds:xa-datasource-class>
             </ds:driver>
         </xsl:copy>
     </xsl:template>

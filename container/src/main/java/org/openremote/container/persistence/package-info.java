@@ -20,12 +20,17 @@
 
 @org.hibernate.annotations.TypeDefs({
     @org.hibernate.annotations.TypeDef(
-        name = "json",
-        typeClass = JsonStringType.class
+        name = Constants.PERSISTENCE_JSON_OBJECT_TYPE,
+        typeClass = ElementalJsonObjectType.class
+    ),
+    @org.hibernate.annotations.TypeDef(
+        name = Constants.PERSISTENCE_JSON_ARRAY_TYPE,
+        typeClass = ElementalJsonArrayType.class
     )
 })
 
 package org.openremote.container.persistence;
 
 import org.openremote.container.Constants;
-import org.openremote.container.json.JsonStringType;
+import org.openremote.container.json.ElementalJsonArrayType;
+import org.openremote.container.json.ElementalJsonObjectType;

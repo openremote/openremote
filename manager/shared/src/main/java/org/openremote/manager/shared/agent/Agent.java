@@ -25,6 +25,7 @@ import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.util.Date;
 
+import static org.openremote.manager.shared.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
 import static org.openremote.manager.shared.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 
 @Entity
@@ -64,8 +65,8 @@ public class Agent {
     @Column(name = "CONNECTOR_TYPE")
     protected String connectorType = NO_CONNECTOR_ASSIGNED_TYPE;
 
-    @Column(name = "CONNECTOR_SETTINGS", columnDefinition = "json")
-    @org.hibernate.annotations.Type(type = "json")
+    @Column(name = "CONNECTOR_SETTINGS", columnDefinition = "jsonb")
+    @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_OBJECT_TYPE)
     protected JsonObject connectorSettings;
 
     public Agent() {

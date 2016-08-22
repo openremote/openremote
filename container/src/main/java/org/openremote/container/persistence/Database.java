@@ -22,7 +22,7 @@ package org.openremote.container.persistence;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.dialect.MySQL57InnoDBDialect;
+import org.hibernate.dialect.PostgreSQL94Dialect;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,7 +35,7 @@ public interface Database {
 
     enum Product implements Database {
 
-        MYSQL {
+        POSTGRES {
             protected HikariConfig hikariConfig;
             protected HikariDataSource hikariDataSource;
 
@@ -43,7 +43,7 @@ public interface Database {
             public Map<String, Object> open(String connectionUrl, String username, String password, int minIdle, int maxPoolSize) {
 
                 hikariConfig = new HikariConfig();
-                hikariConfig.setDataSourceClassName("org.mariadb.jdbc.MySQLDataSource");
+                hikariConfig.setDataSourceClassName("org.postgresql.ds.PGSimpleDataSource");
                 hikariConfig.addDataSourceProperty("url", connectionUrl);
                 hikariConfig.setUsername(username);
                 hikariConfig.setPassword(password);
@@ -53,7 +53,7 @@ public interface Database {
                 hikariDataSource = new HikariDataSource(hikariConfig);
 
                 Map<String, Object> properties = new HashMap<>();
-                properties.put(AvailableSettings.DIALECT, MySQL57InnoDBDialect.class.getName());
+                properties.put(AvailableSettings.DIALECT, PostgreSQL94Dialect.class.getName());
                 properties.put(AvailableSettings.DATASOURCE, hikariDataSource);
 
                 return properties;

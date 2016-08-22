@@ -45,11 +45,15 @@ function dcleanup(){
 }
 ```
 
-We are using the [Orion Context Broker](https://fiware-orion.readthedocs.org/en/develop/) with a MongoDB backend. For development, this is an instance with a non-persistent data store.
+For authentication and authorization we are using [Keycloak](http://keycloak.jboss.org/).
 
-For authentication and authorization we are using [Keycloak](http://keycloak.jboss.org/) with a non-persistent data store.
+We are using the PostgreSQL as a database backend. Test and sample data will be installed fresh every time you start the services. Note that this is not suitable for a production configuration!
 
-Test and sample data will be installed fresh every time you start the server(s).
+To access the database directly with an SQL console, run:
+
+```
+docker exec -it openremote_postgres_dev_1 su -s /bin/sh - postgres -c "sh -c 'psql openremote'"
+```
 
 ### Run required services
 
@@ -86,7 +90,7 @@ You can now open http://localhost:8080/ in your browser.
 
 You can run the tests of the `manager` project with `./gradlew test` or run the individual test classes in your IDE directly. The working directory must always be set to the project root diretory.
 
-Note that some of these tests are end-to-end tests that require the whole environment to be running. This means your Keycloak and Orion containers will be used, and data will be inserted and deleted during a test run. You might want to start with clean containers before running tests and you might have to restart containers after (failed) tests.
+Note that some of these tests are end-to-end tests that require the whole environment to be running. This means your Keycloak and PostgreSQL containers will be used, and data will be inserted and deleted during a test run. You might want to start with clean containers before running tests and you might have to restart containers after (failed) tests.
 
 ### Updating map data
 
