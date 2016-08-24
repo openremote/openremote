@@ -20,7 +20,7 @@
 package org.openremote.container.json;
 
 import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
 import org.postgresql.util.PGobject;
 
@@ -62,14 +62,19 @@ public abstract class PostgreSQLJsonType implements UserType {
     }
 
     @Override
-    public Object nullSafeGet(ResultSet resultSet, String[] names, SessionImplementor session, Object owner) throws HibernateException, SQLException {
+    public Object nullSafeGet(ResultSet resultSet,
+                              String[] names,
+                              SharedSessionContractImplementor session,
+                              Object owner) throws HibernateException, SQLException {
         String json = resultSet.getString(names[0]);
         return json == null ? null : assemble(json, null);
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement st, Object value, int index,
-                            SessionImplementor session) throws HibernateException, SQLException {
+    public void nullSafeSet(PreparedStatement st,
+                            Object value,
+                            int index,
+                            SharedSessionContractImplementor session) throws HibernateException, SQLException {
         final String json = value == null ? null : disassemble(value).toString();
         PGobject pgo = new PGobject();
         pgo.setType("jsonb");

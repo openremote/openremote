@@ -17,24 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.assets.browser;
+package org.openremote.manager.client.assets;
 
-import com.google.gwt.view.client.AsyncDataProvider;
-import com.google.gwt.view.client.HasData;
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
+import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
 import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.http.EntityReader;
 
-class AssetDataProvider extends AsyncDataProvider<Asset> {
-
-    final protected AssetBrowser.Presenter presenter;
-    final protected Asset parent;
-
-    public AssetDataProvider(AssetBrowser.Presenter presenter, Asset parent) {
-        this.presenter = presenter;
-        this.parent = parent;
-    }
-
-    @Override
-    protected void onRangeChanged(HasData<Asset> display) {
-        presenter.loadAssetChildren(parent, display);
-    }
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = Asset.class, mixIn = DefaultJsonMixin.class)})
+public interface AssetArrayMapper
+    extends ObjectMapper<Asset[]>,
+    EntityReader<Asset[]> {
 }

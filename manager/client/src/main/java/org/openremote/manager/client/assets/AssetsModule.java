@@ -20,6 +20,7 @@
 package org.openremote.manager.client.assets;
 
 import com.google.gwt.inject.client.AbstractGinModule;
+import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import org.openremote.manager.client.assets.asset.AssetActivity;
 import org.openremote.manager.client.assets.asset.AssetView;
@@ -27,6 +28,7 @@ import org.openremote.manager.client.assets.asset.AssetViewImpl;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserImpl;
 import org.openremote.manager.client.assets.browser.AssetBrowserPresenter;
+import org.openremote.manager.shared.asset.AssetResource;
 
 public class AssetsModule extends AbstractGinModule {
 
@@ -41,5 +43,15 @@ public class AssetsModule extends AbstractGinModule {
         bind(AssetView.class).to(AssetViewImpl.class).in(Singleton.class);
         bind(AssetActivity.class);
     }
+
+    @Provides
+    @Singleton
+    public AssetResource getAssetResource() {
+        return getNativeAssetResource();
+    }
+
+    public static native AssetResource getNativeAssetResource() /*-{
+        return $wnd.AssetResource;
+    }-*/;
 
 }

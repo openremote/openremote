@@ -19,16 +19,21 @@
  */
 package org.openremote.manager.client.assets.browser;
 
-import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
-import org.openremote.manager.client.assets.SampleAssets;
-import org.openremote.manager.client.assets.asset.Asset;
+import org.openremote.manager.client.assets.AssetArrayMapper;
+import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
+import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.mvp.AppActivity;
+import org.openremote.manager.client.service.RequestService;
+import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.asset.AssetResource;
 
 import java.util.Collection;
 import java.util.logging.Logger;
+
+import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
 abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T extends AssetBrowsingPlace>
     extends AppActivity<T>
@@ -36,16 +41,35 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
 
     private static final Logger LOG = Logger.getLogger(AssetBrowsingActivity.class.getName());
 
+    final protected EventBus eventBus;
+    final protected ManagerMessages managerMessages;
+    final protected RequestService requestService;
     final protected V view;
     final protected AssetBrowser.Presenter assetBrowserPresenter;
+    final protected AssetResource assetResource;
+    final protected AssetArrayMapper assetArrayMapper;
+    final protected AssetMapper assetMapper;
 
     protected EventRegistration<AssetSelectedEvent> assetSelectionRegistration;
     protected String assetId;
     protected Asset asset;
 
-    public AssetBrowsingActivity(V view, AssetBrowser.Presenter assetBrowserPresenter) {
+    public AssetBrowsingActivity(EventBus eventBus,
+                                 ManagerMessages managerMessages,
+                                 RequestService requestService,
+                                 V view,
+                                 AssetBrowser.Presenter assetBrowserPresenter,
+                                 AssetResource assetResource,
+                                 AssetArrayMapper assetArrayMapper,
+                                 AssetMapper assetMapper) {
+        this.eventBus = eventBus;
+        this.managerMessages = managerMessages;
+        this.requestService = requestService;
         this.view = view;
         this.assetBrowserPresenter = assetBrowserPresenter;
+        this.assetResource = assetResource;
+        this.assetArrayMapper = assetArrayMapper;
+        this.assetMapper = assetMapper;
     }
 
     public V getView() {
@@ -112,29 +136,17 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
 
     protected void loadAsset() {
         onBeforeAssetLoad();
-        new Timer() {
-            public void run() {
-                asset = SampleAssets.ALL_BY_ID.get(assetId);
-                assetBrowserPresenter.selectAsset(asset);
-                onAssetReady();
-            }
-        }.schedule(100);
-
-        /* TODO query
         requestService.execute(
             assetMapper,
             requestParams -> assetResource.get(requestParams, assetId),
             200,
-            user -> {
-                this.user = user;
-                this.realm = user.getRealm();
-                loadRoles(() -> {
-                    writeToView();
-                });
+            asset -> {
+                this.asset = asset;
+                assetBrowserPresenter.selectAsset(asset);
+                onAssetReady();
             },
             ex -> handleRequestException(ex, eventBus, managerMessages)
         );
-        */
     }
 
     /**
@@ -150,10 +162,8 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
 
     abstract protected void onAssetSelectionChange(Asset newSelection);
 
-    /**
-     * Noop by default
-     */
     protected void startCreateAsset() {
+        assetBrowserPresenter.selectAsset(null);
     }
 
 }

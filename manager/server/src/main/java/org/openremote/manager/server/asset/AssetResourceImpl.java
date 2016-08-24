@@ -17,24 +17,35 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.assets.browser;
+package org.openremote.manager.server.asset;
 
-import com.google.gwt.view.client.AsyncDataProvider;
-import com.google.gwt.view.client.HasData;
+import org.openremote.container.web.WebResource;
 import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.asset.AssetResource;
+import org.openremote.manager.shared.http.RequestParams;
 
-class AssetDataProvider extends AsyncDataProvider<Asset> {
+import javax.ws.rs.BeanParam;
 
-    final protected AssetBrowser.Presenter presenter;
-    final protected Asset parent;
+public class AssetResourceImpl extends WebResource implements AssetResource {
 
-    public AssetDataProvider(AssetBrowser.Presenter presenter, Asset parent) {
-        this.presenter = presenter;
-        this.parent = parent;
+    protected final AssetService assetService;
+
+    public AssetResourceImpl(AssetService assetService) {
+        this.assetService = assetService;
     }
 
     @Override
-    protected void onRangeChanged(HasData<Asset> display) {
-        presenter.loadAssetChildren(parent, display);
+    public Asset[] getRoot(@BeanParam RequestParams requestParams) {
+        return assetService.getRoot();
+    }
+
+    @Override
+    public Asset[] getChildren(@BeanParam RequestParams requestParams, String parentId) {
+        return assetService.getChildren(parentId);
+    }
+
+    @Override
+    public Asset get(@BeanParam RequestParams requestParams, String assetId) {
+        return assetService.get(assetId);
     }
 }

@@ -25,8 +25,6 @@ import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.PopupPanel;
 import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
-import org.openremote.manager.client.util.Point;
-import org.openremote.manager.client.util.Rectangle;
 import org.openremote.manager.client.widget.MessagesIcon;
 
 import javax.inject.Inject;
@@ -35,6 +33,152 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class PopupToastDisplay implements ToastDisplay {
+
+    protected class Point {
+
+        final protected int x;
+        final protected int y;
+
+        public Point(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+
+        public int getX() {
+            return x;
+        }
+
+        public int getY() {
+            return y;
+        }
+
+        public Point multiply(double by) {
+            return new Point(
+                this.x != 0 ? (int) (this.x * by) : 0,
+                this.y != 0 ? (int) (this.y * by) : 0
+            );
+        }
+
+        public Point divide(double by) {
+            return new Point(
+                this.x != 0 ? (int) (this.x / by) : 0,
+                this.y != 0 ? (int) (this.y / by) : 0
+            );
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Point point = (Point) o;
+
+            if (x != point.x) return false;
+            if (y != point.y) return false;
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = x;
+            result = 31 * result + y;
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "Point{" +
+                "x=" + x +
+                ", y=" + y +
+                '}';
+        }
+    }
+
+    protected class Rectangle {
+
+        protected Point position;
+        protected int width;
+        protected int height;
+
+        public Rectangle(Point position, int width, int height) {
+            this.position = position;
+            this.width = width;
+            this.height = height;
+        }
+
+        public void reset() {
+            position = new Point(0, 0);
+            width = 0;
+            height = 0;
+        }
+
+        public Point getPosition() {
+            return position;
+        }
+
+        public void setPosition(Point position) {
+            this.position = position;
+        }
+
+        public int getWidth() {
+            return width;
+        }
+
+        public void setWidth(int width) {
+            this.width = width;
+        }
+
+        public int getHeight() {
+            return height;
+        }
+
+        public void setHeight(int height) {
+            this.height = height;
+        }
+
+        public Rectangle intersection(Rectangle that) {
+            int tx1 = this.position.getX();
+            int ty1 = this.position.getY();
+            int rx1 = that.position.getX();
+            int ry1 = that.position.getY();
+            long tx2 = tx1;
+            tx2 += this.width;
+            long ty2 = ty1;
+            ty2 += this.height;
+            long rx2 = rx1;
+            rx2 += that.width;
+            long ry2 = ry1;
+            ry2 += that.height;
+            if (tx1 < rx1) tx1 = rx1;
+            if (ty1 < ry1) ty1 = ry1;
+            if (tx2 > rx2) tx2 = rx2;
+            if (ty2 > ry2) ty2 = ry2;
+            tx2 -= tx1;
+            ty2 -= ty1;
+
+            // tx2,ty2 will never overflow (they will never be
+            // larger than the smallest of the two source w,h)
+            // they might underflow, though...
+            if (tx2 < Integer.MIN_VALUE) tx2 = Integer.MIN_VALUE;
+            if (ty2 < Integer.MIN_VALUE) ty2 = Integer.MIN_VALUE;
+            return new Rectangle(new Point(tx1, ty1), (int) tx2, (int) ty2);
+        }
+
+        public boolean isOverlapping(Rectangle that) {
+            Rectangle intersection = this.intersection(that);
+            return (intersection.getWidth() > 0 && intersection.getHeight() > 0);
+        }
+
+        @Override
+        public String toString() {
+            return "Rectangle{" +
+                "position=" + position +
+                ", width=" + width +
+                ", height=" + height +
+                '}';
+        }
+    }
 
     public static final int MARGIN_BOTTOM_PIXEL = 10;
     public static final int MARGIN_RIGHT_PIXEL = 25;

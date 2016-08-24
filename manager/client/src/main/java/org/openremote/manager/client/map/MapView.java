@@ -21,6 +21,7 @@ package org.openremote.manager.client.map;
 
 import elemental.json.JsonObject;
 import org.openremote.manager.client.assets.browser.AssetBrowsingView;
+import org.openremote.manager.shared.map.GeoJSON;
 
 public interface MapView extends AssetBrowsingView<MapView.Presenter> {
 
@@ -33,11 +34,11 @@ public interface MapView extends AssetBrowsingView<MapView.Presenter> {
 
     void refresh();
 
-    void showFeaturesAll(String mapFeaturesJson);
+    void showFeaturesAll(GeoJSON mapFeatures);
 
     void hideFeaturesAll();
 
-    void showFeaturesSelection(String mapFeaturesJson);
+    void showFeaturesSelection(GeoJSON mapFeatures);
 
     void hideFeaturesSelection();
 

@@ -68,8 +68,8 @@ public class AssetViewImpl extends Composite implements AssetView {
     }
 
     @Override
-    public void setDisplayName(String displayName) {
+    public void setName(String name) {
         assetContentContainer.clear();
-        assetContentContainer.add(new Label("SELECTED: " + displayName));
+        assetContentContainer.add(new Label("SELECTED: " + name));
     }
 }

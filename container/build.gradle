@@ -33,8 +33,10 @@ dependencies {
 
     compile "org.postgresql:postgresql:$postgresJdbcVersion"
     compile "com.zaxxer:HikariCP:$hikaricpVersion"
-    compile "org.hibernate:hibernate-entitymanager:$hibernateVersion"
-    compile "org.hibernate:hibernate-java8:$hibernateVersion"
+    compile "org.hibernate:hibernate-core:$hibernateVersion"
+    compile ("org.hibernate:hibernate-spatial:$hibernateVersion") {
+        exclude group: "org.slf4j"
+    }
     compile "org.hibernate:hibernate-validator:$hibernateValidatorVersion"
     compile "org.glassfish.web:javax.el:$javaxELVersion"
 

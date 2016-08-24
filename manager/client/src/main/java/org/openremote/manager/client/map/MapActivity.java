@@ -21,7 +21,8 @@ package org.openremote.manager.client.map;
 
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
-import org.openremote.manager.client.assets.asset.Asset;
+import org.openremote.manager.client.assets.AssetArrayMapper;
+import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
 import org.openremote.manager.client.event.GoToPlaceEvent;
@@ -30,36 +31,38 @@ import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
 import org.openremote.manager.client.service.RequestService;
+import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.asset.AssetResource;
+import org.openremote.manager.shared.map.GeoJSON;
+import org.openremote.manager.shared.map.GeoJSONFeature;
+import org.openremote.manager.shared.map.GeoJSONGeometry;
 import org.openremote.manager.shared.map.MapResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
-import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
 public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implements MapView.Presenter {
 
-    private static final Logger LOG = Logger.getLogger(MapActivity.class.getName());
-
     final MapResource mapResource;
-    final ManagerMessages managerMessages;
-    final RequestService requestService;
     final PlaceController placeController;
     final JsonObjectMapper jsonObjectMapper;
 
     @Inject
-    public MapActivity(AssetBrowser.Presenter assetBrowserPresenter,
-                       MapView view,
-                       MapResource mapResource,
+    public MapActivity(EventBus eventBus,
                        ManagerMessages managerMessages,
                        RequestService requestService,
                        PlaceController placeController,
+                       MapView view,
+                       AssetBrowser.Presenter assetBrowserPresenter,
+                       AssetResource assetResource,
+                       AssetArrayMapper assetArrayMapper,
+                       AssetMapper assetMapper,
+                       MapResource mapResource,
                        JsonObjectMapper jsonObjectMapper) {
-        super(view, assetBrowserPresenter);
+        super(eventBus, managerMessages, requestService, view, assetBrowserPresenter, assetResource, assetArrayMapper, assetMapper);
         this.mapResource = mapResource;
-        this.managerMessages = managerMessages;
-        this.requestService = requestService;
         this.placeController = placeController;
         this.jsonObjectMapper = jsonObjectMapper;
     }
@@ -86,23 +89,32 @@ public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implem
 
     @Override
     protected void startCreateAsset() {
+        super.startCreateAsset();
         getView().hideFeaturesSelection();
     }
 
     @Override
     protected void onAssetReady() {
-        getView().showFeaturesSelection(asset.getMapFeatures());
+        getView().showFeaturesSelection(getFeature(asset));
     }
 
     @Override
     protected void onAssetsDeselected() {
         getView().hideFeaturesSelection();
-        placeController.goTo(new MapPlace());
     }
 
     @Override
     protected void onAssetSelectionChange(Asset newSelection) {
         placeController.goTo(new MapPlace(newSelection.getId()));
+    }
+
+    private GeoJSON getFeature(Asset asset) {
+        return new GeoJSON().setType("FeatureCollection").setFeatures(
+            new GeoJSONFeature().setType("Feature")
+                .setProperty("id", asset.getId())
+                .setProperty("title", asset.getName())
+                .setGeometry(new GeoJSONGeometry().setPoint(asset.getCoordinates()))
+        );
     }
 
 }

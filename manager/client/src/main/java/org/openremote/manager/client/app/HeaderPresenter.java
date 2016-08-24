@@ -23,7 +23,6 @@ import com.google.gwt.place.shared.PlaceController;
 import com.google.inject.Inject;
 import org.openremote.manager.client.admin.overview.AdminOverviewPlace;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
-import org.openremote.manager.client.assets.asset.Asset;
 import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetSelectedEvent;
@@ -36,6 +35,7 @@ import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.user.UserControls;
 import org.openremote.manager.shared.Constants;
+import org.openremote.manager.shared.asset.Asset;
 
 import java.util.logging.Logger;
 

@@ -30,6 +30,7 @@ import org.openremote.manager.client.interop.mapbox.EventType;
 import org.openremote.manager.client.interop.mapbox.GeoJSONSource;
 import org.openremote.manager.client.interop.mapbox.MapboxMap;
 import org.openremote.manager.client.interop.mapbox.Navigation;
+import org.openremote.manager.shared.map.GeoJSON;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -198,7 +199,7 @@ public class MapWidget extends ComplexPanel {
         JsonObject currentFeatureData = currentFeatureSourceData.remove(featureSourceId);
         if (currentFeatureData == null) {
             // Or initialize with empty collection (null doesn't work)
-            currentFeatureData = Json.parse("{\"type\":\"FeatureCollection\",\"features\":[]}");
+            currentFeatureData = GeoJSON.EMPTY_FEATURE_COLLECTION.getJsonObject();
         }
         LOG.fine("Preparing data on feature source: " + featureSourceId);
         sourceOptions.put("data", currentFeatureData);
@@ -229,9 +230,9 @@ public class MapWidget extends ComplexPanel {
         featuresReady = true;
     }
 
-    public void showFeatures(String featureSourceId, String featuresJson) {
-        LOG.fine("Showing features on source " + featureSourceId + ": " + featuresJson);
-        JsonObject data = Json.parse(featuresJson);
+    public void showFeatures(String featureSourceId, GeoJSON mapFeatures) {
+        LOG.fine("Showing features on source " + featureSourceId + ": " + mapFeatures);
+        JsonObject data = mapFeatures.getJsonObject();
         currentFeatureSourceData.put(featureSourceId, data);
         if (featuresReady) {
             data = currentFeatureSourceData.remove(featureSourceId);

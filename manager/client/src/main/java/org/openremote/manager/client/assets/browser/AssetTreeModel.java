@@ -21,9 +21,17 @@ package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.view.client.SingleSelectionModel;
 import com.google.gwt.view.client.TreeViewModel;
-import org.openremote.manager.client.assets.asset.Asset;
+import org.openremote.manager.shared.asset.Asset;
+
+import java.util.logging.Logger;
 
 class AssetTreeModel implements TreeViewModel {
+
+    private static final Logger LOG = Logger.getLogger(AssetTreeModel.class.getName());
+
+    // This type is used when we have to stick a temporary asset into the tree for whatever reason,
+    // e.g. an asset that is really only a loading message or some other UI signal for the user
+    public static final String TEMPORARY_ASSET_TYPE = "TMP";
 
     final AssetBrowser.Presenter presenter;
     final SingleSelectionModel<Asset> selectionModel = new SingleSelectionModel<>();
@@ -51,10 +59,17 @@ class AssetTreeModel implements TreeViewModel {
     }
 
     public boolean isLeaf(Object value) {
+        // Currently we do not have leaf nodes in the tree, so we always offer the user an option to expand
+        // and therefore query/refresh an asset, to see if there are "now" any child assets assigned. The only
+        // other choice would be to determine leaf or composite by asset type, which is kinda arbitrary.
+
+        // The exception to this is any temporary asset, which should not be expandable
         if (value instanceof Asset) {
             Asset asset = (Asset) value;
-            return !asset.getType().equals(Asset.Type.COMPOSITE.name());
+            if (TEMPORARY_ASSET_TYPE.equals(asset.getType()))
+                return true;
         }
-        return true;
+
+        return false;
     }
 }

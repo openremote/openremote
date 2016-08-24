@@ -23,6 +23,7 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.PostgreSQL94Dialect;
+import org.hibernate.spatial.dialect.postgis.PostgisDialect;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -53,7 +54,7 @@ public interface Database {
                 hikariDataSource = new HikariDataSource(hikariConfig);
 
                 Map<String, Object> properties = new HashMap<>();
-                properties.put(AvailableSettings.DIALECT, PostgreSQL94Dialect.class.getName());
+                properties.put(AvailableSettings.DIALECT, PostgisDialect.class.getName());
                 properties.put(AvailableSettings.DATASOURCE, hikariDataSource);
 
                 return properties;

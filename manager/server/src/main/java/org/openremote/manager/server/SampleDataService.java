@@ -19,6 +19,8 @@
  */
 package org.openremote.manager.server;
 
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.GeometryFactory;
 import elemental.json.Json;
 import org.apache.log4j.Logger;
 import org.keycloak.admin.client.resource.*;
@@ -30,8 +32,11 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthForm;
 import org.openremote.manager.server.agent.AgentService;
 import org.openremote.manager.server.agent.ConnectorService;
+import org.openremote.manager.server.asset.AssetService;
+import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.agent.Agent;
+import org.openremote.manager.shared.asset.AssetType;
 import org.openremote.manager.shared.attribute.Attribute;
 import org.openremote.manager.shared.attribute.Attributes;
 import rx.Observable;
@@ -61,6 +66,7 @@ public class SampleDataService implements ContainerService {
     protected ManagerIdentityService identityService;
     protected ConnectorService connectorService;
     protected AgentService agentService;
+    protected AssetService assetService;
 
     @Override
     public void init(Container container) throws Exception {
@@ -69,6 +75,7 @@ public class SampleDataService implements ContainerService {
         identityService = container.getService(ManagerIdentityService.class);
         connectorService = container.getService(ConnectorService.class);
         agentService = container.getService(AgentService.class);
+        assetService = container.getService(AssetService.class);
     }
 
     @Override
@@ -94,6 +101,7 @@ public class SampleDataService implements ContainerService {
         registerClientApplications(accessToken);
         addRolesAndTestUsers(accessToken);
         storeSampleAgent();
+        storeSampleAssets();
     }
 
     @Override
@@ -254,6 +262,7 @@ public class SampleDataService implements ContainerService {
             em.persist(controller2Agent);
         });
 
+        /*
         // TODO Remove tests
         persistenceService.doTransaction(em -> {
             List<String> hosts = em.createNativeQuery(
@@ -274,8 +283,44 @@ public class SampleDataService implements ContainerService {
             if (agents.size() == 0) {
                 throw new RuntimeException("Text query failed! TODO Remove this test...");
             }
-
         });
+        */
+    }
 
+    protected void storeSampleAssets() {
+
+        GeometryFactory geometryFactory = new GeometryFactory();
+
+        persistenceService.doTransaction(em -> {
+            ServerAsset videoLab = new ServerAsset();
+            videoLab.setName("Videolab");
+            videoLab.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+            videoLab.setType(AssetType.BUILDING);
+            em.persist(videoLab);
+
+            ServerAsset office1 = new ServerAsset(videoLab);
+            office1.setName("Office 1");
+            office1.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+            office1.setType(AssetType.ROOM);
+            em.persist(office1);
+
+            ServerAsset office1Thermostat = new ServerAsset(office1);
+            office1Thermostat.setName("Thermostat in Office 1");
+            office1Thermostat.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+            office1Thermostat.setType(AssetType.GENERIC);
+            em.persist(office1Thermostat);
+
+            ServerAsset office2 = new ServerAsset(videoLab);
+            office2.setName("Office 2");
+            office2.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+            office2.setType(AssetType.ROOM);
+            em.persist(office2);
+
+            ServerAsset office3 = new ServerAsset(videoLab);
+            office3.setName("Office 3");
+            office3.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+            office3.setType(AssetType.ROOM);
+            em.persist(office3);
+        });
     }
 }

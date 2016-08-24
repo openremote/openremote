@@ -27,6 +27,7 @@ import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.Label;
 import elemental.json.JsonObject;
+import org.openremote.manager.shared.map.GeoJSON;
 
 import javax.inject.Inject;
 
@@ -84,24 +85,22 @@ public class MapViewImpl extends Composite implements MapView {
     }
 
     @Override
-    public void showFeaturesAll(String mapFeaturesJson) {
-        mapWidget.showFeatures(MapWidget.FEATURES_SOURCE_ALL, mapFeaturesJson);
+    public void showFeaturesAll(GeoJSON mapFeatures) {
+        mapWidget.showFeatures(MapWidget.FEATURES_SOURCE_ALL, mapFeatures);
     }
 
     @Override
     public void hideFeaturesAll() {
-        // TODO ugly
-        showFeaturesAll("{ \"type\": \"FeatureCollection\", \"features\": [] }");
+        showFeaturesAll(GeoJSON.EMPTY_FEATURE_COLLECTION);
     }
 
     @Override
-    public void showFeaturesSelection(String mapFeaturesJson) {
-        mapWidget.showFeatures(MapWidget.FEATURES_SOURCE_SELECTION, mapFeaturesJson);
+    public void showFeaturesSelection(GeoJSON mapFeatures) {
+        mapWidget.showFeatures(MapWidget.FEATURES_SOURCE_SELECTION, mapFeatures);
     }
 
     @Override
     public void hideFeaturesSelection() {
-        // TODO ugly
-        showFeaturesSelection("{ \"type\": \"FeatureCollection\", \"features\": [] }");
+        showFeaturesSelection(GeoJSON.EMPTY_FEATURE_COLLECTION);
     }
 }

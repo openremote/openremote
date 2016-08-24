@@ -1,5 +1,4 @@
 apply plugin: "java"
-apply plugin: "net.ltgt.apt"
 
 dependencies {
     compile "org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.0_spec:$jaxrsSpecVersion"
@@ -11,11 +10,7 @@ dependencies {
     compile "org.keycloak:keycloak-core:$keycloakVersion"
     compile "org.keycloak:keycloak-core:$keycloakVersion:sources"
     compile "org.hibernate:hibernate-validator:$hibernateValidatorVersion"
-    compile "org.hibernate:hibernate-entitymanager:$hibernateVersion"
-    compile "de.grundid.opendatalab:geojson-jackson:$geojsonJacksonVersion"
-    compile "de.grundid.opendatalab:geojson-jackson:$geojsonJacksonVersion:sources"
-
-    apt "org.hibernate:hibernate-jpamodelgen:$hibernateVersion"
+    compile "org.hibernate:hibernate-core:$hibernateVersion"
 }
 
 jar {

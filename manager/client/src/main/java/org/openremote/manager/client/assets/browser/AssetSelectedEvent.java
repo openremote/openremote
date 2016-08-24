@@ -1,6 +1,6 @@
 package org.openremote.manager.client.assets.browser;
 
-import org.openremote.manager.client.assets.asset.Asset;
+import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.event.Event;
 
 public class AssetSelectedEvent extends Event {

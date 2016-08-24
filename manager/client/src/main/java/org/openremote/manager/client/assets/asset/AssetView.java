@@ -28,6 +28,6 @@ public interface AssetView extends AssetBrowsingView<AssetView.Presenter> {
 
     void setFormBusy(boolean busy);
 
-    void setDisplayName(String displayName);
+    void setName(String name);
 
 }

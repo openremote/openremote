@@ -143,7 +143,7 @@ public interface ManagerMessages extends Messages {
 
     String showMoreAssets();
 
-    String emptyCompositeAsset();
+    String emptyAsset();
 
     String agentName();
 
@@ -174,4 +174,6 @@ public interface ManagerMessages extends Messages {
     String agentDeleted(String name);
 
     String unsupportedAttributeType(String name);
+
+    String loadingAssets();
 }

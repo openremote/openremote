@@ -21,12 +21,17 @@ package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import org.openremote.manager.client.assets.AssetArrayMapper;
+import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
+import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.service.RequestService;
+import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.asset.AssetResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -39,19 +44,19 @@ public class AssetActivity
     private static final Logger LOG = Logger.getLogger(AssetActivity.class.getName());
 
     final PlaceController placeController;
-    final EventBus eventBus;
-    final RequestService requestService;
 
     @Inject
-    public AssetActivity(AssetView view,
-                         AssetBrowser.Presenter assetBrowserPresenter,
+    public AssetActivity(EventBus eventBus,
+                         ManagerMessages managerMessages,
+                         RequestService requestService,
                          PlaceController placeController,
-                         EventBus eventBus,
-                         RequestService requestService) {
-        super(view, assetBrowserPresenter);
+                         AssetView view,
+                         AssetBrowser.Presenter assetBrowserPresenter,
+                         AssetResource assetResource,
+                         AssetArrayMapper assetArrayMapper,
+                         AssetMapper assetMapper) {
+        super(eventBus, managerMessages, requestService, view, assetBrowserPresenter, assetResource, assetArrayMapper, assetMapper);
         this.placeController = placeController;
-        this.eventBus = eventBus;
-        this.requestService = requestService;
     }
 
     @Override
@@ -61,14 +66,16 @@ public class AssetActivity
 
     @Override
     protected void startCreateAsset() {
+        super.startCreateAsset();
+
         asset = new Asset();
-        asset.setDisplayName("My New Asset");
+        asset.setName("My New Asset");
         onAssetReady();
     }
 
     @Override
     protected void onAssetReady() {
-        view.setDisplayName(asset.getDisplayName());
+        view.setName(asset.getName());
         // TODO Write data
     }
 

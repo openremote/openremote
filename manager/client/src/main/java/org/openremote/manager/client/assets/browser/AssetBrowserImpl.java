@@ -24,17 +24,14 @@ import com.google.gwt.dom.client.Element;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.cellview.client.CellTree;
-import com.google.gwt.user.client.ui.Composite;
-import com.google.gwt.user.client.ui.HTMLPanel;
-import com.google.gwt.user.client.ui.SimplePanel;
-import com.google.gwt.user.client.ui.TextBox;
-import org.openremote.manager.client.assets.SampleAssets;
-import org.openremote.manager.client.assets.asset.Asset;
+import com.google.gwt.user.client.ui.*;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTreeStyle;
 import org.openremote.manager.client.widget.PushButton;
+import org.openremote.manager.shared.asset.Asset;
 
 import javax.inject.Inject;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -76,7 +73,7 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
 
         assetTree = new AssetTree(
             new AssetTreeModel(presenter),
-            SampleAssets.ROOT,
+            new Asset(),
             formTreeStyle,
             new CellTree.CellTreeMessages() {
                 @Override
@@ -86,7 +83,7 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
 
                 @Override
                 public String emptyTree() {
-                    return managerMessages.emptyCompositeAsset();
+                    return managerMessages.emptyAsset();
                 }
             }
         );
@@ -96,11 +93,16 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
 
         assetTreeContainer.clear();
         assetTreeContainer.add(assetTree);
+
+
     }
 
     @Override
-    public void showAndSelectAsset(List<String> path, String selectedAssetId, boolean scrollIntoView) {
-        List<Asset> selectedPath = new AssetTree.IdSearch().resolvePath(path, assetTree.getRootTreeNode());
+    public void showAndSelectAsset(String[] path, String selectedAssetId, boolean scrollIntoView) {
+        List<Asset> selectedPath = new AssetTree.IdSearch().resolvePath(
+            Arrays.asList(path), assetTree.getRootTreeNode()
+        );
+
         if (selectedPath.size() > 0) {
             Asset selectedAsset = selectedPath.get(selectedPath.size() - 1);
             assetTree.getTreeViewModel().getSelectionModel().setSelected(selectedAsset, true);

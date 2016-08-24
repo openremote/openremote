@@ -17,23 +17,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.agent;
+package org.openremote.manager.shared.asset;
 
 import elemental.json.JsonObject;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
+import java.util.Arrays;
 import java.util.Date;
 
 import static org.openremote.manager.shared.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
 import static org.openremote.manager.shared.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 
-@Entity
-@Table(name = "AGENT")
-public class Agent {
-
-    public static final String NO_CONNECTOR_ASSIGNED_TYPE = "urn:openremote:connector:none";
-    public static final String NO_DESCRIPTION = "-";
+@MappedSuperclass
+@Table(name = "ASSET")
+public class Asset {
 
     @Id
     @Column(name = "ID", length = 22)
@@ -54,22 +52,32 @@ public class Agent {
     protected String name;
 
     @NotNull
-    @Column(name = "DESCRIPTION", nullable = false)
-    protected String description = NO_DESCRIPTION;
+    @Column(name = "ASSET_TYPE", nullable = false)
+    protected String type;
 
-    @NotNull
-    @Column(name = "ENABLED", nullable = false)
-    protected boolean enabled;
+    @Column(name = "PARENT_ID")
+    protected String parentId;
 
-    @NotNull
-    @Column(name = "CONNECTOR_TYPE", nullable = false)
-    protected String connectorType = NO_CONNECTOR_ASSIGNED_TYPE;
-
-    @Column(name = "CONNECTOR_SETTINGS", columnDefinition = "jsonb")
+    @Column(name = "ATTRIBUTES", columnDefinition = "jsonb")
     @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_OBJECT_TYPE)
-    protected JsonObject connectorSettings;
+    protected JsonObject attributes;
 
-    public Agent() {
+    @Transient
+    protected String[] path;
+
+    @Transient
+    protected double[] coordinates;
+
+    public Asset() {
+    }
+
+    public Asset(String name, String type) {
+        this.name = name;
+        this.type = type;
+    }
+
+    public Asset(Asset parent) {
+        this.parentId = parent.getId();
     }
 
     public String getId() {
@@ -96,36 +104,48 @@ public class Agent {
         this.name = name;
     }
 
-    public String getDescription() {
-        return description;
+    public String getType() {
+        return type;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public void setType(String type) {
+        this.type = type;
     }
 
-    public boolean isEnabled() {
-        return enabled;
+    public void setType(AssetType type) {
+        setType(type.getValue());
     }
 
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
+    public String getParentId() {
+        return parentId;
     }
 
-    public String getConnectorType() {
-        return connectorType;
+    public void setParentId(String parentId) {
+        this.parentId = parentId;
     }
 
-    public void setConnectorType(String connectorType) {
-        this.connectorType = connectorType;
+    public JsonObject getAttributes() {
+        return attributes;
     }
 
-    public JsonObject getConnectorSettings() {
-        return connectorSettings;
+    public void setAttributes(JsonObject attributes) {
+        this.attributes = attributes;
     }
 
-    public void setConnectorSettings(JsonObject connectorSettings) {
-        this.connectorSettings = connectorSettings;
+    public String[] getPath() {
+        return path;
+    }
+
+    public void setPath(String[] path) {
+        this.path = path;
+    }
+
+    public double[] getCoordinates() {
+        return coordinates;
+    }
+
+    public void setCoordinates(double... coordinates) {
+        this.coordinates = coordinates;
     }
 
     @Override
@@ -133,9 +153,12 @@ public class Agent {
         return getClass().getSimpleName() + "{" +
             "id='" + id + '\'' +
             ", name='" + name + '\'' +
-            ", enabled=" + enabled +
-            ", connectorType='" + connectorType + '\'' +
-            ", connectorSettings='" + (connectorSettings != null ? connectorSettings.toJson() : "null") + '\'' +
+            ", type ='" + type + '\'' +
+            ", parent ='" + parentId + '\'' +
+            ", path ='" + Arrays.toString(path) + '\'' +
+            ", coordinates ='" + Arrays.toString(coordinates) + '\'' +
+            ", attributes='" + (attributes != null ? attributes.toJson() : "null") + '\'' +
             '}';
     }
+
 }

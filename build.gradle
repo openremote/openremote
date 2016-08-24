@@ -7,7 +7,6 @@ buildscript {
     }
     dependencies {
         classpath "com.bmuschko:gradle-docker-plugin:$dockerGradlePluginVersion"
-        classpath "net.ltgt.gradle:gradle-apt-plugin:$aptGradlePluginVersion"
     }
 }
 

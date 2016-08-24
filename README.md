@@ -84,7 +84,9 @@ Configure your IDE and set up a *Run Configuration*:
 
 You can now open http://localhost:8080/ in your browser.
 
-** NOTE: Please be aware that currently by default the web server binds to all interfaces (i.e. "0.0.0.0") **
+*NOTE: Please be aware that currently by default the web server binds to all interfaces (i.e. `0.0.0.0`)*
+
+*NOTE: During development it can be useful to disable all security checks on the HTTP remote API, for example, to test without authentication and authorization in a simple HTTP client such as `curl`. Start the Manager with the `DISABLE_API_SECURITY=true` environment variable setting to disable security.*
 
 ### Running tests
 

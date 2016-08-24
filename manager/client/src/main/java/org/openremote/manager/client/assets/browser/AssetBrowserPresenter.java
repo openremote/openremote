@@ -22,32 +22,53 @@ package org.openremote.manager.client.assets.browser;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.view.client.HasData;
-import com.google.gwt.view.client.Range;
-import org.openremote.manager.client.assets.SampleAssets;
-import org.openremote.manager.client.assets.asset.Asset;
+import org.openremote.manager.client.assets.AssetArrayMapper;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventListener;
 import org.openremote.manager.client.event.bus.EventRegistration;
+import org.openremote.manager.client.i18n.ManagerMessages;
+import org.openremote.manager.client.service.RequestService;
+import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.asset.AssetResource;
 
 import javax.inject.Inject;
-import java.util.List;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.logging.Logger;
+
+import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
 public class AssetBrowserPresenter implements AssetBrowser.Presenter {
 
     private static final Logger LOG = Logger.getLogger(AssetBrowserPresenter.class.getName());
 
+    final protected EventBus eventBus;
+    final protected ManagerMessages managerMessages;
+    final protected RequestService requestService;
+    final PlaceController placeController;
     final EventBus internalEventBus;
     final AssetBrowser view;
-    final PlaceController placeController;
+    final protected AssetResource assetResource;
+    final protected AssetArrayMapper assetArrayMapper;
 
     protected Asset selectedAsset;
 
     @Inject
-    public AssetBrowserPresenter(AssetBrowser view, PlaceController placeController) {
+    public AssetBrowserPresenter(EventBus eventBus,
+                                 ManagerMessages managerMessages,
+                                 RequestService requestService,
+                                 PlaceController placeController,
+                                 AssetBrowser view,
+                                 AssetResource assetResource,
+                                 AssetArrayMapper assetArrayMapper) {
+        this.eventBus = eventBus;
+        this.managerMessages = managerMessages;
+        this.requestService = requestService;
+        this.placeController = placeController;
         this.internalEventBus = new EventBus();
         this.view = view;
-        this.placeController = placeController;
+        this.assetResource = assetResource;
+        this.assetArrayMapper = assetArrayMapper;
 
         view.setPresenter(this);
     }
@@ -59,29 +80,59 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
 
     @Override
     public void loadAssetChildren(Asset parent, HasData<Asset> display) {
-        final Range range = display.getVisibleRange();
-        // TODO: Real assets query
-        List<Asset> result = SampleAssets.queryAll(parent);
-        Timer t = new Timer() {
-            public void run() {
-                display.setRowData(0, result);
-                display.setRowCount(result.size(), true);
-                onAssetsRefreshed(parent, result);
-            }
-        };
-        // TODO: Simulates network delay
-        t.schedule(25);
-        //t.run();
+        // If parent is the invisible root of the tree, show a loading message
+        if (parent.getId() == null) {
+            display.setRowData(0, Collections.singletonList(
+                new Asset(managerMessages.loadingAssets(), AssetTreeModel.TEMPORARY_ASSET_TYPE)
+            ));
+            display.setRowCount(1, true);
+        }
+
+        // TODO Pagination?
+        // final Range range = display.getVisibleRange();
+        requestService.execute(
+            assetArrayMapper,
+            requestParams -> {
+                if (parent.getId() == null) {
+                    // ROOT of tree
+                    assetResource.getRoot(requestParams);
+                } else {
+                    assetResource.getChildren(requestParams, parent.getId());
+                }
+            },
+            200,
+            assets -> {
+                display.setRowData(0, Arrays.asList(assets));
+                display.setRowCount(assets.length, true);
+                onAssetsRefreshed(parent, assets);
+            },
+            ex -> handleRequestException(ex, eventBus, managerMessages)
+        );
     }
 
     @Override
     public void onAssetSelected(Asset asset) {
+        // This is a complicated method. It may be called when the user selects an asset in the
+        // tree. It may also be called when an asset has been loaded from the server on page load.
+
         if (asset == null) {
+            // Reset the selected asset
             selectedAsset = null;
             internalEventBus.dispatch(new AssetSelectedEvent(null));
-        } else if (selectedAsset == null || !selectedAsset.getId().equals(asset.getId())) {
-            selectedAsset = asset;
-            internalEventBus.dispatch(new AssetSelectedEvent(selectedAsset));
+        } else if (asset.getId() != null) {
+            // The selected asset was not the invisible root or the loading message
+            if (selectedAsset == null || !selectedAsset.getId().equals(asset.getId())) {
+                // If there was no previous selection, or the new asset is a different one, set and fire event
+                selectedAsset = asset;
+                internalEventBus.dispatch(new AssetSelectedEvent(selectedAsset));
+            } else if (selectedAsset.getId().equals(asset.getId())) {
+                // If there was a selection and the new asset is the "same", override the current selection
+                // with the given instance. It might have a path property value, wheres the current one might not.
+                // When the user is browsing the tree and assets are expanded, their children are loaded without
+                // the path value (this would be expensive to calculate on the server). Only when the user selects
+                // an asset, or an asset is loaded on page load, do we get the asset path from the server.
+                selectedAsset = asset;
+            }
         }
     }
 
@@ -107,16 +158,16 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
 
     protected void updateViewSelection(boolean scrollIntoView) {
         // Find the last selected asset after a data refresh and select it again
-        if (selectedAsset != null) {
+        if (selectedAsset != null && selectedAsset.getPath() != null) {
             view.showAndSelectAsset(
-                SampleAssets.getSelectedAssetPath(selectedAsset.getId()),
+                selectedAsset.getPath(),
                 selectedAsset.getId(),
                 scrollIntoView
             );
         }
     }
 
-    protected void onAssetsRefreshed(Asset parent, List<Asset> children) {
+    protected void onAssetsRefreshed(Asset parent, Asset[] children) {
         if (selectedAsset != null) {
             // Only scroll the view if the selected asset was loaded
             boolean scroll = false;

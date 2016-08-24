@@ -67,7 +67,6 @@ org.fourthline.cling:cling-core: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
 org.hibernate.common:hibernate-commons-annotations: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
 org.hibernate.javax.persistence:hibernate-jpa-2.1-api: ECLIPSE DISTRIBUTION LICENSE, VERSION 1.0
 org.hibernate:hibernate-core: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
-org.hibernate:hibernate-entitymanager: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
 org.hibernate:hibernate-validator: APACHE LICENSE, VERSION 2.0
 org.infinispan:*: APACHE LICENSE, VERSION 2.0
 org.javassist:javassist: APACHE LICENSE, VERSION 2.0

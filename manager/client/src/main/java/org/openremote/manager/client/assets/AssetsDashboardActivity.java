@@ -20,11 +20,14 @@
 package org.openremote.manager.client.assets;
 
 import com.google.gwt.place.shared.PlaceController;
-import org.openremote.manager.client.assets.asset.Asset;
 import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
 import org.openremote.manager.client.event.bus.EventBus;
+import org.openremote.manager.client.i18n.ManagerMessages;
+import org.openremote.manager.client.service.RequestService;
+import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.asset.AssetResource;
 
 import javax.inject.Inject;
 
@@ -36,18 +39,18 @@ public class AssetsDashboardActivity
     final EventBus eventBus;
 
     @Inject
-    public AssetsDashboardActivity(AssetsDashboard view,
-                                   AssetBrowser.Presenter assetBrowserPresenter,
+    public AssetsDashboardActivity(EventBus eventBus,
+                                   ManagerMessages managerMessages,
+                                   RequestService requestService,
                                    PlaceController placeController,
-                                   EventBus eventBus) {
-        super(view, assetBrowserPresenter);
+                                   AssetsDashboard view,
+                                   AssetBrowser.Presenter assetBrowserPresenter,
+                                   AssetResource assetResource,
+                                   AssetArrayMapper assetArrayMapper,
+                                   AssetMapper assetMapper) {
+        super(eventBus, managerMessages, requestService, view, assetBrowserPresenter, assetResource, assetArrayMapper, assetMapper);
         this.placeController = placeController;
         this.eventBus = eventBus;
-    }
-
-    @Override
-    protected void startCreateAsset() {
-        assetBrowserPresenter.selectAsset(null);
     }
 
     @Override

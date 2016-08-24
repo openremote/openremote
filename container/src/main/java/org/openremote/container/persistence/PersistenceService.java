@@ -20,7 +20,7 @@
 package org.openremote.container.persistence;
 
 import org.hibernate.Session;
-import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
@@ -84,6 +84,11 @@ public class PersistenceService implements ContainerService {
         persistenceUnitProperties =
             database.open(connectionUrl, databaseUsername, databasePassword, databaseMinPoolSize, databaseMaxPoolSize);
 
+        persistenceUnitProperties.put(
+            org.hibernate.cfg.AvailableSettings.SESSION_SCOPED_INTERCEPTOR,
+            PersistenceEventInterceptor.class.getName()
+        );
+
         persistenceUnitName = container.getConfig(PERSISTENCE_UNIT_NAME, PERSISTENCE_UNIT_NAME_DEFAULT);
     }
 
@@ -112,16 +117,13 @@ public class PersistenceService implements ContainerService {
     }
 
     public EntityManager createEntityManager() {
-        Map<String, String> properties = new HashMap<>();
-        properties.put(
-            org.hibernate.jpa.AvailableSettings.SESSION_INTERCEPTOR,
-            PersistenceEventInterceptor.class.getName()
-        );
-        EntityManager entityManager = getEntityManagerFactory().createEntityManager(properties);
+        EntityManager entityManager = getEntityManagerFactory().createEntityManager();
 
+        // The persistence event interceptor is scoped to an EntityManager, so each new EM needs
+        // access to the dependencies of the interceptor
         Session session = entityManager.unwrap(Session.class);
         PersistenceEventInterceptor persistenceEventInterceptor =
-            (PersistenceEventInterceptor) ((SessionImplementor) session).getInterceptor();
+            (PersistenceEventInterceptor) ((SharedSessionContractImplementor) session).getInterceptor();
         persistenceEventInterceptor.setMessageBrokerService(messageBrokerService);
 
         return entityManager;

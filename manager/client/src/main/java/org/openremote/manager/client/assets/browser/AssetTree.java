@@ -19,9 +19,9 @@
  */
 package org.openremote.manager.client.assets.browser;
 
-import org.openremote.manager.client.assets.asset.Asset;
 import org.openremote.manager.client.style.FormTreeStyle;
 import org.openremote.manager.client.widget.FormTree;
+import org.openremote.manager.shared.asset.Asset;
 
 public class AssetTree extends FormTree {
 

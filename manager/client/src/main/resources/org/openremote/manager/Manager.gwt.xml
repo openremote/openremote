@@ -17,7 +17,6 @@
     <inherits name="com.github.nmorel.gwtjackson.GwtJackson"/>
     <inherits name="org.jboss.resteasy.api.validation.ResteasyValidation"/>
     <inherits name="org.keycloak.representations.idm.KeycloakIDM"/>
-    <inherits name="org.geojson.GeoJSON"/>
 
     <!-- ##################################################################### -->
 
