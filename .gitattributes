@@ -1,0 +1,2 @@
+# Force EOL markers (Windows Tortoise/msysgit client has autocrlf=true default)
+*.sh    eol=lf
