@@ -35,7 +35,6 @@ import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.user.UserControls;
 import org.openremote.manager.shared.Constants;
-import org.openremote.manager.shared.asset.Asset;
 
 import java.util.logging.Logger;
 
@@ -49,7 +48,7 @@ public class HeaderPresenter implements HeaderView.Presenter {
     final protected PlaceController placeController;
     final protected SecurityService securityService;
 
-    protected Asset selectedAsset;
+    protected String selectedAssetId;
 
     protected EventRegistration<AssetSelectedEvent> assetSelectionRegistration;
 
@@ -75,7 +74,7 @@ public class HeaderPresenter implements HeaderView.Presenter {
 
         assetSelectionRegistration = eventBus.register(AssetSelectedEvent.class,
             event -> {
-                selectedAsset = event.getAsset();
+                selectedAssetId = event.getAssetId();
             }
         );
 
@@ -93,8 +92,8 @@ public class HeaderPresenter implements HeaderView.Presenter {
 
     @Override
     public void navigateMap() {
-        if (selectedAsset != null) {
-            placeController.goTo(new MapPlace(selectedAsset.getId()));
+        if (selectedAssetId != null) {
+            placeController.goTo(new MapPlace(selectedAssetId));
         } else {
             placeController.goTo(new MapPlace());
         }
@@ -102,8 +101,8 @@ public class HeaderPresenter implements HeaderView.Presenter {
 
     @Override
     public void navigateAssets() {
-        if (selectedAsset != null) {
-            placeController.goTo(new AssetPlace(selectedAsset.getId()));
+        if (selectedAssetId != null) {
+            placeController.goTo(new AssetPlace(selectedAssetId));
         } else {
             placeController.goTo(new AssetsDashboardPlace());
         }

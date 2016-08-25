@@ -46,9 +46,8 @@ public class AssetsDashboardActivity
                                    AssetsDashboard view,
                                    AssetBrowser.Presenter assetBrowserPresenter,
                                    AssetResource assetResource,
-                                   AssetArrayMapper assetArrayMapper,
                                    AssetMapper assetMapper) {
-        super(eventBus, managerMessages, requestService, view, assetBrowserPresenter, assetResource, assetArrayMapper, assetMapper);
+        super(eventBus, managerMessages, requestService, view, assetBrowserPresenter, assetResource, assetMapper);
         this.placeController = placeController;
         this.eventBus = eventBus;
     }
@@ -62,7 +61,7 @@ public class AssetsDashboardActivity
     }
 
     @Override
-    protected void onAssetSelectionChange(Asset newSelection) {
-        placeController.goTo(new AssetPlace(newSelection.getId()));
+    protected void onAssetSelectionChange(String selectedAssetId) {
+        placeController.goTo(new AssetPlace(selectedAssetId));
     }
 }

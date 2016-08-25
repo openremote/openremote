@@ -21,20 +21,20 @@ package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.view.client.AsyncDataProvider;
 import com.google.gwt.view.client.HasData;
-import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.asset.AssetInfo;
 
-class AssetDataProvider extends AsyncDataProvider<Asset> {
+class AssetDataProvider extends AsyncDataProvider<AssetInfo> {
 
     final protected AssetBrowser.Presenter presenter;
-    final protected Asset parent;
+    final protected AssetInfo parent;
 
-    public AssetDataProvider(AssetBrowser.Presenter presenter, Asset parent) {
+    public AssetDataProvider(AssetBrowser.Presenter presenter, AssetInfo parent) {
         this.presenter = presenter;
         this.parent = parent;
     }
 
     @Override
-    protected void onRangeChanged(HasData<Asset> display) {
+    protected void onRangeChanged(HasData<AssetInfo> display) {
         presenter.loadAssetChildren(parent, display);
     }
 }

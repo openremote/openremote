@@ -21,6 +21,7 @@ package org.openremote.manager.server.asset;
 
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.http.RequestParams;
 
@@ -35,12 +36,12 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
     }
 
     @Override
-    public Asset[] getRoot(@BeanParam RequestParams requestParams) {
+    public AssetInfo[] getRoot(@BeanParam RequestParams requestParams) {
         return assetService.getRoot();
     }
 
     @Override
-    public Asset[] getChildren(@BeanParam RequestParams requestParams, String parentId) {
+    public AssetInfo[] getChildren(@BeanParam RequestParams requestParams, String parentId) {
         return assetService.getChildren(parentId);
     }
 

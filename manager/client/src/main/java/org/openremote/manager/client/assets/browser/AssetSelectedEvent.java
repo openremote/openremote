@@ -1,17 +1,16 @@
 package org.openremote.manager.client.assets.browser;
 
-import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.event.Event;
 
 public class AssetSelectedEvent extends Event {
 
-    final protected Asset asset;
+    final protected String assetId;
 
-    public AssetSelectedEvent(Asset asset) {
-        this.asset = asset;
+    public AssetSelectedEvent(String assetId) {
+        this.assetId = assetId;
     }
 
-    public Asset getAsset() {
-        return asset;
+    public String getAssetId() {
+        return assetId;
     }
 }

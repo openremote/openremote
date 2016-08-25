@@ -37,8 +37,7 @@ import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.asset.AssetType;
-import org.openremote.manager.shared.attribute.Attribute;
-import org.openremote.manager.shared.attribute.Attributes;
+import org.openremote.manager.shared.attribute.*;
 import rx.Observable;
 
 import javax.ws.rs.core.UriBuilder;
@@ -308,6 +307,14 @@ public class SampleDataService implements ContainerService {
             office1Thermostat.setName("Thermostat in Office 1");
             office1Thermostat.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
             office1Thermostat.setType(AssetType.GENERIC);
+            Attributes office1ThermostatAttributes = new Attributes();
+            office1ThermostatAttributes.add(
+                new Attribute("temperature", AttributeType.FLOAT, Json.create(22.5))
+                    .setMetadata(new Metadata()
+                        .addElement(new MetadataElement("scale", "urn:openremote:scale", Json.create("celcius")))
+                    )
+            );
+            office1Thermostat.setAttributes(office1ThermostatAttributes.getJsonObject());
             em.persist(office1Thermostat);
 
             ServerAsset office2 = new ServerAsset(videoLab);

@@ -26,9 +26,9 @@ import com.google.gwt.safehtml.shared.SafeHtml;
 import com.google.gwt.safehtml.shared.SafeHtmlBuilder;
 import com.google.gwt.safehtml.shared.SafeHtmlUtils;
 import com.google.gwt.text.shared.SafeHtmlRenderer;
-import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.asset.AssetInfo;
 
-class AssetCell extends AbstractSafeHtmlCell<Asset> {
+class AssetCell extends AbstractSafeHtmlCell<AssetInfo> {
 
     public interface AssetTemplates extends SafeHtmlTemplates {
         @Template("<div id=\"asset-{0}\">{1}</div>")
@@ -37,8 +37,10 @@ class AssetCell extends AbstractSafeHtmlCell<Asset> {
 
     private static final AssetTemplates TEMPLATES = GWT.create(AssetTemplates.class);
 
-    static final SafeHtmlRenderer<Asset> assetRenderer = new SafeHtmlRenderer<Asset>() {
-        public SafeHtml render(Asset asset) {
+    static final SafeHtmlRenderer<AssetInfo> assetRenderer = new SafeHtmlRenderer<AssetInfo>() {
+
+        @Override
+        public SafeHtml render(AssetInfo asset) {
             if (asset == null)
                 return SafeHtmlUtils.EMPTY_SAFE_HTML;
             SafeHtmlBuilder builder = new SafeHtmlBuilder();
@@ -46,7 +48,8 @@ class AssetCell extends AbstractSafeHtmlCell<Asset> {
             return builder.toSafeHtml();
         }
 
-        public void render(Asset asset, SafeHtmlBuilder appendable) {
+        @Override
+        public void render(AssetInfo asset, SafeHtmlBuilder appendable) {
             appendable.append(TEMPLATES.assetItem(asset.getId(), asset.getName()));
         }
     };

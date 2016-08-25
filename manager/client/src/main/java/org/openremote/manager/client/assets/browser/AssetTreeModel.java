@@ -21,7 +21,7 @@ package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.view.client.SingleSelectionModel;
 import com.google.gwt.view.client.TreeViewModel;
-import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.asset.AssetInfo;
 
 import java.util.logging.Logger;
 
@@ -34,13 +34,13 @@ class AssetTreeModel implements TreeViewModel {
     public static final String TEMPORARY_ASSET_TYPE = "TMP";
 
     final AssetBrowser.Presenter presenter;
-    final SingleSelectionModel<Asset> selectionModel = new SingleSelectionModel<>();
+    final SingleSelectionModel<AssetInfo> selectionModel = new SingleSelectionModel<>();
 
     public AssetTreeModel(AssetBrowser.Presenter presenter) {
         this.presenter = presenter;
         selectionModel.addSelectionChangeHandler(selectionChangeEvent -> {
             if (selectionModel.getSelectedObject() != null) {
-                presenter.onAssetSelected(selectionModel.getSelectedObject());
+                presenter.onAssetSelected(selectionModel.getSelectedObject().getId());
             }
         });
     }
@@ -48,13 +48,13 @@ class AssetTreeModel implements TreeViewModel {
     @Override
     public <T> NodeInfo<?> getNodeInfo(T value) {
         return new DefaultNodeInfo<>(
-            new AssetDataProvider(presenter, (Asset) value),
+            new AssetDataProvider(presenter, (AssetInfo) value),
             new AssetCell(),
             selectionModel,
             null);
     }
 
-    public SingleSelectionModel<Asset> getSelectionModel() {
+    public SingleSelectionModel<AssetInfo> getSelectionModel() {
         return selectionModel;
     }
 
@@ -64,8 +64,8 @@ class AssetTreeModel implements TreeViewModel {
         // other choice would be to determine leaf or composite by asset type, which is kinda arbitrary.
 
         // The exception to this is any temporary asset, which should not be expandable
-        if (value instanceof Asset) {
-            Asset asset = (Asset) value;
+        if (value instanceof AssetInfo) {
+            AssetInfo asset = (AssetInfo) value;
             if (TEMPORARY_ASSET_TYPE.equals(asset.getType()))
                 return true;
         }

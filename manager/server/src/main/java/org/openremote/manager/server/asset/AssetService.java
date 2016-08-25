@@ -27,6 +27,7 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.asset.AssetInfo;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -77,39 +78,36 @@ public class AssetService implements ContainerService {
 
     }
 
-    public Asset[] getRoot() {
+    public AssetInfo[] getRoot() {
         return persistenceService.doTransaction(em -> {
-            List<Asset> result =
+            List<AssetInfo> result =
                 em.createQuery(
-                    "select a from Asset a where a.parent is null order by a.name asc",
-                    Asset.class
+                    "select new org.openremote.manager.shared.asset.AssetInfo(" +
+                        "a.id, a.name, a.type, a.parent.id" +
+                        ") from Asset a where a.parent is null order by a.name asc",
+                    AssetInfo.class
                 ).getResultList();
-            return result.toArray(new Asset[result.size()]);
+            return result.toArray(new AssetInfo[result.size()]);
         });
     }
 
-    public Asset[] getChildren(String parentId) {
+    public AssetInfo[] getChildren(String parentId) {
         return persistenceService.doTransaction(em -> {
-            List<Asset> result =
+            List<AssetInfo> result =
                 em.createQuery(
-                    "select a from Asset a where a.parent.id = :parentId order by a.name asc",
-                    Asset.class
+                    "select new org.openremote.manager.shared.asset.AssetInfo(" +
+                        "a.id, a.name, a.type, a.parent.id" +
+                        ") from Asset a where a.parent.id = :parentId order by a.name asc",
+                    AssetInfo.class
                 ).setParameter("parentId", parentId).getResultList();
-            return result.toArray(new Asset[result.size()]);
+            return result.toArray(new AssetInfo[result.size()]);
         });
     }
 
     public Asset get(String assetId) {
         return persistenceService.doTransaction(em -> {
             Asset asset = em.find(ServerAsset.class, assetId);
-            asset.setPath(getPath(asset.getId()));
-            return asset;
-        });
-    }
-
-    public String[] getPath(String assetId) {
-        return persistenceService.doTransaction(em -> {
-            return em.unwrap(Session.class).doReturningWork(connection -> {
+            asset.setPath(em.unwrap(Session.class).doReturningWork(connection -> {
                 String query =
                     "WITH RECURSIVE ASSET_TREE(ID, PARENT_ID, PATH) AS (" +
                         " SELECT a1.ID, a1.PARENT_ID, ARRAY[text(a1.ID)] FROM ASSET a1 WHERE a1.PARENT_ID IS NULL" +
@@ -129,7 +127,9 @@ public class AssetService implements ContainerService {
                     if (result != null)
                         result.close();
                 }
-            });
+            }));
+            return asset;
         });
     }
+
 }

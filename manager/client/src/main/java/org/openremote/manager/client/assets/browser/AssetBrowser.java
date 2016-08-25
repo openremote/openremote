@@ -23,7 +23,7 @@ import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.view.client.HasData;
 import org.openremote.manager.client.event.bus.EventListener;
 import org.openremote.manager.client.event.bus.EventRegistration;
-import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.asset.AssetInfo;
 
 public interface AssetBrowser extends IsWidget {
 
@@ -31,11 +31,11 @@ public interface AssetBrowser extends IsWidget {
 
         AssetBrowser getView();
 
-        void loadAssetChildren(Asset parent, HasData<Asset> display);
+        void loadAssetChildren(AssetInfo parent, HasData<AssetInfo> display);
 
-        void onAssetSelected(Asset asset);
+        void onAssetSelected(String assetId);
 
-        void selectAsset(Asset asset);
+        void selectAsset(String assetId, String[] path);
 
         EventRegistration<AssetSelectedEvent> onSelection(EventListener<AssetSelectedEvent> listener);
 

@@ -21,7 +21,6 @@ package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
-import org.openremote.manager.client.assets.AssetArrayMapper;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
@@ -53,9 +52,8 @@ public class AssetActivity
                          AssetView view,
                          AssetBrowser.Presenter assetBrowserPresenter,
                          AssetResource assetResource,
-                         AssetArrayMapper assetArrayMapper,
                          AssetMapper assetMapper) {
-        super(eventBus, managerMessages, requestService, view, assetBrowserPresenter, assetResource, assetArrayMapper, assetMapper);
+        super(eventBus, managerMessages, requestService, view, assetBrowserPresenter, assetResource, assetMapper);
         this.placeController = placeController;
     }
 
@@ -85,8 +83,8 @@ public class AssetActivity
     }
 
     @Override
-    protected void onAssetSelectionChange(Asset newSelection) {
-        placeController.goTo(new AssetPlace(newSelection.getId()));
+    protected void onAssetSelectionChange(String selectedAssetId) {
+        placeController.goTo(new AssetPlace(selectedAssetId));
     }
 
     @Override

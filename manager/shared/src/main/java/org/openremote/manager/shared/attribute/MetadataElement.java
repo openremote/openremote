@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.shared.attribute;
 
+import elemental.json.Json;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 
@@ -26,6 +27,21 @@ public class MetadataElement {
 
     final protected String name;
     final protected JsonObject jsonObject;
+
+    public MetadataElement(String name) {
+        this(name, Json.createObject());
+    }
+
+    public MetadataElement(String name, String type) {
+        this(name, Json.createObject());
+        setType(type);
+    }
+
+    public MetadataElement(String name, String type, JsonValue value) {
+        this(name, Json.createObject());
+        setType(type);
+        setValue(value);
+    }
 
     public MetadataElement(String name, JsonObject jsonObject) {
         this.name = name;

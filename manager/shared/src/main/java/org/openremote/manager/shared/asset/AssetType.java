@@ -1,5 +1,9 @@
 package org.openremote.manager.shared.asset;
 
+/**
+ * Asset type is an arbitrary string. It should be URI. This enum contains
+ * the well-known URIs for functionality we want to depend on in our platform.
+ */
 public enum AssetType {
 
     GENERIC("urn:openremote:asset:generic"),

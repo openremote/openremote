@@ -24,11 +24,14 @@ import com.google.gwt.dom.client.Element;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.cellview.client.CellTree;
-import com.google.gwt.user.client.ui.*;
+import com.google.gwt.user.client.ui.Composite;
+import com.google.gwt.user.client.ui.HTMLPanel;
+import com.google.gwt.user.client.ui.SimplePanel;
+import com.google.gwt.user.client.ui.TextBox;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTreeStyle;
 import org.openremote.manager.client.widget.PushButton;
-import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.asset.AssetInfo;
 
 import javax.inject.Inject;
 import java.util.Arrays;
@@ -73,7 +76,7 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
 
         assetTree = new AssetTree(
             new AssetTreeModel(presenter),
-            new Asset(),
+            new AssetInfo(),
             formTreeStyle,
             new CellTree.CellTreeMessages() {
                 @Override
@@ -99,12 +102,12 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
 
     @Override
     public void showAndSelectAsset(String[] path, String selectedAssetId, boolean scrollIntoView) {
-        List<Asset> selectedPath = new AssetTree.IdSearch().resolvePath(
+        List<AssetInfo> selectedPath = new AssetTree.IdSearch().resolvePath(
             Arrays.asList(path), assetTree.getRootTreeNode()
         );
 
         if (selectedPath.size() > 0) {
-            Asset selectedAsset = selectedPath.get(selectedPath.size() - 1);
+            AssetInfo selectedAsset = selectedPath.get(selectedPath.size() - 1);
             assetTree.getTreeViewModel().getSelectionModel().setSelected(selectedAsset, true);
 
             if (!scrollIntoView)

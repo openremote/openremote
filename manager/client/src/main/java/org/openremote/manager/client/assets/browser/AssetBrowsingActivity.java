@@ -20,7 +20,6 @@
 package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
-import org.openremote.manager.client.assets.AssetArrayMapper;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
@@ -47,7 +46,6 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
     final protected V view;
     final protected AssetBrowser.Presenter assetBrowserPresenter;
     final protected AssetResource assetResource;
-    final protected AssetArrayMapper assetArrayMapper;
     final protected AssetMapper assetMapper;
 
     protected EventRegistration<AssetSelectedEvent> assetSelectionRegistration;
@@ -60,7 +58,6 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
                                  V view,
                                  AssetBrowser.Presenter assetBrowserPresenter,
                                  AssetResource assetResource,
-                                 AssetArrayMapper assetArrayMapper,
                                  AssetMapper assetMapper) {
         this.eventBus = eventBus;
         this.managerMessages = managerMessages;
@@ -68,7 +65,6 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
         this.view = view;
         this.assetBrowserPresenter = assetBrowserPresenter;
         this.assetResource = assetResource;
-        this.assetArrayMapper = assetArrayMapper;
         this.assetMapper = assetMapper;
     }
 
@@ -97,11 +93,11 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
 
         assetSelectionRegistration = assetBrowserPresenter.onSelection(
             event -> {
-                if (event.getAsset() == null) {
+                if (event.getAssetId() == null) {
                     onAssetsDeselected();
                 } else {
-                    if (assetId == null || !assetId.equals(event.getAsset().getId())) {
-                        onAssetSelectionChange(event.getAsset());
+                    if (assetId == null || !assetId.equals(event.getAssetId())) {
+                        onAssetSelectionChange(event.getAssetId());
                     }
                 }
 
@@ -142,7 +138,7 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
             200,
             asset -> {
                 this.asset = asset;
-                assetBrowserPresenter.selectAsset(asset);
+                assetBrowserPresenter.selectAsset(asset.getId(), asset.getPath());
                 onAssetReady();
             },
             ex -> handleRequestException(ex, eventBus, managerMessages)
@@ -160,10 +156,10 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
 
     abstract protected void onAssetsDeselected();
 
-    abstract protected void onAssetSelectionChange(Asset newSelection);
+    abstract protected void onAssetSelectionChange(String selectedAssetId);
 
     protected void startCreateAsset() {
-        assetBrowserPresenter.selectAsset(null);
+        assetBrowserPresenter.selectAsset(null, null);
     }
 
 }

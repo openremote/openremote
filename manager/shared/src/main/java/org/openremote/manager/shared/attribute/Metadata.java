@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.shared.attribute;
 
+import elemental.json.Json;
 import elemental.json.JsonObject;
 
 import java.util.LinkedHashSet;
@@ -27,6 +28,10 @@ import java.util.Set;
 public class Metadata {
 
     final protected JsonObject jsonObject;
+
+    public Metadata() {
+        this(Json.createObject());
+    }
 
     public Metadata(JsonObject jsonObject) {
         this.jsonObject = jsonObject;

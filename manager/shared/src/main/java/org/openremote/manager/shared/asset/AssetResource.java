@@ -36,14 +36,14 @@ public interface AssetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
-    Asset[] getRoot(@BeanParam RequestParams requestParams);
+    AssetInfo[] getRoot(@BeanParam RequestParams requestParams);
 
     @GET
     @Path("{assetId}/children")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
-    Asset[] getChildren(@BeanParam RequestParams requestParams, @PathParam("assetId") String parentId);
+    AssetInfo[] getChildren(@BeanParam RequestParams requestParams, @PathParam("assetId") String parentId);
 
     @GET
     @Path("{assetId}")

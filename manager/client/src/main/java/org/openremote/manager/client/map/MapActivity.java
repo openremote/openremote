@@ -21,7 +21,6 @@ package org.openremote.manager.client.map;
 
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
-import org.openremote.manager.client.assets.AssetArrayMapper;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
@@ -57,11 +56,10 @@ public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implem
                        MapView view,
                        AssetBrowser.Presenter assetBrowserPresenter,
                        AssetResource assetResource,
-                       AssetArrayMapper assetArrayMapper,
                        AssetMapper assetMapper,
                        MapResource mapResource,
                        JsonObjectMapper jsonObjectMapper) {
-        super(eventBus, managerMessages, requestService, view, assetBrowserPresenter, assetResource, assetArrayMapper, assetMapper);
+        super(eventBus, managerMessages, requestService, view, assetBrowserPresenter, assetResource, assetMapper);
         this.mapResource = mapResource;
         this.placeController = placeController;
         this.jsonObjectMapper = jsonObjectMapper;
@@ -104,8 +102,8 @@ public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implem
     }
 
     @Override
-    protected void onAssetSelectionChange(Asset newSelection) {
-        placeController.goTo(new MapPlace(newSelection.getId()));
+    protected void onAssetSelectionChange(String selectedAssetId) {
+        placeController.goTo(new MapPlace(selectedAssetId));
     }
 
     private GeoJSON getFeature(Asset asset) {
