@@ -338,4 +338,8 @@ public abstract class AbstractStyle {
     public String StatusIndicatorERROR() {
         return getPrefix() + "StatusIndicatorERROR";
     }
+
+    public String SplitPanelHandle() {
+        return getPrefix() + "SplitPanelHandle";
+    }
 }

@@ -74,8 +74,9 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
 
+        AssetCell.Renderer assetCellRenderer = new AssetCell.Renderer(35);
         assetTree = new AssetTree(
-            new AssetTreeModel(presenter),
+            new AssetTreeModel(presenter, assetCellRenderer),
             new AssetInfo(),
             formTreeStyle,
             new CellTree.CellTreeMessages() {
@@ -97,6 +98,9 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
         assetTreeContainer.clear();
         assetTreeContainer.add(assetTree);
 
+        registerFlowEventListener(assetTreeContainer.getElement(), "over", () -> {
+            LOG.info("### GOT IT");
+        });
 
     }
 
@@ -134,4 +138,13 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
     public void deselectAssets() {
         assetTree.getTreeViewModel().getSelectionModel().clear();
     }
+
+    native protected void registerFlowEventListener(Element element, String type, Runnable callback) /*-{
+        element.addEventListener("webkitTransitionEnd", function (e) {
+            console.log("###### EVENT")
+            console.log(e);
+            callback.run();
+        });
+    }-*/;
+
 }

@@ -21,6 +21,7 @@ package org.openremote.manager.client.map;
 
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
+import com.google.gwt.dom.client.Style;
 import com.google.gwt.user.client.ui.ComplexPanel;
 import com.google.gwt.user.client.ui.FlowPanel;
 import elemental.js.util.*;
@@ -159,7 +160,7 @@ public class MapWidget extends ComplexPanel {
         hostElementId = Document.get().createUniqueId();
 
         host = new FlowPanel();
-        host.setStyleName("flex");
+        host.getElement().getStyle().setHeight(100, Style.Unit.PCT);
         host.getElement().setId(hostElementId);
         add(host, (Element) getElement());
 

@@ -6,37 +6,120 @@
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
     <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
-    <ui:style>
-        .assetControls {
-
-        }
-
+    <ui:style type="org.openremote.manager.client.assets.asset.AssetViewImpl.Style">
         .navItem {
             margin: 0 1em;
         }
+
+        .formMessages {
+            max-width: 30em;
+        }
+
+        .nameTextBox,
+        .attributeTextBox {
+            width: 30em;
+        }
     </ui:style>
 
-    <g:HTMLPanel styleName="flex layout vertical">
-        <g:HTMLPanel
-                styleName="layout horizontal center end-justified {style.assetControls} {widgetStyle.SecondaryNavHorizontal} {themeStyle.SecondaryNavHorizontal}">
+    <w:FlexSplitPanel handleStyle="{widgetStyle.SplitPanelHandle} {themeStyle.SplitPanelHandle}"
+                      firstPanelWidth="250"
+                      firstPanelMinWidth="250"
+                      secondPanelMinWidth="700">
 
-            <w:Hyperlink addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
-                         icon="dashboard"
-                         targetHistoryToken="assets:"
-                         text="Show Dashboard"/>
+        <w:first>
+            <g:HTMLPanel ui:field="sidebarContainer"
+                         styleName="flex layout vertical {widgetStyle.SidebarContent} {themeStyle.SidebarContent}"/>
+        </w:first>
 
-            <w:Hyperlink
-                    addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem} active"
-                    icon="edit"
-                    targetHistoryToken="assets:"
-                    text="Edit Asset"/>
+        <w:second>
+            <g:HTMLPanel styleName="flex layout vertical">
+                <g:HTMLPanel
+                        styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal} {themeStyle.SecondaryNavHorizontal}">
 
-        </g:HTMLPanel>
+                    <w:Hyperlink
+                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                            icon="dashboard"
+                            targetHistoryToken="assets:"
+                            text="Show Dashboard"/>
 
-        <div class="flex {widgetStyle.MainContent} {themeStyle.MainContent}">
-            <div>TODO: Asset browser switches to an advanced UI that needs more space on the left</div>
-            <g:SimplePanel ui:field="assetContentContainer"/>
-        </div>
-    </g:HTMLPanel>
+                    <w:Hyperlink
+                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem} active"
+                            icon="edit"
+                            targetHistoryToken="assets:"
+                            text="Edit Asset"/>
+
+                </g:HTMLPanel>
+
+                <div class="flex {widgetStyle.MainContent} {themeStyle.MainContent}">
+
+                    <g:FlowPanel
+                            styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} {themeStyle.FormMessages} success"
+                            visible="false">
+                        <w:IconLabel icon="check"
+                                     addStyleNames="{widgetStyle.MessagesIcon} {themeStyle.MessagesIcon}"/>
+                        <g:FlowPanel ui:field="formMessagesSuccess"/>
+                    </g:FlowPanel>
+
+                    <g:FlowPanel
+                            styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} {themeStyle.FormMessages} error"
+                            visible="false">
+                        <w:IconLabel icon="warning"
+                                     addStyleNames="{widgetStyle.MessagesIcon} {themeStyle.MessagesIcon}"/>
+                        <g:FlowPanel ui:field="formMessagesError"/>
+                    </g:FlowPanel>
+
+                    <div class="{widgetStyle.Headline1} {themeStyle.Headline1}">
+                        <g:InlineLabel text="{managerMessages.editAsset}"/>
+                    </div>
+
+                    <div class="{widgetStyle.HeadlineSub} {themeStyle.HeadlineSub}">
+                        <span class="required">*</span>
+                        <g:InlineLabel text="{managerMessages.requiredFields}"/>
+                    </div>
+
+                    <w:Form ui:field="form">
+                        <w:FormGroup ui:field="nameGroup">
+                            <w:label>
+                                <w:FormLabel text="{managerMessages.assetName}" required="true"/>
+                            </w:label>
+                            <w:field>
+                                <w:FormField>
+                                    <g:TextBox ui:field="nameInput"
+                                               addStyleNames="{style.nameTextBox} {widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                                </w:FormField>
+                            </w:field>
+                        </w:FormGroup>
+
+                        <g:FlowPanel ui:field="attributesContainer"/>
+
+                        <w:FormGroup>
+                            <w:field>
+                                <w:FormField>
+                                    <w:PushButton ui:field="updateButton"
+                                                  addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                                  text="{managerMessages.updateAsset}"
+                                                  visible="false"
+                                                  icon="save"/>
+                                    <w:PushButton ui:field="createButton"
+                                                  addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                                  text="{managerMessages.createAsset}"
+                                                  visible="false"
+                                                  icon="save"/>
+                                    <w:PushButton ui:field="deleteButton"
+                                                  addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonDanger} {themeStyle.FormButtonDanger} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                                  text="{managerMessages.deleteAsset}"
+                                                  visible="false"
+                                                  icon="trash"/>
+                                </w:FormField>
+                            </w:field>
+                        </w:FormGroup>
+
+                    </w:Form>
+
+                </div>
+            </g:HTMLPanel>
+
+        </w:second>
+    </w:FlexSplitPanel>
 
 </ui:UiBinder>

@@ -8,19 +8,11 @@
     <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
     <ui:style>
-        .view {
-            position: relative;
-        }
-
         .navItem {
             margin: 0 1em;
         }
 
         .mapWidget {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
             height: 100%;
         }
 
@@ -35,28 +27,42 @@
         }
     </ui:style>
 
-    <g:HTMLPanel ui:field="mapContainer" styleName="flex layout vertical" addStyleNames="{style.view}">
+    <w:FlexSplitPanel ui:field="splitPanel"
+                      handleStyle="{widgetStyle.SplitPanelHandle} {themeStyle.SplitPanelHandle}"
+                      firstPanelWidth="250"
+                      firstPanelMinWidth="250"
+                      secondPanelMinWidth="700">
 
-        <g:HTMLPanel
-                styleName="layout horizontal center end-justified {style.mapControls} {widgetStyle.SecondaryNavHorizontal} {themeStyle.SecondaryNavHorizontal}">
+        <w:first>
+            <g:HTMLPanel ui:field="sidebarContainer"
+                         styleName="flex layout vertical {widgetStyle.SidebarContent} {themeStyle.SidebarContent}"/>
+        </w:first>
 
-            <w:Hyperlink addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
-                         icon="map"
-                         targetHistoryToken="map:"
-                         text="Show all assets"/>
+        <w:second>
+            <g:HTMLPanel styleName="flex layout vertical">
+
+                <g:HTMLPanel
+                        styleName="layout horizontal center end-justified {style.mapControls} {widgetStyle.SecondaryNavHorizontal} {themeStyle.SecondaryNavHorizontal}">
+
+                    <w:Hyperlink
+                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                            icon="map"
+                            targetHistoryToken="map:"
+                            text="Show all assets"/>
 
 
-            <div>TODO: Move map navigation action items here</div>
-        </g:HTMLPanel>
+                    <div>TODO: Move map navigation action items here</div>
+                </g:HTMLPanel>
 
-        <g:Label ui:field="mapLoadingLabel"
-                 text="{managerMessages.mapLoading}"
-                 addStyleNames="{style.mapLoadingLabel}"/>
+                <g:Label ui:field="mapLoadingLabel"
+                         text="{managerMessages.mapLoading}"
+                         addStyleNames="{style.mapLoadingLabel}"/>
 
-        <map:MapWidget ui:field="mapWidget"
-                       styleName="flex layout vertical"
-                       addStyleNames="{style.mapWidget}"/>
+                <map:MapWidget ui:field="mapWidget"
+                               addStyleNames="{style.mapWidget}"/>
 
-    </g:HTMLPanel>
+            </g:HTMLPanel>
+        </w:second>
+    </w:FlexSplitPanel>
 
 </ui:UiBinder>

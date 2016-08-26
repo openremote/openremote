@@ -176,4 +176,14 @@ public interface ManagerMessages extends Messages {
     String unsupportedAttributeType(String name);
 
     String loadingAssets();
+
+    String assetName();
+
+    String editAsset();
+
+    String updateAsset();
+
+    String createAsset();
+
+    String deleteAsset();
 }

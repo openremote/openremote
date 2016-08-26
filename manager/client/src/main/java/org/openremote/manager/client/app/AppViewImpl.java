@@ -20,21 +20,22 @@
 package org.openremote.manager.client.app;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.place.shared.Place;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.SimplePanel;
-import org.openremote.manager.client.assets.browser.AssetBrowsingPlace;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
 
 import javax.inject.Inject;
+import java.util.logging.Logger;
 
 public class AppViewImpl extends Composite implements AppView {
+
+    private static final Logger LOG = Logger.getLogger(AppViewImpl.class.getName());
 
     interface UI extends UiBinder<FlowPanel, AppViewImpl> {
     }
@@ -54,9 +55,6 @@ public class AppViewImpl extends Composite implements AppView {
     SimplePanel header;
 
     @UiField
-    SimplePanel sidebar;
-
-    @UiField
     SimplePanel content;
 
     @UiField
@@ -67,6 +65,7 @@ public class AppViewImpl extends Composite implements AppView {
     @Inject
     public AppViewImpl() {
         initWidget(ui.createAndBindUi(this));
+
     }
 
     @Override
@@ -80,11 +79,6 @@ public class AppViewImpl extends Composite implements AppView {
     }
 
     @Override
-    public AcceptsOneWidget getSidebarPanel() {
-        return sidebar;
-    }
-
-    @Override
     public AcceptsOneWidget getContentPanel() {
         return content;
     }
@@ -92,10 +86,5 @@ public class AppViewImpl extends Composite implements AppView {
     @Override
     public AcceptsOneWidget getFooterPanel() {
         return footer;
-    }
-
-    @Override
-    public void updateLayout(Place place) {
-        sidebar.setVisible(place instanceof AssetBrowsingPlace);
     }
 }

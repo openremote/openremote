@@ -107,6 +107,8 @@ public class AssetService implements ContainerService {
     public Asset get(String assetId) {
         return persistenceService.doTransaction(em -> {
             Asset asset = em.find(ServerAsset.class, assetId);
+            if (asset == null)
+                return null;
             asset.setPath(em.unwrap(Session.class).doReturningWork(connection -> {
                 String query =
                     "WITH RECURSIVE ASSET_TREE(ID, PARENT_ID, PATH) AS (" +

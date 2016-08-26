@@ -65,16 +65,23 @@ public class AssetActivity
     @Override
     protected void startCreateAsset() {
         super.startCreateAsset();
-
+        view.setFormBusy(true);
         asset = new Asset();
         asset.setName("My New Asset");
-        onAssetReady();
+        view.enableCreate(true);
+        view.enableUpdate(false);
+        view.enableDelete(false);
+        writeToView();
+        view.setFormBusy(false);
     }
 
     @Override
-    protected void onAssetReady() {
-        view.setName(asset.getName());
-        // TODO Write data
+    protected void onAssetLoaded() {
+        writeToView();
+        view.enableCreate(false);
+        view.enableUpdate(true);
+        view.enableDelete(true);
+        view.setFormBusy(false);
     }
 
     @Override
@@ -90,5 +97,28 @@ public class AssetActivity
     @Override
     protected void onBeforeAssetLoad() {
         view.setFormBusy(true);
+    }
+
+    @Override
+    public void update() {
+
+    }
+
+    @Override
+    public void create() {
+
+    }
+
+    @Override
+    public void delete() {
+
+    }
+
+    protected void writeToView() {
+        view.setName(asset.getName());
+    }
+
+    protected void readFromView() {
+        asset.setName(view.getName());
     }
 }

@@ -25,9 +25,6 @@ import com.google.gwt.place.shared.PlaceHistoryHandler;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.inject.Provider;
-import org.openremote.manager.client.assets.browser.AssetBrowser;
-import org.openremote.manager.client.assets.browser.AssetBrowserPresenter;
-import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.toast.Toast;
 import org.openremote.manager.client.toast.Toasts;
@@ -40,7 +37,6 @@ import javax.inject.Inject;
 public class AppControllerImpl implements AppController, AppView.Presenter {
 
     private final AppView appView;
-    private final AssetBrowser.Presenter assetBrowserPresenter;
     private final PlaceController placeController;
     private final PlaceHistoryHandler placeHistoryHandler;
 
@@ -48,7 +44,6 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
     public AppControllerImpl(PlaceController placeController,
                              Provider<HeaderPresenter> headerPresenterProvider,
                              Provider<FooterPresenter> footerPresenterProvider,
-                             AssetBrowser.Presenter assetBrowserPresenter,
                              PlaceHistoryHandler placeHistoryHandler,
                              EventBus eventBus,
                              AppView appView,
@@ -56,7 +51,6 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
                              AppInitializer appInitializer) { // AppInitializer is needed so that activities are mapped to views
 
         this.appView = appView;
-        this.assetBrowserPresenter = assetBrowserPresenter;
         this.placeController = placeController;
         this.placeHistoryHandler = placeHistoryHandler;
 
@@ -65,13 +59,6 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
         appView.getHeaderPanel().setWidget(headerPresenter.getView());
         FooterPresenter footerPresenter = footerPresenterProvider.get();
         appView.getFooterPanel().setWidget(footerPresenter.getView());
-
-        appView.getSidebarPanel().setWidget(assetBrowserPresenter.getView());
-
-        eventBus.register(
-            GoToPlaceEvent.class,
-            event -> appView.updateLayout(event.getPlace())
-        );
 
         eventBus.register(
             ShowInfoEvent.class,

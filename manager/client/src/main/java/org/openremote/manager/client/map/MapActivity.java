@@ -92,7 +92,7 @@ public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implem
     }
 
     @Override
-    protected void onAssetReady() {
+    protected void onAssetLoaded() {
         getView().showFeaturesSelection(getFeature(asset));
     }
 

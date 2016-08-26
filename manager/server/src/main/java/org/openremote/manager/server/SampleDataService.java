@@ -304,7 +304,7 @@ public class SampleDataService implements ContainerService {
             em.persist(office1);
 
             ServerAsset office1Thermostat = new ServerAsset(office1);
-            office1Thermostat.setName("Thermostat in Office 1");
+            office1Thermostat.setName("Thermostat in Office 1 with a really long name that should test how the UI looks like");
             office1Thermostat.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
             office1Thermostat.setType(AssetType.GENERIC);
             Attributes office1ThermostatAttributes = new Attributes();

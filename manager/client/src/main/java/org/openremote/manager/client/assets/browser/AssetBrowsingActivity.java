@@ -139,7 +139,7 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
             asset -> {
                 this.asset = asset;
                 assetBrowserPresenter.selectAsset(asset.getId(), asset.getPath());
-                onAssetReady();
+                onAssetLoaded();
             },
             ex -> handleRequestException(ex, eventBus, managerMessages)
         );
@@ -152,7 +152,7 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
 
     };
 
-    abstract protected void onAssetReady();
+    abstract protected void onAssetLoaded();
 
     abstract protected void onAssetsDeselected();
 

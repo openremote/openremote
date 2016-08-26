@@ -20,39 +20,67 @@
 package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
-import com.google.gwt.user.client.ui.Composite;
+import com.google.gwt.uibinder.client.UiHandler;
+import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HTMLPanel;
-import com.google.gwt.user.client.ui.Label;
-import com.google.gwt.user.client.ui.SimplePanel;
-import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.style.FormTreeStyle;
+import com.google.gwt.user.client.ui.TextBox;
+import org.openremote.manager.client.assets.browser.AssetBrowser;
+import org.openremote.manager.client.widget.AttributesFormView;
+import org.openremote.manager.client.widget.FlexSplitPanel;
+import org.openremote.manager.client.widget.FormGroup;
+import org.openremote.manager.client.widget.PushButton;
 
 import javax.inject.Inject;
-import java.util.logging.Logger;
 
-public class AssetViewImpl extends Composite implements AssetView {
+public class AssetViewImpl extends AttributesFormView implements AssetView {
 
-    private static final Logger LOG = Logger.getLogger(AssetViewImpl.class.getName());
+    interface UI extends UiBinder<FlexSplitPanel, AssetViewImpl> {
+    }
 
-    interface UI extends UiBinder<HTMLPanel, AssetViewImpl> {
+    interface Style extends CssResource {
+
+        String navItem();
+
+        String formMessages();
+
+        String nameTextBox();
+
+        String attributeTextBox();
     }
 
     @UiField
-    ManagerMessages managerMessages;
+    Style style;
 
     @UiField
-    SimplePanel assetContentContainer;
+    HTMLPanel sidebarContainer;
 
-    final FormTreeStyle formTreeStyle;
+    @UiField
+    FormGroup nameGroup;
+    @UiField
+    TextBox nameInput;
 
+    @UiField
+    FlowPanel attributesContainer;
+
+    @UiField
+    PushButton createButton;
+
+    @UiField
+    PushButton updateButton;
+
+    @UiField
+    PushButton deleteButton;
+
+    final AssetBrowser assetBrowser;
     Presenter presenter;
 
     @Inject
-    public AssetViewImpl(FormTreeStyle formTreeStyle) {
-        this.formTreeStyle = formTreeStyle;
-
+    public AssetViewImpl(AssetBrowser assetBrowser) {
+        this.assetBrowser = assetBrowser;
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
     }
@@ -60,16 +88,56 @@ public class AssetViewImpl extends Composite implements AssetView {
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
-    }
-
-    @Override
-    public void setFormBusy(boolean busy) {
-        // TODO
+        if (presenter != null) {
+            assetBrowser.asWidget().removeFromParent();
+            sidebarContainer.add(assetBrowser.asWidget());
+        } else {
+            sidebarContainer.clear();
+            nameInput.setValue(null);
+        }
     }
 
     @Override
     public void setName(String name) {
-        assetContentContainer.clear();
-        assetContentContainer.add(new Label("SELECTED: " + name));
+        nameInput.setValue(name);
     }
+
+    @Override
+    public String getName() {
+        return nameInput.getValue().length() > 0 ? nameInput.getValue() : null;
+    }
+
+    @Override
+    public void enableCreate(boolean enable) {
+        createButton.setVisible(enable);
+    }
+
+    @Override
+    public void enableUpdate(boolean enable) {
+        updateButton.setVisible(enable);
+    }
+
+    @Override
+    public void enableDelete(boolean enable) {
+        deleteButton.setVisible(enable);
+    }
+
+    @UiHandler("updateButton")
+    void updateClicked(ClickEvent e) {
+        if (presenter != null)
+            presenter.update();
+    }
+
+    @UiHandler("createButton")
+    void createClicked(ClickEvent e) {
+        if (presenter != null)
+            presenter.create();
+    }
+
+    @UiHandler("deleteButton")
+    void deleteClicked(ClickEvent e) {
+        if (presenter != null)
+            presenter.delete();
+    }
+
 }

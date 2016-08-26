@@ -53,7 +53,7 @@ public class AssetsDashboardActivity
     }
 
     @Override
-    protected void onAssetReady() {
+    protected void onAssetLoaded() {
     }
 
     @Override

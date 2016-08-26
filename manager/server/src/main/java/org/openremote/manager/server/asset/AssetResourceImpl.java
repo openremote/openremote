@@ -26,6 +26,8 @@ import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.http.RequestParams;
 
 import javax.ws.rs.BeanParam;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
 
 public class AssetResourceImpl extends WebResource implements AssetResource {
 
@@ -47,6 +49,9 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
 
     @Override
     public Asset get(@BeanParam RequestParams requestParams, String assetId) {
-        return assetService.get(assetId);
+        Asset asset = assetService.get(assetId);
+        if (asset == null)
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        return asset;
     }
 }

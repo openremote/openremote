@@ -22,7 +22,7 @@
             border-radius: 0.4em;
             font-size: smaller !important;
             padding: 0.4em !important;
-            width: 8em;
+            width: 75%;
             height: 0.8em;
         }
 
@@ -32,7 +32,7 @@
     </ui:style>
 
     <g:HTMLPanel styleName="flex layout vertical"
-                 addStyleNames="{style.view} {widgetStyle.SidebarContent} {themeStyle.SidebarContent}">
+                 addStyleNames="{style.view}">
 
         <g:HTMLPanel
                 styleName="layout horizontal center {widgetStyle.SecondaryNavHorizontal} {themeStyle.SecondaryNavHorizontal}">

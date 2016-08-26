@@ -23,25 +23,30 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
+import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.Label;
 import elemental.json.JsonObject;
+import org.openremote.manager.client.assets.browser.AssetBrowser;
+import org.openremote.manager.client.widget.FlexSplitPanel;
 import org.openremote.manager.shared.map.GeoJSON;
 
 import javax.inject.Inject;
+import java.util.logging.Logger;
 
 public class MapViewImpl extends Composite implements MapView {
 
-    interface UI extends UiBinder<HTMLPanel, MapViewImpl> {
+    private static final Logger LOG = Logger.getLogger(MapViewImpl.class.getName());
+
+    interface UI extends UiBinder<FlexSplitPanel, MapViewImpl> {
     }
 
-    private UI ui = GWT.create(UI.class);
-
-    Presenter presenter;
+    @UiField
+    FlexSplitPanel splitPanel;
 
     @UiField
-    HTMLPanel mapContainer;
+    HTMLPanel sidebarContainer;
 
     @UiField
     Label mapLoadingLabel;
@@ -49,17 +54,46 @@ public class MapViewImpl extends Composite implements MapView {
     @UiField
     MapWidget mapWidget;
 
+    final AssetBrowser assetBrowser;
+
+
+    Timer refreshTimer;
+    Presenter presenter;
+
     @Inject
-    public MapViewImpl() {
+    public MapViewImpl(AssetBrowser assetBrowser) {
+        this.assetBrowser = assetBrowser;
+
+        UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
+
+        splitPanel.setOnResize(() -> {
+            // Deduplicate this event to avoid refreshing the map for every pixel move of the sidebar
+            if (refreshTimer != null && refreshTimer.isRunning()) {
+                refreshTimer.cancel();
+            }
+            refreshTimer = new Timer() {
+                @Override
+                public void run() {
+                    refresh();
+                }
+            };
+            refreshTimer.schedule(10);
+        });
+
         mapLoadingLabel.setVisible(true);
         mapWidget.setVisible(false);
     }
 
-
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
+        if (presenter != null) {
+            assetBrowser.asWidget().removeFromParent();
+            sidebarContainer.add(assetBrowser.asWidget());
+        } else {
+            sidebarContainer.clear();
+        }
     }
 
     @Override

@@ -24,10 +24,23 @@ import org.openremote.manager.client.assets.browser.AssetBrowsingView;
 public interface AssetView extends AssetBrowsingView<AssetView.Presenter> {
 
     interface Presenter extends AssetBrowsingView.Presenter {
+
+        void update();
+
+        void create();
+
+        void delete();
     }
 
     void setFormBusy(boolean busy);
 
     void setName(String name);
 
+    String getName();
+
+    void enableCreate(boolean enable);
+
+    void enableUpdate(boolean enable);
+
+    void enableDelete(boolean enable);
 }

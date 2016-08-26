@@ -26,18 +26,25 @@ import com.google.gwt.safehtml.shared.SafeHtml;
 import com.google.gwt.safehtml.shared.SafeHtmlBuilder;
 import com.google.gwt.safehtml.shared.SafeHtmlUtils;
 import com.google.gwt.text.shared.SafeHtmlRenderer;
+import org.openremote.manager.client.util.TextUtil;
 import org.openremote.manager.shared.asset.AssetInfo;
 
 class AssetCell extends AbstractSafeHtmlCell<AssetInfo> {
 
     public interface AssetTemplates extends SafeHtmlTemplates {
         @Template("<div id=\"asset-{0}\">{1}</div>")
-        SafeHtml assetItem(String assetId, String displayName);
+        SafeHtml assetItem(String assetId, String name);
     }
 
     private static final AssetTemplates TEMPLATES = GWT.create(AssetTemplates.class);
 
-    static final SafeHtmlRenderer<AssetInfo> assetRenderer = new SafeHtmlRenderer<AssetInfo>() {
+    public static class Renderer implements SafeHtmlRenderer<AssetInfo> {
+
+        final protected int maxNameLength;
+
+        public Renderer(int maxNameLength) {
+            this.maxNameLength = maxNameLength;
+        }
 
         @Override
         public SafeHtml render(AssetInfo asset) {
@@ -50,14 +57,16 @@ class AssetCell extends AbstractSafeHtmlCell<AssetInfo> {
 
         @Override
         public void render(AssetInfo asset, SafeHtmlBuilder appendable) {
-            appendable.append(TEMPLATES.assetItem(asset.getId(), asset.getName()));
+            appendable.append(TEMPLATES.assetItem(
+                asset.getId(),
+                TextUtil.ellipsize(asset.getName(), maxNameLength))
+            );
         }
-    };
-
-    public AssetCell() {
-        super(assetRenderer);
     }
 
+    public AssetCell(Renderer renderer) {
+        super(renderer);
+    }
 
     @Override
     public void render(Context context, SafeHtml value, SafeHtmlBuilder sb) {

@@ -25,8 +25,10 @@ import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.SimplePanel;
+import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTreeStyle;
+import org.openremote.manager.client.widget.FlexSplitPanel;
 
 import javax.inject.Inject;
 import java.util.logging.Logger;
@@ -35,21 +37,26 @@ public class AssetsDashboardImpl extends Composite implements AssetsDashboard {
 
     private static final Logger LOG = Logger.getLogger(AssetsDashboardImpl.class.getName());
 
-    interface UI extends UiBinder<HTMLPanel, AssetsDashboardImpl> {
+    interface UI extends UiBinder<FlexSplitPanel, AssetsDashboardImpl> {
     }
 
     @UiField
     ManagerMessages managerMessages;
 
     @UiField
+    HTMLPanel sidebarContainer;
+
+    @UiField
     SimplePanel assetsContentContainer;
 
+    final AssetBrowser assetBrowser;
     final FormTreeStyle formTreeStyle;
 
     Presenter presenter;
 
     @Inject
-    public AssetsDashboardImpl(FormTreeStyle formTreeStyle) {
+    public AssetsDashboardImpl(AssetBrowser assetBrowser, FormTreeStyle formTreeStyle) {
+        this.assetBrowser = assetBrowser;
         this.formTreeStyle = formTreeStyle;
 
         UI ui = GWT.create(UI.class);
@@ -59,5 +66,11 @@ public class AssetsDashboardImpl extends Composite implements AssetsDashboard {
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
+        if (presenter != null) {
+            assetBrowser.asWidget().removeFromParent();
+            sidebarContainer.add(assetBrowser.asWidget());
+        } else {
+            sidebarContainer.clear();
+        }
     }
 }

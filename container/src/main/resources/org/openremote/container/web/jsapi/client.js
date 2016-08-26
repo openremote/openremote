@@ -96,7 +96,6 @@ REST.Request.prototype = {
         if (callback) {
             request.onreadystatechange = function () {
                 gotReadyStateChangeEvent = true;
-                REST.log("Got readystatechange");
                 REST._complete(this, callback);
             };
         }
@@ -468,7 +467,6 @@ REST.Encoding.encodeValue = function (val, allowed, form) {
     for (var i = 0; i < val.length; i++) {
         var first = val[i];
         if (allowed[first] == 1) {
-            REST.log("char allowed: " + first);
             ret = ret.concat(first);
         } else if (form && (first == ' ' || first == '\n')) {
             // special rules for application/x-www-form-urlencoded

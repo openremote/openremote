@@ -33,11 +33,13 @@ class AssetTreeModel implements TreeViewModel {
     // e.g. an asset that is really only a loading message or some other UI signal for the user
     public static final String TEMPORARY_ASSET_TYPE = "TMP";
 
+    final protected AssetCell.Renderer renderer;
     final AssetBrowser.Presenter presenter;
     final SingleSelectionModel<AssetInfo> selectionModel = new SingleSelectionModel<>();
 
-    public AssetTreeModel(AssetBrowser.Presenter presenter) {
+    public AssetTreeModel(AssetBrowser.Presenter presenter, AssetCell.Renderer renderer) {
         this.presenter = presenter;
+        this.renderer = renderer;
         selectionModel.addSelectionChangeHandler(selectionChangeEvent -> {
             if (selectionModel.getSelectedObject() != null) {
                 presenter.onAssetSelected(selectionModel.getSelectedObject().getId());
@@ -49,7 +51,7 @@ class AssetTreeModel implements TreeViewModel {
     public <T> NodeInfo<?> getNodeInfo(T value) {
         return new DefaultNodeInfo<>(
             new AssetDataProvider(presenter, (AssetInfo) value),
-            new AssetCell(),
+            new AssetCell(renderer),
             selectionModel,
             null);
     }

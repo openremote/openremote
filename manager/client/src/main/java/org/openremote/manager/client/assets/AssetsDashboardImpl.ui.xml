@@ -16,37 +16,51 @@
         }
     </ui:style>
 
-    <g:HTMLPanel styleName="flex layout horizontal">
+    <w:FlexSplitPanel handleStyle="{widgetStyle.SplitPanelHandle} {themeStyle.SplitPanelHandle}"
+                      firstPanelWidth="250"
+                      firstPanelMinWidth="250"
+                      secondPanelMinWidth="600">
+        <w:first>
+            <g:HTMLPanel ui:field="sidebarContainer"
+                         styleName="flex layout vertical {widgetStyle.SidebarContent} {themeStyle.SidebarContent}"/>
+        </w:first>
+        <w:second>
+            <g:HTMLPanel styleName="flex layout vertical">
 
-        <g:HTMLPanel styleName="flex layout vertical">
-            <g:HTMLPanel
-                    styleName="layout horizontal center end-justified {style.assetsControls} {widgetStyle.SecondaryNavHorizontal} {themeStyle.SecondaryNavHorizontal}">
+                <g:HTMLPanel
+                        styleName="layout horizontal center end-justified {style.assetsControls} {widgetStyle.SecondaryNavHorizontal} {themeStyle.SecondaryNavHorizontal}">
 
-                <w:Hyperlink addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem} active"
-                             icon="dashboard"
-                             targetHistoryToken="assets:"
-                             text="Dashboard"/>
+                    <w:Hyperlink
+                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem} active"
+                            icon="dashboard"
+                            targetHistoryToken="assets:"
+                            text="Dashboard"/>
 
-                <w:Hyperlink addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
-                             icon="edit"
-                             targetHistoryToken="assets:"
-                             text="Edit Dashboard"/>
+                    <w:Hyperlink
+                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                            icon="edit"
+                            targetHistoryToken="assets:"
+                            text="Edit Dashboard"/>
 
-                <w:Hyperlink addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
-                             icon="copy"
-                             targetHistoryToken="assets:"
-                             text="Copy/Create Asset"/>
+                    <w:Hyperlink
+                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                            icon="copy"
+                            targetHistoryToken="assets:"
+                            text="Copy/Create Asset"/>
+
+                </g:HTMLPanel>
+
+                <g:HTMLPanel styleName="flex {widgetStyle.MainContent} {themeStyle.MainContent}">
+                    <div>TODO: Asset browser switches to an advanced UI that needs more space on the left</div>
+                    <g:SimplePanel ui:field="assetsContentContainer">
+                        <g:Label
+                                text="TODO: Asset Dashboard view is the starting view, it will an editable Dashboard App"/>
+                    </g:SimplePanel>
+                </g:HTMLPanel>
 
             </g:HTMLPanel>
 
-            <div class="flex {widgetStyle.MainContent} {themeStyle.MainContent}">
-                <div>TODO: Asset browser switches to an advanced UI that needs more space on the left</div>
-                <g:SimplePanel ui:field="assetsContentContainer">
-                    <g:Label text="TODO: Asset Dashboard view is the starting view, it will an editable Dashboard App"/>
-                </g:SimplePanel>
-            </div>
-        </g:HTMLPanel>
-
-    </g:HTMLPanel>
+        </w:second>
+    </w:FlexSplitPanel>
 
 </ui:UiBinder>
