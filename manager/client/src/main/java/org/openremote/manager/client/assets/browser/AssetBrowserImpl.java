@@ -97,11 +97,6 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
 
         assetTreeContainer.clear();
         assetTreeContainer.add(assetTree);
-
-        registerFlowEventListener(assetTreeContainer.getElement(), "over", () -> {
-            LOG.info("### GOT IT");
-        });
-
     }
 
     @Override
@@ -138,13 +133,4 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
     public void deselectAssets() {
         assetTree.getTreeViewModel().getSelectionModel().clear();
     }
-
-    native protected void registerFlowEventListener(Element element, String type, Runnable callback) /*-{
-        element.addEventListener("webkitTransitionEnd", function (e) {
-            console.log("###### EVENT")
-            console.log(e);
-            callback.run();
-        });
-    }-*/;
-
 }
