@@ -45,7 +45,7 @@ public class Asset {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CREATED_ON", updatable = false, nullable = false)
     @org.hibernate.annotations.CreationTimestamp
-    protected Date createdOn;
+    protected Date createdOn = new Date();
 
     @NotNull
     @Column(name = "NAME", nullable = false)

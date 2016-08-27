@@ -74,7 +74,7 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
 
-        AssetCell.Renderer assetCellRenderer = new AssetCell.Renderer(35);
+        AssetCell.Renderer assetCellRenderer = new AssetCell.Renderer(44);
         assetTree = new AssetTree(
             new AssetTreeModel(presenter, assetCellRenderer),
             new AssetInfo(),

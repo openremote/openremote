@@ -23,9 +23,8 @@ import elemental.json.JsonObject;
 import jsinterop.annotations.JsType;
 
 @JsType(isNative = true, namespace = "mapboxgl")
-public class GeoJSONSource {
+public interface GeoJSONSource {
 
-    public GeoJSONSource(JsonObject options) {}
+    void setData(JsonObject geoJson);
 
-    public native void setData(JsonObject data);
 }

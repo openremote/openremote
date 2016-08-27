@@ -47,7 +47,8 @@ public class MapboxMap {
     public native MapboxMap addLayer(JavaScriptObject layer);
     public native MapboxMap addLayer(JavaScriptObject layer, String beforeLayerId);
 
-    public native MapboxMap addSource(String id, GeoJSONSource source);
+    public native MapboxMap addSource(String sourceId, JsonObject source);
+    public native GeoJSONSource getSource(String sourceId);
 
     // TODO: add batch method fucntionality to map
 //    public native void batch(WorkFn work);
@@ -95,8 +96,6 @@ public class MapboxMap {
     public native JsonValue getPaintProperty(String layerId, String propertyName, String className);
 
     public native double getPitch();
-
-    public native JsonObject getSource(String sourceId);
 
     public native JsonObject getStyle();
 

@@ -21,20 +21,22 @@ package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HTMLPanel;
+import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.TextBox;
+import elemental.json.JsonObject;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
-import org.openremote.manager.client.widget.AttributesFormView;
-import org.openremote.manager.client.widget.FlexSplitPanel;
-import org.openremote.manager.client.widget.FormGroup;
-import org.openremote.manager.client.widget.PushButton;
+import org.openremote.manager.client.widget.*;
+import org.openremote.manager.shared.map.GeoJSON;
 
 import javax.inject.Inject;
+import java.util.Date;
 
 public class AssetViewImpl extends AttributesFormView implements AssetView {
 
@@ -50,6 +52,10 @@ public class AssetViewImpl extends AttributesFormView implements AssetView {
         String nameTextBox();
 
         String attributeTextBox();
+
+        String mapWidget();
+
+        String typeTextBox();
     }
 
     @UiField
@@ -64,6 +70,14 @@ public class AssetViewImpl extends AttributesFormView implements AssetView {
     TextBox nameInput;
 
     @UiField
+    Label createdOnLabel;
+
+    @UiField
+    FormGroup typeGroup;
+    @UiField
+    TextBox typeInput;
+
+    @UiField
     FlowPanel attributesContainer;
 
     @UiField
@@ -74,6 +88,9 @@ public class AssetViewImpl extends AttributesFormView implements AssetView {
 
     @UiField
     PushButton deleteButton;
+
+    @UiField
+    MapWidget mapWidget;
 
     final AssetBrowser assetBrowser;
     Presenter presenter;
@@ -94,6 +111,9 @@ public class AssetViewImpl extends AttributesFormView implements AssetView {
         } else {
             sidebarContainer.clear();
             nameInput.setValue(null);
+            typeInput.setValue(null);
+            createdOnLabel.setText("");
+            hideFeaturesSelection();
         }
     }
 
@@ -105,6 +125,23 @@ public class AssetViewImpl extends AttributesFormView implements AssetView {
     @Override
     public String getName() {
         return nameInput.getValue().length() > 0 ? nameInput.getValue() : null;
+    }
+
+    @Override
+    public void setType(String type) {
+        typeInput.setValue(type);
+    }
+
+    @Override
+    public String getType() {
+        return typeInput.getValue().length() > 0 ? typeInput.getValue() : null;
+    }
+
+    @Override
+    public void setCreatedOn(Date createdOn) {
+        createdOnLabel.setText(
+            createdOn != null ? DateTimeFormat.getFormat("dd. MMM yyyy HH:mm:ss zzz").format(createdOn) : ""
+        );
     }
 
     @Override
@@ -120,6 +157,41 @@ public class AssetViewImpl extends AttributesFormView implements AssetView {
     @Override
     public void enableDelete(boolean enable) {
         deleteButton.setVisible(enable);
+    }
+
+    @Override
+    public void initialiseMap(JsonObject mapOptions) {
+        mapWidget.initialise(mapOptions);
+        mapWidget.resize();
+
+        mapWidget.setClickListener((lng, lat) -> {
+            presenter.onMapClicked(lng, lat);
+        });
+    }
+
+    @Override
+    public boolean isMapInitialised() {
+        return mapWidget.isInitialised();
+    }
+
+    @Override
+    public void showPopup(double lng, double lat, String text) {
+        mapWidget.showPopup(lng, lat, text);
+    }
+
+    @Override
+    public void showFeaturesSelection(GeoJSON mapFeatures) {
+        mapWidget.showFeatures(MapWidget.FEATURES_SOURCE_SELECTION, mapFeatures);
+    }
+
+    @Override
+    public void hideFeaturesSelection() {
+        showFeaturesSelection(GeoJSON.EMPTY_FEATURE_COLLECTION);
+    }
+
+    @Override
+    public void flyTo(double[] coordinates) {
+        mapWidget.flyTo(coordinates);
     }
 
     @UiHandler("updateButton")

@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.client.assets.asset;
 
+import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.assets.AssetMapper;
@@ -28,13 +29,17 @@ import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.i18n.ManagerMessages;
+import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
 import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.asset.AssetResource;
+import org.openremote.manager.shared.map.MapResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
 import java.util.logging.Logger;
+
+import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
 public class AssetActivity
     extends AssetBrowsingActivity<AssetView, AssetPlace>
@@ -43,6 +48,10 @@ public class AssetActivity
     private static final Logger LOG = Logger.getLogger(AssetActivity.class.getName());
 
     final PlaceController placeController;
+    final MapResource mapResource;
+    final JsonObjectMapper jsonObjectMapper;
+
+    protected double[] selectedCoordinates;
 
     @Inject
     public AssetActivity(EventBus eventBus,
@@ -52,14 +61,28 @@ public class AssetActivity
                          AssetView view,
                          AssetBrowser.Presenter assetBrowserPresenter,
                          AssetResource assetResource,
-                         AssetMapper assetMapper) {
+                         AssetMapper assetMapper,
+                         MapResource mapResource,
+                         JsonObjectMapper jsonObjectMapper) {
         super(eventBus, managerMessages, requestService, view, assetBrowserPresenter, assetResource, assetMapper);
         this.placeController = placeController;
+        this.mapResource = mapResource;
+        this.jsonObjectMapper = jsonObjectMapper;
     }
 
     @Override
     public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
         super.start(container, eventBus, registrations);
+
+        if (!getView().isMapInitialised()) {
+            requestService.execute(
+                jsonObjectMapper,
+                mapResource::getSettings,
+                200,
+                view::initialiseMap,
+                ex -> handleRequestException(ex, eventBus, managerMessages)
+            );
+        }
     }
 
     @Override
@@ -82,10 +105,13 @@ public class AssetActivity
         view.enableUpdate(true);
         view.enableDelete(true);
         view.setFormBusy(false);
+        view.showFeaturesSelection(getFeature(asset));
+        view.flyTo(asset.getCoordinates());
     }
 
     @Override
     protected void onAssetsDeselected() {
+        view.hideFeaturesSelection();
         placeController.goTo(new AssetsDashboardPlace());
     }
 
@@ -97,6 +123,12 @@ public class AssetActivity
     @Override
     protected void onBeforeAssetLoad() {
         view.setFormBusy(true);
+    }
+
+    @Override
+    public void onMapClicked(double lng, double lat) {
+        selectedCoordinates = new double[] {lng, lat};
+        view.showPopup(lng, lat, managerMessages.selectedLocation());
     }
 
     @Override
@@ -116,9 +148,15 @@ public class AssetActivity
 
     protected void writeToView() {
         view.setName(asset.getName());
+        view.setType(asset.getType());
+        view.setCreatedOn(asset.getCreatedOn());
     }
 
     protected void readFromView() {
         asset.setName(view.getName());
+        asset.setType(view.getType());
+        if (selectedCoordinates != null) {
+            asset.setCoordinates(selectedCoordinates);
+        }
     }
 }

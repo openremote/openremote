@@ -186,4 +186,10 @@ public interface ManagerMessages extends Messages {
     String createAsset();
 
     String deleteAsset();
+
+    String assetType();
+
+    String createdOn();
+
+    String selectedLocation();
 }
