@@ -49,6 +49,11 @@
                             targetHistoryToken="map:"
                             text="Show all assets"/>
 
+                    <w:Hyperlink
+                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                            icon="plus-square"
+                            targetHistoryToken="asset:"
+                            text="{managerMessages.createAsset}"/>
 
                     <div>TODO: Move map navigation action items here</div>
                 </g:HTMLPanel>

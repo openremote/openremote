@@ -28,12 +28,12 @@ import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.SimpleCheckBox;
 import com.google.gwt.user.client.ui.TextBox;
 import org.openremote.manager.client.widget.FormGroup;
-import org.openremote.manager.client.widget.FormView;
+import org.openremote.manager.client.widget.FormViewImpl;
 import org.openremote.manager.client.widget.PushButton;
 
 import javax.inject.Inject;
 
-public class AdminTenantImpl extends FormView implements AdminTenant {
+public class AdminTenantImpl extends FormViewImpl implements AdminTenant {
 
     interface UI extends UiBinder<HTMLPanel, AdminTenantImpl> {
     }

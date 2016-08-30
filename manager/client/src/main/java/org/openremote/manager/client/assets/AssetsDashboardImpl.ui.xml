@@ -31,22 +31,16 @@
                         styleName="layout horizontal center end-justified {style.assetsControls} {widgetStyle.SecondaryNavHorizontal} {themeStyle.SecondaryNavHorizontal}">
 
                     <w:Hyperlink
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem} active"
-                            icon="dashboard"
-                            targetHistoryToken="assets:"
-                            text="Dashboard"/>
-
-                    <w:Hyperlink
                             addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
                             icon="edit"
                             targetHistoryToken="assets:"
-                            text="Edit Dashboard"/>
+                            text="{managerMessages.editDashboard}"/>
 
                     <w:Hyperlink
                             addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
-                            icon="copy"
-                            targetHistoryToken="assets:"
-                            text="Copy/Create Asset"/>
+                            icon="plus-square"
+                            targetHistoryToken="asset:"
+                            text="{managerMessages.createAsset}"/>
 
                 </g:HTMLPanel>
 

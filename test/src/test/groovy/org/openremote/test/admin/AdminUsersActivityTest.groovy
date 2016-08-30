@@ -241,8 +241,7 @@ class AdminUsersActivityTest extends Specification implements ContainerTrait, Cl
 
         and: "The admin user form should be cleared"
         1 * adminUserView.clearRoles()
-        1 * adminUserView.clearFormMessagesSuccess()
-        1 * adminUserView.clearFormMessagesError()
+        1 * adminUserView.clearFormMessages()
         1 * adminUserView.setUsernameError(false)
         1 * adminUserView.setFirstNameError(false)
         1 * adminUserView.setLastNameError(false)
@@ -270,8 +269,7 @@ class AdminUsersActivityTest extends Specification implements ContainerTrait, Cl
 
         then: "The activity reads the form"
         1 * adminUserView.setFormBusy(true)
-        1 * adminUserView.clearFormMessagesSuccess()
-        1 * adminUserView.clearFormMessagesError()
+        1 * adminUserView.clearFormMessages()
         1 * adminUserView.setUsernameError(false)
         1 * adminUserView.setFirstNameError(false)
         1 * adminUserView.setLastNameError(false)
@@ -305,8 +303,7 @@ class AdminUsersActivityTest extends Specification implements ContainerTrait, Cl
 
         then: "The activity reads the form"
         1 * adminUserView.setFormBusy(true)
-        1 * adminUserView.clearFormMessagesSuccess()
-        1 * adminUserView.clearFormMessagesError()
+        1 * adminUserView.clearFormMessages()
         1 * adminUserView.setUsernameError(false)
         1 * adminUserView.setFirstNameError(false)
         1 * adminUserView.setLastNameError(false)
@@ -337,8 +334,7 @@ class AdminUsersActivityTest extends Specification implements ContainerTrait, Cl
         1 * adminUserView.setFormBusy(false)
         1 * adminUserView.setPresenter(null)
         1 * adminUserView.clearRoles()
-        1 * adminUserView.clearFormMessagesSuccess()
-        1 * adminUserView.clearFormMessagesError()
+        1 * adminUserView.clearFormMessages()
         1 * adminUserView.setUsernameError(false)
         1 * adminUserView.setFirstNameError(false)
         1 * adminUserView.setLastNameError(false)
@@ -378,8 +374,7 @@ class AdminUsersActivityTest extends Specification implements ContainerTrait, Cl
 
         and: "The admin user form should be cleared"
         1 * adminUserView.clearRoles()
-        1 * adminUserView.clearFormMessagesSuccess()
-        1 * adminUserView.clearFormMessagesError()
+        1 * adminUserView.clearFormMessages()
         1 * adminUserView.setUsernameError(false)
         1 * adminUserView.setFirstNameError(false)
         1 * adminUserView.setLastNameError(false)
@@ -545,8 +540,7 @@ class AdminUsersActivityTest extends Specification implements ContainerTrait, Cl
 
         then: "The activity clears the form messages"
         1 * adminUserView.setFormBusy(true)
-        1 * adminUserView.clearFormMessagesSuccess()
-        1 * adminUserView.clearFormMessagesError()
+        1 * adminUserView.clearFormMessages()
         1 * adminUserView.setUsernameError(false)
         1 * adminUserView.setFirstNameError(false)
         1 * adminUserView.setLastNameError(false)
@@ -562,8 +556,7 @@ class AdminUsersActivityTest extends Specification implements ContainerTrait, Cl
         1 * adminUserView.setFormBusy(false)
         1 * adminUserView.setPresenter(null)
         1 * adminUserView.clearRoles()
-        1 * adminUserView.clearFormMessagesSuccess()
-        1 * adminUserView.clearFormMessagesError()
+        1 * adminUserView.clearFormMessages()
         1 * adminUserView.setUsernameError(false)
         1 * adminUserView.setFirstNameError(false)
         1 * adminUserView.setLastNameError(false)

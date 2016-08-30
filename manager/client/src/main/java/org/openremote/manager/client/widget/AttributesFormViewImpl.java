@@ -30,7 +30,7 @@ import org.openremote.manager.shared.attribute.MetadataElement;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AttributesFormView extends FormView {
+public class AttributesFormViewImpl extends FormViewImpl {
 
     public FormGroup[] createAttributeFormGroups(String formFieldStyleName, Attributes attributes) {
         List<FormGroup> list = new ArrayList<>();

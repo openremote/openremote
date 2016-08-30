@@ -20,8 +20,9 @@
 package org.openremote.manager.client.admin.tenant;
 
 import org.openremote.manager.client.admin.AdminContent;
+import org.openremote.manager.client.widget.FormView;
 
-public interface AdminTenant extends AdminContent {
+public interface AdminTenant extends AdminContent, FormView {
 
     interface Presenter {
 
@@ -35,16 +36,6 @@ public interface AdminTenant extends AdminContent {
     }
 
     void setPresenter(Presenter presenter);
-
-    void setFormBusy(boolean busy);
-
-    void addFormMessageError(String message);
-
-    void addFormMessageSuccess(String message);
-
-    void clearFormMessagesError();
-
-    void clearFormMessagesSuccess();
 
     void setTenantDisplayName(String displayName);
 

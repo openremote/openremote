@@ -26,6 +26,7 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.asset.AssetInfo;
 
@@ -104,9 +105,9 @@ public class AssetService implements ContainerService {
         });
     }
 
-    public Asset get(String assetId) {
+    public ServerAsset get(String assetId) {
         return persistenceService.doTransaction(em -> {
-            Asset asset = em.find(ServerAsset.class, assetId);
+            ServerAsset asset = em.find(ServerAsset.class, assetId);
             if (asset == null)
                 return null;
             asset.setPath(em.unwrap(Session.class).doReturningWork(connection -> {
@@ -133,5 +134,27 @@ public class AssetService implements ContainerService {
             return asset;
         });
     }
+
+    public void update(ServerAsset asset) {
+        persistenceService.doTransaction(em -> {
+            em.merge(asset);
+        });
+    }
+
+    public void create(ServerAsset asset) {
+        persistenceService.doTransaction(em -> {
+            em.persist(asset);
+        });
+    }
+
+    public void delete(String assetId) {
+        persistenceService.doTransaction(em -> {
+            Asset asset = em.find(ServerAsset.class, assetId);
+            if (asset != null) {
+                em.remove(asset);
+            }
+        });
+    }
+
 
 }

@@ -52,4 +52,22 @@ public interface AssetResource {
     @RolesAllowed({"read:assets"})
     Asset get(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
 
+    @PUT
+    @Path("{assetId}")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(204)
+    void update(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, Asset asset);
+
+    @POST
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(204)
+    void create(@BeanParam RequestParams requestParams, Asset asset);
+
+    @DELETE
+    @Path("{assetId}")
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(204)
+    void delete(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
 }

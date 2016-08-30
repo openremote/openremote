@@ -38,7 +38,7 @@ import org.openremote.manager.shared.map.GeoJSON;
 import javax.inject.Inject;
 import java.util.Date;
 
-public class AssetViewImpl extends AttributesFormView implements AssetView {
+public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
 
     interface UI extends UiBinder<FlexSplitPanel, AssetViewImpl> {
     }
@@ -78,6 +78,9 @@ public class AssetViewImpl extends AttributesFormView implements AssetView {
     TextBox typeInput;
 
     @UiField
+    Label locationLabel;
+
+    @UiField
     FlowPanel attributesContainer;
 
     @UiField
@@ -113,7 +116,9 @@ public class AssetViewImpl extends AttributesFormView implements AssetView {
             nameInput.setValue(null);
             typeInput.setValue(null);
             createdOnLabel.setText("");
+            locationLabel.setText("");
             hideFeaturesSelection();
+            hideMapPopup();
         }
     }
 
@@ -128,6 +133,13 @@ public class AssetViewImpl extends AttributesFormView implements AssetView {
     }
 
     @Override
+    public void setCreatedOn(Date createdOn) {
+        createdOnLabel.setText(
+            createdOn != null ? DateTimeFormat.getFormat("dd. MMM yyyy HH:mm:ss zzz").format(createdOn) : ""
+        );
+    }
+
+    @Override
     public void setType(String type) {
         typeInput.setValue(type);
     }
@@ -138,9 +150,9 @@ public class AssetViewImpl extends AttributesFormView implements AssetView {
     }
 
     @Override
-    public void setCreatedOn(Date createdOn) {
-        createdOnLabel.setText(
-            createdOn != null ? DateTimeFormat.getFormat("dd. MMM yyyy HH:mm:ss zzz").format(createdOn) : ""
+    public void setLocation(String location) {
+        locationLabel.setText(
+            location != null ? location : "-"
         );
     }
 
@@ -175,8 +187,13 @@ public class AssetViewImpl extends AttributesFormView implements AssetView {
     }
 
     @Override
-    public void showPopup(double lng, double lat, String text) {
+    public void showMapPopup(double lng, double lat, String text) {
         mapWidget.showPopup(lng, lat, text);
+    }
+
+    @Override
+    public void hideMapPopup() {
+        mapWidget.hidePopup();
     }
 
     @Override
@@ -211,5 +228,4 @@ public class AssetViewImpl extends AttributesFormView implements AssetView {
         if (presenter != null)
             presenter.delete();
     }
-
 }

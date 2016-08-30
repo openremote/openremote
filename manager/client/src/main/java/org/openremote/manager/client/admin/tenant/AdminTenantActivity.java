@@ -116,8 +116,7 @@ public class AdminTenantActivity
 
         adminContent.setPresenter(this);
 
-        adminContent.clearFormMessagesSuccess();
-        adminContent.clearFormMessagesError();
+        adminContent.clearFormMessages();
         clearViewFieldErrors();
         adminContent.enableCreate(false);
         adminContent.enableUpdate(false);
@@ -136,16 +135,14 @@ public class AdminTenantActivity
     public void onStop() {
         super.onStop();
         adminContent.setPresenter(null);
-        adminContent.clearFormMessagesSuccess();
-        adminContent.clearFormMessagesError();
+        adminContent.clearFormMessages();
         clearViewFieldErrors();
     }
 
     @Override
     public void create() {
         adminContent.setFormBusy(true);
-        adminContent.clearFormMessagesSuccess();
-        adminContent.clearFormMessagesError();
+        adminContent.clearFormMessages();
         clearViewFieldErrors();
         readFromView();
         requestService.execute(
@@ -168,8 +165,7 @@ public class AdminTenantActivity
     @Override
     public void update() {
         adminContent.setFormBusy(true);
-        adminContent.clearFormMessagesSuccess();
-        adminContent.clearFormMessagesError();
+        adminContent.clearFormMessages();
         clearViewFieldErrors();
         readFromView();
         requestService.execute(
@@ -190,8 +186,7 @@ public class AdminTenantActivity
     @Override
     public void delete() {
         adminContent.setFormBusy(true);
-        adminContent.clearFormMessagesSuccess();
-        adminContent.clearFormMessagesError();
+        adminContent.clearFormMessages();
         clearViewFieldErrors();
         requestService.execute(
             requestParams -> {

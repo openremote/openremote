@@ -85,12 +85,6 @@ public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implem
     }
 
     @Override
-    protected void startCreateAsset() {
-        super.startCreateAsset();
-        hideAssetOnMap();
-    }
-
-    @Override
     protected void onAssetLoaded() {
         showAssetOnMap();
     }
@@ -106,8 +100,10 @@ public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implem
     }
 
     protected void showAssetOnMap() {
-        getView().showFeaturesSelection(getFeature(asset));
-        getView().flyTo(asset.getCoordinates());
+        if (asset != null && asset.getCoordinates() != null) {
+            getView().showFeaturesSelection(getFeature(asset));
+            getView().flyTo(asset.getCoordinates());
+        }
     }
 
     protected void hideAssetOnMap() {

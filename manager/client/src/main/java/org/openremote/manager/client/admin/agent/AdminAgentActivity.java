@@ -112,8 +112,7 @@ public class AdminAgentActivity
 
         adminContent.setPresenter(this);
 
-        adminContent.clearFormMessagesSuccess();
-        adminContent.clearFormMessagesError();
+        adminContent.clearFormMessages();
         clearViewFieldErrors();
         adminContent.enableCreate(false);
         adminContent.enableUpdate(false);
@@ -142,16 +141,14 @@ public class AdminAgentActivity
     public void onStop() {
         super.onStop();
         adminContent.setPresenter(null);
-        adminContent.clearFormMessagesSuccess();
-        adminContent.clearFormMessagesError();
+        adminContent.clearFormMessages();
         clearViewFieldErrors();
     }
 
     @Override
     public void create() {
         adminContent.setFormBusy(true);
-        adminContent.clearFormMessagesSuccess();
-        adminContent.clearFormMessagesError();
+        adminContent.clearFormMessages();
         clearViewFieldErrors();
         readFromView();
         requestService.execute(
@@ -174,8 +171,7 @@ public class AdminAgentActivity
     @Override
     public void update() {
         adminContent.setFormBusy(true);
-        adminContent.clearFormMessagesSuccess();
-        adminContent.clearFormMessagesError();
+        adminContent.clearFormMessages();
         clearViewFieldErrors();
         readFromView();
         requestService.execute(
@@ -195,8 +191,7 @@ public class AdminAgentActivity
     @Override
     public void delete() {
         adminContent.setFormBusy(true);
-        adminContent.clearFormMessagesSuccess();
-        adminContent.clearFormMessagesError();
+        adminContent.clearFormMessages();
         clearViewFieldErrors();
         requestService.execute(
             requestParams -> {

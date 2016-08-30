@@ -290,44 +290,42 @@ public class SampleDataService implements ContainerService {
 
         GeometryFactory geometryFactory = new GeometryFactory();
 
-        persistenceService.doTransaction(em -> {
-            ServerAsset videoLab = new ServerAsset();
-            videoLab.setName("Videolab");
-            videoLab.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
-            videoLab.setType(AssetType.BUILDING);
-            em.persist(videoLab);
+        ServerAsset videoLab = new ServerAsset();
+        videoLab.setName("Videolab");
+        videoLab.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+        videoLab.setType(AssetType.BUILDING);
+        assetService.create(videoLab);
 
-            ServerAsset office1 = new ServerAsset(videoLab);
-            office1.setName("Office 1");
-            office1.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
-            office1.setType(AssetType.ROOM);
-            em.persist(office1);
+        ServerAsset office1 = new ServerAsset(videoLab);
+        office1.setName("Office 1");
+        office1.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+        office1.setType(AssetType.ROOM);
+        assetService.create(office1);
 
-            ServerAsset office1Thermostat = new ServerAsset(office1);
-            office1Thermostat.setName("Thermostat in Office 1 with a really long name that should test how the UI looks like");
-            office1Thermostat.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
-            office1Thermostat.setType(AssetType.GENERIC);
-            Attributes office1ThermostatAttributes = new Attributes();
-            office1ThermostatAttributes.add(
-                new Attribute("temperature", AttributeType.FLOAT, Json.create(22.5))
-                    .setMetadata(new Metadata()
-                        .addElement(new MetadataElement("scale", "urn:openremote:scale", Json.create("celcius")))
-                    )
-            );
-            office1Thermostat.setAttributes(office1ThermostatAttributes.getJsonObject());
-            em.persist(office1Thermostat);
+        ServerAsset office1Thermostat = new ServerAsset(office1);
+        office1Thermostat.setName("Thermostat in Office 1 with a really long name that should test how the UI looks like");
+        office1Thermostat.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+        office1Thermostat.setType(AssetType.GENERIC);
+        Attributes office1ThermostatAttributes = new Attributes();
+        office1ThermostatAttributes.add(
+            new Attribute("temperature", AttributeType.FLOAT, Json.create(22.5))
+                .setMetadata(new Metadata()
+                    .addElement(new MetadataElement("scale", "urn:openremote:scale", Json.create("celcius")))
+                )
+        );
+        office1Thermostat.setAttributes(office1ThermostatAttributes.getJsonObject());
+        assetService.create(office1Thermostat);
 
-            ServerAsset office2 = new ServerAsset(videoLab);
-            office2.setName("Office 2");
-            office2.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
-            office2.setType(AssetType.ROOM);
-            em.persist(office2);
+        ServerAsset office2 = new ServerAsset(videoLab);
+        office2.setName("Office 2");
+        office2.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+        office2.setType(AssetType.ROOM);
+        assetService.create(office2);
 
-            ServerAsset office3 = new ServerAsset(videoLab);
-            office3.setName("Office 3");
-            office3.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
-            office3.setType(AssetType.ROOM);
-            em.persist(office3);
-        });
+        ServerAsset office3 = new ServerAsset(videoLab);
+        office3.setName("Office 3");
+        office3.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+        office3.setType(AssetType.ROOM);
+        assetService.create(office3);
     }
 }

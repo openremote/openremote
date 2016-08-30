@@ -48,13 +48,13 @@
                             addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
                             icon="dashboard"
                             targetHistoryToken="assets:"
-                            text="Show Dashboard"/>
+                            text="{managerMessages.showDashboard}"/>
 
                     <w:Hyperlink
                             addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
-                            icon="copy"
-                            targetHistoryToken="assets:"
-                            text="Copy/Create Asset"/>
+                            icon="plus-square"
+                            targetHistoryToken="asset:"
+                            text="{managerMessages.createAsset}"/>
 
                 </g:HTMLPanel>
 
@@ -120,6 +120,18 @@
                                     <w:FormField>
                                         <g:TextBox ui:field="typeInput"
                                                    addStyleNames="{style.typeTextBox} {widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                                    </w:FormField>
+                                </w:field>
+                            </w:FormGroup>
+
+                            <w:FormGroup>
+                                <w:label>
+                                    <w:FormLabel text="{managerMessages.location}"/>
+                                </w:label>
+                                <w:field>
+                                    <w:FormField>
+                                        <g:Label ui:field="locationLabel"
+                                                 addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormValueLabel} {themeStyle.FormValueLabel}"/>
                                     </w:FormField>
                                 </w:field>
                             </w:FormGroup>

@@ -61,6 +61,7 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
 
     Presenter presenter;
     AssetTree assetTree;
+    AssetInfo assetTreeRoot = new AssetInfo();
 
     @Inject
     public AssetBrowserImpl(FormTreeStyle formTreeStyle) {
@@ -74,29 +75,7 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
 
-        AssetCell.Renderer assetCellRenderer = new AssetCell.Renderer(44);
-        assetTree = new AssetTree(
-            new AssetTreeModel(presenter, assetCellRenderer),
-            new AssetInfo(),
-            formTreeStyle,
-            new CellTree.CellTreeMessages() {
-                @Override
-                public String showMore() {
-                    return managerMessages.showMoreAssets();
-                }
-
-                @Override
-                public String emptyTree() {
-                    return managerMessages.emptyAsset();
-                }
-            }
-        );
-
-        // TODO Page size and paging is not good, do something with onhover autoscroll
-        assetTree.setDefaultNodeSize(1000);
-
-        assetTreeContainer.clear();
-        assetTreeContainer.add(assetTree);
+        createAssetTree();
     }
 
     @Override
@@ -132,5 +111,41 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
     @Override
     public void deselectAssets() {
         assetTree.getTreeViewModel().getSelectionModel().clear();
+    }
+
+    @Override
+    public void refreshAssets(boolean isRootRefresh) {
+        if (isRootRefresh) {
+            // TODO Horrible but I have no idea how to force a reload of the root node of a CellTree
+            createAssetTree();
+        } else {
+            assetTree.refresh();
+        }
+    }
+
+    protected void createAssetTree() {
+        AssetCell.Renderer assetCellRenderer = new AssetCell.Renderer(44);
+        assetTree = new AssetTree(
+            new AssetTreeModel(presenter, assetCellRenderer),
+            assetTreeRoot,
+            formTreeStyle,
+            new CellTree.CellTreeMessages() {
+                @Override
+                public String showMore() {
+                    return managerMessages.showMoreAssets();
+                }
+
+                @Override
+                public String emptyTree() {
+                    return managerMessages.emptyAsset();
+                }
+            }
+        );
+
+        // TODO Page size and paging is not good, do something with onhover autoscroll
+        assetTree.setDefaultNodeSize(1000);
+
+        assetTreeContainer.clear();
+        assetTreeContainer.add(assetTree);
     }
 }

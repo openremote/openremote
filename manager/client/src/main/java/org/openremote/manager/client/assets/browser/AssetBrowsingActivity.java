@@ -153,8 +153,7 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
      * Noop by default
      */
     protected void onBeforeAssetLoad() {
-
-    };
+    }
 
     abstract protected void onAssetLoaded();
 
@@ -163,15 +162,25 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
     abstract protected void onAssetSelectionChange(String selectedAssetId);
 
     protected void startCreateAsset() {
-        assetBrowserPresenter.selectAsset(null, null);
+        assetBrowserPresenter.deselectAsset();
     }
 
     protected GeoJSON getFeature(Asset asset) {
+        if (asset == null
+            || asset.getId() == null
+            || asset.getName() == null
+            || asset.getCoordinates() == null)
+            return GeoJSON.EMPTY_FEATURE_COLLECTION;
+
         return new GeoJSON().setType("FeatureCollection").setFeatures(
             new GeoJSONFeature().setType("Feature")
                 .setProperty("id", asset.getId())
                 .setProperty("title", TextUtil.ellipsize(asset.getName(), 20))
-                .setGeometry(new GeoJSONGeometry().setPoint(asset.getCoordinates()))
+                .setGeometry(
+                    new GeoJSONGeometry().setPoint(
+                        asset.getCoordinates()
+                    )
+                )
         );
     }
 

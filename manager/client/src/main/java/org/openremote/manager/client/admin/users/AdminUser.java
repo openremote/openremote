@@ -20,8 +20,9 @@
 package org.openremote.manager.client.admin.users;
 
 import org.openremote.manager.client.admin.AdminContent;
+import org.openremote.manager.client.widget.FormView;
 
-public interface AdminUser extends AdminContent {
+public interface AdminUser extends AdminContent, FormView {
 
     interface Presenter {
 
@@ -37,16 +38,6 @@ public interface AdminUser extends AdminContent {
     }
 
     void setPresenter(Presenter presenter);
-
-    void setFormBusy(boolean busy);
-
-    void addFormMessageError(String message);
-
-    void addFormMessageSuccess(String message);
-
-    void clearFormMessagesError();
-
-    void clearFormMessagesSuccess();
 
     void setUsername(String username);
 

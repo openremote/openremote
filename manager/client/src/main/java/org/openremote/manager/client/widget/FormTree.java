@@ -30,8 +30,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 public class FormTree extends CellTree {
+
+    private static final Logger LOG = Logger.getLogger(FormTree.class.getName());
 
     public abstract static class Search<T, P> {
 
@@ -99,7 +102,6 @@ public class FormTree extends CellTree {
         this.widgetStyle = formTreeStyle.getWidgetStyle();
         this.themeStyle = formTreeStyle.getThemeStyle();
     }
-
 
     public void refresh() {
         Map<Object, Boolean> openMap = new HashMap<>();
