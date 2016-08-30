@@ -29,7 +29,6 @@ import elemental.js.util.*;
 import elemental.json.Json;
 import elemental.json.JsonArray;
 import elemental.json.JsonObject;
-import jsinterop.annotations.JsType;
 import org.openremote.manager.client.interop.mapbox.*;
 import org.openremote.manager.shared.map.GeoJSON;
 
@@ -41,7 +40,6 @@ public class MapWidget extends ComplexPanel {
 
     private static final Logger LOG = Logger.getLogger(MapWidget.class.getName());
 
-    @JsType
     public interface ClickListener {
         void onClick(double lng, double lat);
     }
