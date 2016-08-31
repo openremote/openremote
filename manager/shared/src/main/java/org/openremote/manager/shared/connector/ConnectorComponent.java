@@ -19,11 +19,14 @@
  */
 package org.openremote.manager.shared.connector;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.device.InventoryCapabilities;
 import org.openremote.manager.shared.agent.AgentStatus;
 import org.openremote.manager.shared.device.Device;
 
+@JsonSerialize(as = Connector.class)
 public interface ConnectorComponent extends Connector {
     public static final String HEADER_DISCOVERY_START = ConnectorComponent.class.getCanonicalName() + ".HEADER_DISCOVERY_START";
     public static final String HEADER_DISCOVERY_STOP = ConnectorComponent.class.getCanonicalName() + ".HEADER_DISCOVERY_STOP";

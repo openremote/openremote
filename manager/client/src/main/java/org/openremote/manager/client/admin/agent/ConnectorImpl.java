@@ -17,14 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.connector;
+package org.openremote.manager.client.admin.agent;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.gwt.json.client.JSONObject;
-import elemental.json.JsonObject;
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.attribute.Attribute;
 import org.openremote.manager.shared.attribute.Attributes;
+import org.openremote.manager.shared.connector.Connector;
 
 public class ConnectorImpl implements Connector {
     protected String type;

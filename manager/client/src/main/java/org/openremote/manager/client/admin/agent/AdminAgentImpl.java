@@ -31,9 +31,6 @@ import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.widget.AttributesFormViewImpl;
 import org.openremote.manager.client.widget.FormGroup;
 import org.openremote.manager.client.widget.PushButton;
-import org.openremote.manager.shared.attribute.Attributes;
-import org.openremote.manager.shared.connector.Connector;
-import org.openremote.manager.shared.connector.ConnectorImpl;
 
 import javax.inject.Inject;
 import java.util.ArrayList;

@@ -113,7 +113,7 @@ public class Controller2Component extends UriEndpointComponent implements Connec
 
     @Override
     public boolean supportsAgentDiscovery() {
-        return true;
+        return false;
     }
 
     @Override
@@ -163,6 +163,6 @@ public class Controller2Component extends UriEndpointComponent implements Connec
 
     @Override
     public boolean supportsDeviceMonitoring(Attributes agentSettings) {
-        return false;
+        return true;
     }
 }

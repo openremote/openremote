@@ -35,6 +35,7 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.util.IdentifierUtil;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.attribute.*;
+import org.openremote.manager.shared.connector.Connector;
 import org.openremote.manager.shared.connector.ConnectorComponent;
 
 import javax.validation.constraints.NotNull;
@@ -48,7 +49,7 @@ public class ConnectorService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(ConnectorService.class.getName());
 
-    final protected Map<String, ConnectorComponent> connectors = new LinkedHashMap<>();
+    final protected Map<String, Connector> connectors = new LinkedHashMap<>();
 
     @Override
     public void init(Container container) throws Exception {
@@ -73,12 +74,12 @@ public class ConnectorService implements ContainerService {
 
     }
 
-    public Map<String, ConnectorComponent> getConnectors() {
+    public Map<String, Connector> getConnectors() {
         return connectors;
     }
 
-    public ConnectorComponent getConnectorByType(String connectorType) {
-        for (ConnectorComponent connector : connectors.values()) {
+    public Connector getConnectorByType(String connectorType) {
+        for (Connector connector : connectors.values()) {
             if (connector.getType().equals(connectorType))
                 return connector;
         }
@@ -94,7 +95,7 @@ public class ConnectorService implements ContainerService {
             if (component instanceof ConnectorComponent) {
                 ConnectorComponent connector = (ConnectorComponent)component;
 
-                for (ConnectorComponent existingConnector : connectors.values()) {
+                for (Connector existingConnector : connectors.values()) {
                     if (existingConnector.getType().equals(connector.getType())) {
                         throw new IllegalStateException(
                             "Duplicate connector types are not allowed: " + connector.getType()

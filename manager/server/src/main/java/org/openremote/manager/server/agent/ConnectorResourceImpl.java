@@ -22,7 +22,6 @@ package org.openremote.manager.server.agent;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.shared.connector.ConnectorComponent;
 import org.openremote.manager.shared.connector.Connector;
-import org.openremote.manager.shared.connector.ConnectorImpl;
 import org.openremote.manager.shared.connector.ConnectorResource;
 import org.openremote.manager.shared.http.RequestParams;
 
@@ -39,12 +38,13 @@ public class ConnectorResourceImpl extends WebResource implements ConnectorResou
 
     @Override
     public Connector[] getConnectors(@BeanParam RequestParams requestParams) {
-        Collection<ConnectorComponent> connectors = connectorService.getConnectors().values();
+        Collection<Connector> connectors = connectorService.getConnectors().values();
 
-        return connectors
-                .stream()
-                .map(c -> new ConnectorImpl(c.getType(), c.getDisplayName(), c.supportsAgentDiscovery(), c.getAgentSettings(), c.getAgentDiscoverySettings()))
-                .toArray(size -> new Connector[size]);
+        return connectors.toArray(new Connector[connectors.size()]);
+//        return connectors
+//                .stream()
+//                .map(c -> new ConnectorImpl(c.getType(), c.getDisplayName(), c.supportsAgentDiscovery(), c.getAgentSettings(), c.getAgentDiscoverySettings()))
+//                .toArray(size -> new Connector[size]);
     }
 
 }

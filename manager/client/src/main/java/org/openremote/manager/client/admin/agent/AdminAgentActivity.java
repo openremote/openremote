@@ -33,10 +33,7 @@ import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.shared.Runnable;
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.agent.AgentResource;
-import org.openremote.manager.shared.connector.Connector;
-import org.openremote.manager.shared.connector.ConnectorImpl;
 import org.openremote.manager.shared.connector.ConnectorResource;
-import org.openremote.manager.shared.connector.ConnectorUtil;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 
 import javax.inject.Inject;

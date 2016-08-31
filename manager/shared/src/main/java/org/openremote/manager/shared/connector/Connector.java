@@ -20,39 +20,43 @@
 package org.openremote.manager.shared.connector;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.openremote.manager.shared.attribute.Attributes;
 
+@JsonSerialize
 public interface Connector {
     /**
      * Get the unique type descriptor for this connector component
      */
-    @JsonInclude
+    @JsonProperty
     String getType();
 
     /**
      * Get the friendly display name for this connector component
      */
-    @JsonInclude
+    @JsonProperty
     String getDisplayName();
 
     /**
      * Indicates whether or not this connector component supports
      * discovery of Agents (connector instances).
      */
-    @JsonInclude
+    @JsonProperty
     boolean supportsAgentDiscovery();
 
     /**
-     * Create a new set of attributes defining the configurable settings for
-     * agent discovery on this connector.
+     * Get the attributes defining the configurable settings for
+     * agent discovery on this connector (if discovery not supported or
+     * no settings required then return null or empty attributes).
      */
-    @JsonInclude
+    @JsonProperty
     Attributes getAgentDiscoverySettings();
 
     /**
-     * Create a new set of attributes defining the configurable settings for
+     * Get the attributes defining the configurable settings for
      * an agent that uses this connector.
      */
-    @JsonInclude
+    @JsonProperty
     Attributes getAgentSettings();
 }

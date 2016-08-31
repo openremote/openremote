@@ -133,4 +133,12 @@ public class AgentService implements ContainerService {
             LOG.info("### RECONFIGURE AGENTS");
         }
     }
+
+    protected void startAgent(Agent agent) {
+
+    }
+
+    protected void stopAgent(Agent agent) {
+
+    }
 }
