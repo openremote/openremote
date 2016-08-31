@@ -35,7 +35,7 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.util.IdentifierUtil;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.attribute.*;
-import org.openremote.manager.shared.connector.Connector;
+import org.openremote.manager.shared.connector.ConnectorComponent;
 
 import javax.validation.constraints.NotNull;
 import java.lang.reflect.Field;
@@ -48,7 +48,7 @@ public class ConnectorService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(ConnectorService.class.getName());
 
-    final protected Map<String, Connector> connectors = new LinkedHashMap<>();
+    final protected Map<String, ConnectorComponent> connectors = new LinkedHashMap<>();
 
     @Override
     public void init(Container container) throws Exception {
@@ -73,206 +73,47 @@ public class ConnectorService implements ContainerService {
 
     }
 
-    public Map<String, Connector> getConnectors() {
+    public Map<String, ConnectorComponent> getConnectors() {
         return connectors;
     }
 
-    public Connector getConnectorByType(String connectorType) {
-        for (Connector connector : connectors.values()) {
+    public ConnectorComponent getConnectorByType(String connectorType) {
+        for (ConnectorComponent connector : connectors.values()) {
             if (connector.getType().equals(connectorType))
                 return connector;
         }
         return null;
     }
 
-    public String getConnectorComponent(Connector connector) {
-        for (Map.Entry<String, Connector> entry : connectors.entrySet()) {
-            if (entry.getValue().getType().equals(connector.getType())) {
-                return entry.getKey();
-            }
-        }
-        return null;
-    }
-
     protected void findConnectors(CamelContext context) throws Exception {
         for (Map.Entry<String, Properties> entry : CamelContextHelper.findComponents(context).entrySet()) {
+
             String connectorComponentName = entry.getKey();
+            Component component = context.getComponent(connectorComponentName);
 
-            Properties properties = entry.getValue();
-            Object connectorType = properties.get(Connector.PROPERTY_TYPE);
+            if (component instanceof ConnectorComponent) {
+                ConnectorComponent connector = (ConnectorComponent)component;
 
-            if (connectorType != null) {
-                Component component = context.getComponent(connectorComponentName);
-                if (component == null) {
-                    throw new IllegalStateException(
-                        "Configured component for connector '" + connectorType + "' not available in context: " + connectorComponentName
-                    );
-                }
-                if (component instanceof UriEndpointComponent) {
-                    UriEndpointComponent uriEndpointComponent = (UriEndpointComponent) component;
-
-                    Connector connector = createConnector(
-                        connectorComponentName,
-                        properties,
-                        uriEndpointComponent
-                    );
-
-                    for (Connector existingConnector : connectors.values()) {
-                        if (existingConnector.getType().equals(connector.getType())) {
-                            throw new IllegalStateException(
-                                "Duplicate connector types are not allowed: " + connector.getType()
-                            );
-                        }
+                for (ConnectorComponent existingConnector : connectors.values()) {
+                    if (existingConnector.getType().equals(connector.getType())) {
+                        throw new IllegalStateException(
+                            "Duplicate connector types are not allowed: " + connector.getType()
+                        );
                     }
-
-                    LOG.info(
-                        "Configured connector component '" + connectorComponentName + "' of type: " + connectorType
-                    );
-
-                    connectors.put(connectorComponentName, connector);
-
-                } else {
-                    LOG.warning(
-                        "Component should implement " +
-                            UriEndpointComponent.class.getName() + ": " + entry.getKey()
-                    );
                 }
+
+                LOG.info(
+                    "Configured connector component '" + connectorComponentName + "' of type: " + connector.getType()
+                );
+
+                connectors.put(connectorComponentName, connector);
+
+            } else {
+                LOG.warning(
+                    "Component should implement " +
+                        UriEndpointComponent.class.getName() + ": " + entry.getKey()
+                );
             }
         }
     }
-
-    protected Connector createConnector(String connectorComponentName,
-                                        Properties componentProperties,
-                                        UriEndpointComponent component) {
-
-        LOG.fine("Creating connector: " + connectorComponentName);
-        Connector connector = new Connector(IdentifierUtil.generateGlobalUniqueId());
-        connector.setType(componentProperties.get(Connector.PROPERTY_TYPE).toString());
-
-        UriEndpoint uriEndpoint = component.getEndpointClass().getAnnotation(UriEndpoint.class);
-        if (uriEndpoint == null) {
-            throw new RuntimeException(
-                "The @UriEndpoint annotation is required on the component endpoint class: " + component.getEndpointClass()
-            );
-        }
-        if (uriEndpoint.title() == null) {
-            throw new RuntimeException(
-                "The @UriEndpoint annotation requires the title attribute on the component endpoint class: " + component.getEndpointClass()
-            );
-        }
-        connector.setName(uriEndpoint.title());
-
-        if (uriEndpoint.syntax() != null) {
-            connector.setSyntax(uriEndpoint.syntax());
-        }
-
-        Object supportsDiscovery = componentProperties.get(Connector.PROPERTY_SUPPORTS_DISCOVERY);
-        if (supportsDiscovery != null) {
-            connector.setSupportsDiscovery(Boolean.valueOf(supportsDiscovery.toString()));
-        }
-
-        Object supportsInventory = componentProperties.get(Connector.PROPERTY_SUPPORTS_INVENTORY);
-        if (supportsInventory != null) {
-            connector.setSupportsInventory(Boolean.valueOf(supportsInventory.toString()));
-        }
-
-        Attributes settings = buildConnectorSettings(
-            connectorComponentName,
-            component.createComponentConfiguration(),
-            component.getEndpointClass()
-        );
-
-        connector.setSettings(settings.getJsonObject());
-
-        return connector;
-    }
-
-    protected Attributes buildConnectorSettings(String connectorComponentName,
-                                                ComponentConfiguration componentConfiguration,
-                                                Class<? extends Endpoint> endpointClass) {
-
-        Attributes settings = new Attributes();
-
-        for (Map.Entry<String, ParameterConfiguration> configEntry : componentConfiguration.getParameterConfigurationMap().entrySet()) {
-            try {
-                Field field = endpointClass.getDeclaredField(configEntry.getKey());
-                if (field.isAnnotationPresent(UriParam.class)) {
-                    Attribute setting = buildConnectorSetting(field, connectorComponentName);
-                    settings.add(setting);
-                    LOG.fine("Adding connector setting: " + setting);
-                }
-            } catch (NoSuchFieldException ex) {
-                // Ignoring setting if there is no annotated field on endpoint class
-                // TODO: Inheritance of endpoint classes? Do we care?
-            }
-        }
-
-        return settings;
-    }
-
-    protected Attribute buildConnectorSetting(Field field, String connectorComponentName) {
-        UriParam uriParam = field.getAnnotation(UriParam.class);
-
-        String attributeName = uriParam.name().length() != 0 ? uriParam.name() : field.getName();
-
-        Attribute attribute = new Attribute(attributeName, Json.createObject());
-        attribute.setMetadata(new Metadata(Json.createObject()));
-
-        if (String.class.isAssignableFrom(field.getType())) {
-            attribute.setType(AttributeType.STRING);
-        } else if (Integer.class.isAssignableFrom(field.getType())) {
-            attribute.setType(AttributeType.INTEGER);
-        } else if (Double.class.isAssignableFrom(field.getType())) {
-            attribute.setType(AttributeType.FLOAT);
-        } else if (Boolean.class.isAssignableFrom(field.getType())) {
-            attribute.setType(AttributeType.BOOLEAN);
-        } else {
-            throw new RuntimeException(
-                "Unsupported endpoint attribute type of connector'" + connectorComponentName + "': " + field.getType()
-            );
-        }
-
-        if (uriParam.label().length() > 0) {
-            attribute.getMetadata().addElement(
-                new MetadataElement("label", Json.createObject())
-                    .setType(AttributeType.STRING.getName())
-                    .setValue(Json.create(uriParam.label()))
-            );
-        }
-
-        if (uriParam.description().length() > 0) {
-            attribute.getMetadata().addElement(
-                new MetadataElement("description", Json.createObject())
-                    .setType(AttributeType.STRING.getName())
-                    .setValue(Json.create(uriParam.description()))
-            );
-        }
-
-        if (uriParam.defaultValue().length() > 0) {
-            attribute.getMetadata().addElement(
-                new MetadataElement("defaultValue", Json.createObject())
-                    .setType(AttributeType.STRING.getName())
-                    .setValue(Json.create(uriParam.defaultValue()))
-            );
-        }
-
-        if (uriParam.defaultValueNote().length() > 0) {
-            attribute.getMetadata().addElement(
-                new MetadataElement("defaultValueNote", Json.createObject())
-                    .setType(AttributeType.STRING.getName())
-                    .setValue(Json.create(uriParam.defaultValueNote()))
-            );
-        }
-
-        if (field.isAnnotationPresent(NotNull.class)) {
-            attribute.getMetadata().addElement(
-                new MetadataElement("required", Json.createObject())
-                    .setType(AttributeType.BOOLEAN.getName())
-                    .setValue(Json.create(true))
-            );
-        }
-
-        return attribute;
-    }
-
 }

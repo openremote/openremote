@@ -34,7 +34,9 @@ import org.openremote.manager.shared.Runnable;
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.agent.AgentResource;
 import org.openremote.manager.shared.connector.Connector;
+import org.openremote.manager.shared.connector.ConnectorImpl;
 import org.openremote.manager.shared.connector.ConnectorResource;
+import org.openremote.manager.shared.connector.ConnectorUtil;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 
 import javax.inject.Inject;
@@ -60,13 +62,13 @@ public class AdminAgentActivity
     final protected ConnectorArrayMapper connectorArrayMapper;
 
     protected String id;
-    protected Connector[] connectors;
+    protected ConnectorImpl[] connectors;
     protected Agent agent;
-    protected Connector assignedConnector;
+    protected ConnectorImpl assignedConnector;
 
     // This is a dummy we use when the Agent's assigned connector is not installed
-    protected final Connector notFoundConnector = new Connector();
-    protected final String notFoundConnectorId = "NOT_FOUND_CONNECTOR_ID";
+    protected final ConnectorImpl notFoundConnector = new ConnectorImpl();
+    protected final String notFoundConnectorType = "NOT_FOUND_CONNECTOR";
 
     @Inject
     public AdminAgentActivity(AdminView adminView,
@@ -92,7 +94,7 @@ public class AdminAgentActivity
         this.agentMapper = agentMapper;
         this.connectorArrayMapper = connectorArrayMapper;
 
-        notFoundConnector.setId(notFoundConnectorId);
+        notFoundConnector.setType(notFoundConnectorType);
     }
 
     @Override
@@ -220,7 +222,7 @@ public class AdminAgentActivity
     }
 
     @Override
-    public void onConnectorSelected(Connector connector) {
+    public void onConnectorSelected(ConnectorImpl connector) {
         assignedConnector = connector;
         adminContent.setAssignedConnector(connector);
     }
@@ -271,7 +273,7 @@ public class AdminAgentActivity
     protected void findAssignedConnector() {
         assignedConnector = null;
         if (agent != null && agent.getConnectorType() != null) {
-            for (Connector connector : connectors) {
+            for (ConnectorImpl connector : connectors) {
                 if (connector.getType().equals(agent.getConnectorType())) {
                     assignedConnector = connector;
                     break;
@@ -280,7 +282,7 @@ public class AdminAgentActivity
             if (assignedConnector != null) {
                 assignedConnector.readSettings(agent);
             } else if (!Agent.NO_CONNECTOR_ASSIGNED_TYPE.equals(agent.getConnectorType())){
-                notFoundConnector.setName(
+                notFoundConnector.setDisplayName(
                     agent.getConnectorType() + " (" + managerMessages.connectorNotInstalled() + ")"
                 );
                 assignedConnector = notFoundConnector;
@@ -290,7 +292,7 @@ public class AdminAgentActivity
 
     protected void setAssignedConnector() {
         if (assignedConnector != null) {
-            if (!assignedConnector.getId().equals(notFoundConnectorId)) {
+            if (!assignedConnector.getType().equals(notFoundConnectorType)) {
                 agent.setConnectorType(assignedConnector.getType());
                 assignedConnector.writeSettings(agent);
             }

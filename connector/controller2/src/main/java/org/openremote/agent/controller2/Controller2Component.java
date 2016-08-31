@@ -19,21 +19,61 @@
  */
 package org.openremote.agent.controller2;
 
+import elemental.json.Json;
 import org.apache.camel.Endpoint;
 import org.apache.camel.impl.UriEndpointComponent;
+import org.openremote.manager.shared.attribute.AttributeType;
+import org.openremote.manager.shared.connector.ConnectorComponent;
+import org.openremote.manager.shared.connector.ConnectorUtil;
+import org.openremote.manager.shared.device.InventoryCapabilities;
+import org.openremote.manager.shared.attribute.Attributes;
 
 import java.net.URI;
 import java.util.Map;
 
-public class Controller2Component extends UriEndpointComponent {
-
+public class Controller2Component extends UriEndpointComponent implements ConnectorComponent {
+    public static final String TYPE = "urn:openremote:connector:controller2";
+    public static final String DISPLAY_NAME = "OpenRemote Controller";
     public static final String URI_SYNTAX = "'controller2://<IP or host name>:<port>/([<device URI>/<resource URI>]|[discovery|inventory])[?username=username&password=secret]";
-
     public static final String HEADER_DEVICE_URI = Controller2Component.class.getCanonicalName() + ".HEADER_DEVICE_URI";
     public static final String HEADER_RESOURCE_URI = Controller2Component.class.getCanonicalName() + ".HEADER_RESOURCE_URI";
     public static final String HEADER_COMMAND_VALUE = Controller2Component.class.getCanonicalName() + ".HEADER_COMMAND_VALUE";
-
     protected final Controller2Adapter.Manager adapterManager;
+    protected static final Attributes agentSettings;
+
+    static {
+        agentSettings = new Attributes();
+        agentSettings.add(ConnectorUtil.buildConnectorSetting(
+                "host",
+                AttributeType.STRING,
+                "Host/IP Address",
+                "The OR Controller network hostname or IP address",
+                true
+        ));
+        agentSettings.add(ConnectorUtil.buildConnectorSetting(
+                "port",
+                AttributeType.INTEGER,
+                "Port",
+                "The OR Controller network port number",
+                true,
+                "8868",
+                null
+        ));
+        agentSettings.add(ConnectorUtil.buildConnectorSetting(
+                "username",
+                AttributeType.STRING,
+                "Username",
+                "The OR Controller Username",
+                false
+        ));
+        agentSettings.add(ConnectorUtil.buildConnectorSetting(
+                "password",
+                AttributeType.STRING,
+                "Password",
+                "The OR Controller Password",
+                false
+        ));
+    }
 
     public Controller2Component(Controller2Adapter.Manager adapterManager) {
         super(Controller2Endpoint.class);
@@ -58,5 +98,71 @@ public class Controller2Component extends UriEndpointComponent {
         } catch (Exception ex) {
             throw new IllegalArgumentException("Required URL in format of " + URI_SYNTAX, ex);
         }
+    }
+
+
+    @Override
+    public String getType() {
+        return TYPE;
+    }
+
+    @Override
+    public String getDisplayName() {
+        return DISPLAY_NAME;
+    }
+
+    @Override
+    public boolean supportsAgentDiscovery() {
+        return true;
+    }
+
+    @Override
+    public Attributes getAgentSettings() {
+        return agentSettings;
+    }
+
+    @Override
+    public Attributes getAgentDiscoverySettings() {
+        return null;
+    }
+
+    @Override
+    public InventoryCapabilities getCapabilities(Attributes agentSettings) {
+        return null;
+    }
+
+    @Override
+    public String getAgentStatusUri(Attributes agentSettings) {
+        return null;
+    }
+
+    @Override
+    public String getDeviceInventoryUri(Attributes agentSettings) {
+        return null;
+    }
+
+    @Override
+    public String getDeviceDiscoveryUri(Attributes agentSettings) {
+        return null;
+    }
+
+    @Override
+    public String getDevicesUri(Attributes agentSettings) {
+        return null;
+    }
+
+    @Override
+    public String getDeviceMonitorUri(Attributes agentSettings) {
+        return null;
+    }
+
+    @Override
+    public String getAgentDiscoveryUri(Attributes discoverySettings) {
+        return null;
+    }
+
+    @Override
+    public boolean supportsDeviceMonitoring(Attributes agentSettings) {
+        return false;
     }
 }

@@ -130,6 +130,8 @@ public class Controller2Endpoint extends DefaultEndpoint {
             adapterManager.closeAdapter(adapter);
     }
 
+
+
     @Override
     public Producer createProducer() throws Exception {
         if (isDiscovery) {

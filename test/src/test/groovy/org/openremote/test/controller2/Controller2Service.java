@@ -12,10 +12,10 @@ import org.openremote.manager.shared.device.Device;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.openremote.manager.shared.connector.ConnectorInventory.Action.ADD;
-import static org.openremote.manager.shared.connector.ConnectorInventory.Action.REMOVE;
-import static org.openremote.manager.shared.connector.ConnectorInventory.Action.UPDATE;
-import static org.openremote.manager.shared.connector.ConnectorInventory.HEADER_DEVICE_ACTION;
+import static org.openremote.manager.shared.device.DeviceInventory.Action.ADD;
+import static org.openremote.manager.shared.device.DeviceInventory.Action.REMOVE;
+import static org.openremote.manager.shared.device.DeviceInventory.Action.UPDATE;
+import static org.openremote.manager.shared.device.DeviceInventory.HEADER_DEVICE_ACTION;
 
 // TODO This is an example service for testing, replaced later with production code
 public class Controller2Service implements ContainerService {

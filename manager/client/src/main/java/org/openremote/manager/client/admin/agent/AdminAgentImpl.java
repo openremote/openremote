@@ -33,6 +33,7 @@ import org.openremote.manager.client.widget.FormGroup;
 import org.openremote.manager.client.widget.PushButton;
 import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.connector.Connector;
+import org.openremote.manager.shared.connector.ConnectorImpl;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -76,7 +77,7 @@ public class AdminAgentImpl extends AttributesFormView implements AdminAgent {
     SimpleCheckBox enabledCheckBox;
 
     @UiField(provided = true)
-    ValueListBox<Connector> connectorListBox;
+    ValueListBox<ConnectorImpl> connectorListBox;
 
     @UiField
     FlowPanel attributesContainer;
@@ -98,12 +99,12 @@ public class AdminAgentImpl extends AttributesFormView implements AdminAgent {
     @Inject
     public AdminAgentImpl(ManagerMessages managerMessages) {
 
-        connectorListBox = new ValueListBox<>(new AbstractRenderer<Connector>() {
+        connectorListBox = new ValueListBox<>(new AbstractRenderer<ConnectorImpl>() {
             @Override
-            public String render(Connector connector) {
+            public String render(ConnectorImpl connector) {
                 if (connector == null)
                     return managerMessages.noConnectorAssigned();
-                return connector.getName();
+                return connector.getDisplayName();
             }
         });
 
@@ -111,7 +112,7 @@ public class AdminAgentImpl extends AttributesFormView implements AdminAgent {
         initWidget(ui.createAndBindUi(this));
 
         connectorListBox.addValueChangeHandler(event -> {
-            Connector connector = event.getValue();
+            ConnectorImpl connector = event.getValue();
             if (presenter != null) {
                 presenter.onConnectorSelected(connector);
             }
@@ -131,20 +132,21 @@ public class AdminAgentImpl extends AttributesFormView implements AdminAgent {
     }
 
     @Override
-    public void setConnectors(Connector[] connectors) {
+    public void setConnectors(ConnectorImpl[] connectors) {
         connectorListBox.setAcceptableValues(Arrays.asList(connectors));
     }
 
     @Override
-    public void setAssignedConnector(Connector connector) {
+    public void setAssignedConnector(ConnectorImpl connector) {
         connectorListBox.setValue(connector);
 
         attributesContainer.clear();
 
         if (connector != null) {
+
             FormGroup[] attributeFormGroups = createAttributeFormGroups(
                 style.connectorAttributeTextBox(),
-                new Attributes(connector.getSettings())
+                connector.getAgentSettings()
             );
             for (FormGroup attributeFormGroup : attributeFormGroups) {
                 attributesContainer.add(attributeFormGroup);

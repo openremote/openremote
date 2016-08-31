@@ -21,6 +21,7 @@ package org.openremote.manager.client.admin.agent;
 
 import org.openremote.manager.client.admin.AdminContent;
 import org.openremote.manager.shared.connector.Connector;
+import org.openremote.manager.shared.connector.ConnectorImpl;
 
 public interface AdminAgent extends AdminContent {
 
@@ -34,7 +35,7 @@ public interface AdminAgent extends AdminContent {
 
         void cancel();
 
-        void onConnectorSelected(Connector connector);
+        void onConnectorSelected(ConnectorImpl connector);
     }
 
     void setPresenter(Presenter presenter);
@@ -49,9 +50,9 @@ public interface AdminAgent extends AdminContent {
 
     void clearFormMessagesSuccess();
 
-    void setConnectors(Connector[] connectors);
+    void setConnectors(ConnectorImpl[] connectors);
 
-    void setAssignedConnector(Connector connector);
+    void setAssignedConnector(ConnectorImpl connector);
 
     void setName(String name);
 

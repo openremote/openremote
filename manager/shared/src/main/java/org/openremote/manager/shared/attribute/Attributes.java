@@ -19,19 +19,38 @@
  */
 package org.openremote.manager.shared.attribute;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import elemental.json.JsonObject;
 
+import java.io.IOException;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+@JsonSerialize(using = AttributesSerializer.class)
+@JsonDeserialize(using = AttributesDeserializer.class)
 public class Attributes {
-
     final protected JsonObject jsonObject;
 
     public Attributes() {
         this(elemental.json.Json.createObject());
     }
 
+    @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public Attributes(JsonObject jsonObject) {
         this.jsonObject = jsonObject;
     }

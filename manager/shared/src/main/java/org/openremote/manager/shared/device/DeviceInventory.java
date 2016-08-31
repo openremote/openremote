@@ -17,18 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin.agent;
+package org.openremote.manager.shared.device;
 
-import com.github.nmorel.gwtjackson.client.ObjectMapper;
-import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
-import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
-import org.openremote.manager.shared.connector.ConnectorImpl;
-import org.openremote.manager.shared.http.EntityReader;
-import org.openremote.manager.shared.http.EntityWriter;
+public class DeviceInventory {
 
-@JsonMixIns({@JsonMixIns.JsonMixIn(target = ConnectorImpl.class, mixIn = DefaultJsonMixin.class)})
-public interface ConnectorArrayMapper
-    extends ObjectMapper<ConnectorImpl[]>,
-    EntityReader<ConnectorImpl[]>,
-    EntityWriter<ConnectorImpl[]> {
+    public enum Action {
+        ADD,
+        REMOVE,
+        UPDATE
+    }
+
+    public static final String HEADER_DEVICE_ACTION = DeviceInventory.class.getCanonicalName() + ".DEVICE_ACTION";
 }
