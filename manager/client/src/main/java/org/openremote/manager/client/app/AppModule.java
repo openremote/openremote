@@ -21,6 +21,10 @@ package org.openremote.manager.client.app;
 
 import com.google.gwt.inject.client.AbstractGinModule;
 import com.google.inject.Singleton;
+import org.openremote.manager.client.app.dialog.ConfirmationDialog;
+import org.openremote.manager.client.app.dialog.ConfirmationDialogImpl;
+import org.openremote.manager.client.app.dialog.Dialog;
+import org.openremote.manager.client.app.dialog.DialogImpl;
 
 public class AppModule extends AbstractGinModule {
 
@@ -30,5 +34,7 @@ public class AppModule extends AbstractGinModule {
         bind(AppView.class).to(AppViewImpl.class).in(Singleton.class);
         bind(HeaderView.class).to(HeaderViewImpl.class).in(Singleton.class);
         bind(FooterView.class).to(FooterViewImpl.class).in(Singleton.class);
+        bind(Dialog.class).to(DialogImpl.class);
+        bind(ConfirmationDialog.class).to(ConfirmationDialogImpl.class);
     }
 }

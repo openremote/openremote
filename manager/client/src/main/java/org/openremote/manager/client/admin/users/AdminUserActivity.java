@@ -285,22 +285,28 @@ public class AdminUserActivity
 
     @Override
     public void delete() {
-        adminContent.setFormBusy(true);
-        adminContent.clearFormMessages();
-        clearViewFieldErrors();
-        requestService.execute(
-            requestParams -> {
-                userResource.delete(requestParams, realm, userId);
-            },
-            204,
+        adminContent.showConfirmation(
+            managerMessages.confirmation(),
+            managerMessages.confirmationDelete(user.getUsername()),
             () -> {
-                adminContent.setFormBusy(false);
-                eventBus.dispatch(new ShowInfoEvent(
-                    managerMessages.userDeleted(user.getUsername())
-                ));
-                placeController.goTo(new AdminUsersPlace(realm));
-            },
-            ex -> handleRequestException(ex, eventBus, managerMessages, validationErrorHandler)
+                adminContent.setFormBusy(true);
+                adminContent.clearFormMessages();
+                clearViewFieldErrors();
+                requestService.execute(
+                    requestParams -> {
+                        userResource.delete(requestParams, realm, userId);
+                    },
+                    204,
+                    () -> {
+                        adminContent.setFormBusy(false);
+                        eventBus.dispatch(new ShowInfoEvent(
+                            managerMessages.userDeleted(user.getUsername())
+                        ));
+                        placeController.goTo(new AdminUsersPlace(realm));
+                    },
+                    ex -> handleRequestException(ex, eventBus, managerMessages, validationErrorHandler)
+                );
+            }
         );
     }
 

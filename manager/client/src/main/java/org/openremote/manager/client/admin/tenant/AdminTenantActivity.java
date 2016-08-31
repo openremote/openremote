@@ -185,22 +185,28 @@ public class AdminTenantActivity
 
     @Override
     public void delete() {
-        adminContent.setFormBusy(true);
-        adminContent.clearFormMessages();
-        clearViewFieldErrors();
-        requestService.execute(
-            requestParams -> {
-                tenantResource.delete(requestParams, this.realm);
-            },
-            204,
+        adminContent.showConfirmation(
+            managerMessages.confirmation(),
+            managerMessages.confirmationDelete(this.realm),
             () -> {
-                adminContent.setFormBusy(false);
-                eventBus.dispatch(new ShowInfoEvent(
-                    managerMessages.tenantDeleted(tenant.getDisplayName())
-                ));
-                placeController.goTo(new AdminTenantsPlace());
-            },
-            ex -> handleRequestException(ex, eventBus, managerMessages, validationErrorHandler)
+                adminContent.setFormBusy(true);
+                adminContent.clearFormMessages();
+                clearViewFieldErrors();
+                requestService.execute(
+                    requestParams -> {
+                        tenantResource.delete(requestParams, this.realm);
+                    },
+                    204,
+                    () -> {
+                        adminContent.setFormBusy(false);
+                        eventBus.dispatch(new ShowInfoEvent(
+                            managerMessages.tenantDeleted(tenant.getDisplayName())
+                        ));
+                        placeController.goTo(new AdminTenantsPlace());
+                    },
+                    ex -> handleRequestException(ex, eventBus, managerMessages, validationErrorHandler)
+                );
+            }
         );
     }
 

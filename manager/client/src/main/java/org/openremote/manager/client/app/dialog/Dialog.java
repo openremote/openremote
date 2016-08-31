@@ -17,26 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.widget;
+package org.openremote.manager.client.app.dialog;
 
-import org.openremote.manager.shared.Runnable;
+import com.google.gwt.user.client.ui.HasWidgets;
+import org.openremote.manager.client.widget.AppPanel;
 
-public interface FormView {
+public interface Dialog extends AppPanel {
 
-    void setFormBusy(boolean busy);
+    void addStyleName(String name);
 
-    void addFormMessageError(String message);
+    void setHeaderLabel(String label);
 
-    void addFormMessageSuccess(String message);
+    HasWidgets getContentPanel();
 
-    void clearFormMessagesError();
-
-    void clearFormMessagesSuccess();
-
-    void clearFormMessages();
-
-    void showConfirmation(String title, String text, Runnable onConfirm);
-
-    void showConfirmation(String title, String text, Runnable onConfirm, Runnable onCancel);
+    HasWidgets getFooterPanel();
 
 }

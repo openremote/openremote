@@ -192,22 +192,28 @@ public class AdminAgentActivity
 
     @Override
     public void delete() {
-        adminContent.setFormBusy(true);
-        adminContent.clearFormMessages();
-        clearViewFieldErrors();
-        requestService.execute(
-            requestParams -> {
-                agentResource.delete(requestParams, this.id);
-            },
-            204,
+        adminContent.showConfirmation(
+            managerMessages.confirmation(),
+            managerMessages.confirmationDelete(agent.getName()),
             () -> {
-                adminContent.setFormBusy(false);
-                eventBus.dispatch(new ShowInfoEvent(
-                    managerMessages.agentDeleted(agent.getName())
-                ));
-                placeController.goTo(new AdminAgentsPlace());
-            },
-            ex -> handleRequestException(ex, eventBus, managerMessages)
+                adminContent.setFormBusy(true);
+                adminContent.clearFormMessages();
+                clearViewFieldErrors();
+                requestService.execute(
+                    requestParams -> {
+                        agentResource.delete(requestParams, this.id);
+                    },
+                    204,
+                    () -> {
+                        adminContent.setFormBusy(false);
+                        eventBus.dispatch(new ShowInfoEvent(
+                            managerMessages.agentDeleted(agent.getName())
+                        ));
+                        placeController.goTo(new AdminAgentsPlace());
+                    },
+                    ex -> handleRequestException(ex, eventBus, managerMessages)
+                );
+            }
         );
     }
 

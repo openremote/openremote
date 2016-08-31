@@ -24,11 +24,16 @@ import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.InlineLabel;
+import com.google.inject.Provider;
+import org.openremote.manager.client.app.dialog.ConfirmationDialog;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
+import org.openremote.manager.shared.Runnable;
 
-public class FormViewImpl extends Composite {
+public class FormViewImpl extends Composite implements FormView {
+
+    protected final Provider<ConfirmationDialog> confirmationDialogProvider;
 
     @UiField
     public WidgetStyle widgetStyle;
@@ -48,34 +53,59 @@ public class FormViewImpl extends Composite {
     @UiField
     public FlowPanel formMessagesError;
 
+    public FormViewImpl(Provider<ConfirmationDialog> confirmationDialogProvider) {
+        this.confirmationDialogProvider = confirmationDialogProvider;
+    }
+
+    @Override
     public void setFormBusy(boolean busy) {
         form.setBusy(busy);
     }
 
+    @Override
     public void addFormMessageError(String message) {
         formMessagesError.add(new InlineLabel(message));
         formMessagesError.getElement().appendChild(Document.get().createBRElement());
         formMessagesError.getParent().setVisible(true);
     }
 
+    @Override
     public void addFormMessageSuccess(String message) {
         formMessagesSuccess.add(new InlineLabel(message));
         formMessagesSuccess.getElement().appendChild(Document.get().createBRElement());
         formMessagesSuccess.getParent().setVisible(true);
     }
 
+    @Override
     public void clearFormMessagesError() {
         formMessagesError.clear();
         formMessagesError.getParent().setVisible(false);
     }
 
+    @Override
     public void clearFormMessagesSuccess() {
         formMessagesSuccess.clear();
         formMessagesSuccess.getParent().setVisible(false);
     }
 
+    @Override
     public void clearFormMessages() {
         clearFormMessagesSuccess();
         clearFormMessagesError();
+    }
+
+    @Override
+    public void showConfirmation(String title, String text, Runnable onConfirm) {
+        showConfirmation(title, text, onConfirm, null);
+    }
+
+    @Override
+    public void showConfirmation(String title, String text, Runnable onConfirm, Runnable onCancel) {
+        ConfirmationDialog confirmationDialog = confirmationDialogProvider.get();
+        confirmationDialog.setTitle(title);
+        confirmationDialog.setText(text);
+        confirmationDialog.setOnConfirm(onConfirm);
+        confirmationDialog.setOnCancel(onCancel);
+        confirmationDialog.show();
     }
 }

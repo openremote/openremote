@@ -17,68 +17,62 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.user;
+package org.openremote.manager.client.app.dialog;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.dom.client.LIElement;
-import com.google.gwt.dom.client.Style;
-import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
-import com.google.gwt.uibinder.client.UiHandler;
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.HasWidgets;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.PopupPanel;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.widget.AbstractAppPanel;
-import org.openremote.manager.client.widget.Hyperlink;
 
 import javax.inject.Inject;
 
-public class UserControlsImpl extends AbstractAppPanel implements UserControls {
+public class DialogImpl extends AbstractAppPanel implements Dialog {
 
-    interface UI extends UiBinder<PopupPanel, UserControlsImpl> {
+    interface UI extends UiBinder<PopupPanel, DialogImpl> {
     }
 
     @UiField
     ManagerMessages managerMessages;
 
     @UiField
-    Label userLabel;
+    FlowPanel mainPanel;
 
     @UiField
-    LIElement editProfileItem;
+    Label headerLabel;
 
     @UiField
-    Hyperlink editProfileLink;
+    FlowPanel contentPanel;
 
-    Presenter presenter;
+    @UiField
+    FlowPanel footerPanel;
 
     @Inject
-    public UserControlsImpl() {
+    public DialogImpl() {
         super(GWT.create(UI.class));
-        setAutoHide(true);
     }
 
     @Override
-    public void setPresenter(Presenter presenter) {
-        this.presenter = presenter;
+    public void addStyleName(String name) {
+        mainPanel.addStyleName(name);
     }
 
     @Override
-    public void setUserDetails(String username,
-                               String fullName,
-                               String userProfilePlaceToken,
-                               boolean hasManageAccountRole) {
-        userLabel.setText(fullName != null && fullName.length() > 0 ? fullName : username);
-
-        editProfileItem.getStyle().setDisplay(
-            hasManageAccountRole ? Style.Display.LIST_ITEM : Style.Display.NONE
-        );
-        editProfileLink.setTargetHistoryToken(userProfilePlaceToken);
+    public void setHeaderLabel(String label) {
+        headerLabel.setText(label);
     }
 
-    @UiHandler("logoutButton")
-    void logoutClicked(ClickEvent e) {
-        presenter.doLogout();
+    @Override
+    public HasWidgets getContentPanel() {
+        return contentPanel;
+    }
+
+    @Override
+    public HasWidgets getFooterPanel() {
+        return footerPanel;
     }
 }

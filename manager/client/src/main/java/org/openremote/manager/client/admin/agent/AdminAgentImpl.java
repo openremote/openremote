@@ -27,6 +27,8 @@ import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.*;
+import com.google.inject.Provider;
+import org.openremote.manager.client.app.dialog.ConfirmationDialog;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.widget.AttributesFormViewImpl;
 import org.openremote.manager.client.widget.FormGroup;
@@ -97,7 +99,8 @@ public class AdminAgentImpl extends AttributesFormViewImpl implements AdminAgent
     protected Presenter presenter;
 
     @Inject
-    public AdminAgentImpl(ManagerMessages managerMessages) {
+    public AdminAgentImpl(ManagerMessages managerMessages, Provider<ConfirmationDialog> confirmationDialogProvider) {
+        super(confirmationDialogProvider);
 
         connectorListBox = new ValueListBox<>(new AbstractRenderer<ConnectorImpl>() {
             @Override

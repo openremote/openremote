@@ -350,4 +350,8 @@ public abstract class AbstractStyle {
     public String ItemWithBorder() {
         return getPrefix() + "ItemWithBorder";
     }
+
+    public String ConfirmationDialog() {
+        return getPrefix() + "ConfirmationDialog";
+    }
 }

@@ -55,6 +55,8 @@ public interface AssetView extends AssetBrowsingView<AssetView.Presenter>, FormV
 
     boolean isMapInitialised();
 
+    void refreshMap();
+
     void showMapPopup(double lng, double lat, String text);
 
     void hideMapPopup();
