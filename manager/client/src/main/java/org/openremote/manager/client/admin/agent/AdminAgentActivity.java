@@ -19,17 +19,14 @@
  */
 package org.openremote.manager.client.admin.agent;
 
-import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.admin.AbstractAdminActivity;
 import org.openremote.manager.client.admin.AdminView;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
-import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.mvp.AppActivity;
-import org.openremote.manager.client.service.RequestService;
-import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.shared.Runnable;
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.agent.AgentResource;
@@ -48,11 +45,7 @@ public class AdminAgentActivity
 
     private static final Logger LOG = Logger.getLogger(AdminAgentActivity.class.getName());
 
-    final protected ManagerMessages managerMessages;
-    final protected PlaceController placeController;
-    final protected EventBus eventBus;
-    final protected SecurityService securityService;
-    final protected RequestService requestService;
+    final protected Environment environment;
     final protected ConnectorResource connectorResource;
     final protected AgentResource agentResource;
     final protected AgentMapper agentMapper;
@@ -68,24 +61,16 @@ public class AdminAgentActivity
     protected final String notFoundConnectorType = "NOT_FOUND_CONNECTOR";
 
     @Inject
-    public AdminAgentActivity(AdminView adminView,
+    public AdminAgentActivity(Environment environment,
+                              AdminView adminView,
                               AdminNavigation.Presenter adminNavigationPresenter,
                               AdminAgent view,
-                              ManagerMessages managerMessages,
-                              PlaceController placeController,
-                              EventBus eventBus,
-                              SecurityService securityService,
-                              RequestService requestService,
                               ConnectorResource connectorResource,
                               AgentResource agentResource,
                               AgentMapper agentMapper,
                               ConnectorArrayMapper connectorArrayMapper) {
         super(adminView, adminNavigationPresenter, view);
-        this.managerMessages = managerMessages;
-        this.placeController = placeController;
-        this.eventBus = eventBus;
-        this.securityService = securityService;
-        this.requestService = requestService;
+        this.environment = environment;
         this.connectorResource = connectorResource;
         this.agentResource = agentResource;
         this.agentMapper = agentMapper;
@@ -150,7 +135,7 @@ public class AdminAgentActivity
         adminContent.clearFormMessages();
         clearViewFieldErrors();
         readFromView();
-        requestService.execute(
+        environment.getRequestService().execute(
             agentMapper,
             requestParams -> {
                 agentResource.create(requestParams, agent);
@@ -158,12 +143,12 @@ public class AdminAgentActivity
             204,
             () -> {
                 adminContent.setFormBusy(false);
-                eventBus.dispatch(new ShowInfoEvent(
-                    managerMessages.agentCreated(agent.getName())
+                environment.getEventBus().dispatch(new ShowInfoEvent(
+                    environment.getMessages().agentCreated(agent.getName())
                 ));
-                placeController.goTo(new AdminAgentsPlace());
+                environment.getPlaceController().goTo(new AdminAgentsPlace());
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages)
+            ex -> handleRequestException(ex, environment)
         );
     }
 
@@ -173,7 +158,7 @@ public class AdminAgentActivity
         adminContent.clearFormMessages();
         clearViewFieldErrors();
         readFromView();
-        requestService.execute(
+        environment.getRequestService().execute(
             agentMapper,
             requestParams -> {
                 agentResource.update(requestParams, id, agent);
@@ -181,34 +166,36 @@ public class AdminAgentActivity
             204,
             () -> {
                 adminContent.setFormBusy(false);
-                adminContent.addFormMessageSuccess(managerMessages.agentUpdated(agent.getName()));
+                adminContent.addFormMessageSuccess(
+                    environment.getMessages().agentUpdated(agent.getName())
+                );
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages)
+            ex -> handleRequestException(ex, environment)
         );
     }
 
     @Override
     public void delete() {
         adminContent.showConfirmation(
-            managerMessages.confirmation(),
-            managerMessages.confirmationDelete(agent.getName()),
+            environment.getMessages().confirmation(),
+            environment.getMessages().confirmationDelete(agent.getName()),
             () -> {
                 adminContent.setFormBusy(true);
                 adminContent.clearFormMessages();
                 clearViewFieldErrors();
-                requestService.execute(
+                environment.getRequestService().execute(
                     requestParams -> {
                         agentResource.delete(requestParams, this.id);
                     },
                     204,
                     () -> {
                         adminContent.setFormBusy(false);
-                        eventBus.dispatch(new ShowInfoEvent(
-                            managerMessages.agentDeleted(agent.getName())
+                        environment.getEventBus().dispatch(new ShowInfoEvent(
+                            environment.getMessages().agentDeleted(agent.getName())
                         ));
-                        placeController.goTo(new AdminAgentsPlace());
+                        environment.getPlaceController().goTo(new AdminAgentsPlace());
                     },
-                    ex -> handleRequestException(ex, eventBus, managerMessages)
+                    ex -> handleRequestException(ex, environment)
                 );
             }
         );
@@ -216,7 +203,7 @@ public class AdminAgentActivity
 
     @Override
     public void cancel() {
-        placeController.goTo(new AdminAgentsPlace());
+        environment.getPlaceController().goTo(new AdminAgentsPlace());
     }
 
     @Override
@@ -226,7 +213,7 @@ public class AdminAgentActivity
     }
 
     protected void loadConnectors(Runnable onSuccess) {
-        requestService.execute(
+        environment.getRequestService().execute(
             connectorArrayMapper,
             connectorResource::getConnectors,
             200,
@@ -234,12 +221,12 @@ public class AdminAgentActivity
                 this.connectors = connectors;
                 onSuccess.run();
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages)
+            ex -> handleRequestException(ex, environment)
         );
     }
 
     protected void loadAgent(Runnable onSuccess) {
-        requestService.execute(
+        environment.getRequestService().execute(
             agentMapper,
             requestParams -> agentResource.get(requestParams, id),
             200,
@@ -248,7 +235,7 @@ public class AdminAgentActivity
                 this.id = agent.getId();
                 onSuccess.run();
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages)
+            ex -> handleRequestException(ex, environment)
         );
     }
 
@@ -281,7 +268,8 @@ public class AdminAgentActivity
                 assignedConnector.readSettings(agent);
             } else if (!Agent.NO_CONNECTOR_ASSIGNED_TYPE.equals(agent.getConnectorType())){
                 notFoundConnector.setDisplayName(
-                    agent.getConnectorType() + " (" + managerMessages.connectorNotInstalled() + ")"
+                    agent.getConnectorType() +
+                        " (" + environment.getMessages().connectorNotInstalled() + ")"
                 );
                 assignedConnector = notFoundConnector;
             }

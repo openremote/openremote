@@ -20,8 +20,6 @@
 package org.openremote.manager.client;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.user.client.ui.RootPanel;
-import org.openremote.manager.client.widget.FlexSplitPanel;
 
 public class ManagerEntryPoint implements com.google.gwt.core.client.EntryPoint {
 
@@ -29,10 +27,6 @@ public class ManagerEntryPoint implements com.google.gwt.core.client.EntryPoint 
 
     @Override
     public void onModuleLoad() {
-/*
-        RootPanel.get().setStyleName("layout horizontal");
-        RootPanel.get().add(new FlexSplitPanel());
-*/
         injector.getAppController().start();
     }
 }

@@ -19,8 +19,8 @@
  */
 package org.openremote.manager.client.admin.users;
 
-import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.admin.AbstractAdminActivity;
 import org.openremote.manager.client.admin.AdminView;
 import org.openremote.manager.client.admin.TenantArrayMapper;
@@ -28,10 +28,7 @@ import org.openremote.manager.client.admin.UserArrayMapper;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
-import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.mvp.AppActivity;
-import org.openremote.manager.client.service.RequestService;
-import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.manager.shared.security.User;
 import org.openremote.manager.shared.security.UserResource;
@@ -45,10 +42,7 @@ public class AdminUsersActivity
     extends AbstractAdminActivity<AdminUsersPlace, AdminUsers>
     implements AdminUsers.Presenter {
 
-    final protected EventBus eventBus;
-    final protected ManagerMessages managerMessages;
-    final protected PlaceController placeController;
-    final protected RequestService requestService;
+    final protected Environment environment;
     final protected TenantResource tenantResource;
     final protected TenantArrayMapper tenantArrayMapper;
     final protected UserResource userResource;
@@ -57,22 +51,16 @@ public class AdminUsersActivity
     protected String realm;
 
     @Inject
-    public AdminUsersActivity(AdminView adminView,
+    public AdminUsersActivity(Environment environment,
+                              AdminView adminView,
                               AdminNavigation.Presenter adminNavigationPresenter,
                               AdminUsers view,
-                              EventBus eventBus,
-                              ManagerMessages managerMessages,
-                              PlaceController placeController,
-                              RequestService requestService,
                               TenantResource tenantResource,
                               TenantArrayMapper tenantArrayMapper,
                               UserResource userResource,
                               UserArrayMapper userArrayMapper) {
         super(adminView, adminNavigationPresenter, view);
-        this.eventBus = eventBus;
-        this.managerMessages = managerMessages;
-        this.placeController = placeController;
-        this.requestService = requestService;
+        this.environment = environment;
         this.tenantResource = tenantResource;
         this.tenantArrayMapper = tenantArrayMapper;
         this.userResource = userResource;
@@ -96,23 +84,23 @@ public class AdminUsersActivity
 
         adminContent.setPresenter(this);
 
-        requestService.execute(
+        environment.getRequestService().execute(
             tenantArrayMapper,
             tenantResource::getAll,
             200,
             tenants -> {
                 adminContent.setTenants(tenants, realm);
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages)
+            ex -> handleRequestException(ex, environment)
         );
 
         if (realm != null) {
-            requestService.execute(
+            environment.getRequestService().execute(
                 userArrayMapper,
                 requestParams -> userResource.getAll(requestParams, realm),
                 200,
                 adminContent::setUsers,
-                ex -> handleRequestException(ex, eventBus, managerMessages)
+                ex -> handleRequestException(ex, environment)
             );
         }
     }
@@ -125,16 +113,16 @@ public class AdminUsersActivity
 
     @Override
     public void onTenantSelected(String realm) {
-        placeController.goTo(new AdminUsersPlace(realm));
+        environment.getPlaceController().goTo(new AdminUsersPlace(realm));
     }
 
     @Override
     public void createUser() {
-        placeController.goTo(new AdminUserPlace(realm));
+        environment.getPlaceController().goTo(new AdminUserPlace(realm));
     }
 
     @Override
     public void onUserSelected(User user) {
-        placeController.goTo(new AdminUserPlace(realm, user.getId()));
+        environment.getPlaceController().goTo(new AdminUserPlace(realm, user.getId()));
     }
 }

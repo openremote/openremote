@@ -19,14 +19,10 @@
  */
 package org.openremote.manager.client.assets;
 
-import com.google.gwt.place.shared.PlaceController;
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
-import org.openremote.manager.client.event.bus.EventBus;
-import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.service.RequestService;
-import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.asset.AssetResource;
 
 import javax.inject.Inject;
@@ -35,21 +31,13 @@ public class AssetsDashboardActivity
     extends AssetBrowsingActivity<AssetsDashboard, AssetsDashboardPlace>
     implements AssetsDashboard.Presenter {
 
-    final PlaceController placeController;
-    final EventBus eventBus;
-
     @Inject
-    public AssetsDashboardActivity(EventBus eventBus,
-                                   ManagerMessages managerMessages,
-                                   RequestService requestService,
-                                   PlaceController placeController,
+    public AssetsDashboardActivity(Environment environment,
                                    AssetsDashboard view,
                                    AssetBrowser.Presenter assetBrowserPresenter,
                                    AssetResource assetResource,
                                    AssetMapper assetMapper) {
-        super(eventBus, managerMessages, requestService, view, assetBrowserPresenter, assetResource, assetMapper);
-        this.placeController = placeController;
-        this.eventBus = eventBus;
+        super(environment, view, assetBrowserPresenter, assetResource, assetMapper);
     }
 
     @Override
@@ -62,6 +50,6 @@ public class AssetsDashboardActivity
 
     @Override
     protected void onAssetSelectionChange(String selectedAssetId) {
-        placeController.goTo(new AssetPlace(selectedAssetId));
+        environment.getPlaceController().goTo(new AssetPlace(selectedAssetId));
     }
 }

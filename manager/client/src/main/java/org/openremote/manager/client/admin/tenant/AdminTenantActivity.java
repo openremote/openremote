@@ -19,18 +19,15 @@
  */
 package org.openremote.manager.client.admin.tenant;
 
-import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.admin.AbstractAdminActivity;
 import org.openremote.manager.client.admin.AdminView;
 import org.openremote.manager.client.admin.TenantMapper;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
-import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.mvp.AppActivity;
-import org.openremote.manager.client.service.RequestService;
-import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 import org.openremote.manager.shared.security.Tenant;
@@ -39,7 +36,6 @@ import org.openremote.manager.shared.validation.ConstraintViolation;
 
 import javax.inject.Inject;
 import java.util.Collection;
-import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
@@ -47,13 +43,7 @@ public class AdminTenantActivity
     extends AbstractAdminActivity<AdminTenantPlace, AdminTenant>
     implements AdminTenant.Presenter {
 
-    private static final Logger LOG = Logger.getLogger(AdminTenantActivity.class.getName());
-
-    final protected ManagerMessages managerMessages;
-    final protected PlaceController placeController;
-    final protected EventBus eventBus;
-    final protected SecurityService securityService;
-    final protected RequestService requestService;
+    final protected Environment environment;
     final protected TenantResource tenantResource;
     final protected TenantMapper tenantMapper;
 
@@ -79,22 +69,14 @@ public class AdminTenantActivity
     protected Tenant tenant;
 
     @Inject
-    public AdminTenantActivity(AdminView adminView,
+    public AdminTenantActivity(Environment environment, 
+                               AdminView adminView,
                                AdminNavigation.Presenter adminNavigationPresenter,
                                AdminTenant view,
-                               ManagerMessages managerMessages,
-                               PlaceController placeController,
-                               EventBus eventBus,
-                               SecurityService securityService,
-                               RequestService requestService,
                                TenantResource tenantResource,
                                TenantMapper tenantMapper) {
         super(adminView, adminNavigationPresenter, view);
-        this.managerMessages = managerMessages;
-        this.placeController = placeController;
-        this.eventBus = eventBus;
-        this.securityService = securityService;
-        this.requestService = requestService;
+        this.environment = environment;
         this.tenantResource = tenantResource;
         this.tenantMapper = tenantMapper;
     }
@@ -145,7 +127,7 @@ public class AdminTenantActivity
         adminContent.clearFormMessages();
         clearViewFieldErrors();
         readFromView();
-        requestService.execute(
+        environment.getRequestService().execute(
             tenantMapper,
             requestParams -> {
                 tenantResource.create(requestParams, tenant);
@@ -153,12 +135,12 @@ public class AdminTenantActivity
             204,
             () -> {
                 adminContent.setFormBusy(false);
-                eventBus.dispatch(new ShowInfoEvent(
-                    managerMessages.tenantCreated(tenant.getDisplayName())
+                environment.getEventBus().dispatch(new ShowInfoEvent(
+                    environment.getMessages().tenantCreated(tenant.getDisplayName())
                 ));
-                placeController.goTo(new AdminTenantsPlace());
+                environment.getPlaceController().goTo(new AdminTenantsPlace());
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages, validationErrorHandler)
+            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
         );
     }
 
@@ -168,7 +150,7 @@ public class AdminTenantActivity
         adminContent.clearFormMessages();
         clearViewFieldErrors();
         readFromView();
-        requestService.execute(
+        environment.getRequestService().execute(
             tenantMapper,
             requestParams -> {
                 tenantResource.update(requestParams, realm, tenant);
@@ -176,35 +158,35 @@ public class AdminTenantActivity
             204,
             () -> {
                 adminContent.setFormBusy(false);
-                adminContent.addFormMessageSuccess(managerMessages.tenantUpdated(tenant.getDisplayName()));
+                adminContent.addFormMessageSuccess(environment.getMessages().tenantUpdated(tenant.getDisplayName()));
                 this.realm = tenant.getRealm();
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages, validationErrorHandler)
+            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
         );
     }
 
     @Override
     public void delete() {
         adminContent.showConfirmation(
-            managerMessages.confirmation(),
-            managerMessages.confirmationDelete(this.realm),
+            environment.getMessages().confirmation(),
+            environment.getMessages().confirmationDelete(this.realm),
             () -> {
                 adminContent.setFormBusy(true);
                 adminContent.clearFormMessages();
                 clearViewFieldErrors();
-                requestService.execute(
+                environment.getRequestService().execute(
                     requestParams -> {
                         tenantResource.delete(requestParams, this.realm);
                     },
                     204,
                     () -> {
                         adminContent.setFormBusy(false);
-                        eventBus.dispatch(new ShowInfoEvent(
-                            managerMessages.tenantDeleted(tenant.getDisplayName())
+                        environment.getEventBus().dispatch(new ShowInfoEvent(
+                            environment.getMessages().tenantDeleted(tenant.getDisplayName())
                         ));
-                        placeController.goTo(new AdminTenantsPlace());
+                        environment.getPlaceController().goTo(new AdminTenantsPlace());
                     },
-                    ex -> handleRequestException(ex, eventBus, managerMessages, validationErrorHandler)
+                    ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
                 );
             }
         );
@@ -212,12 +194,12 @@ public class AdminTenantActivity
 
     @Override
     public void cancel() {
-        placeController.goTo(new AdminTenantsPlace());
+        environment.getPlaceController().goTo(new AdminTenantsPlace());
     }
 
     protected void loadTenant() {
         adminContent.setFormBusy(true);
-        requestService.execute(
+        environment.getRequestService().execute(
             tenantMapper,
             requestParams -> tenantResource.get(requestParams, realm),
             200,
@@ -230,7 +212,7 @@ public class AdminTenantActivity
                 adminContent.enableUpdate(true);
                 adminContent.enableDelete(true);
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages)
+            ex -> handleRequestException(ex, environment)
         );
     }
 

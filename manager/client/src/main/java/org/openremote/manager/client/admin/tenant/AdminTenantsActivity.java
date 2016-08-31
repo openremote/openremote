@@ -19,18 +19,16 @@
  */
 package org.openremote.manager.client.admin.tenant;
 
-import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.admin.AbstractAdminActivity;
 import org.openremote.manager.client.admin.AdminView;
 import org.openremote.manager.client.admin.TenantArrayMapper;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
-import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.service.RequestService;
-import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.manager.shared.security.Tenant;
+import org.openremote.manager.shared.security.TenantResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -41,25 +39,19 @@ public class AdminTenantsActivity
     extends AbstractAdminActivity<AdminTenantsPlace, AdminTenants>
     implements AdminTenants.Presenter {
 
-    final protected ManagerMessages managerMessages;
-    final protected PlaceController placeController;
-    final protected RequestService requestService;
+    final protected Environment environment;
     final protected TenantResource tenantResource;
     final protected TenantArrayMapper tenantArrayMapper;
 
     @Inject
-    public AdminTenantsActivity(AdminView adminView,
+    public AdminTenantsActivity(Environment environment,
+                                AdminView adminView,
                                 AdminNavigation.Presenter adminNavigationPresenter,
                                 AdminTenants view,
-                                ManagerMessages managerMessages,
-                                PlaceController placeController,
-                                RequestService requestService,
                                 TenantResource tenantResource,
                                 TenantArrayMapper tenantArrayMapper) {
         super(adminView, adminNavigationPresenter, view);
-        this.managerMessages = managerMessages;
-        this.placeController = placeController;
-        this.requestService = requestService;
+        this.environment = environment;
         this.tenantResource = tenantResource;
         this.tenantArrayMapper = tenantArrayMapper;
     }
@@ -74,12 +66,12 @@ public class AdminTenantsActivity
         super.start(container, eventBus, registrations);
         adminContent.setPresenter(this);
 
-        requestService.execute(
+        environment.getRequestService().execute(
             tenantArrayMapper,
             tenantResource::getAll,
             200,
             adminContent::setTenants,
-            ex -> handleRequestException(ex, eventBus, managerMessages)
+            ex -> handleRequestException(ex, environment)
         );
     }
 
@@ -91,11 +83,11 @@ public class AdminTenantsActivity
 
     @Override
     public void onTenantSelected(Tenant tenant) {
-        placeController.goTo(new AdminTenantPlace(tenant.getRealm()));
+        environment.getPlaceController().goTo(new AdminTenantPlace(tenant.getRealm()));
     }
 
     @Override
     public void createTenant() {
-        placeController.goTo(new AdminTenantPlace());
+        environment.getPlaceController().goTo(new AdminTenantPlace());
     }
 }

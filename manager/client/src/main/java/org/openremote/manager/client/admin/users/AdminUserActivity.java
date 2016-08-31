@@ -19,16 +19,13 @@
  */
 package org.openremote.manager.client.admin.users;
 
-import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.admin.*;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
-import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.mvp.AppActivity;
-import org.openremote.manager.client.service.RequestService;
-import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.Runnable;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
@@ -47,11 +44,7 @@ public class AdminUserActivity
     extends AbstractAdminActivity<AdminUserPlace, AdminUser>
     implements AdminUser.Presenter {
 
-    final protected ManagerMessages managerMessages;
-    final protected PlaceController placeController;
-    final protected EventBus eventBus;
-    final protected SecurityService securityService;
-    final protected RequestService requestService;
+    final protected Environment environment;
     final protected UserResource userResource;
     final protected UserMapper userMapper;
     final protected CredentialMapper credentialMapper;
@@ -90,24 +83,16 @@ public class AdminUserActivity
     protected Role[] roles = new Role[0];
 
     @Inject
-    public AdminUserActivity(AdminView adminView,
+    public AdminUserActivity(Environment environment,
+                             AdminView adminView,
                              AdminNavigation.Presenter adminNavigationPresenter,
                              AdminUser view,
-                             ManagerMessages managerMessages,
-                             PlaceController placeController,
-                             EventBus eventBus,
-                             SecurityService securityService,
-                             RequestService requestService,
                              UserResource userResource,
                              UserMapper userMapper,
                              CredentialMapper credentialMapper,
                              RoleArrayMapper roleArrayMapper) {
         super(adminView, adminNavigationPresenter, view);
-        this.managerMessages = managerMessages;
-        this.placeController = placeController;
-        this.eventBus = eventBus;
-        this.securityService = securityService;
-        this.requestService = requestService;
+        this.environment = environment;
         this.userResource = userResource;
         this.userMapper = userMapper;
         this.credentialMapper = credentialMapper;
@@ -198,7 +183,7 @@ public class AdminUserActivity
         adminContent.clearFormMessages();
         clearViewFieldErrors();
         readFromView();
-        requestService.execute(
+        environment.getRequestService().execute(
             userMapper,
             requestParams -> {
                 userResource.create(requestParams, realm, user);
@@ -206,12 +191,12 @@ public class AdminUserActivity
             204,
             () -> {
                 adminContent.setFormBusy(false);
-                eventBus.dispatch(new ShowInfoEvent(
-                    managerMessages.userCreated(user.getUsername())
+                environment.getEventBus().dispatch(new ShowInfoEvent(
+                    environment.getMessages().userCreated(user.getUsername())
                 ));
-                placeController.goTo(new AdminUsersPlace(realm));
+                environment.getPlaceController().goTo(new AdminUsersPlace(realm));
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages, validationErrorHandler)
+            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
         );
     }
 
@@ -235,27 +220,27 @@ public class AdminUserActivity
         if (!password.equals(passwordControl)) {
             validationErrorHandler.accept(new ConstraintViolation[]{
                 new ConstraintViolation(
-                    ConstraintViolation.Type.FIELD, "password", managerMessages.passwordsMustMatch()
+                    ConstraintViolation.Type.FIELD, "password", environment.getMessages().passwordsMustMatch()
                 )
             });
             return;
         }
         Credential credential = new Credential(password, false);
-        requestService.execute(
+        environment.getRequestService().execute(
             credentialMapper,
             requestParams -> {
                 userResource.resetPassword(requestParams, realm, userId, credential);
             },
             204,
             () -> {
-                adminContent.addFormMessageSuccess(managerMessages.passwordUpdated());
+                adminContent.addFormMessageSuccess(environment.getMessages().passwordUpdated());
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages, validationErrorHandler)
+            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
         );
     }
 
     protected void updateUser() {
-        requestService.execute(
+        environment.getRequestService().execute(
             userMapper,
             requestParams -> {
                 userResource.update(requestParams, realm, userId, user);
@@ -264,47 +249,47 @@ public class AdminUserActivity
             () -> {
                 updateRoles(() -> {
                     adminContent.setFormBusy(false);
-                    adminContent.addFormMessageSuccess(managerMessages.userUpdated(user.getUsername()));
+                    adminContent.addFormMessageSuccess(environment.getMessages().userUpdated(user.getUsername()));
                 });
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages, validationErrorHandler)
+            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
         );
     }
 
     protected void updateRoles(Runnable onComplete) {
-        requestService.execute(
+        environment.getRequestService().execute(
             roleArrayMapper,
             requestParams -> {
                 userResource.updateRoles(requestParams, realm, userId, roles);
             },
             204,
             onComplete::run,
-            ex -> handleRequestException(ex, eventBus, managerMessages)
+            ex -> handleRequestException(ex, environment)
         );
     }
 
     @Override
     public void delete() {
         adminContent.showConfirmation(
-            managerMessages.confirmation(),
-            managerMessages.confirmationDelete(user.getUsername()),
+            environment.getMessages().confirmation(),
+            environment.getMessages().confirmationDelete(user.getUsername()),
             () -> {
                 adminContent.setFormBusy(true);
                 adminContent.clearFormMessages();
                 clearViewFieldErrors();
-                requestService.execute(
+                environment.getRequestService().execute(
                     requestParams -> {
                         userResource.delete(requestParams, realm, userId);
                     },
                     204,
                     () -> {
                         adminContent.setFormBusy(false);
-                        eventBus.dispatch(new ShowInfoEvent(
-                            managerMessages.userDeleted(user.getUsername())
+                        environment.getEventBus().dispatch(new ShowInfoEvent(
+                            environment.getMessages().userDeleted(user.getUsername())
                         ));
-                        placeController.goTo(new AdminUsersPlace(realm));
+                        environment.getPlaceController().goTo(new AdminUsersPlace(realm));
                     },
-                    ex -> handleRequestException(ex, eventBus, managerMessages, validationErrorHandler)
+                    ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
                 );
             }
         );
@@ -312,12 +297,12 @@ public class AdminUserActivity
 
     @Override
     public void cancel() {
-        placeController.goTo(new AdminUsersPlace(realm));
+        environment.getPlaceController().goTo(new AdminUsersPlace(realm));
     }
 
     protected void loadUser() {
         adminContent.setFormBusy(true);
-        requestService.execute(
+        environment.getRequestService().execute(
             userMapper,
             requestParams -> userResource.get(requestParams, realm, userId),
             200,
@@ -334,12 +319,12 @@ public class AdminUserActivity
                     adminContent.setUsernameEditEnabled(false);
                 });
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages)
+            ex -> handleRequestException(ex, environment)
         );
     }
 
     protected void loadRoles(Runnable onComplete) {
-        requestService.execute(
+        environment.getRequestService().execute(
             roleArrayMapper,
             requestParams -> userResource.getRoles(requestParams, realm, userId),
             200,
@@ -351,7 +336,7 @@ public class AdminUserActivity
                 adminContent.enableRoles(true);
                 onComplete.run();
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages)
+            ex -> handleRequestException(ex, environment)
         );
     }
 
@@ -364,7 +349,7 @@ public class AdminUserActivity
         for (Role role : roles) {
             adminContent.addRole(
                 role.getId(),
-                managerMessages.roleLabel(role.getName().replaceAll(":", "-")),
+                environment.getMessages().roleLabel(role.getName().replaceAll(":", "-")),
                 role.isComposite(),
                 role.isAssigned()
             );

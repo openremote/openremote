@@ -19,15 +19,13 @@
  */
 package org.openremote.manager.client.assets.browser;
 
-import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.view.client.HasData;
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetInfoArrayMapper;
 import org.openremote.manager.client.assets.event.AssetsModifiedEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventListener;
 import org.openremote.manager.client.event.bus.EventRegistration;
-import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.shared.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetResource;
 
@@ -42,10 +40,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
 
     private static final Logger LOG = Logger.getLogger(AssetBrowserPresenter.class.getName());
 
-    final protected EventBus eventBus;
-    final protected ManagerMessages managerMessages;
-    final protected RequestService requestService;
-    final PlaceController placeController;
+    final protected Environment environment;
     final EventBus internalEventBus;
     final AssetBrowser view;
     final protected AssetResource assetResource;
@@ -55,23 +50,17 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     protected String[] selectedAssetPath;
 
     @Inject
-    public AssetBrowserPresenter(EventBus eventBus,
-                                 ManagerMessages managerMessages,
-                                 RequestService requestService,
-                                 PlaceController placeController,
+    public AssetBrowserPresenter(Environment environment,
                                  AssetBrowser view,
                                  AssetResource assetResource,
                                  AssetInfoArrayMapper assetInfoArrayMapper) {
-        this.eventBus = eventBus;
-        this.managerMessages = managerMessages;
-        this.requestService = requestService;
-        this.placeController = placeController;
+        this.environment = environment;
         this.internalEventBus = new EventBus();
         this.view = view;
         this.assetResource = assetResource;
         this.assetInfoArrayMapper = assetInfoArrayMapper;
 
-        eventBus.register(AssetsModifiedEvent.class, event -> {
+        environment.getEventBus().register(AssetsModifiedEvent.class, event -> {
             view.refreshAssets(
                 event.getAsset() == null || event.getAsset().getParentId() == null
             );
@@ -90,14 +79,17 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         // If parent is the invisible root of the tree, show a loading message
         if (parent.getId() == null) {
             display.setRowData(0, Collections.singletonList(
-                new AssetInfo(managerMessages.loadingAssets(), AssetTreeModel.TEMPORARY_ASSET_TYPE)
+                new AssetInfo(
+                    environment.getMessages().loadingAssets(),
+                    AssetTreeModel.TEMPORARY_ASSET_TYPE
+                )
             ));
             display.setRowCount(1, true);
         }
 
         // TODO Pagination?
         // final Range range = display.getVisibleRange();
-        requestService.execute(
+        environment.getRequestService().execute(
             assetInfoArrayMapper,
             requestParams -> {
                 if (parent.getId() == null) {
@@ -113,7 +105,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                 display.setRowCount(assetInfos.length, true);
                 onAssetsRefreshed(parent, assetInfos);
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages)
+            ex -> handleRequestException(ex, environment)
         );
     }
 

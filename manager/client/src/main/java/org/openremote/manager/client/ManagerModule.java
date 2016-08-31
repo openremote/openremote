@@ -27,9 +27,12 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.http.ConstraintViolationReportMapper;
+import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.interop.keycloak.Keycloak;
 import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.service.*;
+import org.openremote.manager.client.style.ThemeStyle;
+import org.openremote.manager.client.style.WidgetStyle;
 
 public class ManagerModule extends AbstractGinModule {
 
@@ -40,6 +43,28 @@ public class ManagerModule extends AbstractGinModule {
 
         bind(CookieService.class).to(CookieServiceImpl.class).in(Singleton.class);
         bind(ValidatorService.class).to(ValidatorServiceImpl.class).in(Singleton.class);
+    }
+
+    @Provides
+    @Singleton
+    public Environment createEnvironment(SecurityService securityService,
+                                         RequestService requestService,
+                                         EventService eventService,
+                                         PlaceController placeController,
+                                         EventBus eventBus,
+                                         ManagerMessages managerMessages,
+                                         WidgetStyle widgetStyle,
+                                         ThemeStyle themeStyle) {
+        return Environment.create(
+            securityService,
+            requestService,
+            eventService,
+            placeController,
+            eventBus,
+            managerMessages,
+            widgetStyle,
+            themeStyle
+        );
     }
 
     @Provides

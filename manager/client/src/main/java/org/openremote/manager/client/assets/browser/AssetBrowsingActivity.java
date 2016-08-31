@@ -20,12 +20,11 @@
 package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
-import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.mvp.AppActivity;
-import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.client.util.TextUtil;
 import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.asset.AssetResource;
@@ -44,9 +43,7 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
 
     private static final Logger LOG = Logger.getLogger(AssetBrowsingActivity.class.getName());
 
-    final protected EventBus eventBus;
-    final protected ManagerMessages managerMessages;
-    final protected RequestService requestService;
+    final protected Environment environment;
     final protected V view;
     final protected AssetBrowser.Presenter assetBrowserPresenter;
     final protected AssetResource assetResource;
@@ -56,16 +53,12 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
     protected String assetId;
     protected Asset asset;
 
-    public AssetBrowsingActivity(EventBus eventBus,
-                                 ManagerMessages managerMessages,
-                                 RequestService requestService,
+    public AssetBrowsingActivity(Environment environment,
                                  V view,
                                  AssetBrowser.Presenter assetBrowserPresenter,
                                  AssetResource assetResource,
                                  AssetMapper assetMapper) {
-        this.eventBus = eventBus;
-        this.managerMessages = managerMessages;
-        this.requestService = requestService;
+        this.environment = environment;
         this.view = view;
         this.assetBrowserPresenter = assetBrowserPresenter;
         this.assetResource = assetResource;
@@ -136,7 +129,7 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
 
     protected void loadAsset() {
         onBeforeAssetLoad();
-        requestService.execute(
+        environment.getRequestService().execute(
             assetMapper,
             requestParams -> assetResource.get(requestParams, assetId),
             200,
@@ -145,7 +138,7 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
                 assetBrowserPresenter.selectAsset(asset.getId(), asset.getPath());
                 onAssetLoaded();
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages)
+            ex -> handleRequestException(ex, environment)
         );
     }
 

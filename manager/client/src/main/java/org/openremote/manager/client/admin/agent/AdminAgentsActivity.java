@@ -19,15 +19,13 @@
  */
 package org.openremote.manager.client.admin.agent;
 
-import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.admin.AbstractAdminActivity;
 import org.openremote.manager.client.admin.AdminView;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
-import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.agent.AgentResource;
 
@@ -43,25 +41,19 @@ public class AdminAgentsActivity
 
     private static final Logger LOG = Logger.getLogger(AdminAgentsActivity.class.getName());
 
-    final protected ManagerMessages managerMessages;
-    final protected PlaceController placeController;
-    final protected RequestService requestService;
+    final protected Environment environment;
     final protected AgentResource agentResource;
     final protected AgentArrayMapper agentArrayMapper;
 
     @Inject
-    public AdminAgentsActivity(AdminView adminView,
+    public AdminAgentsActivity(Environment environment,
+                               AdminView adminView,
                                AdminNavigation.Presenter adminNavigationPresenter,
                                AdminAgents view,
-                               ManagerMessages managerMessages,
-                               PlaceController placeController,
-                               RequestService requestService,
                                AgentResource agentResource,
                                AgentArrayMapper agentArrayMapper) {
         super(adminView, adminNavigationPresenter, view);
-        this.managerMessages = managerMessages;
-        this.placeController = placeController;
-        this.requestService = requestService;
+        this.environment = environment;
         this.agentResource = agentResource;
         this.agentArrayMapper = agentArrayMapper;
     }
@@ -76,12 +68,12 @@ public class AdminAgentsActivity
         super.start(container, eventBus, registrations);
         adminContent.setPresenter(this);
 
-        requestService.execute(
+        environment.getRequestService().execute(
             agentArrayMapper,
             agentResource::getAll,
             200,
             adminContent::setAgents,
-            ex -> handleRequestException(ex, eventBus, managerMessages)
+            ex -> handleRequestException(ex, environment)
         );
 
     }
@@ -94,11 +86,11 @@ public class AdminAgentsActivity
 
     @Override
     public void onAgentSelected(Agent agent) {
-        placeController.goTo(new AdminAgentPlace(agent.getId()));
+        environment.getPlaceController().goTo(new AdminAgentPlace(agent.getId()));
     }
 
     @Override
     public void createAgent() {
-        placeController.goTo(new AdminAgentPlace());
+        environment.getPlaceController().goTo(new AdminAgentPlace());
     }
 }

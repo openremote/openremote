@@ -19,9 +19,8 @@
  */
 package org.openremote.manager.client.assets.asset;
 
-import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
-import org.openremote.manager.client.app.dialog.ConfirmationDialog;
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
@@ -29,9 +28,7 @@ import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.event.AssetsModifiedEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
-import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
-import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.asset.AssetType;
@@ -50,25 +47,20 @@ public class AssetActivity
 
     private static final Logger LOG = Logger.getLogger(AssetActivity.class.getName());
 
-    final PlaceController placeController;
     final MapResource mapResource;
     final JsonObjectMapper jsonObjectMapper;
 
     protected double[] selectedCoordinates;
 
     @Inject
-    public AssetActivity(EventBus eventBus,
-                         ManagerMessages managerMessages,
-                         RequestService requestService,
-                         PlaceController placeController,
+    public AssetActivity(Environment environment,
                          AssetView view,
                          AssetBrowser.Presenter assetBrowserPresenter,
                          AssetResource assetResource,
                          AssetMapper assetMapper,
                          MapResource mapResource,
                          JsonObjectMapper jsonObjectMapper) {
-        super(eventBus, managerMessages, requestService, view, assetBrowserPresenter, assetResource, assetMapper);
-        this.placeController = placeController;
+        super(environment, view, assetBrowserPresenter, assetResource, assetMapper);
         this.mapResource = mapResource;
         this.jsonObjectMapper = jsonObjectMapper;
     }
@@ -78,12 +70,12 @@ public class AssetActivity
         super.start(container, eventBus, registrations);
 
         if (!getView().isMapInitialised()) {
-            requestService.execute(
+            environment.getRequestService().execute(
                 jsonObjectMapper,
                 mapResource::getSettings,
                 200,
                 view::initialiseMap,
-                ex -> handleRequestException(ex, eventBus, managerMessages)
+                ex -> handleRequestException(ex, environment)
             );
         } else {
             view.refreshMap();
@@ -122,7 +114,7 @@ public class AssetActivity
 
     @Override
     protected void onAssetSelectionChange(String selectedAssetId) {
-        placeController.goTo(new AssetPlace(selectedAssetId));
+        environment.getPlaceController().goTo(new AssetPlace(selectedAssetId));
     }
 
     @Override
@@ -142,7 +134,7 @@ public class AssetActivity
     @Override
     public void onMapClicked(double lng, double lat) {
         selectedCoordinates = new double[] {lng, lat};
-        view.showMapPopup(lng, lat, managerMessages.selectedLocation());
+        view.showMapPopup(lng, lat, environment.getMessages().selectedLocation());
         view.setLocation(getLocation(selectedCoordinates));
     }
 
@@ -152,7 +144,7 @@ public class AssetActivity
         view.clearFormMessages();
         clearViewFieldErrors();
         readFromView();
-        requestService.execute(
+        environment.getRequestService().execute(
             assetMapper,
             requestParams -> {
                 assetResource.update(requestParams, assetId, asset);
@@ -160,13 +152,15 @@ public class AssetActivity
             204,
             () -> {
                 view.setFormBusy(false);
-                view.addFormMessageSuccess(managerMessages.assetUpdated(asset.getName()));
+                view.addFormMessageSuccess(environment.getMessages().assetUpdated(asset.getName()));
                 selectedCoordinates = null;
                 view.hideMapPopup();
                 writeToView();
-                eventBus.dispatch(new AssetsModifiedEvent(asset));
+                environment.getEventBus().dispatch(
+                    new AssetsModifiedEvent(asset)
+                );
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages)
+            ex -> handleRequestException(ex, environment)
         );
     }
 
@@ -176,7 +170,7 @@ public class AssetActivity
         view.clearFormMessages();
         clearViewFieldErrors();
         readFromView();
-        requestService.execute(
+        environment.getRequestService().execute(
             assetMapper,
             requestParams -> {
                 assetResource.create(requestParams, asset);
@@ -184,39 +178,39 @@ public class AssetActivity
             204,
             () -> {
                 view.setFormBusy(false);
-                eventBus.dispatch(new ShowInfoEvent(
-                    managerMessages.assetCreated(asset.getName())
+                environment.getEventBus().dispatch(new ShowInfoEvent(
+                    environment.getMessages().assetCreated(asset.getName())
                 ));
-                eventBus.dispatch(new AssetsModifiedEvent(asset));
-                placeController.goTo(new AssetsDashboardPlace());
+                environment.getEventBus().dispatch(new AssetsModifiedEvent(asset));
+                environment.getPlaceController().goTo(new AssetsDashboardPlace());
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages)
+            ex -> handleRequestException(ex, environment)
         );
     }
 
     @Override
     public void delete() {
         view.showConfirmation(
-            managerMessages.confirmation(),
-            managerMessages.confirmationDelete(asset.getName()),
+            environment.getMessages().confirmation(),
+            environment.getMessages().confirmationDelete(asset.getName()),
             () -> {
                 view.setFormBusy(true);
                 view.clearFormMessages();
                 clearViewFieldErrors();
-                requestService.execute(
+                environment.getRequestService().execute(
                     requestParams -> {
                         assetResource.delete(requestParams, this.assetId);
                     },
                     204,
                     () -> {
                         view.setFormBusy(false);
-                        eventBus.dispatch(new ShowInfoEvent(
-                            managerMessages.assetDeleted(asset.getName())
+                        environment.getEventBus().dispatch(new ShowInfoEvent(
+                            environment.getMessages().assetDeleted(asset.getName())
                         ));
-                        eventBus.dispatch(new AssetsModifiedEvent(asset));
-                        placeController.goTo(new AssetsDashboardPlace());
+                        environment.getEventBus().dispatch(new AssetsModifiedEvent(asset));
+                        environment.getPlaceController().goTo(new AssetsDashboardPlace());
                     },
-                    ex -> handleRequestException(ex, eventBus, managerMessages)
+                    ex -> handleRequestException(ex, environment)
                 );
             }
         );
@@ -251,7 +245,7 @@ public class AssetActivity
         if (coordinates != null && coordinates.length == 2) {
             return coordinates[0] + " " + coordinates[1];
         }
-        return managerMessages.selectLocation();
+        return environment.getMessages().selectLocation();
     }
 
     protected void setViewMode(boolean enableCreate) {

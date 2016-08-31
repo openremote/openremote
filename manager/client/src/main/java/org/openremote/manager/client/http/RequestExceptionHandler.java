@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.client.http;
 
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.shared.Consumer;
@@ -27,6 +28,11 @@ import org.openremote.manager.shared.http.*;
 import org.openremote.manager.shared.validation.ConstraintViolation;
 
 public interface RequestExceptionHandler {
+
+    static void handleRequestException(RequestException ex,
+                                       Environment environment) {
+        handleRequestException(ex, environment.getEventBus(), environment.getMessages());
+    }
 
     static void handleRequestException(RequestException ex,
                                        EventBus eventBus,
@@ -49,6 +55,12 @@ public interface RequestExceptionHandler {
         }
 
         eventBus.dispatch(new ShowFailureEvent(managerMessages.requestFailed(msg), 10000));
+    }
+
+    static void handleRequestException(RequestException ex,
+                                       Environment environment,
+                                       Consumer<ConstraintViolation[]> constraintViolationHandler) {
+        handleRequestException(ex, environment.getEventBus(), environment.getMessages(), constraintViolationHandler);
     }
 
     static void handleRequestException(RequestException ex,

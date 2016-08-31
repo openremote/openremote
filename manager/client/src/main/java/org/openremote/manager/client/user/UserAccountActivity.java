@@ -20,35 +20,24 @@
 package org.openremote.manager.client.user;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
-import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.mvp.AppActivity;
-import org.openremote.manager.client.service.RequestService;
-import org.openremote.manager.client.service.SecurityService;
 
 import javax.inject.Inject;
 import java.util.Collection;
-import java.util.logging.Logger;
 
 public class UserAccountActivity extends AppActivity<UserAccountPlace> implements UserAccountView.Presenter {
 
-    private static final Logger LOG = Logger.getLogger(UserAccountActivity.class.getName());
-
+    final protected Environment environment;
     final UserAccountView view;
-    final protected SecurityService securityService;
-    final ManagerMessages managerMessages;
-    final RequestService requestService;
 
     @Inject
-    public UserAccountActivity(UserAccountView view,
-                               SecurityService securityService,
-                               ManagerMessages managerMessages,
-                               RequestService requestService) {
+    public UserAccountActivity(Environment environment,
+                               UserAccountView view) {
+        this.environment = environment;
         this.view = view;
-        this.securityService = securityService;
-        this.managerMessages = managerMessages;
-        this.requestService = requestService;
     }
 
     @Override
@@ -59,7 +48,7 @@ public class UserAccountActivity extends AppActivity<UserAccountPlace> implement
     @Override
     public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
         view.setPresenter(this);
-        view.setRealm(securityService.getRealm());
+        view.setRealm(environment.getSecurityService().getRealm());
         container.setWidget(view.asWidget());
     }
 }

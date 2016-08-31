@@ -35,7 +35,6 @@ import elemental.json.JsonObject;
 import org.openremote.manager.client.app.dialog.ConfirmationDialog;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.widget.*;
-import org.openremote.manager.shared.Runnable;
 import org.openremote.manager.shared.map.GeoJSON;
 
 import javax.inject.Inject;

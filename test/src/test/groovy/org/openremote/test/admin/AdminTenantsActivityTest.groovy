@@ -1,9 +1,11 @@
 package org.openremote.test.admin
 
 import com.google.gwt.junit.GWTMockUtilities
+import com.google.gwt.place.shared.PlaceHistoryHandler
 import com.google.gwt.place.shared.WithTokenizers
 import com.google.gwt.user.client.ui.AcceptsOneWidget
 import com.google.gwt.user.client.ui.Widget
+import org.openremote.manager.client.Environment
 import org.openremote.manager.client.ManagerActivityMapper
 import org.openremote.manager.client.ManagerHistoryMapper
 import org.openremote.manager.client.admin.AdminView
@@ -16,8 +18,11 @@ import org.openremote.manager.client.event.GoToPlaceEvent
 import org.openremote.manager.client.event.WillGoToPlaceEvent
 import org.openremote.manager.client.event.bus.EventListener
 import org.openremote.manager.client.i18n.ManagerMessages
+import org.openremote.manager.client.service.EventService
 import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.service.SecurityService
+import org.openremote.manager.client.style.ThemeStyle
+import org.openremote.manager.client.style.WidgetStyle
 import org.openremote.manager.shared.Consumer
 import org.openremote.manager.shared.Runnable
 import org.openremote.manager.shared.event.Event
@@ -125,6 +130,16 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
         AdminTenantActivity adminTenantActivity
 
         and: "An activity management configuration"
+        def environment = Environment.create(
+                securityService,
+                requestService,
+                Mock(EventService),
+                placeController,
+                eventBus,
+                managerMessages,
+                new WidgetStyle(),
+                new ThemeStyle()
+        )
         def activityDisplay = Mock(AcceptsOneWidget)
         def activityMapper = new ManagerActivityMapper(
                 securityService,
@@ -137,15 +152,13 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
                 {},
                 {
                     adminTenantsActivity = new AdminTenantsActivity(
-                            adminView, adminNavigationPresenter, adminTenantsView, managerMessages,
-                            placeController, requestService, tenantResource, tenantArrayMapper
+                            environment, adminView, adminNavigationPresenter, adminTenantsView, tenantResource, tenantArrayMapper
                     )
                     return adminTenantsActivity
                 },
                 {
                     adminTenantActivity = new AdminTenantActivity(
-                            adminView, adminNavigationPresenter, adminTenantView, managerMessages,
-                            placeController, eventBus, securityService, requestService, tenantResource, tenantMapper
+                            environment, adminView, adminNavigationPresenter, adminTenantView, tenantResource, tenantMapper
                     )
                     return adminTenantActivity
                 },

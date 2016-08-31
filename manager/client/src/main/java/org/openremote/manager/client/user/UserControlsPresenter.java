@@ -19,13 +19,10 @@
  */
 package org.openremote.manager.client.user;
 
-import com.google.gwt.place.shared.PlaceController;
 import com.google.inject.Inject;
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.ManagerHistoryMapper;
 import org.openremote.manager.client.event.UserChangeEvent;
-import org.openremote.manager.client.event.bus.EventBus;
-import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.shared.event.ui.ShowFailureEvent;
 
 import java.util.logging.Logger;
@@ -34,30 +31,27 @@ public class UserControlsPresenter implements UserControls.Presenter {
 
     private static final Logger LOG = Logger.getLogger(UserControlsPresenter.class.getName());
 
-    final protected UserControls view;
-    final protected SecurityService securityService;
-    final protected PlaceController placeController;
+    final protected Environment environment;
     final protected ManagerHistoryMapper managerHistoryMapper;
+    final protected UserControls view;
 
     @Inject
-    public UserControlsPresenter(UserControls view,
-                                 SecurityService securityService,
-                                 PlaceController placeController,
+    public UserControlsPresenter(Environment environment,
                                  ManagerHistoryMapper managerHistoryMapper,
-                                 ManagerMessages managerMessages,
-                                 EventBus eventBus) {
-        this.view = view;
-        this.securityService = securityService;
-        this.placeController = placeController;
+                                 UserControls view) {
+        this.environment = environment;
         this.managerHistoryMapper = managerHistoryMapper;
+        this.view = view;
 
         view.setPresenter(this);
 
         updateView();
 
-        eventBus.register(UserChangeEvent.class, event -> {
+        environment.getEventBus().register(UserChangeEvent.class, event -> {
             if (event.getUsername() == null) {
-                eventBus.dispatch(new ShowFailureEvent(managerMessages.sessionTimedOut()));
+                environment.getEventBus().dispatch(
+                    new ShowFailureEvent(environment.getMessages().sessionTimedOut())
+                );
             } else {
                 updateView();
             }
@@ -71,15 +65,15 @@ public class UserControlsPresenter implements UserControls.Presenter {
 
     @Override
     public void doLogout() {
-        securityService.logout();
+        environment.getSecurityService().logout();
     }
 
     protected void updateView() {
         view.setUserDetails(
-            securityService.getParsedToken().getPreferredUsername(),
-            securityService.getParsedToken().getName(),
+            environment.getSecurityService().getParsedToken().getPreferredUsername(),
+            environment.getSecurityService().getParsedToken().getName(),
             managerHistoryMapper.getToken(new UserAccountPlace()),
-            securityService.hasResourceRole("manage-account", "account")
+            environment.getSecurityService().hasResourceRole("manage-account", "account")
         );
     }
 

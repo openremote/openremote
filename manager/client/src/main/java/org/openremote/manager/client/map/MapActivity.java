@@ -19,16 +19,14 @@
  */
 package org.openremote.manager.client.map;
 
-import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
-import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
-import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.map.MapResource;
 
@@ -40,23 +38,18 @@ import static org.openremote.manager.client.http.RequestExceptionHandler.handleR
 public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implements MapView.Presenter {
 
     final MapResource mapResource;
-    final PlaceController placeController;
     final JsonObjectMapper jsonObjectMapper;
 
     @Inject
-    public MapActivity(EventBus eventBus,
-                       ManagerMessages managerMessages,
-                       RequestService requestService,
-                       PlaceController placeController,
+    public MapActivity(Environment environment,
                        MapView view,
                        AssetBrowser.Presenter assetBrowserPresenter,
                        AssetResource assetResource,
                        AssetMapper assetMapper,
                        MapResource mapResource,
                        JsonObjectMapper jsonObjectMapper) {
-        super(eventBus, managerMessages, requestService, view, assetBrowserPresenter, assetResource, assetMapper);
+        super(environment, view, assetBrowserPresenter, assetResource, assetMapper);
         this.mapResource = mapResource;
-        this.placeController = placeController;
         this.jsonObjectMapper = jsonObjectMapper;
     }
 
@@ -64,14 +57,12 @@ public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implem
     public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
         super.start(container, eventBus, registrations);
 
-        //registrations.add(eventBus.register(GoToPlaceEvent.class, event -> view.refresh()));
-
         if (getView().isMapInitialised()) {
             getView().refresh();
             return;
         }
 
-        requestService.execute(
+        environment.getRequestService().execute(
             jsonObjectMapper,
             mapResource::getSettings,
             200,
@@ -80,7 +71,7 @@ public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implem
                 if (asset != null)
                     showAssetOnMap();
             },
-            ex -> handleRequestException(ex, eventBus, managerMessages)
+            ex -> handleRequestException(ex, environment)
         );
     }
 
@@ -96,7 +87,7 @@ public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implem
 
     @Override
     protected void onAssetSelectionChange(String selectedAssetId) {
-        placeController.goTo(new MapPlace(selectedAssetId));
+        environment.getPlaceController().goTo(new MapPlace(selectedAssetId));
     }
 
     protected void showAssetOnMap() {
