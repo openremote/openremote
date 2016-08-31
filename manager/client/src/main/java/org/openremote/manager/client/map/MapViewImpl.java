@@ -23,13 +23,13 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
-import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.Label;
 import elemental.json.JsonObject;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.widget.FlexSplitPanel;
+import org.openremote.manager.client.widget.MapWidget;
 import org.openremote.manager.shared.map.GeoJSON;
 
 import javax.inject.Inject;
@@ -56,8 +56,6 @@ public class MapViewImpl extends Composite implements MapView {
 
     final AssetBrowser assetBrowser;
 
-
-    Timer refreshTimer;
     Presenter presenter;
 
     @Inject
@@ -67,19 +65,7 @@ public class MapViewImpl extends Composite implements MapView {
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
 
-        splitPanel.setOnResize(() -> {
-            // Deduplicate this event to avoid refreshing the map for every pixel move of the sidebar
-            if (refreshTimer != null && refreshTimer.isRunning()) {
-                refreshTimer.cancel();
-            }
-            refreshTimer = new Timer() {
-                @Override
-                public void run() {
-                    refresh();
-                }
-            };
-            refreshTimer.schedule(10);
-        });
+        splitPanel.setOnResize(this::refresh);
 
         mapLoadingLabel.setVisible(true);
         mapWidget.setVisible(false);
@@ -93,6 +79,8 @@ public class MapViewImpl extends Composite implements MapView {
             sidebarContainer.add(assetBrowser.asWidget());
         } else {
             sidebarContainer.clear();
+            hideFeaturesAll();
+            hideFeaturesSelection();
         }
     }
 
@@ -101,8 +89,9 @@ public class MapViewImpl extends Composite implements MapView {
         mapLoadingLabel.setVisible(false);
         Scheduler.get().scheduleDeferred(() -> {
             mapWidget.initialise(mapOptions);
+            mapWidget.addNavigationControl();
             mapWidget.setVisible(true);
-            mapWidget.refresh();
+            mapWidget.resize();
         });
     }
 
@@ -113,9 +102,7 @@ public class MapViewImpl extends Composite implements MapView {
 
     @Override
     public void refresh() {
-        if (!isMapInitialised())
-            return;
-        mapWidget.refresh();
+        mapWidget.resize();
     }
 
     @Override
@@ -136,5 +123,10 @@ public class MapViewImpl extends Composite implements MapView {
     @Override
     public void hideFeaturesSelection() {
         showFeaturesSelection(GeoJSON.EMPTY_FEATURE_COLLECTION);
+    }
+
+    @Override
+    public void flyTo(double[] coordinates) {
+        mapWidget.flyTo(coordinates);
     }
 }

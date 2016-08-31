@@ -39,8 +39,7 @@ public class ServerAsset extends Asset {
     @JsonIgnore
     protected ServerAsset parent;
 
-    @NotNull
-    @Column(name = "LOCATION", nullable = false)
+    @Column(name = "LOCATION")
     @Access(AccessType.PROPERTY)
     @JsonIgnore
     protected Point location;
@@ -62,10 +61,14 @@ public class ServerAsset extends Asset {
 
     public void setLocation(Point location) {
         this.location = location;
-        setCoordinates(
-            location.getCoordinate().getOrdinate(Coordinate.X),
-            location.getCoordinate().getOrdinate(Coordinate.Y)
-        );
+        if (location == null) {
+            setCoordinates();
+        } else {
+            setCoordinates(
+                location.getCoordinate().getOrdinate(Coordinate.X),
+                location.getCoordinate().getOrdinate(Coordinate.Y)
+            );
+        }
     }
 
 }

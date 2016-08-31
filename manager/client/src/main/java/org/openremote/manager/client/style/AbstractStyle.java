@@ -143,6 +143,10 @@ public abstract class AbstractStyle {
         return getPrefix() + "FormInputText";
     }
 
+    public String FormValueLabel() {
+        return getPrefix() + "FormValueLabel";
+    }
+
     public String FormDropDown() {
         return getPrefix() + "FormDropDown";
     }
@@ -341,5 +345,9 @@ public abstract class AbstractStyle {
 
     public String SplitPanelHandle() {
         return getPrefix() + "SplitPanelHandle";
+    }
+
+    public String ItemWithBorder() {
+        return getPrefix() + "ItemWithBorder";
     }
 }

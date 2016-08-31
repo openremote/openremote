@@ -199,8 +199,7 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
         1 * adminTenantView.setPresenter(_ as AdminTenantActivity)
 
         and: "The admin tenant form should be cleared"
-        1 * adminTenantView.clearFormMessagesSuccess()
-        1 * adminTenantView.clearFormMessagesError()
+        1 * adminTenantView.clearFormMessages()
         1 * adminTenantView.setTenantDisplayNameError(false)
         1 * adminTenantView.setTenantRealmError(false)
         1 * adminTenantView.setTenantEnabledError(false)
@@ -219,8 +218,7 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
 
         then: "The activity reads the tenant form"
         1 * adminTenantView.setFormBusy(true)
-        1 * adminTenantView.clearFormMessagesSuccess()
-        1 * adminTenantView.clearFormMessagesError()
+        1 * adminTenantView.clearFormMessages()
         1 * adminTenantView.setTenantDisplayNameError(false)
         1 * adminTenantView.setTenantRealmError(false)
         1 * adminTenantView.setTenantEnabledError(false)
@@ -245,8 +243,7 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
 
         then: "The activity reads the tenant form"
         1 * adminTenantView.setFormBusy(true)
-        1 * adminTenantView.clearFormMessagesSuccess()
-        1 * adminTenantView.clearFormMessagesError()
+        1 * adminTenantView.clearFormMessages()
         1 * adminTenantView.setTenantDisplayNameError(false)
         1 * adminTenantView.setTenantRealmError(false)
         1 * adminTenantView.setTenantEnabledError(false)
@@ -267,8 +264,7 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
         and: "The form should be cleared the activity stopped"
         1 * adminTenantView.setFormBusy(false)
         1 * adminTenantView.setPresenter(null)
-        1 * adminTenantView.clearFormMessagesSuccess()
-        1 * adminTenantView.clearFormMessagesError()
+        1 * adminTenantView.clearFormMessages();
         1 * adminTenantView.setTenantDisplayNameError(false)
         1 * adminTenantView.setTenantRealmError(false)
         1 * adminTenantView.setTenantEnabledError(false)
@@ -301,8 +297,7 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
         result.appEvents[1].place.realm == "testrealm"
 
         and: "The admin tenant form should be cleared"
-        1 * adminTenantView.clearFormMessagesSuccess()
-        1 * adminTenantView.clearFormMessagesError()
+        1 * adminTenantView.clearFormMessages()
         1 * adminTenantView.setTenantDisplayNameError(false)
         1 * adminTenantView.setTenantRealmError(false)
         1 * adminTenantView.setTenantEnabledError(false)
@@ -325,8 +320,7 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
 
         then: "The activity reads the tenant form"
         1 * adminTenantView.setFormBusy(true)
-        1 * adminTenantView.clearFormMessagesSuccess()
-        1 * adminTenantView.clearFormMessagesError()
+        1 * adminTenantView.clearFormMessages()
         1 * adminTenantView.setTenantDisplayNameError(false)
         1 * adminTenantView.setTenantRealmError(false)
         1 * adminTenantView.setTenantEnabledError(false)
@@ -350,8 +344,7 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
 
         then: "The activity reads the tenant form"
         1 * adminTenantView.setFormBusy(true)
-        1 * adminTenantView.clearFormMessagesSuccess()
-        1 * adminTenantView.clearFormMessagesError()
+        1 * adminTenantView.clearFormMessages()
         1 * adminTenantView.setTenantDisplayNameError(false)
         1 * adminTenantView.setTenantRealmError(false)
         1 * adminTenantView.setTenantEnabledError(false)
@@ -375,8 +368,7 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
 
         then: "The activity clears the tenant form messages"
         1 * adminTenantView.setFormBusy(true)
-        1 * adminTenantView.clearFormMessagesSuccess()
-        1 * adminTenantView.clearFormMessagesError()
+        1 * adminTenantView.clearFormMessages()
         1 * adminTenantView.setTenantDisplayNameError(false)
         1 * adminTenantView.setTenantRealmError(false)
         1 * adminTenantView.setTenantEnabledError(false)
@@ -388,8 +380,7 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
         and: "The form should be cleared the activity stopped"
         1 * adminTenantView.setFormBusy(false)
         1 * adminTenantView.setPresenter(null)
-        1 * adminTenantView.clearFormMessagesSuccess()
-        1 * adminTenantView.clearFormMessagesError()
+        1 * adminTenantView.clearFormMessages()
         1 * adminTenantView.setTenantDisplayNameError(false)
         1 * adminTenantView.setTenantRealmError(false)
         1 * adminTenantView.setTenantEnabledError(false)

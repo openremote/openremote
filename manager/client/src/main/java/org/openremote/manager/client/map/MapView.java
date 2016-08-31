@@ -42,4 +42,6 @@ public interface MapView extends AssetBrowsingView<MapView.Presenter> {
 
     void hideFeaturesSelection();
 
+    void flyTo(double[] coordinates);
+
 }

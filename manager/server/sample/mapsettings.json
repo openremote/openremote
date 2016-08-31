@@ -1,8 +1,9 @@
 {
   "center": [5.4774, 51.4370],
-  "maxBounds": [5.3547, 51.3757, 5.586, 51.5364],
+  "maxBounds": [5.2819, 51.3357, 5.7354, 51.5530],
   "zoom": 12,
   "maxZoom": 18,
+  "boxZoom": false,
   "style": {
     "sprite": "/static/sprites/bright-v9",
     "layers": [
@@ -220,39 +221,6 @@
         }
       },
       {
-        "id": "tunnel_minor",
-        "type": "line",
-        "source": "vector_tiles",
-        "source-layer": "tunnel",
-        "filter": [
-          "all", ["==", "$type", "LineString"],
-          ["in", "class", "motorway_link", "street", "street_limited", "service", "driveway", "path"]
-        ],
-        "paint": {
-          "line-color": "#666",
-          "line-width": {
-            "base": 1.55,
-            "stops": [[4, 0.25], [20, 30]]
-          },
-          "line-dasharray": [0.36, 0.18]
-        }
-      },
-      {
-        "id": "tunnel_major",
-        "type": "line",
-        "source": "vector_tiles",
-        "source-layer": "tunnel",
-        "filter": ["all", ["==", "$type", "LineString"], ["in", "class", "motorway", "main"]],
-        "paint": {
-          "line-color": "#666",
-          "line-width": {
-            "base": 1.4,
-            "stops": [[6, 0.5], [20, 30]]
-          },
-          "line-dasharray": [0.28, 0.14]
-        }
-      },
-      {
         "id": "road_minor",
         "type": "line",
         "source": "vector_tiles",
@@ -319,84 +287,6 @@
             "stops": [[6, 0.5], [20, 10]]
           },
           "line-dasharray": [3, 3]
-        }
-      },
-      {
-        "id": "bridge_minor_case",
-        "type": "line",
-        "source": "vector_tiles",
-        "source-layer": "bridge",
-        "filter": [
-          "all", ["==", "$type", "LineString"],
-          ["in", "class", "motorway_link", "street", "street_limited", "service", "driveway", "path"]
-        ],
-        "paint": {
-          "line-color": "#bbc",
-          "line-width": {
-            "base": 1.6,
-            "stops": [[12, 0.5], [20, 10]]
-          },
-          "line-gap-width": {
-            "base": 1.55,
-            "stops": [[4, 0.25], [20, 15]]
-          }
-        }
-      },
-      {
-        "id": "bridge_major_case",
-        "type": "line",
-        "source": "vector_tiles",
-        "source-layer": "bridge",
-        "filter": ["all", ["==", "$type", "LineString"], ["in", "class", "motorway", "main", "major_rail"]],
-        "paint": {
-          "line-color": "#bbc",
-          "line-width": {
-            "base": 1.4,
-            "stops": [[12, 0.5], [20, 10]]
-          },
-          "line-gap-width": {
-            "base": 1.4,
-            "stops": [[6, 0.5], [20, 20]]
-          }
-        }
-      },
-      {
-        "id": "bridge_minor",
-        "type": "line",
-        "source": "vector_tiles",
-        "source-layer": "bridge",
-        "filter": [
-          "all", ["==", "$type", "LineString"],
-          ["in", "class", "motorway_link", "street", "street_limited", "service", "driveway", "path"]
-        ],
-        "layout": {
-          "line-cap": "round",
-          "line-join": "round"
-        },
-        "paint": {
-          "line-color": "#889",
-          "line-width": {
-            "base": 1.55,
-            "stops": [[4, 0.25], [20, 15]]
-          }
-        }
-      },
-      {
-        "id": "bridge_major",
-        "type": "line",
-        "source": "vector_tiles",
-        "source-layer": "bridge",
-        "filter": ["all", ["==", "$type", "LineString"], ["in", "class", "motorway", "main", "major_rail"]],
-        "layout": {
-          "line-cap": "round",
-          "line-join": "round"
-        },
-        "paint": {
-          "line-color": "#889",
-          "line-width": {
-            "base": 1.4,
-            "stops": [[6, 0.5], [20, 20]]
-          }
         }
       },
       {
@@ -493,7 +383,7 @@
         "layout": {
           "text-field": "{name_en}",
           "text-font": ["Open Sans Semibold"],
-          "text-max-width": 6,
+          "text-max-width": 10,
           "text-size": {
             "stops": [[6, 12], [12, 16]]
           }
@@ -515,7 +405,7 @@
         "layout": {
           "text-field": "{name_en}",
           "text-font": ["Open Sans Bold"],
-          "text-max-width": 10,
+          "text-max-width": 20,
           "text-size": {
             "stops": [[3, 12], [8, 25]]
           }
@@ -537,7 +427,7 @@
         "layout": {
           "text-field": "{name_en}",
           "text-font": ["Open Sans Regular"],
-          "text-max-width": 10,
+          "text-max-width": 20,
           "text-size": {
             "stops": [[3, 14], [8, 22]]
           }

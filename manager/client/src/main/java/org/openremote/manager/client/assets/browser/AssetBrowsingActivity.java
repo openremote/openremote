@@ -26,8 +26,12 @@ import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.service.RequestService;
+import org.openremote.manager.client.util.TextUtil;
 import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.asset.AssetResource;
+import org.openremote.manager.shared.map.GeoJSON;
+import org.openremote.manager.shared.map.GeoJSONFeature;
+import org.openremote.manager.shared.map.GeoJSONGeometry;
 
 import java.util.Collection;
 import java.util.logging.Logger;
@@ -149,8 +153,7 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
      * Noop by default
      */
     protected void onBeforeAssetLoad() {
-
-    };
+    }
 
     abstract protected void onAssetLoaded();
 
@@ -159,7 +162,26 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
     abstract protected void onAssetSelectionChange(String selectedAssetId);
 
     protected void startCreateAsset() {
-        assetBrowserPresenter.selectAsset(null, null);
+        assetBrowserPresenter.deselectAsset();
+    }
+
+    protected GeoJSON getFeature(Asset asset) {
+        if (asset == null
+            || asset.getId() == null
+            || asset.getName() == null
+            || asset.getCoordinates() == null)
+            return GeoJSON.EMPTY_FEATURE_COLLECTION;
+
+        return new GeoJSON().setType("FeatureCollection").setFeatures(
+            new GeoJSONFeature().setType("Feature")
+                .setProperty("id", asset.getId())
+                .setProperty("title", TextUtil.ellipsize(asset.getName(), 20))
+                .setGeometry(
+                    new GeoJSONGeometry().setPoint(
+                        asset.getCoordinates()
+                    )
+                )
+        );
     }
 
 }

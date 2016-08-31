@@ -69,9 +69,12 @@ public class GeoJSONFeature {
     }
 
     public GeoJSONFeature setGeometry(GeoJSONGeometry geometry) {
-        jsonObject.put("geometry", geometry.getJsonObject());
+        if (geometry != null) {
+            jsonObject.put("geometry", geometry.getJsonObject());
+        } else {
+            jsonObject.remove("geometry");
+        }
         return this;
-
     }
 
     @Override

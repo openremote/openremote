@@ -20,10 +20,11 @@
 package org.openremote.manager.client.admin.agent;
 
 import org.openremote.manager.client.admin.AdminContent;
+import org.openremote.manager.client.widget.FormView;
 import org.openremote.manager.shared.connector.Connector;
 import org.openremote.manager.shared.connector.ConnectorImpl;
 
-public interface AdminAgent extends AdminContent {
+public interface AdminAgent extends AdminContent, FormView {
 
     interface Presenter {
 
@@ -39,16 +40,6 @@ public interface AdminAgent extends AdminContent {
     }
 
     void setPresenter(Presenter presenter);
-
-    void setFormBusy(boolean busy);
-
-    void addFormMessageError(String message);
-
-    void addFormMessageSuccess(String message);
-
-    void clearFormMessagesError();
-
-    void clearFormMessagesSuccess();
 
     void setConnectors(ConnectorImpl[] connectors);
 

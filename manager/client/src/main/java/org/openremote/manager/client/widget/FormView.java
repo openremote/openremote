@@ -19,58 +19,17 @@
  */
 package org.openremote.manager.client.widget;
 
-import com.google.gwt.dom.client.Document;
-import com.google.gwt.uibinder.client.UiField;
-import com.google.gwt.user.client.ui.Composite;
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.InlineLabel;
-import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.style.ThemeStyle;
-import org.openremote.manager.client.style.WidgetStyle;
+public interface FormView {
 
-public class FormView extends Composite {
+    void setFormBusy(boolean busy);
 
-    @UiField
-    public WidgetStyle widgetStyle;
+    void addFormMessageError(String message);
 
-    @UiField
-    public ThemeStyle themeStyle;
+    void addFormMessageSuccess(String message);
 
-    @UiField
-    public ManagerMessages managerMessages;
+    void clearFormMessagesError();
 
-    @UiField
-    public Form form;
+    void clearFormMessagesSuccess();
 
-    @UiField
-    public FlowPanel formMessagesSuccess;
-
-    @UiField
-    public FlowPanel formMessagesError;
-
-    public void setFormBusy(boolean busy) {
-        form.setBusy(busy);
-    }
-
-    public void addFormMessageError(String message) {
-        formMessagesError.add(new InlineLabel(message));
-        formMessagesError.getElement().appendChild(Document.get().createBRElement());
-        formMessagesError.getParent().setVisible(true);
-    }
-
-    public void addFormMessageSuccess(String message) {
-        formMessagesSuccess.add(new InlineLabel(message));
-        formMessagesSuccess.getElement().appendChild(Document.get().createBRElement());
-        formMessagesSuccess.getParent().setVisible(true);
-    }
-
-    public void clearFormMessagesError() {
-        formMessagesError.clear();
-        formMessagesError.getParent().setVisible(false);
-    }
-
-    public void clearFormMessagesSuccess() {
-        formMessagesSuccess.clear();
-        formMessagesSuccess.getParent().setVisible(false);
-    }
+    void clearFormMessages();
 }

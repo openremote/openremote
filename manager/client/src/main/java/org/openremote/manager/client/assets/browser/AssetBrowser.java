@@ -37,6 +37,8 @@ public interface AssetBrowser extends IsWidget {
 
         void selectAsset(String assetId, String[] path);
 
+        void deselectAsset();
+
         EventRegistration<AssetSelectedEvent> onSelection(EventListener<AssetSelectedEvent> listener);
 
         void removeRegistration(EventRegistration registration);
@@ -47,4 +49,7 @@ public interface AssetBrowser extends IsWidget {
     void showAndSelectAsset(String[] path, String selectedAssetId, boolean scrollIntoView);
 
     void deselectAssets();
+
+    void refreshAssets(boolean isRootRefresh);
+
 }

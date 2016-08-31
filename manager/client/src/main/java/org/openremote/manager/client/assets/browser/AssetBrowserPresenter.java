@@ -22,6 +22,7 @@ package org.openremote.manager.client.assets.browser;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.view.client.HasData;
 import org.openremote.manager.client.assets.AssetInfoArrayMapper;
+import org.openremote.manager.client.assets.event.AssetsModifiedEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventListener;
 import org.openremote.manager.client.event.bus.EventRegistration;
@@ -69,6 +70,12 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         this.view = view;
         this.assetResource = assetResource;
         this.assetInfoArrayMapper = assetInfoArrayMapper;
+
+        eventBus.register(AssetsModifiedEvent.class, event -> {
+            view.refreshAssets(
+                event.getAsset() == null || event.getAsset().getParentId() == null
+            );
+        });
 
         view.setPresenter(this);
     }
@@ -132,6 +139,11 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         } else {
             view.deselectAssets();
         }
+    }
+
+    @Override
+    public void deselectAsset() {
+        selectAsset(null, null);
     }
 
     @Override

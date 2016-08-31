@@ -27,7 +27,7 @@ import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.*;
 import org.openremote.manager.client.widget.FormGroup;
-import org.openremote.manager.client.widget.FormView;
+import org.openremote.manager.client.widget.FormViewImpl;
 import org.openremote.manager.client.widget.PushButton;
 
 import javax.inject.Inject;
@@ -36,7 +36,7 @@ import java.util.Map;
 
 import static com.google.gwt.dom.client.Style.Display.NONE;
 
-public class AdminUserImpl extends FormView implements AdminUser {
+public class AdminUserImpl extends FormViewImpl implements AdminUser {
 
     interface UI extends UiBinder<HTMLPanel, AdminUserImpl> {
     }

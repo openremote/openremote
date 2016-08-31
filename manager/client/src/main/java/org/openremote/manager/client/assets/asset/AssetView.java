@@ -19,11 +19,18 @@
  */
 package org.openremote.manager.client.assets.asset;
 
+import elemental.json.JsonObject;
 import org.openremote.manager.client.assets.browser.AssetBrowsingView;
+import org.openremote.manager.client.widget.FormView;
+import org.openremote.manager.shared.map.GeoJSON;
 
-public interface AssetView extends AssetBrowsingView<AssetView.Presenter> {
+import java.util.Date;
+
+public interface AssetView extends AssetBrowsingView<AssetView.Presenter>, FormView {
 
     interface Presenter extends AssetBrowsingView.Presenter {
+
+        void onMapClicked(double lng, double lat);
 
         void update();
 
@@ -32,15 +39,36 @@ public interface AssetView extends AssetBrowsingView<AssetView.Presenter> {
         void delete();
     }
 
-    void setFormBusy(boolean busy);
-
     void setName(String name);
 
     String getName();
+
+    void setCreatedOn(Date createdOn);
+
+    void setType(String type);
+
+    String getType();
+
+    void setLocation(String location);
+
+    void initialiseMap(JsonObject mapOptions);
+
+    boolean isMapInitialised();
+
+    void showMapPopup(double lng, double lat, String text);
+
+    void hideMapPopup();
+
+    void showFeaturesSelection(GeoJSON mapFeatures);
+
+    void hideFeaturesSelection();
+
+    void flyTo(double[] coordinates);
 
     void enableCreate(boolean enable);
 
     void enableUpdate(boolean enable);
 
     void enableDelete(boolean enable);
+
 }

@@ -24,17 +24,12 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
-import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
 import org.openremote.manager.client.service.RequestService;
-import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.asset.AssetResource;
-import org.openremote.manager.shared.map.GeoJSON;
-import org.openremote.manager.shared.map.GeoJSONFeature;
-import org.openremote.manager.shared.map.GeoJSONGeometry;
 import org.openremote.manager.shared.map.MapResource;
 
 import javax.inject.Inject;
@@ -69,7 +64,7 @@ public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implem
     public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
         super.start(container, eventBus, registrations);
 
-        registrations.add(eventBus.register(GoToPlaceEvent.class, event -> view.refresh()));
+        //registrations.add(eventBus.register(GoToPlaceEvent.class, event -> view.refresh()));
 
         if (getView().isMapInitialised()) {
             getView().refresh();
@@ -80,25 +75,23 @@ public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implem
             jsonObjectMapper,
             mapResource::getSettings,
             200,
-            view::initialiseMap,
+            mapSettings -> {
+                view.initialiseMap(mapSettings);
+                if (asset != null)
+                    showAssetOnMap();
+            },
             ex -> handleRequestException(ex, eventBus, managerMessages)
         );
     }
 
     @Override
-    protected void startCreateAsset() {
-        super.startCreateAsset();
-        getView().hideFeaturesSelection();
-    }
-
-    @Override
     protected void onAssetLoaded() {
-        getView().showFeaturesSelection(getFeature(asset));
+        showAssetOnMap();
     }
 
     @Override
     protected void onAssetsDeselected() {
-        getView().hideFeaturesSelection();
+        hideAssetOnMap();
     }
 
     @Override
@@ -106,13 +99,15 @@ public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implem
         placeController.goTo(new MapPlace(selectedAssetId));
     }
 
-    private GeoJSON getFeature(Asset asset) {
-        return new GeoJSON().setType("FeatureCollection").setFeatures(
-            new GeoJSONFeature().setType("Feature")
-                .setProperty("id", asset.getId())
-                .setProperty("title", asset.getName())
-                .setGeometry(new GeoJSONGeometry().setPoint(asset.getCoordinates()))
-        );
+    protected void showAssetOnMap() {
+        if (asset != null && asset.getCoordinates() != null) {
+            getView().showFeaturesSelection(getFeature(asset));
+            getView().flyTo(asset.getCoordinates());
+        }
+    }
+
+    protected void hideAssetOnMap() {
+        getView().hideFeaturesSelection();
     }
 
 }

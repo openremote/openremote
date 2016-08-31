@@ -33,7 +33,7 @@
                         <w:PushButton ui:field="createButton"
                                       addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
                                       text="{managerMessages.newTenant}"
-                                      icon="group"/>
+                                      icon="plus-square"/>
                     </w:FormField>
                 </w:field>
             </w:FormGroup>
