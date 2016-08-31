@@ -35,9 +35,6 @@ public class Controller2Service implements ContainerService {
     public void configure(Container container) throws Exception {
         MessageBrokerService messageBrokerService = container.getService(MessageBrokerService.class);
         MessageBrokerContext context = messageBrokerService.getContext();
-
-        configure(context);
-
         messageProducerTemplate = context.createProducerTemplate();
 
         context.addRoutes(new RouteBuilder() {
@@ -88,10 +85,6 @@ public class Controller2Service implements ContainerService {
                         .to("mockController2:10.0.0.123:8080");
             }
         });
-    }
-
-    protected void configure(MessageBrokerContext context) {
-        context.addComponent("mockController2", new Controller2Component());
     }
 
     @Override

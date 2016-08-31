@@ -8,7 +8,9 @@ public enum AssetType {
 
     GENERIC("urn:openremote:asset:generic"),
     BUILDING("urn:openremote:asset:building"),
-    ROOM("urn:openremote:asset:room");
+    ROOM("urn:openremote:asset:room"),
+    AGENT("urn:openremote:asset:agent"),
+    DEVICE("urn:openremote:asset:device");
 
     final protected String value;
 

@@ -1,5 +1,8 @@
 package org.openremote.manager.shared.device;
 
+import org.openremote.manager.shared.attribute.Attribute;
+import org.openremote.manager.shared.attribute.Attributes;
+
 import java.util.Map;
 
 /**
@@ -15,13 +18,18 @@ import java.util.Map;
  * 3311 = Light Control
  */
 public class Capability implements CapabilityDefinition {
-    protected int id;
+    protected String type;
     protected String name;
     protected String description;
-    protected Map<Integer, Resource> resources;
+    protected Attributes resources;
 
-    public int getId() {
-        return id;
+    @Override
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     public String getName() {
@@ -32,12 +40,8 @@ public class Capability implements CapabilityDefinition {
         return description;
     }
 
-    public Map<Integer, Resource> getResources() {
+    public Attributes getResources() {
         return resources;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     public void setName(String name) {
@@ -48,19 +52,7 @@ public class Capability implements CapabilityDefinition {
         this.description = description;
     }
 
-    public void setResources(Map<Integer, Resource> resources) {
+    public void setResources(Attributes resources) {
         this.resources = resources;
-    }
-
-    public void addResource(int id, Resource resource) {
-        resources.put(id, resource);
-    }
-
-    public void removeResource(int id) {
-        resources.remove(id);
-    }
-
-    public void removeResource(Resource resource) {
-        resources.entrySet().stream().filter(entry -> entry.getValue().equals(resource)).map(Map.Entry::getKey).forEach(resources::remove);
     }
 }

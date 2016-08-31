@@ -1,13 +1,11 @@
 package org.openremote.manager.shared.device;
 
-import java.util.Map;
+import org.openremote.manager.shared.attribute.Attributes;
 
 public interface CapabilityDefinition {
-    int getId();
-
-    String getName();
+    String getType();
 
     String getDescription();
 
-    Map<Integer, Resource> getResources();
+    Attributes getResources();
 }

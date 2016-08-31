@@ -25,9 +25,9 @@ import org.openremote.console.controller.ControllerConnectionStatus;
 import org.openremote.console.controller.DeviceRegistrationHandle;
 import org.openremote.console.controller.auth.UserPasswordCredentials;
 import org.openremote.entities.controller.*;
+import org.openremote.manager.shared.attribute.AttributeType;
 import org.openremote.manager.shared.device.Device;
 import org.openremote.manager.shared.device.DeviceResource;
-import org.openremote.manager.shared.device.Resource;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -525,8 +525,7 @@ public class Controller2Adapter {
                                 .findFirst()
                                 .orElseGet(() -> null);
 
-                DeviceResource dr = new DeviceResource();
-                dr.setName(sensor.getName());
+                DeviceResource dr = new DeviceResource(sensor.getName());
                 dr.setUri(sensor.getName().toLowerCase());
                 DeviceResourceMapping resourceMapping = new DeviceResourceMapping();
                 resourceMapping.resource = dr;
@@ -553,17 +552,17 @@ public class Controller2Adapter {
 
                 switch(sensor.getType()) {
                     case SWITCH:
-                        dr.setType(Resource.Type.BOOLEAN);
-                        dr.setAccess(matchingWidgetInfo != null ? Resource.Access.RW : Resource.Access.R);
+                        dr.setType(AttributeType.BOOLEAN);
+                        dr.setAccess(matchingWidgetInfo != null ? DeviceResource.Access.RW : DeviceResource.Access.R);
                         break;
                     case RANGE:
                     case LEVEL:
-                        dr.setType(Resource.Type.INTEGER);
-                        dr.setAccess(matchingWidgetInfo != null ? Resource.Access.RW : Resource.Access.R);
+                        dr.setType(AttributeType.INTEGER);
+                        dr.setAccess(matchingWidgetInfo != null ? DeviceResource.Access.RW : DeviceResource.Access.R);
                         break;
                     default:
-                        dr.setType(Resource.Type.STRING);
-                        dr.setAccess(Resource.Access.R);
+                        dr.setType(AttributeType.STRING);
+                        dr.setAccess(DeviceResource.Access.R);
                         break;
                 }
             }
@@ -573,11 +572,10 @@ public class Controller2Adapter {
             Stream<Command> unassignedCommands = gatewayDevice.getCommands().stream().filter(command -> !assignedCommands.contains(command.getId()));
 
             unassignedCommands.forEach(command -> {
-                DeviceResource dr = new DeviceResource();
-                dr.setName(command.getName());
+                DeviceResource dr = new DeviceResource(command.getName());
                 dr.setUri(command.getName().toLowerCase());
                 dr.setType(null);
-                dr.setAccess(Resource.Access.W);
+                dr.setAccess(DeviceResource.Access.W);
 
                 DeviceResourceMapping resourceMapping = new DeviceResourceMapping();
                 resourceMapping.resource = dr;
@@ -586,7 +584,7 @@ public class Controller2Adapter {
                 deviceMapping.resourceMap.put(dr.getUri(), resourceMapping);
             });
 
-            device.setResources(resources);
+            device.setResources(resources.toArray(new DeviceResource[resources.size()]));
         }
     }
 
