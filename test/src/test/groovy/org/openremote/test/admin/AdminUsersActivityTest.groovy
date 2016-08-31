@@ -538,7 +538,12 @@ class AdminUsersActivityTest extends Specification implements ContainerTrait, Cl
         result.appEvents.clear()
         adminUserActivity.delete()
 
-        then: "The activity clears the form messages"
+        then: "The activity shows a confirmation dialog"
+        1 * adminUserView.showConfirmation(_, _, !null) >> {
+            it[2].run()
+        }
+
+        and: "The activity clears the form messages"
         1 * adminUserView.setFormBusy(true)
         1 * adminUserView.clearFormMessages()
         1 * adminUserView.setUsernameError(false)

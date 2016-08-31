@@ -23,6 +23,10 @@ import com.google.gwt.user.client.ui.UIObject;
 
 public interface AppPanel {
 
+    void setAutoHide(boolean autoHide);
+
+    void setModal(boolean modal);
+
     boolean isShowing();
 
     void show();
@@ -32,6 +36,8 @@ public interface AppPanel {
     void toggle();
 
     void toggleRelativeTo(UIObject target);
+
+    void showCenter();
 
     void hide();
 

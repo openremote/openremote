@@ -69,6 +69,8 @@ public interface ManagerMessages extends Messages {
 
     String deleteTenant();
 
+    String OK();
+
     String cancel();
 
     String filter();
@@ -206,4 +208,8 @@ public interface ManagerMessages extends Messages {
     String location();
 
     String selectLocation();
+
+    String confirmation();
+
+    String confirmationDelete(String label);
 }

@@ -26,6 +26,8 @@ import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.*;
+import com.google.inject.Provider;
+import org.openremote.manager.client.app.dialog.ConfirmationDialog;
 import org.openremote.manager.client.widget.FormGroup;
 import org.openremote.manager.client.widget.FormViewImpl;
 import org.openremote.manager.client.widget.PushButton;
@@ -100,10 +102,12 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
     PushButton cancelButton;
 
     final protected Map<String, SimpleCheckBox> roles = new LinkedHashMap<>();
+
     protected Presenter presenter;
 
     @Inject
-    public AdminUserImpl() {
+    public AdminUserImpl(Provider<ConfirmationDialog> confirmationDialogProvider) {
+        super(confirmationDialogProvider);
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
     }

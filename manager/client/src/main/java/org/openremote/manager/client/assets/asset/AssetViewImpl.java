@@ -30,9 +30,12 @@ import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.TextBox;
+import com.google.inject.Provider;
 import elemental.json.JsonObject;
+import org.openremote.manager.client.app.dialog.ConfirmationDialog;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.widget.*;
+import org.openremote.manager.shared.Runnable;
 import org.openremote.manager.shared.map.GeoJSON;
 
 import javax.inject.Inject;
@@ -99,7 +102,8 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
     Presenter presenter;
 
     @Inject
-    public AssetViewImpl(AssetBrowser assetBrowser) {
+    public AssetViewImpl(AssetBrowser assetBrowser, Provider<ConfirmationDialog> confirmationDialogProvider) {
+        super(confirmationDialogProvider);
         this.assetBrowser = assetBrowser;
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
@@ -184,6 +188,11 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
     @Override
     public boolean isMapInitialised() {
         return mapWidget.isInitialised();
+    }
+
+    @Override
+    public void refreshMap() {
+        mapWidget.resize();
     }
 
     @Override

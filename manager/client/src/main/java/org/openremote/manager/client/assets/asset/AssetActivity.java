@@ -21,6 +21,7 @@ package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import org.openremote.manager.client.app.dialog.ConfirmationDialog;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
@@ -84,6 +85,8 @@ public class AssetActivity
                 view::initialiseMap,
                 ex -> handleRequestException(ex, eventBus, managerMessages)
             );
+        } else {
+            view.refreshMap();
         }
     }
 
@@ -193,23 +196,29 @@ public class AssetActivity
 
     @Override
     public void delete() {
-        view.setFormBusy(true);
-        view.clearFormMessages();
-        clearViewFieldErrors();
-        requestService.execute(
-            requestParams -> {
-                assetResource.delete(requestParams, this.assetId);
-            },
-            204,
+        view.showConfirmation(
+            managerMessages.confirmation(),
+            managerMessages.confirmationDelete(asset.getName()),
             () -> {
-                view.setFormBusy(false);
-                eventBus.dispatch(new ShowInfoEvent(
-                    managerMessages.assetDeleted(asset.getName())
-                ));
-                eventBus.dispatch(new AssetsModifiedEvent(asset));
-                placeController.goTo(new AssetsDashboardPlace());
-            },
-            ex -> handleRequestException(ex, eventBus, managerMessages)
+                view.setFormBusy(true);
+                view.clearFormMessages();
+                clearViewFieldErrors();
+                requestService.execute(
+                    requestParams -> {
+                        assetResource.delete(requestParams, this.assetId);
+                    },
+                    204,
+                    () -> {
+                        view.setFormBusy(false);
+                        eventBus.dispatch(new ShowInfoEvent(
+                            managerMessages.assetDeleted(asset.getName())
+                        ));
+                        eventBus.dispatch(new AssetsModifiedEvent(asset));
+                        placeController.goTo(new AssetsDashboardPlace());
+                    },
+                    ex -> handleRequestException(ex, eventBus, managerMessages)
+                );
+            }
         );
     }
 

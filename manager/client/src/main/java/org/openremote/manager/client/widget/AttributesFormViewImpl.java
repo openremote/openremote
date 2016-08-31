@@ -21,7 +21,9 @@ package org.openremote.manager.client.widget;
 
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.TextBox;
+import com.google.inject.Provider;
 import elemental.json.Json;
+import org.openremote.manager.client.app.dialog.ConfirmationDialog;
 import org.openremote.manager.shared.attribute.Attribute;
 import org.openremote.manager.shared.attribute.AttributeType;
 import org.openremote.manager.shared.attribute.Attributes;
@@ -31,6 +33,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AttributesFormViewImpl extends FormViewImpl {
+
+    public AttributesFormViewImpl(Provider<ConfirmationDialog> confirmationDialogProvider) {
+        super(confirmationDialogProvider);
+    }
 
     public FormGroup[] createAttributeFormGroups(String formFieldStyleName, Attributes attributes) {
         List<FormGroup> list = new ArrayList<>();

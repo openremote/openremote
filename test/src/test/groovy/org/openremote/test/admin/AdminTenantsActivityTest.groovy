@@ -366,7 +366,12 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
         result.appEvents.clear()
         adminTenantActivity.delete()
 
-        then: "The activity clears the tenant form messages"
+        then: "The activity shows a confirmation dialog"
+        1 * adminTenantView.showConfirmation(_, _, !null) >> {
+            it[2].run()
+        }
+
+        and: "The activity clears the tenant form messages"
         1 * adminTenantView.setFormBusy(true)
         1 * adminTenantView.clearFormMessages()
         1 * adminTenantView.setTenantDisplayNameError(false)

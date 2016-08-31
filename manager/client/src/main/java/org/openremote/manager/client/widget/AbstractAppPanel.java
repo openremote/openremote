@@ -30,10 +30,11 @@ public abstract class AbstractAppPanel implements AppPanel {
 
     protected UIObject target;
 
-    public AbstractAppPanel(UiBinder<PopupPanel, AbstractAppPanel> binder, boolean autoHide) {
+    public AbstractAppPanel(UiBinder<PopupPanel, AbstractAppPanel> binder) {
         this.popupPanel = binder.createAndBindUi(this);
         popupPanel.setAutoHideOnHistoryEventsEnabled(true);
-        popupPanel.setAutoHideEnabled(autoHide);
+
+        popupPanel.setGlassStyleName("or-PopupPanelGlass theme-PopupPanelGlass");
 
         popupPanel.addCloseHandler(event -> {
             if (target != null) {
@@ -47,6 +48,20 @@ public abstract class AbstractAppPanel implements AppPanel {
                 popupPanel.showRelativeTo(target);
             }
         });
+    }
+
+    public PopupPanel getPopupPanel() {
+        return popupPanel;
+    }
+
+    @Override
+    public void setAutoHide(boolean autoHide) {
+        popupPanel.setAutoHideEnabled(autoHide);
+    }
+
+    @Override
+    public void setModal(boolean modal) {
+        getPopupPanel().setGlassEnabled(modal);
     }
 
     @Override
@@ -89,4 +104,8 @@ public abstract class AbstractAppPanel implements AppPanel {
         popupPanel.hide();
     }
 
+    @Override
+    public void showCenter() {
+        popupPanel.center();
+    }
 }

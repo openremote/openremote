@@ -1,0 +1,48 @@
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+             xmlns:g="urn:import:com.google.gwt.user.client.ui"
+             xmlns:w="urn:import:org.openremote.manager.client.widget">
+
+    <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
+    <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
+    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
+
+    <ui:style>
+        .popup {
+            z-index: 10;
+        }
+
+        .header {
+            font-weight: 700;
+            padding: 0.4em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .content {
+            overflow: auto;
+            padding: 0.4em;
+        }
+
+        .footer {
+            padding: 0.4em;
+        }
+    </ui:style>
+
+    <g:PopupPanel glassEnabled="false" addStyleNames="{style.popup} {widgetStyle.PopupPanel} {themeStyle.PopupPanel}">
+        <g:FlowPanel ui:field="mainPanel" styleName="flex layout vertical">
+            <g:FlowPanel styleName="layout horizontal {style.header} {widgetStyle.PopupPanelHeader} {themeStyle.PopupPanelHeader}">
+                <g:Label ui:field="headerLabel"/>
+            </g:FlowPanel>
+            <g:FlowPanel ui:field="contentPanel"
+                         styleName="flex layout vertical"
+                         addStyleNames="{style.content} {widgetStyle.PopupPanelContent} {themeStyle.PopupPanelContent}">
+            </g:FlowPanel>
+            <g:FlowPanel ui:field="footerPanel"
+                         styleName="layout horizontal center-center"
+                         addStyleNames="{style.footer} {widgetStyle.PopupPanelFooter} {themeStyle.PopupPanelFooter}">
+            </g:FlowPanel>
+        </g:FlowPanel>
+    </g:PopupPanel>
+
+</ui:UiBinder>

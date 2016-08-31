@@ -142,13 +142,16 @@
         text-decoration: underline;
     }
 
-    .or-SecondaryNav .or-Hyperlink {
+    .or-SecondaryNav .or-Hyperlink,
+    .or-SecondaryNavHorizontal .or-Hyperlink {
         padding: 0;
         border-radius: 0
     }
 
     .or-SecondaryNav .or-Hyperlink a:hover,
-    .or-SecondaryNav .or-Hyperlink a:focus {
+    .or-SecondaryNav .or-Hyperlink a:focus,
+    .or-SecondaryNavHorizontal .or-Hyperlink a:hover,
+    .or-SecondaryNavHorizontal .or-Hyperlink a:focus {
         text-decoration: none;
     }
 
@@ -237,8 +240,10 @@
         padding: 0.2em;
     }
 
-    .or-FormButton:focus, .or-FormButtonPrimary:focus {
-        text-decoration: underline;
+    .or-FormButton,
+    .or-FormButtonDanger,
+    .or-FormButtonPrimary {
+        border: 2px dotted transparent;
     }
 
     .or-FormDropDown {
@@ -292,6 +297,10 @@
         -moz-user-select: none;
         -ms-user-select: none;
         user-select: none;;
+    }
+
+    .or-FormTreeItemValue:hover {
+        opacity: .8;
     }
 
     .or-FormTreeOpenItem {
@@ -348,6 +357,11 @@
     .or-ItemWithBorder {
         border-width: 1px;
         border-style: solid;
+    }
+
+    .or-ConfirmationDialog {
+        width: 25em;
+        height: 10em;
     }
 
 </style>
