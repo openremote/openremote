@@ -20,25 +20,51 @@
 package org.openremote.manager.shared.connector;
 
 import jsinterop.annotations.JsType;
+import org.openremote.manager.shared.asset.AssetInfo;
+import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.http.SuccessStatusCode;
 
-import javax.ws.rs.BeanParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.annotation.security.RolesAllowed;
+import javax.ws.rs.*;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("connector")
 @JsType(isNative = true)
 public interface ConnectorResource {
-
     @GET
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     // TODO Implement admin roles on server
     //@RolesAllowed({"read:admin"})
-    Connector[] getConnectors(@BeanParam RequestParams requestParams);
+    AssetInfo[] getConnectors(@BeanParam RequestParams requestParams);
 
+    @GET
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    @Path("{connectorId}")
+    // TODO Implement admin roles on server
+    //@RolesAllowed({"read:admin"})
+    AssetInfo getConnector(@BeanParam RequestParams requestParams, @PathParam("connectorId")String connectorId);
+
+    @GET
+    @Path("{assetId}/children")
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    // TODO Implement admin roles on server
+    //@RolesAllowed({"read:assets"})
+    AssetInfo[] getChildren(@BeanParam RequestParams requestParams, @PathParam("assetId") String parentId);
+
+    @GET
+    @Path("settings/new/{parentAssetId}")
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    Attributes getAssetSettings(@BeanParam RequestParams requestParams, @PathParam("parentAssetId") String parentId);
+
+    @GET
+    @Path("settings/discovery/{parentAssetId}")
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    Attributes getAssetDiscoverySettings(@BeanParam RequestParams requestParams, @PathParam("parentAssetId") String parentId);
 }

@@ -6,10 +6,10 @@ import org.openremote.manager.shared.device.Device;
 
 import java.util.logging.Logger;
 
-import static org.openremote.manager.shared.device.DeviceInventory.Action.ADD;
-import static org.openremote.manager.shared.device.DeviceInventory.Action.REMOVE;
-import static org.openremote.manager.shared.device.DeviceInventory.Action.UPDATE;
-import static org.openremote.manager.shared.device.DeviceInventory.HEADER_DEVICE_ACTION;
+import static org.openremote.manager.shared.connector.ConnectorComponent.ACTION_CREATE;
+import static org.openremote.manager.shared.connector.ConnectorComponent.ACTION_DELETE;
+import static org.openremote.manager.shared.connector.ConnectorComponent.ACTION_UPDATE;
+import static org.openremote.manager.shared.connector.ConnectorComponent.HEADER_DEVICE_ACTION;
 
 public class Controller2InventoryConsumer extends Controller2Consumer implements Controller2Adapter.DeviceListener {
 
@@ -40,7 +40,7 @@ public class Controller2InventoryConsumer extends Controller2Consumer implements
 
         LOG.fine("Starting new exchange for added device '" + device.getUri() + "'");
         Exchange exchange = getEndpoint().createExchange();
-        exchange.getIn().setHeader(HEADER_DEVICE_ACTION, ADD);
+        exchange.getIn().setHeader(HEADER_DEVICE_ACTION, ACTION_CREATE);
         exchange.getIn().setBody(device);
         processExchange(exchange);
     }
@@ -56,7 +56,7 @@ public class Controller2InventoryConsumer extends Controller2Consumer implements
 
         LOG.fine("Starting new exchange for removed device '" + device.getUri() + "'");
         Exchange exchange = getEndpoint().createExchange();
-        exchange.getIn().setHeader(HEADER_DEVICE_ACTION, REMOVE);
+        exchange.getIn().setHeader(HEADER_DEVICE_ACTION, ACTION_DELETE);
         exchange.getIn().setBody(device);
         processExchange(exchange);
     }
@@ -70,7 +70,7 @@ public class Controller2InventoryConsumer extends Controller2Consumer implements
 
         LOG.fine("Starting new exchange for updated device '" + device.getUri() + "'");
         Exchange exchange = getEndpoint().createExchange();
-        exchange.getIn().setHeader(HEADER_DEVICE_ACTION, UPDATE);
+        exchange.getIn().setHeader(HEADER_DEVICE_ACTION, ACTION_UPDATE);
         exchange.getIn().setBody(device);
         processExchange(exchange);
     }

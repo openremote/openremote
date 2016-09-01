@@ -26,7 +26,6 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.web.WebService;
-import org.openremote.manager.shared.connector.Connector;
 import org.openremote.manager.shared.connector.ConnectorComponent;
 
 import java.util.LinkedHashMap;
@@ -38,7 +37,7 @@ public class ConnectorService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(ConnectorService.class.getName());
 
-    final protected Map<String, Connector> connectors = new LinkedHashMap<>();
+    final protected Map<String, ConnectorComponent> connectors = new LinkedHashMap<>();
 
     @Override
     public void init(Container container) throws Exception {
@@ -63,12 +62,12 @@ public class ConnectorService implements ContainerService {
 
     }
 
-    public Map<String, Connector> getConnectors() {
+    public Map<String, ConnectorComponent> getConnectors() {
         return connectors;
     }
 
-    public Connector getConnectorByType(String connectorType) {
-        for (Connector connector : connectors.values()) {
+    public ConnectorComponent getConnectorByType(String connectorType) {
+        for (ConnectorComponent connector : connectors.values()) {
             if (connector.getType().equals(connectorType))
                 return connector;
         }
@@ -84,7 +83,7 @@ public class ConnectorService implements ContainerService {
             if (component instanceof ConnectorComponent) {
                 ConnectorComponent connector = (ConnectorComponent)component;
 
-                for (Connector existingConnector : connectors.values()) {
+                for (ConnectorComponent existingConnector : connectors.values()) {
                     if (existingConnector.getType().equals(connector.getType())) {
                         throw new IllegalStateException(
                             "Duplicate connector types are not allowed: " + connector.getType()

@@ -19,15 +19,14 @@
  */
 package org.openremote.manager.shared.connector;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.attribute.Attributes;
-import org.openremote.manager.shared.device.InventoryCapabilities;
 import org.openremote.manager.shared.agent.AgentStatus;
 import org.openremote.manager.shared.device.Device;
 
-@JsonSerialize(as = Connector.class)
-public interface ConnectorComponent extends Connector {
+public interface ConnectorComponent {
     public static final String HEADER_DISCOVERY_START = ConnectorComponent.class.getCanonicalName() + ".HEADER_DISCOVERY_START";
     public static final String HEADER_DISCOVERY_STOP = ConnectorComponent.class.getCanonicalName() + ".HEADER_DISCOVERY_STOP";
     public static final String HEADER_INVENTORY_ACTION = ConnectorComponent.class.getCanonicalName() + ".HEADER_INVENTORY_ACTION";
@@ -41,42 +40,80 @@ public interface ConnectorComponent extends Connector {
     public static final String ACTION_WRITE = "WRITE";
 
     /**
-     * Optional endpoint URI for performing agent discovery. If implemented
-     * when agent discovery is required then a route will be created requiring
-     * a consumer from this endpoint which should generate messages for any
-     * agents that the connector discovers using the discovery settings provided.
+     * Get the unique type descriptor for this connector component
+     */
+    String getType();
+
+    /**
+     * Get the friendly display name for this connector component
+     */
+    String getDisplayName();
+
+    /**
+     * Get CRUD support for child assets of the supplied parent asset. A null
+     * response indicates that this asset doesn't support child assets (this can
+     * also be indicated with the appropriate values in the returned {@link ChildAssetSupport}.
      *
-     * {@link Attributes} produced should be valid agent settings. A message should
-     * contain either a single {@link Attributes} object (one message per discovered
-     * agent) or an array of {@link Attributes} objects (multiple agents per message).
+     * If parentAsset is null then response indicates child CRUD support at the
+     * root (in connector terms this usually means agent asset CRUD).
+     */
+    ChildAssetSupport getChildSupport(Asset parentAsset);
+
+    /**
+     * Indicates whether or not this connector component supports child discovery
+     * of the supplied parent asset.
+     *
+     * If parentAsset is null then response indicates whether child discovery is
+     * supported at the root (in connector terms this usually means is agent asset
+     * discovery supported).
+     */
+    boolean supportsChildDiscovery(Asset parentAsset);
+
+    /**
+     * Get the settings mask for discovering child assets of the supplied
+     * parent asset. This is used by clients for user entry of discovery settings.
+     *
+     * If parentAsset is null then child discovery is being requested at the root
+     * (in connector terms this usually means discovering agent assets).
+     */
+    Attributes getChildDiscoverySettings(Asset parentAsset);
+
+    /**
+     * Get the settings mask for creating/updating a child asset of the supplied
+     * parent asset. This is used by clients for user entry of child assets.
+     *
+     * If parentAsset is null then child is being provisioned at the root
+     * (in connector terms this usually means creating agent asset).
+     */
+    Attributes getChildAssetSettings(Asset parentAsset);
+
+    /**
+     * Endpoint URI for performing child asset discovery. If implemented
+     * when child discovery is required then a route will be created requiring
+     * a consumer from this endpoint which should generate messages for any
+     * child assets that the connector discovers based on the supplied parent asset
+     * and discovery settings.
+     *
+     * Messages output by the consumer should contain either a single {@link Asset} object or
+     * an array of {@link Asset} objects. The outputted assets should have IDs and be linked
+     * to their parent(s) thus allowing child discovery to return a hierarchy of assets.
+     *
      * Discovery should run as long as this route is running.
      */
-    String getAgentDiscoveryUri(Attributes discoverySettings);
+    String getChildDiscoveryUri(Asset parentAsset, Attributes discoverySettings);
 
     /**
-     * Get device inventory capabilities of the supplied agent.
-     */
-    InventoryCapabilities getCapabilities(Attributes agentSettings);
-
-    /**
-     * Indicates whether or not this connector component supports monitoring of devices.
-     * If device monitoring is supported then {@link #getDeviceMonitorUri(Attributes)} must
-     * return the Endpoint URI for the device monitor.
-     */
-    boolean supportsDeviceMonitoring(Attributes agentSettings);
-
-    /**
-     * Optional endpoint URI for consuming changes in the connector's status;
-     * messages should be output with the body set to an appropriate {@link AgentStatus}
-     * value.
+     * Indicates whether or not this connector component supports monitoring of the supplied
+     * asset.
      *
-     * If not supported then just return null.
+     * If asset monitoring is supported then {@link #getAssetMonitorUri(Asset)} must
+     * return the Endpoint URI for the asset monitor.
      */
-    String getAgentStatusUri(Attributes agentSettings);
+    boolean supportsMonitoring(Asset asset);
 
     /**
-     * Mandatory endpoint URI for performing device CRUD. The capabilities supported by a particular
-     * agent/connector are determined by the response from {@link #getCapabilities(Attributes)}.
+     * Endpoint URI for performing asset CRUD. The capabilities supported by a particular
+     * connector for this asset are determined by the response from {@link #getChildSupport(Asset)}.
      *
      * Support for reading devices from the inventory is mandatory, all other capabilities are
      * optional and are agent/connector dependent.
@@ -85,61 +122,51 @@ public interface ConnectorComponent extends Connector {
      * by the {@link #HEADER_INVENTORY_ACTION} message header.
      *
      * {@Link #ACTION_CREATE}, {@Link #ACTION_UPDATE}, {@Link #ACTION_DELETE} operations
-     * should consume a {@link Device}[]. In the case of {@link #ACTION_DELETE} then only the
-     * device URI(s) should be required. The reply message body should contain an integer indicating
+     * should consume a {@link Asset}[]. In the case of {@link #ACTION_DELETE} then only the
+     * asset ID should be required. The reply message body should contain an integer indicating
      * the status of the request (conforming to the HTTP Status code specification).
      *
-     * {@link #ACTION_READ} operations should consume a {@link Device}[] where only the device
-     * URI(s) should be required, if no devices are supplied then all devices should be returned.
-     * The reply message body should contain a {@link Device}[] of the requested devices.
+     * {@link #ACTION_READ} operations should consume a {@link Asset}[] where only the ID should
+     * be required, if no assets are supplied then all child assets should be returned.
+     * The reply message body should contain a {@link Asset}[] of the requested devices.
      *
      */
-    String getDeviceInventoryUri(Attributes agentSettings);
+    String getChildInventoryUri(Asset asset);
 
     /**
-     * Optional endpoint URI for performing device discovery. If implemented
-     * when device discovery is required then a route will be created requiring
-     * a consumer from this endpoint which should generate messages for any
-     * devices that the connector discovers from the specified agent.
+     * Endpoint URI for: -
+     *      Reading/Writing from/to assets
+     *      Subscribing/Un-subscribing to asset changes
      *
-     * {@link Attributes} produced should be valid devices (URI and Type). A message should
-     * contain either a single {@link Attributes} object (one message per discovered device)
-     * or an array of {@link Attributes} objects (multiple devices per message).
-     *
-     * Discovery should run as long as this route is running.
-     *
-     * If not supported then just return null.
-     */
-    String getDeviceDiscoveryUri(Attributes agentSettings);
-
-    /**
-     * Mandatory endpoint URI for: -
-     *      Reading from device resources
-     *      Writing to device resources
-     *      Subscribing/Un-subscribing to device changes
-     *
-     * A single endpoint is used for all devices that belong to the specified
-     * agent. This endpoint is expected to support the InOut MEP with the
+     * This endpoint is expected to support the InOut MEP with the
      * {@link #HEADER_DEVICE_ACTION} message header indicating the action to
      * perform/data to return on messages to be consumed by this endpoint.
      *
      * {@link #ACTION_SUBSCRIBE}, {@link #ACTION_UNSUBSCRIBE} operations should consume a
-     * {@link Device}[] where only the device URI(s) should be required. The reply message body
+     * {@link Asset}[] where only the ID(s) should be required. The reply message body
      * should contain an integer indicating the status of the request (conforming to the HTTP
-     * Status code specification). Agents/Connectors that support device subscriptions must return
-     * a valid endpoint URI from {@link #getDeviceMonitorUri(Attributes)}.
+     * Status code specification). Connectors that support asset subscriptions must return
+     * a valid endpoint URI from {@link #getAssetMonitorUri(Asset)}.
+     *
+     * Assets of a connector can share an endpoint which is indicated by returning the same
+     * endpoint URI.
      */
-    String getDevicesUri(Attributes agentSettings);
+    String getAssetUri(Asset asset);
 
     /**
-     * Optional endpoint URI for consuming device changes from the specified agent;
-     * subscribing to device changes is done separately using the devices Endpoint URI.
+     * Endpoint URI for consuming asset changes as reported by the connector.
      *
-     * A subscribed device should be monitored by the connector for any resource value
-     * changes; these changes should then be output in a message body as {@link Device}[]
-     * containing the modified device(s) and resource(s).
+     * A subscribed asset should be monitored by the connector for any resource value
+     * changes; these changes should then be output in a message body as {@link Asset}[]
+     * containing the modified attributes.
      *
-     * If not supported (i.e. devices require polling) then just return null.
+     * If not supported then just return null.
      */
-    String getDeviceMonitorUri(Attributes agentSettings);
+    String getAssetMonitorUri(Asset asset);
+
+    /**
+     * Generate the asset represented by the supplied asset settings, the connector is responsible
+     * for setting the asset ID and asset type as well as any attributes and metadata that are required.
+     */
+    Asset createAsset(Asset parent, Attributes assetSettings);
 }

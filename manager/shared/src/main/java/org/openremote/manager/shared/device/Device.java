@@ -1,5 +1,7 @@
 package org.openremote.manager.shared.device;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import elemental.json.Json;
 import elemental.json.JsonArray;
 import elemental.json.JsonObject;
@@ -19,6 +21,7 @@ import org.openremote.manager.shared.asset.AssetType;
  * and mapping purposes.
  *
  */
+
 public class Device extends Asset {
     protected static final String URI_KEY = "uri";
     protected static final String RESOURCES_KEY = "resources";
@@ -32,6 +35,7 @@ public class Device extends Asset {
     public void setType(String type) {
     }
 
+    @JsonProperty
     public String getUri() {
         if (attributes == null) {
             return null;
@@ -40,6 +44,7 @@ public class Device extends Asset {
         return attributes.getString(URI_KEY);
     }
 
+    @JsonProperty
     public void setUri(String uri) {
         if (attributes == null) {
             attributes = Json.createObject();
@@ -48,6 +53,7 @@ public class Device extends Asset {
         attributes.put(URI_KEY, uri);
     }
 
+    @JsonProperty
     public DeviceResource[] getResources()
     {
         if (attributes == null || !attributes.hasKey(RESOURCES_KEY)) {
@@ -65,6 +71,7 @@ public class Device extends Asset {
         return resources;
     }
 
+    @JsonProperty
     public void setResources(DeviceResource[] resources){
         if (attributes == null) {
             attributes = Json.createObject();
@@ -84,6 +91,7 @@ public class Device extends Asset {
         attributes.put(RESOURCES_KEY, resourcesArr);
     }
 
+    @JsonProperty
     public CapabilityRef[] getCapabilities() {
         if (attributes == null || !attributes.hasKey(CAPABILITIES_KEY)) {
             return null;
@@ -100,6 +108,7 @@ public class Device extends Asset {
         return capabilities;
     }
 
+    @JsonProperty
     public void setCapabilities(CapabilityRef[] capabilities){
         if (attributes == null) {
             attributes = Json.createObject();

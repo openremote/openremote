@@ -17,33 +17,39 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.device;
+package org.openremote.manager.shared.connector;
 
 /**
  * Describes the capabilities that an agent connectors's inventory
  * offers; inventory read is mandatory. This is how device provisioning
  * should be achieved.
  */
-public class InventoryCapabilities {
-    protected boolean inventoryCreate;
-    protected boolean inventoryUpdate;
-    protected boolean inventoryDelete;
+public class ChildAssetSupport {
+    protected boolean create;
+    protected boolean read;
+    protected boolean update;
+    protected boolean delete;
 
-    public InventoryCapabilities(boolean inventoryCreate, boolean inventoryUpdate, boolean inventoryDelete) {
-        this.inventoryCreate = inventoryCreate;
-        this.inventoryUpdate = inventoryUpdate;
-        this.inventoryDelete = inventoryDelete;
+    public ChildAssetSupport(boolean create, boolean read, boolean update, boolean delete) {
+        this.create = create;
+        this.read = read;
+        this.update = update;
+        this.delete = delete;
     }
 
-    public boolean isInventoryCreate() {
-        return inventoryCreate;
+    public boolean isCreate() {
+        return create;
     }
 
-    public boolean isInventoryUpdate() {
-        return inventoryUpdate;
+    public boolean isRead() {
+        return read;
     }
 
-    public boolean isInventoryDelete() {
-        return inventoryDelete;
+    public boolean isUpdate() {
+        return update;
+    }
+
+    public boolean isDelete() {
+        return delete;
     }
 }

@@ -19,13 +19,13 @@
  */
 package org.openremote.agent.controller2;
 
-import elemental.json.Json;
 import org.apache.camel.Endpoint;
 import org.apache.camel.impl.UriEndpointComponent;
+import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.attribute.AttributeType;
 import org.openremote.manager.shared.connector.ConnectorComponent;
 import org.openremote.manager.shared.connector.ConnectorUtil;
-import org.openremote.manager.shared.device.InventoryCapabilities;
+import org.openremote.manager.shared.connector.ChildAssetSupport;
 import org.openremote.manager.shared.attribute.Attributes;
 
 import java.net.URI;
@@ -112,57 +112,52 @@ public class Controller2Component extends UriEndpointComponent implements Connec
     }
 
     @Override
-    public boolean supportsAgentDiscovery() {
+    public ChildAssetSupport getChildSupport(Asset parentAsset) {
+        return null;
+    }
+
+    @Override
+    public boolean supportsChildDiscovery(Asset parentAsset) {
         return false;
     }
 
     @Override
-    public Attributes getAgentSettings() {
-        return agentSettings;
-    }
-
-    @Override
-    public Attributes getAgentDiscoverySettings() {
+    public Attributes getChildDiscoverySettings(Asset parentAsset) {
         return null;
     }
 
     @Override
-    public InventoryCapabilities getCapabilities(Attributes agentSettings) {
+    public Attributes getChildAssetSettings(Asset parentAsset) {
         return null;
     }
 
     @Override
-    public String getAgentStatusUri(Attributes agentSettings) {
+    public String getChildDiscoveryUri(Asset parentAsset, Attributes discoverySettings) {
         return null;
     }
 
     @Override
-    public String getDeviceInventoryUri(Attributes agentSettings) {
+    public boolean supportsMonitoring(Asset asset) {
+        return false;
+    }
+
+    @Override
+    public String getChildInventoryUri(Asset asset) {
         return null;
     }
 
     @Override
-    public String getDeviceDiscoveryUri(Attributes agentSettings) {
+    public String getAssetUri(Asset asset) {
         return null;
     }
 
     @Override
-    public String getDevicesUri(Attributes agentSettings) {
+    public String getAssetMonitorUri(Asset asset) {
         return null;
     }
 
     @Override
-    public String getDeviceMonitorUri(Attributes agentSettings) {
+    public Asset createAsset(Asset parent, Attributes assetSettings) {
         return null;
-    }
-
-    @Override
-    public String getAgentDiscoveryUri(Attributes discoverySettings) {
-        return null;
-    }
-
-    @Override
-    public boolean supportsDeviceMonitoring(Attributes agentSettings) {
-        return true;
     }
 }
