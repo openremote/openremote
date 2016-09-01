@@ -80,6 +80,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
         if (serverAsset == null)
             throw new WebApplicationException(Response.Status.NOT_FOUND);
 
+        serverAsset.setVersion(asset.getVersion());
         serverAsset.setName(asset.getName());
         serverAsset.setType(asset.getType());
         if (asset.getCoordinates() != null && asset.getCoordinates().length == 2) {

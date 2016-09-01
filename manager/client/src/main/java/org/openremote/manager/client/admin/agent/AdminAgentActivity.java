@@ -166,9 +166,10 @@ public class AdminAgentActivity
             204,
             () -> {
                 adminContent.setFormBusy(false);
-                adminContent.addFormMessageSuccess(
+                environment.getEventBus().dispatch(new ShowInfoEvent(
                     environment.getMessages().agentUpdated(agent.getName())
-                );
+                ));
+                environment.getPlaceController().goTo(new AdminAgentPlace(id));
             },
             ex -> handleRequestException(ex, environment)
         );
@@ -277,11 +278,9 @@ public class AdminAgentActivity
     }
 
     protected void setAssignedConnector() {
-        if (assignedConnector != null) {
-            if (!assignedConnector.getType().equals(notFoundConnectorType)) {
-                agent.setConnectorType(assignedConnector.getType());
-                assignedConnector.writeSettings(agent);
-            }
+        if (assignedConnector != null && !assignedConnector.getType().equals(notFoundConnectorType)) {
+            agent.setConnectorType(assignedConnector.getType());
+            assignedConnector.writeSettings(agent);
         } else {
             agent.setConnectorType(null);
             agent.setConnectorSettings(null);

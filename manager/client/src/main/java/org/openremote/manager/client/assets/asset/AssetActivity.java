@@ -152,13 +152,11 @@ public class AssetActivity
             204,
             () -> {
                 view.setFormBusy(false);
-                view.addFormMessageSuccess(environment.getMessages().assetUpdated(asset.getName()));
-                selectedCoordinates = null;
-                view.hideMapPopup();
-                writeToView();
-                environment.getEventBus().dispatch(
-                    new AssetsModifiedEvent(asset)
-                );
+                environment.getEventBus().dispatch(new ShowInfoEvent(
+                    environment.getMessages().assetUpdated(asset.getName())
+                ));
+                environment.getEventBus().dispatch(new AssetsModifiedEvent(asset));
+                environment.getPlaceController().goTo(new AssetPlace(assetId));
             },
             ex -> handleRequestException(ex, environment)
         );

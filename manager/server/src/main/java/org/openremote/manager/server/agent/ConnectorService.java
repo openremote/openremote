@@ -19,27 +19,16 @@
  */
 package org.openremote.manager.server.agent;
 
-import elemental.json.Json;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Component;
-import org.apache.camel.ComponentConfiguration;
-import org.apache.camel.Endpoint;
-import org.apache.camel.impl.ParameterConfiguration;
-import org.apache.camel.impl.UriEndpointComponent;
-import org.apache.camel.spi.UriEndpoint;
-import org.apache.camel.spi.UriParam;
 import org.apache.camel.util.CamelContextHelper;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.util.IdentifierUtil;
 import org.openremote.container.web.WebService;
-import org.openremote.manager.shared.attribute.*;
 import org.openremote.manager.shared.connector.Connector;
 import org.openremote.manager.shared.connector.ConnectorComponent;
 
-import javax.validation.constraints.NotNull;
-import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -108,12 +97,6 @@ public class ConnectorService implements ContainerService {
                 );
 
                 connectors.put(connectorComponentName, connector);
-
-            } else {
-                LOG.warning(
-                    "Component should implement " +
-                        UriEndpointComponent.class.getName() + ": " + entry.getKey()
-                );
             }
         }
     }

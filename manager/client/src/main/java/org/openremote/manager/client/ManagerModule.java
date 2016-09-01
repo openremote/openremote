@@ -25,11 +25,14 @@ import com.google.gwt.place.shared.PlaceHistoryHandler;
 import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import org.openremote.manager.client.event.EventMapper;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.http.ConstraintViolationReportMapper;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.interop.keycloak.Keycloak;
 import org.openremote.manager.client.map.MapPlace;
+import org.openremote.manager.client.mvp.AppActivityManager;
+import org.openremote.manager.client.mvp.AppPlaceController;
 import org.openremote.manager.client.service.*;
 import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
@@ -43,6 +46,12 @@ public class ManagerModule extends AbstractGinModule {
 
         bind(CookieService.class).to(CookieServiceImpl.class).in(Singleton.class);
         bind(ValidatorService.class).to(ValidatorServiceImpl.class).in(Singleton.class);
+    }
+
+    @Provides
+    @Singleton
+    public AppActivityManager getActivityManager(ManagerActivityMapper activityMapper, EventBus eventBus) {
+        return new AppActivityManager("AppActivityManager", activityMapper, eventBus);
     }
 
     @Provides
@@ -66,6 +75,24 @@ public class ManagerModule extends AbstractGinModule {
             themeStyle
         );
     }
+
+    @Provides
+    @Singleton
+    public PlaceController getPlaceController(SecurityService securityService,
+                                              EventBus eventBus,
+                                              com.google.web.bindery.event.shared.EventBus legacyEventBus,
+                                              PlaceController.Delegate delegate) {
+        return new AppPlaceController(securityService, eventBus, legacyEventBus, delegate);
+    }
+
+    @Provides
+    @Singleton
+    public EventService getEventService(SecurityService securityService, EventBus eventBus, EventMapper eventMapper) {
+        EventService eventService = EventServiceImpl.create(securityService, eventBus, eventMapper);
+        eventService.connect();
+        return eventService;
+    }
+
 
     @Provides
     @Singleton

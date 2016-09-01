@@ -92,6 +92,10 @@ public class Asset {
         return version;
     }
 
+    public void setVersion(long version) {
+        this.version = version;
+    }
+
     public Date getCreatedOn() {
         return createdOn;
     }

@@ -21,14 +21,8 @@ package org.openremote.manager.client.mvp;
 
 import com.google.gwt.inject.client.AbstractGinModule;
 import com.google.gwt.place.shared.PlaceController;
-import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import org.openremote.manager.client.ManagerActivityMapper;
-import org.openremote.manager.client.event.EventMapper;
 import org.openremote.manager.client.event.bus.EventBus;
-import org.openremote.manager.client.service.EventService;
-import org.openremote.manager.client.service.EventServiceImpl;
-import org.openremote.manager.client.service.SecurityService;
 
 public class MVPModule extends AbstractGinModule {
 
@@ -38,30 +32,5 @@ public class MVPModule extends AbstractGinModule {
         bind(com.google.web.bindery.event.shared.EventBus.class).to(com.google.web.bindery.event.shared.SimpleEventBus.class).in(Singleton.class);
         bind(EventBus.class).in(Singleton.class);
     }
-
-    @Provides
-    @Singleton
-    public AppActivityManager getActivityManager(ManagerActivityMapper activityMapper, EventBus eventBus) {
-        return new AppActivityManager("AppActivityManager", activityMapper, eventBus);
-    }
-
-    @Provides
-    @Singleton
-    public EventService getEventService(SecurityService securityService, EventBus eventBus, EventMapper eventMapper) {
-        EventService eventService = EventServiceImpl.create(securityService, eventBus, eventMapper);
-        eventService.connect();
-        return eventService;
-    }
-
-    @Provides
-    @Singleton
-    public PlaceController getPlaceController(SecurityService securityService,
-                                              EventService eventService,
-                                              EventBus eventBus,
-                                              com.google.web.bindery.event.shared.EventBus legacyEventBus,
-                                              PlaceController.Delegate delegate) {
-        return new AppPlaceController(securityService, eventBus, legacyEventBus, delegate);
-    }
-
 
 }
