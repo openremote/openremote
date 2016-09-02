@@ -62,7 +62,9 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
 
         environment.getEventBus().register(AssetsModifiedEvent.class, event -> {
             view.refreshAssets(
-                event.getAsset() == null || event.getAsset().getParentId() == null
+                event.isForceRootRefresh()
+                    || event.getAsset() == null
+                    || event.getAsset().getParentId() == null
             );
         });
 

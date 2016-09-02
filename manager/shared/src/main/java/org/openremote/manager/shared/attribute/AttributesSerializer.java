@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.shared.attribute;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
@@ -27,6 +26,7 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
 
 public class AttributesSerializer extends StdSerializer<Attributes> {
+
     public AttributesSerializer() {
         this(null);
     }
@@ -36,8 +36,7 @@ public class AttributesSerializer extends StdSerializer<Attributes> {
     }
 
     @Override
-    public void serialize(Attributes value, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonGenerationException {
+    public void serialize(Attributes value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
         jgen.writeObject(value.getJsonObject());
-        //jgen.writeRaw(value.toString());
     }
 }

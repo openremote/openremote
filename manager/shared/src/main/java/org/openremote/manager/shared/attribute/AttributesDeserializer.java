@@ -20,7 +20,6 @@
 package org.openremote.manager.shared.attribute;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import elemental.json.Json;
@@ -28,6 +27,7 @@ import elemental.json.Json;
 import java.io.IOException;
 
 public class AttributesDeserializer extends StdDeserializer<Attributes> {
+
     public AttributesDeserializer() {
         this(null);
     }
@@ -37,7 +37,7 @@ public class AttributesDeserializer extends StdDeserializer<Attributes> {
     }
 
     @Override
-    public Attributes deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+    public Attributes deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
         return new Attributes(Json.parse(p.getText()));
     }
 }

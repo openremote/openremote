@@ -85,7 +85,7 @@ public interface ConnectorComponent {
      * If parentAsset is null then child is being provisioned at the root
      * (in connector terms this usually means creating agent asset).
      */
-    Attributes getChildAssetSettings(Asset parentAsset);
+    Attributes getConnectorSettings();
 
     /**
      * Endpoint URI for performing child asset discovery. If implemented

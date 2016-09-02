@@ -64,6 +64,9 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
     Style style;
 
     @UiField
+    FlexSplitPanel splitPanel;
+
+    @UiField
     HTMLPanel sidebarContainer;
 
     @UiField
@@ -71,6 +74,8 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
     @UiField
     TextBox nameInput;
 
+    @UiField
+    FormGroup createdOnGroup;
     @UiField
     Label createdOnLabel;
 
@@ -80,7 +85,23 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
     TextBox typeInput;
 
     @UiField
+    FormGroup locationGroup;
+    @UiField
     Label locationLabel;
+
+    @UiField
+    TextBox parentAssetLabel;
+
+    @UiField
+    PushButton selectParentButton;
+    @UiField
+    PushButton setRootParentSelectionButton;
+    @UiField
+    PushButton confirmParentSelectionButton;
+    @UiField
+    PushButton resetParentSelectionButton;
+    @UiField
+    Label selectParentInfoLabel;
 
     @UiField
     FlowPanel attributesContainer;
@@ -106,6 +127,8 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
         this.assetBrowser = assetBrowser;
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
+
+        splitPanel.setOnResize(this::refreshMap);
     }
 
     @Override
@@ -120,8 +143,24 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
             typeInput.setValue(null);
             createdOnLabel.setText("");
             locationLabel.setText("");
+            parentAssetLabel.setText("");
             hideFeaturesSelection();
             hideMapPopup();
+            selectParentButton.setVisible(true);
+            confirmParentSelectionButton.setVisible(false);
+            resetParentSelectionButton.setVisible(false);
+            setRootParentSelectionButton.setVisible(false);
+            selectParentInfoLabel.setVisible(false);
+            nameGroup.setEnabled(true);
+            nameInput.setEnabled(true);
+            createdOnGroup.setEnabled(true);
+            typeGroup.setEnabled(true);
+            typeInput.setEnabled(true);
+            locationGroup.setEnabled(true);
+            mapWidget.setEnabled(true);
+            createButton.setEnabled(true);
+            updateButton.setEnabled(true);
+            deleteButton.setEnabled(true);
         }
     }
 
@@ -157,6 +196,32 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
         locationLabel.setText(
             location != null ? location : "-"
         );
+    }
+
+    @Override
+    public void setParentAsset(String name) {
+        parentAssetLabel.setText(
+            name != null ? name : "-"
+        );
+    }
+
+    @Override
+    public void setParentSelection(boolean isSelecting) {
+        selectParentButton.setVisible(!isSelecting);
+        confirmParentSelectionButton.setVisible(isSelecting);
+        resetParentSelectionButton.setVisible(isSelecting);
+        setRootParentSelectionButton.setVisible(isSelecting);
+        selectParentInfoLabel.setVisible(isSelecting);
+        nameGroup.setEnabled(!isSelecting);
+        nameInput.setEnabled(!isSelecting);
+        createdOnGroup.setEnabled(!isSelecting);
+        typeGroup.setEnabled(!isSelecting);
+        typeInput.setEnabled(!isSelecting);
+        locationGroup.setEnabled(!isSelecting);
+        createButton.setEnabled(!isSelecting);
+        updateButton.setEnabled(!isSelecting);
+        deleteButton.setEnabled(!isSelecting);
+        mapWidget.setEnabled(!isSelecting);
     }
 
     @Override
@@ -235,5 +300,29 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
     void deleteClicked(ClickEvent e) {
         if (presenter != null)
             presenter.delete();
+    }
+
+    @UiHandler("selectParentButton")
+    void selectParentClicked(ClickEvent e) {
+        if (presenter != null)
+            presenter.beginParentSelection();
+    }
+
+    @UiHandler("setRootParentSelectionButton")
+    void setRootParentSelectionClicked(ClickEvent e) {
+        if (presenter != null)
+            presenter.setRootParentSelection();
+    }
+
+    @UiHandler("confirmParentSelectionButton")
+    void confirmParentSelectionClicked(ClickEvent e) {
+        if (presenter != null)
+            presenter.confirmParentSelection();
+    }
+
+    @UiHandler("resetParentSelectionButton")
+    void resetParentSelectionClicked(ClickEvent e) {
+        if (presenter != null)
+            presenter.resetParentSelection();
     }
 }

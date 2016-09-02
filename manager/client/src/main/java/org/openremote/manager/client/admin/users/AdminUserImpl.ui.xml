@@ -41,7 +41,7 @@
 
             <w:FormGroup ui:field="usernameGroup">
                 <w:label>
-                    <w:FormLabel text="{managerMessages.username}" required="true"/>
+                    <w:FormLabel text="{managerMessages.username}" required="true" addStyleNames="larger"/>
                 </w:label>
                 <w:field>
                     <w:FormField>
@@ -53,7 +53,7 @@
 
             <w:FormGroup ui:field="firstNameGroup">
                 <w:label>
-                    <w:FormLabel text="{managerMessages.firstName}"/>
+                    <w:FormLabel text="{managerMessages.firstName}" addStyleNames="larger"/>
                 </w:label>
                 <w:field>
                     <w:FormField>
@@ -65,7 +65,7 @@
 
             <w:FormGroup ui:field="lastNameGroup">
                 <w:label>
-                    <w:FormLabel text="{managerMessages.lastName}"/>
+                    <w:FormLabel text="{managerMessages.lastName}" addStyleNames="larger"/>
                 </w:label>
                 <w:field>
                     <w:FormField>
@@ -77,7 +77,7 @@
 
             <w:FormGroup ui:field="emailGroup">
                 <w:label>
-                    <w:FormLabel text="{managerMessages.email}"/>
+                    <w:FormLabel text="{managerMessages.email}" addStyleNames="larger"/>
                 </w:label>
                 <w:field>
                     <w:FormField>
@@ -89,7 +89,7 @@
 
             <w:FormGroup ui:field="enabledGroup">
                 <w:label>
-                    <w:FormLabel text="{managerMessages.enabled}"/>
+                    <w:FormLabel text="{managerMessages.enabled}" addStyleNames="larger"/>
                 </w:label>
                 <w:field>
                     <w:FormField>
@@ -101,13 +101,13 @@
 
             <w:FormGroup ui:field="resetPasswordNoteGroup">
                 <w:label>
-                    <w:FormLabel text="{managerMessages.notePasswordAfterCreate}"/>
+                    <w:FormLabel text="{managerMessages.notePasswordAfterCreate}" addStyleNames="larger"/>
                 </w:label>
             </w:FormGroup>
 
             <w:FormGroup ui:field="resetPasswordGroup">
                 <w:label>
-                    <w:FormLabel text="{managerMessages.resetPassword}"/>
+                    <w:FormLabel text="{managerMessages.resetPassword}" addStyleNames="larger"/>
                 </w:label>
                 <w:field>
                     <w:FormField>
@@ -120,7 +120,7 @@
 
             <w:FormGroup ui:field="resetPasswordControlGroup">
                 <w:label>
-                    <w:FormLabel text="{managerMessages.repeatPassword}"/>
+                    <w:FormLabel text="{managerMessages.repeatPassword}" addStyleNames="larger"/>
                 </w:label>
                 <w:field>
                     <w:FormField>
@@ -132,13 +132,13 @@
 
             <w:FormGroup ui:field="rolesNoteGroup">
                 <w:label>
-                    <w:FormLabel text="{managerMessages.noteRolesAfterCreate}"/>
+                    <w:FormLabel text="{managerMessages.noteRolesAfterCreate}" addStyleNames="larger"/>
                 </w:label>
             </w:FormGroup>
 
             <w:FormGroup ui:field="rolesGroup" alignStart="true">
                 <w:label>
-                    <w:FormLabel text="{managerMessages.assignedRoles}"/>
+                    <w:FormLabel text="{managerMessages.assignedRoles}" addStyleNames="larger"/>
                 </w:label>
                 <w:field>
                     <w:FormField>

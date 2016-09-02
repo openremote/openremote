@@ -7,10 +7,10 @@ package org.openremote.manager.shared.asset;
 public enum AssetType {
 
     GENERIC("urn:openremote:asset:generic"),
-    BUILDING("urn:openremote:asset:building"),
-    ROOM("urn:openremote:asset:room"),
     AGENT("urn:openremote:asset:agent"),
-    DEVICE("urn:openremote:asset:device");
+    DEVICE("urn:openremote:asset:device"),
+    BUILDING("urn:openremote:asset:building"),
+    ROOM("urn:openremote:asset:room");
 
     final protected String value;
 

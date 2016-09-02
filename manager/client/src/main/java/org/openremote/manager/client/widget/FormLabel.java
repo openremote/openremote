@@ -30,7 +30,7 @@ public class FormLabel extends ComplexPanel {
 
     public FormLabel() {
         setElement(Document.get().createElement(DivElement.TAG));
-        getElement().addClassName("larger or-FormLabel theme-FormLabel");
+        getElement().addClassName("or-FormLabel theme-FormLabel");
 
         labelElement = (LabelElement) Document.get().createElement(LabelElement.TAG);
         labelElement.setHtmlFor(Document.get().createUniqueId());

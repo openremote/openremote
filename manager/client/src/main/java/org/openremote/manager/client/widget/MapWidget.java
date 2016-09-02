@@ -193,6 +193,15 @@ public class MapWidget extends ComplexPanel {
         mapboxMap.resize();
     }
 
+    public void setEnabled(boolean enabled) {
+        if (mapboxMap == null)
+            return;
+        host.removeStyleName("disabled");
+        if (!enabled) {
+            host.addStyleName("disabled");
+        }
+    }
+
     public void showPopup(double lng, double lat, String text) {
         if (mapboxMap == null)
             return;

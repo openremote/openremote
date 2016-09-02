@@ -9,12 +9,14 @@ import org.openremote.console.controller.connector.HttpConnector.ControllerCallb
 import org.openremote.container.message.MessageBrokerContext
 import org.openremote.entities.controller.ControllerInfo
 import org.openremote.test.ContainerTrait
+import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.nio.file.Files
 import java.nio.file.Paths
 
+@Ignore
 class Controller2Test extends Specification implements ContainerTrait {
 
     def "Get Device Inventory"() {

@@ -30,6 +30,7 @@ import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.Runnable;
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.agent.AgentResource;
+import org.openremote.manager.shared.connector.Connector;
 import org.openremote.manager.shared.connector.ConnectorResource;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 
@@ -52,12 +53,12 @@ public class AdminAgentActivity
     final protected ConnectorArrayMapper connectorArrayMapper;
 
     protected String id;
-    protected ConnectorImpl[] connectors;
+    protected Connector[] connectors;
     protected Agent agent;
-    protected ConnectorImpl assignedConnector;
+    protected Connector assignedConnector;
 
     // This is a dummy we use when the Agent's assigned connector is not installed
-    protected final ConnectorImpl notFoundConnector = new ConnectorImpl();
+    protected final Connector notFoundConnector = new Connector();
     protected final String notFoundConnectorType = "NOT_FOUND_CONNECTOR";
 
     @Inject
@@ -208,7 +209,7 @@ public class AdminAgentActivity
     }
 
     @Override
-    public void onConnectorSelected(ConnectorImpl connector) {
+    public void onConnectorSelected(Connector connector) {
         assignedConnector = connector;
         adminContent.setAssignedConnector(connector);
     }
@@ -259,7 +260,7 @@ public class AdminAgentActivity
     protected void findAssignedConnector() {
         assignedConnector = null;
         if (agent != null && agent.getConnectorType() != null) {
-            for (ConnectorImpl connector : connectors) {
+            for (Connector connector : connectors) {
                 if (connector.getType().equals(agent.getConnectorType())) {
                     assignedConnector = connector;
                     break;
@@ -268,7 +269,7 @@ public class AdminAgentActivity
             if (assignedConnector != null) {
                 assignedConnector.readSettings(agent);
             } else if (!Agent.NO_CONNECTOR_ASSIGNED_TYPE.equals(agent.getConnectorType())){
-                notFoundConnector.setDisplayName(
+                notFoundConnector.setName(
                     agent.getConnectorType() +
                         " (" + environment.getMessages().connectorNotInstalled() + ")"
                 );

@@ -51,6 +51,8 @@ public class AssetActivity
     final JsonObjectMapper jsonObjectMapper;
 
     protected double[] selectedCoordinates;
+    protected Asset parentAsset;
+    protected boolean isParentSelection;
 
     @Inject
     public AssetActivity(Environment environment,
@@ -95,8 +97,9 @@ public class AssetActivity
         writeToView();
         clearViewFieldErrors();
         view.clearFormMessages();
-        setViewMode(true);
+        setEditMode(true);
         view.setFormBusy(false);
+        writeParentAssetToView();
     }
 
     @Override
@@ -104,8 +107,16 @@ public class AssetActivity
         writeToView();
         clearViewFieldErrors();
         view.clearFormMessages();
-        setViewMode(false);
+        setEditMode(false);
         view.setFormBusy(false);
+        if (asset.getParentId() != null) {
+            loadAsset(asset.getParentId(), loadedParentAsset -> {
+                this.parentAsset = loadedParentAsset;
+                writeParentAssetToView();
+            });
+        } else {
+            writeParentAssetToView();
+        }
     }
 
     @Override
@@ -114,7 +125,14 @@ public class AssetActivity
 
     @Override
     protected void onAssetSelectionChange(String selectedAssetId) {
-        environment.getPlaceController().goTo(new AssetPlace(selectedAssetId));
+        if (isParentSelection) {
+            loadAsset(selectedAssetId, loadedParentAsset -> {
+                parentAsset = loadedParentAsset;
+                writeParentAssetToView();
+            });
+        } else {
+            environment.getPlaceController().goTo(new AssetPlace(selectedAssetId));
+        }
     }
 
     @Override
@@ -133,7 +151,7 @@ public class AssetActivity
 
     @Override
     public void onMapClicked(double lng, double lat) {
-        selectedCoordinates = new double[] {lng, lat};
+        selectedCoordinates = new double[]{lng, lat};
         view.showMapPopup(lng, lat, environment.getMessages().selectedLocation());
         view.setLocation(getLocation(selectedCoordinates));
     }
@@ -143,7 +161,14 @@ public class AssetActivity
         view.setFormBusy(true);
         view.clearFormMessages();
         clearViewFieldErrors();
+
+        // If the asset was in the root of the tree (so this check must be before
+        // we read the new parent asset state from the view), force an asset tree
+        // root refresh when the update is complete
+        boolean forceRootRefresh = asset.getParentId() == null;
+
         readFromView();
+
         environment.getRequestService().execute(
             assetMapper,
             requestParams -> {
@@ -155,7 +180,7 @@ public class AssetActivity
                 environment.getEventBus().dispatch(new ShowInfoEvent(
                     environment.getMessages().assetUpdated(asset.getName())
                 ));
-                environment.getEventBus().dispatch(new AssetsModifiedEvent(asset));
+                environment.getEventBus().dispatch(new AssetsModifiedEvent(asset, forceRootRefresh));
                 environment.getPlaceController().goTo(new AssetPlace(assetId));
             },
             ex -> handleRequestException(ex, environment)
@@ -214,6 +239,39 @@ public class AssetActivity
         );
     }
 
+
+    @Override
+    public void beginParentSelection() {
+        isParentSelection = true;
+        view.setParentSelection(true);
+    }
+
+    @Override
+    public void confirmParentSelection() {
+        isParentSelection = false;
+        assetBrowserPresenter.selectAsset(asset.getId(), asset.getPath());
+        view.setParentSelection(false);
+    }
+
+    @Override
+    public void setRootParentSelection() {
+        this.parentAsset = null;
+        writeParentAssetToView();
+    }
+
+    @Override
+    public void resetParentSelection() {
+        isParentSelection = false;
+        assetBrowserPresenter.selectAsset(asset.getId(), asset.getPath());
+        view.setParentSelection(false);
+        if (asset.getParentId() != null) {
+            loadAsset(asset.getParentId(), loadedParentAsset -> {
+                this.parentAsset = loadedParentAsset;
+                writeParentAssetToView();
+            });
+        }
+    }
+
     protected void writeToView() {
         view.setName(asset.getName());
         view.setType(asset.getType());
@@ -227,12 +285,19 @@ public class AssetActivity
         }
     }
 
+    protected void writeParentAssetToView() {
+        view.setParentAsset(
+            parentAsset != null ? parentAsset.getName() : environment.getMessages().assetHasNoParent()
+        );
+    }
+
     protected void readFromView() {
         asset.setName(view.getName());
         asset.setType(view.getType());
         if (selectedCoordinates != null) {
             asset.setCoordinates(selectedCoordinates);
         }
+        asset.setParentId(parentAsset != null ? parentAsset.getId() : null);
     }
 
     protected void clearViewFieldErrors() {
@@ -246,7 +311,7 @@ public class AssetActivity
         return environment.getMessages().selectLocation();
     }
 
-    protected void setViewMode(boolean enableCreate) {
+    protected void setEditMode(boolean enableCreate) {
         view.enableCreate(enableCreate);
         view.enableUpdate(!enableCreate);
         view.enableDelete(!enableCreate);

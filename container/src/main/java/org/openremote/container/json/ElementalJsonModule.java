@@ -19,11 +19,14 @@
  */
 package org.openremote.container.json;
 
-import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import elemental.json.*;
 
@@ -31,19 +34,17 @@ import java.io.IOException;
 
 public class ElementalJsonModule extends SimpleModule {
 
-    private static class ElementalJsonDeserializer<T extends JsonValue> extends JsonDeserializer<T> {
+    private static class ElementalJsonDeserializer<T extends JsonValue> extends StdDeserializer<T> {
+
+        public ElementalJsonDeserializer() {
+            super(JsonValue.class);
+        }
+
         @Override
-        public T deserialize(JsonParser p, DeserializationContext context) throws IOException, JsonProcessingException {
-            return (T)genDeserialise(p, context);
+        public T deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException, JsonProcessingException {
+            return (T) Json.parse(jsonParser.getCodec().readTree(jsonParser).toString());
         }
     }
-//
-//    private static class ElementalJsonDeserializer extends JsonDeserializer<JsonValue> {
-//        @Override
-//        public JsonValue deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-//            return deserialize(p, ctxt);
-//        }
-//    }
 
     private static class ElementalJsonSerializer extends JsonSerializer<JsonValue> {
         @Override
@@ -52,85 +53,15 @@ public class ElementalJsonModule extends SimpleModule {
         }
     }
 
-    protected static String JsonParserReader(JsonParser parser) throws IOException {
-        JsonToken startToken = parser.getCurrentToken();
-        JsonToken endToken = startToken.equals(JsonToken.START_OBJECT) ? JsonToken.END_OBJECT : JsonToken.END_ARRAY;
-
-        if (!startToken.equals(JsonToken.START_ARRAY) && !startToken.equals(JsonToken.START_OBJECT)) {
-            throw new RuntimeException("Only Objects and Arrays can be processed");
-        }
-        JsonToken token = startToken;
-        int counter = 1;
-        String str = parser.getText();
-        JsonToken prevToken = token;
-        token = parser.nextToken();
-
-        while(token != null && counter > 0) {
-            if (token.equals(endToken)) {
-                counter--;
-            } else if (token.equals(startToken)) {
-                counter++;
-            }
-
-            String strFormat;
-            if (token.equals(JsonToken.VALUE_STRING)) {
-                strFormat = "\"%1$s\"";
-            } else if (token.equals(JsonToken.FIELD_NAME)) {
-                strFormat = "\"%1$s\":";
-            } else {
-                strFormat = "%1$s";
-            }
-
-            str += String.format(strFormat, parser.getText());
-            prevToken = token;
-            token = parser.nextToken();
-
-            if (token != null && !prevToken.equals(JsonToken.FIELD_NAME) && !prevToken.equals(JsonToken.START_ARRAY) && !prevToken.equals(JsonToken.START_OBJECT) && !token.equals(JsonToken.END_ARRAY) && !token.equals(JsonToken.END_OBJECT)) {
-                str += ",";
-            }
-        }
-
-        return str;
-    }
-
-    protected static JsonValue genDeserialise(JsonParser parser, DeserializationContext context) throws IOException, JsonProcessingException {
-        JsonToken token = parser.getCurrentToken();
-        token = token == null || token.equals(JsonToken.FIELD_NAME) ? parser.nextValue() : token;
-        switch(token) {
-            case START_OBJECT:
-                String objStr = JsonParserReader(parser);
-                return Json.parse(objStr);
-            case START_ARRAY:
-                String arrStr = JsonParserReader(parser);
-                return Json.parse(arrStr);
-            case VALUE_FALSE:
-                return Json.create(false);
-            case VALUE_TRUE:
-                return Json.create(true);
-            case VALUE_NULL:
-                return Json.createNull();
-            case VALUE_NUMBER_FLOAT:
-                return Json.create(parser.getFloatValue());
-            case VALUE_NUMBER_INT:
-                return Json.create(parser.getIntValue());
-            case VALUE_STRING:
-                return Json.create(parser.getValueAsString());
-            case VALUE_EMBEDDED_OBJECT:
-                throw new JsonParseException("Elemental Json Parser doesn't support Embedded Object Deserialization", JsonLocation.NA);
-            default:
-                throw new JsonParseException("Elemental Json Parser doesn't support this token type", JsonLocation.NA);
-        }
-    }
-
     public ElementalJsonModule() {
-        super("ElementalJsonModule", new Version(1,0,0, "latest", null, null));
+        super("ElementalJsonModule", new Version(1, 0, 0, "latest", null, null));
         ElementalJsonSerializer serializer = new ElementalJsonSerializer();
         ElementalJsonDeserializer deserializer = new ElementalJsonDeserializer();
         this.addSerializer(JsonValue.class, serializer);
-        this.addDeserializer(JsonValue.class, deserializer);
         this.addDeserializer(JsonObject.class, deserializer);
         this.addDeserializer(JsonString.class, deserializer);
         this.addDeserializer(JsonNumber.class, deserializer);
         this.addDeserializer(JsonArray.class, deserializer);
+        this.addDeserializer(JsonValue.class, deserializer);
     }
 }

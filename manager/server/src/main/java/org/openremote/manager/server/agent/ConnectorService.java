@@ -62,11 +62,11 @@ public class ConnectorService implements ContainerService {
 
     }
 
-    public Map<String, ConnectorComponent> getConnectors() {
+    public Map<String, ConnectorComponent> getConnectorComponents() {
         return connectors;
     }
 
-    public ConnectorComponent getConnectorByType(String connectorType) {
+    public ConnectorComponent getConnectorComponentByType(String connectorType) {
         for (ConnectorComponent connector : connectors.values()) {
             if (connector.getType().equals(connectorType))
                 return connector;

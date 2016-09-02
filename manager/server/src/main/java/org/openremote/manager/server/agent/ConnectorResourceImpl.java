@@ -19,10 +19,8 @@
  */
 package org.openremote.manager.server.agent;
 
-import org.openremote.container.util.IdentifierUtil;
 import org.openremote.container.web.WebResource;
-import org.openremote.manager.shared.asset.AssetInfo;
-import org.openremote.manager.shared.attribute.Attributes;
+import org.openremote.manager.shared.connector.Connector;
 import org.openremote.manager.shared.connector.ConnectorComponent;
 import org.openremote.manager.shared.connector.ConnectorResource;
 import org.openremote.manager.shared.http.RequestParams;
@@ -39,41 +37,12 @@ public class ConnectorResourceImpl extends WebResource implements ConnectorResou
     }
 
     @Override
-    public AssetInfo[] getConnectors(@BeanParam RequestParams requestParams) {
-        Collection<ConnectorComponent> connectors = connectorService.getConnectors().values();
-        return connectors
+    public Connector[] getConnectors(@BeanParam RequestParams requestParams) {
+        Collection<ConnectorComponent> connectorComponents = connectorService.getConnectorComponents().values();
+        return connectorComponents
                 .stream()
-                .map(c -> new AssetInfo(IdentifierUtil.getEncodedHash(c.getType().getBytes()), c.getDisplayName(), c.getType(), null))
-                .toArray(size -> new AssetInfo[size]);
+                .map(c -> new Connector(c.getDisplayName(), c.getType(), c.getConnectorSettings()))
+                .toArray(Connector[]::new);
     }
 
-
-    @Override
-    public AssetInfo getConnector(@BeanParam RequestParams requestParams, String connectorId) {
-        Collection<ConnectorComponent> connectors = connectorService.getConnectors().values();
-        ConnectorComponent connector = connectors
-                .stream()
-                .filter(c -> IdentifierUtil.getEncodedHash(c.getType().getBytes()).equals(connectorId))
-                .findFirst()
-                .orElse(null);
-        return connector == null ? null : new AssetInfo(connectorId, connector.getDisplayName(), connector.getType(), null);
-    }
-
-    @Override
-    public AssetInfo[] getChildren(@BeanParam RequestParams requestParams, String parentId) {
-        // TODO: Implement Connector Resource getChildren
-        return new AssetInfo[0];
-    }
-
-    @Override
-    public Attributes getAssetSettings(@BeanParam RequestParams requestParams, String parentId) {
-        // TODO: Implement Connector Resource getAssetSettings
-        return null;
-    }
-
-    @Override
-    public Attributes getAssetDiscoverySettings(@BeanParam RequestParams requestParams, String parentId) {
-        // TODO: Implement Connector Resource getAssetDiscoverySettings
-        return null;
-    }
 }

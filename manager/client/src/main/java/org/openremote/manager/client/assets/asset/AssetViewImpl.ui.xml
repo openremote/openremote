@@ -18,18 +18,18 @@
         .nameTextBox,
         .typeTextBox,
         .attributeTextBox {
-            width: 25em;
+            width: 100%;
         }
 
         .mapWidget {
-            margin: 0 1em;
-            width: 25em;
-            height: 15em;
+            margin-left: 2em;
+            width: 44%;
+            height: 24em;
         }
+    </ui:style>
 
-</ui:style>
-
-    <w:FlexSplitPanel handleStyle="{widgetStyle.SplitPanelHandle} {themeStyle.SplitPanelHandle}"
+    <w:FlexSplitPanel ui:field="splitPanel"
+                      handleStyle="{widgetStyle.SplitPanelHandle} {themeStyle.SplitPanelHandle}"
                       firstPanelWidth="250"
                       firstPanelMinWidth="250"
                       secondPanelMinWidth="1000">
@@ -60,107 +60,152 @@
 
                 <div class="flex {widgetStyle.MainContent} {themeStyle.MainContent}">
 
-                    <g:FlowPanel
-                            styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} {themeStyle.FormMessages} success"
-                            visible="false">
-                        <w:IconLabel icon="check"
-                                     addStyleNames="{widgetStyle.MessagesIcon} {themeStyle.MessagesIcon}"/>
-                        <g:FlowPanel ui:field="formMessagesSuccess"/>
-                    </g:FlowPanel>
-
-                    <g:FlowPanel
-                            styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} {themeStyle.FormMessages} error"
-                            visible="false">
-                        <w:IconLabel icon="warning"
-                                     addStyleNames="{widgetStyle.MessagesIcon} {themeStyle.MessagesIcon}"/>
-                        <g:FlowPanel ui:field="formMessagesError"/>
-                    </g:FlowPanel>
-
-                    <div class="{widgetStyle.Headline1} {themeStyle.Headline1}">
-                        <g:InlineLabel text="{managerMessages.editAsset}"/>
-                    </div>
-
-                    <div class="{widgetStyle.HeadlineSub} {themeStyle.HeadlineSub}">
-                        <span class="required">*</span>
-                        <g:InlineLabel text="{managerMessages.requiredFields}"/>
-                    </div>
-
                     <g:HTMLPanel styleName="flex layout horizontal">
 
-                        <w:Form ui:field="form" addStyleNames="flex">
-                            <w:FormGroup ui:field="nameGroup">
-                                <w:label>
-                                    <w:FormLabel text="{managerMessages.assetName}" required="true"/>
-                                </w:label>
-                                <w:field>
-                                    <w:FormField>
-                                        <g:TextBox ui:field="nameInput"
-                                                   addStyleNames="{style.nameTextBox} {widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
-                                    </w:FormField>
-                                </w:field>
-                            </w:FormGroup>
+                        <g:HTMLPanel styleName="flex layout vertical">
 
-                            <w:FormGroup>
-                                <w:label>
-                                    <w:FormLabel text="{managerMessages.createdOn}"/>
-                                </w:label>
-                                <w:field>
-                                    <w:FormField>
-                                        <g:Label ui:field="createdOnLabel"
-                                                   addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormValueLabel} {themeStyle.FormValueLabel}"/>
-                                    </w:FormField>
-                                </w:field>
-                            </w:FormGroup>
+                            <g:FlowPanel
+                                    styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} {themeStyle.FormMessages} success"
+                                    visible="false">
+                                <w:IconLabel icon="check"
+                                             addStyleNames="{widgetStyle.MessagesIcon} {themeStyle.MessagesIcon}"/>
+                                <g:FlowPanel ui:field="formMessagesSuccess"/>
+                            </g:FlowPanel>
 
-                            <w:FormGroup ui:field="typeGroup">
-                                <w:label>
-                                    <w:FormLabel text="{managerMessages.assetType}" required="true"/>
-                                </w:label>
-                                <w:field>
-                                    <w:FormField>
-                                        <g:TextBox ui:field="typeInput"
-                                                   addStyleNames="{style.typeTextBox} {widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
-                                    </w:FormField>
-                                </w:field>
-                            </w:FormGroup>
+                            <g:FlowPanel
+                                    styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} {themeStyle.FormMessages} error"
+                                    visible="false">
+                                <w:IconLabel icon="warning"
+                                             addStyleNames="{widgetStyle.MessagesIcon} {themeStyle.MessagesIcon}"/>
+                                <g:FlowPanel ui:field="formMessagesError"/>
+                            </g:FlowPanel>
 
-                            <w:FormGroup>
-                                <w:label>
-                                    <w:FormLabel text="{managerMessages.location}"/>
-                                </w:label>
-                                <w:field>
-                                    <w:FormField>
-                                        <g:Label ui:field="locationLabel"
-                                                 addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormValueLabel} {themeStyle.FormValueLabel}"/>
-                                    </w:FormField>
-                                </w:field>
-                            </w:FormGroup>
+                            <div class="{widgetStyle.Headline1} {themeStyle.Headline1}">
+                                <g:InlineLabel text="{managerMessages.editAsset}"/>
+                            </div>
 
-                            <g:FlowPanel ui:field="attributesContainer"/>
+                            <div class="{widgetStyle.HeadlineSub} {themeStyle.HeadlineSub}">
+                                <span class="required">*</span>
+                                <g:InlineLabel text="{managerMessages.requiredFields}"/>
+                            </div>
 
-                            <w:FormGroup>
-                                <w:field>
-                                    <w:FormField>
-                                        <w:PushButton ui:field="updateButton"
-                                                      addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                                      text="{managerMessages.updateAsset}"
-                                                      visible="false"
-                                                      icon="save"/>
-                                        <w:PushButton ui:field="createButton"
-                                                      addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                                      text="{managerMessages.createAsset}"
-                                                      visible="false"
-                                                      icon="save"/>
-                                        <w:PushButton ui:field="deleteButton"
-                                                      addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonDanger} {themeStyle.FormButtonDanger} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                                      text="{managerMessages.deleteAsset}"
-                                                      visible="false"
-                                                      icon="trash"/>
-                                    </w:FormField>
-                                </w:field>
-                            </w:FormGroup>
 
-                        </w:Form>
+                            <w:Form ui:field="form" addStyleNames="flex">
+                                <w:FormGroup ui:field="nameGroup">
+                                    <w:label>
+                                        <w:FormLabel text="{managerMessages.assetName}" required="true"/>
+                                    </w:label>
+                                    <w:field>
+                                        <w:FormField addStyleNames="larger">
+                                            <g:TextBox ui:field="nameInput"
+                                                       addStyleNames="{style.nameTextBox} {widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                                        </w:FormField>
+                                    </w:field>
+                                </w:FormGroup>
+
+                                <w:FormGroup ui:field="createdOnGroup">
+                                    <w:label>
+                                        <w:FormLabel text="{managerMessages.createdOn}"/>
+                                    </w:label>
+                                    <w:field>
+                                        <w:FormField>
+                                            <g:Label ui:field="createdOnLabel"
+                                                     addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormValueLabel} {themeStyle.FormValueLabel}"/>
+                                        </w:FormField>
+                                    </w:field>
+                                </w:FormGroup>
+
+                                <w:FormGroup>
+                                    <w:label>
+                                        <w:FormLabel text="{managerMessages.parentAsset}"/>
+                                    </w:label>
+                                    <w:field>
+                                        <w:FormField addStyleNames="larger">
+                                            <g:FlowPanel styleName="layout horizontal center">
+                                                <g:TextBox ui:field="parentAssetLabel"
+                                                           readOnly="true"
+                                                           addStyleNames="{style.typeTextBox} {widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                                                <w:PushButton ui:field="selectParentButton"
+                                                              addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButton} {themeStyle.FormButton} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                                              text="{managerMessages.selectParentAsset}"
+                                                              icon="external-link-square"/>
+                                                <w:PushButton ui:field="setRootParentSelectionButton"
+                                                              addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButton} {themeStyle.FormButton} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                                              visible="false"
+                                                              text="{managerMessages.setRootParentAsset}"
+                                                              icon="minus-square"/>
+                                                <w:PushButton ui:field="confirmParentSelectionButton"
+                                                              addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                                              visible="false"
+                                                              text="{managerMessages.OK}"
+                                                              icon="check"/>
+                                                <w:PushButton ui:field="resetParentSelectionButton"
+                                                              addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButton} {themeStyle.FormButton} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                                              visible="false"
+                                                              text="{managerMessages.reset}"
+                                                              icon="undo"/>
+                                            </g:FlowPanel>
+                                        </w:FormField>
+                                    </w:field>
+                                    <w:info>
+                                        <g:Label ui:field="selectParentInfoLabel"
+                                                 visible="false"
+                                                 text="{managerMessages.selectParentInAssetTree}"/>
+                                    </w:info>
+                                </w:FormGroup>
+
+                                <w:FormGroup ui:field="typeGroup">
+                                    <w:label>
+                                        <w:FormLabel text="{managerMessages.assetType}" required="true"/>
+                                    </w:label>
+                                    <w:field>
+                                        <w:FormField addStyleNames="larger">
+                                            <g:TextBox ui:field="typeInput"
+                                                       readOnly="true"
+                                                       addStyleNames="{style.typeTextBox} {widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                                        </w:FormField>
+                                    </w:field>
+                                </w:FormGroup>
+
+                                <w:FormGroup ui:field="locationGroup">
+                                    <w:label>
+                                        <w:FormLabel text="{managerMessages.location}"/>
+                                    </w:label>
+                                    <w:field>
+                                        <w:FormField>
+                                            <g:Label ui:field="locationLabel"
+                                                     addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormValueLabel} {themeStyle.FormValueLabel}"/>
+                                        </w:FormField>
+                                    </w:field>
+                                </w:FormGroup>
+
+                                <g:FlowPanel ui:field="attributesContainer"/>
+
+                                <w:FormGroup>
+                                    <w:field>
+                                        <w:FormField>
+                                            <w:PushButton ui:field="updateButton"
+                                                          addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                                          text="{managerMessages.updateAsset}"
+                                                          visible="false"
+                                                          icon="save"/>
+                                            <w:PushButton ui:field="createButton"
+                                                          addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                                          text="{managerMessages.createAsset}"
+                                                          visible="false"
+                                                          icon="save"/>
+                                            <w:PushButton ui:field="deleteButton"
+                                                          addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonDanger} {themeStyle.FormButtonDanger} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                                          text="{managerMessages.deleteAsset}"
+                                                          visible="false"
+                                                          icon="trash"/>
+                                        </w:FormField>
+                                    </w:field>
+                                </w:FormGroup>
+
+                            </w:Form>
+
+                        </g:HTMLPanel>
 
                         <w:MapWidget ui:field="mapWidget"
                                      addStyleNames="{style.mapWidget} {widgetStyle.ItemWithBorder} {themeStyle.ItemWithBorder}"/>

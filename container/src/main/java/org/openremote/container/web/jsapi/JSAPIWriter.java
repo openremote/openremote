@@ -23,6 +23,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.nio.charset.Charset;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -72,7 +73,7 @@ public class JSAPIWriter {
             if (clientIsGzipSupported(req)) {
                 ByteArrayOutputStream compressedContent = new ByteArrayOutputStream();
                 GZIPOutputStream gzipstream = new GZIPOutputStream(compressedContent);
-                gzipstream.write(stringWriter.toString().getBytes());
+                gzipstream.write(stringWriter.toString().getBytes(Charset.forName("utf-8")));
                 gzipstream.finish();
 
                 // get the compressed content
@@ -89,7 +90,7 @@ public class JSAPIWriter {
 
             } else {
                 ServletOutputStream output = resp.getOutputStream();
-                byte[] bytes = stringWriter.toString().getBytes();
+                byte[] bytes = stringWriter.toString().getBytes(Charset.forName("utf-8"));
                 resp.setContentLength(bytes.length);
                 output.write(bytes);
                 output.flush();

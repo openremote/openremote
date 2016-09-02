@@ -23,14 +23,19 @@ import com.google.gwt.dom.client.Style;
 import com.google.gwt.uibinder.client.UiChild;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HasWidgets;
+import com.google.gwt.user.client.ui.Label;
 
 public class FormGroup extends FlowPanel implements HasWidgets {
 
+    protected FlowPanel groupPanel = new FlowPanel();
     protected FormLabel formLabel;
     protected FormField formField;
+    protected Label infoLabel;
 
     public FormGroup() {
-        getElement().addClassName("layout horizontal center or-FormGroup theme-FormGroup");
+        getElement().addClassName("layout vertical or-FormGroup theme-FormGroup");
+        groupPanel.setStyleName("layout horizontal center");
+        add(groupPanel);
     }
 
     @UiChild(tagname = "label", limit = 1)
@@ -38,7 +43,7 @@ public class FormGroup extends FlowPanel implements HasWidgets {
         if (this.formLabel != null)
             throw new IllegalStateException("Form label already set");
         this.formLabel = formLabel;
-        add(formLabel);
+        groupPanel.add(formLabel);
     }
 
     @UiChild(tagname = "field", limit = 1)
@@ -46,12 +51,20 @@ public class FormGroup extends FlowPanel implements HasWidgets {
         if (this.formField != null)
             throw new IllegalStateException("Form field already set");
         this.formField = formField;
-        add(formField);
+        groupPanel.add(formField);
 
         if (this.formLabel != null) {
             formField.setFormFieldId(this.formLabel.getFormFieldId());
         }
+    }
 
+    @UiChild(tagname = "info", limit = 1)
+    public void addInfolabel(Label infoLabel) {
+        if (this.infoLabel != null)
+            throw new IllegalStateException("Form info label already set");
+        this.infoLabel = infoLabel;
+        infoLabel.setStyleName("or-FormInfoLabel theme-FormInfoLabel");
+        add(infoLabel);
     }
 
     public FormLabel getFormLabel() {
@@ -60,6 +73,10 @@ public class FormGroup extends FlowPanel implements HasWidgets {
 
     public FormField getFormField() {
         return formField;
+    }
+
+    public Label getInfoLabel() {
+        return infoLabel;
     }
 
     public Style getStyle() {
@@ -75,11 +92,18 @@ public class FormGroup extends FlowPanel implements HasWidgets {
 
     public void setAlignStart(boolean alignStart) {
         if (alignStart) {
-            getElement().removeClassName("center");
-            getElement().addClassName("start");
+            groupPanel.removeStyleName("center");
+            groupPanel.addStyleName("start");
         } else {
-            getElement().removeClassName("start");
-            getElement().addClassName("center");
+            groupPanel.removeStyleName("start");
+            groupPanel.addStyleName("center");
+        }
+    }
+
+    public void setEnabled(boolean enabled) {
+        getElement().removeClassName("disabled");
+        if (!enabled) {
+            getElement().addClassName("disabled");
         }
     }
 }

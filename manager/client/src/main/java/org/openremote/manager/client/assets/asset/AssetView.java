@@ -37,6 +37,15 @@ public interface AssetView extends AssetBrowsingView<AssetView.Presenter>, FormV
         void create();
 
         void delete();
+
+        void beginParentSelection();
+
+        void confirmParentSelection();
+
+        void setRootParentSelection();
+
+        void resetParentSelection();
+
     }
 
     void setName(String name);
@@ -50,6 +59,10 @@ public interface AssetView extends AssetBrowsingView<AssetView.Presenter>, FormV
     String getType();
 
     void setLocation(String location);
+
+    void setParentAsset(String name);
+
+    void setParentSelection(boolean isSelecting);
 
     void initialiseMap(JsonObject mapOptions);
 

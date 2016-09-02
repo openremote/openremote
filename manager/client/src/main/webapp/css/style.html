@@ -110,7 +110,7 @@
 
     .or-PushButton.gwt-PushButton-up-disabled {
         cursor: not-allowed;
-        opacity: .5;
+        opacity: .44;
     }
 
     .or-PushButton.gwt-PushButton-up-disabled:hover,
@@ -180,6 +180,7 @@
     }
 
     .or-Form {
+        margin-top: 0.8em;
         opacity: 1;
         transition: opacity 0.1s ease-in-out;
         -moz-transition: opacity 0.1s ease-in-out;
@@ -202,7 +203,12 @@
 
     .or-FormGroup {
         margin-bottom: 0.4em;
-        min-height: 2.4em;
+        min-height: 2.6em;
+    }
+
+    .or-FormGroup.disabled .or-FormLabel,
+    .or-FormGroup.disabled .or-FormValueLabel {
+        opacity: 0.44;
     }
 
     .or-FormLabel {
@@ -219,30 +225,52 @@
     }
 
     .or-FormField {
+    }
 
+    .or-FormField.larger {
+        width: 100%;
+    }
+
+    .or-FormInfoLabel {
+        font-size: 0.75em;
     }
 
     .or-FormControl {
+        white-space: nowrap;
         font-family: 'Open Sans', Helvetica, Arial, Lucida, sans-serif;
         font-size: inherit;
-        margin: 0.4em;
         border: none;
+        margin: 0 0.4em;
     }
 
     .or-FormControl[disabled] {
         cursor: not-allowed;
-        opacity: .5;
+        opacity: .44;
     }
 
     .or-FormInputText {
         border-bottom: 1px solid;
         font-size: inherit;
-        padding: 0.2em;
+    }
+
+    .or-FormInputText[readOnly] {
+        border-color: transparent;
+        cursor: text;
+    }
+
+    .or-FormInputText,
+    .or-FormValueLabel {
+        padding: 0.2em 0;
+    }
+
+    .or-FormValueLabel {
+        border-bottom: 1px solid transparent;
     }
 
     .or-FormButton,
     .or-FormButtonDanger,
     .or-FormButtonPrimary {
+        padding: 0 0.4em;
         border: 2px dotted transparent;
     }
 
@@ -357,6 +385,16 @@
     .or-ItemWithBorder {
         border-width: 1px;
         border-style: solid;
+    }
+
+    .or-ItemWithBorder .disabled {
+        opacity: 0.44;
+        pointer-events: none;
+        user-select: none;
+        -webkit-user-select: none; /* Chrome/Safari/Opera */
+        -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* IE/Edge */
+        -webkit-touch-callout: none; /* iOS Safari */
     }
 
     .or-ConfirmationDialog {

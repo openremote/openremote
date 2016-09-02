@@ -41,28 +41,16 @@ public class Controller2Endpoint extends DefaultEndpoint {
     final protected boolean isDiscovery;
     final protected boolean isInventory;
 
-    @UriParam(
-        label = "Host/IP Address",
-        description = "The OR Controller 2 network hostname or IP address"
-    )
+    @UriParam
     protected String host;
 
-    @UriParam(
-        label = "Port",
-        description = "The OR Controller 2 network port"
-    )
+    @UriParam
     protected Integer port;
 
-    @UriParam(
-        label = "Username",
-        description = "The OR Controller 2 Username"
-    )
+    @UriParam
     protected String username;
 
-    @UriParam(
-        label = "Password",
-        description = "The OR Controller 2 Password"
-    )
+    @UriParam
     protected String password;
 
     protected String deviceUri;
@@ -129,8 +117,6 @@ public class Controller2Endpoint extends DefaultEndpoint {
         if (adapter != null)
             adapterManager.closeAdapter(adapter);
     }
-
-
 
     @Override
     public Producer createProducer() throws Exception {

@@ -39,18 +39,19 @@ public class Controller2Component extends UriEndpointComponent implements Connec
     public static final String HEADER_RESOURCE_URI = Controller2Component.class.getCanonicalName() + ".HEADER_RESOURCE_URI";
     public static final String HEADER_COMMAND_VALUE = Controller2Component.class.getCanonicalName() + ".HEADER_COMMAND_VALUE";
     protected final Controller2Adapter.Manager adapterManager;
-    protected static final Attributes agentSettings;
+
+    protected static final Attributes settings;
 
     static {
-        agentSettings = new Attributes();
-        agentSettings.add(ConnectorUtil.buildConnectorSetting(
+        settings = new Attributes();
+        settings.add(ConnectorUtil.buildConnectorSetting(
                 "host",
                 AttributeType.STRING,
                 "Host/IP Address",
                 "The OR Controller network hostname or IP address",
                 true
         ));
-        agentSettings.add(ConnectorUtil.buildConnectorSetting(
+        settings.add(ConnectorUtil.buildConnectorSetting(
                 "port",
                 AttributeType.INTEGER,
                 "Port",
@@ -59,14 +60,14 @@ public class Controller2Component extends UriEndpointComponent implements Connec
                 "8868",
                 null
         ));
-        agentSettings.add(ConnectorUtil.buildConnectorSetting(
+        settings.add(ConnectorUtil.buildConnectorSetting(
                 "username",
                 AttributeType.STRING,
                 "Username",
                 "The OR Controller Username",
                 false
         ));
-        agentSettings.add(ConnectorUtil.buildConnectorSetting(
+        settings.add(ConnectorUtil.buildConnectorSetting(
                 "password",
                 AttributeType.STRING,
                 "Password",
@@ -127,8 +128,8 @@ public class Controller2Component extends UriEndpointComponent implements Connec
     }
 
     @Override
-    public Attributes getChildAssetSettings(Asset parentAsset) {
-        return null;
+    public Attributes getConnectorSettings() {
+        return settings;
     }
 
     @Override

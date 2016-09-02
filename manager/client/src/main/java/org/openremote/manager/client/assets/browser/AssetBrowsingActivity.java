@@ -26,6 +26,7 @@ import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.util.TextUtil;
+import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.map.GeoJSON;
@@ -105,7 +106,12 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
 
         asset = null;
         if (assetId != null) {
-            loadAsset();
+            onBeforeAssetLoad();
+            loadAsset(assetId, loadedAsset -> {
+                this.asset = loadedAsset;
+                assetBrowserPresenter.selectAsset(asset.getId(), asset.getPath());
+                onAssetLoaded();
+            });
         } else {
             startCreateAsset();
         }
@@ -127,17 +133,12 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
         super.onStop();
     }
 
-    protected void loadAsset() {
-        onBeforeAssetLoad();
+    protected void loadAsset(String id, Consumer<Asset> assetConsumer) {
         environment.getRequestService().execute(
             assetMapper,
-            requestParams -> assetResource.get(requestParams, assetId),
+            requestParams -> assetResource.get(requestParams, id),
             200,
-            asset -> {
-                this.asset = asset;
-                assetBrowserPresenter.selectAsset(asset.getId(), asset.getPath());
-                onAssetLoaded();
-            },
+            assetConsumer::accept,
             ex -> handleRequestException(ex, environment)
         );
     }

@@ -212,4 +212,16 @@ public interface ManagerMessages extends Messages {
     String confirmation();
 
     String confirmationDelete(String label);
+
+    String parentAsset();
+
+    String selectParentAsset();
+
+    String assetHasNoParent();
+
+    String setRootParentAsset();
+
+    String selectParentInAssetTree();
+
+    String reset();
 }

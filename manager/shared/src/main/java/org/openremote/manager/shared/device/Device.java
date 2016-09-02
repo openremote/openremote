@@ -1,7 +1,7 @@
 package org.openremote.manager.shared.device;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreType;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import elemental.json.Json;
 import elemental.json.JsonArray;
 import elemental.json.JsonObject;
@@ -21,7 +21,7 @@ import org.openremote.manager.shared.asset.AssetType;
  * and mapping purposes.
  *
  */
-
+@JsonIgnoreType
 public class Device extends Asset {
     protected static final String URI_KEY = "uri";
     protected static final String RESOURCES_KEY = "resources";

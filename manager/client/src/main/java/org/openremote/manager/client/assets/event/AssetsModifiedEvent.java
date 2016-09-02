@@ -5,13 +5,23 @@ import org.openremote.manager.shared.event.Event;
 
 public class AssetsModifiedEvent extends Event {
 
-    Asset asset;
+    final protected Asset asset;
+    final protected boolean forceRootRefresh;
 
     public AssetsModifiedEvent(Asset asset) {
+        this(asset, false);
+    }
+
+    public AssetsModifiedEvent(Asset asset, boolean forceRootRefresh) {
         this.asset = asset;
+        this.forceRootRefresh = forceRootRefresh;
     }
 
     public Asset getAsset() {
         return asset;
+    }
+
+    public boolean isForceRootRefresh() {
+        return forceRootRefresh;
     }
 }

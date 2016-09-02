@@ -2,6 +2,7 @@ package org.openremote.test.controller2;
 
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
+import org.openremote.agent.controller2.Controller2Component;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerContext;
@@ -11,10 +12,12 @@ import org.openremote.manager.shared.device.Device;
 import java.util.ArrayList;
 import java.util.List;
 
+/*
 import static org.openremote.manager.shared.connector.AssetInventory.Action.ADD;
 import static org.openremote.manager.shared.connector.AssetInventory.Action.REMOVE;
 import static org.openremote.manager.shared.connector.AssetInventory.Action.UPDATE;
 import static org.openremote.manager.shared.connector.AssetInventory.HEADER_DEVICE_ACTION;
+*/
 
 // TODO This is an example service for testing, replaced later with production code
 public class Controller2Service implements ContainerService {
@@ -36,7 +39,9 @@ public class Controller2Service implements ContainerService {
         MessageBrokerContext context = messageBrokerService.getContext();
         messageProducerTemplate = context.createProducerTemplate();
 
-        context.addRoutes(new RouteBuilder() {
+        configure(context);
+
+/*        context.addRoutes(new RouteBuilder() {
             @Override
             public void configure() throws Exception {
                 from("mockController2:10.0.0.123:8080/inventory")
@@ -83,7 +88,7 @@ public class Controller2Service implements ContainerService {
                         .routeId("Read Resource")
                         .to("mockController2:10.0.0.123:8080");
             }
-        });
+        });*/
     }
 
     @Override
@@ -92,6 +97,10 @@ public class Controller2Service implements ContainerService {
 
     @Override
     public void stop(Container container) {
+    }
+
+    protected void configure(MessageBrokerContext context) {
+        context.addComponent("mockController2", new Controller2Component());
     }
 
 }
