@@ -27,7 +27,6 @@ import com.google.gwt.user.client.ui.InlineLabel;
 import com.google.inject.Provider;
 import org.openremote.manager.client.app.dialog.ConfirmationDialog;
 import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.shared.Runnable;
 
@@ -37,9 +36,6 @@ public class FormViewImpl extends Composite implements FormView {
 
     @UiField
     public WidgetStyle widgetStyle;
-
-    @UiField
-    public ThemeStyle themeStyle;
 
     @UiField
     public ManagerMessages managerMessages;

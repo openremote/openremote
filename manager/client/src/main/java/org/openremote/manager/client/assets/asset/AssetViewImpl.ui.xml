@@ -4,7 +4,6 @@
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
-    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
     <ui:style type="org.openremote.manager.client.assets.asset.AssetViewImpl.Style">
         .navItem {
@@ -44,66 +43,65 @@
     </ui:style>
 
     <w:FlexSplitPanel ui:field="splitPanel"
-                      handleStyle="{widgetStyle.SplitPanelHandle} {themeStyle.SplitPanelHandle}"
+                      handleStyle="{widgetStyle.SplitPanelHandle}"
                       firstPanelWidth="250"
                       firstPanelMinWidth="250"
                       secondPanelMinWidth="1000">
 
         <w:first>
             <g:HTMLPanel ui:field="sidebarContainer"
-                         styleName="flex layout vertical {widgetStyle.SidebarContent} {themeStyle.SidebarContent}"/>
+                         styleName="flex layout vertical {widgetStyle.SidebarContent}"/>
         </w:first>
 
         <w:second>
             <g:HTMLPanel styleName="flex layout vertical">
                 <g:HTMLPanel
-                        styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal} {themeStyle.SecondaryNavHorizontal}">
+                        styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
 
                     <w:Hyperlink
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                             icon="dashboard"
                             targetHistoryToken="assets:"
                             text="{managerMessages.showDashboard}"/>
 
                     <w:Hyperlink
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                             icon="plus-square"
                             targetHistoryToken="asset:"
                             text="{managerMessages.createAsset}"/>
 
                 </g:HTMLPanel>
 
-                <div class="flex {widgetStyle.MainContent} {themeStyle.MainContent}">
+                <div class="flex {widgetStyle.MainContent}">
 
                     <g:HTMLPanel styleName="flex layout horizontal">
 
                         <g:HTMLPanel styleName="flex layout vertical">
 
                             <g:FlowPanel
-                                    styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} {themeStyle.FormMessages} success"
+                                    styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"
                                     visible="false">
                                 <w:IconLabel icon="check"
-                                             addStyleNames="{widgetStyle.MessagesIcon} {themeStyle.MessagesIcon}"/>
+                                             addStyleNames="{widgetStyle.MessagesIcon}"/>
                                 <g:FlowPanel ui:field="formMessagesSuccess"/>
                             </g:FlowPanel>
 
                             <g:FlowPanel
-                                    styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} {themeStyle.FormMessages} error"
+                                    styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} error"
                                     visible="false">
                                 <w:IconLabel icon="warning"
-                                             addStyleNames="{widgetStyle.MessagesIcon} {themeStyle.MessagesIcon}"/>
+                                             addStyleNames="{widgetStyle.MessagesIcon}"/>
                                 <g:FlowPanel ui:field="formMessagesError"/>
                             </g:FlowPanel>
 
-                            <div class="{widgetStyle.Headline1} {themeStyle.Headline1}">
+                            <div class="{widgetStyle.Headline1}">
                                 <g:InlineLabel text="{managerMessages.editAsset}"/>
                             </div>
 
-                            <div class="{widgetStyle.HeadlineSub} {themeStyle.HeadlineSub}">
+                            <div class="{widgetStyle.HeadlineSub}">
                                 <span class="required">*</span>
                                 <g:InlineLabel text="{managerMessages.requiredFields}"/>
                             </div>
-
 
                             <w:Form ui:field="form" addStyleNames="flex">
                                 <w:FormGroup ui:field="nameGroup">
@@ -124,7 +122,7 @@
                                     <w:field>
                                         <w:FormField>
                                             <g:Label ui:field="createdOnLabel"
-                                                     addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormValueLabel} {themeStyle.FormValueLabel}"/>
+                                                     addStyleNames="{widgetStyle.FormControl} {widgetStyle.FormValueLabel}"/>
                                         </w:FormField>
                                     </w:field>
                                 </w:FormGroup>
@@ -136,26 +134,18 @@
                                     <w:field>
                                         <w:FormField addStyleNames="larger">
                                             <g:FlowPanel styleName="layout horizontal center">
-                                                <w:FormInputText ui:field="parentAssetLabel" readOnly="true" addStyleNames="{style.typeTextBox}"/>
-                                                <w:PushButton ui:field="selectParentButton"
-                                                              addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButton} {themeStyle.FormButton} {widgetStyle.PushButton} {themeStyle.PushButton}"
+                                                <w:FormInputText ui:field="parentAssetLabel" readOnly="true"
+                                                                 addStyleNames="{style.typeTextBox}"/>
+                                                <w:FormButton ui:field="selectParentButton"
                                                               text="{managerMessages.selectParentAsset}"
                                                               icon="external-link-square"/>
-                                                <w:PushButton ui:field="setRootParentSelectionButton"
-                                                              addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButton} {themeStyle.FormButton} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                                              visible="false"
+                                                <w:FormButton ui:field="setRootParentSelectionButton" visible="false"
                                                               text="{managerMessages.setRootParentAsset}"
                                                               icon="minus-square"/>
-                                                <w:PushButton ui:field="confirmParentSelectionButton"
-                                                              addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                                              visible="false"
-                                                              text="{managerMessages.OK}"
-                                                              icon="check"/>
-                                                <w:PushButton ui:field="resetParentSelectionButton"
-                                                              addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButton} {themeStyle.FormButton} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                                              visible="false"
-                                                              text="{managerMessages.reset}"
-                                                              icon="undo"/>
+                                                <w:FormButton ui:field="confirmParentSelectionButton" primary="true"
+                                                              visible="false" text="{managerMessages.OK}" icon="check"/>
+                                                <w:FormButton ui:field="resetParentSelectionButton" visible="false"
+                                                              text="{managerMessages.reset}" icon="undo"/>
                                             </g:FlowPanel>
                                         </w:FormField>
                                     </w:field>
@@ -172,7 +162,8 @@
                                     </w:label>
                                     <w:field>
                                         <w:FormField addStyleNames="larger">
-                                            <w:FormInputText ui:field="typeInput" readOnly="true" addStyleNames="{style.typeTextBox}"/>
+                                            <w:FormInputText ui:field="typeInput" readOnly="true"
+                                                             addStyleNames="{style.typeTextBox}"/>
                                         </w:FormField>
                                     </w:field>
                                 </w:FormGroup>
@@ -184,7 +175,7 @@
                                     <w:field>
                                         <w:FormField>
                                             <g:Label ui:field="locationLabel"
-                                                     addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormValueLabel} {themeStyle.FormValueLabel}"/>
+                                                     addStyleNames="{widgetStyle.FormControl} {widgetStyle.FormValueLabel}"/>
                                         </w:FormField>
                                     </w:field>
                                 </w:FormGroup>
@@ -194,20 +185,14 @@
                                 <w:FormGroup ui:field="submitButtonGroup" centerJustified="true">
                                     <w:field>
                                         <w:FormField>
-                                            <w:PushButton ui:field="updateButton"
-                                                          addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                                          text="{managerMessages.updateAsset}"
-                                                          visible="false"
+                                            <w:FormButton ui:field="updateButton" primary="true"
+                                                          text="{managerMessages.updateAsset}" visible="false"
                                                           icon="save"/>
-                                            <w:PushButton ui:field="createButton"
-                                                          addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                                          text="{managerMessages.createAsset}"
-                                                          visible="false"
+                                            <w:FormButton ui:field="createButton" primary="true"
+                                                          text="{managerMessages.createAsset}" visible="false"
                                                           icon="save"/>
-                                            <w:PushButton ui:field="deleteButton"
-                                                          addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonDanger} {themeStyle.FormButtonDanger} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                                          text="{managerMessages.deleteAsset}"
-                                                          visible="false"
+                                            <w:FormButton ui:field="deleteButton" danger="true"
+                                                          text="{managerMessages.deleteAsset}" visible="false"
                                                           icon="trash"/>
                                         </w:FormField>
                                     </w:field>
@@ -218,7 +203,7 @@
                         </g:HTMLPanel>
 
                         <w:MapWidget ui:field="mapWidget"
-                                     addStyleNames="{style.mapWidget} {widgetStyle.ItemWithBorder} {themeStyle.ItemWithBorder}"/>
+                                     addStyleNames="{style.mapWidget} {widgetStyle.ItemWithBorder}"/>
 
                     </g:HTMLPanel>
 

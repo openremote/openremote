@@ -4,7 +4,6 @@
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
-    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
     <ui:style field="usersTableStyle" type="org.openremote.manager.client.admin.users.AdminUsersTable.Style">
         .usernameColumn {
@@ -26,7 +25,7 @@
 
     <g:HTMLPanel styleName="flex layout vertical">
 
-        <div class="{widgetStyle.Headline1} {themeStyle.Headline1}">
+        <div class="{widgetStyle.Headline1}">
             <g:InlineLabel text="{managerMessages.manageUsers}"/>
         </div>
 
@@ -35,7 +34,7 @@
                 <w:field>
                     <w:FormField>
                         <g:ListBox ui:field="tenantListBox"
-                                   addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormDropDown} {themeStyle.FormDropDown}"
+                                   addStyleNames="{widgetStyle.FormControl} {widgetStyle.FormDropDown}"
                                    visibleItemCount="1"/>
                     </w:FormField>
                 </w:field>
@@ -47,9 +46,7 @@
             <w:FormGroup>
                 <w:field>
                     <w:FormField>
-                        <w:PushButton ui:field="createButton"
-                                      addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                      text="{managerMessages.newUser}"
+                        <w:FormButton ui:field="createButton" primary="true" text="{managerMessages.newUser}"
                                       icon="user-plus"/>
                     </w:FormField>
                 </w:field>

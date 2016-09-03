@@ -4,7 +4,6 @@
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
-    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
     <ui:style field="agentsTableStyle" type="org.openremote.manager.client.admin.agent.AdminAgentsTable.Style">
         .nameColumn {
@@ -26,7 +25,7 @@
 
     <g:HTMLPanel styleName="flex layout vertical">
 
-        <div class="{widgetStyle.Headline1} {themeStyle.Headline1}">
+        <div class="{widgetStyle.Headline1}">
             <g:InlineLabel text="{managerMessages.configureAgents}"/>
         </div>
 
@@ -34,9 +33,7 @@
             <w:FormGroup>
                 <w:field>
                     <w:FormField>
-                        <w:PushButton ui:field="createButton"
-                                      addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                      text="{managerMessages.newAgent}"
+                        <w:FormButton ui:field="createButton" primary="true" text="{managerMessages.newAgent}"
                                       icon="plus-square"/>
                     </w:FormField>
                 </w:field>

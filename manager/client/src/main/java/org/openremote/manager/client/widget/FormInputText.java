@@ -10,7 +10,7 @@ public class FormInputText extends TextBox {
 
     public FormInputText() {
         super();
-        setStyleName("or-FormControl theme-FormControl or-FormInputText theme-FormInputText");
+        setStyleName("or-FormControl or-FormInputText");
     }
 
     public String getPlaceholder() {

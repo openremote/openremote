@@ -40,16 +40,16 @@
 </head>
 <body class="layout horizontal">
 
-    <div class="layout vertical or-SecondaryNav theme-SecondaryNav">
-        <div style="margin: 0 1em;" class="or-SecondaryNavItem theme-SecondaryNavItem <#if active=='account'>active</#if>"><div class="fa fa-user" style="width: 1em; margin-right:0.4em;"></div><a href="${url.accountUrl}">${msg("account")}</a></div>
-        <#if features.passwordUpdateSupported><div style="margin: 0 1em;" class="or-SecondaryNavItem theme-SecondaryNavItem <#if active=='password'>active</#if>"><div class="fa fa-key" style="width: 1em; margin-right:0.4em;"></div><a href="${url.passwordUrl}">${msg("password")}</a></div></#if>
+    <div class="layout vertical or-SecondaryNav">
+        <div style="margin: 0 1em;" class="or-SecondaryNavItem <#if active=='account'>active</#if>"><div class="fa fa-user" style="width: 1em; margin-right:0.4em;"></div><a href="${url.accountUrl}">${msg("account")}</a></div>
+        <#if features.passwordUpdateSupported><div style="margin: 0 1em;" class="or-SecondaryNavItem <#if active=='password'>active</#if>"><div class="fa fa-key" style="width: 1em; margin-right:0.4em;"></div><a href="${url.passwordUrl}">${msg("password")}</a></div></#if>
     </div>
 
-    <div class="flex or-MainContent theme-MainContent">
+    <div class="flex or-MainContent">
         <#if message?has_content>
-            <div style="max-width: 30em;" class="layout horizontal or-FormMessages theme-FormMessages ${message.type}">
-                <#if message.type=='success' ><div class="or-MessagesIcon theme-MessagesIcon fa fa-check"></div></#if>
-                <#if message.type=='error' ><div class="or-MessagesIcon theme-MessagesIcon fa fa-warning"></div></#if>
+            <div style="max-width: 30em;" class="layout horizontal or-FormMessages ${message.type}">
+                <#if message.type=='success' ><div class="or-MessagesIcon fa fa-check"></div></#if>
+                <#if message.type=='error' ><div class="or-MessagesIcon fa fa-warning"></div></#if>
                 ${message.summary}
             </div>
         </#if>

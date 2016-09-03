@@ -4,7 +4,6 @@
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
-    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
     <ui:style>
         .navItem {
@@ -12,25 +11,25 @@
         }
     </ui:style>
 
-    <g:HTMLPanel styleName="layout vertical {widgetStyle.SecondaryNav} {themeStyle.SecondaryNav}">
+    <g:HTMLPanel styleName="layout vertical {widgetStyle.SecondaryNav}">
 
         <w:Hyperlink ui:field="overviewLink"
-                     addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                     addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                      icon="dashboard"
                      text="{managerMessages.overview}"/>
 
         <w:Hyperlink ui:field="tenantsLink"
-                     addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                     addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                      icon="group"
                      text="{managerMessages.manageTenants}"/>
 
         <w:Hyperlink ui:field="usersLink"
-                     addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                     addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                      icon="user"
                      text="{managerMessages.manageUsers}"/>
 
         <w:Hyperlink ui:field="agentsLink"
-                     addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                     addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                      icon="gear"
                      text="{managerMessages.configureAgents}"/>
 

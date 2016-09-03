@@ -27,7 +27,6 @@ import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.SimplePanel;
 import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
 
 import javax.inject.Inject;
@@ -47,9 +46,6 @@ public class AppViewImpl extends Composite implements AppView {
 
     @UiField
     WidgetStyle widgetStyle;
-
-    @UiField
-    ThemeStyle themeStyle;
 
     @UiField
     SimplePanel header;

@@ -23,7 +23,6 @@ import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.PopupPanel;
-import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.MessagesIcon;
 
@@ -184,13 +183,11 @@ public class PopupToastDisplay implements ToastDisplay {
     public static final int MARGIN_RIGHT_PIXEL = 25;
 
     final protected WidgetStyle widgetStyle;
-    final protected ThemeStyle themeStyle;
     final protected Map<Toast, ToastPopupPanel> toastPanels = new HashMap<>();
 
     @Inject
-    public PopupToastDisplay(WidgetStyle widgetStyle, ThemeStyle themeStyle) {
+    public PopupToastDisplay(WidgetStyle widgetStyle) {
         this.widgetStyle = widgetStyle;
-        this.themeStyle = themeStyle;
     }
 
     @Override
@@ -236,13 +233,10 @@ public class PopupToastDisplay implements ToastDisplay {
 
             content.setStyleName("layout horizontal center");
             content.addStyleName(widgetStyle.Toast());
-            content.addStyleName(themeStyle.Toast());
             if (isInfo) {
                 content.addStyleName(widgetStyle.ToastInfo());
-                content.addStyleName(themeStyle.ToastInfo());
             } else {
                 content.addStyleName(widgetStyle.ToastFailure());
-                content.addStyleName(themeStyle.ToastFailure());
             }
 
             content.add(new MessagesIcon(isInfo));

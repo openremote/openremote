@@ -4,7 +4,6 @@
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
-    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
     <ui:style>
         .popup {
@@ -29,18 +28,18 @@
         }
     </ui:style>
 
-    <g:PopupPanel glassEnabled="false" addStyleNames="{style.popup} {widgetStyle.PopupPanel} {themeStyle.PopupPanel}">
+    <g:PopupPanel glassEnabled="false" addStyleNames="{style.popup} {widgetStyle.PopupPanel}">
         <g:FlowPanel ui:field="mainPanel" styleName="flex layout vertical">
-            <g:FlowPanel styleName="layout horizontal {style.header} {widgetStyle.PopupPanelHeader} {themeStyle.PopupPanelHeader}">
+            <g:FlowPanel styleName="layout horizontal {style.header} {widgetStyle.PopupPanelHeader}">
                 <g:Label ui:field="headerLabel"/>
             </g:FlowPanel>
             <g:FlowPanel ui:field="contentPanel"
                          styleName="flex layout vertical"
-                         addStyleNames="{style.content} {widgetStyle.PopupPanelContent} {themeStyle.PopupPanelContent}">
+                         addStyleNames="{style.content} {widgetStyle.PopupPanelContent}">
             </g:FlowPanel>
             <g:FlowPanel ui:field="footerPanel"
                          styleName="layout horizontal center-center"
-                         addStyleNames="{style.footer} {widgetStyle.PopupPanelFooter} {themeStyle.PopupPanelFooter}">
+                         addStyleNames="{style.footer} {widgetStyle.PopupPanelFooter}">
             </g:FlowPanel>
         </g:FlowPanel>
     </g:PopupPanel>

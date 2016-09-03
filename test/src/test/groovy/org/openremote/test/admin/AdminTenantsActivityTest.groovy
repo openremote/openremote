@@ -1,7 +1,6 @@
 package org.openremote.test.admin
 
 import com.google.gwt.junit.GWTMockUtilities
-import com.google.gwt.place.shared.PlaceHistoryHandler
 import com.google.gwt.place.shared.WithTokenizers
 import com.google.gwt.user.client.ui.AcceptsOneWidget
 import com.google.gwt.user.client.ui.Widget
@@ -21,7 +20,6 @@ import org.openremote.manager.client.i18n.ManagerMessages
 import org.openremote.manager.client.service.EventService
 import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.service.SecurityService
-import org.openremote.manager.client.style.ThemeStyle
 import org.openremote.manager.client.style.WidgetStyle
 import org.openremote.manager.shared.Consumer
 import org.openremote.manager.shared.Runnable
@@ -137,8 +135,7 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
                 placeController,
                 eventBus,
                 managerMessages,
-                new WidgetStyle(),
-                new ThemeStyle()
+                new WidgetStyle()
         )
         def activityDisplay = Mock(AcceptsOneWidget)
         def activityMapper = new ManagerActivityMapper(

@@ -33,7 +33,7 @@ public class FormGroup extends FlowPanel implements HasWidgets {
     protected Label infoLabel;
 
     public FormGroup() {
-        getElement().addClassName("layout vertical or-FormGroup theme-FormGroup");
+        getElement().addClassName("layout vertical or-FormGroup");
         groupPanel.setStyleName("layout horizontal center");
         add(groupPanel);
     }
@@ -63,7 +63,7 @@ public class FormGroup extends FlowPanel implements HasWidgets {
         if (this.infoLabel != null)
             throw new IllegalStateException("Form info label already set");
         this.infoLabel = infoLabel;
-        infoLabel.setStyleName("or-FormInfoLabel theme-FormInfoLabel");
+        infoLabel.setStyleName("or-FormInfoLabel");
         add(infoLabel);
     }
 

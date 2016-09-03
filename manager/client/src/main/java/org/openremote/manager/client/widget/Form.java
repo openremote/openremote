@@ -25,15 +25,13 @@ import com.google.gwt.user.client.ui.HasWidgets;
 public class Form extends FlowPanel implements HasWidgets {
 
     public Form() {
-        getElement().addClassName("layout vertical or-Form theme-Form");
+        getElement().addClassName("layout vertical or-Form");
     }
 
     public void setBusy(boolean busy) {
         getElement().removeClassName("or-FormBusy");
-        getElement().removeClassName("theme-FormBusy");
         if (busy) {
             getElement().addClassName("or-FormBusy");
-            getElement().addClassName("theme-FormBusy");
         }
     }
 }

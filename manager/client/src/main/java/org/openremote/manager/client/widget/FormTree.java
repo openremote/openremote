@@ -23,7 +23,6 @@ import com.google.gwt.user.cellview.client.CellTree;
 import com.google.gwt.user.cellview.client.TreeNode;
 import com.google.gwt.view.client.TreeViewModel;
 import org.openremote.manager.client.style.FormTreeStyle;
-import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
 
 import java.util.ArrayList;
@@ -95,12 +94,10 @@ public class FormTree extends CellTree {
     }
 
     final protected WidgetStyle widgetStyle;
-    final protected ThemeStyle themeStyle;
 
     public <T> FormTree(TreeViewModel viewModel, T rootValue, FormTreeStyle formTreeStyle, CellTreeMessages messages) {
         super(viewModel, rootValue, formTreeStyle.getCellTreeResources(), messages);
         this.widgetStyle = formTreeStyle.getWidgetStyle();
-        this.themeStyle = formTreeStyle.getThemeStyle();
     }
 
     public void refresh() {

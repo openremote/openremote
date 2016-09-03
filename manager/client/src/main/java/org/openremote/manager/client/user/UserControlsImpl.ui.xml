@@ -4,7 +4,6 @@
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
-    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
     <ui:style>
         .popup {
@@ -38,19 +37,20 @@
         }
     </ui:style>
 
-    <g:PopupPanel glassEnabled="false" addStyleNames="{style.popup} {widgetStyle.PopupPanel} {themeStyle.PopupPanel}">
+    <g:PopupPanel glassEnabled="false" addStyleNames="{style.popup} {widgetStyle.PopupPanel}">
         <g:HTMLPanel styleName="flex layout vertical {style.panel}">
-            <g:HTMLPanel styleName="layout horizontal {style.header} {widgetStyle.PopupPanelHeader} {themeStyle.PopupPanelHeader}">
+            <g:HTMLPanel
+                    styleName="layout horizontal {style.header} {widgetStyle.PopupPanelHeader}">
                 <g:Label ui:field="userLabel"/>
             </g:HTMLPanel>
             <g:HTMLPanel styleName="flex layout vertical"
-                         addStyleNames="{style.content} {widgetStyle.PopupPanelContent} {themeStyle.PopupPanelContent}">
+                         addStyleNames="{style.content} {widgetStyle.PopupPanelContent}">
 
-                <ul class="{widgetStyle.UnorderedList} {themeStyle.UnorderedList}">
+                <ul class="{widgetStyle.UnorderedList}">
 
                     <li ui:field="editProfileItem">
                         <w:Hyperlink ui:field="editProfileLink"
-                                     addStyleNames="{widgetStyle.Hyperlink} {themeStyle.Hyperlink}"
+                                     addStyleNames="{widgetStyle.Hyperlink}"
                                      text="{managerMessages.editAccount}"/>
                     </li>
 
@@ -58,11 +58,8 @@
 
             </g:HTMLPanel>
             <g:HTMLPanel styleName="layout horizontal center-center"
-                         addStyleNames="{style.footer} {widgetStyle.PopupPanelFooter} {themeStyle.PopupPanelFooter}">
-                <w:PushButton ui:field="logoutButton"
-                              icon="sign-out"
-                              text="{managerMessages.logout}"
-                              addStyleNames="{widgetStyle.PushButton} {themeStyle.PushButton}"/>
+                         addStyleNames="{style.footer} {widgetStyle.PopupPanelFooter}">
+                <w:PushButton ui:field="logoutButton" icon="sign-out" text="{managerMessages.logout}"/>
             </g:HTMLPanel>
         </g:HTMLPanel>
     </g:PopupPanel>

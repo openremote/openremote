@@ -28,7 +28,7 @@ public class FormField extends FlowPanel implements HasWidgets {
     protected String formFieldId;
 
     public FormField() {
-        getElement().addClassName("or-FormField theme-FormField");
+        getElement().addClassName("or-FormField");
     }
 
     public void setFormFieldId(String formFieldId) {

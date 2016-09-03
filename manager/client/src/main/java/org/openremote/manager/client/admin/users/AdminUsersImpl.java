@@ -31,7 +31,6 @@ import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.SimplePanel;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTableStyle;
-import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.Form;
 import org.openremote.manager.client.widget.PushButton;
@@ -52,8 +51,6 @@ public class AdminUsersImpl extends Composite implements AdminUsers {
 
     @UiField
     protected WidgetStyle widgetStyle;
-    @UiField
-    protected ThemeStyle themeStyle;
 
     @UiField
     AdminUsersTable.Style usersTableStyle;

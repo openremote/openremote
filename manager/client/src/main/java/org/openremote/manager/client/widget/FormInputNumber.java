@@ -26,7 +26,7 @@ public class FormInputNumber extends TextBoxBase {
 
     public FormInputNumber() {
         super(createInput());
-        setStyleName("or-FormControl theme-FormControl or-FormInputNumber theme-FormInputNumber");
+        setStyleName("or-FormControl or-FormInputNumber");
     }
 
     private static native InputElement createInput() /*-{

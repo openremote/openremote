@@ -9,7 +9,6 @@ public class FormTreeStyle implements CellTree.Style {
 
     final protected StyleClientBundle styleClientBundle;
     final protected WidgetStyle widgetStyle;
-    final protected ThemeStyle themeStyle;
 
     final protected CellTree.Resources cellTreeResources = new CellTree.Resources() {
 
@@ -40,10 +39,9 @@ public class FormTreeStyle implements CellTree.Style {
     };
 
     @Inject
-    public FormTreeStyle(StyleClientBundle styleClientBundle, WidgetStyle widgetStyle, ThemeStyle themeStyle) {
+    public FormTreeStyle(StyleClientBundle styleClientBundle, WidgetStyle widgetStyle) {
         this.styleClientBundle = styleClientBundle;
         this.widgetStyle = widgetStyle;
-        this.themeStyle = themeStyle;
     }
 
     public CellTree.Resources getCellTreeResources() {
@@ -54,73 +52,69 @@ public class FormTreeStyle implements CellTree.Style {
         return widgetStyle;
     }
 
-    public ThemeStyle getThemeStyle() {
-        return themeStyle;
-    }
-
     @Override
     public String cellTreeEmptyMessage() {
-        return widgetStyle.FormTreeEmptyMessage() + " " + themeStyle.FormTreeEmptyMessage();
+        return widgetStyle.FormTreeEmptyMessage();
     }
 
     @Override
     public String cellTreeItem() {
-        return widgetStyle.FormTreeItem() + " " + themeStyle.FormTreeItem();
+        return widgetStyle.FormTreeItem();
     }
 
     @Override
     public String cellTreeItemImage() {
-        return widgetStyle.FormTreeItemImage() + " " + themeStyle.FormTreeItemImage();
+        return widgetStyle.FormTreeItemImage();
     }
 
     @Override
     public String cellTreeItemImageValue() {
-        return widgetStyle.FormTreeItemImageValue() + " " + themeStyle.FormTreeItemImageValue();
+        return widgetStyle.FormTreeItemImageValue();
     }
 
     @Override
     public String cellTreeItemValue() {
-        return widgetStyle.FormTreeItemValue() + " " + themeStyle.FormTreeItemValue();
+        return widgetStyle.FormTreeItemValue();
     }
 
     @Override
     public String cellTreeKeyboardSelectedItem() {
-        return widgetStyle.FormTreeKeyboardSelectedItem() + " " + themeStyle.FormTreeKeyboardSelectedItem();
+        return widgetStyle.FormTreeKeyboardSelectedItem();
     }
 
     @Override
     public String cellTreeOpenItem() {
-        return widgetStyle.FormTreeOpenItem() + " " + themeStyle.FormTreeOpenItem();
+        return widgetStyle.FormTreeOpenItem();
     }
 
     @Override
     public String cellTreeSelectedItem() {
-        return widgetStyle.FormTreeSelectedItem() + " " + themeStyle.FormTreeSelectedItem();
+        return widgetStyle.FormTreeSelectedItem();
     }
 
     @Override
     public String cellTreeShowMoreButton() {
-        return widgetStyle.FormTreeShowMoreButton() + " " + themeStyle.FormTreeShowMoreButton();
+        return widgetStyle.FormTreeShowMoreButton();
     }
 
     @Override
     public String cellTreeTopItem() {
-        return widgetStyle.FormTreeTopItem() + " " + themeStyle.FormTreeTopItem();
+        return widgetStyle.FormTreeTopItem();
     }
 
     @Override
     public String cellTreeTopItemImage() {
-        return widgetStyle.FormTreeTopItemImage() + " " + themeStyle.FormTreeTopItemImage();
+        return widgetStyle.FormTreeTopItemImage();
     }
 
     @Override
     public String cellTreeTopItemImageValue() {
-        return widgetStyle.FormTreeTopItemImageValue() + " " + themeStyle.FormTreeTopItemImageValue();
+        return widgetStyle.FormTreeTopItemImageValue();
     }
 
     @Override
     public String cellTreeWidget() {
-        return widgetStyle.FormTreeWidget() + " " + themeStyle.FormTreeWidget();
+        return widgetStyle.FormTreeWidget();
     }
 
     @Override

@@ -4,7 +4,6 @@
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
-    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
     <ui:style>
         .formMessages {
@@ -15,24 +14,24 @@
     <g:HTMLPanel styleName="flex layout vertical">
 
         <g:FlowPanel
-                styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} {themeStyle.FormMessages} success"
+                styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"
                 visible="false">
-            <w:IconLabel icon="check" addStyleNames="{widgetStyle.MessagesIcon} {themeStyle.MessagesIcon}"/>
+            <w:IconLabel icon="check" addStyleNames="{widgetStyle.MessagesIcon}"/>
             <g:FlowPanel ui:field="formMessagesSuccess"/>
         </g:FlowPanel>
 
         <g:FlowPanel
-                styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} {themeStyle.FormMessages} error"
+                styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} error"
                 visible="false">
-            <w:IconLabel icon="warning" addStyleNames="{widgetStyle.MessagesIcon} {themeStyle.MessagesIcon}"/>
+            <w:IconLabel icon="warning" addStyleNames="{widgetStyle.MessagesIcon}"/>
             <g:FlowPanel ui:field="formMessagesError"/>
         </g:FlowPanel>
 
-        <div class="{widgetStyle.Headline1} {themeStyle.Headline1}">
+        <div class="{widgetStyle.Headline1}">
             <g:InlineLabel text="{managerMessages.editUser}"/>
         </div>
 
-        <div class="{widgetStyle.HeadlineSub} {themeStyle.HeadlineSub}">
+        <div class="{widgetStyle.HeadlineSub}">
             <span class="required">*</span>
             <g:InlineLabel text="{managerMessages.requiredFields}"/>
         </div>
@@ -108,7 +107,7 @@
                     <w:FormField>
                         <!-- TODO: autocomplete="new-password" to disable browser saving password popup-->
                         <g:PasswordTextBox ui:field="resetPasswordInput"
-                                           addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                                           addStyleNames="{widgetStyle.FormControl} {widgetStyle.FormInputText}"/>
                     </w:FormField>
                 </w:field>
             </w:FormGroup>
@@ -120,7 +119,7 @@
                 <w:field>
                     <w:FormField>
                         <g:PasswordTextBox ui:field="resetPasswordControlInput"
-                                           addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                                           addStyleNames="{widgetStyle.FormControl} {widgetStyle.FormInputText}"/>
                     </w:FormField>
                 </w:field>
             </w:FormGroup>
@@ -146,25 +145,13 @@
             <w:FormGroup centerJustified="true">
                 <w:field>
                     <w:FormField>
-                        <w:PushButton ui:field="updateButton"
-                                      addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                      text="{managerMessages.updateUser}"
-                                      visible="false"
-                                      icon="save"/>
-                        <w:PushButton ui:field="createButton"
-                                      addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonPrimary} {themeStyle.FormButtonPrimary} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                      text="{managerMessages.createUser}"
-                                      visible="false"
-                                      icon="save"/>
-                        <w:PushButton ui:field="deleteButton"
-                                      addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButtonDanger} {themeStyle.FormButtonDanger} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                      text="{managerMessages.deleteUser}"
-                                      visible="false"
-                                      icon="trash"/>
-                        <w:PushButton ui:field="cancelButton"
-                                      addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButton} {themeStyle.FormButton} {widgetStyle.PushButton} {themeStyle.PushButton}"
-                                      text="{managerMessages.cancel}"
-                                      icon="close"/>
+                        <w:FormButton ui:field="updateButton" primary="true" text="{managerMessages.updateUser}"
+                                      visible="false" icon="save"/>
+                        <w:FormButton ui:field="createButton" primary="true" text="{managerMessages.createUser}"
+                                      visible="false" icon="save"/>
+                        <w:FormButton ui:field="deleteButton" danger="true" text="{managerMessages.deleteUser}"
+                                      visible="false" icon="trash"/>
+                        <w:FormButton ui:field="cancelButton" text="{managerMessages.cancel}" icon="close"/>
                     </w:FormField>
                 </w:field>
             </w:FormGroup>

@@ -24,6 +24,6 @@ import com.google.gwt.user.client.ui.SimpleCheckBox;
 public class FormCheckBox extends SimpleCheckBox {
 
     public FormCheckBox() {
-        setStyleName("or-FormControl theme-FormControl or-FormCheckBox theme-FormCheckBox");
+        setStyleName("or-FormControl or-FormCheckBox");
     }
 }

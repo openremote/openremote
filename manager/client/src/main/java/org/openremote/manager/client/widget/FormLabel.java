@@ -32,10 +32,10 @@ public class FormLabel extends ComplexPanel {
 
     public FormLabel() {
         setElement(Document.get().createElement(DivElement.TAG));
-        getElement().addClassName("or-FormLabel theme-FormLabel layout horizontal center");
+        getElement().addClassName("or-FormLabel layout horizontal center");
 
         iconElement = (SpanElement) Document.get().createElement(SpanElement.TAG);
-        iconElement.addClassName("flex or-FormLabelIcon theme-FormLabelIcon");
+        iconElement.addClassName("flex or-FormLabelIcon");
         iconElement.getStyle().setTextAlign(Style.TextAlign.RIGHT);
 
         labelElement = (LabelElement) Document.get().createElement(LabelElement.TAG);

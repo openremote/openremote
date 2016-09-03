@@ -34,7 +34,6 @@ import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.mvp.AppActivityManager;
 import org.openremote.manager.client.mvp.AppPlaceController;
 import org.openremote.manager.client.service.*;
-import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
 
 public class ManagerModule extends AbstractGinModule {
@@ -62,8 +61,7 @@ public class ManagerModule extends AbstractGinModule {
                                          PlaceController placeController,
                                          EventBus eventBus,
                                          ManagerMessages managerMessages,
-                                         WidgetStyle widgetStyle,
-                                         ThemeStyle themeStyle) {
+                                         WidgetStyle widgetStyle) {
         return Environment.create(
             securityService,
             requestService,
@@ -71,8 +69,7 @@ public class ManagerModule extends AbstractGinModule {
             placeController,
             eventBus,
             managerMessages,
-            widgetStyle,
-            themeStyle
+            widgetStyle
         );
     }
 

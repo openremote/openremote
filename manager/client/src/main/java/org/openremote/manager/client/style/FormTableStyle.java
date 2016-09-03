@@ -31,7 +31,6 @@ public class FormTableStyle implements CellTable.Style {
 
     final protected StyleClientBundle styleClientBundle;
     final protected WidgetStyle widgetStyle;
-    final protected ThemeStyle themeStyle;
 
     final protected CellTable.Resources cellTableResources = new CellTable.Resources() {
         @Override
@@ -71,10 +70,9 @@ public class FormTableStyle implements CellTable.Style {
     };
 
     @Inject
-    public FormTableStyle(StyleClientBundle styleClientBundle, WidgetStyle widgetStyle, ThemeStyle themeStyle) {
+    public FormTableStyle(StyleClientBundle styleClientBundle, WidgetStyle widgetStyle) {
         this.styleClientBundle = styleClientBundle;
         this.widgetStyle = widgetStyle;
-        this.themeStyle = themeStyle;
     }
 
     public CellTable.Resources getCellTableResources() {
@@ -85,133 +83,129 @@ public class FormTableStyle implements CellTable.Style {
         return widgetStyle;
     }
 
-    public ThemeStyle getThemeStyle() {
-        return themeStyle;
-    }
-
     @Override
     public String cellTableCell() {
-        return widgetStyle.FormTableCell() + " " + themeStyle.FormTableCell();
+        return widgetStyle.FormTableCell();
     }
 
     @Override
     public String cellTableEvenRow() {
-        return widgetStyle.FormTableEvenRow() + " " + themeStyle.FormTableEvenRow();
+        return widgetStyle.FormTableEvenRow();
     }
 
     @Override
     public String cellTableEvenRowCell() {
-        return widgetStyle.FormTableEvenRowCell() + " " + themeStyle.FormTableEvenRowCell();
+        return widgetStyle.FormTableEvenRowCell();
     }
 
     @Override
     public String cellTableFirstColumn() {
-        return widgetStyle.FormTableFirstColumn() + " " + themeStyle.FormTableFirstColumn();
+        return widgetStyle.FormTableFirstColumn();
     }
 
     @Override
     public String cellTableFirstColumnFooter() {
-        return widgetStyle.FormTableFirstColumnFooter() + " " + themeStyle.FormTableFirstColumnFooter();
+        return widgetStyle.FormTableFirstColumnFooter();
     }
 
     @Override
     public String cellTableFirstColumnHeader() {
-        return widgetStyle.FormTableFirstColumnHeader() + " " + themeStyle.FormTableFirstColumnHeader();
+        return widgetStyle.FormTableFirstColumnHeader();
     }
 
     @Override
     public String cellTableFooter() {
-        return widgetStyle.FormTableFooter() + " " + themeStyle.FormTableFooter();
+        return widgetStyle.FormTableFooter();
     }
 
     @Override
     public String cellTableHeader() {
-        return widgetStyle.FormTableHeader() + " " + themeStyle.FormTableHeader();
+        return widgetStyle.FormTableHeader();
     }
 
     @Override
     public String cellTableHoveredRow() {
-        return widgetStyle.FormTableHoveredRow() + " " + themeStyle.FormTableHoveredRow();
+        return widgetStyle.FormTableHoveredRow();
     }
 
     @Override
     public String cellTableHoveredRowCell() {
-        return widgetStyle.FormTableHoveredRowCell() + " " + themeStyle.FormTableHoveredRowCell();
+        return widgetStyle.FormTableHoveredRowCell();
     }
 
     @Override
     public String cellTableKeyboardSelectedCell() {
-        return widgetStyle.FormTableKeyboardSelectedCell() + " " + themeStyle.FormTableKeyboardSelectedCell();
+        return widgetStyle.FormTableKeyboardSelectedCell();
     }
 
     @Override
     public String cellTableKeyboardSelectedRow() {
-        return widgetStyle.FormTableKeyboardSelectedRow() + " " + themeStyle.FormTableKeyboardSelectedRow();
+        return widgetStyle.FormTableKeyboardSelectedRow();
     }
 
     @Override
     public String cellTableKeyboardSelectedRowCell() {
-        return widgetStyle.FormTableKeyboardSelectedRowCell() + " " + themeStyle.FormTableKeyboardSelectedRowCell();
+        return widgetStyle.FormTableKeyboardSelectedRowCell();
     }
 
     @Override
     public String cellTableLastColumn() {
-        return widgetStyle.FormTableLastColumn() + " " + themeStyle.FormTableLastColumn();
+        return widgetStyle.FormTableLastColumn();
     }
 
     @Override
     public String cellTableLastColumnFooter() {
-        return widgetStyle.FormTableLastColumnFooter() + " " + themeStyle.FormTableLastColumnFooter();
+        return widgetStyle.FormTableLastColumnFooter();
     }
 
     @Override
     public String cellTableLastColumnHeader() {
-        return widgetStyle.FormTableLastColumnHeader() + " " + themeStyle.FormTableLastColumnHeader();
+        return widgetStyle.FormTableLastColumnHeader();
     }
 
     @Override
     public String cellTableLoading() {
-        return widgetStyle.FormTableLoading() + " " + themeStyle.FormTableLoading();
+        return widgetStyle.FormTableLoading();
     }
 
     @Override
     public String cellTableOddRow() {
-        return widgetStyle.FormTableOddRow() + " " + themeStyle.FormTableOddRow();
+        return widgetStyle.FormTableOddRow();
     }
 
     @Override
     public String cellTableOddRowCell() {
-        return widgetStyle.FormTableOddRowCell() + " " + themeStyle.FormTableOddRowCell();
+        return widgetStyle.FormTableOddRowCell();
     }
 
     @Override
     public String cellTableSelectedRow() {
-        return widgetStyle.FormTableSelectedRow() + " " + themeStyle.FormTableSelectedRow();
+        return widgetStyle.FormTableSelectedRow();
     }
 
     @Override
     public String cellTableSelectedRowCell() {
-        return widgetStyle.FormTableSelectedRowCell() + " " + themeStyle.FormTableSelectedRowCell();
+        return widgetStyle.FormTableSelectedRowCell();
     }
 
     @Override
     public String cellTableSortableHeader() {
-        return widgetStyle.FormTableSortableHeader() + " " + themeStyle.FormTableSortableHeader();
+        return widgetStyle.FormTableSortableHeader();
     }
 
     @Override
     public String cellTableSortedHeaderAscending() {
-        return widgetStyle.FormTableSortedHeaderAscending() + " " + themeStyle.FormTableSortedHeaderAscending();
+        return widgetStyle.FormTableSortedHeaderAscending();
     }
 
     @Override
     public String cellTableSortedHeaderDescending() {
-        return widgetStyle.FormTableSortedHeaderDescending() + " " + themeStyle.FormTableSortedHeaderDescending();
+        return widgetStyle.FormTableSortedHeaderDescending();
     }
 
     @Override
     public String cellTableWidget() {
-        return widgetStyle.FormTableWidget() + " " + themeStyle.FormTableWidget();
+        return widgetStyle.FormTableWidget();
     }
 
     @Override

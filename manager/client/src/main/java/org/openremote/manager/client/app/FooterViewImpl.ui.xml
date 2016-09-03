@@ -10,10 +10,9 @@
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
-    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
-    <g:HTMLPanel styleName="flex layout end-justified horizontal" addStyleNames="{style.footer} {widgetStyle.Footer} {themeStyle.Footer}">
-        <div class="{widgetStyle.Hyperlink} {themeStyle.Hyperlink}">
+    <g:HTMLPanel styleName="flex layout end-justified horizontal" addStyleNames="{style.footer} {widgetStyle.Footer}">
+        <div class="{widgetStyle.Hyperlink}">
             <g:Anchor href="http://openremote.com/">&#169; OpenRemote Inc.</g:Anchor>
         </div>
     </g:HTMLPanel>

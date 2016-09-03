@@ -29,7 +29,6 @@ import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.SimplePanel;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTableStyle;
-import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.PushButton;
 import org.openremote.manager.shared.agent.Agent;
@@ -48,9 +47,6 @@ public class AdminAgentsImpl extends Composite implements AdminAgents {
 
     @UiField
     WidgetStyle widgetStyle;
-
-    @UiField
-    ThemeStyle themeStyle;
 
     @UiField
     AdminAgentsTable.Style agentsTableStyle;

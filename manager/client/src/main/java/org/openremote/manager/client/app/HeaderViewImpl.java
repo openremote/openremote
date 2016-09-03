@@ -29,7 +29,6 @@ import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.inject.Inject;
 import org.openremote.manager.client.assets.AssetsPlace;
-import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.admin.AdminPlace;
 import org.openremote.manager.client.flows.FlowsPlace;
 import org.openremote.manager.client.map.MapPlace;
@@ -43,9 +42,6 @@ public class HeaderViewImpl extends Composite implements HeaderView {
 
     private static UI ui = GWT.create(UI.class);
     private Presenter presenter;
-
-    @UiField
-    ThemeStyle themeStyle;
 
     @UiField
     HTMLPanel quickAccess;

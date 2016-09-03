@@ -3,9 +3,8 @@
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
-    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
-    <g:FlowPanel styleName="layout vertical" addStyleNames="{widgetStyle.Viewport} {themeStyle.Viewport}">
+    <g:FlowPanel styleName="layout vertical {widgetStyle.Viewport}">
         <g:SimplePanel ui:field="header" styleName="layout horizontal"/>
         <g:SimplePanel ui:field="content" styleName="flex layout vertical"/>
         <g:SimplePanel ui:field="footer" styleName="layout horizontal"/>

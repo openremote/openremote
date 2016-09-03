@@ -4,7 +4,6 @@
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
-    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
     <ui:style>
         .navItem {
@@ -27,30 +26,30 @@
     </ui:style>
 
     <w:FlexSplitPanel ui:field="splitPanel"
-                      handleStyle="{widgetStyle.SplitPanelHandle} {themeStyle.SplitPanelHandle}"
+                      handleStyle="{widgetStyle.SplitPanelHandle}"
                       firstPanelWidth="250"
                       firstPanelMinWidth="250"
                       secondPanelMinWidth="700">
 
         <w:first>
             <g:HTMLPanel ui:field="sidebarContainer"
-                         styleName="flex layout vertical {widgetStyle.SidebarContent} {themeStyle.SidebarContent}"/>
+                         styleName="flex layout vertical {widgetStyle.SidebarContent}"/>
         </w:first>
 
         <w:second>
             <g:HTMLPanel styleName="flex layout vertical">
 
                 <g:HTMLPanel
-                        styleName="layout horizontal center end-justified {style.mapControls} {widgetStyle.SecondaryNavHorizontal} {themeStyle.SecondaryNavHorizontal}">
+                        styleName="layout horizontal center end-justified {style.mapControls} {widgetStyle.SecondaryNavHorizontal}">
 
                     <w:Hyperlink
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                             icon="map"
                             targetHistoryToken="map:"
                             text="Show all assets"/>
 
                     <w:Hyperlink
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                             icon="plus-square"
                             targetHistoryToken="asset:"
                             text="{managerMessages.createAsset}"/>

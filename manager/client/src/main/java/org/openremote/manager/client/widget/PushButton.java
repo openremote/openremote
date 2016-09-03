@@ -28,7 +28,7 @@ public class PushButton extends com.google.gwt.user.client.ui.PushButton {
 
     public PushButton() {
         super();
-        getElement().addClassName("or-PushButton");
+        setStyleName("or-PushButton");
         getElement().appendChild(iconLabel.getElement());
     }
 

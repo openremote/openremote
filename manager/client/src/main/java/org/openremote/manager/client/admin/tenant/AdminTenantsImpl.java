@@ -27,7 +27,6 @@ import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.*;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTableStyle;
-import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.PushButton;
 import org.openremote.manager.shared.security.Tenant;
@@ -46,9 +45,6 @@ public class AdminTenantsImpl extends Composite implements AdminTenants {
 
     @UiField
     WidgetStyle widgetStyle;
-
-    @UiField
-    ThemeStyle themeStyle;
 
     @UiField
     AdminTenantsTable.Style tenantsTableStyle;

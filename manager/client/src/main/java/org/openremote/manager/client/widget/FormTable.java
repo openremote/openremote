@@ -24,27 +24,24 @@ import com.google.gwt.user.cellview.client.Column;
 import com.google.gwt.user.cellview.client.Header;
 import com.google.gwt.user.cellview.client.TextHeader;
 import org.openremote.manager.client.style.FormTableStyle;
-import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
 
 public class FormTable<T> extends CellTable<T> {
 
     final protected WidgetStyle widgetStyle;
-    final protected ThemeStyle themeStyle;
 
     public FormTable(int pageSize, FormTableStyle formTableStyle) {
         super(pageSize, formTableStyle.getCellTableResources());
         this.widgetStyle = formTableStyle.getWidgetStyle();
-        this.themeStyle = formTableStyle.getThemeStyle();
     }
 
     protected void applyStyleCellText(Column column) {
-        column.setCellStyleNames(widgetStyle.FormTableCellText() + " " + themeStyle.FormTableCellText());
+        column.setCellStyleNames(widgetStyle.FormTableCellText());
     }
 
     protected Header createHeader(String text) {
         TextHeader header = new TextHeader(text);
-        header.setHeaderStyleNames(widgetStyle.FormTableHeaderCell() + " " + themeStyle.FormTableHeaderCell());
+        header.setHeaderStyleNames(widgetStyle.FormTableHeaderCell());
         return header;
     }
 

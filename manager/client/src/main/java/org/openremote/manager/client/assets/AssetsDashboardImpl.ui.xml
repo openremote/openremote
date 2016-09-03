@@ -4,7 +4,6 @@
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
-    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
     <ui:style>
         .assetsControls {
@@ -16,35 +15,35 @@
         }
     </ui:style>
 
-    <w:FlexSplitPanel handleStyle="{widgetStyle.SplitPanelHandle} {themeStyle.SplitPanelHandle}"
+    <w:FlexSplitPanel handleStyle="{widgetStyle.SplitPanelHandle}"
                       firstPanelWidth="250"
                       firstPanelMinWidth="250"
                       secondPanelMinWidth="600">
         <w:first>
             <g:HTMLPanel ui:field="sidebarContainer"
-                         styleName="flex layout vertical {widgetStyle.SidebarContent} {themeStyle.SidebarContent}"/>
+                         styleName="flex layout vertical {widgetStyle.SidebarContent}"/>
         </w:first>
         <w:second>
             <g:HTMLPanel styleName="flex layout vertical">
 
                 <g:HTMLPanel
-                        styleName="layout horizontal center end-justified {style.assetsControls} {widgetStyle.SecondaryNavHorizontal} {themeStyle.SecondaryNavHorizontal}">
+                        styleName="layout horizontal center end-justified {style.assetsControls} {widgetStyle.SecondaryNavHorizontal}">
 
                     <w:Hyperlink
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                             icon="edit"
                             targetHistoryToken="assets:"
                             text="{managerMessages.editDashboard}"/>
 
                     <w:Hyperlink
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                             icon="plus-square"
                             targetHistoryToken="asset:"
                             text="{managerMessages.createAsset}"/>
 
                 </g:HTMLPanel>
 
-                <g:HTMLPanel styleName="flex {widgetStyle.MainContent} {themeStyle.MainContent}">
+                <g:HTMLPanel styleName="flex {widgetStyle.MainContent}">
                     <div>TODO: Asset browser switches to an advanced UI that needs more space on the left</div>
                     <g:SimplePanel ui:field="assetsContentContainer">
                         <g:Label

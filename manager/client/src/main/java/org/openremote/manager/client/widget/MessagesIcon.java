@@ -26,6 +26,5 @@ public class MessagesIcon extends InlineLabel {
     public MessagesIcon(boolean isInfo) {
         setStyleName("fa fa-" + (isInfo ? "check" : "warning"));
         addStyleName("or-MessagesIcon");
-        addStyleName("theme-MessagesIcon");
     }
 }

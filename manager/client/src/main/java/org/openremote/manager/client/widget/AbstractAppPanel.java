@@ -34,7 +34,7 @@ public abstract class AbstractAppPanel implements AppPanel {
         this.popupPanel = binder.createAndBindUi(this);
         popupPanel.setAutoHideOnHistoryEventsEnabled(true);
 
-        popupPanel.setGlassStyleName("or-PopupPanelGlass theme-PopupPanelGlass");
+        popupPanel.setGlassStyleName("or-PopupPanelGlass");
 
         popupPanel.addCloseHandler(event -> {
             if (target != null) {

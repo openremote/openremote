@@ -4,7 +4,6 @@
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
-    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
     <ui:style>
         .view {
@@ -35,17 +34,17 @@
                  addStyleNames="{style.view}">
 
         <g:HTMLPanel
-                styleName="layout horizontal center {widgetStyle.SecondaryNavHorizontal} {themeStyle.SecondaryNavHorizontal}">
+                styleName="layout horizontal center {widgetStyle.SecondaryNavHorizontal}">
 
             <div class="flex">
                 <w:FormInputText ui:field="searchInput"
-                                 addStyleNames="{style.navItemFirst} {style.searchInput} {widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"
+                                 addStyleNames="{style.navItemFirst} {style.searchInput} {widgetStyle.FormControl} {widgetStyle.FormInputText}"
                                  autofocus="true"
                                  placeholder="{managerMessages.search}..."/>
             </div>
 
             <w:PushButton ui:field="filterButton"
-                          addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem} {themeStyle.SecondaryNavItem}"
+                          addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                           text="{managerMessages.filter}"
                           icon="filter"/>
 

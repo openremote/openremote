@@ -19,12 +19,11 @@
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
-    <ui:with field="themeStyle" type="org.openremote.manager.client.style.ThemeStyle"/>
 
-    <g:HTMLPanel styleName="flex layout horizontal center {widgetStyle.Header} {themeStyle.Header}">
+    <g:HTMLPanel styleName="flex layout horizontal center {widgetStyle.Header}">
 
         <g:HTMLPanel ui:field="quickAccess"
-                     styleName="{style.navItemFirst} {widgetStyle.NavItem} {themeStyle.NavItem}">
+                     styleName="{style.navItemFirst} {widgetStyle.NavItem}">
             <g:HTMLPanel styleName="layout horizontal center {style.logoButton}">
                 <svg style="pointer-events: none; display: block; height: 100%; margin-right: 8px;" viewBox="0 0 24 24"
                      preserveAspectRatio="xMidYMid meet">
@@ -40,35 +39,35 @@
         </g:HTMLPanel>
 
         <w:PushButton ui:field="mapButton"
-                      addStyleNames="{widgetStyle.NavItem} {themeStyle.NavItem}"
+                      addStyleNames="{widgetStyle.NavItem}"
                       icon="map"
                       text="{managerMessages.map}"/>
 
         <w:PushButton ui:field="assetsButton"
-                      addStyleNames="{widgetStyle.NavItem} {themeStyle.NavItem}"
+                      addStyleNames="{widgetStyle.NavItem}"
                       icon="cubes"
                       text="{managerMessages.assets}"/>
 
         <w:PushButton ui:field="rulesButton"
-                      addStyleNames="{widgetStyle.NavItem} {themeStyle.NavItem}"
+                      addStyleNames="{widgetStyle.NavItem}"
                       icon="chain"
                       text="{managerMessages.rules}"/>
 
         <w:PushButton ui:field="flowsButton"
-                      addStyleNames="{widgetStyle.NavItem} {themeStyle.NavItem}"
+                      addStyleNames="{widgetStyle.NavItem}"
                       icon="connectdevelop"
                       text="{managerMessages.flows}"/>
 
         <g:HTMLPanel styleName="flex"/>
 
         <w:PushButton ui:field="adminButton"
-                      addStyleNames="{widgetStyle.NavItem} {themeStyle.NavItem}"
+                      addStyleNames="{widgetStyle.NavItem}"
                       icon="gears"
                       text="{managerMessages.admin}"/>
 
         <w:PushButton ui:field="userButton"
                       icon="user"
-                      addStyleNames="{style.navItemLast} {widgetStyle.NavItem} {themeStyle.NavItem}"/>
+                      addStyleNames="{style.navItemLast} {widgetStyle.NavItem}"/>
 
     </g:HTMLPanel>
 

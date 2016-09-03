@@ -20,13 +20,11 @@
 package org.openremote.manager.client;
 
 import com.google.gwt.place.shared.PlaceController;
-import com.google.gwt.place.shared.PlaceHistoryHandler;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.service.EventService;
 import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.client.service.SecurityService;
-import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
 
 /**
@@ -41,8 +39,7 @@ public interface Environment {
                                      PlaceController placeController,
                                      EventBus eventBus,
                                      ManagerMessages managerMessages,
-                                     WidgetStyle widgetStyle,
-                                     ThemeStyle themeStyle) {
+                                     WidgetStyle widgetStyle) {
         return new Environment() {
             @Override
             public SecurityService getSecurityService() {
@@ -78,11 +75,6 @@ public interface Environment {
             public WidgetStyle getWidgetStyle() {
                 return widgetStyle;
             }
-
-            @Override
-            public ThemeStyle getThemeStyle() {
-                return themeStyle;
-            }
         };
     }
 
@@ -100,5 +92,4 @@ public interface Environment {
 
     WidgetStyle getWidgetStyle();
 
-    ThemeStyle getThemeStyle();
 }

@@ -21,7 +21,6 @@ package org.openremote.manager.client.app.dialog;
 
 import com.google.gwt.user.client.ui.Label;
 import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.style.ThemeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.PushButton;
 import org.openremote.manager.shared.Runnable;
@@ -38,25 +37,20 @@ public class ConfirmationDialogImpl implements ConfirmationDialog {
     @Inject
     public ConfirmationDialogImpl(Dialog dialog,
                                   WidgetStyle widgetStyle,
-                                  ThemeStyle themeStyle,
                                   ManagerMessages managerMessages) {
         this.dialog = dialog;
 
         dialog.setModal(true);
         dialog.setAutoHide(false);
         dialog.addStyleName(widgetStyle.ConfirmationDialog());
-        dialog.addStyleName(themeStyle.ConfirmationDialog());
 
         PushButton confirmButton = new PushButton();
         confirmButton.setFocus(true);
         confirmButton.setText(managerMessages.OK());
         confirmButton.setIcon("check");
         confirmButton.addStyleName(widgetStyle.FormControl());
-        confirmButton.addStyleName(themeStyle.FormControl());
         confirmButton.addStyleName(widgetStyle.PushButton());
-        confirmButton.addStyleName(themeStyle.PushButton());
         confirmButton.addStyleName(widgetStyle.FormButtonPrimary());
-        confirmButton.addStyleName(themeStyle.FormButtonPrimary());
         confirmButton.addClickHandler(event -> {
             dialog.hide();
             if (onConfirm != null)
@@ -68,11 +62,8 @@ public class ConfirmationDialogImpl implements ConfirmationDialog {
         cancelButton.setText(managerMessages.cancel());
         cancelButton.setIcon("close");
         cancelButton.addStyleName(widgetStyle.FormControl());
-        cancelButton.addStyleName(themeStyle.FormControl());
         cancelButton.addStyleName(widgetStyle.PushButton());
-        cancelButton.addStyleName(themeStyle.PushButton());
         cancelButton.addStyleName(widgetStyle.FormButton());
-        cancelButton.addStyleName(themeStyle.FormButton());
         cancelButton.addClickHandler(event -> {
             dialog.hide();
             if (onCancel != null)

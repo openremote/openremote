@@ -17,13 +17,33 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.style;
+package org.openremote.manager.client.widget;
 
-public class ThemeStyle extends AbstractStyle {
+public class FormButton extends PushButton {
 
-    @Override
-    String getPrefix() {
-        return "theme-";
+    public FormButton() {
+        super();
+        addStyleName("or-FormControl or-FormButton");
+    }
+
+    public void setPrimary(boolean primary) {
+        clearStyles();
+        if (primary) {
+            addStyleName("or-FormButtonPrimary");
+        }
+    }
+
+    public void setDanger(boolean danger) {
+        clearStyles();
+        if (danger) {
+            addStyleName("or-FormButtonDanger");
+        }
+    }
+
+    protected void clearStyles() {
+        removeStyleName("or-FormButton");
+        removeStyleName("or-FormButtonPrimary");
+        removeStyleName("or-FormButtonDanger");
     }
 
 }

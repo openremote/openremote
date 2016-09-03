@@ -6,39 +6,39 @@
     ${msg("loginTitleHtml",(realm.displayNameHtml!''))}
     <#elseif section = "form">
         <#if realm.password>
-        <form class="layout vertical or-Form theme-Form" action="${url.loginAction}" method="post">
-            <div class="layout horizontal center or-FormGroup theme-FormGroup">
-                <div class="or-FormLabel theme-FormLabel">
+        <form class="layout vertical or-Form" action="${url.loginAction}" method="post">
+            <div class="layout horizontal center or-FormGroup">
+                <div class="or-FormLabel">
                     <label for="username"><#if !realm.registrationEmailAsUsername>${msg("usernameOrEmail")}<#else>${msg("email")}</#if></label>
                 </div>
 
-                <div class="or-FormField theme-FormField">
+                <div class="or-FormField">
                     <#if usernameEditDisabled??>
                         <input id="username"
                                autofocus
-                               class="or-FormControl theme-FormControl or-FormInputText theme-FormInputText"
+                               class="or-FormControl or-FormInputText"
                                name="username" value="${(login.username!'')?html}" type="text" disabled/>
                     <#else>
                         <input id="username"
                                autofocus
-                               class="or-FormControl theme-FormControl or-FormInputText theme-FormInputText"
+                               class="or-FormControl or-FormInputText"
                                name="username" value="${(login.username!'')?html}" type="text" autofocus/>
                     </#if>
                 </div>
             </div>
 
-            <div class="layout horizontal center or-FormGroup theme-FormGroup">
-                <div class="or-FormLabel theme-FormLabel">
+            <div class="layout horizontal center or-FormGroup">
+                <div class="or-FormLabel">
                     <label for="password">${msg("password")}</label>
                 </div>
 
-                <div class="or-FormField theme-FormField">
-                    <input id="password" class="or-FormControl theme-FormControl or-FormInputText theme-FormInputText"
+                <div class="or-FormField">
+                    <input id="password" class="or-FormControl or-FormInputText"
                            name="password" type="password" autocomplete="off"/>
                 </div>
             </div>
 
-            <div class="layout horizontal center-center or-FormGroup theme-FormGroup">
+            <div class="layout horizontal center-center or-FormGroup">
                 <div>
                     <#if realm.rememberMe && !usernameEditDisabled??>
                         <div class="checkbox">
@@ -60,8 +60,8 @@
                     </div>
                 </div>
 
-                <div class="or-FormField theme-FormField">
-                    <input class="or-FormControl theme-FormControl or-FormButtonPrimary theme-FormButtonPrimary or-PushButton theme-PushButton"
+                <div class="or-FormField">
+                    <input class="or-FormControl or-FormButtonPrimary or-PushButton"
                            name="login"
                            type="submit"
                            value="${msg("doLogIn")}"/>
