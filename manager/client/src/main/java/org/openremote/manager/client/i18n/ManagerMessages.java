@@ -224,4 +224,6 @@ public interface ManagerMessages extends Messages {
     String selectParentInAssetTree();
 
     String reset();
+
+    String invalidAssetParent();
 }

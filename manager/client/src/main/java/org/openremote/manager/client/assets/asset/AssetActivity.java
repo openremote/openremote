@@ -37,6 +37,7 @@ import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 import org.openremote.manager.shared.map.MapResource;
 
 import javax.inject.Inject;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.logging.Logger;
 
@@ -128,8 +129,14 @@ public class AssetActivity
     protected void onAssetSelectionChange(String selectedAssetId) {
         if (isParentSelection) {
             loadAsset(selectedAssetId, loadedParentAsset -> {
-                parentAsset = loadedParentAsset;
-                writeParentAssetToView();
+                if (Arrays.asList(loadedParentAsset.getPath()).contains(asset.getId())) {
+                    environment.getEventBus().dispatch(
+                        new ShowInfoEvent(environment.getMessages().invalidAssetParent())
+                    );
+                } else {
+                    parentAsset = loadedParentAsset;
+                    writeParentAssetToView();
+                }
             });
         } else {
             environment.getPlaceController().goTo(new AssetPlace(selectedAssetId));

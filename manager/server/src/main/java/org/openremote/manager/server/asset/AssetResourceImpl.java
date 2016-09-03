@@ -59,16 +59,24 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
 
     @Override
     public void update(@BeanParam RequestParams requestParams, String assetId, Asset asset) {
-        assetService.update(
-            mapToServerAsset(asset, assetService.get(assetId))
-        );
+        try {
+            assetService.update(
+                mapToServerAsset(asset, assetService.get(assetId))
+            );
+        } catch (IllegalStateException ex) {
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        }
     }
 
     @Override
     public void create(@BeanParam RequestParams requestParams, Asset asset) {
-        assetService.create(
-            mapToServerAsset(asset, new ServerAsset())
-        );
+        try {
+            assetService.create(
+                mapToServerAsset(asset, new ServerAsset())
+            );
+        } catch (IllegalStateException ex) {
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        }
     }
 
     @Override

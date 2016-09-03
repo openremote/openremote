@@ -29,9 +29,12 @@ import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.asset.AssetInfo;
+import org.openremote.manager.shared.ngsi.Entity;
 
+import javax.persistence.EntityManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -107,42 +110,20 @@ public class AssetService implements ContainerService {
 
     public ServerAsset get(String assetId) {
         return persistenceService.doTransaction(em -> {
-            ServerAsset asset = em.find(ServerAsset.class, assetId);
-            if (asset == null)
-                return null;
-            asset.setPath(em.unwrap(Session.class).doReturningWork(connection -> {
-                String query =
-                    "WITH RECURSIVE ASSET_TREE(ID, PARENT_ID, PATH) AS (" +
-                        " SELECT a1.ID, a1.PARENT_ID, ARRAY[text(a1.ID)] FROM ASSET a1 WHERE a1.PARENT_ID IS NULL" +
-                        " UNION ALL" +
-                        " SELECT a2.ID, a2.PARENT_ID, array_append(at.PATH, text(a2.ID)) FROM ASSET a2, ASSET_TREE at WHERE a2.PARENT_ID = at.ID" +
-                        ") SELECT PATH FROM ASSET_TREE WHERE ID = ?";
-
-                ResultSet result = null;
-                try (PreparedStatement statement = connection.prepareStatement(query)) {
-                    statement.setString(1, assetId);
-                    result = statement.executeQuery();
-                    if (result.next()) {
-                        return (String[]) result.getArray("PATH").getArray();
-                    }
-                    return null;
-                } finally {
-                    if (result != null)
-                        result.close();
-                }
-            }));
-            return asset;
+            return loadAsset(em, assetId);
         });
     }
 
     public void update(ServerAsset asset) {
         persistenceService.doTransaction(em -> {
+            validateParent(em, asset);
             em.merge(asset);
         });
     }
 
     public void create(ServerAsset asset) {
         persistenceService.doTransaction(em -> {
+            validateParent(em, asset);
             em.persist(asset);
         });
     }
@@ -156,5 +137,42 @@ public class AssetService implements ContainerService {
         });
     }
 
+    protected ServerAsset loadAsset(EntityManager em, String assetId) {
+        ServerAsset asset = em.find(ServerAsset.class, assetId);
+        if (asset == null)
+            return null;
+        asset.setPath(em.unwrap(Session.class).doReturningWork(connection -> {
+            String query =
+                "WITH RECURSIVE ASSET_TREE(ID, PARENT_ID, PATH) AS (" +
+                    " SELECT a1.ID, a1.PARENT_ID, ARRAY[text(a1.ID)] FROM ASSET a1 WHERE a1.PARENT_ID IS NULL" +
+                    " UNION ALL" +
+                    " SELECT a2.ID, a2.PARENT_ID, array_append(at.PATH, text(a2.ID)) FROM ASSET a2, ASSET_TREE at WHERE a2.PARENT_ID = at.ID" +
+                    ") SELECT PATH FROM ASSET_TREE WHERE ID = ?";
+
+            ResultSet result = null;
+            try (PreparedStatement statement = connection.prepareStatement(query)) {
+                statement.setString(1, assetId);
+                result = statement.executeQuery();
+                if (result.next()) {
+                    return (String[]) result.getArray("PATH").getArray();
+                }
+                return null;
+            } finally {
+                if (result != null)
+                    result.close();
+            }
+        }));
+        return asset;
+    }
+
+    protected void validateParent(EntityManager em, Asset asset) {
+        if (asset.getParentId() == null)
+            return;
+        ServerAsset parent = loadAsset(em, asset.getParentId());
+        if (parent == null)
+            throw new IllegalStateException("Parent asset not found: " + asset.getParentId());
+        if (Arrays.asList(parent.getPath()).contains(asset.getId()))
+            throw new IllegalStateException("Parent asset can not be a child of the asset: " + asset.getParentId());
+    }
 
 }
