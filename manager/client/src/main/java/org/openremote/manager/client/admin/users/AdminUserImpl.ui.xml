@@ -45,8 +45,7 @@
                 </w:label>
                 <w:field>
                     <w:FormField>
-                        <g:TextBox ui:field="usernameInput"
-                                   addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                        <w:FormInputText ui:field="usernameInput"/>
                     </w:FormField>
                 </w:field>
             </w:FormGroup>
@@ -57,8 +56,7 @@
                 </w:label>
                 <w:field>
                     <w:FormField>
-                        <g:TextBox ui:field="firstNameInput"
-                                   addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                        <w:FormInputText ui:field="firstNameInput"/>
                     </w:FormField>
                 </w:field>
             </w:FormGroup>
@@ -69,8 +67,7 @@
                 </w:label>
                 <w:field>
                     <w:FormField>
-                        <g:TextBox ui:field="lastNameInput"
-                                   addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                        <w:FormInputText ui:field="lastNameInput"/>
                     </w:FormField>
                 </w:field>
             </w:FormGroup>
@@ -81,8 +78,7 @@
                 </w:label>
                 <w:field>
                     <w:FormField>
-                        <g:TextBox ui:field="emailInput"
-                                   addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                        <w:FormInputText ui:field="emailInput"/>
                     </w:FormField>
                 </w:field>
             </w:FormGroup>
@@ -93,8 +89,7 @@
                 </w:label>
                 <w:field>
                     <w:FormField>
-                        <g:SimpleCheckBox ui:field="enabledCheckBox"
-                                          addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormCheckBox} {themeStyle.FormCheckBox}"/>
+                        <w:FormCheckBox ui:field="enabledCheckBox"/>
                     </w:FormField>
                 </w:field>
             </w:FormGroup>
@@ -148,7 +143,7 @@
                 </w:field>
             </w:FormGroup>
 
-            <w:FormGroup>
+            <w:FormGroup centerJustified="true">
                 <w:field>
                     <w:FormField>
                         <w:PushButton ui:field="updateButton"

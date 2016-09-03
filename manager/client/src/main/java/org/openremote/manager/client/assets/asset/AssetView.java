@@ -22,6 +22,7 @@ package org.openremote.manager.client.assets.asset;
 import elemental.json.JsonObject;
 import org.openremote.manager.client.assets.browser.AssetBrowsingView;
 import org.openremote.manager.client.widget.FormView;
+import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.map.GeoJSON;
 
 import java.util.Date;
@@ -63,6 +64,8 @@ public interface AssetView extends AssetBrowsingView<AssetView.Presenter>, FormV
     void setParentAsset(String name);
 
     void setParentSelection(boolean isSelecting);
+
+    void setAttributes(Attributes attributes);
 
     void initialiseMap(JsonObject mapOptions);
 

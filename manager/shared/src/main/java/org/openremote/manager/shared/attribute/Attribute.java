@@ -58,11 +58,11 @@ public class Attribute {
 
     public AttributeType getType() {
         String typeName = jsonObject.hasKey("type") ? jsonObject.get("type").asString() : null;
-        return typeName != null ? AttributeType.fromName(typeName) : null;
+        return typeName != null ? AttributeType.fromValue(typeName) : null;
     }
 
     public Attribute setType(AttributeType type) {
-        jsonObject.put("type", type.getName());
+        jsonObject.put("type", type.getValue());
         return this;
     }
 
@@ -79,8 +79,12 @@ public class Attribute {
         return this;
     }
 
+    public boolean hasMetadata() {
+        return jsonObject.hasKey("metadata");
+    }
+
     public Metadata getMetadata() {
-        return jsonObject.hasKey("metadata") ? new Metadata(jsonObject.getObject("metadata")) : null;
+        return hasMetadata() ? new Metadata(jsonObject.getObject("metadata")) : null;
     }
 
     public Attribute setMetadata(Metadata metadata) {

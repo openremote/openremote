@@ -21,9 +21,9 @@ package org.openremote.manager.client.widget;
 
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.uibinder.client.UiChild;
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.HasWidgets;
-import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.*;
+
+import java.util.Iterator;
 
 public class FormGroup extends FlowPanel implements HasWidgets {
 
@@ -100,10 +100,17 @@ public class FormGroup extends FlowPanel implements HasWidgets {
         }
     }
 
-    public void setEnabled(boolean enabled) {
-        getElement().removeClassName("disabled");
-        if (!enabled) {
-            getElement().addClassName("disabled");
+    public void setCenterJustified(boolean centerJustified) {
+        removeStyleName("center-justified");
+        if (centerJustified) {
+            addStyleName("center-justified");
+        }
+    }
+
+    public void setOpaque(boolean opaque) {
+        getElement().removeClassName("opaque");
+        if (!opaque) {
+            getElement().addClassName("opaque");
         }
     }
 }

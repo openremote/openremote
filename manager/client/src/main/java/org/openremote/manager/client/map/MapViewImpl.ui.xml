@@ -55,7 +55,6 @@
                             targetHistoryToken="asset:"
                             text="{managerMessages.createAsset}"/>
 
-                    <div>TODO: Move map navigation action items here</div>
                 </g:HTMLPanel>
 
                 <g:Label ui:field="mapLoadingLabel"

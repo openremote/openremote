@@ -20,38 +20,57 @@
 package org.openremote.manager.client.widget;
 
 import com.google.gwt.user.client.ui.Label;
-import com.google.gwt.user.client.ui.TextBox;
 import com.google.inject.Provider;
 import elemental.json.Json;
 import org.openremote.manager.client.app.dialog.ConfirmationDialog;
+import org.openremote.manager.client.util.TextUtil;
+import org.openremote.manager.shared.asset.AssetAttributeType;
 import org.openremote.manager.shared.attribute.Attribute;
 import org.openremote.manager.shared.attribute.AttributeType;
 import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.attribute.MetadataElement;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class AttributesFormViewImpl extends FormViewImpl {
+
+    private static final Logger LOG = Logger.getLogger(AttributesFormViewImpl.class.getName());
 
     public AttributesFormViewImpl(Provider<ConfirmationDialog> confirmationDialogProvider) {
         super(confirmationDialogProvider);
     }
 
-    public FormGroup[] createAttributeFormGroups(String formFieldStyleName, Attributes attributes) {
+    public FormGroup[] createAttributeFormGroups(AttributesFormStyle style, Attributes attributes) {
+        if (attributes == null)
+            return new FormGroup[0];
         List<FormGroup> list = new ArrayList<>();
-        for (Attribute attribute : attributes.get()) {
+        List<Attribute> attributeList = Arrays.asList(attributes.get());
+        Collections.sort(attributeList, (o1, o2) -> o1.getName().compareTo(o2.getName()));
+        for (Attribute attribute : attributeList) {
 
             FormGroup formGroup = createAttributeFormGroup(attribute);
 
             if (attribute.getType().equals(AttributeType.STRING)) {
-                formGroup.getFormField().add(createStringEditor(formFieldStyleName, attribute));
+                formGroup.getFormField().add(createStringEditor(style, attribute));
             } else if (attribute.getType().equals(AttributeType.INTEGER)) {
-                formGroup.getFormField().add(createIntegerEditor(formFieldStyleName, attribute));
+                formGroup.getFormField().add(createIntegerEditor(style, attribute));
+            } else if (attribute.getType().equals(AttributeType.FLOAT)) {
+                formGroup.getFormField().add(createFloatEditor(style, attribute));
+            } else if (attribute.getType().equals(AttributeType.BOOLEAN)) {
+                formGroup.getFormField().add(createBooleanEditor(style, attribute));
             } else {
                 formGroup.getFormField().add(
-                    new Label(managerMessages.unsupportedAttributeType(attribute.getType().getName()))
+                    new Label(managerMessages.unsupportedAttributeType(attribute.getType().getValue()))
                 );
+            }
+
+            String description = getDescription(attribute);
+            if (description != null) {
+                formGroup.addInfolabel(new Label(description));
             }
 
             list.add(formGroup);
@@ -66,11 +85,19 @@ public class AttributesFormViewImpl extends FormViewImpl {
         String label = attribute.getName();
         if (attribute.getMetadata().hasElement("label")) {
             MetadataElement metadataLabel = attribute.getMetadata().getElement("label");
-            if (metadataLabel.getType().equals(AttributeType.STRING.getName())) {
+            if (metadataLabel.getType().equals(AttributeType.STRING.getValue())) {
                 label = metadataLabel.getValue().asString();
             }
         }
-        formLabel.setText(label);
+        formLabel.setText(TextUtil.ellipsize(label, 30));
+        formLabel.addStyleName("larger");
+
+        if (AssetAttributeType.isSensor(attribute)) {
+            formLabel.setIcon("sign-out");
+        } else if (AssetAttributeType.isActuator(attribute)) {
+            formLabel.setIcon("sign-in");
+        }
+
         formGroup.addFormLabel(formLabel);
 
         FormField attributeField = new FormField();
@@ -79,52 +106,118 @@ public class AttributesFormViewImpl extends FormViewImpl {
         return formGroup;
     }
 
-    protected TextBox createTextBoxEditor(String formFieldStyleName, Attribute attribute) {
-        TextBox textBox = new TextBox();
+    /* ####################################################################### */
 
-        textBox.addStyleName(formFieldStyleName);
-        textBox.addStyleName(widgetStyle.FormControl());
-        textBox.addStyleName(themeStyle.FormControl());
-        textBox.addStyleName(widgetStyle.FormInputText());
-        textBox.addStyleName(themeStyle.FormInputText());
-
-        if (attribute.getMetadata().hasElement("description")) {
-            MetadataElement metadataDescription = attribute.getMetadata().getElement("description");
-            if (metadataDescription.getType().equals(AttributeType.STRING.getName())) {
-                textBox.setTitle(metadataDescription.getValue().asString());
-            }
-        }
+    protected FormInputText createStringEditor(AttributesFormStyle style, Attribute attribute) {
+        FormInputText input = createFormInputText(style.attributeStringEditor());
 
         if (attribute.getValue() != null) {
-            textBox.setValue(attribute.getValue().asString());
+            input.setValue(attribute.getValue().asString());
         }
-        return textBox;
+
+        if (AssetAttributeType.isSensor(attribute)) {
+            input.setReadOnly(true);
+        } else {
+            input.addValueChangeHandler(
+                event -> attribute.setValue(
+                    Json.create(event.getValue())
+                )
+            );
+        }
+        return input;
     }
 
-    protected TextBox createStringEditor(String formFieldStyleName, Attribute attribute) {
-        TextBox textBox = createTextBoxEditor(formFieldStyleName, attribute);
+    protected FormInputNumber createIntegerEditor(AttributesFormStyle style, Attribute attribute) {
+        FormInputNumber input = createFormInputNumber(style.attributeIntegerEditor());
 
-        textBox.addValueChangeHandler(
-            event -> attribute.setValue(
-                Json.create(event.getValue())
-            )
-        );
+        if (attribute.getValue() != null) {
+            input.setValue(attribute.getValue().asString());
+        }
 
-        return textBox;
+        if (AssetAttributeType.isSensor(attribute)) {
+            input.setReadOnly(true);
+        } else {
+            input.addValueChangeHandler(event -> {
+                try {
+                    Integer value = Integer.valueOf(event.getValue());
+                    attribute.setValue(Json.create(value));
+                } catch (NumberFormatException ex) {
+                    // TODO Do nothing? can we hook this up into validation?
+                }
+            });
+        }
+        return input;
     }
 
-    protected TextBox createIntegerEditor(String formFieldStyleName, Attribute attribute) {
-        TextBox textBox = createTextBoxEditor(formFieldStyleName, attribute);
+    protected FormInputText createFloatEditor(AttributesFormStyle style, Attribute attribute) {
+        FormInputText input = createFormInputText(style.attributeFloatEditor());
 
-        textBox.addValueChangeHandler(event -> {
-            try {
-                Integer value = Integer.valueOf(event.getValue());
-                attribute.setValue(Json.create(value));
-            } catch (NumberFormatException ex) {
-                // TODO Do nothing? can we hook this up into validation?
+        if (attribute.getValue() != null) {
+            input.setValue(attribute.getValue().asString());
+        }
+
+        if (AssetAttributeType.isSensor(attribute)) {
+            input.setReadOnly(true);
+        } else {
+            input.addValueChangeHandler(event -> {
+                try {
+                    Double value = Double.valueOf(event.getValue());
+                    attribute.setValue(Json.create(value));
+                } catch (NumberFormatException ex) {
+                    // TODO Do nothing? can we hook this up into validation?
+                }
+            });
+        }
+        return input;
+    }
+
+    protected FormCheckBox createBooleanEditor(AttributesFormStyle style, Attribute attribute) {
+        FormCheckBox input = createFormInputCheckBox(style.attributeBooleanEditor());
+
+        if (attribute.getValue() != null) {
+            boolean value = attribute.getValue().asBoolean();
+            input.setValue(value);
+        }
+
+        if (AssetAttributeType.isSensor(attribute)) {
+            input.setEnabled(false);
+        } else {
+            input.addValueChangeHandler(event -> {
+                attribute.setValue(Json.create(input.getValue()));
+            });
+        }
+        return input;
+    }
+
+    /* ####################################################################### */
+
+    protected FormInputText createFormInputText(String formFieldStyleName) {
+        FormInputText input = new FormInputText();
+        input.addStyleName(formFieldStyleName);
+        return input;
+    }
+
+    protected FormInputNumber createFormInputNumber(String formFieldStyleName) {
+        FormInputNumber input = new FormInputNumber();
+        input.addStyleName(formFieldStyleName);
+        return input;
+    }
+
+    protected FormCheckBox createFormInputCheckBox(String formFieldStyleName) {
+        FormCheckBox input = new FormCheckBox();
+        input.addStyleName(formFieldStyleName);
+        return input;
+    }
+
+    /* ####################################################################### */
+
+    protected String getDescription(Attribute attribute) {
+        if (attribute.getMetadata().hasElement("description")) {
+            MetadataElement metadataDescription = attribute.getMetadata().getElement("description");
+            if (metadataDescription.getType().equals(AttributeType.STRING.getValue())) {
+                return metadataDescription.getValue().asString();
             }
-        });
-
-        return textBox;
+        }
+        return null;
     }
 }

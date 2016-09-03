@@ -9,6 +9,8 @@ public class FormInputText extends TextBox {
     boolean autofocus;
 
     public FormInputText() {
+        super();
+        setStyleName("or-FormControl theme-FormControl or-FormInputText theme-FormInputText");
     }
 
     public String getPlaceholder() {

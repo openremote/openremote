@@ -26,15 +26,14 @@ import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.HTMLPanel;
-import com.google.gwt.user.client.ui.Label;
-import com.google.gwt.user.client.ui.TextBox;
+import com.google.gwt.user.client.ui.*;
 import com.google.inject.Provider;
 import elemental.json.JsonObject;
 import org.openremote.manager.client.app.dialog.ConfirmationDialog;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.widget.*;
+import org.openremote.manager.client.widget.PushButton;
+import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.map.GeoJSON;
 
 import javax.inject.Inject;
@@ -45,7 +44,7 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
     interface UI extends UiBinder<FlexSplitPanel, AssetViewImpl> {
     }
 
-    interface Style extends CssResource {
+    interface Style extends CssResource, AttributesFormStyle{
 
         String navItem();
 
@@ -53,11 +52,17 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
 
         String nameTextBox();
 
-        String attributeTextBox();
-
         String mapWidget();
 
         String typeTextBox();
+
+        String attributeIntegerEditor();
+
+        String attributeFloatEditor();
+
+        String attributeStringEditor();
+
+        String attributeBooleanEditor();
     }
 
     @UiField
@@ -107,6 +112,9 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
     FlowPanel attributesContainer;
 
     @UiField
+    FormGroup submitButtonGroup;
+
+    @UiField
     PushButton createButton;
 
     @UiField
@@ -120,6 +128,7 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
 
     final AssetBrowser assetBrowser;
     Presenter presenter;
+    FormGroup[] attributeFormGroups = new FormGroup[0];
 
     @Inject
     public AssetViewImpl(AssetBrowser assetBrowser, Provider<ConfirmationDialog> confirmationDialogProvider) {
@@ -151,16 +160,18 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
             resetParentSelectionButton.setVisible(false);
             setRootParentSelectionButton.setVisible(false);
             selectParentInfoLabel.setVisible(false);
-            nameGroup.setEnabled(true);
-            nameInput.setEnabled(true);
-            createdOnGroup.setEnabled(true);
-            typeGroup.setEnabled(true);
-            typeInput.setEnabled(true);
-            locationGroup.setEnabled(true);
-            mapWidget.setEnabled(true);
             createButton.setEnabled(true);
             updateButton.setEnabled(true);
             deleteButton.setEnabled(true);
+            nameGroup.setOpaque(true);
+            createdOnGroup.setOpaque(true);
+            typeGroup.setOpaque(true);
+            locationGroup.setOpaque(true);
+            submitButtonGroup.setOpaque(true);
+            mapWidget.setOpaque(true);
+            for (FormGroup attributeFormGroup : attributeFormGroups) {
+                attributeFormGroup.setOpaque(true);
+            }
         }
     }
 
@@ -212,16 +223,24 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
         resetParentSelectionButton.setVisible(isSelecting);
         setRootParentSelectionButton.setVisible(isSelecting);
         selectParentInfoLabel.setVisible(isSelecting);
-        nameGroup.setEnabled(!isSelecting);
-        nameInput.setEnabled(!isSelecting);
-        createdOnGroup.setEnabled(!isSelecting);
-        typeGroup.setEnabled(!isSelecting);
-        typeInput.setEnabled(!isSelecting);
-        locationGroup.setEnabled(!isSelecting);
-        createButton.setEnabled(!isSelecting);
-        updateButton.setEnabled(!isSelecting);
-        deleteButton.setEnabled(!isSelecting);
-        mapWidget.setEnabled(!isSelecting);
+        nameGroup.setOpaque(!isSelecting);
+        createdOnGroup.setOpaque(!isSelecting);
+        typeGroup.setOpaque(!isSelecting);
+        locationGroup.setOpaque(!isSelecting);
+        submitButtonGroup.setOpaque(!isSelecting);
+        mapWidget.setOpaque(!isSelecting);
+        for (FormGroup attributeFormGroup : attributeFormGroups) {
+            attributeFormGroup.setOpaque(!isSelecting);
+        }
+    }
+
+    @Override
+    public void setAttributes(Attributes attributes) {
+        attributesContainer.clear();
+        attributeFormGroups = createAttributeFormGroups(style, attributes);
+        for (FormGroup attributeFormGroup : attributeFormGroups) {
+            attributesContainer.add(attributeFormGroup);
+        }
     }
 
     @Override

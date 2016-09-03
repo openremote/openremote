@@ -193,12 +193,12 @@ public class MapWidget extends ComplexPanel {
         mapboxMap.resize();
     }
 
-    public void setEnabled(boolean enabled) {
+    public void setOpaque(boolean opaque) {
         if (mapboxMap == null)
             return;
-        host.removeStyleName("disabled");
-        if (!enabled) {
-            host.addStyleName("disabled");
+        host.removeStyleName("opaque");
+        if (!opaque) {
+            host.addStyleName("opaque");
         }
     }
 

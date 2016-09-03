@@ -30,8 +30,7 @@ import com.google.gwt.user.client.ui.*;
 import com.google.inject.Provider;
 import org.openremote.manager.client.app.dialog.ConfirmationDialog;
 import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.widget.AttributesFormViewImpl;
-import org.openremote.manager.client.widget.FormGroup;
+import org.openremote.manager.client.widget.*;
 import org.openremote.manager.client.widget.PushButton;
 import org.openremote.manager.shared.connector.Connector;
 
@@ -47,15 +46,21 @@ public class AdminAgentImpl extends AttributesFormViewImpl implements AdminAgent
     interface UI extends UiBinder<HTMLPanel, AdminAgentImpl> {
     }
 
-    interface Style extends CssResource {
+    interface Style extends CssResource, AttributesFormStyle {
 
         String formMessages();
 
-        String nameTextBox();
+        String nameInput();
 
-        String descriptionTextBox();
+        String descriptionInput();
 
-        String connectorAttributeTextBox();
+        String attributeIntegerEditor();
+
+        String attributeFloatEditor();
+
+        String attributeStringEditor();
+
+        String attributeBooleanEditor();
     }
 
     @UiField
@@ -74,7 +79,7 @@ public class AdminAgentImpl extends AttributesFormViewImpl implements AdminAgent
     @UiField
     FormGroup enabledGroup;
     @UiField
-    SimpleCheckBox enabledCheckBox;
+    FormCheckBox enabledCheckBox;
 
     @UiField(provided = true)
     ValueListBox<Connector> connectorListBox;
@@ -144,11 +149,8 @@ public class AdminAgentImpl extends AttributesFormViewImpl implements AdminAgent
         attributesContainer.clear();
 
         if (connector != null) {
-
-            FormGroup[] attributeFormGroups = createAttributeFormGroups(
-                style.connectorAttributeTextBox(),
-                connector.getSettings()
-            );
+            FormGroup[] attributeFormGroups =
+                createAttributeFormGroups(style, connector.getSettings());
             for (FormGroup attributeFormGroup : attributeFormGroups) {
                 attributesContainer.add(attributeFormGroup);
             }

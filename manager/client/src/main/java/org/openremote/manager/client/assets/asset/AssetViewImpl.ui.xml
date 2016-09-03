@@ -16,8 +16,7 @@
         }
 
         .nameTextBox,
-        .typeTextBox,
-        .attributeTextBox {
+        .typeTextBox {
             width: 100%;
         }
 
@@ -25,6 +24,22 @@
             margin-left: 2em;
             width: 44%;
             height: 24em;
+        }
+
+        .attributeStringEditor {
+            width: 100%;
+        }
+
+        .attributeIntegerEditor {
+            width: 10em;
+        }
+
+        .attributeFloatEditor {
+            width: 5em;
+        }
+
+        .attributeBooleanEditor {
+
         }
     </ui:style>
 
@@ -97,8 +112,7 @@
                                     </w:label>
                                     <w:field>
                                         <w:FormField addStyleNames="larger">
-                                            <g:TextBox ui:field="nameInput"
-                                                       addStyleNames="{style.nameTextBox} {widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                                            <w:FormInputText ui:field="nameInput" addStyleNames="{style.nameTextBox}"/>
                                         </w:FormField>
                                     </w:field>
                                 </w:FormGroup>
@@ -122,9 +136,7 @@
                                     <w:field>
                                         <w:FormField addStyleNames="larger">
                                             <g:FlowPanel styleName="layout horizontal center">
-                                                <g:TextBox ui:field="parentAssetLabel"
-                                                           readOnly="true"
-                                                           addStyleNames="{style.typeTextBox} {widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                                                <w:FormInputText ui:field="parentAssetLabel" readOnly="true" addStyleNames="{style.typeTextBox}"/>
                                                 <w:PushButton ui:field="selectParentButton"
                                                               addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormButton} {themeStyle.FormButton} {widgetStyle.PushButton} {themeStyle.PushButton}"
                                                               text="{managerMessages.selectParentAsset}"
@@ -160,9 +172,7 @@
                                     </w:label>
                                     <w:field>
                                         <w:FormField addStyleNames="larger">
-                                            <g:TextBox ui:field="typeInput"
-                                                       readOnly="true"
-                                                       addStyleNames="{style.typeTextBox} {widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                                            <w:FormInputText ui:field="typeInput" readOnly="true" addStyleNames="{style.typeTextBox}"/>
                                         </w:FormField>
                                     </w:field>
                                 </w:FormGroup>
@@ -181,7 +191,7 @@
 
                                 <g:FlowPanel ui:field="attributesContainer"/>
 
-                                <w:FormGroup>
+                                <w:FormGroup ui:field="submitButtonGroup" centerJustified="true">
                                     <w:field>
                                         <w:FormField>
                                             <w:PushButton ui:field="updateButton"

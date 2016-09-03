@@ -85,7 +85,7 @@ public class AssetService implements ContainerService {
                 em.createQuery(
                     "select new org.openremote.manager.shared.asset.AssetInfo(" +
                         "a.id, a.name, a.type, a.parent.id" +
-                        ") from Asset a where a.parent is null order by a.name asc",
+                        ") from Asset a where a.parent is null order by a.createdOn asc",
                     AssetInfo.class
                 ).getResultList();
             return result.toArray(new AssetInfo[result.size()]);
@@ -98,7 +98,7 @@ public class AssetService implements ContainerService {
                 em.createQuery(
                     "select new org.openremote.manager.shared.asset.AssetInfo(" +
                         "a.id, a.name, a.type, a.parent.id" +
-                        ") from Asset a where a.parent.id = :parentId order by a.name asc",
+                        ") from Asset a where a.parent.id = :parentId order by a.createdOn asc",
                     AssetInfo.class
                 ).setParameter("parentId", parentId).getResultList();
             return result.toArray(new AssetInfo[result.size()]);

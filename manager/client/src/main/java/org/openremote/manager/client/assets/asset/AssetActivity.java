@@ -32,6 +32,7 @@ import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
 import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.asset.AssetType;
+import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 import org.openremote.manager.shared.map.MapResource;
 
@@ -276,6 +277,7 @@ public class AssetActivity
         view.setName(asset.getName());
         view.setType(asset.getType());
         view.setCreatedOn(asset.getCreatedOn());
+        view.setAttributes(new Attributes(asset.getAttributes()));
         view.setLocation(getLocation(asset.getCoordinates()));
         if (asset != null && asset.getId() != null) {
             view.showFeaturesSelection(getFeature(asset));

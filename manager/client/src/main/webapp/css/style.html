@@ -202,12 +202,12 @@
     }
 
     .or-FormGroup {
-        margin-bottom: 0.4em;
+        margin-bottom: 0.6em;
         min-height: 2.6em;
     }
 
-    .or-FormGroup.disabled .or-FormLabel,
-    .or-FormGroup.disabled .or-FormValueLabel {
+    .or-FormGroup.opaque .or-FormLabel,
+    .or-FormGroup.opaque .or-FormValueLabel {
         opacity: 0.44;
     }
 
@@ -216,8 +216,13 @@
         font-weight: 600;
     }
 
+    .or-FormLabelIcon {
+        margin-right: 0.4em;
+        font-size: 1.2em;
+    }
+
     .or-FormLabel.larger {
-        min-width: 13em;
+        min-width: 15em;
     }
 
     .or-FormLabel .required {
@@ -243,22 +248,35 @@
         margin: 0 0.4em;
     }
 
-    .or-FormControl[disabled] {
+    .or-FormControl[disabled],
+    .or-FormGroup.opaque .or-FormControl {
         cursor: not-allowed;
+        pointer-events: none;
         opacity: .44;
     }
 
-    .or-FormInputText {
+    .or-FormControl.or-FormCheckBox[disabled] {
+        opacity: 1;
+    }
+
+    .or-FormGroup.opaque .or-FormCheckBox {
+        opacity: 0.44;
+    }
+
+    .or-FormInputText,
+    .or-FormInputNumber {
         border-bottom: 1px solid;
         font-size: inherit;
     }
 
-    .or-FormInputText[readOnly] {
+    .or-FormInputText[readOnly],
+    .or-FormInputNumber[readOnly] {
         border-color: transparent;
         cursor: text;
     }
 
     .or-FormInputText,
+    .or-FormInputNumber,
     .or-FormValueLabel {
         padding: 0.2em 0;
     }
@@ -281,6 +299,7 @@
     }
 
     .or-FormCheckBox {
+        margin: 0 0.4em;
     }
 
     .or-FormTableHeaderCell {
@@ -387,7 +406,7 @@
         border-style: solid;
     }
 
-    .or-ItemWithBorder .disabled {
+    .or-ItemWithBorder .opaque {
         opacity: 0.44;
         pointer-events: none;
         user-select: none;

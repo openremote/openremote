@@ -143,15 +143,18 @@
 
     }
 
-    .theme-FormInputText {
+    .theme-FormInputText,
+    .theme-FormInputNumber {
         border-color: var(--theme-darkgrey);
     }
 
-    .theme-FormInputText:focus {
+    .theme-FormInputText:focus,
+    .theme-FormInputNumber:focus {
         border-color: var(--theme-lightgreen);
     }
 
-    .theme-FormInputText[readOnly]:focus {
+    .theme-FormInputText[readOnly]:focus,
+    .theme-FormInputNumber[readOnly]:focus {
         border-color: transparent;
     }
 

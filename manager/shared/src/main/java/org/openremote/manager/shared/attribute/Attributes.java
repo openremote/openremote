@@ -69,8 +69,11 @@ public class Attributes {
         return hasAttribute(name) ? new Attribute(name, jsonObject.getObject(name)) : null;
     }
 
-    public Attributes add(Attribute attribute) {
-        jsonObject.put(attribute.getName(), attribute.getJsonObject());
+    public Attributes add(Attribute... attributes) {
+        if (attributes != null)
+            for (Attribute attribute : attributes) {
+                jsonObject.put(attribute.getName(), attribute.getJsonObject());
+            }
         return this;
     }
 

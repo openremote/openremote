@@ -20,9 +20,6 @@
 package org.openremote.manager.shared.connector;
 
 import elemental.json.Json;
-import elemental.json.JsonValue;
-import org.openremote.manager.shared.agent.Agent;
-import org.openremote.manager.shared.attribute.*;
 import org.openremote.manager.shared.attribute.Attribute;
 import org.openremote.manager.shared.attribute.AttributeType;
 import org.openremote.manager.shared.attribute.Metadata;
@@ -42,7 +39,7 @@ public class ConnectorUtil {
         if (displayName != null && displayName.length() > 0) {
             attribute.getMetadata().addElement(
                     new MetadataElement("label", Json.createObject())
-                            .setType(AttributeType.STRING.getName())
+                            .setType(AttributeType.STRING.getValue())
                             .setValue(Json.create(displayName))
             );
         }
@@ -50,7 +47,7 @@ public class ConnectorUtil {
         if (description != null && description.length() > 0) {
             attribute.getMetadata().addElement(
                     new MetadataElement("description", Json.createObject())
-                            .setType(AttributeType.STRING.getName())
+                            .setType(AttributeType.STRING.getValue())
                             .setValue(Json.create(description))
             );
         }
@@ -58,7 +55,7 @@ public class ConnectorUtil {
         if (defaultValue != null && defaultValue.length() > 0) {
             attribute.getMetadata().addElement(
                     new MetadataElement("defaultValue", Json.createObject())
-                            .setType(type.getName())
+                            .setType(type.getValue())
                             .setValue(Json.create(defaultValue))
             );
         }
@@ -66,7 +63,7 @@ public class ConnectorUtil {
         if (defaultValueNote != null && defaultValueNote.length() > 0) {
             attribute.getMetadata().addElement(
                     new MetadataElement("defaultValueNote", Json.createObject())
-                            .setType(AttributeType.STRING.getName())
+                            .setType(AttributeType.STRING.getValue())
                             .setValue(Json.create(defaultValueNote))
             );
         }
@@ -74,7 +71,7 @@ public class ConnectorUtil {
         if (required) {
             attribute.getMetadata().addElement(
                     new MetadataElement("required", Json.createObject())
-                            .setType(AttributeType.BOOLEAN.getName())
+                            .setType(AttributeType.BOOLEAN.getValue())
                             .setValue(Json.create(true))
             );
         }

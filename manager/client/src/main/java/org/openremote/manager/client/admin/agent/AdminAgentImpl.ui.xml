@@ -11,10 +11,25 @@
             max-width: 30em;
         }
 
-        .nameTextBox,
-        .descriptionTextBox,
-        .connectorAttributeTextBox {
+        .nameInput,
+        .descriptionInput {
             width: 30em;
+        }
+
+        .attributeStringEditor {
+            width: 30em;
+        }
+
+        .attributeIntegerEditor {
+            width: 10em;
+        }
+
+        .attributeFloatEditor {
+            width: 5em;
+        }
+
+        .attributeBooleanEditor {
+
         }
     </ui:style>
 
@@ -50,8 +65,7 @@
                 </w:label>
                 <w:field>
                     <w:FormField>
-                        <g:TextBox ui:field="nameInput"
-                                   addStyleNames="{style.nameTextBox} {widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                        <w:FormInputText ui:field="nameInput" addStyleNames="{style.nameInput}"/>
                     </w:FormField>
                 </w:field>
             </w:FormGroup>
@@ -62,9 +76,7 @@
                 </w:label>
                 <w:field>
                     <w:FormField>
-                        <g:TextBox
-                                ui:field="descriptionInput"
-                                addStyleNames="{style.descriptionTextBox} {widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormInputText} {themeStyle.FormInputText}"/>
+                        <w:FormInputText ui:field="descriptionInput" addStyleNames="{style.descriptionInput}"/>
                     </w:FormField>
                 </w:field>
             </w:FormGroup>
@@ -75,8 +87,7 @@
                 </w:label>
                 <w:field>
                     <w:FormField>
-                        <g:SimpleCheckBox ui:field="enabledCheckBox"
-                                          addStyleNames="{widgetStyle.FormControl} {themeStyle.FormControl} {widgetStyle.FormCheckBox} {themeStyle.FormCheckBox}"/>
+                        <w:FormCheckBox ui:field="enabledCheckBox"/>
                     </w:FormField>
                 </w:field>
             </w:FormGroup>
@@ -95,7 +106,7 @@
 
             <g:FlowPanel ui:field="attributesContainer"/>
 
-            <w:FormGroup>
+            <w:FormGroup centerJustified="true">
                 <w:field>
                     <w:FormField>
                         <w:PushButton ui:field="updateButton"

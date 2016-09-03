@@ -24,13 +24,19 @@ import com.google.gwt.user.client.ui.ComplexPanel;
 
 public class FormLabel extends ComplexPanel {
 
+    protected SpanElement iconElement;
+    protected String icon;
     protected LabelElement labelElement;
     protected SpanElement requiredElement;
     protected boolean required;
 
     public FormLabel() {
         setElement(Document.get().createElement(DivElement.TAG));
-        getElement().addClassName("or-FormLabel theme-FormLabel");
+        getElement().addClassName("or-FormLabel theme-FormLabel layout horizontal center");
+
+        iconElement = (SpanElement) Document.get().createElement(SpanElement.TAG);
+        iconElement.addClassName("flex or-FormLabelIcon theme-FormLabelIcon");
+        iconElement.getStyle().setTextAlign(Style.TextAlign.RIGHT);
 
         labelElement = (LabelElement) Document.get().createElement(LabelElement.TAG);
         labelElement.setHtmlFor(Document.get().createUniqueId());
@@ -63,4 +69,23 @@ public class FormLabel extends ComplexPanel {
     public String getFormFieldId() {
         return labelElement.getHtmlFor();
     }
+
+    public String getIcon() {
+        return icon;
+    }
+
+    public void setIcon(String icon) {
+        if (this.icon != null) {
+            iconElement.removeClassName("fa");
+            iconElement.removeClassName("fa-" + icon);
+        } else {
+            getElement().insertAfter(iconElement, requiredElement);
+        }
+        this.icon = icon;
+        if (icon != null) {
+            iconElement.addClassName("fa");
+            iconElement.addClassName("fa-" + icon);
+        }
+    }
+
 }

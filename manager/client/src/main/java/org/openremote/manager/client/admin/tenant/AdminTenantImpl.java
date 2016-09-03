@@ -29,6 +29,7 @@ import com.google.gwt.user.client.ui.SimpleCheckBox;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.inject.Provider;
 import org.openremote.manager.client.app.dialog.ConfirmationDialog;
+import org.openremote.manager.client.widget.FormCheckBox;
 import org.openremote.manager.client.widget.FormGroup;
 import org.openremote.manager.client.widget.FormViewImpl;
 import org.openremote.manager.client.widget.PushButton;
@@ -53,7 +54,7 @@ public class AdminTenantImpl extends FormViewImpl implements AdminTenant {
     @UiField
     FormGroup enabledGroup;
     @UiField
-    SimpleCheckBox enabledCheckBox;
+    FormCheckBox enabledCheckBox;
 
     @UiField
     PushButton createButton;

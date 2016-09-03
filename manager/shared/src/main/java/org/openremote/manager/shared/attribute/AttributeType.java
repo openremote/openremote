@@ -35,27 +35,27 @@ public enum AttributeType {
     BOOLEAN_ARRAY("Boolean[]", JsonType.ARRAY),
     DATETIME("DateTime", JsonType.STRING);
 
-    private String name;
+    private String value;
     private JsonType jsonType;
 
-    AttributeType(String name, JsonType jsonType) {
-        this.name = name;
+    AttributeType(String value, JsonType jsonType) {
+        this.value = value;
         this.jsonType = jsonType;
     }
 
-    public String getName() {
-        return name;
+    public String getValue() {
+        return value;
     }
 
     public JsonType getJsonType() {
         return jsonType;
     }
 
-    public static AttributeType fromName(String name) {
+    public static AttributeType fromValue(String value) {
         AttributeType[] values = AttributeType.values();
-        for (AttributeType value : values) {
-            if (value.getName().equalsIgnoreCase(name))
-                return value;
+        for (AttributeType v : values) {
+            if (v.getValue().equalsIgnoreCase(value))
+                return v;
         }
         return null;
     }

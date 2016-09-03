@@ -28,6 +28,7 @@ import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.*;
 import com.google.inject.Provider;
 import org.openremote.manager.client.app.dialog.ConfirmationDialog;
+import org.openremote.manager.client.widget.FormCheckBox;
 import org.openremote.manager.client.widget.FormGroup;
 import org.openremote.manager.client.widget.FormViewImpl;
 import org.openremote.manager.client.widget.PushButton;
@@ -66,7 +67,7 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
     @UiField
     FormGroup enabledGroup;
     @UiField
-    SimpleCheckBox enabledCheckBox;
+    FormCheckBox enabledCheckBox;
 
     @UiField
     FormGroup resetPasswordNoteGroup;
@@ -101,7 +102,7 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
     @UiField
     PushButton cancelButton;
 
-    final protected Map<String, SimpleCheckBox> roles = new LinkedHashMap<>();
+    final protected Map<String, FormCheckBox> roles = new LinkedHashMap<>();
 
     protected Presenter presenter;
 
@@ -272,7 +273,7 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
             roleLabel.getElement().getStyle().setFontWeight(Style.FontWeight.BOLD);
         }
 
-        SimpleCheckBox assignedCheckBox = new SimpleCheckBox();
+        FormCheckBox assignedCheckBox = new FormCheckBox();
         assignedCheckBox.setValue(assigned);
 
         assignedCheckBox.addValueChangeHandler(event -> {
