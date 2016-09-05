@@ -69,6 +69,10 @@ public class WidgetStyle {
         return "or-UnorderedList";
     }
 
+    public String Divider() {
+        return "or-Divider";
+    }
+
     public String Toast() {
         return "or-Toast";
     }

@@ -87,6 +87,7 @@
         border-radius: 0.15em;
         font-weight: 600;
         display: inline-block;
+        white-space: nowrap;
     }
 
     .or-PushButton,
@@ -108,15 +109,20 @@
         margin-right: 0.4em;
     }
 
-    .or-PushButton.gwt-PushButton-up-disabled {
+    .or-PushButton.or-PushButton-up-disabled {
         cursor: not-allowed;
         opacity: .44;
     }
 
-    .or-PushButton.gwt-PushButton-up-disabled:hover,
-    .or-PushButton.gwt-PushButton-up-disabled:active {
+    .or-PushButton.or-PushButton-up-disabled:hover,
+    .or-PushButton.or-PushButton-up-disabled:active {
         -webkit-filter: inherit;
         filter: inherit;
+    }
+
+    .or-Divider {
+        min-height: 0.1em;
+        margin: 1em 0;
     }
 
     .or-Hyperlink {
@@ -203,7 +209,7 @@
 
     .or-FormGroup {
         margin-bottom: 0.6em;
-        min-height: 2.6em;
+        min-height: 2.75em;
     }
 
     .or-FormGroup.opaque .or-FormLabel,
@@ -388,6 +394,11 @@
         padding-bottom: 0.8em;
         text-decoration: none;
         font-weight: 600;
+    }
+
+    .or-FormTreeIcon {
+        margin-left: 0.4em;
+        width: 1.6em;
     }
 
     .or-FormMessages,

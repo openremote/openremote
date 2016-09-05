@@ -31,7 +31,6 @@ import org.openremote.manager.shared.attribute.MetadataElement;
  */
 public enum AssetAttributeType {
 
-
     SENSOR("urn:openremote:asset:sensor"),
     ACTUATOR("urn:openremote:asset:actuator");
 

@@ -23,8 +23,10 @@ import com.google.gwt.dom.client.Style;
 import com.google.gwt.uibinder.client.UiChild;
 import com.google.gwt.user.client.ui.*;
 
-import java.util.Iterator;
-
+/**
+ * A form has form groups, each group is a combination of label,
+ * control field, etc. typically rendered in a single line/block.
+ */
 public class FormGroup extends FlowPanel implements HasWidgets {
 
     protected FlowPanel groupPanel = new FlowPanel();
@@ -109,7 +111,7 @@ public class FormGroup extends FlowPanel implements HasWidgets {
 
     public void setOpaque(boolean opaque) {
         getElement().removeClassName("opaque");
-        if (!opaque) {
+        if (opaque) {
             getElement().addClassName("opaque");
         }
     }

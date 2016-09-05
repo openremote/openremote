@@ -28,12 +28,13 @@ import com.google.gwt.safehtml.shared.SafeHtmlUtils;
 import com.google.gwt.text.shared.SafeHtmlRenderer;
 import org.openremote.manager.client.util.TextUtil;
 import org.openremote.manager.shared.asset.AssetInfo;
+import org.openremote.manager.shared.asset.AssetType;
 
 class AssetCell extends AbstractSafeHtmlCell<AssetInfo> {
 
     public interface AssetTemplates extends SafeHtmlTemplates {
-        @Template("<div id=\"asset-{0}\">{1}</div>")
-        SafeHtml assetItem(String assetId, String name);
+        @Template("<div id=\"asset-{0}\"><span class=\"or-FormTreeIcon fa fa-{2}\"></span>{1}</div>")
+        SafeHtml assetItem(String assetId, String name, String icon);
     }
 
     private static final AssetTemplates TEMPLATES = GWT.create(AssetTemplates.class);
@@ -59,8 +60,9 @@ class AssetCell extends AbstractSafeHtmlCell<AssetInfo> {
         public void render(AssetInfo asset, SafeHtmlBuilder appendable) {
             appendable.append(TEMPLATES.assetItem(
                 asset.getId(),
-                TextUtil.ellipsize(asset.getName(), maxNameLength))
-            );
+                TextUtil.ellipsize(asset.getName(), maxNameLength),
+                getIcon(asset.getWellKnownType())
+            ));
         }
     }
 
@@ -72,6 +74,21 @@ class AssetCell extends AbstractSafeHtmlCell<AssetInfo> {
     public void render(Context context, SafeHtml value, SafeHtmlBuilder sb) {
         if (value != null) {
             sb.append(value);
+        }
+    }
+
+    static protected String getIcon(AssetType assetType) {
+        switch (assetType) {
+            case BUILDING:
+                return "building";
+            case FLOOR:
+                return "server";
+            case AGENT:
+                return "cubes";
+            case DEVICE:
+                return "gear";
+            default:
+                return "cube";
         }
     }
 }

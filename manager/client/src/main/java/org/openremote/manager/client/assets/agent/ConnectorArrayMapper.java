@@ -17,18 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.admin.agent;
+package org.openremote.manager.client.assets.agent;
 
 import com.github.nmorel.gwtjackson.client.ObjectMapper;
 import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
 import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
-import org.openremote.manager.shared.attribute.Attributes;
+import org.openremote.manager.shared.connector.Connector;
 import org.openremote.manager.shared.http.EntityReader;
 import org.openremote.manager.shared.http.EntityWriter;
 
-@JsonMixIns({@JsonMixIns.JsonMixIn(target = Attributes.class, mixIn = DefaultJsonMixin.class)})
-public interface AttributesMapper
-    extends ObjectMapper<Attributes>,
-    EntityReader<Attributes>,
-    EntityWriter<Attributes> {
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = Connector.class, mixIn = DefaultJsonMixin.class)})
+public interface ConnectorArrayMapper
+    extends ObjectMapper<Connector[]>,
+    EntityReader<Connector[]>,
+    EntityWriter<Connector[]> {
 }

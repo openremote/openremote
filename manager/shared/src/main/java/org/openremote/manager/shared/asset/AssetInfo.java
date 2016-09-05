@@ -67,6 +67,10 @@ public class AssetInfo  {
         return type;
     }
 
+    public AssetType getWellKnownType() {
+        return AssetType.getByValue(getType());
+    }
+
     public void setType(String type) {
         this.type = type;
     }

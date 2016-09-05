@@ -9,7 +9,6 @@
 
         <class>org.openremote.container.persistence</class>
 
-        <class>org.openremote.manager.shared.agent.Agent</class>
         <class>org.openremote.manager.server.asset.ServerAsset</class>
 
         <exclude-unlisted-classes>true</exclude-unlisted-classes>

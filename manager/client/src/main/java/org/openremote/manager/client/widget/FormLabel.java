@@ -35,7 +35,7 @@ public class FormLabel extends ComplexPanel {
         getElement().addClassName("or-FormLabel layout horizontal center");
 
         iconElement = (SpanElement) Document.get().createElement(SpanElement.TAG);
-        iconElement.addClassName("flex or-FormLabelIcon");
+        iconElement.addClassName("or-FormLabelIcon");
         iconElement.getStyle().setTextAlign(Style.TextAlign.RIGHT);
 
         labelElement = (LabelElement) Document.get().createElement(LabelElement.TAG);
@@ -79,7 +79,7 @@ public class FormLabel extends ComplexPanel {
             iconElement.removeClassName("fa");
             iconElement.removeClassName("fa-" + icon);
         } else {
-            getElement().insertAfter(iconElement, requiredElement);
+            getElement().insertBefore(iconElement, labelElement);
         }
         this.icon = icon;
         if (icon != null) {

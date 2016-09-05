@@ -19,13 +19,23 @@
  */
 package org.openremote.manager.client.widget;
 
-public interface AttributesFormStyle {
+import com.google.gwt.text.shared.Renderer;
+import com.google.gwt.user.client.ui.ValueListBox;
+import com.google.gwt.view.client.ProvidesKey;
 
-    String attributeStringEditor();
+public class FormDropDown<T> extends ValueListBox<T> {
 
-    String attributeIntegerEditor();
+    public FormDropDown(Renderer<? super T> renderer) {
+        super(renderer);
+        setStyleName("or-FormControl or-FormDropDown");
+    }
 
-    String attributeFloatEditor();
+    public FormDropDown(Renderer<? super T> renderer, ProvidesKey<T> keyProvider) {
+        super(renderer, keyProvider);
+        setStyleName("or-FormControl or-FormDropDown");
+    }
 
-    String attributeBooleanEditor();
+    public FormDropDown() {
+        setStyleName("or-FormControl or-FormDropDown");
+    }
 }

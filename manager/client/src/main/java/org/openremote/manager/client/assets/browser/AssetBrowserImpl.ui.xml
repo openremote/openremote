@@ -10,19 +10,20 @@
         }
 
         .navItem {
-            margin-right: 1.2em;
+            margin-right: 0.8em;
         }
 
         .navItemFirst {
             margin-left: 0.2em !important;
+            margin-right: 0.8em !important;
         }
 
         .searchInput {
             border-radius: 0.4em;
             font-size: smaller !important;
             padding: 0.4em !important;
-            width: 75%;
             height: 0.8em;
+            min-width: 7em;
         }
 
         .assetTreeContainer {
@@ -36,17 +37,20 @@
         <g:HTMLPanel
                 styleName="layout horizontal center {widgetStyle.SecondaryNavHorizontal}">
 
-            <div class="flex">
-                <w:FormInputText ui:field="searchInput"
-                                 addStyleNames="{style.navItemFirst} {style.searchInput} {widgetStyle.FormControl} {widgetStyle.FormInputText}"
-                                 autofocus="true"
-                                 placeholder="{managerMessages.search}..."/>
-            </div>
+            <w:FormInputText ui:field="searchInput"
+                             addStyleNames="flex {style.navItemFirst} {style.searchInput}"
+                             autofocus="true"
+                             placeholder="{managerMessages.search}..."/>
 
             <w:PushButton ui:field="filterButton"
                           addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                           text="{managerMessages.filter}"
                           icon="filter"/>
+
+            <w:PushButton ui:field="sortButton"
+                          addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
+                          text="{managerMessages.sort}"
+                          icon="sort"/>
 
         </g:HTMLPanel>
 

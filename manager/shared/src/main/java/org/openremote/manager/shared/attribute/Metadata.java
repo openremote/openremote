@@ -66,6 +66,10 @@ public class Metadata {
         return this;
     }
 
+    public Metadata copy() {
+        return new Metadata(Json.parse(getJsonObject().toJson()));
+    }
+
     @Override
     public String toString() {
         return jsonObject.toJson();

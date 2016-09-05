@@ -40,18 +40,18 @@ public class Controller2Component extends UriEndpointComponent implements Connec
     public static final String HEADER_COMMAND_VALUE = Controller2Component.class.getCanonicalName() + ".HEADER_COMMAND_VALUE";
     protected final Controller2Adapter.Manager adapterManager;
 
-    protected static final Attributes settings;
+    public static final Attributes SETTINGS;
 
     static {
-        settings = new Attributes();
-        settings.add(ConnectorUtil.buildConnectorSetting(
+        SETTINGS = new Attributes();
+        SETTINGS.put(ConnectorUtil.buildConnectorSetting(
                 "host",
                 AttributeType.STRING,
                 "Host/IP Address",
                 "The OR Controller network hostname or IP address",
                 true
         ));
-        settings.add(ConnectorUtil.buildConnectorSetting(
+        SETTINGS.put(ConnectorUtil.buildConnectorSetting(
                 "port",
                 AttributeType.INTEGER,
                 "Port",
@@ -60,14 +60,14 @@ public class Controller2Component extends UriEndpointComponent implements Connec
                 "8868",
                 null
         ));
-        settings.add(ConnectorUtil.buildConnectorSetting(
+        SETTINGS.put(ConnectorUtil.buildConnectorSetting(
                 "username",
                 AttributeType.STRING,
                 "Username",
                 "The OR Controller Username",
                 false
         ));
-        settings.add(ConnectorUtil.buildConnectorSetting(
+        SETTINGS.put(ConnectorUtil.buildConnectorSetting(
                 "password",
                 AttributeType.STRING,
                 "Password",
@@ -129,7 +129,7 @@ public class Controller2Component extends UriEndpointComponent implements Connec
 
     @Override
     public Attributes getConnectorSettings() {
-        return settings;
+        return SETTINGS;
     }
 
     @Override

@@ -22,7 +22,6 @@ package org.openremote.manager.client.admin;
 import com.google.gwt.inject.client.AbstractGinModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import org.openremote.manager.client.admin.agent.*;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.admin.navigation.AdminNavigationImpl;
 import org.openremote.manager.client.admin.navigation.AdminNavigationPresenter;
@@ -31,8 +30,6 @@ import org.openremote.manager.client.admin.overview.AdminOverviewActivity;
 import org.openremote.manager.client.admin.overview.AdminOverviewImpl;
 import org.openremote.manager.client.admin.tenant.*;
 import org.openremote.manager.client.admin.users.*;
-import org.openremote.manager.shared.agent.AgentResource;
-import org.openremote.manager.shared.connector.ConnectorResource;
 import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.manager.shared.security.UserResource;
 
@@ -57,11 +54,6 @@ public class AdminModule extends AbstractGinModule {
         bind(AdminUsersActivity.class);
         bind(AdminUser.class).to(AdminUserImpl.class).in(Singleton.class);
         bind(AdminUserActivity.class);
-
-        bind(AdminAgents.class).to(AdminAgentsImpl.class).in(Singleton.class);
-        bind(AdminAgentsActivity.class);
-        bind(AdminAgent.class).to(AdminAgentImpl.class).in(Singleton.class);
-        bind(AdminAgentActivity.class);
     }
 
     @Provides
@@ -82,26 +74,6 @@ public class AdminModule extends AbstractGinModule {
 
     public static native UserResource getNativeUserResource() /*-{
         return $wnd.UserResource;
-    }-*/;
-
-    @Provides
-    @Singleton
-    public ConnectorResource getConnectorResource() {
-        return getNativeConnectorResource();
-    }
-
-    public static native ConnectorResource getNativeConnectorResource() /*-{
-        return $wnd.ConnectorResource;
-    }-*/;
-
-    @Provides
-    @Singleton
-    public AgentResource getAgentResource() {
-        return getNativeAgentResource();
-    }
-
-    public static native AgentResource getNativeAgentResource() /*-{
-        return $wnd.AgentResource;
     }-*/;
 
 }

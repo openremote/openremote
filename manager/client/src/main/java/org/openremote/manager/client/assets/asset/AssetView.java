@@ -19,9 +19,13 @@
  */
 package org.openremote.manager.client.assets.asset;
 
+import com.google.gwt.user.client.ui.InsertPanel;
 import elemental.json.JsonObject;
 import org.openremote.manager.client.assets.browser.AssetBrowsingView;
+import org.openremote.manager.client.widget.AttributesEditor;
+import org.openremote.manager.client.widget.Form;
 import org.openremote.manager.client.widget.FormView;
+import org.openremote.manager.shared.asset.AssetType;
 import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.map.GeoJSON;
 
@@ -31,14 +35,6 @@ public interface AssetView extends AssetBrowsingView<AssetView.Presenter>, FormV
 
     interface Presenter extends AssetBrowsingView.Presenter {
 
-        void onMapClicked(double lng, double lat);
-
-        void update();
-
-        void create();
-
-        void delete();
-
         void beginParentSelection();
 
         void confirmParentSelection();
@@ -46,6 +42,18 @@ public interface AssetView extends AssetBrowsingView<AssetView.Presenter>, FormV
         void setRootParentSelection();
 
         void resetParentSelection();
+
+        void centerMap();
+
+        void onMapClicked(double lng, double lat);
+
+        void onAssetTypeSelected(AssetType value);
+
+        void update();
+
+        void create();
+
+        void delete();
 
     }
 
@@ -55,21 +63,15 @@ public interface AssetView extends AssetBrowsingView<AssetView.Presenter>, FormV
 
     void setCreatedOn(Date createdOn);
 
-    void setType(String type);
-
-    String getType();
-
-    void setLocation(String location);
-
-    void setParentAsset(String name);
+    void setParent(String name);
 
     void setParentSelection(boolean isSelecting);
-
-    void setAttributes(Attributes attributes);
 
     void initialiseMap(JsonObject mapOptions);
 
     boolean isMapInitialised();
+
+    void setLocation(String location);
 
     void refreshMap();
 
@@ -82,6 +84,22 @@ public interface AssetView extends AssetBrowsingView<AssetView.Presenter>, FormV
     void hideFeaturesSelection();
 
     void flyTo(double[] coordinates);
+
+    void setTypeSelectionEnabled(boolean enabled);
+
+    void setAvailableTypes(AssetType[] assetTypes);
+
+    void selectType(AssetType assetType);
+
+    void setTypeInputVisible(boolean visible);
+
+    void setType(String type);
+
+    String getType();
+
+    AttributesEditor.Container getAttributesEditorContainer();
+
+    void setAttributesEditor(AttributesEditor attributesEditor);
 
     void enableCreate(boolean enable);
 

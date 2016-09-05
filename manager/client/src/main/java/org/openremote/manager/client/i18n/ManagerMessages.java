@@ -147,21 +147,7 @@ public interface ManagerMessages extends Messages {
 
     String emptyAsset();
 
-    String agentName();
-
-    String connectorType();
-
-    String configureAgents();
-
-    String newAgent();
-
-    String editAgent();
-
-    String updateAgent();
-
-    String createAgent();
-
-    String deleteAgent();
+    String connector();
 
     String description();
 
@@ -169,19 +155,11 @@ public interface ManagerMessages extends Messages {
 
     String connectorNotInstalled();
 
-    String agentUpdated(String name);
-
-    String agentCreated(String name);
-
-    String agentDeleted(String name);
-
     String unsupportedAttributeType(String name);
 
     String loadingAssets();
 
     String assetName();
-
-    String editAsset();
 
     String updateAsset();
 
@@ -226,4 +204,16 @@ public interface ManagerMessages extends Messages {
     String reset();
 
     String invalidAssetParent();
+
+    String centerMap();
+
+    String showHistory();
+
+    String sort();
+
+    String assetTypeLabel(@Select String name);
+
+    String noTypeSelected();
+
+    String enterCustomAssetType();
 }

@@ -21,18 +21,23 @@ package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.assets.agent.ConnectorArrayMapper;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
+import org.openremote.manager.client.assets.agent.AgentAttributesEditor;
+import org.openremote.manager.client.assets.device.DeviceAttributesEditor;
 import org.openremote.manager.client.assets.event.AssetsModifiedEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
+import org.openremote.manager.client.widget.AttributesEditor;
 import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.asset.AssetType;
 import org.openremote.manager.shared.attribute.Attributes;
+import org.openremote.manager.shared.connector.ConnectorResource;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 import org.openremote.manager.shared.map.MapResource;
 
@@ -49,12 +54,17 @@ public class AssetActivity
 
     private static final Logger LOG = Logger.getLogger(AssetActivity.class.getName());
 
-    final MapResource mapResource;
-    final JsonObjectMapper jsonObjectMapper;
+    final protected MapResource mapResource;
+    final protected JsonObjectMapper jsonObjectMapper;
 
+    final protected ConnectorArrayMapper connectorArrayMapper;
+    final protected ConnectorResource connectorResource;
+
+    protected boolean isCreateAsset;
     protected double[] selectedCoordinates;
     protected Asset parentAsset;
     protected boolean isParentSelection;
+    protected AttributesEditor attributesEditor;
 
     @Inject
     public AssetActivity(Environment environment,
@@ -63,10 +73,14 @@ public class AssetActivity
                          AssetResource assetResource,
                          AssetMapper assetMapper,
                          MapResource mapResource,
-                         JsonObjectMapper jsonObjectMapper) {
+                         JsonObjectMapper jsonObjectMapper,
+                         ConnectorArrayMapper connectorArrayMapper,
+                         ConnectorResource connectorResource) {
         super(environment, view, assetBrowserPresenter, assetResource, assetMapper);
         this.mapResource = mapResource;
         this.jsonObjectMapper = jsonObjectMapper;
+        this.connectorArrayMapper = connectorArrayMapper;
+        this.connectorResource = connectorResource;
     }
 
     @Override
@@ -84,40 +98,46 @@ public class AssetActivity
         } else {
             view.refreshMap();
         }
+
+        view.setAvailableTypes(AssetType.editable());
     }
 
     @Override
     protected void startCreateAsset() {
         super.startCreateAsset();
-
+        isCreateAsset = true;
         view.setFormBusy(true);
-
         asset = new Asset();
         asset.setName("My New Asset");
-        asset.setType(AssetType.GENERIC);
-
+        asset.setType(AssetType.CUSTOM);
         writeToView();
         clearViewFieldErrors();
         view.clearFormMessages();
-        setEditMode(true);
+        writeParentToView();
+        view.setTypeSelectionEnabled(true);
+        writeTypeToView();
+        writeAttributesEditorToView();
         view.setFormBusy(false);
-        writeParentAssetToView();
     }
 
     @Override
     protected void onAssetLoaded() {
+        isCreateAsset = false;
         writeToView();
         clearViewFieldErrors();
         view.clearFormMessages();
-        setEditMode(false);
-        view.setFormBusy(false);
+        view.setTypeSelectionEnabled(false);
+        writeTypeToView();
+        writeAttributesEditorToView();
         if (asset.getParentId() != null) {
             loadAsset(asset.getParentId(), loadedParentAsset -> {
                 this.parentAsset = loadedParentAsset;
-                writeParentAssetToView();
+                writeParentToView();
+                view.setFormBusy(false);
             });
         } else {
-            writeParentAssetToView();
+            writeParentToView();
+            view.setFormBusy(false);
         }
     }
 
@@ -135,7 +155,7 @@ public class AssetActivity
                     );
                 } else {
                     parentAsset = loadedParentAsset;
-                    writeParentAssetToView();
+                    writeParentToView();
                 }
             });
         } else {
@@ -162,6 +182,13 @@ public class AssetActivity
         selectedCoordinates = new double[]{lng, lat};
         view.showMapPopup(lng, lat, environment.getMessages().selectedLocation());
         view.setLocation(getLocation(selectedCoordinates));
+    }
+
+    @Override
+    public void onAssetTypeSelected(AssetType type) {
+        asset.setType(type);
+        writeTypeToView();
+        writeAttributesEditorToView();
     }
 
     @Override
@@ -264,7 +291,7 @@ public class AssetActivity
     @Override
     public void setRootParentSelection() {
         this.parentAsset = null;
-        writeParentAssetToView();
+        writeParentToView();
     }
 
     @Override
@@ -275,16 +302,23 @@ public class AssetActivity
         if (asset.getParentId() != null) {
             loadAsset(asset.getParentId(), loadedParentAsset -> {
                 this.parentAsset = loadedParentAsset;
-                writeParentAssetToView();
+                writeParentToView();
             });
+        }
+    }
+
+    @Override
+    public void centerMap() {
+        if (selectedCoordinates != null) {
+            view.flyTo(selectedCoordinates);
+        } else if (asset.getCoordinates() != null) {
+            view.flyTo(asset.getCoordinates());
         }
     }
 
     protected void writeToView() {
         view.setName(asset.getName());
-        view.setType(asset.getType());
         view.setCreatedOn(asset.getCreatedOn());
-        view.setAttributes(new Attributes(asset.getAttributes()));
         view.setLocation(getLocation(asset.getCoordinates()));
         if (asset != null && asset.getId() != null) {
             view.showFeaturesSelection(getFeature(asset));
@@ -292,21 +326,64 @@ public class AssetActivity
         } else {
             view.hideFeaturesSelection();
         }
+        view.enableCreate(isCreateAsset);
+        view.enableUpdate(!isCreateAsset);
+        view.enableDelete(!isCreateAsset);
     }
 
-    protected void writeParentAssetToView() {
-        view.setParentAsset(
+    protected void writeParentToView() {
+        view.setParent(
             parentAsset != null ? parentAsset.getName() : environment.getMessages().assetHasNoParent()
         );
     }
 
+    protected void writeTypeToView() {
+        AssetType assetType = asset.getWellKnownType();
+        view.selectType(assetType);
+        view.setTypeInputVisible(AssetType.CUSTOM.equals(assetType));
+        view.setType(asset.getType());
+    }
+
+    protected void writeAttributesEditorToView() {
+        switch(asset.getWellKnownType()) {
+            case DEVICE:
+                attributesEditor = new DeviceAttributesEditor(
+                    environment,
+                    view.getAttributesEditorContainer(),
+                    new Attributes(asset.getAttributes())
+                );
+                break;
+            case AGENT:
+                attributesEditor = new AgentAttributesEditor(
+                    environment,
+                    view.getAttributesEditorContainer(),
+                    new Attributes(asset.getAttributes()),
+                    connectorResource,
+                    connectorArrayMapper
+                );
+                break;
+            default:
+                attributesEditor = new AttributesEditor(
+                    environment,
+                    view.getAttributesEditorContainer(),
+                    new Attributes(asset.getAttributes())
+                );
+        }
+        view.setAttributesEditor(attributesEditor);
+    }
+
     protected void readFromView() {
         asset.setName(view.getName());
-        asset.setType(view.getType());
+        if (AssetType.CUSTOM.equals(asset.getWellKnownType())) {
+            asset.setType(view.getType());
+        }
         if (selectedCoordinates != null) {
             asset.setCoordinates(selectedCoordinates);
         }
         asset.setParentId(parentAsset != null ? parentAsset.getId() : null);
+        asset.setAttributes(
+            attributesEditor != null ? attributesEditor.getAttributes().getJsonObject() : null
+        );
     }
 
     protected void clearViewFieldErrors() {
@@ -317,12 +394,7 @@ public class AssetActivity
         if (coordinates != null && coordinates.length == 2) {
             return coordinates[0] + " " + coordinates[1];
         }
-        return environment.getMessages().selectLocation();
+        return null;
     }
 
-    protected void setEditMode(boolean enableCreate) {
-        view.enableCreate(enableCreate);
-        view.enableUpdate(!enableCreate);
-        view.enableDelete(!enableCreate);
-    }
 }

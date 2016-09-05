@@ -34,8 +34,6 @@ public interface AdminNavigation extends IsWidget {
 
         String getAdminUsersPlaceToken();
 
-        String getAdminAgentsPlaceToken();
-
         void setActivePlace(AdminPlace place);
     }
 

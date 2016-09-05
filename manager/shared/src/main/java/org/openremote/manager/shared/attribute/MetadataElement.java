@@ -74,6 +74,10 @@ public class MetadataElement {
         return this;
     }
 
+    public MetadataElement copy() {
+        return new MetadataElement(getName(), Json.parse(getJsonObject().toJson()));
+    }
+
     @Override
     public String toString() {
         return jsonObject.toJson();

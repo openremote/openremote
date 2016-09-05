@@ -24,10 +24,9 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
-import org.openremote.container.web.WebService;
-import org.openremote.manager.shared.agent.Agent;
+import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.asset.AssetType;
 
-import java.util.*;
 import java.util.logging.Logger;
 
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_EVENT_HEADER;
@@ -36,8 +35,6 @@ import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_
 public class AgentService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
-
-    final protected Map<String, Agent> activeAgents = new LinkedHashMap<>();
 
     protected MessageBrokerService messageBrokerService;
     protected PersistenceService persistenceService;
@@ -53,7 +50,11 @@ public class AgentService implements ContainerService {
             @Override
             public void configure() throws Exception {
                 from(PERSISTENCE_EVENT_TOPIC)
-                    .filter(body().isInstanceOf(Agent.class))
+                    .filter(body().isInstanceOf(Asset.class))
+                    .filter(exchange -> {
+                        Asset asset = exchange.getIn().getBody(Asset.class);
+                        return AssetType.AGENT.equals(asset.getWellKnownType());
+                    })
                     .process(exchange -> {
                         LOG.info("### AGENT PERSISTENCE EVENT: " + exchange.getIn().getHeader(PERSISTENCE_EVENT_HEADER));
                         LOG.info("### AGENT: " + exchange.getIn().getBody());
@@ -66,14 +67,11 @@ public class AgentService implements ContainerService {
 
     @Override
     public void configure(Container container) throws Exception {
-        container.getService(WebService.class).getApiSingletons().add(
-            new AgentResourceImpl(this)
-        );
     }
 
     @Override
     public void start(Container container) throws Exception {
-        reconfigureAgents();
+        // TODO On startup, load all enabled agents and reconfigureAgents();
     }
 
     @Override
@@ -81,64 +79,8 @@ public class AgentService implements ContainerService {
 
     }
 
-    public Agent[] getActive() {
-        synchronized (activeAgents) {
-            return activeAgents.values().toArray(new Agent[activeAgents.size()]);
-        }
-    }
-
-    public Agent[] getAll(boolean onlyEnabled) {
-        return persistenceService.doTransaction(em -> {
-            List<Agent> result =
-                em.createQuery(
-                    onlyEnabled
-                        ? "select a from Agent a where a.enabled = true order by a.createdOn desc"
-                        : "select a from Agent a order by a.createdOn desc"
-                    , Agent.class
-                ).getResultList();
-            return result.toArray(new Agent[result.size()]);
-        });
-    }
-
-    public Agent get(String agentId) {
-        return persistenceService.doTransaction(em -> {
-            return em.find(Agent.class, agentId);
-        });
-    }
-
-    public void create(Agent agent) {
-        persistenceService.doTransaction(em -> {
-            em.persist(agent);
-        });
-    }
-
-    public void update(Agent agent) {
-        persistenceService.doTransaction(em -> {
-            em.merge(agent);
-        });
-    }
-
-    public void delete(String agentId) {
-        persistenceService.doTransaction(em -> {
-            Agent agent = em.find(Agent.class, agentId);
-            if (agent != null) {
-                em.remove(agent);
-            }
-        });
-    }
-
     protected void reconfigureAgents() {
-        synchronized (activeAgents) {
-            // TODO Implement route restart etc.
-            LOG.info("### RECONFIGURE AGENTS");
-        }
+        LOG.info("############################### TODO: RECONFIGURE AGENTS");
     }
 
-    protected void startAgent(Agent agent) {
-
-    }
-
-    protected void stopAgent(Agent agent) {
-
-    }
 }

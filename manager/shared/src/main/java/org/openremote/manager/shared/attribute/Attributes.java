@@ -22,10 +22,10 @@ package org.openremote.manager.shared.attribute;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import elemental.json.Json;
 import elemental.json.JsonObject;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 
 @JsonSerialize(using = AttributesSerializer.class)
 @JsonDeserialize(using = AttributesDeserializer.class)
@@ -33,12 +33,12 @@ public class Attributes {
     final protected JsonObject jsonObject;
 
     public Attributes() {
-        this(elemental.json.Json.createObject());
+        this(Json.createObject());
     }
 
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public Attributes(JsonObject jsonObject) {
-        this.jsonObject = jsonObject;
+        this.jsonObject = jsonObject != null ? jsonObject : Json.createObject();
     }
 
     public JsonObject getJsonObject() {
@@ -69,7 +69,7 @@ public class Attributes {
         return hasAttribute(name) ? new Attribute(name, jsonObject.getObject(name)) : null;
     }
 
-    public Attributes add(Attribute... attributes) {
+    public Attributes put(Attribute... attributes) {
         if (attributes != null)
             for (Attribute attribute : attributes) {
                 jsonObject.put(attribute.getName(), attribute.getJsonObject());
@@ -84,11 +84,19 @@ public class Attributes {
         return this;
     }
 
-    public Attributes clear() {
+    public Attributes clear(String... excludeAttributes) {
+        List<String> excluded =
+            excludeAttributes != null ? Arrays.asList(excludeAttributes) : new ArrayList<>();
         for (Attribute attribute : get()) {
-            remove(attribute.getName());
+            if (!excluded.contains(attribute.getName())) {
+                remove(attribute.getName());
+            }
         }
         return this;
+    }
+
+    public Attributes copy() {
+        return new Attributes(Json.parse(getJsonObject().toJson()));
     }
 
     @Override

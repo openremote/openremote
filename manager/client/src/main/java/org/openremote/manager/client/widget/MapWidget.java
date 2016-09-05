@@ -197,7 +197,7 @@ public class MapWidget extends ComplexPanel {
         if (mapboxMap == null)
             return;
         host.removeStyleName("opaque");
-        if (!opaque) {
+        if (opaque) {
             host.addStyleName("opaque");
         }
     }

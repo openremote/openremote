@@ -26,10 +26,8 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
-import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.asset.AssetInfo;
-import org.openremote.manager.shared.ngsi.Entity;
 
 import javax.persistence.EntityManager;
 import java.sql.PreparedStatement;

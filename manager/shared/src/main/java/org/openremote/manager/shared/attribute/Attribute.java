@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.shared.attribute;
 
+import elemental.json.Json;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 
@@ -28,8 +29,7 @@ public class Attribute {
     final protected JsonObject jsonObject;
 
     public Attribute(String name) {
-        this.name = name;
-        jsonObject = elemental.json.Json.createObject();
+        this(name, Json.createObject());
     }
 
     public Attribute(String name, AttributeType type) {
@@ -70,6 +70,10 @@ public class Attribute {
         return jsonObject.hasKey("value") ? jsonObject.get("value") : null;
     }
 
+    public String getValueAsString() {
+        return jsonObject.hasKey("value") ? jsonObject.get("value").asString() : null;
+    }
+
     public JsonObject getValueAsObject() {
         return jsonObject.hasKey("value") ? jsonObject.getObject("value") : null;
     }
@@ -79,8 +83,28 @@ public class Attribute {
         return this;
     }
 
+    public Attribute setValue(String value) {
+        return setValue(Json.create(value));
+    }
+
+    public Attribute setValue(Integer value) {
+        return setValue(Json.create(value));
+    }
+
+    public Attribute setValue(double value) {
+        return setValue(Json.create(value));
+    }
+
+    public Attribute setValue(boolean value) {
+        return setValue(Json.create(value));
+    }
+
     public boolean hasMetadata() {
         return jsonObject.hasKey("metadata");
+    }
+
+    public boolean hasMetadataElement(String name) {
+        return hasMetadata() && getMetadata().hasElement(name);
     }
 
     public Metadata getMetadata() {
@@ -90,6 +114,10 @@ public class Attribute {
     public Attribute setMetadata(Metadata metadata) {
         jsonObject.put("metadata", metadata.getJsonObject());
         return this;
+    }
+
+    public Attribute copy() {
+        return new Attribute(getName(), Json.parse(getJsonObject().toJson()));
     }
 
     @Override

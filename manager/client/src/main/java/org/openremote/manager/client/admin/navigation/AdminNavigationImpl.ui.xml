@@ -28,11 +28,6 @@
                      icon="user"
                      text="{managerMessages.manageUsers}"/>
 
-        <w:Hyperlink ui:field="agentsLink"
-                     addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                     icon="gear"
-                     text="{managerMessages.configureAgents}"/>
-
     </g:HTMLPanel>
 
 </ui:UiBinder>

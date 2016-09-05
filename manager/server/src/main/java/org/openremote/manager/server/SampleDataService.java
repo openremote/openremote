@@ -26,6 +26,7 @@ import org.apache.log4j.Logger;
 import org.keycloak.admin.client.resource.*;
 import org.keycloak.common.enums.SslRequired;
 import org.keycloak.representations.idm.*;
+import org.openremote.agent.controller2.Controller2Component;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -35,10 +36,10 @@ import org.openremote.manager.server.agent.ConnectorService;
 import org.openremote.manager.server.asset.AssetService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.asset.AssetAttributeType;
 import org.openremote.manager.shared.asset.AssetType;
 import org.openremote.manager.shared.attribute.*;
+import org.openremote.manager.shared.connector.Connector;
 import rx.Observable;
 
 import javax.ws.rs.core.UriBuilder;
@@ -47,7 +48,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.openremote.manager.shared.Constants.*;
-import static org.openremote.manager.shared.attribute.AttributeType.INTEGER;
 import static org.openremote.manager.shared.attribute.AttributeType.STRING;
 import static rx.Observable.fromCallable;
 
@@ -100,7 +100,6 @@ public class SampleDataService implements ContainerService {
         configureMasterRealm(accessToken);
         registerClientApplications(accessToken);
         addRolesAndTestUsers(accessToken);
-        storeSampleAgent();
         storeSampleAssets();
     }
 
@@ -246,61 +245,20 @@ public class SampleDataService implements ContainerService {
 
     }
 
-    protected void storeSampleAgent() {
-        Agent controller2Agent = new Agent();
-        controller2Agent.setName("OpenRemote Controller2 Test Agent");
-        controller2Agent.setDescription("A test agent for OpenRemote Controller version 2.x");
-        controller2Agent.setEnabled(true);
-        controller2Agent.setConnectorType("urn:openremote:connector:controller2");
-
-        Attributes connectorSettings = new Attributes();
-        connectorSettings.add(new Attribute("host", STRING, Json.create("192.168.0.0")));
-        connectorSettings.add(new Attribute("port", INTEGER, Json.create(8080)));
-        controller2Agent.setConnectorSettings(connectorSettings.getJsonObject());
-
-        persistenceService.doTransaction(em -> {
-            em.persist(controller2Agent);
-        });
-
-        /*
-        // TODO Remove tests
-        persistenceService.doTransaction(em -> {
-            List<String> hosts = em.createNativeQuery(
-                "SELECT text(a.CONNECTOR_SETTINGS #> '{host,value}') FROM AGENT a " +
-                    "WHERE a.CONNECTOR_SETTINGS #> '{port,value}' = '8080'"
-            ).getResultList();
-
-            if (hosts.size() == 0) {
-                throw new RuntimeException("Text query failed! TODO Remove this test...");
-            }
-
-            List<Agent> agents = em.createNativeQuery(
-                "SELECT a.* FROM AGENT a " +
-                    "WHERE a.CONNECTOR_SETTINGS #> '{port,value}' = '8080'",
-                Agent.class
-            ).getResultList();
-
-            if (agents.size() == 0) {
-                throw new RuntimeException("Text query failed! TODO Remove this test...");
-            }
-        });
-        */
-    }
-
     protected void storeSampleAssets() {
 
         GeometryFactory geometryFactory = new GeometryFactory();
 
-        ServerAsset videoLab = new ServerAsset();
-        videoLab.setName("Videolab");
-        videoLab.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
-        videoLab.setType(AssetType.BUILDING);
-        assetService.create(videoLab);
+        ServerAsset smartOffice = new ServerAsset();
+        smartOffice.setName("Smart Office");
+        smartOffice.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+        smartOffice.setType(AssetType.BUILDING);
+        assetService.create(smartOffice);
 
         ServerAsset floor;
         ServerAsset floor6 = null;
         for (int i = 0; i < 7; i++) {
-            floor = new ServerAsset(videoLab);
+            floor = new ServerAsset(smartOffice);
             floor.setName("Floor " + (i + 1));
             floor.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
             floor.setType(AssetType.FLOOR);
@@ -316,7 +274,24 @@ public class SampleDataService implements ContainerService {
             room = new ServerAsset(floor6);
             room.setName("6.00" + (i + 1));
             room.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
-            room.setType(AssetType.ROOM);
+
+            if (i == 2) {
+                // This is our sample agent
+                room.setType(AssetType.AGENT);
+                Attributes room3Attributes = new Attributes();
+                room3Attributes.put(
+                    new Attribute(Connector.ASSET_ATTRIBUTE_CONNECTOR, STRING, Json.create("urn:openremote:connector:controller2"))
+                );
+                for (Attribute connectorSetting : Controller2Component.SETTINGS.get()) {
+                    room3Attributes.put(connectorSetting.copy());
+                }
+                room3Attributes.get("host").setValue("192.168.123.123");
+                room3Attributes.get("port").setValue(8080);
+                room.setAttributes(room3Attributes.getJsonObject());
+            } else {
+                room.setType(AssetType.ROOM);
+            }
+
             assetService.create(room);
 
             if (i == 2)
@@ -328,7 +303,7 @@ public class SampleDataService implements ContainerService {
         wallpanel.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         wallpanel.setType(AssetType.DEVICE);
         Attributes wallpanelAttributes = new Attributes();
-        wallpanelAttributes.add(
+        wallpanelAttributes.put(
             new Attribute("temperature", AttributeType.FLOAT, Json.create(21.3))
                 .setMetadata(new Metadata()
                     .addElement(new MetadataElement("type", AttributeType.STRING.getValue(), AssetAttributeType.SENSOR.getJsonValue()))
@@ -366,7 +341,7 @@ public class SampleDataService implements ContainerService {
         presence.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         presence.setType(AssetType.DEVICE);
         Attributes presenceAttributes = new Attributes();
-        presenceAttributes.add(
+        presenceAttributes.put(
             new Attribute("presence", AttributeType.BOOLEAN, Json.create(false))
                 .setMetadata(new Metadata()
                     .addElement(new MetadataElement("type", AttributeType.STRING.getValue(), AssetAttributeType.SENSOR.getJsonValue()))
@@ -381,7 +356,7 @@ public class SampleDataService implements ContainerService {
         windows.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         windows.setType(AssetType.DEVICE);
         Attributes windowsAttributes = new Attributes();
-        windowsAttributes.add(
+        windowsAttributes.put(
             new Attribute("status", AttributeType.BOOLEAN, Json.create(false))
                 .setMetadata(new Metadata()
                     .addElement(new MetadataElement("type", AttributeType.STRING.getValue(), AssetAttributeType.SENSOR.getJsonValue()))
@@ -396,7 +371,7 @@ public class SampleDataService implements ContainerService {
         valve.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         valve.setType(AssetType.DEVICE);
         Attributes valveAttributes = new Attributes();
-        valveAttributes.add(
+        valveAttributes.put(
             new Attribute("status", AttributeType.BOOLEAN, Json.create(true))
                 .setMetadata(new Metadata()
                     .addElement(new MetadataElement("type", AttributeType.STRING.getValue(), AssetAttributeType.SENSOR.getJsonValue()))

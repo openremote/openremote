@@ -30,6 +30,7 @@ import com.google.gwt.user.client.ui.SimplePanel;
 import com.google.gwt.user.client.ui.TextBox;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTreeStyle;
+import org.openremote.manager.client.widget.FormInputText;
 import org.openremote.manager.client.widget.PushButton;
 import org.openremote.manager.shared.asset.AssetInfo;
 
@@ -52,10 +53,13 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
     SimplePanel assetTreeContainer;
 
     @UiField
-    TextBox searchInput;
+    FormInputText searchInput;
 
     @UiField
     PushButton filterButton;
+
+    @UiField
+    PushButton sortButton;
 
     final FormTreeStyle formTreeStyle;
 

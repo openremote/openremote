@@ -23,6 +23,7 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.resources.client.CssResource;
+import com.google.gwt.text.shared.AbstractRenderer;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
@@ -33,28 +34,31 @@ import org.openremote.manager.client.app.dialog.ConfirmationDialog;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.widget.*;
 import org.openremote.manager.client.widget.PushButton;
-import org.openremote.manager.shared.attribute.Attributes;
+import org.openremote.manager.shared.asset.AssetType;
 import org.openremote.manager.shared.map.GeoJSON;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.logging.Logger;
 
-public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
+public class AssetViewImpl extends FormViewImpl implements AssetView {
+
+    private static final Logger LOG = Logger.getLogger(AssetViewImpl.class.getName());
 
     interface UI extends UiBinder<FlexSplitPanel, AssetViewImpl> {
     }
 
-    interface Style extends CssResource, AttributesFormStyle{
+    interface Style extends CssResource, AttributesEditor.Style {
 
         String navItem();
 
         String formMessages();
 
-        String nameTextBox();
-
         String mapWidget();
 
-        String typeTextBox();
+        String typeInput();
 
         String attributeIntegerEditor();
 
@@ -74,6 +78,8 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
     @UiField
     HTMLPanel sidebarContainer;
 
+    /* ############################################################################ */
+
     @UiField
     FormGroup nameGroup;
     @UiField
@@ -83,20 +89,11 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
     FormGroup createdOnGroup;
     @UiField
     Label createdOnLabel;
+    @UiField
+    FormButton showHistoryButton;
 
     @UiField
-    FormGroup typeGroup;
-    @UiField
-    TextBox typeInput;
-
-    @UiField
-    FormGroup locationGroup;
-    @UiField
-    Label locationLabel;
-
-    @UiField
-    TextBox parentAssetLabel;
-
+    TextBox parentLabel;
     @UiField
     PushButton selectParentButton;
     @UiField
@@ -109,31 +106,68 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
     Label selectParentInfoLabel;
 
     @UiField
-    FlowPanel attributesContainer;
-
+    FormGroup locationGroup;
     @UiField
-    FormGroup submitButtonGroup;
-
+    Label locationLabel;
     @UiField
-    PushButton createButton;
-
-    @UiField
-    PushButton updateButton;
-
-    @UiField
-    PushButton deleteButton;
-
+    FormButton centerMapButton;
     @UiField
     MapWidget mapWidget;
 
+    /* ############################################################################ */
+
+    @UiField
+    Form attributesForm;
+    @UiField
+    FormGroup typeGroup;
+    @UiField(provided = true)
+    FormDropDown<AssetType> typeDropDown;
+    @UiField
+    FormInputText typeInput;
+    @UiField
+    Label customTypeInfoLabel;
+    @UiField
+    FlowPanel attributesEditorContainer;
+
+    /* ############################################################################ */
+
+    @UiField
+    Form submitForm;
+    @UiField
+    FormGroup submitButtonGroup;
+    @UiField
+    PushButton createButton;
+    @UiField
+    PushButton updateButton;
+    @UiField
+    PushButton deleteButton;
+
     final AssetBrowser assetBrowser;
     Presenter presenter;
-    FormGroup[] attributeFormGroups = new FormGroup[0];
+    AttributesEditor attributesEditor;
 
     @Inject
     public AssetViewImpl(AssetBrowser assetBrowser, Provider<ConfirmationDialog> confirmationDialogProvider) {
         super(confirmationDialogProvider);
         this.assetBrowser = assetBrowser;
+
+        typeDropDown = new FormDropDown<>(
+            new AbstractRenderer<AssetType>() {
+                @Override
+                public String render(AssetType assetType) {
+                    if (assetType == null)
+                        return managerMessages.noTypeSelected();
+                    return managerMessages.assetTypeLabel(assetType.name());
+                }
+            }
+        );
+
+        typeDropDown.addValueChangeHandler(event -> {
+            if (presenter != null) {
+                presenter.onAssetTypeSelected(event.getValue());
+            }
+        });
+
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
 
@@ -143,37 +177,44 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
+
+        // Restore initial state of view
+        sidebarContainer.clear();
+        nameInput.setValue(null);
+        createdOnLabel.setText("");
+        parentLabel.setText("");
+        selectParentButton.setVisible(true);
+        confirmParentSelectionButton.setVisible(false);
+        resetParentSelectionButton.setVisible(false);
+        setRootParentSelectionButton.setVisible(false);
+        selectParentInfoLabel.setVisible(false);
+        locationLabel.setText("");
+        centerMapButton.setEnabled(false);
+        typeDropDown.setValue(null);
+        typeDropDown.setAcceptableValues(new ArrayList<>());
+        typeDropDown.setEnabled(true);
+        typeInput.setVisible(false);
+        customTypeInfoLabel.setVisible(false);
+        hideFeaturesSelection();
+        hideMapPopup();
+        setOpaque(false);
+        attributesEditorContainer.clear();
+        attributesEditor = null;
+
         if (presenter != null) {
             assetBrowser.asWidget().removeFromParent();
             sidebarContainer.add(assetBrowser.asWidget());
-        } else {
-            sidebarContainer.clear();
-            nameInput.setValue(null);
-            typeInput.setValue(null);
-            createdOnLabel.setText("");
-            locationLabel.setText("");
-            parentAssetLabel.setText("");
-            hideFeaturesSelection();
-            hideMapPopup();
-            selectParentButton.setVisible(true);
-            confirmParentSelectionButton.setVisible(false);
-            resetParentSelectionButton.setVisible(false);
-            setRootParentSelectionButton.setVisible(false);
-            selectParentInfoLabel.setVisible(false);
-            createButton.setEnabled(true);
-            updateButton.setEnabled(true);
-            deleteButton.setEnabled(true);
-            nameGroup.setOpaque(true);
-            createdOnGroup.setOpaque(true);
-            typeGroup.setOpaque(true);
-            locationGroup.setOpaque(true);
-            submitButtonGroup.setOpaque(true);
-            mapWidget.setOpaque(true);
-            for (FormGroup attributeFormGroup : attributeFormGroups) {
-                attributeFormGroup.setOpaque(true);
-            }
         }
     }
+
+    @Override
+    public void setFormBusy(boolean busy) {
+        super.setFormBusy(busy);
+        attributesForm.setBusy(busy);
+        submitForm.setBusy(busy);
+    }
+
+    /* ############################################################################ */
 
     @Override
     public void setName(String name) {
@@ -193,27 +234,8 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
     }
 
     @Override
-    public void setType(String type) {
-        typeInput.setValue(type);
-    }
-
-    @Override
-    public String getType() {
-        return typeInput.getValue().length() > 0 ? typeInput.getValue() : null;
-    }
-
-    @Override
-    public void setLocation(String location) {
-        locationLabel.setText(
-            location != null ? location : "-"
-        );
-    }
-
-    @Override
-    public void setParentAsset(String name) {
-        parentAssetLabel.setText(
-            name != null ? name : "-"
-        );
+    public void setParent(String name) {
+        parentLabel.setText(name != null ? name : "");
     }
 
     @Override
@@ -223,39 +245,13 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
         resetParentSelectionButton.setVisible(isSelecting);
         setRootParentSelectionButton.setVisible(isSelecting);
         selectParentInfoLabel.setVisible(isSelecting);
-        nameGroup.setOpaque(!isSelecting);
-        createdOnGroup.setOpaque(!isSelecting);
-        typeGroup.setOpaque(!isSelecting);
-        locationGroup.setOpaque(!isSelecting);
-        submitButtonGroup.setOpaque(!isSelecting);
-        mapWidget.setOpaque(!isSelecting);
-        for (FormGroup attributeFormGroup : attributeFormGroups) {
-            attributeFormGroup.setOpaque(!isSelecting);
-        }
+        setOpaque(isSelecting);
     }
 
     @Override
-    public void setAttributes(Attributes attributes) {
-        attributesContainer.clear();
-        attributeFormGroups = createAttributeFormGroups(style, attributes);
-        for (FormGroup attributeFormGroup : attributeFormGroups) {
-            attributesContainer.add(attributeFormGroup);
-        }
-    }
-
-    @Override
-    public void enableCreate(boolean enable) {
-        createButton.setVisible(enable);
-    }
-
-    @Override
-    public void enableUpdate(boolean enable) {
-        updateButton.setVisible(enable);
-    }
-
-    @Override
-    public void enableDelete(boolean enable) {
-        deleteButton.setVisible(enable);
+    public void setLocation(String location) {
+        locationLabel.setText(location != null ? location : managerMessages.selectLocation());
+        centerMapButton.setEnabled(location != null);
     }
 
     @Override
@@ -303,24 +299,6 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
         mapWidget.flyTo(coordinates);
     }
 
-    @UiHandler("updateButton")
-    void updateClicked(ClickEvent e) {
-        if (presenter != null)
-            presenter.update();
-    }
-
-    @UiHandler("createButton")
-    void createClicked(ClickEvent e) {
-        if (presenter != null)
-            presenter.create();
-    }
-
-    @UiHandler("deleteButton")
-    void deleteClicked(ClickEvent e) {
-        if (presenter != null)
-            presenter.delete();
-    }
-
     @UiHandler("selectParentButton")
     void selectParentClicked(ClickEvent e) {
         if (presenter != null)
@@ -343,5 +321,119 @@ public class AssetViewImpl extends AttributesFormViewImpl implements AssetView {
     void resetParentSelectionClicked(ClickEvent e) {
         if (presenter != null)
             presenter.resetParentSelection();
+    }
+
+    @UiHandler("centerMapButton")
+    void centerMapClicked(ClickEvent e) {
+        if (presenter != null)
+            presenter.centerMap();
+    }
+
+    /* ############################################################################ */
+
+    @Override
+    public void setTypeSelectionEnabled(boolean enabled) {
+        typeDropDown.setEnabled(enabled);
+    }
+
+    @Override
+    public void setAvailableTypes(AssetType[] assetTypes) {
+        typeDropDown.setAcceptableValues(Arrays.asList(assetTypes));
+    }
+
+    @Override
+    public void selectType(AssetType assetType) {
+        typeDropDown.setValue(assetType);
+    }
+
+    @Override
+    public void setTypeInputVisible(boolean visible) {
+        typeInput.setVisible(visible);
+        customTypeInfoLabel.setVisible(visible);
+    }
+
+    @Override
+    public void setType(String type) {
+        typeInput.setValue(type);
+    }
+
+    @Override
+    public String getType() {
+        return typeInput.getValue().length() > 0 ? typeInput.getValue() : null;
+    }
+
+    @Override
+    public AttributesEditor.Container getAttributesEditorContainer() {
+        return new AttributesEditor.Container() {
+            @Override
+            public FormView getFormView() {
+                return AssetViewImpl.this;
+            }
+
+            @Override
+            public AttributesEditor.Style getStyle() {
+                return style;
+            }
+
+            @Override
+            public InsertPanel getPanel() {
+                return attributesEditorContainer;
+            }
+        };
+    }
+
+    @Override
+    public void setAttributesEditor(AttributesEditor editor) {
+        this.attributesEditor = editor;
+        attributesEditorContainer.clear();
+        editor.render();
+    }
+
+    /* ############################################################################ */
+
+    @Override
+    public void enableCreate(boolean enable) {
+        createButton.setVisible(enable);
+    }
+
+    @Override
+    public void enableUpdate(boolean enable) {
+        updateButton.setVisible(enable);
+    }
+
+    @Override
+    public void enableDelete(boolean enable) {
+        deleteButton.setVisible(enable);
+    }
+
+    @UiHandler("updateButton")
+    void updateClicked(ClickEvent e) {
+        if (presenter != null)
+            presenter.update();
+    }
+
+    @UiHandler("createButton")
+    void createClicked(ClickEvent e) {
+        if (presenter != null)
+            presenter.create();
+    }
+
+    @UiHandler("deleteButton")
+    void deleteClicked(ClickEvent e) {
+        if (presenter != null)
+            presenter.delete();
+    }
+
+    /* ############################################################################ */
+
+    protected void setOpaque(boolean opaque) {
+        nameGroup.setOpaque(opaque);
+        createdOnGroup.setOpaque(opaque);
+        locationGroup.setOpaque(opaque);
+        mapWidget.setOpaque(opaque);
+        typeGroup.setOpaque(opaque);
+        if (attributesEditor != null)
+            attributesEditor.setOpaque(opaque);
+        submitButtonGroup.setOpaque(opaque);
     }
 }

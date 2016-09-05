@@ -112,12 +112,16 @@ public class Asset {
         return type;
     }
 
+    public AssetType getWellKnownType() {
+        return AssetType.getByValue(getType());
+    }
+
     public void setType(String type) {
         this.type = type;
     }
 
     public void setType(AssetType type) {
-        setType(type.getValue());
+        setType(type != null ? type.getValue() : null);
     }
 
     public String getParentId() {

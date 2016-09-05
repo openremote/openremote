@@ -26,8 +26,6 @@ import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.Hyperlink;
 import org.openremote.manager.client.admin.AdminPlace;
-import org.openremote.manager.client.admin.agent.AdminAgentPlace;
-import org.openremote.manager.client.admin.agent.AdminAgentsPlace;
 import org.openremote.manager.client.admin.tenant.AdminTenantPlace;
 import org.openremote.manager.client.admin.tenant.AdminTenantsPlace;
 import org.openremote.manager.client.admin.users.AdminUserPlace;
@@ -51,9 +49,6 @@ public class AdminNavigationImpl extends Composite implements AdminNavigation {
     @UiField
     Hyperlink usersLink;
 
-    @UiField
-    Hyperlink agentsLink;
-
     @Inject
     public AdminNavigationImpl() {
         UI ui = GWT.create(UI.class);
@@ -67,7 +62,6 @@ public class AdminNavigationImpl extends Composite implements AdminNavigation {
         overviewLink.setTargetHistoryToken(presenter.getAdminOverviewPlaceToken());
         tenantsLink.setTargetHistoryToken(presenter.getAdminTenantsPlaceToken());
         usersLink.setTargetHistoryToken(presenter.getAdminUsersPlaceToken());
-        agentsLink.setTargetHistoryToken(presenter.getAdminAgentsPlaceToken());
     }
 
     @Override
@@ -75,7 +69,6 @@ public class AdminNavigationImpl extends Composite implements AdminNavigation {
         overviewLink.removeStyleName("active");
         tenantsLink.removeStyleName("active");
         usersLink.removeStyleName("active");
-        agentsLink.removeStyleName("active");
 
         if (adminPlace instanceof AdminTenantsPlace) {
             tenantsLink.addStyleName("active");
@@ -85,10 +78,6 @@ public class AdminNavigationImpl extends Composite implements AdminNavigation {
             usersLink.addStyleName("active");
         } else if (adminPlace instanceof AdminUserPlace) {
             usersLink.addStyleName("active");
-        } else if (adminPlace instanceof AdminAgentsPlace) {
-            agentsLink.addStyleName("active");
-        } else if (adminPlace instanceof AdminAgentPlace) {
-            agentsLink.addStyleName("active");
         } else {
             overviewLink.addStyleName("active");
         }
