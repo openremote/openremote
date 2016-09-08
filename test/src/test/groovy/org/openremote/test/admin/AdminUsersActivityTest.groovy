@@ -175,8 +175,6 @@ class AdminUsersActivityTest extends Specification implements ContainerTrait, Cl
                     )
                     return adminUserActivity
                 },
-                {},
-                {},
                 {}
         )
         startActivityManager(activityDisplay, activityMapper, eventBus)

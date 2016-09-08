@@ -62,7 +62,11 @@ public class Attribute {
     }
 
     public Attribute setType(AttributeType type) {
-        jsonObject.put("type", type.getValue());
+        if (type != null) {
+            jsonObject.put("type", Json.create(type.getValue()));
+        } else if (jsonObject.hasKey("type")) {
+            jsonObject.remove("type");
+        }
         return this;
     }
 
@@ -112,7 +116,11 @@ public class Attribute {
     }
 
     public Attribute setMetadata(Metadata metadata) {
-        jsonObject.put("metadata", metadata.getJsonObject());
+        if (metadata != null) {
+            jsonObject.put("metadata", metadata.getJsonObject());
+        } else if (jsonObject.hasKey("metadata")) {
+            jsonObject.remove("metadata");
+        }
         return this;
     }
 

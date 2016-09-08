@@ -6,6 +6,7 @@ services:
     links:
       - postgres
       - keycloak
+      - controller
     environment:
       TZ: "Europe/Zurich"
       DEV_MODE: 'false'
@@ -39,3 +40,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: secret
       POSTGRES_DB: openremote
+  controller:
+    image: openremote/demo-controller:latest
+    environment:
+      TZ: "Europe/Zurich"
+      BEEHIVE_REMOTE_SERVICE_URI: "urn:disabled"

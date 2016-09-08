@@ -21,10 +21,11 @@ package org.openremote.agent.controller2;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
+import org.openremote.agent.controller2.model.SensorListener;
 
 import java.util.logging.Logger;
 
-public class Controller2ReadConsumer extends Controller2Consumer implements Controller2Adapter.SensorListener {
+public class Controller2ReadConsumer extends Controller2Consumer implements SensorListener {
 
     private static final Logger LOG = Logger.getLogger(Controller2ReadConsumer.class.getName());
     protected String deviceUri;
@@ -39,12 +40,12 @@ public class Controller2ReadConsumer extends Controller2Consumer implements Cont
     @Override
     synchronized protected void doStart() throws Exception {
         super.doStart();
-        getEndpoint().getAdapter().addSensorListener(this);
+        getEndpoint().getAdapter().getControllerState().addSensorListener(this);
     }
 
     @Override
     synchronized protected void doStop() throws Exception {
-        getEndpoint().getAdapter().removeSensorListener(this);
+        getEndpoint().getAdapter().getControllerState().removeSensorListener(this);
         super.doStop();
     }
 

@@ -1,0 +1,11 @@
+FROM openremote/controller:latest
+
+RUN rm -r /opt/or-resources/*
+
+ADD config/controller.xml /opt/or-resources/controller.xml
+
+USER root
+RUN chown -R openremote.openremote /opt/or-resources
+USER openremote
+
+CMD ["run"]

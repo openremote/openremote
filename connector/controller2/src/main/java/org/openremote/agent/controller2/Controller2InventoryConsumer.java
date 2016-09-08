@@ -2,6 +2,7 @@ package org.openremote.agent.controller2;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
+import org.openremote.agent.controller2.model.DeviceListener;
 import org.openremote.manager.shared.device.Device;
 
 import java.util.logging.Logger;
@@ -11,7 +12,7 @@ import static org.openremote.manager.shared.connector.ConnectorComponent.ACTION_
 import static org.openremote.manager.shared.connector.ConnectorComponent.ACTION_UPDATE;
 import static org.openremote.manager.shared.connector.ConnectorComponent.HEADER_DEVICE_ACTION;
 
-public class Controller2InventoryConsumer extends Controller2Consumer implements Controller2Adapter.DeviceListener {
+public class Controller2InventoryConsumer extends Controller2Consumer implements DeviceListener {
 
     private static final Logger LOG = Logger.getLogger(Controller2InventoryConsumer.class.getName());
 
@@ -22,12 +23,12 @@ public class Controller2InventoryConsumer extends Controller2Consumer implements
     @Override
     synchronized protected void doStart() throws Exception {
         super.doStart();
-        getEndpoint().getAdapter().addDeviceListener(this);
+        getEndpoint().getAdapter().getControllerState().addDeviceListener(this);
     }
 
     @Override
     synchronized protected void doStop() throws Exception {
-        getEndpoint().getAdapter().removeDeviceListener(this);
+        getEndpoint().getAdapter().getControllerState().removeDeviceListener(this);
         super.doStop();
     }
 
@@ -38,14 +39,12 @@ public class Controller2InventoryConsumer extends Controller2Consumer implements
             return;
         }
 
-        LOG.fine("Starting new exchange for added device '" + device.getUri() + "'");
+        LOG.fine("Starting new exchange for added device '" + device + "'");
         Exchange exchange = getEndpoint().createExchange();
         exchange.getIn().setHeader(HEADER_DEVICE_ACTION, ACTION_CREATE);
         exchange.getIn().setBody(device);
         processExchange(exchange);
     }
-
-
 
     @Override
     public void onDeviceRemoved(Device device) {

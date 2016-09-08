@@ -162,8 +162,6 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
                 {},
                 {},
                 {},
-                {},
-                {}
         )
         startActivityManager(activityDisplay, activityMapper, eventBus)
 

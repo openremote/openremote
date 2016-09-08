@@ -115,7 +115,6 @@
         <property name="lutron_homeworks.username" value="openremote" />
         <property name="webapp.port" value="8080" />
         <property name="vera.address" value="" />
-        <property name="protocol.zwave.classname" value="org.openremote.controller.protocol.zwave.ZWaveCommandBuilder" />
         <property name="resource.upload.enable" value="true" />
         <property name="amx_ni.address" value="192.168.1.1" />
     </config>

@@ -58,7 +58,9 @@ public class FlexSplitPanel extends Composite {
         secondPanel.getElement().getStyle().setOverflow(Style.Overflow.AUTO);
 
         resizeHandle.setStyleName("layout horizontal center-center");
-        resizeHandle.getElement().getStyle().setCursor(Style.Cursor.POINTER);
+        resizeHandle.getElement().getStyle().setCursor(
+            isVertical() ? Style.Cursor.ROW_RESIZE : Style.Cursor.COL_RESIZE
+        );
         resizeHandle.getElement().getStyle().setProperty("flex", "0 0 24px");
 
         resizeHandle.addMouseDownHandler(event -> {

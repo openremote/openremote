@@ -17,25 +17,32 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.controller2;
+package org.openremote.agent.controller2.model;
 
-import org.apache.camel.Processor;
-import org.apache.camel.impl.DefaultConsumer;
-import org.apache.camel.util.URISupport;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-public class Controller2Consumer extends DefaultConsumer {
+/**
+ * Used to handle native sensor change callbacks and notify the component sensor listeners
+ */
+public class SensorListenerHandler implements PropertyChangeListener {
 
-    public Controller2Consumer(Controller2Endpoint endpoint, Processor processor) {
-        super(endpoint, processor);
+    protected List<SensorListener> listeners = new CopyOnWriteArrayList<>();
+
+    public void addListener(SensorListener listener) {
+        listeners.add(listener);
+    }
+
+    public void removeListener(SensorListener listener) {
+        listeners.remove(listener);
     }
 
     @Override
-    public Controller2Endpoint getEndpoint() {
-        return (Controller2Endpoint) super.getEndpoint();
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + URISupport.sanitizeUri(getEndpoint().getEndpointUri()) + "]";
+    public void propertyChange(PropertyChangeEvent evt) {
+        listeners.stream().forEach(sensorListener -> {
+            sensorListener.onUpdate(evt.getNewValue());
+        });
     }
 }

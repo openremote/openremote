@@ -3,6 +3,7 @@ package org.openremote.agent.controller2;
 import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.util.URISupport;
 
 import java.util.logging.Logger;
 
@@ -23,5 +24,10 @@ public class Controller2ReadProducer extends DefaultProducer {
     @Override
     public void process(Exchange exchange) throws Exception {
         // TODO: Implement read producer (should support inOut response for ad-hoc resource reading)
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[" + URISupport.sanitizeUri(getEndpoint().getEndpointUri()) + "]";
     }
 }

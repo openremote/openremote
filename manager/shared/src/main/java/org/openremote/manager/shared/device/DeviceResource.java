@@ -1,5 +1,6 @@
 package org.openremote.manager.shared.device;
 
+import elemental.json.Json;
 import elemental.json.JsonObject;
 import org.openremote.manager.shared.attribute.Attribute;
 import org.openremote.manager.shared.attribute.AttributeType;
@@ -29,39 +30,38 @@ public class DeviceResource extends Attribute {
     }
 
     public String getDescription() {
-        return jsonObject.getString("description");
+        return jsonObject.get("description").asString();
     }
 
     public DeviceResource setDescription(String description) {
-        jsonObject.put("description", description);
+        jsonObject.put("description", Json.create(description));
         return this;
     }
 
     public Access getAccess() {
-        String accessStr = jsonObject.get("access");
-        return accessStr != null ? Access.valueOf(accessStr) : null;
+        return jsonObject.hasKey("access") ? Access.valueOf(jsonObject.get("access").asString()) : null;
     }
 
     public DeviceResource setAccess(Access access) {
-        jsonObject.put("access", access.toString());
+        jsonObject.put("access", Json.create(access.toString()));
         return this;
     }
 
     public String getUnits() {
-        return jsonObject.get("units");
+        return jsonObject.get("units").asString();
     }
 
     public DeviceResource setUnits(String units) {
-        jsonObject.put("units", units);
+        jsonObject.put("units", Json.create(units));
         return this;
     }
 
     public String getUri() {
-        return jsonObject.get("uri");
+        return jsonObject.get("uri").asString();
     }
 
     public DeviceResource setUri(String uri) {
-        jsonObject.put("uri", uri);
+        jsonObject.put("uri", Json.create(uri));
         return this;
     }
 
@@ -70,16 +70,16 @@ public class DeviceResource extends Attribute {
     }
 
     public DeviceResource setPassive(boolean passive) {
-        jsonObject.put("passive", passive);
+        jsonObject.put("passive", Json.create(passive));
         return this;
     }
 
     public boolean isConstant() {
-        return jsonObject.getBoolean("constant");
+        return jsonObject.get("constant").asBoolean();
     }
 
     public DeviceResource setConstant(boolean constant) {
-        jsonObject.put("constant", constant);
+        jsonObject.put("constant", Json.create(constant));
         return this;
     }
 }

@@ -17,25 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.controller2;
+package org.openremote.agent.controller2.model;
 
-import org.apache.camel.Processor;
-import org.apache.camel.impl.DefaultConsumer;
-import org.apache.camel.util.URISupport;
+import org.openremote.manager.shared.device.Device;
 
-public class Controller2Consumer extends DefaultConsumer {
+/**
+ * Used by IOT connectors to announce changes to devices.
+ * When a gateway component starts it should announce all devices
+ * that it is already aware of and connected to.
+ */
+public interface DeviceListener {
 
-    public Controller2Consumer(Controller2Endpoint endpoint, Processor processor) {
-        super(endpoint, processor);
-    }
+    void onDeviceAdded(Device device);
 
-    @Override
-    public Controller2Endpoint getEndpoint() {
-        return (Controller2Endpoint) super.getEndpoint();
-    }
+    void onDeviceRemoved(Device device);
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + URISupport.sanitizeUri(getEndpoint().getEndpointUri()) + "]";
-    }
+    void onDeviceUpdated(Device device);
 }

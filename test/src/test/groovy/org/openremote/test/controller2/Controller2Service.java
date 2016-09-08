@@ -12,12 +12,7 @@ import org.openremote.manager.shared.device.Device;
 import java.util.ArrayList;
 import java.util.List;
 
-/*
-import static org.openremote.manager.shared.connector.AssetInventory.Action.ADD;
-import static org.openremote.manager.shared.connector.AssetInventory.Action.REMOVE;
-import static org.openremote.manager.shared.connector.AssetInventory.Action.UPDATE;
-import static org.openremote.manager.shared.connector.AssetInventory.HEADER_DEVICE_ACTION;
-*/
+import static org.openremote.manager.shared.connector.ConnectorComponent.*;
 
 // TODO This is an example service for testing, replaced later with production code
 public class Controller2Service implements ContainerService {
@@ -25,8 +20,6 @@ public class Controller2Service implements ContainerService {
     public List<Device> addedDevices = new ArrayList<>();
     public List<Device> removedDevices = new ArrayList<>();
     public List<Device> updatedDevices = new ArrayList<>();
-    public List<String> discoveredItems = new ArrayList<>();
-    public List<String> receivedSensorData = new ArrayList<>();
     public ProducerTemplate messageProducerTemplate;
 
     @Override
@@ -39,25 +32,23 @@ public class Controller2Service implements ContainerService {
         MessageBrokerContext context = messageBrokerService.getContext();
         messageProducerTemplate = context.createProducerTemplate();
 
-        configure(context);
-
-/*        context.addRoutes(new RouteBuilder() {
+        context.addRoutes(new RouteBuilder() {
             @Override
             public void configure() throws Exception {
-                from("mockController2:10.0.0.123:8080/inventory")
+                from("controller2://192.168.99.100:8083/inventory")
                         .routeId("Device Inventory")
                         .choice()
-                            .when(header(HEADER_DEVICE_ACTION).isEqualTo(ADD))
+                            .when(header(HEADER_DEVICE_ACTION).isEqualTo(ACTION_CREATE))
                                 .process(exchange -> {
                                     Device device = exchange.getIn().getBody(Device.class);
                                     addedDevices.add(device);
                             }).endChoice()
-                            .when(header(HEADER_DEVICE_ACTION).isEqualTo(REMOVE))
+                            .when(header(HEADER_DEVICE_ACTION).isEqualTo(ACTION_DELETE))
                             .process(exchange -> {
                                 Device device = exchange.getIn().getBody(Device.class);
                                 removedDevices.add(device);
                             }).endChoice()
-                            .when(header(HEADER_DEVICE_ACTION).isEqualTo(UPDATE))
+                            .when(header(HEADER_DEVICE_ACTION).isEqualTo(ACTION_UPDATE))
                             .process(exchange -> {
                                 Device device = exchange.getIn().getBody(Device.class);
                                 updatedDevices.add(device);
@@ -65,30 +56,9 @@ public class Controller2Service implements ContainerService {
 
                 from("direct:triggerDiscovery")
                     .routeId("Trigger discovery")
-                    .to("mockController2:10.0.0.123:8080/discovery");
-
-                from("mockController2:10.0.0.123:8080/discovery")
-                    .routeId("Discovered devices")
-                    .process(exchange -> {
-                        List<String> discovered = exchange.getIn().getBody(List.class);
-                        discoveredItems.addAll(discovered);
-                    });
-
-                from("mockController2:10.0.0.123:8080")
-                    .routeId("Received sensor values")
-                    .process(exchange -> {
-                        receivedSensorData.add(exchange.getIn().getBody(String.class));
-                    });
-
-                from("direct:write")
-                    .routeId("Write Resource")
-                    .to("mockController2:10.0.0.123:8080");
-
-                from("direct:read")
-                        .routeId("Read Resource")
-                        .to("mockController2:10.0.0.123:8080");
+                    .to("controller2://192.168.99.100:8083/discovery");
             }
-        });*/
+        });
     }
 
     @Override
@@ -99,8 +69,8 @@ public class Controller2Service implements ContainerService {
     public void stop(Container container) {
     }
 
-    protected void configure(MessageBrokerContext context) {
-        context.addComponent("mockController2", new Controller2Component());
+    public void triggerDiscovery() {
+        messageProducerTemplate.sendBody("direct:triggerDiscovery", "");
     }
 
 }

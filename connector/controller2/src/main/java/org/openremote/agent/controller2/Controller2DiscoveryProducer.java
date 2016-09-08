@@ -22,6 +22,7 @@ package org.openremote.agent.controller2;
 import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.util.URISupport;
 
 public class Controller2DiscoveryProducer extends DefaultProducer {
 
@@ -36,6 +37,11 @@ public class Controller2DiscoveryProducer extends DefaultProducer {
 
     @Override
     public void process(Exchange exchange) throws Exception {
-        getEndpoint().getAdapter().triggerDiscovery();
+        getEndpoint().getAdapter().getControllerState().triggerDiscovery();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[" + URISupport.sanitizeUri(getEndpoint().getEndpointUri()) + "]";
     }
 }

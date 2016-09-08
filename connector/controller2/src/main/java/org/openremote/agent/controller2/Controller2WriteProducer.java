@@ -3,6 +3,7 @@ package org.openremote.agent.controller2;
 import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
 import org.apache.camel.impl.DefaultProducer;
+import org.apache.camel.util.URISupport;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -57,6 +58,11 @@ public class Controller2WriteProducer extends DefaultProducer {
             LOG.fine("Writing to '" + deviceUri + " : " + resourceUri + "' with value: " + commandValue);
         }
 
-        getEndpoint().getAdapter().writeResource(deviceUri, resourceUri, commandValue);
+        getEndpoint().getAdapter().getControllerState().writeResource(deviceUri, resourceUri, commandValue);
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[" + URISupport.sanitizeUri(getEndpoint().getEndpointUri()) + "]";
     }
 }

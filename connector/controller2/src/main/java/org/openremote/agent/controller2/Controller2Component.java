@@ -30,15 +30,19 @@ import org.openremote.manager.shared.attribute.Attributes;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.logging.Logger;
 
 public class Controller2Component extends UriEndpointComponent implements ConnectorComponent {
+
+    private static final Logger LOG = Logger.getLogger(Controller2Component.class.getName());
+
     public static final String TYPE = "urn:openremote:connector:controller2";
     public static final String DISPLAY_NAME = "OpenRemote Controller";
     public static final String URI_SYNTAX = "'controller2://<IP or host name>:<port>/([<device URI>/<resource URI>]|[discovery|inventory])[?username=username&password=secret]";
     public static final String HEADER_DEVICE_URI = Controller2Component.class.getCanonicalName() + ".HEADER_DEVICE_URI";
     public static final String HEADER_RESOURCE_URI = Controller2Component.class.getCanonicalName() + ".HEADER_RESOURCE_URI";
     public static final String HEADER_COMMAND_VALUE = Controller2Component.class.getCanonicalName() + ".HEADER_COMMAND_VALUE";
-    protected final Controller2Adapter.Manager adapterManager;
+    protected final Controller2AdapterManager adapterManager;
 
     public static final Attributes SETTINGS;
 
@@ -76,19 +80,27 @@ public class Controller2Component extends UriEndpointComponent implements Connec
         ));
     }
 
-    public Controller2Component(Controller2Adapter.Manager adapterManager) {
+    public Controller2Component(Controller2AdapterManager adapterManager) {
         super(Controller2Endpoint.class);
         this.adapterManager = adapterManager;
     }
 
     public Controller2Component() {
-        this(Controller2Adapter.DEFAULT_MANAGER);
+        this(Controller2AdapterManager.DEFAULT_MANAGER);
     }
 
     @Override
     protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
         try {
+
             URI parsedUri = URI.create(uri);
+
+            // TODO java.net.URI violates latest RFCs http://bugs.java.com/view_bug.do?bug_id=6587184
+            if (parsedUri.getHost() == null)
+                throw new IllegalArgumentException("Parsed host was empty, note that host names can not contain underscores");
+
+            if (parsedUri.getPort() == -1)
+                throw new IllegalArgumentException("Parsed port was empty");
 
             parameters.put("host", parsedUri.getHost());
             parameters.put("port", parsedUri.getPort());
@@ -100,7 +112,6 @@ public class Controller2Component extends UriEndpointComponent implements Connec
             throw new IllegalArgumentException("Required URL in format of " + URI_SYNTAX, ex);
         }
     }
-
 
     @Override
     public String getType() {

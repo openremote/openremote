@@ -43,6 +43,7 @@ dependencies {
     compile "org.apache.camel:camel-core:$camelVersion"
     compile "org.apache.camel:camel-servlet:$camelVersion"
     compile "org.apache.camel:camel-ahc-ws:$camelVersion"
+    compile "com.ning:async-http-client:$ahcVersion"
     compile "org.apache.camel:camel-jackson:$camelVersion"
     compile "org.apache.camel:camel-script:$camelVersion"
     compile "org.apache.camel:camel-groovy:$camelVersion"

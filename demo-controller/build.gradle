@@ -1,0 +1,14 @@
+import com.bmuschko.gradle.docker.tasks.image.*
+
+ext.dockerImageName = "$dockerRepository/$project.name:$imageVersion".toString()
+
+task buildImage(type: DockerBuildImage) {
+    inputDir = projectDir
+    dockerFile = file("$projectDir/Dockerfile-demo")
+    tag = dockerImageName
+}
+
+task pushImage(type: DockerPushImage) {
+    dependsOn buildImage
+    imageName = dockerImageName
+}

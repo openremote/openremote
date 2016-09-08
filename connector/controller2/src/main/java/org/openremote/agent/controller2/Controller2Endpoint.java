@@ -37,7 +37,7 @@ import java.net.URL;
 )
 public class Controller2Endpoint extends DefaultEndpoint {
 
-    final protected Controller2Adapter.Manager adapterManager;
+    final protected Controller2AdapterManager adapterManager;
     final protected boolean isDiscovery;
     final protected boolean isInventory;
 
@@ -58,7 +58,7 @@ public class Controller2Endpoint extends DefaultEndpoint {
 
     protected Controller2Adapter adapter;
 
-    public Controller2Endpoint(String endpointUri, Controller2Component component, Controller2Adapter.Manager adapterManager, String path) {
+    public Controller2Endpoint(String endpointUri, Controller2Component component, Controller2AdapterManager adapterManager, String path) {
         super(endpointUri, component);
 
         this.adapterManager = adapterManager;
@@ -129,7 +129,9 @@ public class Controller2Endpoint extends DefaultEndpoint {
     @Override
     public Consumer createConsumer(Processor processor) throws Exception {
         if (isDiscovery) {
-            return new Controller2DiscoveryConsumer(this, processor);
+            throw new UnsupportedOperationException(
+                "Discovery only supports producers (triggering discovery), use an inventory endpoint to receive devices"
+            );
         } else if (isInventory) {
             return new Controller2InventoryConsumer(this, processor);
         }
