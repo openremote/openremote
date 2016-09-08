@@ -31,26 +31,22 @@ public class Controller2WriteProducer extends DefaultProducer {
     public void process(Exchange exchange) throws Exception {
         // Extract write related headers
         String deviceUri = exchange.getIn().getHeader(
-                Controller2Component.HEADER_DEVICE_URI,
+            Controller2Component.HEADER_DEVICE_URI,
             this.deviceUri,
-                String.class
+            String.class
         );
 
         String resourceUri = exchange.getIn().getHeader(
-                Controller2Component.HEADER_RESOURCE_URI,
-                this.resourceUri,
-                String.class
+            Controller2Component.HEADER_RESOURCE_URI,
+            this.resourceUri,
+            String.class
         );
 
-        String commandValue = exchange.getIn().getHeader(
-                Controller2Component.HEADER_COMMAND_VALUE,
-                null,
-                String.class
-        );
+        Object commandValue = exchange.getIn().getBody();
 
         if (deviceUri == null || "".equals(deviceUri) || resourceUri == null || "".equals(resourceUri)) {
             throw new IllegalArgumentException(
-                    "Both device and resource URI message headers must be defined for write producer"
+                "Both device and resource URI message headers must be defined for write producer"
             );
         }
 

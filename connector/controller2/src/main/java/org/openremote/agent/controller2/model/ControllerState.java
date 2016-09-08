@@ -24,10 +24,7 @@ import org.openremote.console.controller.Controller;
 import org.openremote.entities.controller.*;
 import org.openremote.manager.shared.Consumer;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.logging.Logger;
@@ -69,7 +66,7 @@ public class ControllerState {
             deviceMap.clear();
             updateDeviceMappings(controller, deviceMapping -> {
                 LOG.fine("Updating device mapping: " + deviceMapping.getGatewayDevice().getName());
-                deviceMap.put(deviceMapping.getGatewayDevice().getName().toLowerCase(), deviceMapping);
+                deviceMap.put(deviceMapping.getDevice().getUri(), deviceMapping);
             });
             initialized = true;
             LOG.fine("Controller state initialized");
@@ -148,7 +145,7 @@ public class ControllerState {
     }
 
     public void writeResource(String deviceUri, String resourceUri, Object resourceValue) {
-        LOG.fine("Writing resource (" + controllerUrl + "): " + deviceUri + " : " + resourceUri + " - " + resourceValue);
+        LOG.fine("Writing resource (" + controllerUrl + "): " + deviceUri + "/" + resourceUri + ": " + resourceValue);
 
         if (!initialized) {
             LOG.fine("Controller state not initialized, queuing write request");
@@ -306,14 +303,22 @@ public class ControllerState {
         Command sendCommand = resourceMapping.getSendCommand1();
 
         Object resourceValue = request.getResourceValue();
-        if (resourceMapping.getSendCommand2() != null) {
+        if (resourceValue != null && resourceMapping.getSendCommand2() != null) {
             // This is a switch the command to send varies depending on the value
-            boolean switchValue = (boolean) resourceValue;
-            if (!switchValue) {
-                // Use off command which is command2
-                sendCommand = resourceMapping.getSendCommand2();
+            // (whoever invented this better not raise their hand...)
+            switch(resourceValue.toString().toLowerCase(Locale.ROOT)) {
+                case "off":
+                case "false":
+                    resourceValue = "off";
+                    sendCommand = resourceMapping.getSendCommand2();
+                    break;
+                case "on":
+                case "true":
+                    resourceValue = "on";
+                    break;
+                default:
+                    throw new IllegalArgumentException("Can't parse command value for boolean switch: " + resourceValue);
             }
-            resourceValue = switchValue ? "on" : "off";
         }
 
         if (sendCommand == null) {

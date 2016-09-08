@@ -26,6 +26,7 @@ import org.openremote.console.controller.ControllerConnectionStatus;
 import org.openremote.console.controller.auth.Credentials;
 import org.openremote.console.controller.connector.ControllerDiscoveryResponseHandler;
 import org.openremote.console.controller.connector.ControllerDiscoveryServer;
+import org.openremote.console.controller.connector.HttpConnector;
 import org.openremote.entities.controller.AsyncControllerCallback;
 import org.openremote.entities.controller.ControllerResponseCode;
 
@@ -44,7 +45,7 @@ import java.util.logging.Logger;
 /**
  * An asynchronous multi-threaded connector.
  */
-public class Controller2HttpConnector extends org.openremote.console.controller.connector.HttpConnector {
+public class Controller2HttpConnector extends HttpConnector {
 
     private static final Logger LOG = Logger.getLogger(Controller2HttpConnector.class.getName());
 
@@ -152,6 +153,7 @@ public class Controller2HttpConnector extends org.openremote.console.controller.
 
             @Override
             public Void onCompleted(Response response) throws Exception {
+                LOG.fine("Response status: " + response.getStatusCode());
                 if (response.getStatusCode() >= 300) {
                     callback.getWrappedCallback().onFailure(
                         ControllerResponseCode.getResponseCode(response.getStatusCode())
@@ -174,11 +176,16 @@ public class Controller2HttpConnector extends org.openremote.console.controller.
 
                 }
 
+                byte[] responseBytes = response.getResponseBodyAsBytes();
+                if (LOG.isLoggable(Level.FINE)) {
+                    LOG.fine("Response body: " + (new String(responseBytes, Charset.forName("utf-8"))));
+                }
+
                 Controller2HttpConnector.this.handleResponse(
                     callback,
                     response.getStatusCode(),
                     responseHeadersMap,
-                    response.getResponseBodyAsBytes()
+                    responseBytes
                 );
                 return null;
             }
@@ -194,6 +201,10 @@ public class Controller2HttpConnector extends org.openremote.console.controller.
                 }
             }
         };
+
+        if (LOG.isLoggable(Level.FINE)) {
+            LOG.fine("Request body: " + content);
+        }
 
         try {
             if (doHead) {

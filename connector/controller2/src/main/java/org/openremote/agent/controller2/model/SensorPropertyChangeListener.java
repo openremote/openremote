@@ -23,11 +23,14 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Logger;
 
 /**
  * Used to handle native sensor change callbacks and notify the component sensor listeners
  */
-public class SensorListenerHandler implements PropertyChangeListener {
+public class SensorPropertyChangeListener implements PropertyChangeListener {
+
+    private static final Logger LOG = Logger.getLogger(SensorPropertyChangeListener.class.getName());
 
     protected List<SensorListener> listeners = new CopyOnWriteArrayList<>();
 
@@ -41,6 +44,7 @@ public class SensorListenerHandler implements PropertyChangeListener {
 
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
+        LOG.fine("Propagating controller change event to " + listeners.size() + " sensor listeners: " + evt.getNewValue());
         listeners.stream().forEach(sensorListener -> {
             sensorListener.onUpdate(evt.getNewValue());
         });

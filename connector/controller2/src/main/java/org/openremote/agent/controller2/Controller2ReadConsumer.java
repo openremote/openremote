@@ -63,7 +63,7 @@ public class Controller2ReadConsumer extends Controller2Consumer implements Sens
     public void onUpdate(Object newValue) {
         // Push value into message body and camel type converter can be used to
         // get value into the required type by the next processor in the route
-        LOG.fine("Consuming state change from '" + deviceUri + " : " + resourceUri + "'");
+        LOG.fine("Consuming state change from '" + deviceUri + " : " + resourceUri + "': " + newValue);
         Exchange exchange = getEndpoint().createExchange();
         exchange.getIn().setBody(newValue);
         try {

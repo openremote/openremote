@@ -29,10 +29,7 @@ import org.openremote.manager.shared.device.Device;
 import org.openremote.manager.shared.device.DeviceResource;
 
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
 /**
@@ -87,7 +84,7 @@ public class DeviceMapping {
             // TODO: Stable device identifier generation?
             device.setId(
                 IdentifierUtil.getEncodedHash(
-                    gatewayDevice.getName().toLowerCase().getBytes(Charset.forName("utf-8"))
+                    gatewayDevice.getName().toLowerCase(Locale.ROOT).getBytes(Charset.forName("utf-8"))
                 )
             );
             device.setUri(gatewayDevice.getName());
@@ -118,7 +115,7 @@ public class DeviceMapping {
                         .orElseGet(() -> null);
 
                 DeviceResource dr = new DeviceResource(sensor.getName());
-                dr.setUri(sensor.getName().toLowerCase());
+                dr.setUri(sensor.getName().toLowerCase(Locale.ROOT));
                 DeviceResourceMapping resourceMapping = new DeviceResourceMapping();
                 resourceMapping.setResource(dr);
                 resourceMapping.setGatewaySensor(sensor);
@@ -169,7 +166,7 @@ public class DeviceMapping {
 
             unassignedCommands.forEach(command -> {
                 DeviceResource dr = new DeviceResource(command.getName());
-                dr.setUri(command.getName().toLowerCase());
+                dr.setUri(command.getName().toLowerCase(Locale.ROOT));
                 dr.setType(null);
                 dr.setAccess(DeviceResource.Access.W);
 

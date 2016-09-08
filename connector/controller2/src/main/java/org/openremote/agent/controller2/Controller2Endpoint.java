@@ -28,6 +28,7 @@ import org.apache.camel.spi.UriParam;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Path;
 
 @UriEndpoint(
     scheme = "controller2",
@@ -58,18 +59,22 @@ public class Controller2Endpoint extends DefaultEndpoint {
 
     protected Controller2Adapter adapter;
 
-    public Controller2Endpoint(String endpointUri, Controller2Component component, Controller2AdapterManager adapterManager, String path) {
+    public Controller2Endpoint(String endpointUri, Controller2Component component, Controller2AdapterManager adapterManager, Path path) {
         super(endpointUri, component);
 
         this.adapterManager = adapterManager;
-        this.isDiscovery = "/discovery".equals(path);
-        this.isInventory = "/inventory".equals(path);
+        this.isDiscovery = path.getNameCount() == 1 && path.getName(0).toString().equals("discovery");
+        this.isInventory= path.getNameCount() == 1 && path.getName(0).toString().equals("inventory");
 
-        if (!isDiscovery && !isInventory && path != null) {
-            String[] deviceResourceArr = path.split("//");
-            if (deviceResourceArr.length == 2) {
-                deviceUri = deviceResourceArr[0];
-                resourceUri = deviceResourceArr[1];
+        if (!isDiscovery && !isInventory) {
+            if (path.getNameCount() == 2) {
+                this.deviceUri = path.getName(0).toString();
+                this.resourceUri = path.getName(1).toString();
+            }
+            if (deviceUri == null || deviceUri.length() == 0 || resourceUri ==null || resourceUri.length() ==0) {
+                throw new IllegalArgumentException(
+                    "Both device and resource URI message headers must be defined for this endpoint: " + endpointUri
+                );
             }
         }
     }
@@ -138,7 +143,7 @@ public class Controller2Endpoint extends DefaultEndpoint {
 
         // Read consumer needs specific device and resource so gateway can
         // deal with providing push notifications whichever way it needs to
-        if (deviceUri == null || resourceUri == null) {
+        if (deviceUri != null && resourceUri != null) {
             return new Controller2ReadConsumer(this, processor, deviceUri, resourceUri);
         } else {
             throw new UnsupportedOperationException("Read consumer requires deviceURI and resource URI");

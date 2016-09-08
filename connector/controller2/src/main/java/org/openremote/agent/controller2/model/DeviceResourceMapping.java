@@ -28,7 +28,7 @@ import org.openremote.manager.shared.device.DeviceResource;
  */
 public class DeviceResourceMapping {
 
-    final protected SensorListenerHandler sensorListenerHandler = new SensorListenerHandler();
+    final protected SensorPropertyChangeListener sensorPropertyChangeListener = new SensorPropertyChangeListener();
 
     protected DeviceResource resource;
     protected Sensor gatewaySensor;
@@ -36,11 +36,11 @@ public class DeviceResourceMapping {
     protected Command sendCommand2;
 
     public void addSensorListener(SensorListener listener) {
-        sensorListenerHandler.addListener(listener);
+        sensorPropertyChangeListener.addListener(listener);
     }
 
     public void removeSensorListener(SensorListener listener) {
-        sensorListenerHandler.removeListener(listener);
+        sensorPropertyChangeListener.removeListener(listener);
     }
 
     public DeviceResource getResource() {
@@ -56,6 +56,8 @@ public class DeviceResourceMapping {
     }
 
     public void setGatewaySensor(Sensor gatewaySensor) {
+        // Yeah, this is just fantastic... another level of callbacks and indirection
+        gatewaySensor.addPropertyChangeListener(sensorPropertyChangeListener);
         this.gatewaySensor = gatewaySensor;
     }
 

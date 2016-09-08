@@ -29,6 +29,8 @@ import org.openremote.manager.shared.connector.ChildAssetSupport;
 import org.openremote.manager.shared.attribute.Attributes;
 
 import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -41,7 +43,6 @@ public class Controller2Component extends UriEndpointComponent implements Connec
     public static final String URI_SYNTAX = "'controller2://<IP or host name>:<port>/([<device URI>/<resource URI>]|[discovery|inventory])[?username=username&password=secret]";
     public static final String HEADER_DEVICE_URI = Controller2Component.class.getCanonicalName() + ".HEADER_DEVICE_URI";
     public static final String HEADER_RESOURCE_URI = Controller2Component.class.getCanonicalName() + ".HEADER_RESOURCE_URI";
-    public static final String HEADER_COMMAND_VALUE = Controller2Component.class.getCanonicalName() + ".HEADER_COMMAND_VALUE";
     protected final Controller2AdapterManager adapterManager;
 
     public static final Attributes SETTINGS;
@@ -105,7 +106,7 @@ public class Controller2Component extends UriEndpointComponent implements Connec
             parameters.put("host", parsedUri.getHost());
             parameters.put("port", parsedUri.getPort());
 
-            String path = parsedUri.getPath();
+            Path path = Paths.get(parsedUri.getPath());
 
             return new Controller2Endpoint(uri, this, adapterManager, path);
         } catch (Exception ex) {

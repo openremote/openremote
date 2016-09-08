@@ -39,5 +39,6 @@ services:
     environment:
       TZ: "Europe/Zurich"
       BEEHIVE_REMOTE_SERVICE_URI: "urn:disabled"
+      CONTROLLER_CONSOLE_THRESHOLD: "INFO"
     ports:
       - "8083:8688"
