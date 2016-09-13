@@ -27,9 +27,15 @@ import elemental.json.JsonObject;
 
 import java.util.*;
 
+/**
+ * Convenience overlay API for {@link JsonObject}.
+ *
+ * Modifies the given or an empty object.
+ */
 @JsonSerialize(using = AttributesSerializer.class)
 @JsonDeserialize(using = AttributesDeserializer.class)
 public class Attributes {
+
     final protected JsonObject jsonObject;
 
     public Attributes() {

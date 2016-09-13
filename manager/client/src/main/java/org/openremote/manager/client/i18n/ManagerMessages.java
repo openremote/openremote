@@ -216,4 +216,12 @@ public interface ManagerMessages extends Messages {
     String noTypeSelected();
 
     String enterCustomAssetType();
+
+    String deviceKey();
+
+    String resourceKey();
+
+    String readValue();
+
+    String writeValue();
 }

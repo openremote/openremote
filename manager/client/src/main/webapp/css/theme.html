@@ -126,6 +126,19 @@
         color: var(--theme-red);
     }
 
+    .or-FormGroup.even {
+        background-color: var(--theme-brightgrey);
+    }
+
+    .or-FormGroup.odd {
+        background-color: var(--theme-white);
+    }
+
+    .or-FormGroup.even .or-FormInfoLabel,
+    .or-FormGroup.odd .or-FormInfoLabel{
+        background-color: var(--theme-white);
+    }
+
     .or-FormLabel {
         color: var(--theme-darkgrey);
     }
@@ -149,6 +162,7 @@
     .or-FormInputText,
     .or-FormInputNumber {
         border-color: var(--theme-darkgrey);
+        background: transparent;
     }
 
     .or-FormInputText:focus,

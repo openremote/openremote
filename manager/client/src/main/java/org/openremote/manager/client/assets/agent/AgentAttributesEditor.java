@@ -23,6 +23,7 @@ import com.google.gwt.text.shared.AbstractRenderer;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.widget.*;
 import org.openremote.manager.shared.Consumer;
+import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.attribute.Attribute;
 import org.openremote.manager.shared.attribute.AttributeType;
 import org.openremote.manager.shared.attribute.Attributes;
@@ -36,6 +37,8 @@ import static org.openremote.manager.client.http.RequestExceptionHandler.handleR
 import static org.openremote.manager.shared.connector.Connector.ASSET_ATTRIBUTE_CONNECTOR;
 
 public class AgentAttributesEditor extends AttributesEditor {
+
+    final protected Agent agent;
 
     final protected ConnectorResource connectorResource;
     final protected ConnectorArrayMapper connectorArrayMapper;
@@ -52,6 +55,7 @@ public class AgentAttributesEditor extends AttributesEditor {
     public AgentAttributesEditor(Environment environment, Container container, Attributes attributes,
                                  ConnectorResource connectorResource, ConnectorArrayMapper connectorArrayMapper) {
         super(environment, container, attributes);
+        this.agent = new Agent(attributes);
         this.connectorResource = connectorResource;
         this.connectorArrayMapper = connectorArrayMapper;
 
@@ -73,10 +77,10 @@ public class AgentAttributesEditor extends AttributesEditor {
             Connector connector = getConnector();
             if (connector != null) {
                 connectorDropDown.setValue(connector);
-                writeConnectorSettingsToAttributes(connector);
-            } else if (getConnectorType() != null) {
+                agent.writeConnectorSettings(connector);
+            } else if (agent.getConnectorType() != null) {
                 notFoundConnector.setName(
-                    getConnectorType() +
+                    agent.getConnectorType() +
                         " (" + environment.getMessages().connectorNotInstalled() + ")"
                 );
                 connectorDropDown.setValue(notFoundConnector);
@@ -133,12 +137,12 @@ public class AgentAttributesEditor extends AttributesEditor {
 
     protected void onConnectorSelected(Connector connector) {
         if (connector != null) {
-            setConnectorType(connector.getType());
-            writeConnectorSettingsToAttributes(getConnector());
+            agent.setConnectorType(connector.getType());
+            agent.writeConnectorSettings(getConnector());
         } else {
             Connector oldConnector = getConnector();
-            removeConnectorSettingsFromAttributes(oldConnector);
-            removeConnectorTypeAttribute();
+            agent.removeConnectorSettings(oldConnector);
+            agent.removeConnectorType();
         }
         refresh();
     }
@@ -153,61 +157,14 @@ public class AgentAttributesEditor extends AttributesEditor {
         );
     }
 
-    protected Attribute getOrCreateConnectorTypeAttribute() {
-        if (attributes.hasAttribute(ASSET_ATTRIBUTE_CONNECTOR)) {
-            return attributes.get(ASSET_ATTRIBUTE_CONNECTOR);
-        } else {
-            Attribute attribute = new Attribute(ASSET_ATTRIBUTE_CONNECTOR, AttributeType.STRING);
-            attributes.put(attribute);
-            return attribute;
-        }
-    }
-
-    protected void removeConnectorTypeAttribute() {
-        attributes.remove(ASSET_ATTRIBUTE_CONNECTOR);
-    }
-
-    protected String getConnectorType() {
-        return getOrCreateConnectorTypeAttribute().getValueAsString();
-    }
-
-    protected void setConnectorType(String connectorType) {
-        getOrCreateConnectorTypeAttribute().setValue(connectorType);
-    }
-
     protected Connector getConnector() {
         Connector assignedConnector = null;
         for (Connector connector : availableConnectors) {
-            if (connector.getType().equals(getConnectorType())) {
+            if (connector.getType().equals(agent.getConnectorType())) {
                 assignedConnector = connector;
                 break;
             }
         }
         return assignedConnector;
-    }
-
-    protected void writeConnectorSettingsToAttributes(Connector connector) {
-        if (connector == null)
-            return;
-        for (Attribute setting : connector.getSettings().get()) {
-            Attribute attribute = attributes.get(setting.getName());
-            // If the connector setting still has the same type as the agent's attribute, only update metadata
-            if (attribute != null && attribute.getType().equals(setting.getType())) {
-                attribute.setMetadata(setting.getMetadata().copy());
-            } else {
-                // The agent does not have the connector setting or it's now a different type, replace/create attribute
-                attribute = new Attribute(setting.getName(), setting.getType());
-                attribute.setMetadata(setting.getMetadata().copy());
-                attributes.put(attribute);
-            }
-        }
-    }
-
-    protected void removeConnectorSettingsFromAttributes(Connector connector) {
-        if (connector == null)
-            return;
-        for (Attribute setting : connector.getSettings().get()) {
-            attributes.remove(setting.getName());
-        }
     }
 }

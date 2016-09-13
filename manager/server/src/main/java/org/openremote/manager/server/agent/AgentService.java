@@ -19,36 +19,89 @@
  */
 package org.openremote.manager.server.agent;
 
+import org.apache.camel.FailedToCreateRouteException;
+import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.manager.server.asset.AssetService;
+import org.openremote.manager.server.asset.ServerAsset;
+import org.openremote.manager.shared.Function;
+import org.openremote.manager.shared.agent.Agent;
+import org.openremote.manager.shared.agent.InventoryModifiedEvent;
 import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.asset.AssetType;
+import org.openremote.manager.shared.attribute.Attributes;
+import org.openremote.manager.shared.connector.ConnectorComponent;
+import org.openremote.manager.shared.util.Util;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_EVENT_HEADER;
-import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_EVENT_TOPIC;
+import static org.openremote.container.persistence.PersistenceEvent.*;
 
 public class AgentService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
 
     protected MessageBrokerService messageBrokerService;
-    protected PersistenceService persistenceService;
+    ProducerTemplate producerTemplate;
+
+    protected AssetService assetService;
     protected ConnectorService connectorService;
+
+    final protected Map<String, AgentRoutes> agentInstanceMap = new LinkedHashMap<>();
+
+    /*
+    This is the dynamic routing slip for discovery triggers: We call either the desired agent
+    only, or get a list of all agents and trigger all of them.
+     */
+    final protected Function<String, String> triggerDiscoveryRouting = new Function<String, String>() {
+        @Override
+        public String apply(String agentAssetId) {
+            LOG.fine("Routing trigger discovery message for agent(s): " + agentAssetId);
+            List<String> destinations = new ArrayList<>();
+            if (agentAssetId != null && agentAssetId.length() > 0) {
+                Asset agentAsset = assetService.get(agentAssetId);
+                if (agentAsset != null) {
+                    destinations.add(
+                        AgentRoutes.TRIGGER_DISCOVERY_ROUTE(agentAssetId)
+                    );
+                }
+            } else {
+                Asset[] allAgents = assetService.findByType(AssetType.AGENT);
+                for (Asset agent : allAgents) {
+                    destinations.add(
+                        AgentRoutes.TRIGGER_DISCOVERY_ROUTE(agent.getId())
+                    );
+                }
+            }
+            LOG.fine("Triggering discovery on agents: " + destinations);
+            return Util.toCommaSeparated(
+                destinations.toArray(new String[destinations.size()])
+            );
+        }
+    };
 
     @Override
     public void init(Container container) throws Exception {
         messageBrokerService = container.getService(MessageBrokerService.class);
-        persistenceService = container.getService(PersistenceService.class);
+        producerTemplate = messageBrokerService.getContext().createProducerTemplate();
+        assetService = container.getService(AssetService.class);
         connectorService = container.getService(ConnectorService.class);
 
         messageBrokerService.getContext().addRoutes(new RouteBuilder() {
             @Override
             public void configure() throws Exception {
+
+                // If any agent was modified in the database, reconfigure this service
                 from(PERSISTENCE_EVENT_TOPIC)
                     .filter(body().isInstanceOf(Asset.class))
                     .filter(exchange -> {
@@ -56,11 +109,15 @@ public class AgentService implements ContainerService {
                         return AssetType.AGENT.equals(asset.getWellKnownType());
                     })
                     .process(exchange -> {
-                        LOG.info("### AGENT PERSISTENCE EVENT: " + exchange.getIn().getHeader(PERSISTENCE_EVENT_HEADER));
-                        LOG.info("### AGENT: " + exchange.getIn().getBody());
-                        // TODO: Implement fine-grained life cycle changes
-                        reconfigureAgents();
+                        PersistenceEvent persistenceEvent = exchange.getIn().getHeader(PERSISTENCE_EVENT_HEADER, PersistenceEvent.class);
+                        Asset agent = exchange.getIn().getBody(Asset.class);
+                        reconfigureAgents(persistenceEvent == UPDATE ? agent : null);
                     });
+
+                // Dynamically route discovery trigger messages to agents
+                from(Agent.TOPIC_TRIGGER_DISCOVERY)
+                    .routingSlip(method(triggerDiscoveryRouting))
+                    .ignoreInvalidEndpoints();
             }
         });
     }
@@ -71,7 +128,7 @@ public class AgentService implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
-        // TODO On startup, load all enabled agents and reconfigureAgents();
+        reconfigureAgents(null);
     }
 
     @Override
@@ -79,8 +136,104 @@ public class AgentService implements ContainerService {
 
     }
 
-    protected void reconfigureAgents() {
-        LOG.info("############################### TODO: RECONFIGURE AGENTS");
+    protected void reconfigureAgents(Asset updatedAgent) {
+        ServerAsset[] agents = assetService.findByType(AssetType.AGENT);
+
+        LOG.fine("Reconfigure agents: " + agents.length);
+
+        synchronized (agentInstanceMap) {
+            for (ServerAsset agentAsset : agents) {
+                Agent agent = new Agent(new Attributes(agentAsset.getAttributes()));
+                if (agent.isEnabled()) {
+
+                    if (!agentInstanceMap.containsKey(agentAsset.getId())) {
+                        LOG.fine("Agent is enabled and was not running: " + agentAsset.getId());
+                        startAgent(agentAsset);
+                    } else if (updatedAgent != null && agentAsset.getId().equals(updatedAgent.getId())) {
+                        LOG.fine("Agent is enabled and already running, restarting due to update: " + agentAsset.getId());
+                        stopAgent(agentAsset.getId());
+                        startAgent(agentAsset);
+                    }
+
+                    // Agent is not enabled anymore but still running
+                } else if (agentInstanceMap.containsKey(agentAsset.getId())) {
+                    LOG.fine("Agent is disabled and still running: " + agentAsset.getId());
+                    stopAgent(agentAsset.getId());
+                }
+            }
+
+            for (String agentId : agentInstanceMap.keySet()) {
+                boolean found = false;
+                for (ServerAsset agent : agents) {
+                    if (agent.getId().equals(agentId)) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    LOG.fine("Agent is not present anymore and still running: " + agentId);
+                    stopAgent(agentId);
+                }
+            }
+        }
     }
 
+    protected void startAgent(Asset agentAsset) {
+        LOG.fine("Starting agent: " + agentAsset);
+
+        Agent agent = new Agent(new Attributes(agentAsset.getAttributes()));
+        ConnectorComponent connectorComponent = connectorService.getConnectorComponentByType(agent.getConnectorType());
+        AgentRoutes agentRoutes = new AgentRoutes(agentAsset, agent, connectorComponent) {
+            @Override
+            protected void handleInventoryModified(InventoryModifiedEvent event) {
+                Asset deviceAsset = event.getDeviceAsset();
+                switch (event.getCause()) {
+                    case CREATE:
+                        LOG.fine("Creating new child asset of agent '" + agentAsset.getId() + "': " + deviceAsset);
+                        ServerAsset deviceServerAsset = ServerAsset.map(
+                            deviceAsset,
+                            new ServerAsset(),
+                            agentAsset.getId(),
+                            agentAsset.getCoordinates()
+                        );
+                        assetService.create(deviceServerAsset);
+                        break;
+                    default:
+                        throw new UnsupportedOperationException("TODO Implement UPDATE, DELETE, etc.");
+                }
+            }
+        };
+
+        agentInstanceMap.put(agentAsset.getId(), agentRoutes);
+
+        try {
+
+            MessageBrokerContext context = messageBrokerService.getContext();
+            context.addRoutes(agentRoutes);
+
+        } catch (FailedToCreateRouteException ex) {
+            LOG.log(Level.SEVERE, "Error starting agent" + agentAsset, ex);
+            // TODO: We should mark the agent or fire event, or...
+        } catch (Exception ex) {
+            LOG.log(Level.SEVERE, "Error starting agent" + agentAsset, ex);
+            // TODO: We should mark the agent or fire event, or...
+        }
+    }
+
+    protected void stopAgent(String agentId) {
+        LOG.fine("Stopping agent: " + agentId);
+        if (agentInstanceMap.containsKey(agentId)) {
+            AgentRoutes agentRoutes = agentInstanceMap.remove(agentId);
+            MessageBrokerContext context = messageBrokerService.getContext();
+            try {
+                agentRoutes.stop(context);
+            } catch (FailedToCreateRouteException ex) {
+                LOG.log(Level.SEVERE, "Error stopping agent" + agentId, ex);
+                // TODO: We should mark the agent or fire event, or...
+            } catch (Exception ex) {
+                LOG.log(Level.SEVERE, "Error stopping agent" + agentId, ex);
+                // TODO: We should mark the agent or fire event, or...
+            }
+        }
+    }
 }

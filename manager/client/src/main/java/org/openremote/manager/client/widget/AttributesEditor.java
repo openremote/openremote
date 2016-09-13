@@ -79,11 +79,14 @@ public class AttributesEditor {
         }
         List<Attribute> attributeList = Arrays.asList(attributes.get());
         Collections.sort(attributeList, (o1, o2) -> o1.getName().compareTo(o2.getName()));
+        int count = 0;
         for (Attribute attribute : attributeList) {
             LOG.fine("Building form group for attribute: " + attribute.getName());
             FormGroup formGroup = createFormGroup(attribute);
             if (formGroup != null) {
+                formGroup.addStyleName((count & 1) == 0 ? "even" : "odd");
                 formGroups.put(attribute, formGroup);
+                count++;
             }
         }
     }
@@ -131,7 +134,7 @@ public class AttributesEditor {
     /* ####################################################################### */
 
     protected void clearContainer() {
-        while(container.getPanel().getWidgetCount() > 0) {
+        while (container.getPanel().getWidgetCount() > 0) {
             container.getPanel().remove(0);
         }
     }
@@ -147,13 +150,13 @@ public class AttributesEditor {
         formGroup.addFormField(attributeField);
 
         if (attribute.getType().equals(AttributeType.STRING)) {
-            formGroup.getFormField().add(createStringEditor(container.getStyle(), attribute, false));
+            formGroup.getFormField().add(createStringEditor(container.getStyle(), attribute, isDefaultReadOnly(attribute)));
         } else if (attribute.getType().equals(AttributeType.INTEGER)) {
-            formGroup.getFormField().add(createIntegerEditor(container.getStyle(), attribute, false));
+            formGroup.getFormField().add(createIntegerEditor(container.getStyle(), attribute, isDefaultReadOnly(attribute)));
         } else if (attribute.getType().equals(AttributeType.FLOAT)) {
-            formGroup.getFormField().add(createFloatEditor(container.getStyle(), attribute, false));
+            formGroup.getFormField().add(createFloatEditor(container.getStyle(), attribute, isDefaultReadOnly(attribute)));
         } else if (attribute.getType().equals(AttributeType.BOOLEAN)) {
-            formGroup.getFormField().add(createBooleanEditor(container.getStyle(), attribute, false));
+            formGroup.getFormField().add(createBooleanEditor(container.getStyle(), attribute, isDefaultReadOnly(attribute)));
         } else {
             formGroup.getFormField().add(
                 new Label(environment.getMessages().unsupportedAttributeType(attribute.getType().getValue()))
@@ -315,5 +318,9 @@ public class AttributesEditor {
             return attribute.getMetadata().getElement("defaultValue");
         }
         return null;
+    }
+
+    protected boolean isDefaultReadOnly(Attribute attribute) {
+        return false;
     }
 }

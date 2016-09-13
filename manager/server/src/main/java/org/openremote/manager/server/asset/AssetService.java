@@ -28,6 +28,7 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.asset.AssetInfo;
+import org.openremote.manager.shared.asset.AssetType;
 
 import javax.persistence.EntityManager;
 import java.sql.PreparedStatement;
@@ -90,6 +91,17 @@ public class AssetService implements ContainerService {
                     AssetInfo.class
                 ).getResultList();
             return result.toArray(new AssetInfo[result.size()]);
+        });
+    }
+
+    public ServerAsset[] findByType(AssetType assetType) {
+        return persistenceService.doTransaction(em -> {
+            List<ServerAsset> result =
+                em.createQuery(
+                    "select a from Asset a where a.type = :assetType order by a.createdOn asc",
+                    ServerAsset.class
+                ).setParameter("assetType", assetType.getValue()).getResultList();
+            return result.toArray(new ServerAsset[result.size()]);
         });
     }
 

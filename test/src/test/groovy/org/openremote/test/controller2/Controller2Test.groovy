@@ -4,6 +4,9 @@ import org.apache.camel.Exchange
 import org.apache.camel.Processor
 import org.apache.camel.builder.RouteBuilder
 import org.openremote.container.message.MessageBrokerService
+import org.openremote.manager.server.SampleDataService
+import org.openremote.manager.server.asset.AssetService
+import org.openremote.manager.shared.agent.Agent
 import org.openremote.manager.shared.asset.Asset
 import org.openremote.manager.shared.asset.AssetType
 import org.openremote.manager.shared.attribute.AttributeType
@@ -12,54 +15,61 @@ import org.openremote.manager.shared.device.DeviceResource
 import org.openremote.test.ContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.BlockingVariables
-import spock.util.concurrent.PollingConditions
 
 class Controller2Test extends Specification implements ContainerTrait {
 
     def "Get Device Inventory"() {
-        given: "a test controller service"
-        def controllerService = new Controller2Service()
-
-        and: "a clean result state"
-        def conditions = new PollingConditions(timeout: 3)
-
-        when: "the server container is started"
+        given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices(controllerService))
+        def container = startContainer(defaultConfig(serverPort), defaultServices())
 
-        and: "discovery is triggered"
-        controllerService.triggerDiscovery()
+        when: "we wait a bit for initial state"
+        sleep(2000)
 
-        then: "the service should receive the devices from the inventory"
-        conditions.eventually {
-            assert controllerService.addedDevices.size() > 0
-            Asset device = controllerService.addedDevices.get(0)
+        then: "the device assets should be the children of the agent asset"
+        def assetService = container.getService(AssetService.class)
+        def agentAsset = assetService.get(container.getService(SampleDataService.class).SAMPLE_AGENT_ID)
+        agentAsset != null
+        def deviceAssetInfos = assetService.getChildren(agentAsset.getId())
+        deviceAssetInfos .size() == 1
+        deviceAssetInfos.each {
+            Asset device = assetService.get(it.id)
             assert device.name == "TestDevice"
             assert device.id != null
             assert device.wellKnownType == AssetType.DEVICE
-            DeviceAttributes attributes = new DeviceAttributes(device.attributes)
+            def attributes = new DeviceAttributes(device.attributes)
             assert attributes.deviceResources.length == 5
             assert attributes.getDeviceResource("Light1Switch").type == AttributeType.STRING
             assert attributes.getDeviceResource("Light1Switch").valueAsString == "light1switch"
             assert attributes.getDeviceResource("Light1Switch").getResourceType() == AttributeType.BOOLEAN
             assert attributes.getDeviceResource("Light1Switch").getAccess() == DeviceResource.Access.RW
+
+            // Clear database for next condition
+            assetService.delete(it.id)
         }
+
+        when: "discovery is triggered"
+        getMessageProducerTemplate(container)
+                .sendBody(Agent.TOPIC_TRIGGER_DISCOVERY, "") // Empty body triggers all agents
+
+        and: "we wait a bit for inventory response"
+        sleep(2000)
+
+        then: "the device assets should be the children of the agent asset"
+        def updatedDeviceAssetInfos = assetService.getChildren(agentAsset.getId())
+        updatedDeviceAssetInfos.size() == 1
 
         cleanup: "the server should be stopped"
         stopContainer(container)
     }
 
     def "Write actuator and read updated sensor value"() {
-        given: "a test controller service"
-        def controllerService = new Controller2Service()
-
-        and: "a clean result state"
-        def conditions = new PollingConditions(timeout: 5)
+        given: "a clean result state"
         def result = new BlockingVariables(5)
 
         when: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices(controllerService))
+        def container = startContainer(defaultConfig(serverPort), defaultServices())
 
         and: "an actuator and a sensor route are started"
         String deviceResourceEndpoint = "controller2://192.168.99.100:8083/testdevice/light1switch";
@@ -68,10 +78,10 @@ class Controller2Test extends Specification implements ContainerTrait {
             @Override
             void configure() throws Exception {
                 from("direct:light1switch")
-                .to(deviceResourceEndpoint);
+                        .to(deviceResourceEndpoint);
 
                 from(deviceResourceEndpoint)
-                .process(new Processor() {
+                        .process(new Processor() {
                     @Override
                     void process(Exchange exchange) throws Exception {
                         switch (exchange.getIn().getBody(String.class)) {

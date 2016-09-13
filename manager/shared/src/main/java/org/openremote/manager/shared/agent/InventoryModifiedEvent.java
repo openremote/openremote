@@ -17,19 +17,32 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.util;
+package org.openremote.manager.shared.agent;
 
-import javax.persistence.AttributeConverter;
+import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.event.Event;
 
-public class StringArrayConverter implements AttributeConverter<String[], String> {
+public class InventoryModifiedEvent extends Event {
 
-    @Override
-    public String convertToDatabaseColumn(String[] attribute) {
-        return Util.toCommaSeparated(attribute);
+    public enum Cause {
+        CREATE,
+        UPDATE,
+        DELETE,
     }
 
-    @Override
-    public String[] convertToEntityAttribute(String data) {
-        return Util.fromCommaSeparated(data);
+    final protected Asset deviceAsset;
+    final protected Cause cause;
+
+    public InventoryModifiedEvent(Asset deviceAsset, Cause cause) {
+        this.deviceAsset = deviceAsset;
+        this.cause = cause;
+    }
+
+    public Asset getDeviceAsset() {
+        return deviceAsset;
+    }
+
+    public Cause getCause() {
+        return cause;
     }
 }

@@ -22,7 +22,7 @@ package org.openremote.manager.client.assets.browser;
 import com.google.gwt.view.client.HasData;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetInfoArrayMapper;
-import org.openremote.manager.client.assets.event.AssetsModifiedEvent;
+import org.openremote.manager.shared.asset.AssetModifiedEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventListener;
 import org.openremote.manager.client.event.bus.EventRegistration;
@@ -60,7 +60,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         this.assetResource = assetResource;
         this.assetInfoArrayMapper = assetInfoArrayMapper;
 
-        environment.getEventBus().register(AssetsModifiedEvent.class, event -> {
+        environment.getEventBus().register(AssetModifiedEvent.class, event -> {
             view.refreshAssets(
                 event.isForceRootRefresh()
                     || event.getAsset() == null

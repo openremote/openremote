@@ -22,16 +22,14 @@ package org.openremote.manager.shared.device;
 import com.fasterxml.jackson.annotation.JsonIgnoreType;
 import elemental.json.Json;
 import elemental.json.JsonObject;
-import org.openremote.manager.shared.attribute.Attribute;
-import org.openremote.manager.shared.attribute.AttributeType;
-import org.openremote.manager.shared.attribute.Attributes;
+import org.openremote.manager.shared.attribute.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Device asset attribute handling for representing devices that come from agents.
- *
+ * <p>
  * A device asset requires a key (typically unique within the scope of the
  * {@link org.openremote.manager.shared.connector.ConnectorComponent}) and
  * zero or many device resources (which also have a key, typically unique

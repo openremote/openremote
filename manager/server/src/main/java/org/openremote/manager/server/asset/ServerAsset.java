@@ -21,11 +21,11 @@ package org.openremote.manager.server.asset;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 import org.openremote.manager.shared.asset.Asset;
 
 import javax.persistence.*;
-import javax.validation.constraints.NotNull;
 
 /**
  * This can only be used on the server and offers types (such as Hibernate proxying, Geometry)
@@ -33,6 +33,39 @@ import javax.validation.constraints.NotNull;
  */
 @Entity(name = "Asset")
 public class ServerAsset extends Asset {
+
+    /**
+     * Easy conversion between types, we copy all properties (not a deep copy!)
+     */
+    public static ServerAsset map(Asset asset, ServerAsset serverAsset) {
+        return map(asset, serverAsset, null, null);
+    }
+
+    public static ServerAsset map(Asset asset, ServerAsset serverAsset, String overrideParentId, double[] overrideLocation) {
+        serverAsset.setVersion(asset.getVersion());
+        serverAsset.setName(asset.getName());
+        serverAsset.setType(asset.getType());
+
+        serverAsset.setParentId(overrideParentId != null ? overrideParentId : asset.getParentId());
+
+        GeometryFactory geometryFactory = new GeometryFactory();
+
+        if (overrideLocation != null) {
+            serverAsset.setLocation(geometryFactory.createPoint(new Coordinate(
+                overrideLocation[0],
+                overrideLocation[1]
+            )));
+        } else if (asset.getCoordinates() != null && asset.getCoordinates().length == 2) {
+            serverAsset.setLocation(geometryFactory.createPoint(new Coordinate(
+                asset.getCoordinates()[0],
+                asset.getCoordinates()[1]
+            )));
+        } else {
+            serverAsset.setLocation(null);
+        }
+        serverAsset.setAttributes(asset.getAttributes());
+        return serverAsset;
+    }
 
     @JoinColumn(name = "PARENT_ID", insertable = false, updatable = false)
     @ManyToOne(fetch = FetchType.LAZY)

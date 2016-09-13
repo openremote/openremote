@@ -79,6 +79,14 @@ public class Attribute {
         return jsonObject.hasKey("value") ? jsonObject.get("value").asString() : null;
     }
 
+    public Boolean getValueAsBoolean() {
+        return jsonObject.hasKey("value") && jsonObject.get("value").asBoolean();
+    }
+
+    public Double getValueAsDouble() {
+        return jsonObject.hasKey("value") ? jsonObject.get("value").asNumber() : null;
+    }
+
     public JsonObject getValueAsObject() {
         return jsonObject.hasKey("value") ? jsonObject.getObject("value") : null;
     }

@@ -17,19 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.util;
+package org.openremote.manager.server.event;
 
-import javax.persistence.AttributeConverter;
+import org.apache.camel.Exchange;
+import org.apache.camel.Predicate;
+import org.openremote.manager.shared.event.Event;
 
-public class StringArrayConverter implements AttributeConverter<String[], String> {
+public class EventPredicate<T extends Event> implements Predicate {
 
-    @Override
-    public String convertToDatabaseColumn(String[] attribute) {
-        return Util.toCommaSeparated(attribute);
+    final protected Class<T> eventType;
+
+    public EventPredicate(Class<T> eventType) {
+        this.eventType = eventType;
     }
 
     @Override
-    public String[] convertToEntityAttribute(String data) {
-        return Util.fromCommaSeparated(data);
+    public boolean matches(Exchange exchange) {
+        return exchange.getIn().getBody() != null
+            && eventType.isAssignableFrom(exchange.getIn().getBody().getClass());
     }
 }

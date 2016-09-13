@@ -21,6 +21,8 @@ package org.openremote.test
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import elemental.json.JsonValue
+import org.apache.camel.ProducerTemplate
+import org.apache.camel.builder.RouteBuilder
 import org.glassfish.tyrus.client.ClientManager
 import org.jboss.resteasy.client.jaxrs.ResteasyClient
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder
@@ -215,6 +217,14 @@ trait ContainerTrait {
     static AccessTokenResponse authenticate(Container container, String realm, String clientId, String username, String password) {
         container.getService(ManagerIdentityService.class).getKeycloak()
                 .getAccessToken(realm, new AuthForm(clientId, username, password));
+    }
+
+    static ProducerTemplate getMessageProducerTemplate(Container container) {
+        return container.getService(MessageBrokerService.class).getContext().createProducerTemplate();
+    }
+
+    static void addRoutes(Container container, RouteBuilder routeBuilder) {
+        container.getService(MessageBrokerService.class).getContext().addRoutes(routeBuilder);
     }
 
     static def WebSocketContainer createWebsocketContainer() {

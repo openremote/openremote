@@ -21,6 +21,7 @@ package org.openremote.agent.controller2;
 
 import org.apache.camel.Endpoint;
 import org.apache.camel.impl.UriEndpointComponent;
+import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.attribute.AttributeType;
 import org.openremote.manager.shared.connector.ConnectorComponent;
@@ -50,34 +51,34 @@ public class Controller2Component extends UriEndpointComponent implements Connec
     static {
         SETTINGS = new Attributes();
         SETTINGS.put(ConnectorUtil.buildConnectorSetting(
-                "host",
-                AttributeType.STRING,
-                "Host/IP Address",
-                "The OR Controller network hostname or IP address",
-                true
+            "host",
+            AttributeType.STRING,
+            "Host/IP Address",
+            "The OR Controller network hostname or IP address",
+            true
         ));
         SETTINGS.put(ConnectorUtil.buildConnectorSetting(
-                "port",
-                AttributeType.INTEGER,
-                "Port",
-                "The OR Controller network port number",
-                true,
-                "8868",
-                null
+            "port",
+            AttributeType.INTEGER,
+            "Port",
+            "The OR Controller network port number",
+            true,
+            "8868",
+            null
         ));
         SETTINGS.put(ConnectorUtil.buildConnectorSetting(
-                "username",
-                AttributeType.STRING,
-                "Username",
-                "The OR Controller Username",
-                false
+            "username",
+            AttributeType.STRING,
+            "Username",
+            "The OR Controller Username",
+            false
         ));
         SETTINGS.put(ConnectorUtil.buildConnectorSetting(
-                "password",
-                AttributeType.STRING,
-                "Password",
-                "The OR Controller Password",
-                false
+            "password",
+            AttributeType.STRING,
+            "Password",
+            "The OR Controller Password",
+            false
         ));
     }
 
@@ -124,52 +125,25 @@ public class Controller2Component extends UriEndpointComponent implements Connec
     }
 
     @Override
-    public ChildAssetSupport getChildSupport(Asset parentAsset) {
-        return null;
-    }
-
-    @Override
-    public boolean supportsChildDiscovery(Asset parentAsset) {
-        return false;
-    }
-
-    @Override
-    public Attributes getChildDiscoverySettings(Asset parentAsset) {
-        return null;
-    }
-
-    @Override
     public Attributes getConnectorSettings() {
         return SETTINGS;
     }
 
+    // TODO These dynamic routes are safe? Should we escape values before we concatenate strings?
+
     @Override
-    public String getChildDiscoveryUri(Asset parentAsset, Attributes discoverySettings) {
-        return null;
+    public String getInventoryUri(String agentAssetId, Agent agent) {
+        String host = agent.getAttributes().hasAttribute("host") ? agent.getAttributes().get("host").getValueAsString() : null;
+        Integer port = agent.getAttributes().hasAttribute("port") ? agent.getAttributes().get("port").getValueAsDouble().intValue() : null;
+        // TODO username and password
+        return "controller2://" + host + ":" + port + "/inventory";
     }
 
     @Override
-    public boolean supportsMonitoring(Asset asset) {
-        return false;
-    }
-
-    @Override
-    public String getChildInventoryUri(Asset asset) {
-        return null;
-    }
-
-    @Override
-    public String getAssetUri(Asset asset) {
-        return null;
-    }
-
-    @Override
-    public String getAssetMonitorUri(Asset asset) {
-        return null;
-    }
-
-    @Override
-    public Asset createAsset(Asset parent, Attributes assetSettings) {
-        return null;
+    public String getDiscoveryTriggerUri(String agentAssetId, Agent agent) {
+        String host = agent.getAttributes().hasAttribute("host") ? agent.getAttributes().get("host").getValueAsString() : null;
+        Integer port = agent.getAttributes().hasAttribute("port") ? agent.getAttributes().get("port").getValueAsDouble().intValue() : null;
+        // TODO username and password
+        return "controller2://" + host + ":" + port + "/discovery";
     }
 }

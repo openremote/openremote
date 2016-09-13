@@ -30,6 +30,20 @@ import java.util.Date;
 import static org.openremote.manager.shared.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
 import static org.openremote.manager.shared.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 
+/**
+ * The main model class of this software.
+ *
+ * An asset is an identifiable item in a composite relationship with other assets. This tree
+ * of assets can managed through a <code>null</code> {@link #parentId} property for root
+ * items, and a valid parent identifier for sub-items.
+ *
+ * Each asset has dynamically typed optional attributes with an underlying
+ * {@link elemental.json.Json} object model. Use the {@link Attributes} class to work with
+ * this API.
+ *
+ * The location of an asset is stored as a pair of LNG/LAT coordinates.
+ *
+ */
 @MappedSuperclass
 @Table(name = "ASSET")
 public class Asset {
@@ -161,6 +175,10 @@ public class Asset {
         this.coordinates = coordinates;
     }
 
+    public boolean hasCoordinates() {
+        return getCoordinates() != null && getCoordinates().length > 0;
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
@@ -173,5 +191,4 @@ public class Asset {
             ", attributes='" + (attributes != null ? attributes.toJson() : "null") + '\'' +
             '}';
     }
-
 }

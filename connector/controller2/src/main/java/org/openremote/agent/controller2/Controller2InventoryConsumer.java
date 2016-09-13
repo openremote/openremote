@@ -3,11 +3,12 @@ package org.openremote.agent.controller2;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.openremote.agent.controller2.model.DeviceListener;
+import org.openremote.manager.shared.agent.InventoryModifiedEvent;
 import org.openremote.manager.shared.asset.Asset;
 
 import java.util.logging.Logger;
 
-import static org.openremote.manager.shared.connector.ConnectorComponent.*;
+import static org.openremote.manager.shared.agent.InventoryModifiedEvent.Cause.*;
 
 public class Controller2InventoryConsumer extends Controller2Consumer implements DeviceListener {
 
@@ -38,8 +39,7 @@ public class Controller2InventoryConsumer extends Controller2Consumer implements
 
         LOG.fine("Starting new exchange for added device:  " + device);
         Exchange exchange = getEndpoint().createExchange();
-        exchange.getIn().setHeader(HEADER_DEVICE_ACTION, ACTION_CREATE);
-        exchange.getIn().setBody(device);
+        exchange.getIn().setBody(new InventoryModifiedEvent(device, CREATE));
         processExchange(exchange);
     }
 
@@ -52,8 +52,7 @@ public class Controller2InventoryConsumer extends Controller2Consumer implements
 
         LOG.fine("Starting new exchange for removed device: " + device);
         Exchange exchange = getEndpoint().createExchange();
-        exchange.getIn().setHeader(HEADER_DEVICE_ACTION, ACTION_DELETE);
-        exchange.getIn().setBody(device);
+        exchange.getIn().setBody(new InventoryModifiedEvent(device, DELETE));
         processExchange(exchange);
     }
 
@@ -66,8 +65,7 @@ public class Controller2InventoryConsumer extends Controller2Consumer implements
 
         LOG.fine("Starting new exchange for updated device: " + device);
         Exchange exchange = getEndpoint().createExchange();
-        exchange.getIn().setHeader(HEADER_DEVICE_ACTION, ACTION_UPDATE);
-        exchange.getIn().setBody(device);
+        exchange.getIn().setBody(new InventoryModifiedEvent(device, UPDATE));
         processExchange(exchange);
     }
 

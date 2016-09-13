@@ -19,8 +19,6 @@
  */
 package org.openremote.manager.server.asset;
 
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.asset.AssetInfo;
@@ -87,22 +85,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
     protected ServerAsset mapToServerAsset(Asset asset, ServerAsset serverAsset) {
         if (serverAsset == null)
             throw new WebApplicationException(Response.Status.NOT_FOUND);
-
-        serverAsset.setVersion(asset.getVersion());
-        serverAsset.setName(asset.getName());
-        serverAsset.setType(asset.getType());
-        if (asset.getCoordinates() != null && asset.getCoordinates().length == 2) {
-            GeometryFactory geometryFactory = new GeometryFactory();
-            serverAsset.setLocation(geometryFactory.createPoint(new Coordinate(
-                asset.getCoordinates()[0],
-                asset.getCoordinates()[1]
-            )));
-        } else {
-            serverAsset.setLocation(null);
-        }
-        serverAsset.setParentId(asset.getParentId());
-        serverAsset.setAttributes(asset.getAttributes());
-        return serverAsset;
+        return ServerAsset.map(asset, serverAsset);
     }
 
 }

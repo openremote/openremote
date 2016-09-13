@@ -69,4 +69,24 @@ public class Util {
         }
         return null;
     }
+
+    public static String toCommaSeparated(String... strings) {
+        if (strings == null || strings.length == 0)
+            return null;
+        StringBuilder sb = new StringBuilder();
+        for (String s : strings) {
+            sb.append(s).append(",");
+        }
+        if (sb.length() > 0) {
+            sb.deleteCharAt(sb.length()-1);
+        }
+        return sb.toString();
+    }
+
+    public static String[] fromCommaSeparated(String commaWords) {
+        if (commaWords == null)
+            return new String[0];
+        return commaWords.split(",");
+    }
+
 }

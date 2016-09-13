@@ -21,19 +21,19 @@ package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
-import org.openremote.manager.client.assets.agent.ConnectorArrayMapper;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
+import org.openremote.manager.client.assets.agent.AgentAttributesEditor;
+import org.openremote.manager.client.assets.agent.ConnectorArrayMapper;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
-import org.openremote.manager.client.assets.agent.AgentAttributesEditor;
 import org.openremote.manager.client.assets.device.DeviceAttributesEditor;
-import org.openremote.manager.client.assets.event.AssetsModifiedEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
 import org.openremote.manager.client.widget.AttributesEditor;
 import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.asset.AssetModifiedEvent;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.asset.AssetType;
 import org.openremote.manager.shared.attribute.Attributes;
@@ -47,6 +47,7 @@ import java.util.Collection;
 import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
+import static org.openremote.manager.shared.asset.AssetModifiedEvent.Cause.*;
 
 public class AssetActivity
     extends AssetBrowsingActivity<AssetView, AssetPlace>
@@ -215,7 +216,7 @@ public class AssetActivity
                 environment.getEventBus().dispatch(new ShowInfoEvent(
                     environment.getMessages().assetUpdated(asset.getName())
                 ));
-                environment.getEventBus().dispatch(new AssetsModifiedEvent(asset, forceRootRefresh));
+                environment.getEventBus().dispatch(new AssetModifiedEvent(asset, UPDATE, forceRootRefresh));
                 environment.getPlaceController().goTo(new AssetPlace(assetId));
             },
             ex -> handleRequestException(ex, environment)
@@ -239,7 +240,7 @@ public class AssetActivity
                 environment.getEventBus().dispatch(new ShowInfoEvent(
                     environment.getMessages().assetCreated(asset.getName())
                 ));
-                environment.getEventBus().dispatch(new AssetsModifiedEvent(asset));
+                environment.getEventBus().dispatch(new AssetModifiedEvent(asset, CREATE));
                 environment.getPlaceController().goTo(new AssetsDashboardPlace());
             },
             ex -> handleRequestException(ex, environment)
@@ -265,7 +266,7 @@ public class AssetActivity
                         environment.getEventBus().dispatch(new ShowInfoEvent(
                             environment.getMessages().assetDeleted(asset.getName())
                         ));
-                        environment.getEventBus().dispatch(new AssetsModifiedEvent(asset));
+                        environment.getEventBus().dispatch(new AssetModifiedEvent(asset, DELETE));
                         environment.getPlaceController().goTo(new AssetsDashboardPlace());
                     },
                     ex -> handleRequestException(ex, environment)
