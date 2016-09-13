@@ -18,6 +18,7 @@ services:
     links:
       - postgres
       - keycloak
+      - controller
 
     environment:
 
@@ -89,3 +90,10 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: secret
       POSTGRES_DB: openremote
+
+  # The demo controller (device gateway)
+  controller:
+    image: openremote/demo-controller:latest
+    environment:
+      TZ: "Europe/Zurich"
+      BEEHIVE_REMOTE_SERVICE_URI: "urn:disabled"
