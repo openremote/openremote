@@ -13,13 +13,13 @@ public class Controller2WriteProducer extends DefaultProducer {
 
     private static final Logger LOG = Logger.getLogger(Controller2WriteProducer.class.getName());
 
-    protected String deviceUri;
-    protected String resourceUri;
+    protected String deviceKey;
+    protected String resourceKey;
 
-    public Controller2WriteProducer(Endpoint endpoint, String deviceUri, String resourceUri) {
+    public Controller2WriteProducer(Endpoint endpoint, String deviceKey, String resourceKey) {
         super(endpoint);
-        this.deviceUri = deviceUri;
-        this.resourceUri = resourceUri;
+        this.deviceKey = deviceKey;
+        this.resourceKey = resourceKey;
     }
 
     @Override
@@ -31,14 +31,14 @@ public class Controller2WriteProducer extends DefaultProducer {
     public void process(Exchange exchange) throws Exception {
         // Extract write related headers
         String deviceUri = exchange.getIn().getHeader(
-            Controller2Component.HEADER_DEVICE_URI,
-            this.deviceUri,
+            Controller2Component.HEADER_DEVICE_KEY,
+            this.deviceKey,
             String.class
         );
 
         String resourceUri = exchange.getIn().getHeader(
-            Controller2Component.HEADER_RESOURCE_URI,
-            this.resourceUri,
+            Controller2Component.HEADER_DEVICE_RESOURCE_KEY,
+            this.resourceKey,
             String.class
         );
 

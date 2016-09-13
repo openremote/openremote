@@ -23,10 +23,12 @@ import org.openremote.console.controller.AsyncRegistrationCallback;
 import org.openremote.console.controller.Controller;
 import org.openremote.entities.controller.*;
 import org.openremote.manager.shared.Consumer;
+import org.openremote.manager.shared.device.DeviceAttributes;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -37,6 +39,7 @@ public class ControllerState {
     final protected String controllerUrl;
 
     protected volatile boolean initialized = false;
+    // TODO: The concurrency control of these data structures should be revisited when we deal with reconnect/refresh of devices
     final protected Map<String, DeviceMapping> deviceMap = new LinkedHashMap<>();
     final protected List<SensorListener> sensorListeners = new CopyOnWriteArrayList<>();
     final protected List<DeviceListener> deviceListeners = new CopyOnWriteArrayList<>();
@@ -65,14 +68,19 @@ public class ControllerState {
         try {
             deviceMap.clear();
             updateDeviceMappings(controller, deviceMapping -> {
-                LOG.fine("Updating device mapping: " + deviceMapping.getGatewayDevice().getName());
-                deviceMap.put(deviceMapping.getDevice().getUri(), deviceMapping);
+                String deviceKey = new DeviceAttributes(deviceMapping.getDeviceAsset().getAttributes()).getKey();
+                LOG.fine("Updating device mapping: " + deviceKey);
+                deviceMap.put(deviceKey, deviceMapping);
             });
             initialized = true;
             LOG.fine("Controller state initialized");
         } catch (InterruptedException e) {
             initialized = false;
             LOG.severe("Controller state initialization was interrupted");
+        } catch (Exception ex) {
+            initialized = false;
+            // TODO: better error handling
+            LOG.log(Level.SEVERE, "Controller state initialization failed", ex);
         }
 
         LOG.fine("Processing sensor listeners: " + sensorListeners.size());
@@ -89,8 +97,8 @@ public class ControllerState {
     }
 
     public void addSensorListener(SensorListener listener) {
-        if (listener != null && (listener.getDeviceUri() == null || listener.getResourceUri() == null)) {
-            LOG.warning("Ignoring invalid sensor listener (" + controllerUrl + "), missing device or resource URI: " + listener);
+        if (listener != null && (listener.getDeviceKey() == null || listener.getDeviceResourceKey() == null)) {
+            LOG.warning("Ignoring invalid sensor listener (" + controllerUrl + "), missing device or resource key: " + listener);
             return;
         }
         LOG.fine("Adding sensor listener (" + controllerUrl + "): " + listener);
@@ -101,21 +109,21 @@ public class ControllerState {
     public void removeSensorListener(SensorListener listener) {
         LOG.fine("Removing sensor listener (" + controllerUrl + "): " + listener);
         sensorListeners.remove(listener);
-        if (listener.getDeviceUri() == null) {
+        if (listener.getDeviceKey() == null) {
             return;
         }
         // Unregister the handler
-        DeviceMapping deviceMapping = deviceMap.get(listener.getDeviceUri());
+        DeviceMapping deviceMapping = deviceMap.get(listener.getDeviceKey());
 
         if (deviceMapping == null) {
-            LOG.fine("Device URI for sensor listener cannot be found so ignoring");
+            LOG.fine("Device key for sensor listener cannot be found so ignoring: " + listener.getDeviceKey());
             return;
         }
 
-        DeviceResourceMapping resourceMapping = deviceMapping.getResourceMap().get(listener.getResourceUri());
+        DeviceResourceMapping resourceMapping = deviceMapping.getResourceMap().get(listener.getDeviceResourceKey());
 
         if (resourceMapping == null) {
-            LOG.fine("Resource URI for sensor listener cannot be found so ignoring");
+            LOG.fine("Device resource key for sensor listener cannot be found so ignoring: " + listener.getDeviceResourceKey());
             return;
         }
 
@@ -144,20 +152,20 @@ public class ControllerState {
         deviceListeners.forEach(this::announceDevices);
     }
 
-    public void writeResource(String deviceUri, String resourceUri, Object resourceValue) {
-        LOG.fine("Writing resource (" + controllerUrl + "): " + deviceUri + "/" + resourceUri + ": " + resourceValue);
+    public void writeResource(String deviceKey, String resourceKey, Object resourceValue) {
+        LOG.fine("Writing resource (" + controllerUrl + "): " + deviceKey + "/" + resourceKey + ": " + resourceValue);
 
         if (!initialized) {
             LOG.fine("Controller state not initialized, queuing write request");
             WriteResourceRequest writeRequest = new WriteResourceRequest();
-            writeRequest.setDeviceUri(deviceUri);
-            writeRequest.setResourceUri(resourceUri);
+            writeRequest.setDeviceKey(deviceKey);
+            writeRequest.setResourceKey(resourceKey);
             writeRequest.setResourceValue(resourceValue);
             queuedWriteRequests.add(writeRequest);
             return;
         }
 
-        processWriteRequest(new WriteResourceRequest(deviceUri, resourceUri, resourceValue));
+        processWriteRequest(new WriteResourceRequest(deviceKey, resourceKey, resourceValue));
     }
 
     /* ################################################################################## */
@@ -224,7 +232,7 @@ public class ControllerState {
                     @Override
                     public void onSuccess(org.openremote.entities.controller.Device gatewayDevice) {
                         LOG.fine("Got device '" + deviceName + "' from the controller");
-                        mapping.setGatewayDevice(gatewayDevice);
+                        mapping.setDevice(gatewayDevice);
                         latch.countDown();
                     }
                 });
@@ -235,9 +243,9 @@ public class ControllerState {
                 final CountDownLatch latch = new CountDownLatch(1);
                 // Register the gateway device (so we get sensor change events and can send commands), this starts
                 // the polling of sensor values - effectively long-lasting HTTP connection for each device!
-                if (mapping.getGatewayDevice() != null) {
+                if (mapping.getDevice() != null) {
                     mapping.setRegistrationHandle(
-                        controller.registerDevice(mapping.getGatewayDevice(), new AsyncRegistrationCallback() {
+                        controller.registerDevice(mapping.getDevice(), new AsyncRegistrationCallback() {
                             @Override
                             public void onFailure(ControllerResponseCode controllerResponseCode) {
                                 LOG.info("Failed to register device '" + deviceName + "' with the controller: " + controllerResponseCode);
@@ -261,17 +269,17 @@ public class ControllerState {
     }
 
     protected void processSensorListener(SensorListener listener) {
-        DeviceMapping deviceMapping = deviceMap.get(listener.getDeviceUri());
+        DeviceMapping deviceMapping = deviceMap.get(listener.getDeviceKey());
 
         if (deviceMapping == null) {
-            LOG.fine("Device mapping for sensor listener cannot be found so ignoring, device URI was: " + listener.getDeviceUri());
+            LOG.fine("Device mapping for sensor listener cannot be found so ignoring, device key was: " + listener.getDeviceKey());
             return;
         }
 
-        DeviceResourceMapping resourceMapping = deviceMapping.getResourceMap().get(listener.getResourceUri());
+        DeviceResourceMapping resourceMapping = deviceMapping.getResourceMap().get(listener.getDeviceResourceKey());
 
         if (resourceMapping == null) {
-            LOG.fine("Resource for sensor listener cannot be found so ignoring, resource URI was: " + listener.getResourceUri());
+            LOG.fine("Resource for sensor listener cannot be found so ignoring, resource key was: " + listener.getDeviceResourceKey());
             return;
         }
         LOG.fine("Adding sensor listener to device resource mapping: " + resourceMapping.getResource().getName());
@@ -281,22 +289,22 @@ public class ControllerState {
     protected void announceDevices(DeviceListener listener) {
         LOG.fine("Announcing " + deviceMap.size() + " devices on listener: " + listener);
         deviceMap.values().stream().forEach(deviceMapping -> {
-            listener.onDeviceAdded(deviceMapping.getDevice());
+            listener.onDeviceAdded(deviceMapping.getDeviceAsset());
         });
     }
 
     protected void processWriteRequest(WriteResourceRequest request) {
-        DeviceMapping deviceMapping = deviceMap.get(request.getDeviceUri());
+        DeviceMapping deviceMapping = deviceMap.get(request.getDeviceKey());
 
         if (deviceMapping == null) {
-            LOG.info("Request to write to unknown device URI '" + request.getDeviceUri() + "' will be ignored");
+            LOG.info("Request to write to unknown device key '" + request.getDeviceKey() + "' will be ignored");
             return;
         }
 
-        DeviceResourceMapping resourceMapping = deviceMapping.getResourceMap().get(request.getResourceUri());
+        DeviceResourceMapping resourceMapping = deviceMapping.getResourceMap().get(request.getResourceKey());
 
         if (resourceMapping == null) {
-            LOG.info("Request to write to unknown resource URI '" + request.getResourceUri() + "' will be ignored");
+            LOG.info("Request to write to unknown resource key '" + request.getResourceKey() + "' will be ignored");
             return;
         }
 
@@ -322,24 +330,24 @@ public class ControllerState {
         }
 
         if (sendCommand == null) {
-            LOG.info("Unable to determine the command to send for " + request.getResourceValue() + " : " + request.getResourceUri());
+            LOG.info("Unable to determine the command to send for " + request.getResourceValue() + " : " + request.getResourceKey());
             return;
         }
 
-        LOG.fine("Sending command on '" + deviceMapping.getGatewayDevice().getName() + "': " + sendCommand);
+        LOG.fine("Sending command on '" + deviceMapping.getDevice().getName() + "': " + sendCommand);
         // TODO: Callback handling? Should maybe just log something...
-        deviceMapping.getGatewayDevice().sendCommand(
+        deviceMapping.getDevice().sendCommand(
             sendCommand,
             (resourceValue != null ? resourceValue.toString() : null),
             new AsyncControllerCallback<CommandResponse>() {
                 @Override
                 public void onFailure(ControllerResponseCode controllerResponseCode) {
-
+                    // TODO Components should offer a route for logging, so we can store (error) events
                 }
 
                 @Override
                 public void onSuccess(CommandResponse commandResponse) {
-
+                    // TODO Components should offer a route for logging, so we can store (succes) events
                 }
             }
         );

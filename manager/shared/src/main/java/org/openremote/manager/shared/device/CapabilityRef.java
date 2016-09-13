@@ -5,7 +5,9 @@ import org.openremote.manager.shared.attribute.Attribute;
 import org.openremote.manager.shared.attribute.AttributeType;
 import org.openremote.manager.shared.attribute.Attributes;
 
+// TODO Not used
 public class CapabilityRef extends Attribute {
+
     protected Attributes resources;
 
     public CapabilityRef(JsonObject jsonObject) {

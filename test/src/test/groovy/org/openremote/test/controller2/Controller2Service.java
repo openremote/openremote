@@ -2,12 +2,11 @@ package org.openremote.test.controller2;
 
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.agent.controller2.Controller2Component;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.manager.shared.device.Device;
+import org.openremote.manager.shared.asset.Asset;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,9 +16,9 @@ import static org.openremote.manager.shared.connector.ConnectorComponent.*;
 // TODO This is an example service for testing, replaced later with production code
 public class Controller2Service implements ContainerService {
 
-    public List<Device> addedDevices = new ArrayList<>();
-    public List<Device> removedDevices = new ArrayList<>();
-    public List<Device> updatedDevices = new ArrayList<>();
+    public List<Asset> addedDevices = new ArrayList<>();
+    public List<Asset> removedDevices = new ArrayList<>();
+    public List<Asset> updatedDevices = new ArrayList<>();
     public ProducerTemplate messageProducerTemplate;
 
     @Override
@@ -40,18 +39,21 @@ public class Controller2Service implements ContainerService {
                         .choice()
                             .when(header(HEADER_DEVICE_ACTION).isEqualTo(ACTION_CREATE))
                                 .process(exchange -> {
-                                    Device device = exchange.getIn().getBody(Device.class);
-                                    addedDevices.add(device);
+                                    addedDevices.add(
+                                        exchange.getIn().getBody(Asset.class)
+                                    );
                             }).endChoice()
                             .when(header(HEADER_DEVICE_ACTION).isEqualTo(ACTION_DELETE))
                             .process(exchange -> {
-                                Device device = exchange.getIn().getBody(Device.class);
-                                removedDevices.add(device);
+                                removedDevices.add(
+                                    exchange.getIn().getBody(Asset.class)
+                                );
                             }).endChoice()
                             .when(header(HEADER_DEVICE_ACTION).isEqualTo(ACTION_UPDATE))
                             .process(exchange -> {
-                                Device device = exchange.getIn().getBody(Device.class);
-                                updatedDevices.add(device);
+                                updatedDevices.add(
+                                    exchange.getIn().getBody(Asset.class)
+                                );
                             }).end();
 
                 from("direct:triggerDiscovery")

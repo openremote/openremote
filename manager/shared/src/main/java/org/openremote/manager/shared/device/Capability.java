@@ -1,9 +1,6 @@
 package org.openremote.manager.shared.device;
 
-import org.openremote.manager.shared.attribute.Attribute;
 import org.openremote.manager.shared.attribute.Attributes;
-
-import java.util.Map;
 
 /**
  * Analogous to an Object in LWM2M; note the mandatory field
@@ -17,6 +14,7 @@ import java.util.Map;
  * 3 = DeviceInfo
  * 3311 = Light Control
  */
+// TODO Not used
 public class Capability implements CapabilityDefinition {
     protected String type;
     protected String name;

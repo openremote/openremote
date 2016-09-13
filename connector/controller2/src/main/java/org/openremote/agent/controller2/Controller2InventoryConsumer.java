@@ -3,14 +3,11 @@ package org.openremote.agent.controller2;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.openremote.agent.controller2.model.DeviceListener;
-import org.openremote.manager.shared.device.Device;
+import org.openremote.manager.shared.asset.Asset;
 
 import java.util.logging.Logger;
 
-import static org.openremote.manager.shared.connector.ConnectorComponent.ACTION_CREATE;
-import static org.openremote.manager.shared.connector.ConnectorComponent.ACTION_DELETE;
-import static org.openremote.manager.shared.connector.ConnectorComponent.ACTION_UPDATE;
-import static org.openremote.manager.shared.connector.ConnectorComponent.HEADER_DEVICE_ACTION;
+import static org.openremote.manager.shared.connector.ConnectorComponent.*;
 
 public class Controller2InventoryConsumer extends Controller2Consumer implements DeviceListener {
 
@@ -33,13 +30,13 @@ public class Controller2InventoryConsumer extends Controller2Consumer implements
     }
 
     @Override
-    public void onDeviceAdded(Device device) {
+    public void onDeviceAdded(Asset device) {
         if (!isStarted() && !isStarting()) {
             LOG.fine("Received device added event but consumer hasn't been started");
             return;
         }
 
-        LOG.fine("Starting new exchange for added device '" + device + "'");
+        LOG.fine("Starting new exchange for added device:  " + device);
         Exchange exchange = getEndpoint().createExchange();
         exchange.getIn().setHeader(HEADER_DEVICE_ACTION, ACTION_CREATE);
         exchange.getIn().setBody(device);
@@ -47,13 +44,13 @@ public class Controller2InventoryConsumer extends Controller2Consumer implements
     }
 
     @Override
-    public void onDeviceRemoved(Device device) {
+    public void onDeviceRemoved(Asset device) {
         if (!isStarted() && !isStarting()) {
             LOG.fine("Received device removed event but consumer hasn't been started");
             return;
         }
 
-        LOG.fine("Starting new exchange for removed device '" + device.getUri() + "'");
+        LOG.fine("Starting new exchange for removed device: " + device);
         Exchange exchange = getEndpoint().createExchange();
         exchange.getIn().setHeader(HEADER_DEVICE_ACTION, ACTION_DELETE);
         exchange.getIn().setBody(device);
@@ -61,13 +58,13 @@ public class Controller2InventoryConsumer extends Controller2Consumer implements
     }
 
     @Override
-    public void onDeviceUpdated(Device device) {
+    public void onDeviceUpdated(Asset device) {
         if (!isStarted() && !isStarting()) {
             LOG.fine("Received device updated event but consumer hasn't been started");
             return;
         }
 
-        LOG.fine("Starting new exchange for updated device '" + device.getUri() + "'");
+        LOG.fine("Starting new exchange for updated device: " + device);
         Exchange exchange = getEndpoint().createExchange();
         exchange.getIn().setHeader(HEADER_DEVICE_ACTION, ACTION_UPDATE);
         exchange.getIn().setBody(device);

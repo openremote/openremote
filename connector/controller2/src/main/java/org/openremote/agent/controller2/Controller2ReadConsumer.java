@@ -28,13 +28,14 @@ import java.util.logging.Logger;
 public class Controller2ReadConsumer extends Controller2Consumer implements SensorListener {
 
     private static final Logger LOG = Logger.getLogger(Controller2ReadConsumer.class.getName());
-    protected String deviceUri;
-    protected String resourceUri;
 
-    public Controller2ReadConsumer(Controller2Endpoint endpoint, Processor processor, String deviceUri, String resourceUri) {
+    protected String deviceKey;
+    protected String resourceKey;
+
+    public Controller2ReadConsumer(Controller2Endpoint endpoint, Processor processor, String deviceKey, String resourceKey) {
         super(endpoint, processor);
-        this.deviceUri = deviceUri;
-        this.resourceUri = resourceUri;
+        this.deviceKey = deviceKey;
+        this.resourceKey = resourceKey;
     }
 
     @Override
@@ -50,20 +51,20 @@ public class Controller2ReadConsumer extends Controller2Consumer implements Sens
     }
 
     @Override
-    public String getDeviceUri() {
-        return deviceUri;
+    public String getDeviceKey() {
+        return deviceKey;
     }
 
     @Override
-    public String getResourceUri() {
-        return resourceUri;
+    public String getDeviceResourceKey() {
+        return resourceKey;
     }
 
     @Override
     public void onUpdate(Object newValue) {
         // Push value into message body and camel type converter can be used to
         // get value into the required type by the next processor in the route
-        LOG.fine("Consuming state change from '" + deviceUri + " : " + resourceUri + "': " + newValue);
+        LOG.fine("Consuming state change from '" + deviceKey + " : " + resourceKey + "': " + newValue);
         Exchange exchange = getEndpoint().createExchange();
         exchange.getIn().setBody(newValue);
         try {

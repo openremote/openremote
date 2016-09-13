@@ -23,9 +23,12 @@ import org.openremote.console.controller.Controller;
 import org.openremote.console.controller.DeviceRegistrationHandle;
 import org.openremote.container.util.IdentifierUtil;
 import org.openremote.entities.controller.Command;
+import org.openremote.entities.controller.Device;
 import org.openremote.entities.controller.Sensor;
+import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.asset.AssetType;
 import org.openremote.manager.shared.attribute.AttributeType;
-import org.openremote.manager.shared.device.Device;
+import org.openremote.manager.shared.device.DeviceAttributes;
 import org.openremote.manager.shared.device.DeviceResource;
 
 import java.nio.charset.Charset;
@@ -37,18 +40,10 @@ import java.util.stream.Stream;
  */
 public class DeviceMapping {
 
-    protected org.openremote.entities.controller.Device gatewayDevice;
     protected Device device;
+    protected Asset deviceAsset;
     protected DeviceRegistrationHandle registrationHandle;
     protected Map<String, DeviceResourceMapping> resourceMap = new HashMap<>();
-
-    public org.openremote.entities.controller.Device getGatewayDevice() {
-        return gatewayDevice;
-    }
-
-    public void setGatewayDevice(org.openremote.entities.controller.Device gatewayDevice) {
-        this.gatewayDevice = gatewayDevice;
-    }
 
     public Device getDevice() {
         return device;
@@ -56,6 +51,10 @@ public class DeviceMapping {
 
     public void setDevice(Device device) {
         this.device = device;
+    }
+
+    public Asset getDeviceAsset() {
+        return deviceAsset;
     }
 
     public DeviceRegistrationHandle getRegistrationHandle() {
@@ -70,42 +69,41 @@ public class DeviceMapping {
         return resourceMap;
     }
 
-    public void setResourceMap(Map<String, DeviceResourceMapping> resourceMap) {
-        this.resourceMap = resourceMap;
-    }
-
     public void update(List<Controller.WidgetCommandInfo> widgetCommandInfos) {
-        setDevice(null);
-        org.openremote.entities.controller.Device gatewayDevice = getGatewayDevice();
+        deviceAsset = null;
+        Device device = getDevice();
 
-        if (gatewayDevice != null) {
-            Device device = new Device();
-            setDevice(device);
+        if (device != null) {
+
+            // TODO Take first command protocol as the device type?
+            // String deviceProtocol = device.getCommands().get(0).getProtocol().toUpperCase();
+
+            deviceAsset = new Asset(device.getName(), AssetType.DEVICE);
+
             // TODO: Stable device identifier generation?
-            device.setId(
+            deviceAsset.setId(
                 IdentifierUtil.getEncodedHash(
-                    gatewayDevice.getName().toLowerCase(Locale.ROOT).getBytes(Charset.forName("utf-8"))
+                    device.getName().toLowerCase(Locale.ROOT).getBytes(Charset.forName("utf-8"))
                 )
             );
-            device.setUri(gatewayDevice.getName());
-            device.setName(gatewayDevice.getName());
 
-            if (gatewayDevice.getCommands() == null || gatewayDevice.getCommands().size() == 0) {
+            DeviceAttributes deviceAttributes = new DeviceAttributes(deviceAsset.getAttributes());
+            deviceAttributes.setKey(device.getName().toLowerCase(Locale.ROOT));
+
+            if (device.getCommands() == null || device.getCommands().size() == 0) {
                 return;
             }
 
-            // Get Device type
             // TODO: Controller API needs to provide Make & model info for the device
-            // Take first command protocol as the device type
-            device.setType(gatewayDevice.getCommands().get(0).getProtocol().toUpperCase());
+            //deviceAttributes.setMakeAndModel();
+
 
             // Get Device resources and capabilities
-            List<DeviceResource> resources = new ArrayList<>();
             List<Integer> assignedCommands = new ArrayList<>();
 
             // Go through sensors - any used by slider and switch
             // widgets can be RW resources
-            for (Sensor sensor : gatewayDevice.getSensors()) {
+            for (Sensor sensor : device.getSensors()) {
                 Command sensorCommand = sensor.getCommand();
                 assignedCommands.add(sensorCommand.getId());
                 Controller.WidgetCommandInfo matchingWidgetInfo =
@@ -114,19 +112,43 @@ public class DeviceMapping {
                         .findFirst()
                         .orElseGet(() -> null);
 
-                DeviceResource dr = new DeviceResource(sensor.getName());
-                dr.setUri(sensor.getName().toLowerCase(Locale.ROOT));
+                AttributeType resourceType;
+                DeviceResource.Access access;
+                switch (sensor.getType()) {
+                    case SWITCH:
+                        resourceType = AttributeType.BOOLEAN;
+                        access = matchingWidgetInfo != null ? DeviceResource.Access.RW : DeviceResource.Access.R;
+                        break;
+                    case RANGE:
+                    case LEVEL:
+                        resourceType = AttributeType.INTEGER;
+                        access = matchingWidgetInfo != null ? DeviceResource.Access.RW : DeviceResource.Access.R;
+                        break;
+                    default:
+                        resourceType = AttributeType.STRING;
+                        access = DeviceResource.Access.R;
+                        break;
+                }
+
+                DeviceResource deviceResource = new DeviceResource(
+                    sensor.getName(),
+                    sensor.getName().toLowerCase(Locale.ROOT),
+                    resourceType,
+                    access
+                );
+
                 DeviceResourceMapping resourceMapping = new DeviceResourceMapping();
-                resourceMapping.setResource(dr);
+                resourceMapping.setResource(deviceResource);
                 resourceMapping.setGatewaySensor(sensor);
-                resources.add(dr);
-                getResourceMap().put(dr.getUri(), resourceMapping);
+                getResourceMap().put(deviceResource.getValueAsString(), resourceMapping);
+
+                deviceAttributes.put(deviceResource);
 
                 if (matchingWidgetInfo != null) {
                     if (matchingWidgetInfo.getCommandId1() > 0) {
                         assignedCommands.add(matchingWidgetInfo.getCommandId1());
                         resourceMapping.setSendCommand1(
-                            gatewayDevice.getCommands().stream()
+                            device.getCommands().stream()
                                 .filter(command -> command.getId() == matchingWidgetInfo.getCommandId1())
                                 .findFirst()
                                 .orElseGet(() -> null)
@@ -134,7 +156,7 @@ public class DeviceMapping {
                     }
                     if (matchingWidgetInfo.getCommandId2() > 0) {
                         resourceMapping.setSendCommand2(
-                            gatewayDevice.getCommands().stream()
+                            device.getCommands().stream()
                                 .filter(command -> command.getId() == matchingWidgetInfo.getCommandId2())
                                 .findFirst()
                                 .orElseGet(() -> null)
@@ -142,42 +164,32 @@ public class DeviceMapping {
                         assignedCommands.add(matchingWidgetInfo.getCommandId2());
                     }
                 }
-
-                switch (sensor.getType()) {
-                    case SWITCH:
-                        dr.setType(AttributeType.BOOLEAN);
-                        dr.setAccess(matchingWidgetInfo != null ? DeviceResource.Access.RW : DeviceResource.Access.R);
-                        break;
-                    case RANGE:
-                    case LEVEL:
-                        dr.setType(AttributeType.INTEGER);
-                        dr.setAccess(matchingWidgetInfo != null ? DeviceResource.Access.RW : DeviceResource.Access.R);
-                        break;
-                    default:
-                        dr.setType(AttributeType.STRING);
-                        dr.setAccess(DeviceResource.Access.R);
-                        break;
-                }
             }
 
             // Add any commands not already covered as write resources
             // Assume they are W resources with null data type
-            Stream<Command> unassignedCommands = gatewayDevice.getCommands().stream().filter(command -> !assignedCommands.contains(command.getId()));
+            Stream<Command> unassignedCommands = device.getCommands().stream().filter(
+                command -> !assignedCommands.contains(command.getId())
+            );
 
+            // TODO: All commands are of string type?
             unassignedCommands.forEach(command -> {
-                DeviceResource dr = new DeviceResource(command.getName());
-                dr.setUri(command.getName().toLowerCase(Locale.ROOT));
-                dr.setType(null);
-                dr.setAccess(DeviceResource.Access.W);
+                DeviceResource deviceResource = new DeviceResource(
+                    command.getName(),
+                    command.getName().toLowerCase(Locale.ROOT),
+                    AttributeType.STRING,
+                    DeviceResource.Access.W
+                );
 
                 DeviceResourceMapping resourceMapping = new DeviceResourceMapping();
-                resourceMapping.setResource(dr);
+                resourceMapping.setResource(deviceResource);
                 resourceMapping.setSendCommand1(command);
-                resources.add(dr);
-                getResourceMap().put(dr.getUri(), resourceMapping);
+                getResourceMap().put(deviceResource.getValueAsString(), resourceMapping);
+
+                deviceAttributes.put(deviceResource);
             });
 
-            device.setResources(resources.toArray(new DeviceResource[resources.size()]));
+            deviceAsset.setAttributes(deviceAttributes.getJsonObject());
         }
     }
 }

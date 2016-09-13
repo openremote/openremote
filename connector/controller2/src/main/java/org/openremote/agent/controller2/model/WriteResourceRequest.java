@@ -24,33 +24,33 @@ package org.openremote.agent.controller2.model;
  */
 public class WriteResourceRequest {
 
-    protected String deviceUri;
-    protected String resourceUri;
+    protected String deviceKey;
+    protected String resourceKey;
     protected Object resourceValue;
 
     public WriteResourceRequest() {
     }
 
-    public WriteResourceRequest(String deviceUri, String resourceUri, Object resourceValue) {
-        this.deviceUri = deviceUri;
-        this.resourceUri = resourceUri;
+    public WriteResourceRequest(String deviceKey, String resourceKey, Object resourceValue) {
+        this.deviceKey = deviceKey;
+        this.resourceKey = resourceKey;
         this.resourceValue = resourceValue;
     }
 
-    public String getDeviceUri() {
-        return deviceUri;
+    public String getDeviceKey() {
+        return deviceKey;
     }
 
-    public void setDeviceUri(String deviceUri) {
-        this.deviceUri = deviceUri;
+    public void setDeviceKey(String deviceKey) {
+        this.deviceKey = deviceKey;
     }
 
-    public String getResourceUri() {
-        return resourceUri;
+    public String getResourceKey() {
+        return resourceKey;
     }
 
-    public void setResourceUri(String resourceUri) {
-        this.resourceUri = resourceUri;
+    public void setResourceKey(String resourceKey) {
+        this.resourceKey = resourceKey;
     }
 
     public Object getResourceValue() {

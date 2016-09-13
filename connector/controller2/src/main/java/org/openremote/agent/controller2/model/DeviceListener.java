@@ -19,7 +19,7 @@
  */
 package org.openremote.agent.controller2.model;
 
-import org.openremote.manager.shared.device.Device;
+import org.openremote.manager.shared.asset.Asset;
 
 /**
  * Used by IOT connectors to announce changes to devices.
@@ -28,9 +28,11 @@ import org.openremote.manager.shared.device.Device;
  */
 public interface DeviceListener {
 
-    void onDeviceAdded(Device device);
+    void onDeviceAdded(Asset device);
 
-    void onDeviceRemoved(Device device);
+    // TODO Not used, implement!
+    void onDeviceRemoved(Asset device);
 
-    void onDeviceUpdated(Device device);
+    // TODO Not used, implement!
+    void onDeviceUpdated(Asset device);
 }

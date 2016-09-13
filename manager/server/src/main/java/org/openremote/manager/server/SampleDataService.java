@@ -40,6 +40,8 @@ import org.openremote.manager.shared.asset.AssetAttributeType;
 import org.openremote.manager.shared.asset.AssetType;
 import org.openremote.manager.shared.attribute.*;
 import org.openremote.manager.shared.connector.Connector;
+import org.openremote.manager.shared.device.DeviceAttributes;
+import org.openremote.manager.shared.device.DeviceResource;
 import rx.Observable;
 
 import javax.ws.rs.core.UriBuilder;
@@ -48,6 +50,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.openremote.manager.shared.Constants.*;
+import static org.openremote.manager.shared.attribute.AttributeType.BOOLEAN;
+import static org.openremote.manager.shared.attribute.AttributeType.INTEGER;
 import static org.openremote.manager.shared.attribute.AttributeType.STRING;
 import static rx.Observable.fromCallable;
 
@@ -306,31 +310,31 @@ public class SampleDataService implements ContainerService {
         wallpanelAttributes.put(
             new Attribute("temperature", AttributeType.FLOAT, Json.create(21.3))
                 .setMetadata(new Metadata()
-                    .addElement(new MetadataElement("type", AttributeType.STRING.getValue(), AssetAttributeType.SENSOR.getJsonValue()))
-                    .addElement(new MetadataElement("label", AttributeType.STRING.getValue(), Json.create("Actual Temperature")))
-                    .addElement(new MetadataElement("scale", "urn:openremote:scale", Json.create("celcius")))
+                    .putElement(new MetadataElement("type", AttributeType.STRING.getValue(), AssetAttributeType.SENSOR.getJsonValue()))
+                    .putElement(new MetadataElement("label", AttributeType.STRING.getValue(), Json.create("Actual Temperature")))
+                    .putElement(new MetadataElement("scale", "urn:openremote:scale", Json.create("celcius")))
                 ),
             new Attribute("setpointSensor", AttributeType.FLOAT, Json.create(22.5))
                 .setMetadata(new Metadata()
-                    .addElement(new MetadataElement("type", AttributeType.STRING.getValue(), AssetAttributeType.SENSOR.getJsonValue()))
-                    .addElement(new MetadataElement("label", AttributeType.STRING.getValue(), Json.create("Setpoint Temperature")))
-                    .addElement(new MetadataElement("scale", "urn:openremote:scale", Json.create("celcius")))
+                    .putElement(new MetadataElement("type", AttributeType.STRING.getValue(), AssetAttributeType.SENSOR.getJsonValue()))
+                    .putElement(new MetadataElement("label", AttributeType.STRING.getValue(), Json.create("Setpoint Temperature")))
+                    .putElement(new MetadataElement("scale", "urn:openremote:scale", Json.create("celcius")))
                 ),
             new Attribute("setpointActuator", AttributeType.FLOAT, Json.create(22.5))
                 .setMetadata(new Metadata()
-                    .addElement(new MetadataElement("type", AttributeType.STRING.getValue(), AssetAttributeType.ACTUATOR.getJsonValue()))
-                    .addElement(new MetadataElement("label", AttributeType.STRING.getValue(), Json.create("Setpoint Control")))
-                    .addElement(new MetadataElement("scale", "urn:openremote:scale", Json.create("celcius")))
+                    .putElement(new MetadataElement("type", AttributeType.STRING.getValue(), AssetAttributeType.ACTUATOR.getJsonValue()))
+                    .putElement(new MetadataElement("label", AttributeType.STRING.getValue(), Json.create("Setpoint Control")))
+                    .putElement(new MetadataElement("scale", "urn:openremote:scale", Json.create("celcius")))
                 ),
             new Attribute("statusSensor", AttributeType.BOOLEAN, Json.create(true))
                 .setMetadata(new Metadata()
-                    .addElement(new MetadataElement("type", AttributeType.STRING.getValue(), AssetAttributeType.SENSOR.getJsonValue()))
-                    .addElement(new MetadataElement("label", AttributeType.STRING.getValue(), Json.create("On/Off Status")))
+                    .putElement(new MetadataElement("type", AttributeType.STRING.getValue(), AssetAttributeType.SENSOR.getJsonValue()))
+                    .putElement(new MetadataElement("label", AttributeType.STRING.getValue(), Json.create("On/Off Status")))
                 ),
             new Attribute("statusActuator", AttributeType.BOOLEAN, Json.create(true))
                 .setMetadata(new Metadata()
-                    .addElement(new MetadataElement("type", AttributeType.STRING.getValue(), AssetAttributeType.ACTUATOR.getJsonValue()))
-                    .addElement(new MetadataElement("label", AttributeType.STRING.getValue(), Json.create("On/Off Control")))
+                    .putElement(new MetadataElement("type", AttributeType.STRING.getValue(), AssetAttributeType.ACTUATOR.getJsonValue()))
+                    .putElement(new MetadataElement("label", AttributeType.STRING.getValue(), Json.create("On/Off Control")))
                 )
         );
         wallpanel.setAttributes(wallpanelAttributes.getJsonObject());
@@ -344,8 +348,8 @@ public class SampleDataService implements ContainerService {
         presenceAttributes.put(
             new Attribute("presence", AttributeType.BOOLEAN, Json.create(false))
                 .setMetadata(new Metadata()
-                    .addElement(new MetadataElement("type", AttributeType.STRING.getValue(), AssetAttributeType.SENSOR.getJsonValue()))
-                    .addElement(new MetadataElement("label", AttributeType.STRING.getValue(), Json.create("Presence Detected")))
+                    .putElement(new MetadataElement("type", AttributeType.STRING.getValue(), AssetAttributeType.SENSOR.getJsonValue()))
+                    .putElement(new MetadataElement("label", AttributeType.STRING.getValue(), Json.create("Presence Detected")))
                 )
         );
         presence.setAttributes(presenceAttributes.getJsonObject());
@@ -359,8 +363,8 @@ public class SampleDataService implements ContainerService {
         windowsAttributes.put(
             new Attribute("status", AttributeType.BOOLEAN, Json.create(false))
                 .setMetadata(new Metadata()
-                    .addElement(new MetadataElement("type", AttributeType.STRING.getValue(), AssetAttributeType.SENSOR.getJsonValue()))
-                    .addElement(new MetadataElement("label", AttributeType.STRING.getValue(), Json.create("Windows Open")))
+                    .putElement(new MetadataElement("type", AttributeType.STRING.getValue(), AssetAttributeType.SENSOR.getJsonValue()))
+                    .putElement(new MetadataElement("label", AttributeType.STRING.getValue(), Json.create("Windows Open")))
                 )
         );
         windows.setAttributes(windowsAttributes.getJsonObject());
@@ -374,11 +378,36 @@ public class SampleDataService implements ContainerService {
         valveAttributes.put(
             new Attribute("status", AttributeType.BOOLEAN, Json.create(true))
                 .setMetadata(new Metadata()
-                    .addElement(new MetadataElement("type", AttributeType.STRING.getValue(), AssetAttributeType.SENSOR.getJsonValue()))
-                    .addElement(new MetadataElement("label", AttributeType.STRING.getValue(), Json.create("Valve Open")))
+                    .putElement(new MetadataElement("type", AttributeType.STRING.getValue(), AssetAttributeType.SENSOR.getJsonValue()))
+                    .putElement(new MetadataElement("label", AttributeType.STRING.getValue(), Json.create("Valve Open")))
                 )
         );
         valve.setAttributes(valveAttributes.getJsonObject());
         assetService.create(valve);
+
+/* TODO Update sample data
+        ServerAsset lightSwitch = new ServerAsset(room3);
+        lightSwitch.setName("Light Switch");
+        lightSwitch.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+        lightSwitch.setType(AssetType.DEVICE);
+        DeviceAttributes lightSwitchAttributes = new DeviceAttributes();
+
+        lightSwitchAttributes.put(
+            new DeviceResource("Light1Switch", "light1switch", BOOLEAN, DeviceResource.Access.RW),
+            new DeviceResource("Light1Slider", "light1slider", INTEGER, DeviceResource.Access.RW),
+            new DeviceResource("Light1BrightnessSet", "light1brightnessset", INTEGER, DeviceResource.Access.W)
+        );
+
+        lightSwitchAttributes.put(
+            new Attribute("status", AttributeType.BOOLEAN, Json.create(true))
+                .setMetadata(new Metadata()
+                    .putElement(new MetadataElement("type", AttributeType.STRING.getValue(), AssetAttributeType.SENSOR.getJsonValue()))
+                    .putElement(new MetadataElement("label", AttributeType.STRING.getValue(), Json.create("Valve Open")))
+                )
+        );
+        lightSwitch.setAttributes(lightSwitchAttributes.getJsonObject());
+        assetService.create(lightSwitch);
+*/
+
     }
 }

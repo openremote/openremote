@@ -1,6 +1,8 @@
 package org.openremote.manager.shared.device;
 
+// TODO Not used
 public class ResourceRef {
+
     protected String uri;
     protected String valueConverter;
 

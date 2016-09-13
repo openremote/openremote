@@ -20,6 +20,7 @@
 package org.openremote.manager.shared.asset;
 
 import elemental.json.JsonObject;
+import org.openremote.manager.shared.attribute.Attributes;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -74,6 +75,10 @@ public class Asset {
     public Asset(String name, String type) {
         this.name = name;
         this.type = type;
+    }
+
+    public Asset(String name, AssetType type) {
+        this(name, type.getValue());
     }
 
     public Asset(Asset parent) {

@@ -20,6 +20,7 @@
 package org.openremote.manager.shared.attribute;
 
 import elemental.json.Json;
+import elemental.json.JsonArray;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 
@@ -80,6 +81,10 @@ public class Attribute {
 
     public JsonObject getValueAsObject() {
         return jsonObject.hasKey("value") ? jsonObject.getObject("value") : null;
+    }
+
+    public JsonArray getValueAsArray() {
+        return jsonObject.hasKey("value") ? jsonObject.getArray("value") : null;
     }
 
     public Attribute setValue(JsonValue value) {

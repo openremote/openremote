@@ -54,8 +54,8 @@ public class Controller2Endpoint extends DefaultEndpoint {
     @UriParam
     protected String password;
 
-    protected String deviceUri;
-    protected String resourceUri;
+    protected String deviceKey;
+    protected String deviceResourceKey;
 
     protected Controller2Adapter adapter;
 
@@ -68,12 +68,12 @@ public class Controller2Endpoint extends DefaultEndpoint {
 
         if (!isDiscovery && !isInventory) {
             if (path.getNameCount() == 2) {
-                this.deviceUri = path.getName(0).toString();
-                this.resourceUri = path.getName(1).toString();
+                this.deviceKey = path.getName(0).toString();
+                this.deviceResourceKey = path.getName(1).toString();
             }
-            if (deviceUri == null || deviceUri.length() == 0 || resourceUri ==null || resourceUri.length() ==0) {
+            if (deviceKey == null || deviceKey.length() == 0 || deviceResourceKey ==null || deviceResourceKey.length() ==0) {
                 throw new IllegalArgumentException(
-                    "Both device and resource URI message headers must be defined for this endpoint: " + endpointUri
+                    "Both device and resource key must be defined for this endpoint: " + endpointUri
                 );
             }
         }
@@ -128,7 +128,7 @@ public class Controller2Endpoint extends DefaultEndpoint {
         if (isDiscovery) {
             return new Controller2DiscoveryProducer(this);
         }
-        return new Controller2WriteProducer(this, deviceUri, resourceUri);
+        return new Controller2WriteProducer(this, deviceKey, deviceResourceKey);
     }
 
     @Override
@@ -143,10 +143,10 @@ public class Controller2Endpoint extends DefaultEndpoint {
 
         // Read consumer needs specific device and resource so gateway can
         // deal with providing push notifications whichever way it needs to
-        if (deviceUri != null && resourceUri != null) {
-            return new Controller2ReadConsumer(this, processor, deviceUri, resourceUri);
+        if (deviceKey != null && deviceResourceKey != null) {
+            return new Controller2ReadConsumer(this, processor, deviceKey, deviceResourceKey);
         } else {
-            throw new UnsupportedOperationException("Read consumer requires deviceURI and resource URI");
+            throw new UnsupportedOperationException("Read consumer requires device and resource keys");
         }
     }
 

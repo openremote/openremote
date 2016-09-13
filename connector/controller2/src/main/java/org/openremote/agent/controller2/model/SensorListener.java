@@ -21,9 +21,9 @@ package org.openremote.agent.controller2.model;
 
 public interface SensorListener {
 
-    String getDeviceUri();
+    String getDeviceKey();
 
-    String getResourceUri();
+    String getDeviceResourceKey();
 
     void onUpdate(Object obj);
 }

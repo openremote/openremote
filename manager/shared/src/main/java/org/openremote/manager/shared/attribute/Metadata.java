@@ -61,8 +61,14 @@ public class Metadata {
         return jsonObject.hasKey(name);
     }
 
-    public Metadata addElement(MetadataElement element) {
+    public Metadata putElement(MetadataElement element) {
         jsonObject.put(element.getName(), element.getJsonObject());
+        return this;
+    }
+
+    public Metadata removeElement(String name) {
+        if (jsonObject.hasKey(name))
+            jsonObject.remove(name);
         return this;
     }
 

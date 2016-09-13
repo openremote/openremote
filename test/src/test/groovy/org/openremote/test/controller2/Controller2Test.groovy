@@ -4,6 +4,11 @@ import org.apache.camel.Exchange
 import org.apache.camel.Processor
 import org.apache.camel.builder.RouteBuilder
 import org.openremote.container.message.MessageBrokerService
+import org.openremote.manager.shared.asset.Asset
+import org.openremote.manager.shared.asset.AssetType
+import org.openremote.manager.shared.attribute.AttributeType
+import org.openremote.manager.shared.device.DeviceAttributes
+import org.openremote.manager.shared.device.DeviceResource
 import org.openremote.test.ContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.BlockingVariables
@@ -28,6 +33,16 @@ class Controller2Test extends Specification implements ContainerTrait {
         then: "the service should receive the devices from the inventory"
         conditions.eventually {
             assert controllerService.addedDevices.size() > 0
+            Asset device = controllerService.addedDevices.get(0)
+            assert device.name == "TestDevice"
+            assert device.id != null
+            assert device.wellKnownType == AssetType.DEVICE
+            DeviceAttributes attributes = new DeviceAttributes(device.attributes)
+            assert attributes.deviceResources.length == 5
+            assert attributes.getDeviceResource("Light1Switch").type == AttributeType.STRING
+            assert attributes.getDeviceResource("Light1Switch").valueAsString == "light1switch"
+            assert attributes.getDeviceResource("Light1Switch").getResourceType() == AttributeType.BOOLEAN
+            assert attributes.getDeviceResource("Light1Switch").getAccess() == DeviceResource.Access.RW
         }
 
         cleanup: "the server should be stopped"
@@ -47,7 +62,7 @@ class Controller2Test extends Specification implements ContainerTrait {
         def container = startContainer(defaultConfig(serverPort), defaultServices(controllerService))
 
         and: "an actuator and a sensor route are started"
-        String deviceResourceEndpoint = "controller2://192.168.99.100:8083/TestDevice/light1switch";
+        String deviceResourceEndpoint = "controller2://192.168.99.100:8083/testdevice/light1switch";
         def messageBrokerContext = container.getService(MessageBrokerService.class).context;
         messageBrokerContext.addRoutes(new RouteBuilder() {
             @Override

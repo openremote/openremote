@@ -40,9 +40,9 @@ public class Controller2Component extends UriEndpointComponent implements Connec
 
     public static final String TYPE = "urn:openremote:connector:controller2";
     public static final String DISPLAY_NAME = "OpenRemote Controller";
-    public static final String URI_SYNTAX = "'controller2://<IP or host name>:<port>/([<device URI>/<resource URI>]|[discovery|inventory])[?username=username&password=secret]";
-    public static final String HEADER_DEVICE_URI = Controller2Component.class.getCanonicalName() + ".HEADER_DEVICE_URI";
-    public static final String HEADER_RESOURCE_URI = Controller2Component.class.getCanonicalName() + ".HEADER_RESOURCE_URI";
+    public static final String URI_SYNTAX = "'controller2://<IP or host name>:<port>/([<device key>/<resource key>]|[discovery|inventory])[?username=username&password=secret]";
+    public static final String HEADER_DEVICE_KEY = Controller2Component.class.getCanonicalName() + ".HEADER_DEVICE_KEY";
+    public static final String HEADER_DEVICE_RESOURCE_KEY = Controller2Component.class.getCanonicalName() + ".HEADER_DEVICE_RESOURCE_KEY";
     protected final Controller2AdapterManager adapterManager;
 
     public static final Attributes SETTINGS;
@@ -93,7 +93,6 @@ public class Controller2Component extends UriEndpointComponent implements Connec
     @Override
     protected Endpoint createEndpoint(String uri, String remaining, Map<String, Object> parameters) throws Exception {
         try {
-
             URI parsedUri = URI.create(uri);
 
             // TODO java.net.URI violates latest RFCs http://bugs.java.com/view_bug.do?bug_id=6587184

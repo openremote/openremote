@@ -51,6 +51,14 @@ public enum AttributeType {
         return jsonType;
     }
 
+    public static boolean isValid(String value) {
+        for (AttributeType attributeType : values()) {
+            if (attributeType.getValue().equals(value))
+                return true;
+        }
+        return false;
+    }
+
     public static AttributeType fromValue(String value) {
         AttributeType[] values = AttributeType.values();
         for (AttributeType v : values) {

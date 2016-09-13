@@ -37,7 +37,7 @@ public class ConnectorUtil {
         attribute.setMetadata(new Metadata(Json.createObject()));
 
         if (displayName != null && displayName.length() > 0) {
-            attribute.getMetadata().addElement(
+            attribute.getMetadata().putElement(
                     new MetadataElement("label", Json.createObject())
                             .setType(AttributeType.STRING.getValue())
                             .setValue(Json.create(displayName))
@@ -45,7 +45,7 @@ public class ConnectorUtil {
         }
 
         if (description != null && description.length() > 0) {
-            attribute.getMetadata().addElement(
+            attribute.getMetadata().putElement(
                     new MetadataElement("description", Json.createObject())
                             .setType(AttributeType.STRING.getValue())
                             .setValue(Json.create(description))
@@ -53,7 +53,7 @@ public class ConnectorUtil {
         }
 
         if (defaultValue != null && defaultValue.length() > 0) {
-            attribute.getMetadata().addElement(
+            attribute.getMetadata().putElement(
                     new MetadataElement("defaultValue", Json.createObject())
                             .setType(type.getValue())
                             .setValue(Json.create(defaultValue))
@@ -61,7 +61,7 @@ public class ConnectorUtil {
         }
 
         if (defaultValueNote != null && defaultValueNote.length() > 0) {
-            attribute.getMetadata().addElement(
+            attribute.getMetadata().putElement(
                     new MetadataElement("defaultValueNote", Json.createObject())
                             .setType(AttributeType.STRING.getValue())
                             .setValue(Json.create(defaultValueNote))
@@ -69,7 +69,7 @@ public class ConnectorUtil {
         }
 
         if (required) {
-            attribute.getMetadata().addElement(
+            attribute.getMetadata().putElement(
                     new MetadataElement("required", Json.createObject())
                             .setType(AttributeType.BOOLEAN.getValue())
                             .setValue(Json.create(true))
