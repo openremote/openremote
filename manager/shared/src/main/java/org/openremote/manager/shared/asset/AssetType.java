@@ -61,4 +61,8 @@ public enum AssetType {
         }
         return CUSTOM;
     }
+
+    public static boolean isLeaf(AssetType wellKnownType) {
+        return wellKnownType.equals(DEVICE);
+    }
 }

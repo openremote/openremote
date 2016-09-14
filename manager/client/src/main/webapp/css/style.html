@@ -71,6 +71,11 @@
         opacity: .8;
     }
 
+    .or-SecondaryNavItem.or-FormControl:hover,
+    .or-SecondaryNavItem.or-FormControl:focus {
+        opacity: 1;
+    }
+
     .or-MainContent {
         overflow: auto;
         padding: 1em;
@@ -186,7 +191,6 @@
     }
 
     .or-Form {
-        margin-top: 0.8em;
         opacity: 1;
         transition: opacity 0.1s ease-in-out;
         -moz-transition: opacity 0.1s ease-in-out;
@@ -208,8 +212,8 @@
     }
 
     .or-FormGroup {
-        margin-bottom: 0.6em;
-        min-height: 2.75em;
+        margin-bottom: 0.4em;
+        padding: 0.4em;
     }
 
     .or-FormGroup.opaque .or-FormLabel,
@@ -243,7 +247,14 @@
     }
 
     .or-FormInfoLabel {
-        font-size: 0.75em;
+        margin: 0 0.1em;
+        font-size: 0.7em;
+        font-weight: 500;
+        max-width: 14em;
+    }
+
+    .or-FormLabel.larger ~ .or-FormInfoLabel {
+        max-width: 20em;
     }
 
     .or-FormControl {
@@ -305,7 +316,7 @@
     }
 
     .or-FormCheckBox {
-        margin: 0 0.4em;
+        height: 1.8em;
     }
 
     .or-FormTableHeaderCell {

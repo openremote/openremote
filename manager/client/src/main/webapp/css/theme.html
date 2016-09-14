@@ -60,6 +60,12 @@
         color: var(--theme-white);
     }
 
+    .or-SecondaryNavItem.or-FormInputText,
+    .or-SecondaryNavItem.or-FormInputNumber {
+        background: var(--theme-white);
+        color: var(--theme-black);
+    }
+
     .or-SecondaryNavItem a {
         color: var(--theme-white) !important;
     }
@@ -115,7 +121,8 @@
     }
 
     .or-FormGroup {
-
+        background-image: -webkit-linear-gradient(45deg, var(--theme-brightgrey) 0%, transparent 100%);
+        background-image: -moz-linear-gradient(45deg, var(--theme-brightgrey) 0%, transparent 100%);
     }
 
     .or-FormGroup.error .or-FormControl {
@@ -124,19 +131,6 @@
 
     .or-FormGroup.error .or-FormLabel {
         color: var(--theme-red);
-    }
-
-    .or-FormGroup.even {
-        background-color: var(--theme-brightgrey);
-    }
-
-    .or-FormGroup.odd {
-        background-color: var(--theme-white);
-    }
-
-    .or-FormGroup.even .or-FormInfoLabel,
-    .or-FormGroup.odd .or-FormInfoLabel{
-        background-color: var(--theme-white);
     }
 
     .or-FormLabel {

@@ -22,6 +22,7 @@ package org.openremote.manager.client.assets.browser;
 import com.google.gwt.view.client.SingleSelectionModel;
 import com.google.gwt.view.client.TreeViewModel;
 import org.openremote.manager.shared.asset.AssetInfo;
+import org.openremote.manager.shared.asset.AssetType;
 
 import java.util.logging.Logger;
 
@@ -70,7 +71,12 @@ class AssetTreeModel implements TreeViewModel {
             AssetInfo asset = (AssetInfo) value;
             if (TEMPORARY_ASSET_TYPE.equals(asset.getType()))
                 return true;
+
+            // And another exception are types which we know to be a leaf
+            if (AssetType.isLeaf(asset.getWellKnownType()))
+                return true;
         }
+
 
         return false;
     }

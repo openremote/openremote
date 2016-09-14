@@ -5,7 +5,7 @@
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
 
-    <ui:style type="org.openremote.manager.client.assets.asset.AssetViewImpl.Style">
+    <ui:style field="style" type="org.openremote.manager.client.assets.asset.AssetViewImpl.Style">
         .navItem {
             margin: 0 1em;
         }
@@ -15,15 +15,18 @@
         }
 
         .typeInput {
-            width: 30em;
+            width: 17em;
         }
 
         .mapWidget {
             margin-left: 2em;
             width: 44%;
-            height: 13em;
+            height: 10.9em;
         }
+    </ui:style>
 
+    <ui:style field="attributesEditorStyle"
+              type="org.openremote.manager.client.assets.asset.AssetViewImpl.AttributesEditorStyle">
         .attributeStringEditor {
             width: 26em;
         }
@@ -37,7 +40,34 @@
         }
 
         .attributeBooleanEditor {
+        }
+    </ui:style>
 
+    <ui:style field="deviceAttributesEditorStyle"
+              type="org.openremote.manager.client.assets.asset.AssetViewImpl.DeviceAttributesEditorStyle">
+        .attributeStringEditor {
+            width: 44%;
+        }
+
+        .attributeIntegerEditor {
+            width: 5em;
+        }
+
+        .attributeFloatEditor {
+            width: 5em;
+        }
+
+        .attributeBooleanEditor {
+        }
+
+        .readWriteInput {
+            width: 5em;
+        }
+
+        .readButton {
+        }
+
+        .writeButton {
         }
     </ui:style>
 
@@ -89,7 +119,7 @@
                         <g:FlowPanel ui:field="formMessagesError"/>
                     </g:FlowPanel>
 
-                    <g:HTMLPanel styleName="flex-none layout horizontal center">
+                    <g:HTMLPanel styleName="flex-none layout horizontal">
                         <w:Form ui:field="form" addStyleNames="flex">
                             <w:FormGroup ui:field="nameGroup">
                                 <w:label>
@@ -171,8 +201,6 @@
                                      addStyleNames="{style.mapWidget} {widgetStyle.ItemWithBorder}"/>
                     </g:HTMLPanel>
 
-                    <div class="{widgetStyle.Divider}"/>
-
                     <g:HTMLPanel styleName="flex-none layout horizontal">
                         <w:Form ui:field="attributesForm" addStyleNames="flex">
 
@@ -184,7 +212,8 @@
                                     <w:FormField addStyleNames="larger">
                                         <g:FlowPanel styleName="layout horizontal center">
                                             <w:FormDropDown ui:field="typeDropDown"/>
-                                            <w:FormInputText ui:field="typeInput" addStyleNames="{style.typeInput}"
+                                            <w:FormInputText ui:field="typeInput"
+                                                             addStyleNames="{style.typeInput}"
                                                              visible="false"/>
                                         </g:FlowPanel>
                                     </w:FormField>
@@ -203,7 +232,7 @@
 
                     <g:HTMLPanel styleName="flex-none layout horizontal">
                         <w:Form ui:field="submitForm" addStyleNames="flex">
-                            <w:FormGroup ui:field="submitButtonGroup" centerJustified="true">
+                            <w:FormGroup ui:field="submitButtonGroup">
                                 <w:field>
                                     <w:FormField>
                                         <w:FormButton ui:field="updateButton" primary="true"

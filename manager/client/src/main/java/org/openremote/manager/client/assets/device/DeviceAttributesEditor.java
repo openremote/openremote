@@ -28,15 +28,53 @@ import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.device.DeviceAttributes;
 import org.openremote.manager.shared.device.DeviceResource;
 
-import static com.google.gwt.dom.client.Style.Unit.EM;
+import java.util.logging.Logger;
 
-public class DeviceAttributesEditor extends AttributesEditor {
+public class DeviceAttributesEditor extends AttributesEditor<DeviceAttributesEditor.Style> {
+
+    private static final Logger LOG = Logger.getLogger(DeviceAttributesEditor.class.getName());
+
+    public interface Style extends AttributesEditor.Style {
+
+        String readWriteInput();
+
+        String readButton();
+
+        String writeButton();
+    }
 
     final protected DeviceAttributes deviceAttributes;
 
-    public DeviceAttributesEditor(Environment environment, Container container, Attributes attributes) {
+    final protected FormGroup deviceActionsGroup = new FormGroup();
+    final protected FormCheckBox enableLiveUpdatesCheckBox = new FormCheckBox();
+
+    public DeviceAttributesEditor(Environment environment, Container<DeviceAttributesEditor.Style> container, Attributes attributes) {
         super(environment, container, attributes);
         this.deviceAttributes = new DeviceAttributes(attributes.getJsonObject());
+
+        FormLabel enableLiveUpdates = new FormLabel();
+        enableLiveUpdates.addStyleName("larger");
+        enableLiveUpdates.setText(environment.getMessages().enableLiveUpdates());
+        FormField deviceActionsFormField = new FormField();
+        deviceActionsFormField.add(enableLiveUpdatesCheckBox);
+        deviceActionsGroup.addFormLabel(enableLiveUpdates);
+        deviceActionsGroup.addFormField(deviceActionsFormField);
+
+        enableLiveUpdatesCheckBox.addValueChangeHandler(event -> {
+            LOG.info("### LIVE UPDATES: " + event.getValue());
+        });
+    }
+
+    @Override
+    public void render() {
+        container.getPanel().add(deviceActionsGroup);
+        super.render();
+    }
+
+    @Override
+    public void setOpaque(boolean opaque) {
+        super.setOpaque(opaque);
+        deviceActionsGroup.setOpaque(opaque);
     }
 
     @Override
@@ -45,21 +83,11 @@ public class DeviceAttributesEditor extends AttributesEditor {
 
         if (DeviceResource.isDeviceResource(attribute)) {
             DeviceResource deviceResource = new DeviceResource(attribute);
-
-            switch (deviceResource.getAccess()) {
-                case R:
-                    formLabel.setText(formLabel.getText() + " (R)");
-                    break;
-                case W:
-                    formLabel.setText(formLabel.getText() + " (W)");
-                    break;
-                default:
-                    formLabel.setText(formLabel.getText() + " (RW)");
-            }
-
+            // TODO Anything
         } else if (attribute.getName().equals("key")) {
             formLabel.setText(environment.getMessages().deviceKey());
         }
+
         return formLabel;
     }
 
@@ -78,30 +106,36 @@ public class DeviceAttributesEditor extends AttributesEditor {
             actionPanel.setStyleName("flex layout horizontal center");
 
             FormButton readButton = new FormButton();
-            FormInputText readOutput = new FormInputText();
-            readOutput.getElement().getStyle().setWidth(5, EM);
-            readOutput.setReadOnly(true);
-            readButton.setText(environment.getMessages().readValue());
+            readButton.setPrimary(true);
+            readButton.addStyleName(container.getStyle().readButton());
+            readButton.setText(environment.getMessages().read());
+
+            FormInputText readWriteInput = new FormInputText();
+            readWriteInput.addStyleName(container.getStyle().readWriteInput());
 
             FormButton writeButton = new FormButton();
-            FormInputText writeInput = new FormInputText();
-            writeInput.getElement().getStyle().setWidth(5, EM);
-            writeButton.setText(environment.getMessages().writeValue());
+            writeButton.setDanger(true);
+            writeButton.addStyleName(container.getStyle().writeButton());
+            writeButton.setText(environment.getMessages().write());
 
+            actionPanel.add(readButton);
+            actionPanel.add(readWriteInput);
+            actionPanel.add(writeButton);
             switch (deviceResource.getAccess()) {
                 case R:
-                    actionPanel.add(readButton);
-                    actionPanel.add(readOutput);
+                    readWriteInput.setReadOnly(true);
+                    readButton.setEnabled(true);
+                    writeButton.setEnabled(false);
                     break;
                 case W:
-                    actionPanel.add(writeInput);
-                    actionPanel.add(writeButton);
+                    readWriteInput.setReadOnly(false);
+                    readButton.setEnabled(false);
+                    writeButton.setEnabled(true);
                     break;
                 default:
-                    actionPanel.add(writeInput);
-                    actionPanel.add(writeButton);
-                    actionPanel.add(readButton);
-                    actionPanel.add(readOutput);
+                    readWriteInput.setReadOnly(false);
+                    readButton.setEnabled(true);
+                    writeButton.setEnabled(true);
             }
             formGroup.getFormField().add(actionPanel);
         }
@@ -110,7 +144,7 @@ public class DeviceAttributesEditor extends AttributesEditor {
 
     @Override
     protected boolean isDefaultReadOnly(Attribute attribute) {
-        return attribute.getName().equals("key") || super.isDefaultReadOnly(attribute);
+        return DeviceAttributes.isReadOnly(attribute) || super.isDefaultReadOnly(attribute);
     }
 
     @Override

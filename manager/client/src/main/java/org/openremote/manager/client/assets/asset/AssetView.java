@@ -22,6 +22,7 @@ package org.openremote.manager.client.assets.asset;
 import com.google.gwt.user.client.ui.InsertPanel;
 import elemental.json.JsonObject;
 import org.openremote.manager.client.assets.browser.AssetBrowsingView;
+import org.openremote.manager.client.assets.device.DeviceAttributesEditor;
 import org.openremote.manager.client.widget.AttributesEditor;
 import org.openremote.manager.client.widget.Form;
 import org.openremote.manager.client.widget.FormView;
@@ -87,6 +88,8 @@ public interface AssetView extends AssetBrowsingView<AssetView.Presenter>, FormV
 
     void setTypeSelectionEnabled(boolean enabled);
 
+    void setEditable(boolean editable);
+
     void setAvailableTypes(AssetType[] assetTypes);
 
     void selectType(AssetType assetType);
@@ -97,7 +100,9 @@ public interface AssetView extends AssetBrowsingView<AssetView.Presenter>, FormV
 
     String getType();
 
-    AttributesEditor.Container getAttributesEditorContainer();
+    AttributesEditor.Container<AttributesEditor.Style> getAttributesEditorContainer();
+
+    AttributesEditor.Container<DeviceAttributesEditor.Style> getDeviceAttributesEditorContainer();
 
     void setAttributesEditor(AttributesEditor attributesEditor);
 

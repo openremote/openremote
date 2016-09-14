@@ -128,6 +128,7 @@ public class AssetActivity
         clearViewFieldErrors();
         view.clearFormMessages();
         view.setTypeSelectionEnabled(false);
+        view.setEditable(asset.getWellKnownType().isEditable());
         writeTypeToView();
         writeAttributesEditorToView();
         if (asset.getParentId() != null) {
@@ -275,7 +276,6 @@ public class AssetActivity
         );
     }
 
-
     @Override
     public void beginParentSelection() {
         isParentSelection = true;
@@ -350,7 +350,7 @@ public class AssetActivity
             case DEVICE:
                 attributesEditor = new DeviceAttributesEditor(
                     environment,
-                    view.getAttributesEditorContainer(),
+                    view.getDeviceAttributesEditorContainer(),
                     new Attributes(asset.getAttributes())
                 );
                 break;
@@ -364,7 +364,7 @@ public class AssetActivity
                 );
                 break;
             default:
-                attributesEditor = new AttributesEditor(
+                attributesEditor = new AttributesEditor<>(
                     environment,
                     view.getAttributesEditorContainer(),
                     new Attributes(asset.getAttributes())

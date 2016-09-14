@@ -19,7 +19,6 @@
         }
 
         .searchInput {
-            border-radius: 0.4em;
             font-size: smaller !important;
             padding: 0.4em !important;
             height: 0.8em;
@@ -38,7 +37,7 @@
                 styleName="layout horizontal center {widgetStyle.SecondaryNavHorizontal}">
 
             <w:FormInputText ui:field="searchInput"
-                             addStyleNames="flex {style.navItemFirst} {style.searchInput}"
+                             addStyleNames="flex {style.navItemFirst} {style.searchInput} {widgetStyle.SecondaryNavItem}"
                              autofocus="true"
                              placeholder="{managerMessages.search}..."/>
 

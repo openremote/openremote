@@ -53,6 +53,10 @@ public class DeviceAttributes extends Attributes {
 
     protected static final String KEY = "key";
 
+    public static boolean isReadOnly(Attribute attribute) {
+        return attribute.getName().equals(KEY);
+    }
+
     public DeviceAttributes() {
         super();
     }

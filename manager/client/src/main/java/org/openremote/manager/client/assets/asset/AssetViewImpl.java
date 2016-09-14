@@ -32,6 +32,7 @@ import com.google.inject.Provider;
 import elemental.json.JsonObject;
 import org.openremote.manager.client.app.dialog.ConfirmationDialog;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
+import org.openremote.manager.client.assets.device.DeviceAttributesEditor;
 import org.openremote.manager.client.widget.*;
 import org.openremote.manager.client.widget.PushButton;
 import org.openremote.manager.shared.asset.AssetType;
@@ -50,7 +51,7 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     interface UI extends UiBinder<FlexSplitPanel, AssetViewImpl> {
     }
 
-    interface Style extends CssResource, AttributesEditor.Style {
+    interface Style extends CssResource {
 
         String navItem();
 
@@ -59,6 +60,9 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
         String mapWidget();
 
         String typeInput();
+    }
+
+    interface AttributesEditorStyle extends CssResource, AttributesEditor.Style {
 
         String attributeIntegerEditor();
 
@@ -69,8 +73,31 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
         String attributeBooleanEditor();
     }
 
+    interface DeviceAttributesEditorStyle extends CssResource, DeviceAttributesEditor.Style {
+
+        String attributeIntegerEditor();
+
+        String attributeFloatEditor();
+
+        String attributeStringEditor();
+
+        String attributeBooleanEditor();
+
+        String readWriteInput();
+
+        String readButton();
+
+        String writeButton();
+    }
+
     @UiField
     Style style;
+
+    @UiField
+    AttributesEditorStyle attributesEditorStyle;
+
+    @UiField
+    DeviceAttributesEditorStyle deviceAttributesEditorStyle;
 
     @UiField
     FlexSplitPanel splitPanel;
@@ -180,10 +207,12 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
 
         // Restore initial state of view
         sidebarContainer.clear();
+        nameInput.setEnabled(true);
         nameInput.setValue(null);
         createdOnLabel.setText("");
         parentLabel.setText("");
         selectParentButton.setVisible(true);
+        selectParentButton.setEnabled(true);
         confirmParentSelectionButton.setVisible(false);
         resetParentSelectionButton.setVisible(false);
         setRootParentSelectionButton.setVisible(false);
@@ -257,6 +286,7 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     @Override
     public void initialiseMap(JsonObject mapOptions) {
         mapWidget.initialise(mapOptions);
+        mapWidget.addNavigationControl();
         mapWidget.resize();
 
         mapWidget.setClickListener((lng, lat) -> {
@@ -337,6 +367,12 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     }
 
     @Override
+    public void setEditable(boolean editable) {
+        selectParentButton.setEnabled(editable);
+        nameInput.setEnabled(editable);
+    }
+
+    @Override
     public void setAvailableTypes(AssetType[] assetTypes) {
         typeDropDown.setAcceptableValues(Arrays.asList(assetTypes));
     }
@@ -363,8 +399,8 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     }
 
     @Override
-    public AttributesEditor.Container getAttributesEditorContainer() {
-        return new AttributesEditor.Container() {
+    public AttributesEditor.Container<AttributesEditor.Style> getAttributesEditorContainer() {
+        return new AttributesEditor.Container<AttributesEditor.Style>() {
             @Override
             public FormView getFormView() {
                 return AssetViewImpl.this;
@@ -372,7 +408,27 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
 
             @Override
             public AttributesEditor.Style getStyle() {
-                return style;
+                return attributesEditorStyle;
+            }
+
+            @Override
+            public InsertPanel getPanel() {
+                return attributesEditorContainer;
+            }
+        };
+    }
+
+    @Override
+    public AttributesEditor.Container<DeviceAttributesEditor.Style> getDeviceAttributesEditorContainer() {
+        return new AttributesEditor.Container<DeviceAttributesEditor.Style>() {
+            @Override
+            public FormView getFormView() {
+                return AssetViewImpl.this;
+            }
+
+            @Override
+            public DeviceAttributesEditor.Style getStyle() {
+                return deviceAttributesEditorStyle;
             }
 
             @Override

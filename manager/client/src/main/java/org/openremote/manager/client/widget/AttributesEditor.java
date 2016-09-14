@@ -32,14 +32,14 @@ import org.openremote.manager.shared.attribute.MetadataElement;
 import java.util.*;
 import java.util.logging.Logger;
 
-public class AttributesEditor {
+public class AttributesEditor<S extends AttributesEditor.Style> {
 
     private static final Logger LOG = Logger.getLogger(AttributesEditor.class.getName());
 
-    public interface Container {
+    public interface Container<S> {
         FormView getFormView();
 
-        Style getStyle();
+        S getStyle();
 
         InsertPanel getPanel();
     }
@@ -56,11 +56,11 @@ public class AttributesEditor {
     }
 
     final protected Environment environment;
-    final protected Container container;
+    final protected Container<S> container;
     final protected Attributes attributes;
     final protected Map<Attribute, FormGroup> formGroups = new LinkedHashMap<>();
 
-    public AttributesEditor(Environment environment, Container container, Attributes attributes) {
+    public AttributesEditor(Environment environment, Container<S> container, Attributes attributes) {
         this.environment = environment;
         this.container = container;
         this.attributes = attributes;
@@ -79,14 +79,11 @@ public class AttributesEditor {
         }
         List<Attribute> attributeList = Arrays.asList(attributes.get());
         Collections.sort(attributeList, (o1, o2) -> o1.getName().compareTo(o2.getName()));
-        int count = 0;
         for (Attribute attribute : attributeList) {
             LOG.fine("Building form group for attribute: " + attribute.getName());
             FormGroup formGroup = createFormGroup(attribute);
             if (formGroup != null) {
-                formGroup.addStyleName((count & 1) == 0 ? "even" : "odd");
                 formGroups.put(attribute, formGroup);
-                count++;
             }
         }
     }
@@ -188,7 +185,7 @@ public class AttributesEditor {
 
     /* ####################################################################### */
 
-    protected FormInputText createStringEditor(Style style, Attribute attribute, boolean readOnly) {
+    protected FormInputText createStringEditor(S style, Attribute attribute, boolean readOnly) {
         FormInputText input = createFormInputText(style.attributeStringEditor());
 
         MetadataElement defaultValue;
@@ -210,7 +207,7 @@ public class AttributesEditor {
         return input;
     }
 
-    protected FormInputNumber createIntegerEditor(Style style, Attribute attribute, boolean readOnly) {
+    protected FormInputNumber createIntegerEditor(S style, Attribute attribute, boolean readOnly) {
         FormInputNumber input = createFormInputNumber(style.attributeIntegerEditor());
 
         MetadataElement defaultValue;
@@ -235,7 +232,7 @@ public class AttributesEditor {
         return input;
     }
 
-    protected FormInputText createFloatEditor(Style style, Attribute attribute, boolean readOnly) {
+    protected FormInputText createFloatEditor(S style, Attribute attribute, boolean readOnly) {
         FormInputText input = createFormInputText(style.attributeFloatEditor());
 
         MetadataElement defaultValue;
@@ -260,7 +257,7 @@ public class AttributesEditor {
         return input;
     }
 
-    protected FormCheckBox createBooleanEditor(Style style, Attribute attribute, boolean readOnly) {
+    protected FormCheckBox createBooleanEditor(S style, Attribute attribute, boolean readOnly) {
         FormCheckBox input = createFormInputCheckBox(style.attributeBooleanEditor());
 
         MetadataElement defaultValue;

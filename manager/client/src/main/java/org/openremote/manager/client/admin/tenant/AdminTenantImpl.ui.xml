@@ -71,7 +71,7 @@
                 </w:field>
             </w:FormGroup>
 
-            <w:FormGroup centerJustified="true">
+            <w:FormGroup>
                 <w:field>
                     <w:FormField>
                         <w:FormButton ui:field="updateButton" primary="true" text="{managerMessages.updateTenant}"

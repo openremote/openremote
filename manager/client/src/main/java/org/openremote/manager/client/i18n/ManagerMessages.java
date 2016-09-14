@@ -221,7 +221,9 @@ public interface ManagerMessages extends Messages {
 
     String resourceKey();
 
-    String readValue();
+    String read();
 
-    String writeValue();
+    String write();
+
+    String enableLiveUpdates();
 }

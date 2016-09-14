@@ -29,15 +29,15 @@ import com.google.gwt.user.client.ui.*;
  */
 public class FormGroup extends FlowPanel implements HasWidgets {
 
-    protected FlowPanel groupPanel = new FlowPanel();
+    protected FlowPanel labelPanel = new FlowPanel();
     protected FormLabel formLabel;
     protected FormField formField;
     protected Label infoLabel;
 
     public FormGroup() {
-        getElement().addClassName("layout vertical or-FormGroup");
-        groupPanel.setStyleName("layout horizontal center");
-        add(groupPanel);
+        getElement().addClassName("layout horizontal center or-FormGroup");
+        labelPanel.setStyleName("layout vertical");
+        add(labelPanel);
     }
 
     @UiChild(tagname = "label", limit = 1)
@@ -45,7 +45,7 @@ public class FormGroup extends FlowPanel implements HasWidgets {
         if (this.formLabel != null)
             throw new IllegalStateException("Form label already set");
         this.formLabel = formLabel;
-        groupPanel.add(formLabel);
+        labelPanel.add(formLabel);
     }
 
     @UiChild(tagname = "field", limit = 1)
@@ -53,7 +53,7 @@ public class FormGroup extends FlowPanel implements HasWidgets {
         if (this.formField != null)
             throw new IllegalStateException("Form field already set");
         this.formField = formField;
-        groupPanel.add(formField);
+        add(formField);
 
         if (this.formLabel != null) {
             formField.setFormFieldId(this.formLabel.getFormFieldId());
@@ -66,7 +66,7 @@ public class FormGroup extends FlowPanel implements HasWidgets {
             throw new IllegalStateException("Form info label already set");
         this.infoLabel = infoLabel;
         infoLabel.setStyleName("or-FormInfoLabel");
-        add(infoLabel);
+        labelPanel.add(infoLabel);
     }
 
     public FormLabel getFormLabel() {
@@ -94,18 +94,11 @@ public class FormGroup extends FlowPanel implements HasWidgets {
 
     public void setAlignStart(boolean alignStart) {
         if (alignStart) {
-            groupPanel.removeStyleName("center");
-            groupPanel.addStyleName("start");
+            removeStyleName("center");
+            addStyleName("start");
         } else {
-            groupPanel.removeStyleName("start");
-            groupPanel.addStyleName("center");
-        }
-    }
-
-    public void setCenterJustified(boolean centerJustified) {
-        removeStyleName("center-justified");
-        if (centerJustified) {
-            addStyleName("center-justified");
+            removeStyleName("start");
+            addStyleName("center");
         }
     }
 

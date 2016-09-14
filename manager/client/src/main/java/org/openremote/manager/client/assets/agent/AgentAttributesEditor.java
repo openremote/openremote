@@ -25,7 +25,6 @@ import org.openremote.manager.client.widget.*;
 import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.attribute.Attribute;
-import org.openremote.manager.shared.attribute.AttributeType;
 import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.connector.Connector;
 import org.openremote.manager.shared.connector.ConnectorResource;
@@ -36,7 +35,7 @@ import java.util.List;
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 import static org.openremote.manager.shared.connector.Connector.ASSET_ATTRIBUTE_CONNECTOR;
 
-public class AgentAttributesEditor extends AttributesEditor {
+public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Style> {
 
     final protected Agent agent;
 
@@ -52,7 +51,7 @@ public class AgentAttributesEditor extends AttributesEditor {
 
     protected List<Connector> availableConnectors;
 
-    public AgentAttributesEditor(Environment environment, Container container, Attributes attributes,
+    public AgentAttributesEditor(Environment environment, Container<AttributesEditor.Style> container, Attributes attributes,
                                  ConnectorResource connectorResource, ConnectorArrayMapper connectorArrayMapper) {
         super(environment, container, attributes);
         this.agent = new Agent(attributes);
