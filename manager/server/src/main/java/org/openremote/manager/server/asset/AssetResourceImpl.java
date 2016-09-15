@@ -58,7 +58,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
     @Override
     public void update(@BeanParam RequestParams requestParams, String assetId, Asset asset) {
         try {
-            assetService.update(
+            assetService.merge(
                 mapToServerAsset(asset, assetService.get(assetId))
             );
         } catch (IllegalStateException ex) {
@@ -69,7 +69,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
     @Override
     public void create(@BeanParam RequestParams requestParams, Asset asset) {
         try {
-            assetService.create(
+            assetService.merge(
                 mapToServerAsset(asset, new ServerAsset())
             );
         } catch (IllegalStateException ex) {

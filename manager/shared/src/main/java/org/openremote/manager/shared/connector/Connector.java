@@ -8,6 +8,7 @@ public class Connector {
 
     protected String name;
     protected String type;
+    protected boolean supportsInventoryRefresh;
     protected Attributes settings;
 
     public Connector() {
@@ -17,9 +18,10 @@ public class Connector {
         this.type = type;
     }
 
-    public Connector(String name, String type, Attributes settings) {
+    public Connector(String name, String type, boolean supportsInventoryRefresh, Attributes settings) {
         this.name = name;
         this.type = type;
+        this.supportsInventoryRefresh = supportsInventoryRefresh;
         this.settings = settings;
     }
 
@@ -37,6 +39,14 @@ public class Connector {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public boolean isSupportsInventoryRefresh() {
+        return supportsInventoryRefresh;
+    }
+
+    public void setSupportsInventoryRefresh(boolean supportsInventoryRefresh) {
+        this.supportsInventoryRefresh = supportsInventoryRefresh;
     }
 
     public Attributes getSettings() {

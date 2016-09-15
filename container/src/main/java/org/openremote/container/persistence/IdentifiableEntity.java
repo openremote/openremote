@@ -17,31 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.agent;
+package org.openremote.container.persistence;
 
-import org.openremote.manager.shared.asset.Asset;
-import org.openremote.manager.shared.event.Event;
+/**
+ * Marker interface for automatic identifier generation
+ *
+ * Only set an identifier value when an instance is persisted if there was no identifier already set.
+ *
+ */
+public interface IdentifiableEntity {
 
-public class InventoryModifiedEvent extends Event {
+    void setId(String id);
 
-    public enum Cause {
-        PUT,
-        DELETE,
-    }
-
-    final protected Asset deviceAsset;
-    final protected Cause cause;
-
-    public InventoryModifiedEvent(Asset deviceAsset, Cause cause) {
-        this.deviceAsset = deviceAsset;
-        this.cause = cause;
-    }
-
-    public Asset getDeviceAsset() {
-        return deviceAsset;
-    }
-
-    public Cause getCause() {
-        return cause;
-    }
+    String getId();
 }

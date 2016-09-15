@@ -78,9 +78,11 @@ public abstract class AgentRoutes extends RouteBuilder {
     public void stop(MessageBrokerContext context) throws Exception {
         if (inventoryUri != null) {
             context.stopRoute("Agent Inventory - " + agentAsset.getId());
+            context.removeRoute("Agent Inventory - " + agentAsset.getId());
         }
         if (triggerDiscoveryUri != null) {
             context.stopRoute("Agent Trigger Discovery - " + agentAsset.getId());
+            context.removeRoute("Agent Trigger Discovery - " + agentAsset.getId());
         }
     }
 

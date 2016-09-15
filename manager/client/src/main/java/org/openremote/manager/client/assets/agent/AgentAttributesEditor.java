@@ -24,10 +24,13 @@ import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.widget.*;
 import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.agent.Agent;
+import org.openremote.manager.shared.agent.AgentResource;
+import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.attribute.Attribute;
 import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.connector.Connector;
 import org.openremote.manager.shared.connector.ConnectorResource;
+import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 
 import java.util.Arrays;
 import java.util.List;
@@ -38,12 +41,17 @@ import static org.openremote.manager.shared.connector.Connector.ASSET_ATTRIBUTE_
 public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Style> {
 
     final protected Agent agent;
+    final protected Asset agentAsset;
 
     final protected ConnectorResource connectorResource;
     final protected ConnectorArrayMapper connectorArrayMapper;
+    final protected AgentResource agentResource;
 
     final protected FormGroup connectorDropDownGroup = new FormGroup();
     final protected FormDropDown<Connector> connectorDropDown;
+
+    final protected FormGroup actionsGroup = new FormGroup();
+    final protected FormButton refreshInventoryButton = new FormButton();
 
     // This is a dummy we use when the Agent's assigned connector is not installed
     protected final String notFoundConnectorType = "NOT_FOUND_CONNECTOR";
@@ -51,12 +59,21 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
 
     protected List<Connector> availableConnectors;
 
-    public AgentAttributesEditor(Environment environment, Container<AttributesEditor.Style> container, Attributes attributes,
-                                 ConnectorResource connectorResource, ConnectorArrayMapper connectorArrayMapper) {
+    public AgentAttributesEditor(Environment environment,
+                                 Container<AttributesEditor.Style> container,
+                                 Attributes attributes,
+                                 boolean isCreateAsset,
+                                 Asset agentAsset,
+                                 ConnectorResource connectorResource,
+                                 ConnectorArrayMapper connectorArrayMapper,
+                                 AgentResource agentResource) {
         super(environment, container, attributes);
-        this.agent = new Agent(attributes);
+        this.agentAsset = agentAsset;
+        this.agent = new Agent(attributes, isCreateAsset);
+
         this.connectorResource = connectorResource;
         this.connectorArrayMapper = connectorArrayMapper;
+        this.agentResource = agentResource;
 
         connectorDropDown = createConnectorDropDown();
         FormLabel connectorDropDownLabel = new FormLabel();
@@ -65,6 +82,20 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
         connectorDropDownField.add(connectorDropDown);
         connectorDropDownGroup.addFormLabel(connectorDropDownLabel);
         connectorDropDownGroup.addFormField(connectorDropDownField);
+
+        FormLabel actionsLabel = new FormLabel();
+        actionsLabel.setText(environment.getMessages().actions());
+        FormField actionsField = new FormField();
+        actionsGroup.addFormLabel(actionsLabel);
+        actionsGroup.addFormField(actionsField);
+
+        refreshInventoryButton.setText(environment.getMessages().refreshInventory());
+        refreshInventoryButton.setDanger(true);
+        refreshInventoryButton.addClickHandler(event -> {
+            doRefreshInventory();
+        });
+        refreshInventoryButton.setEnabled(false);
+        actionsField.add(refreshInventoryButton);
 
         container.getFormView().setFormBusy(true);
         loadConnectors(connectors -> {
@@ -76,6 +107,9 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
             Connector connector = getConnector();
             if (connector != null) {
                 connectorDropDown.setValue(connector);
+                refreshInventoryButton.setEnabled(
+                    connector.isSupportsInventoryRefresh() && agentAsset.getId() != null
+                );
                 agent.writeConnectorSettings(connector);
             } else if (agent.getConnectorType() != null) {
                 notFoundConnector.setName(
@@ -98,6 +132,24 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
     }
 
     @Override
+    protected FormLabel buildFormLabel(Attribute attribute) {
+        FormLabel formLabel = super.buildFormLabel(attribute);
+        if (attribute.getName().equals("enabled")) {
+            formLabel.setText(environment.getMessages().enabled());
+        }
+        return formLabel;
+    }
+
+    @Override
+    protected String getDescription(Attribute attribute) {
+        String description = super.getDescription(attribute);
+        if (attribute.getName().equals("enabled")) {
+            description = environment.getMessages().enableAgentDescription();
+        }
+        return description;
+    }
+
+    @Override
     public void buildAttributeFormGroups() {
         if (availableConnectors != null) {
             super.buildAttributeFormGroups();
@@ -107,6 +159,7 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
     @Override
     public void render() {
         container.getPanel().add(connectorDropDownGroup);
+        container.getPanel().add(actionsGroup);
         super.render();
     }
 
@@ -114,6 +167,7 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
     public void setOpaque(boolean opaque) {
         super.setOpaque(opaque);
         connectorDropDownGroup.setOpaque(opaque);
+        actionsGroup.setOpaque(opaque);
     }
 
     protected FormDropDown<Connector> createConnectorDropDown() {
@@ -137,11 +191,16 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
     protected void onConnectorSelected(Connector connector) {
         if (connector != null) {
             agent.setConnectorType(connector.getType());
-            agent.writeConnectorSettings(getConnector());
+            Connector c = getConnector();
+            agent.writeConnectorSettings(c);
+            refreshInventoryButton.setEnabled(
+                c.isSupportsInventoryRefresh() && agentAsset.getId() != null
+            );
         } else {
             Connector oldConnector = getConnector();
             agent.removeConnectorSettings(oldConnector);
             agent.removeConnectorType();
+            refreshInventoryButton.setEnabled(false);
         }
         refresh();
     }
@@ -165,5 +224,28 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
             }
         }
         return assignedConnector;
+    }
+
+    protected void doRefreshInventory() {
+        if (agentAsset.getId() == null)
+            return;
+        container.showConfirmation(
+            environment.getMessages().confirmation(),
+            environment.getMessages().confirmationInventoryRefresh(agentAsset.getName()),
+            () -> {
+                refreshInventoryButton.setEnabled(false);
+                environment.getRequestService().execute(
+                    requestParams -> agentResource.refreshInventory(requestParams, agentAsset.getId()),
+                    204,
+                    () -> {
+                        refreshInventoryButton.setEnabled(true);
+                        environment.getEventBus().dispatch(
+                            new ShowInfoEvent(environment.getMessages().inventoryRefreshed(agentAsset.getName()))
+                        );
+                    },
+                    ex -> handleRequestException(ex, environment)
+                );
+            }
+        );
     }
 }

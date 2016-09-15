@@ -32,6 +32,7 @@ import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
 import org.openremote.manager.client.widget.AttributesEditor;
+import org.openremote.manager.shared.agent.AgentResource;
 import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.asset.AssetModifiedEvent;
 import org.openremote.manager.shared.asset.AssetResource;
@@ -60,6 +61,7 @@ public class AssetActivity
 
     final protected ConnectorArrayMapper connectorArrayMapper;
     final protected ConnectorResource connectorResource;
+    final protected AgentResource agentResource;
 
     protected boolean isCreateAsset;
     protected double[] selectedCoordinates;
@@ -76,12 +78,14 @@ public class AssetActivity
                          MapResource mapResource,
                          JsonObjectMapper jsonObjectMapper,
                          ConnectorArrayMapper connectorArrayMapper,
-                         ConnectorResource connectorResource) {
+                         ConnectorResource connectorResource,
+                         AgentResource agentResource) {
         super(environment, view, assetBrowserPresenter, assetResource, assetMapper);
         this.mapResource = mapResource;
         this.jsonObjectMapper = jsonObjectMapper;
         this.connectorArrayMapper = connectorArrayMapper;
         this.connectorResource = connectorResource;
+        this.agentResource = agentResource;
     }
 
     @Override
@@ -110,7 +114,7 @@ public class AssetActivity
         view.setFormBusy(true);
         asset = new Asset();
         asset.setName("My New Asset");
-        asset.setType(AssetType.CUSTOM);
+        asset.setType("urn:mydomain:customtype");
         writeToView();
         clearViewFieldErrors();
         view.clearFormMessages();
@@ -359,8 +363,11 @@ public class AssetActivity
                     environment,
                     view.getAttributesEditorContainer(),
                     new Attributes(asset.getAttributes()),
+                    isCreateAsset,
+                    asset,
                     connectorResource,
-                    connectorArrayMapper
+                    connectorArrayMapper,
+                    agentResource
                 );
                 break;
             default:

@@ -54,6 +54,11 @@ public interface ConnectorComponent {
     String getInventoryUri(String agentAssetId, Agent agent);
 
     /**
+     * Can this component accept a trigger message for discovery/inventory refresh?
+     */
+    boolean isSupportingDiscoveryTrigger();
+
+    /**
      * Return the inventory endpoint URI where a user can send empty messages, which
      * should trigger internal discovery of child assets and possible asynchronous
      * reaction with {@link InventoryModifiedEvent}s.

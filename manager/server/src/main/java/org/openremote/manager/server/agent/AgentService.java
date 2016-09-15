@@ -27,21 +27,20 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.container.web.WebService;
 import org.openremote.manager.server.asset.AssetService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.shared.Function;
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.agent.InventoryModifiedEvent;
 import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetType;
 import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.connector.ConnectorComponent;
 import org.openremote.manager.shared.util.Util;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -60,7 +59,7 @@ public class AgentService implements ContainerService {
     final protected Map<String, AgentRoutes> agentInstanceMap = new LinkedHashMap<>();
 
     /*
-    This is the dynamic routing slip for discovery triggers: We call either the desired agent
+    This is the dynamic routing for discovery triggers: We call either the desired agent
     only, or get a list of all agents and trigger all of them.
      */
     final protected Function<String, String> triggerDiscoveryRouting = new Function<String, String>() {
@@ -124,6 +123,9 @@ public class AgentService implements ContainerService {
 
     @Override
     public void configure(Container container) throws Exception {
+        container.getService(WebService.class).getApiSingletons().add(
+            new AgentResourceImpl(this)
+        );
     }
 
     @Override
@@ -134,6 +136,14 @@ public class AgentService implements ContainerService {
     @Override
     public void stop(Container container) throws Exception {
 
+    }
+
+    public void clearInventory(String agentId) {
+        assetService.deleteChildren(agentId);
+    }
+
+    public void triggerDiscovery(String agentId) {
+        producerTemplate.sendBody(Agent.TOPIC_TRIGGER_DISCOVERY, agentId);
     }
 
     protected void reconfigureAgents(Asset updatedAgent) {
@@ -188,18 +198,34 @@ public class AgentService implements ContainerService {
             protected void handleInventoryModified(InventoryModifiedEvent event) {
                 Asset deviceAsset = event.getDeviceAsset();
                 switch (event.getCause()) {
-                    case CREATE:
-                        LOG.fine("Creating new child asset of agent '" + agentAsset.getId() + "': " + deviceAsset);
-                        ServerAsset deviceServerAsset = ServerAsset.map(
-                            deviceAsset,
-                            new ServerAsset(),
-                            agentAsset.getId(),
-                            agentAsset.getCoordinates()
-                        );
-                        assetService.create(deviceServerAsset);
+                    case PUT:
+                        LOG.fine("Put child asset of agent '" + agentAsset.getId() + "': " + deviceAsset);
+                        ServerAsset deviceServerAsset = assetService.get(deviceAsset.getId());
+                        if (deviceServerAsset == null) {
+                            deviceServerAsset = ServerAsset.map(
+                                deviceAsset,
+                                new ServerAsset(),
+                                agentAsset.getId(),
+                                agentAsset.getCoordinates()
+                            );
+                            deviceServerAsset.setId(deviceAsset.getId());
+                            LOG.fine("Child asset of agent is new, merging: " + deviceServerAsset);
+                            deviceServerAsset = assetService.merge(deviceServerAsset);
+                        } else {
+                            deviceServerAsset = ServerAsset.map(
+                                deviceAsset,
+                                deviceServerAsset,
+                                agentAsset.getId(),
+                                agentAsset.getCoordinates()
+                            );
+                            LOG.fine("Child asset of agent already exists, merging: " + deviceServerAsset);
+                            deviceServerAsset = assetService.merge(deviceServerAsset);
+                        }
                         break;
-                    default:
-                        throw new UnsupportedOperationException("TODO Implement UPDATE, DELETE, etc.");
+                    case DELETE:
+                        LOG.fine("Delete child asset of agent '" + agentAsset.getId() + "': " + deviceAsset);
+                        assetService.delete(deviceAsset.getId());
+                        break;
                 }
             }
         };

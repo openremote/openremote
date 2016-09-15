@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
+import org.openremote.container.persistence.IdentifiableEntity;
 import org.openremote.manager.shared.asset.Asset;
 
 import javax.persistence.*;
@@ -32,7 +33,7 @@ import javax.persistence.*;
  * which can not be serialized or compiled on the client.
  */
 @Entity(name = "Asset")
-public class ServerAsset extends Asset {
+public class ServerAsset extends Asset implements IdentifiableEntity {
 
     /**
      * Easy conversion between types, we copy all properties (not a deep copy!)

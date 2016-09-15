@@ -20,8 +20,11 @@
 package org.openremote.manager.shared.agent;
 
 import elemental.json.Json;
+import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.attribute.*;
 import org.openremote.manager.shared.connector.Connector;
+
+import java.util.logging.Logger;
 
 import static org.openremote.manager.shared.connector.Connector.ASSET_ATTRIBUTE_CONNECTOR;
 
@@ -36,6 +39,8 @@ import static org.openremote.manager.shared.connector.Connector.ASSET_ATTRIBUTE_
  */
 public class Agent {
 
+    private static final Logger LOG = Logger.getLogger(Agent.class.getName());
+
     /**
      * Send messages to this endpoint to trigger discovery of the assets available through an agent. If the
      * message body is empty, all running agent's will execute discovery. If an agent asset identifier is
@@ -46,31 +51,33 @@ public class Agent {
     final protected Attributes attributes;
 
     public Agent(Attributes attributes) {
+        this(attributes, false);
+    }
+
+    public Agent(Attributes attributes, boolean initialize) {
         this.attributes = attributes;
+        if (initialize)
+            initialize();
     }
 
     public Attributes getAttributes() {
         return attributes;
     }
 
+    public void initialize() {
+        setEnabled(false);
+    }
+
     public boolean isEnabled() {
-        return attributes.hasAttribute("enabled") && attributes.get("enabled").getValueAsBoolean();
+        return attributes.hasAttribute("enabled") && attributes.get("enabled").isValueTrue();
     }
 
     public Agent setEnabled(boolean enabled) {
-        attributes.put(
-            new Attribute("enabled", AttributeType.BOOLEAN, Json.create(enabled))
-                .setMetadata(new Metadata()
-                    .putElement(
-                        new MetadataElement("label", AttributeType.STRING.getValue(), Json.create("Enabled"))
-                    )
-                    .putElement(
-                        new MetadataElement("description", AttributeType.STRING.getValue(),
-                            Json.create("Enabled agents will discover devices and manage their inventory automatically")
-                        )
-                    )
-                )
-        );
+        if (attributes.hasAttribute("enabled")) {
+            attributes.get("enabled").setValue(Json.create(enabled));
+        } else {
+            attributes.put(new Attribute("enabled", AttributeType.BOOLEAN, Json.create(enabled)));
+        }
         return this;
     }
 

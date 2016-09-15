@@ -49,7 +49,7 @@ import static org.openremote.manager.shared.Constants.PERSISTENCE_UNIQUE_ID_GENE
 public class Asset {
 
     @Id
-    @Column(name = "ID", length = 22)
+    @Column(name = "ID", length = 27)
     @GeneratedValue(generator = PERSISTENCE_UNIQUE_ID_GENERATOR)
     protected String id;
 

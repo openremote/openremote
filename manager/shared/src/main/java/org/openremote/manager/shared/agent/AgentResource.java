@@ -19,29 +19,21 @@
  */
 package org.openremote.manager.shared.agent;
 
-import org.openremote.manager.shared.asset.Asset;
-import org.openremote.manager.shared.event.Event;
+import jsinterop.annotations.JsType;
+import org.openremote.manager.shared.http.RequestParams;
+import org.openremote.manager.shared.http.SuccessStatusCode;
 
-public class InventoryModifiedEvent extends Event {
+import javax.annotation.security.RolesAllowed;
+import javax.ws.rs.*;
 
-    public enum Cause {
-        PUT,
-        DELETE,
-    }
+@Path("agent")
+@JsType(isNative = true)
+public interface AgentResource {
 
-    final protected Asset deviceAsset;
-    final protected Cause cause;
+    @DELETE
+    @SuccessStatusCode(204)
+    @Path("{agentId}/inventory")
+    @RolesAllowed({"write:assets"})
+    void refreshInventory(@BeanParam RequestParams requestParams, @PathParam("agentId") String agentId);
 
-    public InventoryModifiedEvent(Asset deviceAsset, Cause cause) {
-        this.deviceAsset = deviceAsset;
-        this.cause = cause;
-    }
-
-    public Asset getDeviceAsset() {
-        return deviceAsset;
-    }
-
-    public Cause getCause() {
-        return cause;
-    }
 }

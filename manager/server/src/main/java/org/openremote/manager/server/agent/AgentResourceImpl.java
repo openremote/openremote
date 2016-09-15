@@ -17,31 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.agent;
+package org.openremote.manager.server.agent;
 
-import org.openremote.manager.shared.asset.Asset;
-import org.openremote.manager.shared.event.Event;
+import org.openremote.container.web.WebResource;
+import org.openremote.manager.shared.agent.AgentResource;
+import org.openremote.manager.shared.http.RequestParams;
 
-public class InventoryModifiedEvent extends Event {
+import javax.ws.rs.BeanParam;
 
-    public enum Cause {
-        PUT,
-        DELETE,
+public class AgentResourceImpl extends WebResource implements AgentResource {
+
+    protected final AgentService agentService;
+
+    public AgentResourceImpl(AgentService agentService) {
+        this.agentService = agentService;
     }
 
-    final protected Asset deviceAsset;
-    final protected Cause cause;
-
-    public InventoryModifiedEvent(Asset deviceAsset, Cause cause) {
-        this.deviceAsset = deviceAsset;
-        this.cause = cause;
+    @Override
+    public void refreshInventory(@BeanParam RequestParams requestParams, String agentId) {
+        agentService.clearInventory(agentId);
+        agentService.triggerDiscovery(agentId);
     }
 
-    public Asset getDeviceAsset() {
-        return deviceAsset;
-    }
-
-    public Cause getCause() {
-        return cause;
-    }
 }

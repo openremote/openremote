@@ -19,10 +19,7 @@
  */
 package org.openremote.manager.shared.attribute;
 
-import elemental.json.Json;
-import elemental.json.JsonArray;
-import elemental.json.JsonObject;
-import elemental.json.JsonValue;
+import elemental.json.*;
 
 public class Attribute {
 
@@ -80,7 +77,17 @@ public class Attribute {
     }
 
     public Boolean getValueAsBoolean() {
-        return jsonObject.hasKey("value") && jsonObject.get("value").asBoolean();
+        return (jsonObject.hasKey("value") && jsonObject.get("value").getType() == JsonType.BOOLEAN)
+            ? jsonObject.get("value").asBoolean()
+            : null;
+    }
+
+    public boolean isValueTrue() {
+        return getValueAsBoolean() != null && getValueAsBoolean();
+    }
+
+    public boolean isValueFalse() {
+        return getValueAsBoolean() != null && !getValueAsBoolean();
     }
 
     public Double getValueAsDouble() {

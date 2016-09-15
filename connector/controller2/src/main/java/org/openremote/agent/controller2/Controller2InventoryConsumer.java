@@ -39,7 +39,7 @@ public class Controller2InventoryConsumer extends Controller2Consumer implements
 
         LOG.fine("Starting new exchange for added device:  " + device);
         Exchange exchange = getEndpoint().createExchange();
-        exchange.getIn().setBody(new InventoryModifiedEvent(device, CREATE));
+        exchange.getIn().setBody(new InventoryModifiedEvent(device, PUT));
         processExchange(exchange);
     }
 
@@ -65,7 +65,7 @@ public class Controller2InventoryConsumer extends Controller2Consumer implements
 
         LOG.fine("Starting new exchange for updated device: " + device);
         Exchange exchange = getEndpoint().createExchange();
-        exchange.getIn().setBody(new InventoryModifiedEvent(device, UPDATE));
+        exchange.getIn().setBody(new InventoryModifiedEvent(device, PUT));
         processExchange(exchange);
     }
 

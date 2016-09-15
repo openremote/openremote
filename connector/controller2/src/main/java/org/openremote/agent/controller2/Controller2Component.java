@@ -140,6 +140,11 @@ public class Controller2Component extends UriEndpointComponent implements Connec
     }
 
     @Override
+    public boolean isSupportingDiscoveryTrigger() {
+        return true;
+    }
+
+    @Override
     public String getDiscoveryTriggerUri(String agentAssetId, Agent agent) {
         String host = agent.getAttributes().hasAttribute("host") ? agent.getAttributes().get("host").getValueAsString() : null;
         Integer port = agent.getAttributes().hasAttribute("port") ? agent.getAttributes().get("port").getValueAsDouble().intValue() : null;

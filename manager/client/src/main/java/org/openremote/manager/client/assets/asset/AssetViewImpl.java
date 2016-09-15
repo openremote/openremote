@@ -35,6 +35,7 @@ import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.device.DeviceAttributesEditor;
 import org.openremote.manager.client.widget.*;
 import org.openremote.manager.client.widget.PushButton;
+import org.openremote.manager.shared.Runnable;
 import org.openremote.manager.shared.asset.AssetType;
 import org.openremote.manager.shared.map.GeoJSON;
 
@@ -207,7 +208,7 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
 
         // Restore initial state of view
         sidebarContainer.clear();
-        nameInput.setEnabled(true);
+        nameInput.setReadOnly(false);
         nameInput.setValue(null);
         createdOnLabel.setText("");
         parentLabel.setText("");
@@ -369,7 +370,7 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     @Override
     public void setEditable(boolean editable) {
         selectParentButton.setEnabled(editable);
-        nameInput.setEnabled(editable);
+        nameInput.setReadOnly(!editable);
     }
 
     @Override
@@ -415,6 +416,16 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
             public InsertPanel getPanel() {
                 return attributesEditorContainer;
             }
+
+            @Override
+            public void showConfirmation(String title, String text, Runnable onConfirm) {
+                AssetViewImpl.this.showConfirmation(title, text, onConfirm);
+            }
+
+            @Override
+            public void showConfirmation(String title, String text, Runnable onConfirm, Runnable onCancel) {
+                AssetViewImpl.this.showConfirmation(title, text, onConfirm, onCancel);
+            }
         };
     }
 
@@ -434,6 +445,16 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
             @Override
             public InsertPanel getPanel() {
                 return attributesEditorContainer;
+            }
+
+            @Override
+            public void showConfirmation(String title, String text, Runnable onConfirm) {
+                AssetViewImpl.this.showConfirmation(title, text, onConfirm);
+            }
+
+            @Override
+            public void showConfirmation(String title, String text, Runnable onConfirm, Runnable onCancel) {
+                AssetViewImpl.this.showConfirmation(title, text, onConfirm, onCancel);
             }
         };
     }

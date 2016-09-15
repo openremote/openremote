@@ -40,9 +40,14 @@ public class ConnectorResourceImpl extends WebResource implements ConnectorResou
     public Connector[] getConnectors(@BeanParam RequestParams requestParams) {
         Collection<ConnectorComponent> connectorComponents = connectorService.getConnectorComponents().values();
         return connectorComponents
-                .stream()
-                .map(c -> new Connector(c.getDisplayName(), c.getType(), c.getConnectorSettings()))
-                .toArray(Connector[]::new);
+            .stream()
+            .map(c -> new Connector(
+                c.getDisplayName(),
+                c.getType(),
+                c.isSupportingDiscoveryTrigger(),
+                c.getConnectorSettings()
+            ))
+            .toArray(Connector[]::new);
     }
 
 }

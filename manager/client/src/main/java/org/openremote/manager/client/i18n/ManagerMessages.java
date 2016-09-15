@@ -226,4 +226,14 @@ public interface ManagerMessages extends Messages {
     String write();
 
     String enableLiveUpdates();
+
+    String actions();
+
+    String refreshInventory();
+
+    String inventoryRefreshed(String aget);
+
+    String enableAgentDescription();
+
+    String confirmationInventoryRefresh(String agent);
 }

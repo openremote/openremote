@@ -124,17 +124,10 @@ public class AssetService implements ContainerService {
         });
     }
 
-    public void update(ServerAsset asset) {
-        persistenceService.doTransaction(em -> {
+    public ServerAsset merge(ServerAsset asset) {
+        return persistenceService.doTransaction(em -> {
             validateParent(em, asset);
-            em.merge(asset);
-        });
-    }
-
-    public void create(ServerAsset asset) {
-        persistenceService.doTransaction(em -> {
-            validateParent(em, asset);
-            em.persist(asset);
+            return em.merge(asset);
         });
     }
 
@@ -143,6 +136,24 @@ public class AssetService implements ContainerService {
             Asset asset = em.find(ServerAsset.class, assetId);
             if (asset != null) {
                 em.remove(asset);
+            }
+        });
+    }
+
+    public void deleteChildren(String parentId) {
+        persistenceService.doTransaction(em -> {
+            List<AssetInfo> result =
+                em.createQuery(
+                    "select new org.openremote.manager.shared.asset.AssetInfo(" +
+                        "a.id, a.name, a.type, a.parent.id" +
+                        ") from Asset a where a.parent.id = :parentId order by a.createdOn asc",
+                    AssetInfo.class
+                ).setParameter("parentId", parentId).getResultList();
+            for (AssetInfo assetInfo : result) {
+                Asset asset = em.find(ServerAsset.class, assetInfo.getId());
+                if (asset != null) {
+                    em.remove(asset);
+                }
             }
         });
     }

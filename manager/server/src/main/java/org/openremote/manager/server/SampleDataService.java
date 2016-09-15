@@ -253,27 +253,26 @@ public class SampleDataService implements ContainerService {
         smartOffice.setName("Smart Office");
         smartOffice.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         smartOffice.setType(AssetType.BUILDING);
-        assetService.create(smartOffice);
+        smartOffice = assetService.merge(smartOffice);
 
         ServerAsset groundfloor = new ServerAsset(smartOffice);
         groundfloor.setName("Ground Floor");
         groundfloor.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         groundfloor.setType(AssetType.FLOOR);
-        assetService.create(groundfloor);
+        groundfloor = assetService.merge(groundfloor);
 
         ServerAsset lobby = new ServerAsset(groundfloor);
         lobby.setName("Lobby");
         lobby.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         lobby.setType(AssetType.ROOM);
-        assetService.create(lobby);
+        lobby = assetService.merge(lobby);
 
         ServerAsset sampleAgentAsset = new ServerAsset(lobby);
         sampleAgentAsset.setName("Light & TV Controller");
         sampleAgentAsset.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         sampleAgentAsset.setType(AssetType.AGENT);
 
-        Agent sampleAgent = new Agent(new Attributes());
-
+        Agent sampleAgent = new Agent(new Attributes(), true);
         sampleAgent.setEnabled(true);
         sampleAgent.setConnectorType("urn:openremote:connector:controller2");
         for (Attribute connectorSetting : Controller2Component.SETTINGS.get()) {
@@ -284,7 +283,7 @@ public class SampleDataService implements ContainerService {
 
         sampleAgentAsset.setAttributes(sampleAgent.getAttributes().getJsonObject());
 
-        assetService.create(sampleAgentAsset);
+        sampleAgentAsset = assetService.merge(sampleAgentAsset);
 
         SAMPLE_AGENT_ID = sampleAgentAsset.getId();
     }

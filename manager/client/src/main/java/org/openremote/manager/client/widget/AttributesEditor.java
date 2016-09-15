@@ -24,6 +24,7 @@ import com.google.gwt.user.client.ui.Label;
 import elemental.json.Json;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.util.TextUtil;
+import org.openremote.manager.shared.Runnable;
 import org.openremote.manager.shared.attribute.Attribute;
 import org.openremote.manager.shared.attribute.AttributeType;
 import org.openremote.manager.shared.attribute.Attributes;
@@ -42,6 +43,10 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         S getStyle();
 
         InsertPanel getPanel();
+
+        void showConfirmation(String title, String text, Runnable onConfirm);
+
+        void showConfirmation(String title, String text, Runnable onConfirm, Runnable onCancel);
     }
 
     public interface Style {
@@ -260,13 +265,15 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
     protected FormCheckBox createBooleanEditor(S style, Attribute attribute, boolean readOnly) {
         FormCheckBox input = createFormInputCheckBox(style.attributeBooleanEditor());
 
+        Boolean value = null;
         MetadataElement defaultValue;
-        if (attribute.getValue() != null) {
-            boolean value = attribute.getValue().asBoolean();
-            input.setValue(value);
+        if (attribute.getValueAsBoolean() != null) {
+            value = attribute.getValueAsBoolean();
         } else if ((defaultValue = getDefaultValue(attribute)) != null) {
-            input.setValue(defaultValue.getValue().asBoolean());
+            defaultValue.getValue().asBoolean();
         }
+
+        input.setValue(value);
 
         if (readOnly) {
             input.setEnabled(false);
