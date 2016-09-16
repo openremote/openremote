@@ -4,17 +4,30 @@ import org.apache.camel.Exchange
 import org.apache.camel.Processor
 import org.apache.camel.builder.RouteBuilder
 import org.openremote.container.message.MessageBrokerService
+import org.openremote.manager.client.service.RequestServiceImpl
+import org.openremote.manager.client.service.SecurityService
 import org.openremote.manager.server.SampleDataService
 import org.openremote.manager.server.asset.AssetService
+import org.openremote.manager.shared.Consumer
+import org.openremote.manager.shared.Runnable
 import org.openremote.manager.shared.agent.Agent
+import org.openremote.manager.shared.agent.AgentResource
 import org.openremote.manager.shared.asset.Asset
 import org.openremote.manager.shared.asset.AssetType
 import org.openremote.manager.shared.attribute.AttributeType
 import org.openremote.manager.shared.device.DeviceAttributes
 import org.openremote.manager.shared.device.DeviceResource
+import org.openremote.manager.shared.http.EntityReader
+import org.openremote.manager.shared.http.RequestException
+import org.openremote.manager.shared.http.RequestParams
+import org.openremote.manager.shared.validation.ConstraintViolationReport
+import org.openremote.test.ClientObjectMapper
 import org.openremote.test.ContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.BlockingVariables
+
+import static org.openremote.manager.shared.Constants.MANAGER_CLIENT_ID
+import static org.openremote.manager.shared.Constants.MASTER_REALM
 
 class Controller2Test extends Specification implements ContainerTrait {
 
@@ -22,6 +35,30 @@ class Controller2Test extends Specification implements ContainerTrait {
         given: "the server container is started"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
+
+        and: "an authenticated user and client security service"
+        def realm = MASTER_REALM;
+        def accessToken = authenticate(container, realm, MANAGER_CLIENT_ID, "admin", "admin").token
+        def securityService = Stub(SecurityService) {
+            getRealm() >> realm
+            getToken() >> accessToken
+            updateToken(_, _, _) >> { int minValiditySeconds, Consumer<Boolean> successFn, Runnable errorFn ->
+                successFn.accept(true) // The token is always valid (this assumes the test doesn't run very long)
+            };
+            hasResourceRoleOrIsAdmin(_, _) >> { String role, String resource ->
+                return true; // TODO: Should use the parsed token
+            }
+        }
+
+        and: "a client request service and target"
+        def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
+        def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
+        def clientTarget = getClientTarget(createClient(container).build(), serverUri(serverPort), realm)
+
+        and: "an agent client resource"
+        def agentResource = Stub(AgentResource) {
+            _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
+        }
 
         when: "we wait a bit for initial state"
         sleep(2000)
@@ -31,7 +68,7 @@ class Controller2Test extends Specification implements ContainerTrait {
         def agentAsset = assetService.get(container.getService(SampleDataService.class).SAMPLE_AGENT_ID)
         agentAsset != null
         def deviceAssetInfos = assetService.getChildren(agentAsset.getId())
-        deviceAssetInfos .size() == 1
+        deviceAssetInfos.size() == 1
         deviceAssetInfos.each {
             Asset device = assetService.get(it.id)
             assert device.name == "TestDevice"
@@ -49,8 +86,25 @@ class Controller2Test extends Specification implements ContainerTrait {
         }
 
         when: "discovery is triggered"
-        getMessageProducerTemplate(container)
-                .sendBody(Agent.TOPIC_TRIGGER_DISCOVERY, "") // Empty body triggers all agents
+        requestService.execute(
+                new Consumer<RequestParams<Void>>() {
+                    @Override
+                    void accept(RequestParams requestParams) {
+                        agentResource.refreshInventory(requestParams, agentAsset.getId())
+                    }
+                },
+                204,
+                new java.lang.Runnable() {
+                    @Override
+                    void run() {
+                    }
+                },
+                new Consumer<RequestException>() {
+                    @Override
+                    void accept(RequestException e) {
+                    }
+                }
+        );
 
         and: "we wait a bit for inventory response"
         sleep(2000)

@@ -186,7 +186,7 @@ public class JSAPIWriter {
         writer.println("// " + httpMethod + " " + uri);
         writer.println(methodMetaData.getFunctionName() + " = function(_params");
         printURIParamsSignature(uri, writer);
-        printEntityParamsSignature(methodMetaData, writer);
+        printMethodParamsSignature(methodMetaData, writer);
         writer.println("){");
         writer.println(" var params = _params ? _params : {};");
         writer.println(" var request = new REST.Request();");
@@ -238,11 +238,15 @@ public class JSAPIWriter {
         writer.println("};");
     }
 
-    private void printEntityParamsSignature(MethodMetaData methodMetaData, PrintWriter writer) {
+    private void printMethodParamsSignature(MethodMetaData methodMetaData, PrintWriter writer) {
         List<MethodParamMetaData> params = methodMetaData.getParameters();
         for (MethodParamMetaData methodParamMetaData : params) {
-            if (methodParamMetaData.getParamType() == MethodParamMetaData.MethodParamType.ENTITY_PARAMETER) {
-                writer.println(", " + methodParamMetaData.getParamName());
+            switch (methodParamMetaData.getParamType()) {
+                // TODO Support other method params in call signature
+                case ENTITY_PARAMETER:
+                case QUERY_PARAMETER:
+                    writer.println(", " + methodParamMetaData.getParamName());
+                    break;
             }
         }
     }
@@ -258,9 +262,6 @@ public class JSAPIWriter {
     private void printParameter(MethodParamMetaData metaData,
                                 PrintWriter writer) {
         switch (metaData.getParamType()) {
-            case QUERY_PARAMETER:
-                print(metaData, writer, "QueryParameter");
-                break;
             case HEADER_PARAMETER:
                 print(metaData, writer, "Header");
                 // FIXME: warn about forbidden headers:
@@ -278,8 +279,12 @@ public class JSAPIWriter {
             case FORM:
                 print(metaData, writer, "Form");
                 break;
+            case QUERY_PARAMETER:
+                writer.println(" if(" + metaData.getParamName() + ") {");
+                writer.println("   request.addQueryParameter('" + metaData.getParamName() + "', " + metaData.getParamName() + ");");
+                writer.println(" }");
+                break;
             case ENTITY_PARAMETER:
-                // the entity
                 writer.println(" if(" + metaData.getParamName() + ") {");
                 writer.println("   if(params.$entityWriter) {");
                 writer.println("      request.setEntity(params.$entityWriter.write("+metaData.getParamName()+"));");

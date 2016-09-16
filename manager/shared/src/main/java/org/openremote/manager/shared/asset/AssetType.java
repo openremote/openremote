@@ -13,6 +13,7 @@ import java.util.List;
 public enum AssetType {
 
     CUSTOM(null),
+    TENANT("urn:openremote:asset:tenant", false),
     AGENT("urn:openremote:asset:agent"),
     DEVICE("urn:openremote:asset:device", false),
     BUILDING("urn:openremote:asset:building"),
@@ -63,6 +64,6 @@ public enum AssetType {
     }
 
     public static boolean isLeaf(AssetType wellKnownType) {
-        return wellKnownType.equals(DEVICE);
+        return wellKnownType != null && wellKnownType.equals(DEVICE);
     }
 }

@@ -182,9 +182,7 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
         1 * adminTenantsView.setPresenter(_ as AdminTenantsActivity)
 
         and: "The view should have received the tenants"
-        result.tenants.length == 1
-        result.tenants[0].realm == MASTER_REALM
-        result.tenants[0].enabled
+        result.tenants.length == 3
 
         when: "The user clicks Create Tenant"
         adminTenantsActivity != null
@@ -284,7 +282,7 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
         result.appEvents[2].place instanceof AdminTenantsPlace
 
         and: "The view should have received the tenants"
-        result.tenants.length == 2
+        result.tenants.length == 4
 
         when: "The new tenant is selected"
         result.appEvents.clear()
@@ -405,8 +403,7 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
         result.appEvents[2].place instanceof AdminTenantsPlace
 
         and: "The view should have received the tenants"
-        result.tenants.length == 1
-        result.tenants[0].realm == MASTER_REALM
+        result.tenants.length == 3
 
         and: "The server should be stopped"
         stopContainer(container);

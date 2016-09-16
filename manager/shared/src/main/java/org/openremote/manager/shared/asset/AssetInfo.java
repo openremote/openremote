@@ -28,16 +28,27 @@ public class AssetInfo  {
 
     protected String name;
 
+    protected String realm;
+
     protected String type;
 
     protected String parentId;
 
+    public AssetInfo(String id) {
+        this.id = id;
+    }
+
     public AssetInfo() {
     }
 
-    public AssetInfo(String id, String name, String type, String parentId) {
+    public AssetInfo(Asset asset) {
+        this(asset.getId(), asset.getName(), asset.getRealm(), asset.getType(), asset.getParentId());
+    }
+
+    public AssetInfo(String id, String name, String realm, String type, String parentId) {
         this.id = id;
         this.name = name;
+        this.realm = realm;
         this.type = type;
         this.parentId = parentId;
     }
@@ -55,6 +66,14 @@ public class AssetInfo  {
         this.id = id;
     }
 
+    public String getRealm() {
+        return realm;
+    }
+
+    public void setRealm(String realm) {
+        this.realm = realm;
+    }
+
     public String getName() {
         return name;
     }
@@ -68,7 +87,11 @@ public class AssetInfo  {
     }
 
     public AssetType getWellKnownType() {
-        return AssetType.getByValue(getType());
+        return getType() != null ? AssetType.getByValue(getType()) : null;
+    }
+
+    public boolean isWellKnownType(AssetType assetType) {
+        return assetType.equals(getWellKnownType());
     }
 
     public void setType(String type) {
@@ -88,6 +111,7 @@ public class AssetInfo  {
         return getClass().getSimpleName() + "{" +
             "id='" + id + '\'' +
             ", name='" + name + '\'' +
+            ", realm='" + realm + '\'' +
             ", type='" + type + '\'' +
             ", parentId='" + parentId + '\'' +
             '}';

@@ -33,6 +33,7 @@ import org.keycloak.admin.client.resource.ServerInfoResource;
 import org.keycloak.common.enums.SslRequired;
 import org.keycloak.common.util.PemUtils;
 import org.keycloak.representations.adapters.config.AdapterConfig;
+import org.openremote.container.Constants;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.observable.RetryWithDelay;
@@ -152,7 +153,7 @@ public class IdentityService implements ContainerService {
                 // This will pass authentication ("NOT ATTEMPTED" state), but later fail any role authorization
                 KeycloakDeployment notAuthenticatedKeycloakDeployment = new KeycloakDeployment();
 
-                String realm = request.getQueryParamValue("realm");
+                String realm = request.getQueryParamValue(WebService.REQUEST_REALM_PARAM);
                 if (realm == null || realm.length() == 0) {
                     LOG.fine("No realm in request, no authentication will be attempted: " + request.getURI());
                     return notAuthenticatedKeycloakDeployment;

@@ -50,11 +50,9 @@ import javax.ws.rs.core.UriBuilder;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.URI;
-import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -74,9 +72,10 @@ public abstract class WebService implements ContainerService {
     public static final String API_PATH = "/api";
     public static final String JSAPI_PATH = "/jsapi";
     public static final String STATIC_PATH = "/static";
+    public static final String REQUEST_REALM_PARAM = "requestRealm";
     protected final Pattern PATTERN_STATIC = Pattern.compile(Pattern.quote(STATIC_PATH) + "(/.*)?");
-    protected final Pattern PATTERN_REALM_ROOT = Pattern.compile("/([a-z]+)/?");
-    protected final Pattern PATTERN_REALM_SUB = Pattern.compile("/([a-z]+)/(.*)");
+    protected final Pattern PATTERN_REALM_ROOT = Pattern.compile("/([a-zA-Z0-9\\-_]+)/?");
+    protected final Pattern PATTERN_REALM_SUB = Pattern.compile("/([a-zA-Z0-9\\-_]+)/(.*)");
 
     protected String host;
     protected int port;
@@ -208,7 +207,7 @@ public abstract class WebService implements ContainerService {
                 // Move the realm from path segment to query parameter
                 URI apiUrl = fromUri(exchange.getRequestURL())
                     .replacePath(API_PATH).path(realmSubMatcher.group(2))
-                    .replaceQuery(exchange.getQueryString()).queryParam("realm", realm)
+                    .replaceQuery(exchange.getQueryString()).queryParam(REQUEST_REALM_PARAM, realm)
                     .build();
 
                 exchange.setRequestURI(apiUrl.toString(), true);
@@ -219,7 +218,7 @@ public abstract class WebService implements ContainerService {
                 exchange.setQueryString(apiUrl.getRawQuery());
 
                 // Just to make it look nice
-                exchange.addQueryParam("realm", realm);
+                exchange.addQueryParam(REQUEST_REALM_PARAM, realm);
 
                 apiHandler.handleRequest(exchange);
                 return;

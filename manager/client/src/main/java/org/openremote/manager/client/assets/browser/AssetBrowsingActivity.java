@@ -28,7 +28,9 @@ import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.util.TextUtil;
 import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetResource;
+import org.openremote.manager.shared.asset.AssetType;
 import org.openremote.manager.shared.map.GeoJSON;
 import org.openremote.manager.shared.map.GeoJSONFeature;
 import org.openremote.manager.shared.map.GeoJSONGeometry;
@@ -91,16 +93,21 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
 
         assetSelectionRegistration = assetBrowserPresenter.onSelection(
             event -> {
-                if (event.getAssetId() == null) {
+                if (event.getAssetInfo() == null) {
                     onAssetsDeselected();
+                    eventBus.dispatch(event);
                 } else {
-                    if (assetId == null || !assetId.equals(event.getAssetId())) {
-                        onAssetSelectionChange(event.getAssetId());
+                    if (event.getAssetInfo().isWellKnownType(AssetType.TENANT)) {
+                        onAssetsDeselected();
+                        eventBus.dispatch(new AssetSelectedEvent(null));
+
+                        onTenantSelected(event.getAssetInfo().getId(), event.getAssetInfo().getRealm());
+
+                    } else if (assetId == null || !assetId.equals(event.getAssetInfo().getId())) {
+                        onAssetSelectionChange(event.getAssetInfo());
+                        eventBus.dispatch(event);
                     }
                 }
-
-                // Put on global event bus so interested 3rd party can get state (e.g. header presenter)
-                eventBus.dispatch(event);
             }
         );
 
@@ -109,7 +116,7 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
             onBeforeAssetLoad();
             loadAsset(assetId, loadedAsset -> {
                 this.asset = loadedAsset;
-                assetBrowserPresenter.selectAsset(asset.getId(), asset.getPath());
+                assetBrowserPresenter.selectAsset(asset);
                 onAssetLoaded();
             });
         } else {
@@ -153,7 +160,9 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
 
     abstract protected void onAssetsDeselected();
 
-    abstract protected void onAssetSelectionChange(String selectedAssetId);
+    abstract protected void onAssetSelectionChange(AssetInfo selectedAssetInfo);
+
+    abstract protected void onTenantSelected(String id, String realm);
 
     protected void startCreateAsset() {
         assetBrowserPresenter.deselectAsset();

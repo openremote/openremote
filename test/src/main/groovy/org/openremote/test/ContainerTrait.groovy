@@ -28,6 +28,7 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClient
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
 import org.keycloak.representations.AccessTokenResponse
+import org.openremote.container.Constants
 import org.openremote.container.Container
 import org.openremote.container.ContainerService
 import org.openremote.container.message.MessageBrokerService
@@ -236,7 +237,7 @@ trait ContainerTrait {
                 .scheme("ws")
                 .replacePath(MessageBrokerService.WEBSOCKET_PATH)
                 .path(endpointPath)
-                .queryParam("realm", realm)
+                .queryParam(Constants.REQUEST_REALM_PARAM, realm)
                 .queryParam("Authorization", "Bearer " + accessToken);
     }
 

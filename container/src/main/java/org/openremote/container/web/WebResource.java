@@ -19,11 +19,16 @@
  */
 package org.openremote.container.web;
 
+import org.keycloak.KeycloakPrincipal;
+import org.keycloak.KeycloakSecurityContext;
+import org.keycloak.representations.IDToken;
+import org.openremote.container.Constants;
 import org.openremote.container.Container;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
@@ -36,6 +41,9 @@ public class WebResource {
     @Context
     protected UriInfo uriInfo;
 
+    @Context
+    protected SecurityContext securityContext;
+
     public WebApplication getApplication() {
         return (WebApplication) application;
     }
@@ -44,11 +52,38 @@ public class WebResource {
         return getApplication().getContainer();
     }
 
+    @SuppressWarnings("unchecked")
+    public KeycloakPrincipal<KeycloakSecurityContext> getCallerPrincipal() {
+        KeycloakPrincipal<KeycloakSecurityContext> principal =
+            (KeycloakPrincipal<KeycloakSecurityContext>) securityContext.getUserPrincipal();
+        if (principal == null) {
+            throw new IllegalStateException("Request is not authenticated, can't access user principal");
+        }
+        return principal;
+    }
+
+    /**
+     * Will try to access the realm from query parameters. This works even if the
+     * current caller is not authenticated, as the query parameter will be set on
+     * all API requests by the {@link WebService)}.
+     */
     public String getRealm() {
-        String realm = uriInfo.getQueryParameters().getFirst("realm");
+        String realm = uriInfo.getQueryParameters().getFirst(WebService.REQUEST_REALM_PARAM);
         if (realm == null || realm.length() == 0) {
             throw new WebApplicationException("Missing realm parameter", BAD_REQUEST);
         }
         return realm;
+    }
+
+    /**
+     * This works only if the current caller is authenticated, we obtain the
+     * realm from auth material.
+     */
+    public String getAuthenticatedRealm() {
+        return getCallerPrincipal().getKeycloakSecurityContext().getRealm();
+    }
+
+    public IDToken getCallerToken() {
+        return getCallerPrincipal().getKeycloakSecurityContext().getIdToken();
     }
 }

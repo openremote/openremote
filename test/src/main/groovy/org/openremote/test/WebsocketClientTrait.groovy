@@ -20,7 +20,9 @@
 package org.openremote.test
 
 import org.glassfish.tyrus.client.ClientManager
+import org.openremote.container.Constants
 import org.openremote.container.message.MessageBrokerService
+import org.openremote.container.web.WebService
 import spock.lang.Shared
 
 import javax.websocket.*
@@ -107,7 +109,7 @@ trait WebsocketClientTrait {
                 .scheme("ws")
                 .replacePath(MessageBrokerService.WEBSOCKET_PATH)
                 .path(endpointPath)
-                .queryParam("realm", realm)
+                .queryParam(WebService.REQUEST_REALM_PARAM, realm)
                 .queryParam("Authorization", "Bearer " + accessToken)
                 .build();
     }

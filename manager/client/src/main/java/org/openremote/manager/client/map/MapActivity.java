@@ -27,6 +27,7 @@ import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
+import org.openremote.manager.shared.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.map.MapResource;
 
@@ -86,8 +87,13 @@ public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implem
     }
 
     @Override
-    protected void onAssetSelectionChange(String selectedAssetId) {
-        environment.getPlaceController().goTo(new MapPlace(selectedAssetId));
+    protected void onAssetSelectionChange(AssetInfo selectedAssetInfo) {
+        environment.getPlaceController().goTo(new MapPlace(selectedAssetInfo.getId()));
+    }
+
+    @Override
+    protected void onTenantSelected(String id, String realm) {
+
     }
 
     protected void showAssetOnMap() {

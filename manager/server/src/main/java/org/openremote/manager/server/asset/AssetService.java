@@ -21,16 +21,20 @@ package org.openremote.manager.server.asset;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
+import org.keycloak.KeycloakPrincipal;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.server.security.ManagerIdentityService;
+import org.openremote.manager.shared.Constants;
 import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetType;
 
 import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Arrays;
@@ -45,6 +49,7 @@ public class AssetService implements ContainerService {
     private static final Logger LOG = Logger.getLogger(AssetService.class.getName());
 
     protected MessageBrokerService messageBrokerService;
+    protected ManagerIdentityService identityService;
     protected PersistenceService persistenceService;
 
     @Override
@@ -81,26 +86,43 @@ public class AssetService implements ContainerService {
 
     }
 
-    public AssetInfo[] getRoot() {
+    public AssetInfo[] getRoot(String realm) {
+        if (realm == null || realm.length() == 0)
+            throw new IllegalArgumentException("Realm must be provided to query assets");
         return persistenceService.doTransaction(em -> {
-            List<AssetInfo> result =
-                em.createQuery(
-                    "select new org.openremote.manager.shared.asset.AssetInfo(" +
-                        "a.id, a.name, a.type, a.parent.id" +
-                        ") from Asset a where a.parent is null order by a.createdOn asc",
-                    AssetInfo.class
-                ).getResultList();
+            List<AssetInfo> result = em.createQuery(
+                "select new org.openremote.manager.shared.asset.AssetInfo(" +
+                    "a.id, a.name, a.realm, a.type, a.parent.id" +
+                    ") from Asset a where a.parent is null and a.realm = :realm order by a.createdOn asc",
+                AssetInfo.class
+            ).setParameter("realm", realm).getResultList();
             return result.toArray(new AssetInfo[result.size()]);
         });
     }
 
-    public ServerAsset[] findByType(AssetType assetType) {
+    public ServerAsset[] findByType(String realm, AssetType assetType) {
+        if (realm == null || realm.length() == 0)
+            throw new IllegalArgumentException("Realm must be provided to query assets");
+        return persistenceService.doTransaction(em -> {
+            List<ServerAsset> result =
+                em.createQuery(
+                    "select a from Asset a where a.realm = :realm and a.type = :assetType order by a.createdOn asc",
+                    ServerAsset.class)
+                    .setParameter("realm", realm)
+                    .setParameter("assetType", assetType.getValue())
+                    .getResultList();
+            return result.toArray(new ServerAsset[result.size()]);
+        });
+    }
+
+    public ServerAsset[] findByTypeInAllRealms(AssetType assetType) {
         return persistenceService.doTransaction(em -> {
             List<ServerAsset> result =
                 em.createQuery(
                     "select a from Asset a where a.type = :assetType order by a.createdOn asc",
-                    ServerAsset.class
-                ).setParameter("assetType", assetType.getValue()).getResultList();
+                    ServerAsset.class)
+                    .setParameter("assetType", assetType.getValue())
+                    .getResultList();
             return result.toArray(new ServerAsset[result.size()]);
         });
     }
@@ -110,7 +132,7 @@ public class AssetService implements ContainerService {
             List<AssetInfo> result =
                 em.createQuery(
                     "select new org.openremote.manager.shared.asset.AssetInfo(" +
-                        "a.id, a.name, a.type, a.parent.id" +
+                        "a.id, a.name, a.realm, a.type, a.parent.id" +
                         ") from Asset a where a.parent.id = :parentId order by a.createdOn asc",
                     AssetInfo.class
                 ).setParameter("parentId", parentId).getResultList();
@@ -145,7 +167,7 @@ public class AssetService implements ContainerService {
             List<AssetInfo> result =
                 em.createQuery(
                     "select new org.openremote.manager.shared.asset.AssetInfo(" +
-                        "a.id, a.name, a.type, a.parent.id" +
+                        "a.id, a.name, a.realm, a.type, a.parent.id" +
                         ") from Asset a where a.parent.id = :parentId order by a.createdOn asc",
                     AssetInfo.class
                 ).setParameter("parentId", parentId).getResultList();

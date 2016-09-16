@@ -32,17 +32,16 @@ import static org.openremote.manager.shared.Constants.PERSISTENCE_UNIQUE_ID_GENE
 
 /**
  * The main model class of this software.
- *
+ * <p>
  * An asset is an identifiable item in a composite relationship with other assets. This tree
  * of assets can managed through a <code>null</code> {@link #parentId} property for root
  * items, and a valid parent identifier for sub-items.
- *
+ * <p>
  * Each asset has dynamically typed optional attributes with an underlying
  * {@link elemental.json.Json} object model. Use the {@link Attributes} class to work with
  * this API.
- *
+ * <p>
  * The location of an asset is stored as a pair of LNG/LAT coordinates.
- *
  */
 @MappedSuperclass
 @Table(name = "ASSET")
@@ -56,6 +55,10 @@ public class Asset {
     @Version
     @Column(name = "OBJ_VERSION", nullable = false)
     protected long version;
+
+    @NotNull
+    @Column(name = "TENANT_REALM", nullable = false)
+    protected String realm;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CREATED_ON", updatable = false, nullable = false)
@@ -87,15 +90,25 @@ public class Asset {
     }
 
     public Asset(String name, String type) {
+        this(null, name, type);
+    }
+
+    public Asset(String realm, String name, String type) {
+        this.realm = realm;
         this.name = name;
         this.type = type;
     }
 
     public Asset(String name, AssetType type) {
-        this(name, type.getValue());
+        this(null, name, type.getValue());
+    }
+
+    public Asset(String realm, String name, AssetType type) {
+        this(realm, name, type.getValue());
     }
 
     public Asset(Asset parent) {
+        this.realm = parent.getRealm();
         this.parentId = parent.getId();
     }
 
@@ -113,6 +126,14 @@ public class Asset {
 
     public void setVersion(long version) {
         this.version = version;
+    }
+
+    public String getRealm() {
+        return realm;
+    }
+
+    public void setRealm(String realm) {
+        this.realm = realm;
     }
 
     public Date getCreatedOn() {
@@ -183,6 +204,7 @@ public class Asset {
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "id='" + id + '\'' +
+            ", realm='" + realm + '\'' +
             ", name='" + name + '\'' +
             ", type ='" + type + '\'' +
             ", parent ='" + parentId + '\'' +

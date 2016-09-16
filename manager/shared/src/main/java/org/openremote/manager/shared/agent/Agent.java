@@ -42,11 +42,13 @@ public class Agent {
     private static final Logger LOG = Logger.getLogger(Agent.class.getName());
 
     /**
-     * Send messages to this endpoint to trigger discovery of the assets available through an agent. If the
-     * message body is empty, all running agent's will execute discovery. If an agent asset identifier is
-     * present in the message body, only that agent will execute discovery.
+     * Send messages to this endpoint to trigger discovery of the assets available through an agent.
+     * If an agent asset identifier is present in the message body, only that agent will execute
+     * discovery. If the message body is empty, the {@link #TOPIC_TRIGGER_DISCOVERY_HEADER_REALM} header
+     * must be present, then all running agents of that realm will execute discovery.
      */
     public static String TOPIC_TRIGGER_DISCOVERY = "seda://urn:openremote:agent:discovery?multipleConsumers=true&waitForTaskToComplete=NEVER";
+    public static final String TOPIC_TRIGGER_DISCOVERY_HEADER_REALM = "TRIGGER_DISCOVERY_REALM";
 
     final protected Attributes attributes;
 

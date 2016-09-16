@@ -23,6 +23,7 @@ import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
+import org.openremote.manager.shared.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetResource;
 
 import javax.inject.Inject;
@@ -49,7 +50,12 @@ public class AssetsDashboardActivity
     }
 
     @Override
-    protected void onAssetSelectionChange(String selectedAssetId) {
-        environment.getPlaceController().goTo(new AssetPlace(selectedAssetId));
+    protected void onAssetSelectionChange(AssetInfo selectedAssetInfo) {
+        environment.getPlaceController().goTo(new AssetPlace(selectedAssetInfo.getId()));
+    }
+
+    @Override
+    protected void onTenantSelected(String id, String realm) {
+
     }
 }

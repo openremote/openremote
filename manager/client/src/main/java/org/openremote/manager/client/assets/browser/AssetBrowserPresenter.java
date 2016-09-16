@@ -21,17 +21,21 @@ package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.view.client.HasData;
 import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.admin.TenantArrayMapper;
 import org.openremote.manager.client.assets.AssetInfoArrayMapper;
-import org.openremote.manager.shared.asset.AssetModifiedEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventListener;
 import org.openremote.manager.client.event.bus.EventRegistration;
-import org.openremote.manager.shared.asset.AssetInfo;
-import org.openremote.manager.shared.asset.AssetResource;
+import org.openremote.manager.shared.Constants;
+import org.openremote.manager.shared.asset.*;
+import org.openremote.manager.shared.security.Tenant;
+import org.openremote.manager.shared.security.TenantResource;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
@@ -45,7 +49,10 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     final AssetBrowser view;
     final protected AssetResource assetResource;
     final protected AssetInfoArrayMapper assetInfoArrayMapper;
+    final protected TenantResource tenantResource;
+    final protected TenantArrayMapper tenantArrayMapper;
 
+    protected List<AssetInfo> tenantAssetInfos = new ArrayList<>();
     protected String selectedAssetId;
     protected String[] selectedAssetPath;
 
@@ -53,8 +60,12 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     public AssetBrowserPresenter(Environment environment,
                                  AssetBrowser view,
                                  AssetResource assetResource,
-                                 AssetInfoArrayMapper assetInfoArrayMapper) {
+                                 AssetInfoArrayMapper assetInfoArrayMapper,
+                                 TenantResource tenantResource,
+                                 TenantArrayMapper tenantArrayMapper) {
         this.environment = environment;
+        this.tenantResource = tenantResource;
+        this.tenantArrayMapper = tenantArrayMapper;
         this.internalEventBus = new EventBus();
         this.view = view;
         this.assetResource = assetResource;
@@ -80,23 +91,105 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     public void loadAssetChildren(AssetInfo parent, HasData<AssetInfo> display) {
         // If parent is the invisible root of the tree, show a loading message
         if (parent.getId() == null) {
-            display.setRowData(0, Collections.singletonList(
-                new AssetInfo(
-                    environment.getMessages().loadingAssets(),
-                    AssetTreeModel.TEMPORARY_ASSET_TYPE
-                )
-            ));
-            display.setRowCount(1, true);
+            showLoadingMessage(display);
         }
+
+        // If the parent is the invisible root of the tree and we are in the master realm, show all realms
+        String currentRealm = environment.getSecurityService().getRealm();
+        if (parent.getId() == null && currentRealm.equals(Constants.MASTER_REALM)) {
+            loadTenants(parent, display);
+        } else {
+            loadChildren(parent, display);
+        }
+    }
+
+    @Override
+    public void onAssetSelected(AssetInfo assetInfo) {
+        if (assetInfo == null) {
+            // Reset the selected asset
+            selectedAssetId = null;
+            internalEventBus.dispatch(new AssetSelectedEvent(null));
+        } else if (selectedAssetId == null || !selectedAssetId.equals(assetInfo.getId())) {
+            // If there was no previous selection, or the new asset is a different one, set and fire event
+            selectedAssetId = assetInfo.getId();
+            internalEventBus.dispatch(new AssetSelectedEvent(assetInfo));
+        }
+    }
+
+    @Override
+    public void selectAsset(Asset asset) {
+        onAssetSelected(asset != null ? new AssetInfo(asset) : null);
+        selectedAssetPath = asset != null ? getTenantAdjustedAssetPath(asset) : null;
+        if (selectedAssetId != null) {
+            updateViewSelection(true);
+        } else {
+            view.deselectAssets();
+        }
+    }
+
+    @Override
+    public void deselectAsset() {
+        selectAsset(null);
+    }
+
+    @Override
+    public EventRegistration<AssetSelectedEvent> onSelection(EventListener<AssetSelectedEvent> listener) {
+        return internalEventBus.register(AssetSelectedEvent.class, listener);
+    }
+
+    @Override
+    public void removeRegistration(EventRegistration registration) {
+        internalEventBus.remove(registration);
+    }
+
+    protected void showLoadingMessage(HasData<AssetInfo> display) {
+        display.setRowData(0, Collections.singletonList(
+            new AssetInfo(
+                environment.getMessages().loadingAssets(),
+                AssetTreeModel.TEMPORARY_ASSET_TYPE
+            )
+        ));
+        display.setRowCount(1, true);
+    }
+
+    protected void loadTenants(AssetInfo parent, HasData<AssetInfo> display) {
+        environment.getRequestService().execute(
+            tenantArrayMapper,
+            tenantResource::getAll,
+            200,
+            tenants -> {
+                tenantAssetInfos.clear();
+                for (Tenant tenant : tenants) {
+                    tenantAssetInfos.add(new AssetInfo(
+                        tenant.getId(),
+                        tenant.getDisplayName(),
+                        tenant.getRealm(),
+                        AssetType.TENANT.getValue(),
+                        null
+                    ));
+                }
+                display.setRowData(0, tenantAssetInfos);
+                display.setRowCount(tenantAssetInfos.size(), true);
+                onAssetsRefreshed(parent, tenantAssetInfos.toArray(new AssetInfo[tenantAssetInfos.size()]));
+            },
+            ex -> handleRequestException(ex, environment)
+        );
+    }
+
+    protected void loadChildren(AssetInfo parent, HasData<AssetInfo> display) {
+        String realm = parent.getId() != null ? parent.getRealm() : environment.getSecurityService().getRealm();
 
         // TODO Pagination?
         // final Range range = display.getVisibleRange();
         environment.getRequestService().execute(
             assetInfoArrayMapper,
             requestParams -> {
-                if (parent.getId() == null) {
-                    // ROOT of tree
-                    assetResource.getRoot(requestParams);
+                if (parent.isWellKnownType(AssetType.TENANT)) {
+                    LOG.fine("Loading the root assets of tenant: " + realm);
+                    assetResource.getRoot(requestParams, realm);
+                } else if (parent.getId() == null) {
+                    LOG.fine("Loading the root assets of authenticated tenant");
+                    assetResource.getRoot(requestParams, null);
                 } else {
                     assetResource.getChildren(requestParams, parent.getId());
                 }
@@ -109,45 +202,6 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
             },
             ex -> handleRequestException(ex, environment)
         );
-    }
-
-    @Override
-    public void onAssetSelected(String assetId) {
-        if (assetId == null) {
-            // Reset the selected asset
-            selectedAssetId = null;
-            internalEventBus.dispatch(new AssetSelectedEvent(null));
-        } else if (selectedAssetId == null || !selectedAssetId.equals(assetId)) {
-            // If there was no previous selection, or the new asset is a different one, set and fire event
-            selectedAssetId = assetId;
-            internalEventBus.dispatch(new AssetSelectedEvent(selectedAssetId));
-        }
-    }
-
-    @Override
-    public void selectAsset(String assetId, String[] path) {
-        onAssetSelected(assetId);
-        selectedAssetPath = path;
-        if (selectedAssetId != null) {
-            updateViewSelection(true);
-        } else {
-            view.deselectAssets();
-        }
-    }
-
-    @Override
-    public void deselectAsset() {
-        selectAsset(null, null);
-    }
-
-    @Override
-    public EventRegistration<AssetSelectedEvent> onSelection(EventListener<AssetSelectedEvent> listener) {
-        return internalEventBus.register(AssetSelectedEvent.class, listener);
-    }
-
-    @Override
-    public void removeRegistration(EventRegistration registration) {
-        internalEventBus.remove(registration);
     }
 
     protected void updateViewSelection(boolean scrollIntoView) {
@@ -167,5 +221,23 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
             }
             updateViewSelection(scroll);
         }
+    }
+
+    protected String[] getTenantAdjustedAssetPath(Asset asset) {
+        List<String> path = new ArrayList<>();
+        // If we are in the master realm, we try to find the tenant and prefix the
+        // path array with the tenant asset ID, since that is the root level of
+        // the asset tree
+        String currentRealm = environment.getSecurityService().getRealm();
+        if (currentRealm.equals(Constants.MASTER_REALM)) {
+            for (AssetInfo tenantAssetInfo : tenantAssetInfos) {
+                if (tenantAssetInfo.getRealm().equals(asset.getRealm())) {
+                    path.add(tenantAssetInfo.getId());
+                    break;
+                }
+            }
+        }
+        path.addAll(Arrays.asList(asset.getPath()));
+        return path.toArray(new String[path.size()]);
     }
 }

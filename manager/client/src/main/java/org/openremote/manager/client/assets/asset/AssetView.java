@@ -62,6 +62,8 @@ public interface AssetView extends AssetBrowsingView<AssetView.Presenter>, FormV
 
     String getName();
 
+    void setRealm(String realm);
+
     void setCreatedOn(Date createdOn);
 
     void setParent(String name);

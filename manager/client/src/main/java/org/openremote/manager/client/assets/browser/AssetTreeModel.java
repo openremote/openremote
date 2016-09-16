@@ -43,7 +43,7 @@ class AssetTreeModel implements TreeViewModel {
         this.renderer = renderer;
         selectionModel.addSelectionChangeHandler(selectionChangeEvent -> {
             if (selectionModel.getSelectedObject() != null) {
-                presenter.onAssetSelected(selectionModel.getSelectedObject().getId());
+                presenter.onAssetSelected(selectionModel.getSelectedObject());
             }
         });
     }
@@ -62,22 +62,17 @@ class AssetTreeModel implements TreeViewModel {
     }
 
     public boolean isLeaf(Object value) {
-        // Currently we do not have leaf nodes in the tree, so we always offer the user an option to expand
-        // and therefore query/refresh an asset, to see if there are "now" any child assets assigned. The only
-        // other choice would be to determine leaf or composite by asset type, which is kinda arbitrary.
-
-        // The exception to this is any temporary asset, which should not be expandable
         if (value instanceof AssetInfo) {
             AssetInfo asset = (AssetInfo) value;
-            if (TEMPORARY_ASSET_TYPE.equals(asset.getType()))
-                return true;
+            if (asset.getType() != null) {
+                if (TEMPORARY_ASSET_TYPE.equals(asset.getType()))
+                    return true;
 
-            // And another exception are types which we know to be a leaf
-            if (AssetType.isLeaf(asset.getWellKnownType()))
-                return true;
+                // And another exception are types which we know to be a leaf
+                if (AssetType.isLeaf(asset.getWellKnownType()))
+                    return true;
+            }
         }
-
-
         return false;
     }
 }

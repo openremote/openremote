@@ -33,17 +33,22 @@ import javax.persistence.*;
  * which can not be serialized or compiled on the client.
  */
 @Entity(name = "Asset")
+// TODO Write on-insert/update SQL trigger that validates the asset realm, it must match the parent's realm
 public class ServerAsset extends Asset implements IdentifiableEntity {
 
     /**
      * Easy conversion between types, we copy all properties (not a deep copy!)
      */
     public static ServerAsset map(Asset asset, ServerAsset serverAsset) {
-        return map(asset, serverAsset, null, null);
+        return map(asset, serverAsset, null, null, null);
     }
 
-    public static ServerAsset map(Asset asset, ServerAsset serverAsset, String overrideParentId, double[] overrideLocation) {
+    public static ServerAsset map(Asset asset, ServerAsset serverAsset,
+                                  String overrideRealm,
+                                  String overrideParentId,
+                                  double[] overrideLocation) {
         serverAsset.setVersion(asset.getVersion());
+        serverAsset.setRealm(overrideRealm != null ? overrideRealm : asset.getRealm());
         serverAsset.setName(asset.getName());
         serverAsset.setType(asset.getType());
 

@@ -33,10 +33,7 @@ import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
 import org.openremote.manager.client.widget.AttributesEditor;
 import org.openremote.manager.shared.agent.AgentResource;
-import org.openremote.manager.shared.asset.Asset;
-import org.openremote.manager.shared.asset.AssetModifiedEvent;
-import org.openremote.manager.shared.asset.AssetResource;
-import org.openremote.manager.shared.asset.AssetType;
+import org.openremote.manager.shared.asset.*;
 import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.connector.ConnectorResource;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
@@ -65,6 +62,7 @@ public class AssetActivity
 
     protected boolean isCreateAsset;
     protected double[] selectedCoordinates;
+    protected String realm;
     protected Asset parentAsset;
     protected boolean isParentSelection;
     protected AttributesEditor attributesEditor;
@@ -111,9 +109,11 @@ public class AssetActivity
     protected void startCreateAsset() {
         super.startCreateAsset();
         isCreateAsset = true;
+        realm = environment.getSecurityService().getRealm();
         view.setFormBusy(true);
         asset = new Asset();
         asset.setName("My New Asset");
+        asset.setRealm(realm);
         asset.setType("urn:mydomain:customtype");
         writeToView();
         clearViewFieldErrors();
@@ -128,6 +128,7 @@ public class AssetActivity
     @Override
     protected void onAssetLoaded() {
         isCreateAsset = false;
+        realm = asset.getRealm();
         writeToView();
         clearViewFieldErrors();
         view.clearFormMessages();
@@ -152,20 +153,30 @@ public class AssetActivity
     }
 
     @Override
-    protected void onAssetSelectionChange(String selectedAssetId) {
+    protected void onAssetSelectionChange(AssetInfo selectedAssetInfo) {
         if (isParentSelection) {
-            loadAsset(selectedAssetId, loadedParentAsset -> {
+            loadAsset(selectedAssetInfo.getId(), loadedParentAsset -> {
                 if (Arrays.asList(loadedParentAsset.getPath()).contains(asset.getId())) {
                     environment.getEventBus().dispatch(
                         new ShowInfoEvent(environment.getMessages().invalidAssetParent())
                     );
                 } else {
+                    this.realm = loadedParentAsset.getRealm();
                     parentAsset = loadedParentAsset;
                     writeParentToView();
                 }
             });
         } else {
-            environment.getPlaceController().goTo(new AssetPlace(selectedAssetId));
+            environment.getPlaceController().goTo(new AssetPlace(selectedAssetInfo.getId()));
+        }
+    }
+
+    @Override
+    protected void onTenantSelected(String id, String realm) {
+        if (isParentSelection) {
+            this.parentAsset = null;
+            this.realm = realm;
+            writeParentToView();
         }
     }
 
@@ -204,11 +215,12 @@ public class AssetActivity
         clearViewFieldErrors();
 
         // If the asset was in the root of the tree (so this check must be before
-        // we read the new parent asset state from the view), force an asset tree
+        // we read the new parent asset state), force an asset tree
         // root refresh when the update is complete
         boolean forceRootRefresh = asset.getParentId() == null;
 
         readFromView();
+        readParent();
 
         environment.getRequestService().execute(
             assetMapper,
@@ -234,6 +246,7 @@ public class AssetActivity
         view.clearFormMessages();
         clearViewFieldErrors();
         readFromView();
+        readParent();
         environment.getRequestService().execute(
             assetMapper,
             requestParams -> {
@@ -289,7 +302,7 @@ public class AssetActivity
     @Override
     public void confirmParentSelection() {
         isParentSelection = false;
-        assetBrowserPresenter.selectAsset(asset.getId(), asset.getPath());
+        assetBrowserPresenter.selectAsset(asset);
         view.setParentSelection(false);
     }
 
@@ -302,7 +315,7 @@ public class AssetActivity
     @Override
     public void resetParentSelection() {
         isParentSelection = false;
-        assetBrowserPresenter.selectAsset(asset.getId(), asset.getPath());
+        assetBrowserPresenter.selectAsset(asset);
         view.setParentSelection(false);
         if (asset.getParentId() != null) {
             loadAsset(asset.getParentId(), loadedParentAsset -> {
@@ -323,6 +336,7 @@ public class AssetActivity
 
     protected void writeToView() {
         view.setName(asset.getName());
+        view.setRealm(asset.getRealm());
         view.setCreatedOn(asset.getCreatedOn());
         view.setLocation(getLocation(asset.getCoordinates()));
         if (asset != null && asset.getId() != null) {
@@ -337,9 +351,8 @@ public class AssetActivity
     }
 
     protected void writeParentToView() {
-        view.setParent(
-            parentAsset != null ? parentAsset.getName() : environment.getMessages().assetHasNoParent()
-        );
+        view.setParent(parentAsset != null ? parentAsset.getName(): environment.getMessages().assetHasNoParent());
+        view.setRealm(realm);
     }
 
     protected void writeTypeToView() {
@@ -388,10 +401,19 @@ public class AssetActivity
         if (selectedCoordinates != null) {
             asset.setCoordinates(selectedCoordinates);
         }
-        asset.setParentId(parentAsset != null ? parentAsset.getId() : null);
         asset.setAttributes(
             attributesEditor != null ? attributesEditor.getAttributes().getJsonObject() : null
         );
+    }
+
+    protected void readParent() {
+        if (parentAsset != null) {
+            asset.setRealm(parentAsset.getRealm());
+            asset.setParentId(parentAsset.getId());
+        } else {
+            asset.setRealm(realm);
+            asset.setParentId(null);
+        }
     }
 
     protected void clearViewFieldErrors() {

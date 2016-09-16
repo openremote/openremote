@@ -121,6 +121,11 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     FormButton showHistoryButton;
 
     @UiField
+    FormGroup realmGroup;
+    @UiField
+    Label realmLabel;
+
+    @UiField
     TextBox parentLabel;
     @UiField
     PushButton selectParentButton;
@@ -210,6 +215,7 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
         sidebarContainer.clear();
         nameInput.setReadOnly(false);
         nameInput.setValue(null);
+        realmLabel.setText("");
         createdOnLabel.setText("");
         parentLabel.setText("");
         selectParentButton.setVisible(true);
@@ -254,6 +260,11 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     @Override
     public String getName() {
         return nameInput.getValue().length() > 0 ? nameInput.getValue() : null;
+    }
+
+    @Override
+    public void setRealm(String realm) {
+        realmLabel.setText(realm);
     }
 
     @Override
@@ -505,6 +516,7 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
 
     protected void setOpaque(boolean opaque) {
         nameGroup.setOpaque(opaque);
+        realmGroup.setOpaque(opaque);
         createdOnGroup.setOpaque(opaque);
         locationGroup.setOpaque(opaque);
         mapWidget.setOpaque(opaque);

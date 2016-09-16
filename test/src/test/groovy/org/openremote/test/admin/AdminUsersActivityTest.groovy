@@ -196,9 +196,7 @@ class AdminUsersActivityTest extends Specification implements ContainerTrait, Cl
         1 * adminUsersView.setPresenter(_ as AdminUsersActivity)
 
         and: "The view should have received the tenants and selected realm"
-        result.tenants.length == 1
-        result.tenants[0].realm == MASTER_REALM
-        result.tenants[0].enabled
+        result.tenants.length == 3
         result.selectedRealm == null
 
         when: "The master tenant is selected"
@@ -218,9 +216,7 @@ class AdminUsersActivityTest extends Specification implements ContainerTrait, Cl
         result.appEvents[1].place.realm == MASTER_REALM
 
         and: "The view should have received the tenants, selected realm, and users"
-        result.tenants.length == 1
-        result.tenants[0].realm == MASTER_REALM
-        result.tenants[0].enabled
+        result.tenants.length == 3
         result.selectedRealm == MASTER_REALM
         result.users.length == 2
 
@@ -589,9 +585,7 @@ class AdminUsersActivityTest extends Specification implements ContainerTrait, Cl
         result.appEvents[2].place.realm == MASTER_REALM
 
         and: "The view should have received the tenants and users"
-        result.tenants.length == 1
-        result.tenants[0].realm == MASTER_REALM
-        result.tenants[0].enabled
+        result.tenants.length == 3
         result.selectedRealm == MASTER_REALM
         result.users.length == 2
 

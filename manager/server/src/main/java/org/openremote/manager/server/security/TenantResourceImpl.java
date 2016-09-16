@@ -19,10 +19,6 @@
  */
 package org.openremote.manager.server.security;
 
-import org.keycloak.admin.client.resource.ClientResource;
-import org.keycloak.admin.client.resource.ClientsResource;
-import org.keycloak.representations.idm.ClientRepresentation;
-import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.server.i18n.I18NService;
 import org.openremote.manager.shared.http.RequestParams;
@@ -39,7 +35,6 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static org.openremote.container.json.JsonUtil.convert;
 import static org.openremote.manager.shared.Constants.MASTER_REALM;
 import static org.openremote.manager.shared.validation.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
 
@@ -54,12 +49,7 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
     @Override
     public Tenant[] getAll(RequestParams requestParams) {
         try {
-            List<RealmRepresentation> realms = managerIdentityService.getRealms(requestParams).findAll();
-            List<Tenant> validatedRealms = new ArrayList<>();
-            for (RealmRepresentation realm : realms) {
-                validatedRealms.add(convert(getContainer().JSON, Tenant.class, realm));
-            }
-            return validatedRealms.toArray(new Tenant[validatedRealms.size()]);
+            return managerIdentityService.getTenants(requestParams.getBearerAuth());
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -70,11 +60,7 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
     @Override
     public Tenant get(RequestParams requestParams, String realm) {
         try {
-            return convert(
-                getContainer().JSON,
-                Tenant.class,
-                managerIdentityService.getRealms(requestParams).realm(realm).toRepresentation()
-            );
+            return managerIdentityService.getTenant(requestParams.getBearerAuth(), realm);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -94,9 +80,7 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
             );
         }
         try {
-            managerIdentityService.getRealms(requestParams).realm(realm).update(
-                convert(getContainer().JSON, RealmRepresentation.class, tenant)
-            );
+            managerIdentityService.updateTenant(requestParams.getBearerAuth(), realm, tenant);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -107,20 +91,7 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
     @Override
     public void create(RequestParams requestParams, Tenant tenant) {
         try {
-            RealmRepresentation realmRepresentation =
-                convert(getContainer().JSON, RealmRepresentation.class, tenant);
-            managerIdentityService.getRealms(requestParams).create(realmRepresentation);
-
-            // TODO This is not atomic, write compensation actions
-
-            ClientsResource clientsResource = managerIdentityService.getRealms(requestParams)
-                .realm(realmRepresentation.getRealm()).clients();
-            ClientRepresentation managerClient = managerIdentityService.createManagerClient();
-            clientsResource.create(managerClient);
-            managerClient = clientsResource.findByClientId(managerClient.getClientId()).get(0);
-            ClientResource clientResource = clientsResource.get(managerClient.getId());
-            managerIdentityService.addDefaultRoles(clientResource.roles());
-
+            managerIdentityService.createTenant(requestParams.getBearerAuth(), tenant);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -140,7 +111,7 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
             );
         }
         try {
-            managerIdentityService.getRealms(requestParams).realm(realm).remove();
+            managerIdentityService.deleteTenant(requestParams.getBearerAuth(), realm);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {

@@ -37,16 +37,22 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
         this.assetService = assetService;
     }
 
+    // TODO Restrict access to realms!
     @Override
-    public AssetInfo[] getRoot(@BeanParam RequestParams requestParams) {
-        return assetService.getRoot();
+    public AssetInfo[] getRoot(@BeanParam RequestParams requestParams, String realm) {
+        if (realm == null || realm.length() == 0) {
+            realm = getAuthenticatedRealm();
+        }
+        return assetService.getRoot(realm);
     }
 
+    // TODO Restrict access to realms!
     @Override
     public AssetInfo[] getChildren(@BeanParam RequestParams requestParams, String parentId) {
         return assetService.getChildren(parentId);
     }
 
+    // TODO Restrict access to realms!
     @Override
     public Asset get(@BeanParam RequestParams requestParams, String assetId) {
         Asset asset = assetService.get(assetId);
@@ -55,9 +61,11 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
         return asset;
     }
 
+    // TODO Restrict access to realms!
     @Override
     public void update(@BeanParam RequestParams requestParams, String assetId, Asset asset) {
         try {
+            // TODO We must limit updates to the same realm, also perform "new parent" checks!
             assetService.merge(
                 mapToServerAsset(asset, assetService.get(assetId))
             );
@@ -66,6 +74,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
         }
     }
 
+    // TODO Restrict access to realms!
     @Override
     public void create(@BeanParam RequestParams requestParams, Asset asset) {
         try {
@@ -77,6 +86,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
         }
     }
 
+    // TODO Restrict access to realms!
     @Override
     public void delete(@BeanParam RequestParams requestParams, String assetId) {
         assetService.delete(assetId);

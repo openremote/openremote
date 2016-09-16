@@ -63,7 +63,7 @@ public class UserResourceImpl extends WebResource implements UserResource {
     public User[] getAll(RequestParams requestParams, String realm) {
         try {
             List<UserRepresentation> userRepresentations =
-                managerIdentityService.getRealms(requestParams).realm(realm).users().search(null, 0, Integer.MAX_VALUE);
+                managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().search(null, 0, Integer.MAX_VALUE);
             List<User> users = new ArrayList<>();
             for (UserRepresentation userRepresentation : userRepresentations) {
                 users.add(convertUser(realm, userRepresentation));
@@ -81,7 +81,7 @@ public class UserResourceImpl extends WebResource implements UserResource {
         try {
             return convertUser(
                 realm,
-                managerIdentityService.getRealms(requestParams).realm(realm).users().get(userId).toRepresentation()
+                managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).toRepresentation()
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -102,7 +102,7 @@ public class UserResourceImpl extends WebResource implements UserResource {
             );
         }
         try {
-            managerIdentityService.getRealms(requestParams).realm(realm).users().get(userId).update(
+            managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).update(
                 convert(getContainer().JSON, UserRepresentation.class, user)
             );
         } catch (ClientErrorException ex) {
@@ -115,7 +115,7 @@ public class UserResourceImpl extends WebResource implements UserResource {
     @Override
     public void create(RequestParams requestParams, String realm, User user) {
         try {
-            Response response = managerIdentityService.getRealms(requestParams).realm(realm).users().create(
+            Response response = managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().create(
                 convert(getContainer().JSON, UserRepresentation.class, user)
             );
             if (!response.getStatusInfo().equals(Response.Status.CREATED)) {
@@ -146,7 +146,7 @@ public class UserResourceImpl extends WebResource implements UserResource {
             );
         }
         try {
-            Response response = managerIdentityService.getRealms(requestParams).realm(realm).users().delete(userId);
+            Response response = managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().delete(userId);
             if (!response.getStatusInfo().equals(Response.Status.NO_CONTENT)) {
                 throw new WebApplicationException(
                     Response.status(response.getStatus())
@@ -166,7 +166,7 @@ public class UserResourceImpl extends WebResource implements UserResource {
     @Override
     public void resetPassword(@BeanParam RequestParams requestParams, String realm, String userId, Credential credential) {
         try {
-            managerIdentityService.getRealms(requestParams).realm(realm).users().get(userId).resetPassword(
+            managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).resetPassword(
                 convert(getContainer().JSON, CredentialRepresentation.class, credential)
             );
         } catch (ClientErrorException ex) {
@@ -180,9 +180,9 @@ public class UserResourceImpl extends WebResource implements UserResource {
     public Role[] getRoles(@BeanParam RequestParams requestParams, String realm, String userId) {
         try {
             RoleMappingResource roleMappingResource =
-                managerIdentityService.getRealms(requestParams).realm(realm).users().get(userId).roles();
+                managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).roles();
             ClientsResource clientsResource =
-                managerIdentityService.getRealms(requestParams).realm(realm).clients();
+                managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).clients();
             String clientId = clientsResource.findByClientId(MANAGER_CLIENT_ID).get(0).getId();
             RolesResource rolesResource = clientsResource.get(clientId).roles();
 
@@ -219,9 +219,9 @@ public class UserResourceImpl extends WebResource implements UserResource {
     public void updateRoles(@BeanParam RequestParams requestParams, String realm, String userId, Role[] roles) {
         try {
             RoleMappingResource roleMappingResource =
-                managerIdentityService.getRealms(requestParams).realm(realm).users().get(userId).roles();
+                managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).roles();
             ClientsResource clientsResource =
-                managerIdentityService.getRealms(requestParams).realm(realm).clients();
+                managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).clients();
             String clientId = clientsResource.findByClientId(MANAGER_CLIENT_ID).get(0).getId();
 
             List<RoleRepresentation> rolesToAdd = new ArrayList<>();
@@ -303,7 +303,7 @@ public class UserResourceImpl extends WebResource implements UserResource {
 
     protected UserRepresentation getMasterRealmAdminUser(RequestParams requestParams) {
         List<UserRepresentation> adminUsers = managerIdentityService
-            .getRealms(requestParams).realm(MASTER_REALM)
+            .getRealms(requestParams.getBearerAuth()).realm(MASTER_REALM)
             .users().search(MASTER_REALM_ADMIN_USER, null, null);
         if (adminUsers.size() == 0) {
             throw new IllegalStateException("Can't load master realm admin user");

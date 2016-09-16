@@ -20,6 +20,8 @@
 package org.openremote.manager.client.service;
 
 import com.google.inject.Inject;
+import elemental.client.Browser;
+import elemental.html.Location;
 import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.interop.keycloak.*;
@@ -58,7 +60,9 @@ public class SecurityServiceImpl implements SecurityService {
     @Override
     public void logout() {
         LogoutOptions opts = new LogoutOptions();
-        opts.redirectUri = "/" + getRealm();
+        // TODO Experiments with relative URLs only worked for master realm logout, not any other realm...
+        Location location = Browser.getWindow().getLocation();
+        opts.redirectUri = location.getProtocol() + "//" + location.getHost() + "/" + getRealm();
         keycloak.logout(opts);
     }
 

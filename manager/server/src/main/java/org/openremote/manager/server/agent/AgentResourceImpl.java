@@ -36,7 +36,7 @@ public class AgentResourceImpl extends WebResource implements AgentResource {
     @Override
     public void refreshInventory(@BeanParam RequestParams requestParams, String agentId) {
         agentService.clearInventory(agentId);
-        agentService.triggerDiscovery(agentId);
+        agentService.triggerDiscovery(getAuthenticatedRealm(), agentId);
     }
 
 }

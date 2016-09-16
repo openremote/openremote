@@ -40,7 +40,7 @@ public class Tenant {
 
     @NotNull(message = "{Tenant.realm.NotNull}")
     @Size(min = 3, max = 255, message = "{Tenant.realm.Size}")
-    @Pattern(regexp = "[a-z0-9]+", message = "{Tenant.realm.Pattern}")
+    @Pattern(regexp = "[a-zA-Z0-9\\-_]+", message = "{Tenant.realm.Pattern}")
     public String getRealm() {
         return realm;
     }
@@ -69,7 +69,7 @@ public class Tenant {
 
     @Override
     public String toString() {
-        return getClass().getName() + "{" +
+        return getClass().getSimpleName() + "{" +
             "id='" + id + '\'' +
             ", realm='" + realm + '\'' +
             ", displayName='" + displayName + '\'' +

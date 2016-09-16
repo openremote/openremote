@@ -73,9 +73,7 @@ public class HeaderPresenter implements HeaderView.Presenter {
         );
 
         assetSelectionRegistration = eventBus.register(AssetSelectedEvent.class,
-            event -> {
-                selectedAssetId = event.getAssetId();
-            }
+            event -> selectedAssetId = event.getAssetInfo() != null ? event.getAssetInfo().getId() : null
         );
 
         view.setUsername(securityService.getParsedToken().getPreferredUsername());

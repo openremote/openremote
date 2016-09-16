@@ -79,6 +79,8 @@ class AssetCell extends AbstractSafeHtmlCell<AssetInfo> {
 
     static protected String getIcon(AssetType assetType) {
         switch (assetType) {
+            case TENANT:
+                return "group";
             case BUILDING:
                 return "building";
             case FLOOR:

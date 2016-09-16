@@ -39,10 +39,9 @@ import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.asset.AssetType;
 import org.openremote.manager.shared.attribute.Attribute;
 import org.openremote.manager.shared.attribute.Attributes;
+import org.openremote.manager.shared.security.Tenant;
 import rx.Observable;
 
-import javax.ws.rs.core.UriBuilder;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -96,11 +95,16 @@ public class SampleDataService implements ContainerService {
             MASTER_REALM, new AuthForm(ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, ADMIN_PASSWORD)
         ).getToken();
 
-        deleteRealms(accessToken);
-        configureMasterRealm(accessToken);
-        registerClientApplications(accessToken);
-        addRolesAndTestUsers(accessToken);
-        storeSampleAssets();
+        try {
+            deleteRealms(accessToken);
+            configureMasterRealm(accessToken);
+            createTenants(accessToken);
+            storeSampleAssets();
+
+            LOG.info("--- SAMPLE DATA COMPLETE ---");
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     @Override
@@ -119,27 +123,16 @@ public class SampleDataService implements ContainerService {
 
     protected void configureMasterRealm(String accessToken) {
         RealmResource realmResource = identityService.getRealms(accessToken, false).realm(MASTER_REALM);
+        ClientsResource clientsResource = identityService.getRealms(accessToken, false).realm(MASTER_REALM).clients();
+        UsersResource usersResource = identityService.getRealms(accessToken, false).realm(MASTER_REALM).users();
+
         RealmRepresentation masterRealm = realmResource.toRepresentation();
 
-        masterRealm.setDisplayName("OpenRemote");
-        masterRealm.setDisplayNameHtml("<div class=\"kc-logo-text\"><span>OpenRemote</span></div>");
+        masterRealm.setDisplayName("Master");
 
-        masterRealm.setLoginTheme("openremote");
-        masterRealm.setAccountTheme("openremote");
-
-        masterRealm.setSsoSessionIdleTimeout(10800); // 3 hours
-
-        // TODO: Make SSL setup configurable
-        masterRealm.setSslRequired(SslRequired.NONE.toString());
-
-        // TODO: This should only be set in dev mode, 60 seconds is enough in production?
-        masterRealm.setAccessTokenLifespan(900); // 15 minutes
+        identityService.configureRealm(masterRealm);
 
         realmResource.update(masterRealm);
-    }
-
-    protected void registerClientApplications(String accessToken) {
-        ClientsResource clientsResource = identityService.getRealms(accessToken, false).realm(MASTER_REALM).clients();
 
         // Find out if there is a client already present for this application, if so, delete it
         fromCallable(clientsResource::findAll)
@@ -150,48 +143,15 @@ public class SampleDataService implements ContainerService {
                 clientsResource.get(clientObjectId).remove();
             });
 
-        // Register a new client for this application
-        ClientRepresentation managerClient = new ClientRepresentation();
-
-        managerClient.setRegistrationAccessToken(accessToken);
-
-        managerClient.setClientId(MANAGER_CLIENT_ID);
-
-        managerClient.setName("OpenRemote Manager");
-        managerClient.setPublicClient(true);
-
-        // TODO this should only be enabled in dev mode, we need it for integration tests
-        managerClient.setDirectAccessGrantsEnabled(true);
-
-        String callbackUrl = UriBuilder.fromUri("/").path(MASTER_REALM).path("*").build().toString();
-
-        List<String> redirectUrls = new ArrayList<>();
-        redirectUrls.add(callbackUrl);
-        managerClient.setRedirectUris(redirectUrls);
-
-        String baseUrl = UriBuilder.fromUri("/").path(MASTER_REALM).build().toString();
-        managerClient.setBaseUrl(baseUrl);
-
-        String clientResourceLocation =
-            clientsResource.create(managerClient).getLocation().toString();
-
-        LOG.info("Registered client application '" + MANAGER_CLIENT_ID + "' with identity provider: " + clientResourceLocation);
-    }
-
-    protected void addRolesAndTestUsers(String accessToken) {
-        ClientsResource clientsResource = identityService.getRealms(accessToken, false).realm(MASTER_REALM).clients();
-        UsersResource usersResource = identityService.getRealms(accessToken, false).realm(MASTER_REALM).users();
+        identityService.createClientApplication(accessToken, masterRealm.getRealm());
 
         String clientObjectId = fromCallable(() -> clientsResource.findByClientId(MANAGER_CLIENT_ID))
             .flatMap(Observable::from)
             .map(ClientRepresentation::getId)
             .toBlocking().singleOrDefault(null);
 
-        // Register some roles
         ClientResource clientResource = clientsResource.get(clientObjectId);
         RolesResource rolesResource = clientResource.roles();
-
-        identityService.addDefaultRoles(rolesResource);
 
         // Give admin all roles (we can only check realm _or_ application roles in @RolesAllowed)!
         RoleRepresentation readRole = rolesResource.get("read").toRepresentation();
@@ -242,7 +202,20 @@ public class SampleDataService implements ContainerService {
             readRole,
             writeRole
         ));
+    }
 
+    protected void createTenants(String accessToken) throws Exception {
+        Tenant customerA = new Tenant();
+        customerA.setRealm("customerA");
+        customerA.setDisplayName("Customer A");
+        customerA.setEnabled(true);
+        identityService.createTenant(accessToken, customerA);
+
+        Tenant customerB = new Tenant();
+        customerB.setRealm("customerB");
+        customerB.setDisplayName("Customer B");
+        customerB.setEnabled(true);
+        identityService.createTenant(accessToken, customerB);
     }
 
     protected void storeSampleAssets() {
@@ -250,6 +223,7 @@ public class SampleDataService implements ContainerService {
         GeometryFactory geometryFactory = new GeometryFactory();
 
         ServerAsset smartOffice = new ServerAsset();
+        smartOffice.setRealm(MASTER_REALM);
         smartOffice.setName("Smart Office");
         smartOffice.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         smartOffice.setType(AssetType.BUILDING);

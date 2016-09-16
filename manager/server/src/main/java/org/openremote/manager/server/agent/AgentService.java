@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.server.agent;
 
+import org.apache.camel.Exchange;
 import org.apache.camel.FailedToCreateRouteException;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
@@ -27,6 +28,7 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.container.util.IdentifierUtil;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.asset.AssetService;
 import org.openremote.manager.server.asset.ServerAsset;
@@ -34,13 +36,16 @@ import org.openremote.manager.shared.Function;
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.agent.InventoryModifiedEvent;
 import org.openremote.manager.shared.asset.Asset;
-import org.openremote.manager.shared.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetType;
 import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.connector.ConnectorComponent;
 import org.openremote.manager.shared.util.Util;
 
-import java.util.*;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -57,37 +62,6 @@ public class AgentService implements ContainerService {
     protected ConnectorService connectorService;
 
     final protected Map<String, AgentRoutes> agentInstanceMap = new LinkedHashMap<>();
-
-    /*
-    This is the dynamic routing for discovery triggers: We call either the desired agent
-    only, or get a list of all agents and trigger all of them.
-     */
-    final protected Function<String, String> triggerDiscoveryRouting = new Function<String, String>() {
-        @Override
-        public String apply(String agentAssetId) {
-            LOG.fine("Routing trigger discovery message for agent(s): " + agentAssetId);
-            List<String> destinations = new ArrayList<>();
-            if (agentAssetId != null && agentAssetId.length() > 0) {
-                Asset agentAsset = assetService.get(agentAssetId);
-                if (agentAsset != null) {
-                    destinations.add(
-                        AgentRoutes.TRIGGER_DISCOVERY_ROUTE(agentAssetId)
-                    );
-                }
-            } else {
-                Asset[] allAgents = assetService.findByType(AssetType.AGENT);
-                for (Asset agent : allAgents) {
-                    destinations.add(
-                        AgentRoutes.TRIGGER_DISCOVERY_ROUTE(agent.getId())
-                    );
-                }
-            }
-            LOG.fine("Triggering discovery on agents: " + destinations);
-            return Util.toCommaSeparated(
-                destinations.toArray(new String[destinations.size()])
-            );
-        }
-    };
 
     @Override
     public void init(Container container) throws Exception {
@@ -110,12 +84,15 @@ public class AgentService implements ContainerService {
                     .process(exchange -> {
                         PersistenceEvent persistenceEvent = exchange.getIn().getHeader(PERSISTENCE_EVENT_HEADER, PersistenceEvent.class);
                         Asset agent = exchange.getIn().getBody(Asset.class);
-                        reconfigureAgents(persistenceEvent == UPDATE ? agent : null);
+
+                        ServerAsset[] agents = assetService.findByType(agent.getRealm(), AssetType.AGENT);
+                        LOG.fine("Reconfigure agents of realm '" + agent.getRealm() + "': " + agents.length);
+                        reconfigureAgents(agents, persistenceEvent == UPDATE ? agent : null);
                     });
 
                 // Dynamically route discovery trigger messages to agents
                 from(Agent.TOPIC_TRIGGER_DISCOVERY)
-                    .routingSlip(method(triggerDiscoveryRouting))
+                    .routingSlip(method(AgentService.this, "triggerDiscoverySlip"))
                     .ignoreInvalidEndpoints();
             }
         });
@@ -130,7 +107,9 @@ public class AgentService implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
-        reconfigureAgents(null);
+        ServerAsset[] agents = assetService.findByTypeInAllRealms(AssetType.AGENT);
+        LOG.fine("Configure agents in all realms:" + agents.length);
+        reconfigureAgents(agents, null);
     }
 
     @Override
@@ -142,15 +121,24 @@ public class AgentService implements ContainerService {
         assetService.deleteChildren(agentId);
     }
 
-    public void triggerDiscovery(String agentId) {
-        producerTemplate.sendBody(Agent.TOPIC_TRIGGER_DISCOVERY, agentId);
+    public void triggerDiscovery(String realm, String agentId) {
+        if (agentId != null) {
+            producerTemplate.sendBody(Agent.TOPIC_TRIGGER_DISCOVERY, agentId);
+        } else {
+            if (realm == null || realm.length() == 0) {
+                throw new IllegalArgumentException(
+                    "Realm must be provided to trigger discovery of all agents (in that realm)"
+                );
+            }
+            producerTemplate.sendBodyAndHeader(
+                Agent.TOPIC_TRIGGER_DISCOVERY,
+                null,
+                Agent.TOPIC_TRIGGER_DISCOVERY_HEADER_REALM, realm
+            );
+        }
     }
 
-    protected void reconfigureAgents(Asset updatedAgent) {
-        ServerAsset[] agents = assetService.findByType(AssetType.AGENT);
-
-        LOG.fine("Reconfigure agents: " + agents.length);
-
+    protected void reconfigureAgents(ServerAsset[] agents, Asset updatedAgent) {
         synchronized (agentInstanceMap) {
             for (ServerAsset agentAsset : agents) {
                 Agent agent = new Agent(new Attributes(agentAsset.getAttributes()));
@@ -197,24 +185,36 @@ public class AgentService implements ContainerService {
             @Override
             protected void handleInventoryModified(InventoryModifiedEvent event) {
                 Asset deviceAsset = event.getDeviceAsset();
+
+                // We must combine the device and the agent identifiers to uniquely identify a
+                // discovered device - the same device id might be given to several agents (and
+                // these agents can be in different realms)
+                String combinedAssetId = IdentifierUtil.getEncodedHash(
+                    agentAsset.getId().getBytes(Charset.forName("utf-8")),
+                    deviceAsset.getId().getBytes(Charset.forName("utf-8"))
+                );
+
                 switch (event.getCause()) {
                     case PUT:
                         LOG.fine("Put child asset of agent '" + agentAsset.getId() + "': " + deviceAsset);
-                        ServerAsset deviceServerAsset = assetService.get(deviceAsset.getId());
+
+                        ServerAsset deviceServerAsset = assetService.get(combinedAssetId);
                         if (deviceServerAsset == null) {
                             deviceServerAsset = ServerAsset.map(
                                 deviceAsset,
                                 new ServerAsset(),
+                                agentAsset.getRealm(),
                                 agentAsset.getId(),
                                 agentAsset.getCoordinates()
                             );
-                            deviceServerAsset.setId(deviceAsset.getId());
+                            deviceServerAsset.setId(combinedAssetId);
                             LOG.fine("Child asset of agent is new, merging: " + deviceServerAsset);
                             deviceServerAsset = assetService.merge(deviceServerAsset);
                         } else {
                             deviceServerAsset = ServerAsset.map(
                                 deviceAsset,
                                 deviceServerAsset,
+                                agentAsset.getRealm(),
                                 agentAsset.getId(),
                                 agentAsset.getCoordinates()
                             );
@@ -224,7 +224,7 @@ public class AgentService implements ContainerService {
                         break;
                     case DELETE:
                         LOG.fine("Delete child asset of agent '" + agentAsset.getId() + "': " + deviceAsset);
-                        assetService.delete(deviceAsset.getId());
+                        assetService.delete(combinedAssetId);
                         break;
                 }
             }
@@ -261,5 +261,37 @@ public class AgentService implements ContainerService {
                 // TODO: We should mark the agent or fire event, or...
             }
         }
+    }
+
+    public String triggerDiscoverySlip(String agentAssetId, Exchange exchange) {
+        // Find given or all agents of given realm, add their trigger discovery endpoints to the routing slip
+        List<String> destinations = new ArrayList<>();
+        if (agentAssetId != null && agentAssetId.length() > 0) {
+            Asset agentAsset = assetService.get(agentAssetId);
+            if (agentAsset != null) {
+                LOG.fine("Routing trigger discovery message for agent: " + agentAssetId);
+                destinations.add(
+                    AgentRoutes.TRIGGER_DISCOVERY_ROUTE(agentAssetId)
+                );
+            }
+        } else {
+            String realm = exchange.getIn().getHeader(
+                Agent.TOPIC_TRIGGER_DISCOVERY_HEADER_REALM, String.class
+            );
+            if (realm != null) {
+                LOG.fine("Routing trigger discovery message for all agents of realm: " + realm);
+                Asset[] allAgents = assetService.findByType(realm, AssetType.AGENT);
+                for (Asset agent : allAgents) {
+                    destinations.add(
+                        AgentRoutes.TRIGGER_DISCOVERY_ROUTE(agent.getId())
+                    );
+                }
+            }
+        }
+
+        LOG.fine("Triggering discovery on agents: " + destinations);
+        return Util.toCommaSeparated(
+            destinations.toArray(new String[destinations.size()])
+        );
     }
 }

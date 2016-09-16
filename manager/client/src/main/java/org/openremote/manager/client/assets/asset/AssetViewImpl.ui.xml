@@ -21,7 +21,7 @@
         .mapWidget {
             margin-left: 2em;
             width: 44%;
-            height: 10.9em;
+            height: 14em;
         }
     </ui:style>
 
@@ -128,6 +128,20 @@
                                 <w:field>
                                     <w:FormField addStyleNames="larger">
                                         <w:FormInputText ui:field="nameInput" addStyleNames="flex"/>
+                                    </w:FormField>
+                                </w:field>
+                            </w:FormGroup>
+
+                            <w:FormGroup ui:field="realmGroup">
+                                <w:label>
+                                    <w:FormLabel text="{managerMessages.tenantName}"/>
+                                </w:label>
+                                <w:field>
+                                    <w:FormField>
+                                        <g:FlowPanel styleName="flex layout horizontal center">
+                                            <g:Label ui:field="realmLabel"
+                                                     addStyleNames="flex {widgetStyle.FormControl} {widgetStyle.FormValueLabel}"/>
+                                        </g:FlowPanel>
                                     </w:FormField>
                                 </w:field>
                             </w:FormGroup>
