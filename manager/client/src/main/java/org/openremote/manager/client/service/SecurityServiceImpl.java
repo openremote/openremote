@@ -25,10 +25,15 @@ import elemental.html.Location;
 import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.interop.keycloak.*;
+import org.openremote.manager.shared.Constants;
 import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.Runnable;
 
+import java.util.logging.Logger;
+
 public class SecurityServiceImpl implements SecurityService {
+
+    private static final Logger LOG = Logger.getLogger(SecurityServiceImpl.class.getName());
 
     protected final Keycloak keycloak;
 
@@ -45,6 +50,15 @@ public class SecurityServiceImpl implements SecurityService {
         onAuthLogout(() -> {
             eventBus.dispatch(new UserChangeEvent(null));
         });
+
+        // We update the refresh token in the background. The only other option would
+        // be to update the token before every request in request service. However, this
+        // will force asynchronous execution of all HTTP requests, which we don't want.
+        Browser.getWindow().setInterval(() -> updateToken(
+            Constants.ACCESS_TOKEN_LIFESPAN_SECONDS/2, // Token must be good for X more seconds
+            tokenRefreshed -> LOG.fine("Access token updated, was refreshed from auth server: " + tokenRefreshed),
+            this::logout
+        ), 30000);
     }
 
     @Override

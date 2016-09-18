@@ -20,20 +20,17 @@
 package org.openremote.manager.shared.event;
 
 import com.fasterxml.jackson.annotation.*;
+import org.openremote.manager.shared.asset.AssetModifiedEvent;
+import org.openremote.manager.shared.asset.SubscribeAssetModified;
+import org.openremote.manager.shared.asset.UnsubscribeAssetModified;
 import org.openremote.manager.shared.util.Util;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(value = JsonInclude.Include.NON_EMPTY)
-@JsonAutoDetect(
-    fieldVisibility = JsonAutoDetect.Visibility.ANY,
-    getterVisibility = JsonAutoDetect.Visibility.NONE,
-    setterVisibility = JsonAutoDetect.Visibility.NONE,
-    isGetterVisibility = JsonAutoDetect.Visibility.NONE,
-    creatorVisibility = JsonAutoDetect.Visibility.NONE
-)
 @JsonSubTypes({
     // Events used on client and server (serialized on client/server bus)
     @JsonSubTypes.Type(value = Message.class, name = "MESSAGE"),
+    @JsonSubTypes.Type(value = SubscribeAssetModified.class, name = "SUBSCRIBE_ASSET_CHANGES"),
+    @JsonSubTypes.Type(value = UnsubscribeAssetModified.class, name = "UNSUBSCRIBE_ASSET_CHANGES"),
+    @JsonSubTypes.Type(value = AssetModifiedEvent.class, name = "ASSET_MODIFIED"),
     /*
     @JsonSubTypes.Type(value = FlowDeployEvent.class, name = "FLOW_DEPLOY"),
     @JsonSubTypes.Type(value = FlowDeploymentFailureEvent.class, name = "FLOW_DEPLOYMENT_FAILURE"),
@@ -66,6 +63,7 @@ import org.openremote.manager.shared.util.Util;
     include = JsonTypeInfo.As.PROPERTY,
     property = "event"
 )
+// TODO The GWT jackson integration sometimes tries to pick up ALL subclasses when serialization generators are produced, use @JsonIgnoreType on them
 public abstract class Event {
 
     // This is compatible with the Polymer event naming, so events can be used in JS/Polymer components
@@ -85,4 +83,9 @@ public abstract class Event {
         return getType(getClass());
     }
 
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName();
+    }
 }

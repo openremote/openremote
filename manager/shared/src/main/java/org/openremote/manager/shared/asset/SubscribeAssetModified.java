@@ -17,22 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.event;
+package org.openremote.manager.shared.asset;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreType;
-import com.google.gwt.place.shared.Place;
 import org.openremote.manager.shared.event.Event;
 
-@JsonIgnoreType
-public class GoToPlaceEvent extends Event {
+public class SubscribeAssetModified extends Event {
 
-    private final Place place;
-
-    public GoToPlaceEvent(Place place) {
-        this.place = place;
-    }
-
-    public Place getPlace() {
-        return place;
-    }
 }

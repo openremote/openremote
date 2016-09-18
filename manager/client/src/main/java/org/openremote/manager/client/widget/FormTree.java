@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-public class FormTree extends CellTree {
+abstract public class FormTree extends CellTree {
 
     private static final Logger LOG = Logger.getLogger(FormTree.class.getName());
 
@@ -68,7 +68,7 @@ public class FormTree extends CellTree {
             int count = node.getChildCount();
             for (int i = 0; i < count; i++) {
                 @SuppressWarnings("unchecked")
-                T childEntity = (T)node.getChildValue(i);
+                T childEntity = (T) node.getChildValue(i);
                 if (isMatchingPathElement(pathElement, childEntity)) {
                     // We found the path element, add the entity to the path list
                     entityPath.add(childEntity);
@@ -101,14 +101,14 @@ public class FormTree extends CellTree {
     }
 
     public void refresh() {
-        Map<Object, Boolean> openMap = new HashMap<>();
+        Map<String, Boolean> openMap = new HashMap<>();
         TreeNode root = getRootTreeNode();
         getNodeOpenMap(root, openMap);
-        openMap.put(root, true);
+        openMap.put(getTreeNodeId(root), true);
         refresh(root, openMap);
     }
 
-    public void refresh(TreeNode treeNode, Map<Object, Boolean> openMap) {
+    public void refresh(TreeNode treeNode, Map<String, Boolean> openMap) {
         if (treeNode == null) {
             return;
         }
@@ -118,7 +118,7 @@ public class FormTree extends CellTree {
                 continue;
             }
             treeNode.setChildOpen(i, false);
-            Boolean open = openMap.get(treeNode.getChildValue(i));
+            Boolean open = openMap.get(getTreeNodeId(treeNode.getChildValue(i)));
             if (open != null && open) {
                 TreeNode childNode = treeNode.setChildOpen(i, true);
                 refresh(childNode, openMap);
@@ -126,7 +126,7 @@ public class FormTree extends CellTree {
         }
     }
 
-    protected void getNodeOpenMap(TreeNode treeNode, Map<Object, Boolean> openMap) {
+    protected void getNodeOpenMap(TreeNode treeNode, Map<String, Boolean> openMap) {
         if (treeNode == null) {
             return;
         }
@@ -136,7 +136,7 @@ public class FormTree extends CellTree {
                 continue;
             }
 
-            openMap.put(treeNode.getChildValue(i), treeNode.isChildOpen(i));
+            openMap.put(getTreeNodeId(treeNode.getChildValue(i)), treeNode.isChildOpen(i));
 
             /* This gets the child node, but doesn't change the open status (there 's no other way to get the child). */
             TreeNode childNode = treeNode.setChildOpen(i, treeNode.isChildOpen(i));
@@ -144,4 +144,6 @@ public class FormTree extends CellTree {
             getNodeOpenMap(childNode, openMap);
         }
     }
+
+    abstract protected String getTreeNodeId(Object treeNodeValue);
 }

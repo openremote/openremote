@@ -132,20 +132,6 @@
                                 </w:field>
                             </w:FormGroup>
 
-                            <w:FormGroup ui:field="realmGroup">
-                                <w:label>
-                                    <w:FormLabel text="{managerMessages.tenantName}"/>
-                                </w:label>
-                                <w:field>
-                                    <w:FormField>
-                                        <g:FlowPanel styleName="flex layout horizontal center">
-                                            <g:Label ui:field="realmLabel"
-                                                     addStyleNames="flex {widgetStyle.FormControl} {widgetStyle.FormValueLabel}"/>
-                                        </g:FlowPanel>
-                                    </w:FormField>
-                                </w:field>
-                            </w:FormGroup>
-
                             <w:FormGroup ui:field="createdOnGroup">
                                 <w:label>
                                     <w:FormLabel text="{managerMessages.createdOn}"/>
@@ -159,6 +145,20 @@
                                                           text="{managerMessages.showHistory}"
                                                           enabled="false"
                                                           icon="history"/>
+                                        </g:FlowPanel>
+                                    </w:FormField>
+                                </w:field>
+                            </w:FormGroup>
+
+                            <w:FormGroup ui:field="realmGroup">
+                                <w:label>
+                                    <w:FormLabel text="{managerMessages.tenantName}"/>
+                                </w:label>
+                                <w:field>
+                                    <w:FormField>
+                                        <g:FlowPanel styleName="flex layout horizontal center">
+                                            <g:Label ui:field="realmLabel"
+                                                     addStyleNames="flex {widgetStyle.FormControl} {widgetStyle.FormValueLabel}"/>
                                         </g:FlowPanel>
                                     </w:FormField>
                                 </w:field>

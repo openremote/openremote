@@ -20,7 +20,6 @@
 package org.openremote.container.persistence;
 
 import org.apache.camel.ExchangePattern;
-import org.apache.camel.ProducerTemplate;
 import org.hibernate.CallbackException;
 import org.hibernate.EmptyInterceptor;
 import org.hibernate.Transaction;
@@ -42,9 +41,7 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
     private static final Logger LOG = Logger.getLogger(PersistenceEventInterceptor.class.getName());
 
     protected MessageBrokerService messageBrokerService;
-    protected Set<Object> inserts = new HashSet<>();
-    protected Set<Object> updates = new HashSet<>();
-    protected Set<Object> deletes = new HashSet<>();
+    protected Set<PersistenceEvent> persistenceEvents = new HashSet<>();
 
     public MessageBrokerService getMessageBrokerService() {
         if (messageBrokerService == null)
@@ -60,7 +57,13 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
     public boolean onSave(Object entity, Serializable id,
                           Object[] state, String[] propertyNames, Type[] types)
         throws CallbackException {
-        inserts.add(entity);
+        //noinspection unchecked
+        persistenceEvents.add(new PersistenceEvent(
+            PersistenceEvent.Cause.INSERT,
+            entity,
+            propertyNames,
+            state
+        ));
         return false;
     }
 
@@ -69,7 +72,14 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
                                 Object[] currentState, Object[] previousState,
                                 String[] propertyNames, Type[] types)
         throws CallbackException {
-        updates.add(entity);
+        //noinspection unchecked
+        persistenceEvents.add(new PersistenceEvent(
+            PersistenceEvent.Cause.UPDATE,
+            entity,
+            propertyNames,
+            currentState,
+            previousState
+        ));
         return false;
     }
 
@@ -78,7 +88,13 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
                          Object[] state,
                          String[] propertyNames,
                          Type[] types) {
-        deletes.add(entity);
+        //noinspection unchecked
+        persistenceEvents.add(new PersistenceEvent(
+            PersistenceEvent.Cause.DELETE,
+            entity,
+            propertyNames,
+            state
+        ));
     }
 
     @Override
@@ -93,23 +109,18 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
                 try {
                     if (status != Status.STATUS_COMMITTED)
                         return;
-                    ProducerTemplate producerTemplate =
-                        messageBrokerService.getContext().createProducerTemplate();
 
-                    for (Object insert : inserts) {
-                        publishEvent(producerTemplate, insert, PersistenceEvent.INSERT);
-                    }
-                    for (Object update : updates) {
-                        publishEvent(producerTemplate, update, PersistenceEvent.UPDATE);
-                    }
-                    for (Object delete : deletes) {
-                        publishEvent(producerTemplate, delete, PersistenceEvent.DELETE);
-
+                    for (PersistenceEvent persistenceEvent : persistenceEvents) {
+                        messageBrokerService.getProducerTemplate().sendBodyAndHeader(
+                            PersistenceEvent.PERSISTENCE_EVENT_TOPIC,
+                            ExchangePattern.InOnly,
+                            persistenceEvent,
+                            PersistenceEvent.HEADER_ENTITY_TYPE,
+                            persistenceEvent.getEntity().getClass()
+                        );
                     }
                 } finally {
-                    inserts.clear();
-                    updates.clear();
-                    deletes.clear();
+                    persistenceEvents.clear();
                 }
             }
         });
@@ -117,15 +128,5 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
 
     @Override
     public void afterTransactionCompletion(Transaction tx) {
-    }
-
-    protected void publishEvent(ProducerTemplate producerTemplate, Object object, PersistenceEvent eventAction) {
-        producerTemplate.sendBodyAndHeader(
-            PersistenceEvent.PERSISTENCE_EVENT_TOPIC,
-            ExchangePattern.InOnly,
-            object,
-            PersistenceEvent.PERSISTENCE_EVENT_HEADER,
-            eventAction
-        );
     }
 }

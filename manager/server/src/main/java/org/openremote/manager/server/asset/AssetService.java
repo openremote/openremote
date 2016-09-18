@@ -21,50 +21,95 @@ package org.openremote.manager.server.asset;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
-import org.keycloak.KeycloakPrincipal;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
-import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.manager.shared.Constants;
-import org.openremote.manager.shared.asset.Asset;
-import org.openremote.manager.shared.asset.AssetInfo;
-import org.openremote.manager.shared.asset.AssetType;
+import org.openremote.container.web.socket.WebsocketConstants;
+import org.openremote.manager.server.event.EventPredicate;
+import org.openremote.manager.server.event.EventService;
+import org.openremote.manager.shared.asset.*;
 
 import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_EVENT_HEADER;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_EVENT_TOPIC;
+import static org.openremote.container.persistence.PersistenceEvent.matchesEntityType;
 
 public class AssetService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(AssetService.class.getName());
 
+    // TODO this is quite a hack to get some publish/subscribe system going, it will have to be replaced
+    final protected Map<String, Long> assetListeners = new ConcurrentHashMap<>();
+    final protected int ASSET_LISTENERS_MAX_LIFETIME_SECONDS = 60;
+    final protected ScheduledExecutorService assetListenerScheduler = Executors.newScheduledThreadPool(1);
+
     protected MessageBrokerService messageBrokerService;
-    protected ManagerIdentityService identityService;
+    protected EventService eventService;
     protected PersistenceService persistenceService;
 
     @Override
     public void init(Container container) throws Exception {
         messageBrokerService = container.getService(MessageBrokerService.class);
+        eventService = container.getService(EventService.class);
         persistenceService = container.getService(PersistenceService.class);
+
+        // Max life time of listeners is 60 seconds
+        assetListenerScheduler.scheduleAtFixedRate(() -> {
+            assetListeners.forEach((sessionKey, timeStamp) -> {
+                if (timeStamp + (ASSET_LISTENERS_MAX_LIFETIME_SECONDS * 1000) < System.currentTimeMillis()) {
+                    LOG.fine("Removing asset listener session due to timeout: " + sessionKey);
+                    assetListeners.remove(sessionKey);
+                }
+            });
+        }, ASSET_LISTENERS_MAX_LIFETIME_SECONDS, ASSET_LISTENERS_MAX_LIFETIME_SECONDS, TimeUnit.SECONDS);
 
         messageBrokerService.getContext().addRoutes(new RouteBuilder() {
             @Override
             public void configure() throws Exception {
-                from(PERSISTENCE_EVENT_TOPIC)
-                    .filter(body().isInstanceOf(Asset.class))
+
+                // TODO None of this is secure or considers the realm of an asset or the logged-in user's realm
+                from(EventService.INCOMING_EVENT_QUEUE)
+                    .filter(new EventPredicate<>(SubscribeAssetModified.class))
                     .process(exchange -> {
-                        LOG.info("### ASSET PERSISTENCE EVENT: " + exchange.getIn().getHeader(PERSISTENCE_EVENT_HEADER));
-                        LOG.info("### ASSET: " + exchange.getIn().getBody());
+                        String sessionKey = exchange.getIn().getHeader(WebsocketConstants.SESSION_KEY, String.class);
+                        Long timestamp = System.currentTimeMillis();
+                        LOG.fine("Subscribing/updating subscription to asset change events for session: " + sessionKey);
+                        assetListeners.put(sessionKey, timestamp);
+                    });
+
+                from(EventService.INCOMING_EVENT_QUEUE)
+                    .filter(new EventPredicate<>(UnsubscribeAssetModified.class))
+                    .process(exchange -> {
+                        String sessionKey = exchange.getIn().getHeader(WebsocketConstants.SESSION_KEY, String.class);
+                        LOG.fine("Unsubscribing from asset change events for session: " + sessionKey);
+                        assetListeners.remove(sessionKey);
+                    });
+
+                from(PERSISTENCE_EVENT_TOPIC)
+                    .filter(matchesEntityType(Asset.class))
+                    .process(exchange -> {
+                        PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
+                        //noinspection unchecked
+                        for (AssetModifiedEvent assetModifiedEvent : createAssetModifiedEvents(persistenceEvent)) {
+                            LOG.fine("Publishing asset modified event to asset listeners: " + assetListeners.size());
+                            for (String sessionKey : assetListeners.keySet()) {
+                                eventService.sendEvent(sessionKey, assetModifiedEvent);
+                            }
+                        }
                     });
             }
         });
@@ -92,7 +137,7 @@ public class AssetService implements ContainerService {
         return persistenceService.doTransaction(em -> {
             List<AssetInfo> result = em.createQuery(
                 "select new org.openremote.manager.shared.asset.AssetInfo(" +
-                    "a.id, a.name, a.realm, a.type, a.parent.id" +
+                    "a.id, a.version, a.name, a.realm, a.type, a.parent.id" +
                     ") from Asset a where a.parent is null and a.realm = :realm order by a.createdOn asc",
                 AssetInfo.class
             ).setParameter("realm", realm).getResultList();
@@ -132,7 +177,7 @@ public class AssetService implements ContainerService {
             List<AssetInfo> result =
                 em.createQuery(
                     "select new org.openremote.manager.shared.asset.AssetInfo(" +
-                        "a.id, a.name, a.realm, a.type, a.parent.id" +
+                        "a.id, a.version, a.name, a.realm, a.type, a.parent.id" +
                         ") from Asset a where a.parent.id = :parentId order by a.createdOn asc",
                     AssetInfo.class
                 ).setParameter("parentId", parentId).getResultList();
@@ -167,7 +212,7 @@ public class AssetService implements ContainerService {
             List<AssetInfo> result =
                 em.createQuery(
                     "select new org.openremote.manager.shared.asset.AssetInfo(" +
-                        "a.id, a.name, a.realm, a.type, a.parent.id" +
+                        "a.id, a.version, a.name, a.realm, a.type, a.parent.id" +
                         ") from Asset a where a.parent.id = :parentId order by a.createdOn asc",
                     AssetInfo.class
                 ).setParameter("parentId", parentId).getResultList();
@@ -216,6 +261,85 @@ public class AssetService implements ContainerService {
             throw new IllegalStateException("Parent asset not found: " + asset.getParentId());
         if (Arrays.asList(parent.getPath()).contains(asset.getId()))
             throw new IllegalStateException("Parent asset can not be a child of the asset: " + asset.getParentId());
+    }
+
+    private AssetModifiedEvent[] createAssetModifiedEvents(PersistenceEvent<Asset> persistenceEvent) {
+        List<AssetModifiedEvent> events = new ArrayList<>();
+
+        Asset asset = persistenceEvent.getEntity();
+        // Assets are a composite structure and we want to be able to fire events that say
+        // "a child was removed/inserted for this or that parent". To do this we need to
+        // compare old and new entity state, figuring out which parent was modified. There
+        // is also the special case of assets without parent: In that case we fire a "children
+        // modified" for a special "empty" asset, which clients should consider to be the root
+        // item of the whole tree. It has no name, no id, no parent, etc.
+        List<String> modifiedParentIds = new ArrayList<>();
+
+        AssetModifiedEvent.Cause cause = null;
+
+        switch (persistenceEvent.getCause()) {
+            case INSERT:
+                cause = AssetModifiedEvent.Cause.CREATE;
+                if (asset.getParentId() != null) {
+                    modifiedParentIds.add(asset.getParentId());
+                } else {
+                    // The "root without id" asset was modified
+                    events.add(new AssetModifiedEvent(new AssetInfo(), AssetModifiedEvent.Cause.CHILDREN_MODIFIED));
+                }
+                break;
+            case UPDATE:
+                cause = AssetModifiedEvent.Cause.UPDATE;
+
+                int parentIdIndex = -1;
+                for (int i = 0; i < persistenceEvent.getPropertyNames().length; i++) {
+                    String propertyName = persistenceEvent.getPropertyNames()[i];
+                    if (propertyName.equals("parentId")) {
+                        parentIdIndex = i;
+                        break;
+                    }
+                }
+                String previousParentId = persistenceEvent.getPreviousState() != null
+                    ? (String) persistenceEvent.getPreviousState()[parentIdIndex]
+                    : null;
+                String currentParentId = (String) persistenceEvent.getCurrentState()[parentIdIndex];
+                if (previousParentId == null && currentParentId == null) {
+                    // The "root without id" asset was modified
+                    events.add(new AssetModifiedEvent(new AssetInfo(), AssetModifiedEvent.Cause.CHILDREN_MODIFIED));
+                } else {
+                    if (previousParentId == null) {
+                        // The "root without id" asset was modified
+                        events.add(new AssetModifiedEvent(new AssetInfo(), AssetModifiedEvent.Cause.CHILDREN_MODIFIED));
+                        modifiedParentIds.add(currentParentId);
+                    } else if (currentParentId == null) {
+                        // The "root without id" asset was modified
+                        events.add(new AssetModifiedEvent(new AssetInfo(), AssetModifiedEvent.Cause.CHILDREN_MODIFIED));
+                        modifiedParentIds.add(previousParentId);
+                    } else {
+                        modifiedParentIds.add(asset.getParentId());
+                    }
+                }
+                break;
+            case DELETE:
+                cause = AssetModifiedEvent.Cause.DELETE;
+                if (asset.getParentId() != null) {
+                    modifiedParentIds.add(asset.getParentId());
+                } else {
+                    // The "root without id" asset was modified
+                    events.add(new AssetModifiedEvent(new AssetInfo(), AssetModifiedEvent.Cause.CHILDREN_MODIFIED));
+                }
+                break;
+        }
+
+        events.add(new AssetModifiedEvent(asset, cause));
+
+        for (String modifiedParentId : modifiedParentIds) {
+            Asset parent = get(modifiedParentId);
+            if (parent != null) {
+                events.add(new AssetModifiedEvent(parent, AssetModifiedEvent.Cause.CHILDREN_MODIFIED));
+            }
+        }
+
+        return events.toArray(new AssetModifiedEvent[events.size()]);
     }
 
 }

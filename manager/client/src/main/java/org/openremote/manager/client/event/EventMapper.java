@@ -19,32 +19,12 @@
  */
 package org.openremote.manager.client.event;
 
-import com.github.nmorel.gwtjackson.client.JsonDeserializationContext;
-import com.github.nmorel.gwtjackson.client.JsonSerializationContext;
-import com.github.nmorel.gwtjackson.client.exception.JsonDeserializationException;
-import com.github.nmorel.gwtjackson.client.exception.JsonSerializationException;
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
+import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
 import org.openremote.manager.shared.event.Event;
 
-/* TODO This generator fails because Event is an abstract class, so serializers/deserializers are generated for ALL subclasses which won't compile
 @JsonMixIns({@JsonMixIns.JsonMixIn(target = Event.class, mixIn = DefaultJsonMixin.class)})
 public interface EventMapper extends ObjectMapper<Event> {
-}
-*/
-public class EventMapper {
 
-    public Event read(String input) throws JsonDeserializationException {
-        throw new UnsupportedOperationException("TODO: NOT IMPLEMENTED");
-    }
-
-    public Event read(String input, JsonDeserializationContext ctx) throws JsonDeserializationException {
-        throw new UnsupportedOperationException("TODO: NOT IMPLEMENTED");
-    }
-
-    public String write(Event value) throws JsonSerializationException {
-        throw new UnsupportedOperationException("TODO: NOT IMPLEMENTED");
-    }
-
-    public String write(Event value, JsonSerializationContext ctx) throws JsonSerializationException {
-        throw new UnsupportedOperationException("TODO: NOT IMPLEMENTED");
-    }
 }

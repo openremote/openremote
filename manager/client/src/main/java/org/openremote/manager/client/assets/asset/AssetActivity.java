@@ -33,7 +33,10 @@ import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
 import org.openremote.manager.client.widget.AttributesEditor;
 import org.openremote.manager.shared.agent.AgentResource;
-import org.openremote.manager.shared.asset.*;
+import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.asset.AssetInfo;
+import org.openremote.manager.shared.asset.AssetResource;
+import org.openremote.manager.shared.asset.AssetType;
 import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.connector.ConnectorResource;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
@@ -45,7 +48,6 @@ import java.util.Collection;
 import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
-import static org.openremote.manager.shared.asset.AssetModifiedEvent.Cause.*;
 
 public class AssetActivity
     extends AssetBrowsingActivity<AssetView, AssetPlace>
@@ -213,15 +215,8 @@ public class AssetActivity
         view.setFormBusy(true);
         view.clearFormMessages();
         clearViewFieldErrors();
-
-        // If the asset was in the root of the tree (so this check must be before
-        // we read the new parent asset state), force an asset tree
-        // root refresh when the update is complete
-        boolean forceRootRefresh = asset.getParentId() == null;
-
         readFromView();
         readParent();
-
         environment.getRequestService().execute(
             assetMapper,
             requestParams -> {
@@ -233,7 +228,6 @@ public class AssetActivity
                 environment.getEventBus().dispatch(new ShowInfoEvent(
                     environment.getMessages().assetUpdated(asset.getName())
                 ));
-                environment.getEventBus().dispatch(new AssetModifiedEvent(asset, UPDATE, forceRootRefresh));
                 environment.getPlaceController().goTo(new AssetPlace(assetId));
             },
             ex -> handleRequestException(ex, environment)
@@ -258,7 +252,6 @@ public class AssetActivity
                 environment.getEventBus().dispatch(new ShowInfoEvent(
                     environment.getMessages().assetCreated(asset.getName())
                 ));
-                environment.getEventBus().dispatch(new AssetModifiedEvent(asset, CREATE));
                 environment.getPlaceController().goTo(new AssetsDashboardPlace());
             },
             ex -> handleRequestException(ex, environment)
@@ -284,7 +277,6 @@ public class AssetActivity
                         environment.getEventBus().dispatch(new ShowInfoEvent(
                             environment.getMessages().assetDeleted(asset.getName())
                         ));
-                        environment.getEventBus().dispatch(new AssetModifiedEvent(asset, DELETE));
                         environment.getPlaceController().goTo(new AssetsDashboardPlace());
                     },
                     ex -> handleRequestException(ex, environment)
@@ -295,15 +287,22 @@ public class AssetActivity
 
     @Override
     public void beginParentSelection() {
-        isParentSelection = true;
+        if (!isCreateAsset) {
+            assetBrowserPresenter.selectAsset(null);
+        }
         view.setParentSelection(true);
+        isParentSelection = true;
     }
 
     @Override
     public void confirmParentSelection() {
-        isParentSelection = false;
-        assetBrowserPresenter.selectAsset(asset);
+        if (!isCreateAsset) {
+            assetBrowserPresenter.selectAsset(asset);
+        } else {
+            assetBrowserPresenter.selectAsset(null);
+        }
         view.setParentSelection(false);
+        isParentSelection = false;
     }
 
     @Override
@@ -319,6 +318,7 @@ public class AssetActivity
         view.setParentSelection(false);
         if (asset.getParentId() != null) {
             loadAsset(asset.getParentId(), loadedParentAsset -> {
+                this.realm = loadedParentAsset.getRealm();
                 this.parentAsset = loadedParentAsset;
                 writeParentToView();
             });

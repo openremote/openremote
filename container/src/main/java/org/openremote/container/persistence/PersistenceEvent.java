@@ -19,14 +19,62 @@
  */
 package org.openremote.container.persistence;
 
-public enum PersistenceEvent {
+import org.apache.camel.Predicate;
 
-    INSERT,
-    UPDATE,
-    DELETE;
+public class PersistenceEvent<T> {
 
+    // TODO: Unbounded queue
     public static final String PERSISTENCE_EVENT_TOPIC =
         "seda:" + PersistenceEvent.class.getSimpleName() + "?multipleConsumers=true&discardIfNoConsumers=true";
 
-    public static final String PERSISTENCE_EVENT_HEADER = PersistenceEvent.class.getSimpleName();
+    public static final String HEADER_ENTITY_TYPE = PersistenceEvent.class.getSimpleName() + ".ENTITY_TYPE";
+
+    public static Predicate matchesEntityType(Class<?> type) {
+        return exchange -> {
+            Class<?> entityType = exchange.getIn().getHeader(HEADER_ENTITY_TYPE, Class.class);
+            return type.isAssignableFrom(entityType);
+        };
+    }
+
+    public enum Cause {
+        INSERT, UPDATE, DELETE
+    }
+
+    final protected Cause cause;
+    final protected T entity;
+    final protected String[] propertyNames;
+    final protected Object[] currentState;
+    final protected Object[] previousState;
+
+    public PersistenceEvent(Cause cause, T entity, String[] propertyNames, Object[] currentState, Object[] previousState) {
+        this.cause = cause;
+        this.entity = entity;
+        this.propertyNames = propertyNames;
+        this.currentState = currentState;
+        this.previousState = previousState;
+    }
+
+    public PersistenceEvent(Cause cause, T entity, String[] propertyNames, Object[] currentState) {
+        this(cause, entity, propertyNames, currentState, null);
+    }
+
+    public Cause getCause() {
+        return cause;
+    }
+
+    public T getEntity() {
+        return entity;
+    }
+
+    public String[] getPropertyNames() {
+        return propertyNames;
+    }
+
+    public Object[] getCurrentState() {
+        return currentState;
+    }
+
+    public Object[] getPreviousState() {
+        return previousState;
+    }
 }

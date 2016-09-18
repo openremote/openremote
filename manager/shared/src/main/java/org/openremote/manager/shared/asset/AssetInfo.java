@@ -22,9 +22,11 @@ package org.openremote.manager.shared.asset;
 /**
  * A DTO for performance-critical operations with assets, such as tree loading/rendering.
  */
-public class AssetInfo  {
+public class AssetInfo {
 
     protected String id;
+
+    protected long version;
 
     protected String name;
 
@@ -42,11 +44,12 @@ public class AssetInfo  {
     }
 
     public AssetInfo(Asset asset) {
-        this(asset.getId(), asset.getName(), asset.getRealm(), asset.getType(), asset.getParentId());
+        this(asset.getId(), asset.getVersion(), asset.getName(), asset.getRealm(), asset.getType(), asset.getParentId());
     }
 
-    public AssetInfo(String id, String name, String realm, String type, String parentId) {
+    public AssetInfo(String id, long version, String name, String realm, String type, String parentId) {
         this.id = id;
+        this.version = version;
         this.name = name;
         this.realm = realm;
         this.type = type;
@@ -64,6 +67,14 @@ public class AssetInfo  {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public long getVersion() {
+        return version;
+    }
+
+    public void setVersion(long version) {
+        this.version = version;
     }
 
     public String getRealm() {

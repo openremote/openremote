@@ -30,29 +30,34 @@ public class AssetModifiedEvent extends Event {
         CHILDREN_MODIFIED
     }
 
-    final protected Asset asset;
-    final protected Cause cause;
-    final protected boolean forceRootRefresh;
+    protected AssetInfo assetInfo;
+    protected Cause cause;
+
+    public AssetModifiedEvent() {
+    }
 
     public AssetModifiedEvent(Asset asset, Cause cause) {
-        this(asset, cause, false);
+        this(new AssetInfo(asset), cause);
     }
 
-    public AssetModifiedEvent(Asset asset, Cause cause, boolean forceRootRefresh) {
-        this.asset = asset;
+    public AssetModifiedEvent(AssetInfo assetInfo, Cause cause) {
+        this.assetInfo = assetInfo;
         this.cause = cause;
-        this.forceRootRefresh = forceRootRefresh;
     }
 
-    public Asset getAsset() {
-        return asset;
+    public AssetInfo getAssetInfo() {
+        return assetInfo;
     }
 
     public Cause getCause() {
         return cause;
     }
 
-    public boolean isForceRootRefresh() {
-        return forceRootRefresh;
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "assetInfo='" + assetInfo+ '\'' +
+            ", cause=" + cause +
+            "}";
     }
 }

@@ -19,20 +19,21 @@
  */
 package org.openremote.manager.client.event;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreType;
-import com.google.gwt.place.shared.Place;
+import jsinterop.annotations.JsType;
 import org.openremote.manager.shared.event.Event;
 
-@JsonIgnoreType
-public class GoToPlaceEvent extends Event {
+@JsType
+public class CancelRepeatingServerSendEvent extends ServerSendEvent {
 
-    private final Place place;
+    final public String key;
 
-    public GoToPlaceEvent(Place place) {
-        this.place = place;
+    public CancelRepeatingServerSendEvent(Event event, String key) {
+        super(event);
+        this.key = key;
     }
 
-    public Place getPlace() {
-        return place;
+    public String getKey() {
+        return key;
     }
+
 }

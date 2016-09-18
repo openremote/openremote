@@ -27,8 +27,6 @@ import org.openremote.manager.shared.Runnable;
 
 public interface SecurityService {
 
-    int MIN_VALIDITY_SECONDS = 10;
-
     void login();
 
     void login(LoginOptions options);

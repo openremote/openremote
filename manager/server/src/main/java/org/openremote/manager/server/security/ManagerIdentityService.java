@@ -157,6 +157,7 @@ public class ManagerIdentityService extends IdentityService {
                 + (realmRepresentation.getDisplayName().replaceAll("[^A-Za-z0-9]", ""))
                 + " </span></div>"
         );
+        realmRepresentation.setAccessTokenLifespan(Constants.ACCESS_TOKEN_LIFESPAN_SECONDS);
         realmRepresentation.setLoginTheme("openremote");
         realmRepresentation.setAccountTheme("openremote");
         realmRepresentation.setSsoSessionIdleTimeout(
@@ -165,11 +166,6 @@ public class ManagerIdentityService extends IdentityService {
 
         // TODO: Make SSL setup configurable
         realmRepresentation.setSslRequired(SslRequired.NONE.toString());
-
-        if (container.isDevMode()) {
-            LOG.warning("Setting 15 minutes access token lifespan, this should not be usedin production!");
-            realmRepresentation.setAccessTokenLifespan(900);
-        }
     }
 
     public void createClientApplication(String bearerAuth, String realm) {

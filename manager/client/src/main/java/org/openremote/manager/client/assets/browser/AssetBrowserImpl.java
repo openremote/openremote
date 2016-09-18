@@ -73,6 +73,16 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
 
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
+
+        addAttachHandler(event -> {
+            if (presenter == null)
+                return;
+            if (event.isAttached()) {
+                presenter.onViewAttached();
+            } else {
+                presenter.onViewDetached();
+            }
+        });
     }
 
     @Override

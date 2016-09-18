@@ -45,22 +45,23 @@ import org.apache.camel.Exchange;
 import org.apache.camel.TypeConverters;
 import org.openremote.container.Container;
 import org.openremote.manager.shared.event.Event;
-import org.slf4j.LoggerFactory;
+
+import java.util.logging.Logger;
 
 public class EventTypeConverters implements TypeConverters {
 
-    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EventTypeConverters.class);
+    private static final Logger LOG = Logger.getLogger(EventTypeConverters.class.getName());
 
 
     @Converter
     public String writeEvent(Event event, Exchange exchange) throws Exception {
-        LOG.trace("Writing event JSON: " + event);
+        LOG.fine("Writing event JSON: " + event);
         return getObjectMapper(exchange).writeValueAsString(event);
     }
 
     @Converter
     public Event readEvent(String string, Exchange exchange) throws Exception {
-        LOG.trace("Reading event JSON: " + string);
+        LOG.fine("Reading event JSON: " + string);
         return getObjectMapper(exchange).readValue(string, Event.class);
     }
 

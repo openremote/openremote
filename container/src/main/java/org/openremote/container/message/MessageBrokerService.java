@@ -20,6 +20,7 @@
 package org.openremote.container.message;
 
 import org.apache.camel.Processor;
+import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.LoggingErrorHandlerBuilder;
 import org.apache.camel.impl.DefaultStreamCachingStrategy;
 import org.apache.camel.spi.RouteContext;
@@ -42,10 +43,12 @@ public class MessageBrokerService implements ContainerService {
     public static final String MESSAGE_SESSION_ALLOWED_ORIGIN_DEFAULT = null;
 
     protected MessageBrokerContext context;
+    protected ProducerTemplate producerTemplate;
 
     @Override
     public void init(Container container) throws Exception {
         context = new MessageBrokerContext();
+        producerTemplate = context.createProducerTemplate();
 
         // TODO make configurable in environment
         context.disableJMX();
@@ -105,4 +108,7 @@ public class MessageBrokerService implements ContainerService {
         return context;
     }
 
+    public ProducerTemplate getProducerTemplate() {
+        return producerTemplate;
+    }
 }

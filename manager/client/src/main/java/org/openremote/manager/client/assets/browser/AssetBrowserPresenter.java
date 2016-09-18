@@ -23,6 +23,8 @@ import com.google.gwt.view.client.HasData;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.admin.TenantArrayMapper;
 import org.openremote.manager.client.assets.AssetInfoArrayMapper;
+import org.openremote.manager.client.event.CancelRepeatingServerSendEvent;
+import org.openremote.manager.client.event.RepeatingServerSendEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventListener;
 import org.openremote.manager.client.event.bus.EventRegistration;
@@ -72,11 +74,21 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         this.assetInfoArrayMapper = assetInfoArrayMapper;
 
         environment.getEventBus().register(AssetModifiedEvent.class, event -> {
-            view.refreshAssets(
-                event.isForceRootRefresh()
-                    || event.getAsset() == null
-                    || event.getAsset().getParentId() == null
-            );
+            LOG.fine("Asset modified event received: " + event);
+            if (event.getCause() == AssetModifiedEvent.Cause.CHILDREN_MODIFIED) {
+
+                boolean forceRootRefresh = event.getAssetInfo().getParentId() == null;
+
+                // If we are in the master realm, we never refresh the root of
+                // the asset tree, these are "immutable" tenants
+                // TODO: Notifications when tenants are modified?
+                String currentRealm = environment.getSecurityService().getRealm();
+                if (currentRealm.equals(Constants.MASTER_REALM)) {
+                    forceRootRefresh = false;
+                }
+
+                view.refreshAssets(forceRootRefresh);
+            }
         });
 
         view.setPresenter(this);
@@ -85,6 +97,25 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     @Override
     public AssetBrowser getView() {
         return view;
+    }
+
+    @Override
+    public void onViewAttached() {
+        LOG.fine("Asset browser attached, subscribing to asset changes on the server");
+        environment.getEventBus().dispatch(new RepeatingServerSendEvent(
+            new SubscribeAssetModified(),
+            AssetBrowserPresenter.class.getSimpleName(),
+            30000
+        ));
+    }
+
+    @Override
+    public void onViewDetached() {
+        LOG.fine("Asset browser detached, unsubscribing from asset changes on the server");
+        environment.getEventBus().dispatch(new CancelRepeatingServerSendEvent(
+            new UnsubscribeAssetModified(),
+            AssetBrowserPresenter.class.getSimpleName()
+        ));
     }
 
     @Override
@@ -155,13 +186,18 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     protected void loadTenants(AssetInfo parent, HasData<AssetInfo> display) {
         environment.getRequestService().execute(
             tenantArrayMapper,
-            tenantResource::getAll,
+            requestParams -> {
+                // This must be async, so tree selection/searching works
+                requestParams.setAsync(false);
+                tenantResource.getAll(requestParams);
+            },
             200,
             tenants -> {
                 tenantAssetInfos.clear();
                 for (Tenant tenant : tenants) {
                     tenantAssetInfos.add(new AssetInfo(
                         tenant.getId(),
+                        0,
                         tenant.getDisplayName(),
                         tenant.getRealm(),
                         AssetType.TENANT.getValue(),
@@ -184,6 +220,8 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         environment.getRequestService().execute(
             assetInfoArrayMapper,
             requestParams -> {
+                // This must be async, so tree selection/searching works
+                requestParams.setAsync(false);
                 if (parent.isWellKnownType(AssetType.TENANT)) {
                     LOG.fine("Loading the root assets of tenant: " + realm);
                     assetResource.getRoot(requestParams, realm);
@@ -237,7 +275,9 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                 }
             }
         }
-        path.addAll(Arrays.asList(asset.getPath()));
+        if (asset.getPath() != null) {
+            path.addAll(Arrays.asList(asset.getPath()));
+        }
         return path.toArray(new String[path.size()]);
     }
 }

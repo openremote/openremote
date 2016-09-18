@@ -32,6 +32,10 @@ public interface AssetBrowser extends IsWidget {
 
         AssetBrowser getView();
 
+        void onViewAttached();
+
+        void onViewDetached();
+
         void loadAssetChildren(AssetInfo parent, HasData<AssetInfo> display);
 
         void onAssetSelected(AssetInfo assetInfo);

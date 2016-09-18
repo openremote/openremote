@@ -58,6 +58,9 @@ public class RequestParams<OUT> {
     @JsProperty(name = "$callback")
     public Request.InternalCallback callback;
 
+    @JsProperty(name = "$async")
+    public boolean async;
+
     @JsIgnore
     public RequestParams() {
     }
@@ -117,4 +120,8 @@ public class RequestParams<OUT> {
         return this;
     }
 
+    public RequestParams<OUT> setAsync(boolean async) {
+        this.async = async;
+        return this;
+    }
 }

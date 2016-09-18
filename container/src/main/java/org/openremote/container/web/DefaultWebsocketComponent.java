@@ -97,9 +97,9 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
 
         WebResourceCollection resourceCollection = new WebResourceCollection();
         resourceCollection.addUrlPattern("/*");
-        // A constraint with empty roles triggers authentication, we authorize specific roles later in Camel
+        // Require authentication, but authorize specific roles later in Camel
         SecurityConstraint constraint = new SecurityConstraint();
-        constraint.setEmptyRoleSemantic(SecurityInfo.EmptyRoleSemantic.PERMIT);
+        constraint.setEmptyRoleSemantic(SecurityInfo.EmptyRoleSemantic.AUTHENTICATE);
         constraint.addWebResourceCollection(resourceCollection);
         deploymentInfo.addSecurityConstraints(constraint);
 

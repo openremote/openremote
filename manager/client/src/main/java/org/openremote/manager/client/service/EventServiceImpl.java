@@ -23,16 +23,19 @@ import elemental.client.Browser;
 import elemental.events.CloseEvent;
 import elemental.html.Location;
 import elemental.html.WebSocket;
-import org.openremote.manager.client.event.EventMapper;
-import org.openremote.manager.client.event.MessageReceivedEvent;
-import org.openremote.manager.client.event.ServerSendEvent;
+import org.openremote.manager.client.event.*;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.util.Timeout;
+import org.openremote.manager.shared.Constants;
 import org.openremote.manager.shared.event.Event;
 import org.openremote.manager.shared.event.Message;
 import org.openremote.manager.shared.event.session.*;
 import org.openremote.manager.shared.event.ui.ShowFailureEvent;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 public class EventServiceImpl implements EventService {
@@ -57,6 +60,10 @@ public class EventServiceImpl implements EventService {
     final protected String serviceUrl;
     final protected EventMapper eventMapper;
 
+    // TODO This should be made thread-safe, how?
+    final protected List<String> queue = new ArrayList<>();
+    final protected Map<String, Integer> eventIntervals = new HashMap<>();
+
     protected WebSocket webSocket;
     protected int failureCount;
 
@@ -69,6 +76,36 @@ public class EventServiceImpl implements EventService {
         this.eventBus.register(
             ServerSendEvent.class,
             serverSendEvent -> sendData(this.eventMapper.write(serverSendEvent.getEvent()))
+        );
+
+        this.eventBus.register(
+            RepeatingServerSendEvent.class,
+            repeatEvent -> {
+                final String key = repeatEvent.getKey();
+                final String data = this.eventMapper.write(repeatEvent.getEvent());
+                sendData(data);
+                if (eventIntervals.containsKey(key)) {
+                    Browser.getWindow().clearInterval(eventIntervals.get(key));
+                }
+                int interval = Browser.getWindow().setInterval(
+                    () -> sendData(data), repeatEvent.getIntervalMillis()
+                );
+                eventIntervals.put(key, interval);
+
+                // TODO If the websocket connection drops and is established again, all repeating events should be send immediately?
+            }
+        );
+
+        this.eventBus.register(
+            CancelRepeatingServerSendEvent.class,
+            cancelEvent -> {
+                final String key = cancelEvent.getKey();
+                if (eventIntervals.containsKey(key)) {
+                    Browser.getWindow().clearInterval(eventIntervals.get(key));
+                }
+                final String data = this.eventMapper.write(cancelEvent.getEvent());
+                sendData(data);
+            }
         );
 
         this.eventBus.register(
@@ -90,6 +127,11 @@ public class EventServiceImpl implements EventService {
             event -> {
                 LOG.fine("Session opened successfully, resetting failure count...");
                 failureCount = 0;
+                LOG.fine("Flushing send data queue: " + queue.size());
+                for (String s : queue) {
+                    sendData(s);
+                }
+                queue.clear();
             }
         );
 
@@ -127,13 +169,13 @@ public class EventServiceImpl implements EventService {
         }
 
         securityService.updateToken(
-            SecurityService.MIN_VALIDITY_SECONDS,
+            Constants.ACCESS_TOKEN_LIFESPAN_SECONDS/2,
             refreshed -> {
                 // If it wasn't refreshed, it was still valid, in both cases we can continue
                 LOG.fine("Connecting to event websocket: " + serviceUrl);
 
                 String authenticatedServiceUrl = serviceUrl
-                    + "?realm=" + securityService.getRealm()
+                    + "?requestRealm=" + securityService.getRealm()
                     + "&Authorization=Bearer " + securityService.getToken();
 
                 webSocket = Browser.getWindow().newWebSocket(authenticatedServiceUrl);
@@ -177,7 +219,12 @@ public class EventServiceImpl implements EventService {
             LOG.fine("Sending data on WebSocket: " + data);
             webSocket.send(data);
         } else {
-            LOG.fine("WebSocket not connected, discarding: " + data);
+            if (queue.size() <= 1000) {
+                LOG.fine("WebSocket not connected, queuing: " + data);
+                queue.add(data);
+            } else {
+                LOG.warning("WebSocket not connected, send queue full, discarding: " + data);
+            }
         }
     }
 

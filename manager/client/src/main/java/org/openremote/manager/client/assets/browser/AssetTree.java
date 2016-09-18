@@ -42,4 +42,12 @@ public class AssetTree extends FormTree {
         return (AssetTreeModel) super.getTreeViewModel();
     }
 
+    @Override
+    protected String getTreeNodeId(Object treeNodeValue) {
+        if (treeNodeValue instanceof AssetInfo) {
+            AssetInfo assetInfo = (AssetInfo) treeNodeValue;
+            return assetInfo.getId();
+        }
+        return treeNodeValue.toString();
+    }
 }

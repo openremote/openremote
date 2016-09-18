@@ -226,6 +226,7 @@ public class JSAPIWriter {
         writer.println("  request.setContentType('"
             + methodMetaData.getConsumesMIMEType() + "');");
         writer.println(" if(params.$callback){");
+        writer.println("  if(params.$async === false) { request.setAsync(false); }");
         writer.println("  request.execute(params.$callback);");
         writer.println(" }else{");
         writer.println("  var returnValue;");

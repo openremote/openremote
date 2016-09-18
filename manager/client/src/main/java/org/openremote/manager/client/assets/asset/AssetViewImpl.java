@@ -516,7 +516,6 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
 
     protected void setOpaque(boolean opaque) {
         nameGroup.setOpaque(opaque);
-        realmGroup.setOpaque(opaque);
         createdOnGroup.setOpaque(opaque);
         locationGroup.setOpaque(opaque);
         mapWidget.setOpaque(opaque);

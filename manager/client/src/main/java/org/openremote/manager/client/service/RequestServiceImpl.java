@@ -111,92 +111,82 @@ public class RequestServiceImpl implements RequestService {
                                   Consumer<OUT> onResponse,
                                   Consumer<RequestException> onException) {
 
-        Consumer<Boolean> onValidAccessToken =
-            tokenRefreshed -> {
-                // If it wasn't refreshed, it was still valid, in both cases we can continue
-                RequestParams<OUT> requestParams = new RequestParams<>(
-                    (responseCode, request, responseText) -> {
+            RequestParams<OUT> requestParams = new RequestParams<>(
+                (responseCode, request, responseText) -> {
 
-                        if (responseCode == 0) {
-                            onException.accept(new NoResponseException());
-                            return;
-                        }
-
-                        if (responseCode == 400) {
-                            String validationException = request.getResponseHeader(VIOLATION_EXCEPTION_HEADER);
-                            if (validationException != null && validationException.equals("true")) {
-                                if (LOG.isLoggable(Level.FINE)) {
-                                    LOG.fine("Received 400 status with constraint violation report: " + responseText);
-                                }
-                                ConstraintViolationReport report = getConstraintViolationReport(responseText);
-                                onException.accept(new BadRequestException(400, report));
-                            } else {
-                                if (LOG.isLoggable(Level.FINE)) {
-                                    LOG.fine("Received 400 status without constraint violation report");
-                                }
-                                onException.accept(new BadRequestException(400));
-                            }
-                            return;
-                        }
-
-                        if (responseCode == 401) {
-                            if (LOG.isLoggable(Level.FINE)) {
-                                LOG.fine("Received 401, logging out...");
-                            }
-                            securityService.logout();
-                            return;
-                        }
-
-                        if (responseCode == 409) {
-                            if (LOG.isLoggable(Level.FINE)) {
-                                LOG.fine("Received 409 conflict");
-                            }
-                            onException.accept(new ConflictRequestException());
-                            return;
-                        }
-
-                        if (LOG.isLoggable(Level.FINE)) {
-                            LOG.fine("Received response status: " + responseCode);
-                        }
-
-                        if (expectedStatusCode != ANY_STATUS_CODE && responseCode != expectedStatusCode) {
-                            onException.accept(new UnexpectedStatusRequestException(responseCode, expectedStatusCode));
-                            return;
-                        }
-
-                        OUT out = null;
-                        if (responseText != null && responseText.length() > 0 && entityReader != null) {
-                            if (LOG.isLoggable(Level.FINE))
-                                LOG.fine("Reading response text, length: " + responseText.length());
-                            try {
-                                out = entityReader.read(responseText);
-                            } catch (Exception ex) {
-                                if (LOG.isLoggable(Level.FINE))
-                                    LOG.log(Level.FINE, "Response marshalling error", ex);
-                                onException.accept(new EntityMarshallingRequestException(ex));
-                                return;
-                            }
-                        } else {
-                            LOG.fine("No response text or response entity reader");
-                        }
-                        onResponse.accept(out);
+                    if (responseCode == 0) {
+                        onException.accept(new NoResponseException());
+                        return;
                     }
-                );
 
-                requestParams.withBearerAuth(securityService.getToken());
+                    if (responseCode == 400) {
+                        String validationException = request.getResponseHeader(VIOLATION_EXCEPTION_HEADER);
+                        if (validationException != null && validationException.equals("true")) {
+                            if (LOG.isLoggable(Level.FINE)) {
+                                LOG.fine("Received 400 status with constraint violation report: " + responseText);
+                            }
+                            ConstraintViolationReport report = getConstraintViolationReport(responseText);
+                            onException.accept(new BadRequestException(400, report));
+                        } else {
+                            if (LOG.isLoggable(Level.FINE)) {
+                                LOG.fine("Received 400 status without constraint violation report");
+                            }
+                            onException.accept(new BadRequestException(400));
+                        }
+                        return;
+                    }
 
-                if (entityWriter != null) {
-                    requestParams.setEntityWriter(entityWriter);
+                    if (responseCode == 401) {
+                        if (LOG.isLoggable(Level.FINE)) {
+                            LOG.fine("Received 401, logging out...");
+                        }
+                        securityService.logout();
+                        return;
+                    }
+
+                    if (responseCode == 409) {
+                        if (LOG.isLoggable(Level.FINE)) {
+                            LOG.fine("Received 409 conflict");
+                        }
+                        onException.accept(new ConflictRequestException());
+                        return;
+                    }
+
+                    if (LOG.isLoggable(Level.FINE)) {
+                        LOG.fine("Received response status: " + responseCode);
+                    }
+
+                    if (expectedStatusCode != ANY_STATUS_CODE && responseCode != expectedStatusCode) {
+                        onException.accept(new UnexpectedStatusRequestException(responseCode, expectedStatusCode));
+                        return;
+                    }
+
+                    OUT out = null;
+                    if (responseText != null && responseText.length() > 0 && entityReader != null) {
+                        if (LOG.isLoggable(Level.FINE))
+                            LOG.fine("Reading response text, length: " + responseText.length());
+                        try {
+                            out = entityReader.read(responseText);
+                        } catch (Exception ex) {
+                            if (LOG.isLoggable(Level.FINE))
+                                LOG.log(Level.FINE, "Response marshalling error", ex);
+                            onException.accept(new EntityMarshallingRequestException(ex));
+                            return;
+                        }
+                    } else {
+                        LOG.fine("No response text or response entity reader");
+                    }
+                    onResponse.accept(out);
                 }
+            );
 
-                onRequest.accept(requestParams);
-            };
+            requestParams.withBearerAuth(securityService.getToken());
 
-        securityService.updateToken(
-            SecurityService.MIN_VALIDITY_SECONDS,
-            onValidAccessToken,
-            securityService::logout
-        );
+            if (entityWriter != null) {
+                requestParams.setEntityWriter(entityWriter);
+            }
+
+            onRequest.accept(requestParams);
     }
 
     protected ConstraintViolationReport getConstraintViolationReport(String responseText) {

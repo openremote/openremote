@@ -19,16 +19,15 @@
  */
 package org.openremote.manager.server.event;
 
-import org.apache.camel.ProducerTemplate;
+import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.component.bean.AmbiguousMethodCallException;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.web.socket.IsUserInRole;
+import org.openremote.container.web.socket.WebsocketConstants;
 import org.openremote.manager.shared.event.Event;
-import org.openremote.manager.shared.event.Message;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -40,24 +39,23 @@ public class EventService implements ContainerService {
     private static final Logger LOG = Logger.getLogger(EventService.class.getName());
     public static final String WEBSOCKET_EVENTS = "events";
 
+    // TODO: Unbounded queue
     public static final String INCOMING_EVENT_QUEUE = "seda://incomingEvent?multipleConsumers=true&waitForTaskToComplete=NEVER";
+    // TODO: Unbounded queue
     public static final String OUTGOING_EVENT_QUEUE = "seda://outgoingEvent?multipleConsumers=true&waitForTaskToComplete=NEVER";
 
-    protected ProducerTemplate producerTemplate;
+    protected MessageBrokerService messageBrokerService;
 
     @Override
     public void init(Container container) throws Exception {
-
     }
 
     @Override
     public void configure(Container container) throws Exception {
-        MessageBrokerService messageBrokerService = container.getService(MessageBrokerService.class);
+        messageBrokerService = container.getService(MessageBrokerService.class);
         MessageBrokerContext context = messageBrokerService.getContext();
 
         context.getTypeConverterRegistry().addTypeConverters(new EventTypeConverters());
-
-        producerTemplate = context.createProducerTemplate();
 
         context.addRoutes(new RouteBuilder() {
             @Override
@@ -74,18 +72,9 @@ public class EventService implements ContainerService {
                     .convertBodyTo(Event.class)
                     .to(EventService.INCOMING_EVENT_QUEUE);
 
-                from(EventService.INCOMING_EVENT_QUEUE)
-                    .routeId("Handle incoming events")
-                    .doTry()
-                    .bean(EventService.this, "onEvent")
-                    .doCatch(AmbiguousMethodCallException.class) // No overloaded method for given event subtype
-                    .log("log:org.openremote.event.unhandled?level=DEBUG&showCaughtException=false&showBodyType=false&showExchangePattern=false&showStackTrace=false")
-                    .stop()
-                    .endDoTry();
-
                 from(EventService.OUTGOING_EVENT_QUEUE)
                     .routeId("Send outgoing events to all WebSocket sessions")
-                    .to("websocket://" + WEBSOCKET_EVENTS + "?sendToAll=true");
+                    .to("websocket://" + WEBSOCKET_EVENTS);
             }
         });
     }
@@ -100,17 +89,20 @@ public class EventService implements ContainerService {
 
     }
 
+    public static String getSession(Exchange exchange) {
+        return exchange.getIn().getHeader(WebsocketConstants.SESSION_KEY, null, String.class);
+    }
+
+    public void sendEvent(String session, Event event) {
+        messageBrokerService.getProducerTemplate().sendBodyAndHeader(
+            OUTGOING_EVENT_QUEUE,
+            event,
+            session != null ? WebsocketConstants.SESSION_KEY : WebsocketConstants.SEND_TO_ALL,
+            session != null ? session : true
+        );
+    }
+
     public void sendEvent(Event event) {
-        if (LOG.isLoggable(Level.FINE))
-            LOG.fine("Sending: " + event);
-        producerTemplate.sendBody(OUTGOING_EVENT_QUEUE, event);
+        sendEvent(null, event);
     }
-
-    public void onEvent(Message message) {
-        if (LOG.isLoggable(Level.FINE))
-            LOG.fine("### On incoming message event: " + message);
-
-        sendEvent(new Message("Hello from server, the time is: " + System.currentTimeMillis()));
-    }
-
 }

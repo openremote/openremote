@@ -21,7 +21,6 @@ package org.openremote.manager.server.agent;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.FailedToCreateRouteException;
-import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
@@ -32,7 +31,6 @@ import org.openremote.container.util.IdentifierUtil;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.asset.AssetService;
 import org.openremote.manager.server.asset.ServerAsset;
-import org.openremote.manager.shared.Function;
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.agent.InventoryModifiedEvent;
 import org.openremote.manager.shared.asset.Asset;
@@ -49,14 +47,15 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.container.persistence.PersistenceEvent.*;
+import static org.openremote.container.persistence.PersistenceEvent.Cause.UPDATE;
+import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_EVENT_TOPIC;
+import static org.openremote.container.persistence.PersistenceEvent.matchesEntityType;
 
 public class AgentService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
 
     protected MessageBrokerService messageBrokerService;
-    ProducerTemplate producerTemplate;
 
     protected AssetService assetService;
     protected ConnectorService connectorService;
@@ -66,7 +65,6 @@ public class AgentService implements ContainerService {
     @Override
     public void init(Container container) throws Exception {
         messageBrokerService = container.getService(MessageBrokerService.class);
-        producerTemplate = messageBrokerService.getContext().createProducerTemplate();
         assetService = container.getService(AssetService.class);
         connectorService = container.getService(ConnectorService.class);
 
@@ -76,18 +74,19 @@ public class AgentService implements ContainerService {
 
                 // If any agent was modified in the database, reconfigure this service
                 from(PERSISTENCE_EVENT_TOPIC)
-                    .filter(body().isInstanceOf(Asset.class))
+                    .filter(matchesEntityType(Asset.class))
                     .filter(exchange -> {
-                        Asset asset = exchange.getIn().getBody(Asset.class);
+                        PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
+                        Asset asset = (Asset) persistenceEvent.getEntity();
                         return AssetType.AGENT.equals(asset.getWellKnownType());
                     })
                     .process(exchange -> {
-                        PersistenceEvent persistenceEvent = exchange.getIn().getHeader(PERSISTENCE_EVENT_HEADER, PersistenceEvent.class);
-                        Asset agent = exchange.getIn().getBody(Asset.class);
+                        PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
+                        Asset agent = (Asset) persistenceEvent.getEntity();
 
                         ServerAsset[] agents = assetService.findByType(agent.getRealm(), AssetType.AGENT);
                         LOG.fine("Reconfigure agents of realm '" + agent.getRealm() + "': " + agents.length);
-                        reconfigureAgents(agents, persistenceEvent == UPDATE ? agent : null);
+                        reconfigureAgents(agents, persistenceEvent.getCause() == UPDATE ? agent : null);
                     });
 
                 // Dynamically route discovery trigger messages to agents
@@ -123,14 +122,14 @@ public class AgentService implements ContainerService {
 
     public void triggerDiscovery(String realm, String agentId) {
         if (agentId != null) {
-            producerTemplate.sendBody(Agent.TOPIC_TRIGGER_DISCOVERY, agentId);
+            messageBrokerService.getProducerTemplate().sendBody(Agent.TOPIC_TRIGGER_DISCOVERY, agentId);
         } else {
             if (realm == null || realm.length() == 0) {
                 throw new IllegalArgumentException(
                     "Realm must be provided to trigger discovery of all agents (in that realm)"
                 );
             }
-            producerTemplate.sendBodyAndHeader(
+            messageBrokerService.getProducerTemplate().sendBodyAndHeader(
                 Agent.TOPIC_TRIGGER_DISCOVERY,
                 null,
                 Agent.TOPIC_TRIGGER_DISCOVERY_HEADER_REALM, realm
