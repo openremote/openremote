@@ -52,7 +52,6 @@ public class EventTypeConverters implements TypeConverters {
 
     private static final Logger LOG = Logger.getLogger(EventTypeConverters.class.getName());
 
-
     @Converter
     public String writeEvent(Event event, Exchange exchange) throws Exception {
         LOG.fine("Writing event JSON: " + event);

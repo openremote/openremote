@@ -20,6 +20,7 @@
 package org.openremote.manager.shared.event;
 
 import com.fasterxml.jackson.annotation.*;
+import org.openremote.manager.shared.agent.RefreshInventoryEvent;
 import org.openremote.manager.shared.asset.AssetModifiedEvent;
 import org.openremote.manager.shared.asset.SubscribeAssetModified;
 import org.openremote.manager.shared.asset.UnsubscribeAssetModified;
@@ -31,6 +32,7 @@ import org.openremote.manager.shared.util.Util;
     @JsonSubTypes.Type(value = SubscribeAssetModified.class, name = "SUBSCRIBE_ASSET_CHANGES"),
     @JsonSubTypes.Type(value = UnsubscribeAssetModified.class, name = "UNSUBSCRIBE_ASSET_CHANGES"),
     @JsonSubTypes.Type(value = AssetModifiedEvent.class, name = "ASSET_MODIFIED"),
+    @JsonSubTypes.Type(value = RefreshInventoryEvent.class, name = "REFRESH_INVENTORY"),
     /*
     @JsonSubTypes.Type(value = FlowDeployEvent.class, name = "FLOW_DEPLOY"),
     @JsonSubTypes.Type(value = FlowDeploymentFailureEvent.class, name = "FLOW_DEPLOYMENT_FAILURE"),
@@ -67,7 +69,6 @@ import org.openremote.manager.shared.util.Util;
 public abstract class Event {
 
     // This is compatible with the Polymer event naming, so events can be used in JS/Polymer components
-    // TODO we still need this? this isn't really good for anonymous inner classes?
     public static String getType(String simpleClassName) {
         String type = Util.toLowerCaseDash(simpleClassName);
         if (type.length() > 6 && type.substring(type.length() - 6).equals("-event"))

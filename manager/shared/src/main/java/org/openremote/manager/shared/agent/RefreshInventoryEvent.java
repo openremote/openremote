@@ -17,26 +17,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.agent;
+package org.openremote.manager.shared.agent;
 
-import org.openremote.container.web.WebResource;
-import org.openremote.manager.shared.agent.AgentResource;
-import org.openremote.manager.shared.http.RequestParams;
+import org.openremote.manager.shared.event.Event;
 
-import javax.ws.rs.BeanParam;
+public class RefreshInventoryEvent extends Event {
 
-public class AgentResourceImpl extends WebResource implements AgentResource {
+    protected String agentId;
 
-    protected final AgentService agentService;
+    public RefreshInventoryEvent() {
+    }
 
-    public AgentResourceImpl(AgentService agentService) {
-        this.agentService = agentService;
+    public RefreshInventoryEvent(String agentId) {
+        this.agentId = agentId;
+    }
+
+    public String getAgentId() {
+        return agentId;
     }
 
     @Override
-    public void refreshInventory(@BeanParam RequestParams requestParams, String agentId) {
-        agentService.clearInventory(agentId);
-        agentService.triggerDiscovery(getAuthenticatedRealm(), agentId);
+    public String toString() {
+        return "RefreshInventoryEvent{" +
+            "agentId='" + agentId + '\'' +
+            "}";
     }
-
 }

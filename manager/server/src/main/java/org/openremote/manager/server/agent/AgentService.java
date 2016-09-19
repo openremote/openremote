@@ -29,10 +29,14 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.util.IdentifierUtil;
 import org.openremote.container.web.WebService;
+import org.openremote.container.web.socket.IsUserInRole;
 import org.openremote.manager.server.asset.AssetService;
 import org.openremote.manager.server.asset.ServerAsset;
+import org.openremote.manager.server.event.EventPredicate;
+import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.agent.InventoryModifiedEvent;
+import org.openremote.manager.shared.agent.RefreshInventoryEvent;
 import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.asset.AssetType;
 import org.openremote.manager.shared.attribute.Attributes;
@@ -47,9 +51,11 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.apache.camel.builder.PredicateBuilder.not;
 import static org.openremote.container.persistence.PersistenceEvent.Cause.UPDATE;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_EVENT_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.matchesEntityType;
+
 
 public class AgentService implements ContainerService {
 
@@ -93,15 +99,25 @@ public class AgentService implements ContainerService {
                 from(Agent.TOPIC_TRIGGER_DISCOVERY)
                     .routingSlip(method(AgentService.this, "triggerDiscoverySlip"))
                     .ignoreInvalidEndpoints();
+
+                from(EventService.INCOMING_EVENT_QUEUE)
+                    .filter(new EventPredicate<>(RefreshInventoryEvent.class))
+                    .choice()
+                    .when(not(new IsUserInRole("write:assets")))
+                    .to("log:org.openremote.event.forbidden?level=INFO&showAll=true&multiline=true")
+                    .otherwise()
+                    .process(exchange -> {
+                        String agentId = exchange.getIn().getBody(RefreshInventoryEvent.class).getAgentId();
+                        LOG.fine("Refreshing inventory of agent: " + agentId);
+                        clearInventory(agentId);
+                        triggerDiscovery(agentId);
+                    });
             }
         });
     }
 
     @Override
     public void configure(Container container) throws Exception {
-        container.getService(WebService.class).getApiSingletons().add(
-            new AgentResourceImpl(this)
-        );
     }
 
     @Override
@@ -116,14 +132,15 @@ public class AgentService implements ContainerService {
 
     }
 
-    public void clearInventory(String agentId) {
+    protected void clearInventory(String agentId) {
         assetService.deleteChildren(agentId);
     }
 
-    public void triggerDiscovery(String realm, String agentId) {
+    protected void triggerDiscovery(String agentId) {
         if (agentId != null) {
             messageBrokerService.getProducerTemplate().sendBody(Agent.TOPIC_TRIGGER_DISCOVERY, agentId);
         } else {
+            /* TODO: Do we need this?
             if (realm == null || realm.length() == 0) {
                 throw new IllegalArgumentException(
                     "Realm must be provided to trigger discovery of all agents (in that realm)"
@@ -134,6 +151,7 @@ public class AgentService implements ContainerService {
                 null,
                 Agent.TOPIC_TRIGGER_DISCOVERY_HEADER_REALM, realm
             );
+            */
         }
     }
 

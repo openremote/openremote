@@ -4,25 +4,20 @@ import org.apache.camel.Exchange
 import org.apache.camel.Processor
 import org.apache.camel.builder.RouteBuilder
 import org.openremote.container.message.MessageBrokerService
-import org.openremote.manager.client.service.RequestServiceImpl
-import org.openremote.manager.client.service.SecurityService
 import org.openremote.manager.server.SampleDataService
 import org.openremote.manager.server.asset.AssetService
-import org.openremote.manager.shared.Consumer
-import org.openremote.manager.shared.Runnable
-import org.openremote.manager.shared.agent.Agent
-import org.openremote.manager.shared.agent.AgentResource
+import org.openremote.manager.server.event.EventService
+import org.openremote.manager.shared.agent.RefreshInventoryEvent
 import org.openremote.manager.shared.asset.Asset
+import org.openremote.manager.shared.asset.AssetModifiedEvent
 import org.openremote.manager.shared.asset.AssetType
+import org.openremote.manager.shared.asset.SubscribeAssetModified
 import org.openremote.manager.shared.attribute.AttributeType
 import org.openremote.manager.shared.device.DeviceAttributes
 import org.openremote.manager.shared.device.DeviceResource
-import org.openremote.manager.shared.http.EntityReader
-import org.openremote.manager.shared.http.RequestException
-import org.openremote.manager.shared.http.RequestParams
-import org.openremote.manager.shared.validation.ConstraintViolationReport
-import org.openremote.test.ClientObjectMapper
+import org.openremote.test.BlockingWebsocketEndpoint
 import org.openremote.test.ContainerTrait
+import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.BlockingVariables
 
@@ -36,29 +31,13 @@ class Controller2Test extends Specification implements ContainerTrait {
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
 
-        and: "an authenticated user and client security service"
+        and: "an authenticated user"
         def realm = MASTER_REALM;
         def accessToken = authenticate(container, realm, MANAGER_CLIENT_ID, "admin", "admin").token
-        def securityService = Stub(SecurityService) {
-            getRealm() >> realm
-            getToken() >> accessToken
-            updateToken(_, _, _) >> { int minValiditySeconds, Consumer<Boolean> successFn, Runnable errorFn ->
-                successFn.accept(true) // The token is always valid (this assumes the test doesn't run very long)
-            };
-            hasResourceRoleOrIsAdmin(_, _) >> { String role, String resource ->
-                return true; // TODO: Should use the parsed token
-            }
-        }
 
-        and: "a client request service and target"
-        def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
-        def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
+        and: "a client target"
         def clientTarget = getClientTarget(createClient(container).build(), serverUri(serverPort), realm)
-
-        and: "an agent client resource"
-        def agentResource = Stub(AgentResource) {
-            _(*_) >> { callResourceProxy(container.JSON, clientTarget, getDelegate()) }
-        }
+        def websocketClient = createWebsocketClient()
 
         when: "we wait a bit for initial state"
         sleep(2000)
@@ -69,53 +48,55 @@ class Controller2Test extends Specification implements ContainerTrait {
         agentAsset != null
         def deviceAssetInfos = assetService.getChildren(agentAsset.getId())
         deviceAssetInfos.size() == 1
-        deviceAssetInfos.each {
-            Asset device = assetService.get(it.id)
-            assert device.name == "TestDevice"
-            assert device.id != null
-            assert device.wellKnownType == AssetType.DEVICE
-            def attributes = new DeviceAttributes(device.attributes)
-            assert attributes.deviceResources.length == 5
-            assert attributes.getDeviceResource("Light1Switch").type == AttributeType.STRING
-            assert attributes.getDeviceResource("Light1Switch").valueAsString == "light1switch"
-            assert attributes.getDeviceResource("Light1Switch").getResourceType() == AttributeType.BOOLEAN
-            assert attributes.getDeviceResource("Light1Switch").getAccess() == DeviceResource.Access.RW
+        def deviceAssetInfo = deviceAssetInfos[0];
+        Asset device = assetService.get(deviceAssetInfo.id)
+        assert device.name == "TestDevice"
+        assert device.id != null
+        assert device.wellKnownType == AssetType.DEVICE
+        def attributes = new DeviceAttributes(device.attributes)
+        assert attributes.deviceResources.length == 5
+        assert attributes.getDeviceResource("Light1Switch").type == AttributeType.STRING
+        assert attributes.getDeviceResource("Light1Switch").valueAsString == "light1switch"
+        assert attributes.getDeviceResource("Light1Switch").getResourceType() == AttributeType.BOOLEAN
+        assert attributes.getDeviceResource("Light1Switch").getAccess() == DeviceResource.Access.RW
 
-            // Clear database for next condition
-            assetService.delete(it.id)
-        }
+        // Clear database for next condition
+        assetService.delete(deviceAssetInfo.id)
 
-        when: "discovery is triggered"
-        requestService.execute(
-                new Consumer<RequestParams<Void>>() {
-                    @Override
-                    void accept(RequestParams requestParams) {
-                        agentResource.refreshInventory(requestParams, agentAsset.getId())
-                    }
-                },
-                204,
-                new java.lang.Runnable() {
-                    @Override
-                    void run() {
-                    }
-                },
-                new Consumer<RequestException>() {
-                    @Override
-                    void accept(RequestException e) {
-                    }
-                }
-        );
+        when: "connecting to the websocket"
+        def endpoint = new BlockingWebsocketEndpoint(2);
+        def session = connect(websocketClient, endpoint, clientTarget, realm, accessToken, EventService.WEBSOCKET_EVENTS);
+
+        and: "we listen to asset modification events"
+        session.basicRemote.sendText(container.JSON.writeValueAsString(
+                new SubscribeAssetModified()
+        ));
+
+        and: "discovery is triggered"
+        session.basicRemote.sendText(container.JSON.writeValueAsString(
+                new RefreshInventoryEvent(agentAsset.getId())
+        ));
 
         and: "we wait a bit for inventory response"
-        sleep(2000)
+        endpoint.awaitMessages()
 
         then: "the device assets should be the children of the agent asset"
         def updatedDeviceAssetInfos = assetService.getChildren(agentAsset.getId())
         updatedDeviceAssetInfos.size() == 1
 
+        and: "the asset modified events should have been received"
+        def createEvent = container.JSON.readValue(endpoint.messages[0].toString(), AssetModifiedEvent.class)
+        createEvent.cause == AssetModifiedEvent.Cause.CREATE
+        createEvent.assetInfo.id == deviceAssetInfo.id
+
+        def childrenModifiedEvent = container.JSON.readValue(endpoint.messages[1].toString(), AssetModifiedEvent.class)
+        childrenModifiedEvent.cause == AssetModifiedEvent.Cause.CHILDREN_MODIFIED
+        childrenModifiedEvent.assetInfo.id == deviceAssetInfo.parentId
+
         cleanup: "the server should be stopped"
         stopContainer(container)
     }
+
 
     def "Write actuator and read updated sensor value"() {
         given: "a clean result state"
@@ -127,8 +108,7 @@ class Controller2Test extends Specification implements ContainerTrait {
 
         and: "an actuator and a sensor route are started"
         String deviceResourceEndpoint = "controller2://192.168.99.100:8083/testdevice/light1switch";
-        def messageBrokerContext = container.getService(MessageBrokerService.class).context;
-        messageBrokerContext.addRoutes(new RouteBuilder() {
+        addRoutes(container, new RouteBuilder() {
             @Override
             void configure() throws Exception {
                 from("direct:light1switch")
@@ -154,19 +134,18 @@ class Controller2Test extends Specification implements ContainerTrait {
         })
 
         and: "the actuator is switched on"
-        messageBrokerContext.createProducerTemplate().sendBody("direct:light1switch", "ON")
+        getMessageProducerTemplate(container).sendBody("direct:light1switch", "ON")
 
         then: "the sensor value should change"
         result.sensorSwitchedOn
 
         when: "the actuator is switched off"
-        messageBrokerContext.createProducerTemplate().sendBody("direct:light1switch", "OFF")
+        getMessageProducerTemplate(container).sendBody("direct:light1switch", "OFF")
 
         then: "the sensor value should change"
         result.sensorSwitchedoff
 
         cleanup: "the server should be stopped"
         stopContainer(container)
-
     }
 }

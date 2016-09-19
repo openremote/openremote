@@ -21,10 +21,11 @@ package org.openremote.manager.client.assets.agent;
 
 import com.google.gwt.text.shared.AbstractRenderer;
 import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.event.ServerSendEvent;
 import org.openremote.manager.client.widget.*;
 import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.agent.Agent;
-import org.openremote.manager.shared.agent.AgentResource;
+import org.openremote.manager.shared.agent.RefreshInventoryEvent;
 import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.attribute.Attribute;
 import org.openremote.manager.shared.attribute.Attributes;
@@ -45,7 +46,6 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
 
     final protected ConnectorResource connectorResource;
     final protected ConnectorArrayMapper connectorArrayMapper;
-    final protected AgentResource agentResource;
 
     final protected FormGroup connectorDropDownGroup = new FormGroup();
     final protected FormDropDown<Connector> connectorDropDown;
@@ -65,15 +65,13 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
                                  boolean isCreateAsset,
                                  Asset agentAsset,
                                  ConnectorResource connectorResource,
-                                 ConnectorArrayMapper connectorArrayMapper,
-                                 AgentResource agentResource) {
+                                 ConnectorArrayMapper connectorArrayMapper) {
         super(environment, container, attributes);
         this.agentAsset = agentAsset;
         this.agent = new Agent(attributes, isCreateAsset);
 
         this.connectorResource = connectorResource;
         this.connectorArrayMapper = connectorArrayMapper;
-        this.agentResource = agentResource;
 
         connectorDropDown = createConnectorDropDown();
         FormLabel connectorDropDownLabel = new FormLabel();
@@ -233,17 +231,11 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
             environment.getMessages().confirmation(),
             environment.getMessages().confirmationInventoryRefresh(agentAsset.getName()),
             () -> {
-                refreshInventoryButton.setEnabled(false);
-                environment.getRequestService().execute(
-                    requestParams -> agentResource.refreshInventory(requestParams, agentAsset.getId()),
-                    204,
-                    () -> {
-                        refreshInventoryButton.setEnabled(true);
-                        environment.getEventBus().dispatch(
-                            new ShowInfoEvent(environment.getMessages().inventoryRefreshed(agentAsset.getName()))
-                        );
-                    },
-                    ex -> handleRequestException(ex, environment)
+                environment.getEventBus().dispatch(new ServerSendEvent(
+                    new RefreshInventoryEvent(agentAsset.getId())
+                ));
+                environment.getEventBus().dispatch(
+                    new ShowInfoEvent(environment.getMessages().inventoryRefreshed(agentAsset.getName()))
                 );
             }
         );

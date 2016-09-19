@@ -32,7 +32,6 @@ import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
 import org.openremote.manager.client.widget.AttributesEditor;
-import org.openremote.manager.shared.agent.AgentResource;
 import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetResource;
@@ -60,7 +59,6 @@ public class AssetActivity
 
     final protected ConnectorArrayMapper connectorArrayMapper;
     final protected ConnectorResource connectorResource;
-    final protected AgentResource agentResource;
 
     protected boolean isCreateAsset;
     protected double[] selectedCoordinates;
@@ -78,14 +76,12 @@ public class AssetActivity
                          MapResource mapResource,
                          JsonObjectMapper jsonObjectMapper,
                          ConnectorArrayMapper connectorArrayMapper,
-                         ConnectorResource connectorResource,
-                         AgentResource agentResource) {
+                         ConnectorResource connectorResource) {
         super(environment, view, assetBrowserPresenter, assetResource, assetMapper);
         this.mapResource = mapResource;
         this.jsonObjectMapper = jsonObjectMapper;
         this.connectorArrayMapper = connectorArrayMapper;
         this.connectorResource = connectorResource;
-        this.agentResource = agentResource;
     }
 
     @Override
@@ -381,8 +377,7 @@ public class AssetActivity
                     isCreateAsset,
                     asset,
                     connectorResource,
-                    connectorArrayMapper,
-                    agentResource
+                    connectorArrayMapper
                 );
                 break;
             default:

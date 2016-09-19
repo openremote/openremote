@@ -62,10 +62,12 @@ public class EventService implements ContainerService {
             public void configure() throws Exception {
 
                 // TODO This is only a simple example for role checking in routes
+                /*
                 interceptFrom("websocket://" + WEBSOCKET_EVENTS)
                     .when(not(new IsUserInRole("read")))
                     .to("log:org.openremote.event.forbidden?level=INFO&showAll=true&multiline=true")
                     .stop();
+                */
 
                 from("websocket://" + WEBSOCKET_EVENTS)
                     .routeId("Receive incoming events on WebSocket")
