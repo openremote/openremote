@@ -25,6 +25,7 @@ import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.user.client.ui.ComplexPanel;
 import com.google.gwt.user.client.ui.FlowPanel;
+import elemental.client.Browser;
 import elemental.js.util.*;
 import elemental.json.Json;
 import elemental.json.JsonArray;
@@ -191,6 +192,10 @@ public class MapWidget extends ComplexPanel {
         if (mapboxMap == null)
             return;
         mapboxMap.resize();
+        // We need to do this again asynchronous, sometimes the layout isn't ready
+        Browser.getWindow().setTimeout(() -> {
+            mapboxMap.resize();
+        }, 10);
     }
 
     public void setOpaque(boolean opaque) {

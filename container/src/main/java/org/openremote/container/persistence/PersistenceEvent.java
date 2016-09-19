@@ -77,4 +77,22 @@ public class PersistenceEvent<T> {
     public Object[] getPreviousState() {
         return previousState;
     }
+
+    public <T> T getPreviousState(String propertyName) {
+        return getPreviousState() != null ? (T) getPreviousState()[getPropertyIndex(propertyName)] : null;
+    }
+
+    public <T> T getCurrentState(String propertyName) {
+        return (T) getCurrentState()[getPropertyIndex(propertyName)];
+    }
+
+    protected int getPropertyIndex(String propertyName) {
+        for (int i = 0; i < getPropertyNames().length; i++) {
+            String property = getPropertyNames()[i];
+            if (property.equals(propertyName)) {
+                return i;
+            }
+        }
+        throw new IllegalArgumentException("Property not found: " + propertyName);
+    }
 }

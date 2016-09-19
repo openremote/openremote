@@ -36,6 +36,8 @@ public class AssetInfo {
 
     protected String parentId;
 
+    protected double[] coordinates;
+
     public AssetInfo(String id) {
         this.id = id;
     }
@@ -44,16 +46,17 @@ public class AssetInfo {
     }
 
     public AssetInfo(Asset asset) {
-        this(asset.getId(), asset.getVersion(), asset.getName(), asset.getRealm(), asset.getType(), asset.getParentId());
+        this(asset.getId(), asset.getVersion(), asset.getName(), asset.getRealm(), asset.getType(), asset.getParentId(), asset.getCoordinates());
     }
 
-    public AssetInfo(String id, long version, String name, String realm, String type, String parentId) {
+    public AssetInfo(String id, long version, String name, String realm, String type, String parentId, double[] coordinates) {
         this.id = id;
         this.version = version;
         this.name = name;
         this.realm = realm;
         this.type = type;
         this.parentId = parentId;
+        this.coordinates = coordinates;
     }
 
     public AssetInfo(String name, String type) {
@@ -125,6 +128,7 @@ public class AssetInfo {
             ", realm='" + realm + '\'' +
             ", type='" + type + '\'' +
             ", parentId='" + parentId + '\'' +
+            ", coordinates='" + coordinates+ '\'' +
             '}';
     }
 }

@@ -14,4 +14,11 @@ public class AssetSelectedEvent extends Event {
     public AssetInfo getAssetInfo() {
         return assetInfo;
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "assetInfo=" + assetInfo +
+            "}";
+    }
 }

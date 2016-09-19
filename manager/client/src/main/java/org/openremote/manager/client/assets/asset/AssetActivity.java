@@ -179,6 +179,8 @@ public class AssetActivity
             this.parentAsset = null;
             this.realm = realm;
             writeParentToView();
+        } else {
+            environment.getPlaceController().goTo(new AssetsDashboardPlace());
         }
     }
 

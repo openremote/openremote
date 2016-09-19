@@ -97,14 +97,16 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
                     onAssetsDeselected();
                     eventBus.dispatch(event);
                 } else {
+                    // We must check if the selected "asset" was a tenant, then we fire different events
                     if (event.getAssetInfo().isWellKnownType(AssetType.TENANT)) {
                         onAssetsDeselected();
+                        // Turn this into a "asset deselected event"
                         eventBus.dispatch(new AssetSelectedEvent(null));
-
                         onTenantSelected(event.getAssetInfo().getId(), event.getAssetInfo().getRealm());
-
-                    } else if (assetId == null || !assetId.equals(event.getAssetInfo().getId())) {
-                        onAssetSelectionChange(event.getAssetInfo());
+                    } else {
+                        if (assetId == null || !assetId.equals(event.getAssetInfo().getId())) {
+                            onAssetSelectionChange(event.getAssetInfo());
+                        }
                         eventBus.dispatch(event);
                     }
                 }

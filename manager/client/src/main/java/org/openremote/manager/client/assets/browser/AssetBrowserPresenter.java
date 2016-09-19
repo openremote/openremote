@@ -201,6 +201,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                         tenant.getDisplayName(),
                         tenant.getRealm(),
                         AssetType.TENANT.getValue(),
+                        null,
                         null
                     ));
                 }

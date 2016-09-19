@@ -35,10 +35,7 @@ import org.openremote.manager.shared.asset.*;
 import javax.persistence.EntityManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -136,8 +133,8 @@ public class AssetService implements ContainerService {
             throw new IllegalArgumentException("Realm must be provided to query assets");
         return persistenceService.doTransaction(em -> {
             List<AssetInfo> result = em.createQuery(
-                "select new org.openremote.manager.shared.asset.AssetInfo(" +
-                    "a.id, a.version, a.name, a.realm, a.type, a.parent.id" +
+                "select new org.openremote.manager.server.asset.ServerAssetInfo(" +
+                    "a.id, a.version, a.name, a.realm, a.type, a.parent.id, a.location" +
                     ") from Asset a where a.parent is null and a.realm = :realm order by a.createdOn asc",
                 AssetInfo.class
             ).setParameter("realm", realm).getResultList();
@@ -176,8 +173,8 @@ public class AssetService implements ContainerService {
         return persistenceService.doTransaction(em -> {
             List<AssetInfo> result =
                 em.createQuery(
-                    "select new org.openremote.manager.shared.asset.AssetInfo(" +
-                        "a.id, a.version, a.name, a.realm, a.type, a.parent.id" +
+                    "select new org.openremote.manager.server.asset.ServerAssetInfo(" +
+                        "a.id, a.version, a.name, a.realm, a.type, a.parent.id, a.location" +
                         ") from Asset a where a.parent.id = :parentId order by a.createdOn asc",
                     AssetInfo.class
                 ).setParameter("parentId", parentId).getResultList();
@@ -211,8 +208,8 @@ public class AssetService implements ContainerService {
         persistenceService.doTransaction(em -> {
             List<AssetInfo> result =
                 em.createQuery(
-                    "select new org.openremote.manager.shared.asset.AssetInfo(" +
-                        "a.id, a.version, a.name, a.realm, a.type, a.parent.id" +
+                    "select new org.openremote.manager.server.asset.ServerAssetInfo(" +
+                        "a.id, a.version, a.name, a.realm, a.type, a.parent.id, a.location" +
                         ") from Asset a where a.parent.id = :parentId order by a.createdOn asc",
                     AssetInfo.class
                 ).setParameter("parentId", parentId).getResultList();
@@ -290,18 +287,9 @@ public class AssetService implements ContainerService {
             case UPDATE:
                 cause = AssetModifiedEvent.Cause.UPDATE;
 
-                int parentIdIndex = -1;
-                for (int i = 0; i < persistenceEvent.getPropertyNames().length; i++) {
-                    String propertyName = persistenceEvent.getPropertyNames()[i];
-                    if (propertyName.equals("parentId")) {
-                        parentIdIndex = i;
-                        break;
-                    }
-                }
-                String previousParentId = persistenceEvent.getPreviousState() != null
-                    ? (String) persistenceEvent.getPreviousState()[parentIdIndex]
-                    : null;
-                String currentParentId = (String) persistenceEvent.getCurrentState()[parentIdIndex];
+                // Find out if the asset has a new parent
+                String previousParentId = persistenceEvent.getPreviousState("parentId");
+                String currentParentId = persistenceEvent.getCurrentState("parentId");
                 if (previousParentId == null && currentParentId == null) {
                     // The "root without id" asset was modified
                     events.add(new AssetModifiedEvent(new AssetInfo(), AssetModifiedEvent.Cause.CHILDREN_MODIFIED));
@@ -314,10 +302,17 @@ public class AssetService implements ContainerService {
                         // The "root without id" asset was modified
                         events.add(new AssetModifiedEvent(new AssetInfo(), AssetModifiedEvent.Cause.CHILDREN_MODIFIED));
                         modifiedParentIds.add(previousParentId);
-                    } else {
-                        modifiedParentIds.add(asset.getParentId());
                     }
                 }
+
+                // Only send "children modified" of the parent if the name of the asset changed
+                String previousName = persistenceEvent.getPreviousState("name");
+                String currentName = persistenceEvent.getCurrentState("name");
+                boolean isEqualName = Objects.equals(previousName, currentName);
+                if (!isEqualName){
+                    modifiedParentIds.add(asset.getParentId());
+                }
+
                 break;
             case DELETE:
                 cause = AssetModifiedEvent.Cause.DELETE;

@@ -93,7 +93,7 @@ public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implem
 
     @Override
     protected void onTenantSelected(String id, String realm) {
-
+        hideAssetOnMap();
     }
 
     protected void showAssetOnMap() {
