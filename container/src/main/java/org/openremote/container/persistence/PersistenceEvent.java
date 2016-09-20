@@ -19,8 +19,6 @@
  */
 package org.openremote.container.persistence;
 
-import org.apache.camel.Predicate;
-
 public class PersistenceEvent<T> {
 
     // TODO: Unbounded queue
@@ -28,13 +26,6 @@ public class PersistenceEvent<T> {
         "seda:" + PersistenceEvent.class.getSimpleName() + "?multipleConsumers=true&discardIfNoConsumers=true";
 
     public static final String HEADER_ENTITY_TYPE = PersistenceEvent.class.getSimpleName() + ".ENTITY_TYPE";
-
-    public static Predicate matchesEntityType(Class<?> type) {
-        return exchange -> {
-            Class<?> entityType = exchange.getIn().getHeader(HEADER_ENTITY_TYPE, Class.class);
-            return type.isAssignableFrom(entityType);
-        };
-    }
 
     public enum Cause {
         INSERT, UPDATE, DELETE

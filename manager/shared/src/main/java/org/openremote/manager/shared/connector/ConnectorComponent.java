@@ -23,10 +23,52 @@ import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.agent.InventoryModifiedEvent;
 import org.openremote.manager.shared.attribute.Attributes;
 
+import java.util.Collection;
+
 /**
  * Connectors to external systems are implemented as Apache Camel components.
  */
 public interface ConnectorComponent {
+
+    String HEADER_DEVICE_KEY = ConnectorComponent.class.getCanonicalName() + ".HEADER_DEVICE_KEY";
+    String HEADER_DEVICE_RESOURCE_KEY = ConnectorComponent.class.getCanonicalName() + ".HEADER_DEVICE_RESOURCE_KEY";
+
+    enum Capability {
+        /**
+         * A producer that reacts to empty "trigger discovery" messages and notifies
+         * any {@link #inventory} consumers when discovery of devices or device resources
+         * resulted in any inventory changes.
+         */
+        discovery,
+
+        /**
+         * A producer that reacts to inventory update messages ("assign device", etc.), or
+         * a consumer that starts {@link InventoryModifiedEvent} exchanges when device or device
+         * resource inventory of this connector has been modified.
+         */
+        inventory,
+
+        /**
+         * A producer that can read a device resource value. Device and resource key will
+         * be set as headers ({@link #HEADER_DEVICE_KEY}, {@link #HEADER_DEVICE_RESOURCE_KEY}),
+         * the value must be returned as the body of the IN message.
+         */
+        read,
+
+        /**
+         * A producer that can write a device resource value. Device and resource key will
+         * be set as headers ({@link #HEADER_DEVICE_KEY}, {@link #HEADER_DEVICE_RESOURCE_KEY}),
+         * the value will be set as the body of the IN message.
+         */
+        write,
+
+        /**
+         * A consumer that starts exchanges when a device resource value is modified. The device
+         * and resource key must be available as headers ({@link #HEADER_DEVICE_KEY},
+         * {@link #HEADER_DEVICE_RESOURCE_KEY}), the resource value as body of the IN message.
+         */
+        listen
+    }
 
     /**
      * Get the unique type descriptor for this connector component
@@ -39,31 +81,30 @@ public interface ConnectorComponent {
     String getDisplayName();
     
     /**
-     * Get the settings mask for creating/updating a child asset of the supplied
-     * parent asset. This is used by clients for user entry of child assets.
-     *
-     * If parentAsset is null then child is being provisioned at the root
-     * (in connector terms this usually means creating agent asset).
+     * Get the settings for configuring an {@link Agent} of this component.
      */
     Attributes getConnectorSettings();
 
     /**
-     * Return the inventory endpoint URI where {@link InventoryModifiedEvent}s
-     * can be received. If null is returned, no inventory actions will be monitored.
+     * Consumers supported by this connector.
      */
-    String getInventoryUri(String agentAssetId, Agent agent);
+    Collection<Capability> getConsumerCapabilities();
 
     /**
-     * Can this component accept a trigger message for discovery/inventory refresh?
+     * Producers supported by this connector.
      */
-    boolean isSupportingDiscoveryTrigger();
+    Collection<Capability> getProducerCapabilities();
 
     /**
-     * Return the inventory endpoint URI where a user can send empty messages, which
-     * should trigger internal discovery of child assets and possible asynchronous
-     * reaction with {@link InventoryModifiedEvent}s.
-     * If null is returned, triggering discovery will not be supported.
+     * Build a Camel consumer endpoint URI for the given capability and agent configuration. An
+     * endpoint URI must be returned if the capability was announced in {@link #getConsumerCapabilities()}.
+     * The <code>deviceKey</code> parameter is only available for consumer capability {@link Capability#listen}.
      */
-    String getDiscoveryTriggerUri(String agentAssetId, Agent agent);
+    String buildConsumerEndpoint(Capability capability, String agentAssetId, Agent agent, String deviceKey);
 
+    /**
+     * Build a Camel producer endpoint URI for the given capability and agent configuration. An
+     * endpoint URI must be returned if the capability was announced in {@link #getProducerCapabilities()}.
+     */
+    String buildProducerEndpoint(Capability capability, String agentAssetId, Agent agent);
 }

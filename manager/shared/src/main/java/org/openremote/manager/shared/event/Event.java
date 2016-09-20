@@ -20,7 +20,7 @@
 package org.openremote.manager.shared.event;
 
 import com.fasterxml.jackson.annotation.*;
-import org.openremote.manager.shared.agent.RefreshInventoryEvent;
+import org.openremote.manager.shared.agent.*;
 import org.openremote.manager.shared.asset.AssetModifiedEvent;
 import org.openremote.manager.shared.asset.SubscribeAssetModified;
 import org.openremote.manager.shared.asset.UnsubscribeAssetModified;
@@ -33,6 +33,11 @@ import org.openremote.manager.shared.util.Util;
     @JsonSubTypes.Type(value = UnsubscribeAssetModified.class, name = "UNSUBSCRIBE_ASSET_CHANGES"),
     @JsonSubTypes.Type(value = AssetModifiedEvent.class, name = "ASSET_MODIFIED"),
     @JsonSubTypes.Type(value = RefreshInventoryEvent.class, name = "REFRESH_INVENTORY"),
+    @JsonSubTypes.Type(value = SubscribeDeviceResourceUpdates.class, name = "SUBSCRIBE_DEVICE_RESOURCE_UPDATES"),
+    @JsonSubTypes.Type(value = UnsubscribeDeviceResourceUpdates.class, name = "UNSUBSCRIBE_DEVICE_RESOURCE_UPDATES"),
+    @JsonSubTypes.Type(value = DeviceResourceValueEvent.class, name = "DEVICE_RESOURCE_UPDATED"),
+    @JsonSubTypes.Type(value = DeviceResourceRead.class, name = "DEVICE_RESOURCE_READ"),
+    @JsonSubTypes.Type(value = DeviceResourceWrite.class, name = "DEVICE_RESOURCE_WRITE"),
     /*
     @JsonSubTypes.Type(value = FlowDeployEvent.class, name = "FLOW_DEPLOY"),
     @JsonSubTypes.Type(value = FlowDeploymentFailureEvent.class, name = "FLOW_DEPLOYMENT_FAILURE"),

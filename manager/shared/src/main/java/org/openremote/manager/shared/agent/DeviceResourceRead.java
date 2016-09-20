@@ -22,30 +22,42 @@ package org.openremote.manager.shared.agent;
 import org.openremote.manager.shared.event.Event;
 
 /**
- * Tell an agent to delete and re-discover all it's child assets (which are
- * {@link org.openremote.manager.shared.asset.AssetType#DEVICE}). You will
- * receive {@link org.openremote.manager.shared.asset.AssetModifiedEvent}s for
- * any detected changes.
+ * Read a device resource value asynchronously, a {@link DeviceResourceValueEvent} will
+ * be send by the service.
  */
-public class RefreshInventoryEvent extends Event {
+public class DeviceResourceRead extends Event {
 
     protected String agentId;
+    protected String deviceKey;
+    protected String deviceResourceKey;
 
-    public RefreshInventoryEvent() {
+    public DeviceResourceRead() {
     }
 
-    public RefreshInventoryEvent(String agentId) {
+    public DeviceResourceRead(String agentId, String deviceKey, String deviceResourceKey) {
         this.agentId = agentId;
+        this.deviceKey = deviceKey;
+        this.deviceResourceKey = deviceResourceKey;
     }
 
     public String getAgentId() {
         return agentId;
     }
 
+    public String getDeviceKey() {
+        return deviceKey;
+    }
+
+    public String getDeviceResourceKey() {
+        return deviceResourceKey;
+    }
+
     @Override
     public String toString() {
-        return "RefreshInventoryEvent{" +
+        return getClass().getSimpleName() + "{" +
             "agentId='" + agentId + '\'' +
+            ", deviceKey='" + deviceKey + '\'' +
+            ", deviceResourceKey='" + deviceResourceKey + '\'' +
             "}";
     }
 }

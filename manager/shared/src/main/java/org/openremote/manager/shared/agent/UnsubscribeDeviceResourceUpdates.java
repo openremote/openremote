@@ -17,23 +17,40 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.event;
+package org.openremote.manager.shared.agent;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.Predicate;
 import org.openremote.manager.shared.event.Event;
 
-public class EventPredicate<T extends Event> implements Predicate {
+/**
+ * Tell an agent that you are no longer interested in receiving
+ * {@link DeviceResourceValueEvent}s for a given device.
+ */
+public class UnsubscribeDeviceResourceUpdates extends Event {
 
-    final protected Class<T> eventType;
+    protected String agentId;
+    protected String deviceKey;
 
-    public EventPredicate(Class<T> eventType) {
-        this.eventType = eventType;
+    public UnsubscribeDeviceResourceUpdates() {
+    }
+
+    public UnsubscribeDeviceResourceUpdates(String agentId, String deviceKey) {
+        this.agentId = agentId;
+        this.deviceKey = deviceKey;
+    }
+
+    public String getAgentId() {
+        return agentId;
+    }
+
+    public String getDeviceKey() {
+        return deviceKey;
     }
 
     @Override
-    public boolean matches(Exchange exchange) {
-        return exchange.getIn().getBody() != null
-            && eventType.isAssignableFrom(exchange.getIn().getBody().getClass());
+    public String toString() {
+        return getClass().getSimpleName() +"{" +
+            "assetId='" + agentId + '\'' +
+            ", deviceKey='" + deviceKey + '\'' +
+            "}";
     }
 }

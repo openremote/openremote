@@ -43,14 +43,11 @@ public class DeviceAttributesEditor extends AttributesEditor<DeviceAttributesEdi
         String writeButton();
     }
 
-    final protected DeviceAttributes deviceAttributes;
-
     final protected FormGroup deviceActionsGroup = new FormGroup();
     final protected FormCheckBox enableLiveUpdatesCheckBox = new FormCheckBox();
 
     public DeviceAttributesEditor(Environment environment, Container<DeviceAttributesEditor.Style> container, Attributes attributes) {
         super(environment, container, attributes);
-        this.deviceAttributes = new DeviceAttributes(attributes.getJsonObject());
 
         FormLabel enableLiveUpdates = new FormLabel();
         enableLiveUpdates.addStyleName("larger");
@@ -100,6 +97,7 @@ public class DeviceAttributesEditor extends AttributesEditor<DeviceAttributesEdi
             );
 
             DeviceResource deviceResource = new DeviceResource(attribute);
+
 
             // TODO These actions don't do anything
             FlowPanel actionPanel = new FlowPanel();

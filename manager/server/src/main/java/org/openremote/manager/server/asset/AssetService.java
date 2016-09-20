@@ -28,35 +28,25 @@ import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
 import org.openremote.container.web.socket.WebsocketConstants;
-import org.openremote.manager.server.event.EventPredicate;
 import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.shared.asset.*;
 
 import javax.persistence.EntityManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_EVENT_TOPIC;
-import static org.openremote.container.persistence.PersistenceEvent.matchesEntityType;
+import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
+import static org.openremote.manager.server.event.EventPredicates.isEventType;
 
-public class AssetService implements ContainerService {
-
-    private static final Logger LOG = Logger.getLogger(AssetService.class.getName());
-
-    // TODO this is quite a hack to get some publish/subscribe system going, it will have to be replaced
-    final protected Map<String, Long> assetListeners = new ConcurrentHashMap<>();
-    final protected int ASSET_LISTENERS_MAX_LIFETIME_SECONDS = 60;
-    final protected ScheduledExecutorService assetListenerScheduler = Executors.newScheduledThreadPool(1);
+public class AssetService extends RouteBuilder implements ContainerService {
 
     protected MessageBrokerService messageBrokerService;
     protected EventService eventService;
     protected PersistenceService persistenceService;
+    protected AssetListenerSubscriptions assetListenerSubscriptions;
 
     @Override
     public void init(Container container) throws Exception {
@@ -64,52 +54,14 @@ public class AssetService implements ContainerService {
         eventService = container.getService(EventService.class);
         persistenceService = container.getService(PersistenceService.class);
 
-        // Max life time of listeners is 60 seconds
-        assetListenerScheduler.scheduleAtFixedRate(() -> {
-            assetListeners.forEach((sessionKey, timeStamp) -> {
-                if (timeStamp + (ASSET_LISTENERS_MAX_LIFETIME_SECONDS * 1000) < System.currentTimeMillis()) {
-                    LOG.fine("Removing asset listener session due to timeout: " + sessionKey);
-                    assetListeners.remove(sessionKey);
-                }
-            });
-        }, ASSET_LISTENERS_MAX_LIFETIME_SECONDS, ASSET_LISTENERS_MAX_LIFETIME_SECONDS, TimeUnit.SECONDS);
-
-        messageBrokerService.getContext().addRoutes(new RouteBuilder() {
+        assetListenerSubscriptions = new AssetListenerSubscriptions(eventService) {
             @Override
-            public void configure() throws Exception {
-
-                // TODO None of this is secure or considers the realm of an asset or the logged-in user's realm
-                from(EventService.INCOMING_EVENT_QUEUE)
-                    .filter(new EventPredicate<>(SubscribeAssetModified.class))
-                    .process(exchange -> {
-                        String sessionKey = exchange.getIn().getHeader(WebsocketConstants.SESSION_KEY, String.class);
-                        Long timestamp = System.currentTimeMillis();
-                        LOG.fine("Subscribing/updating subscription to asset change events for session: " + sessionKey);
-                        assetListeners.put(sessionKey, timestamp);
-                    });
-
-                from(EventService.INCOMING_EVENT_QUEUE)
-                    .filter(new EventPredicate<>(UnsubscribeAssetModified.class))
-                    .process(exchange -> {
-                        String sessionKey = exchange.getIn().getHeader(WebsocketConstants.SESSION_KEY, String.class);
-                        LOG.fine("Unsubscribing from asset change events for session: " + sessionKey);
-                        assetListeners.remove(sessionKey);
-                    });
-
-                from(PERSISTENCE_EVENT_TOPIC)
-                    .filter(matchesEntityType(Asset.class))
-                    .process(exchange -> {
-                        PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
-                        //noinspection unchecked
-                        for (AssetModifiedEvent assetModifiedEvent : createAssetModifiedEvents(persistenceEvent)) {
-                            LOG.fine("Publishing asset modified event to asset listeners: " + assetListeners.size());
-                            for (String sessionKey : assetListeners.keySet()) {
-                                eventService.sendEvent(sessionKey, assetModifiedEvent);
-                            }
-                        }
-                    });
+            protected Asset getAsset(String assetId) {
+                return AssetService.this.get(assetId);
             }
-        });
+        };
+
+        messageBrokerService.getContext().addRoutes(this);
     }
 
     @Override
@@ -126,6 +78,37 @@ public class AssetService implements ContainerService {
     @Override
     public void stop(Container container) throws Exception {
 
+    }
+
+    @Override
+    public void configure() throws Exception {
+        // TODO None of this is secure or considers the realm of an asset or the logged-in user's realm
+        from(EventService.INCOMING_EVENT_QUEUE)
+            .filter(isEventType(SubscribeAssetModified.class))
+            .process(exchange -> {
+                String sessionKey = EventService.getSessionKey(exchange);
+                assetListenerSubscriptions.addSubscription(
+                    sessionKey,
+                    exchange.getIn().getBody(SubscribeAssetModified.class)
+                );
+            });
+
+        from(EventService.INCOMING_EVENT_QUEUE)
+            .filter(isEventType(UnsubscribeAssetModified.class))
+            .process(exchange -> {
+                String sessionKey = EventService.getSessionKey(exchange);
+                assetListenerSubscriptions.removeSubscription(
+                    sessionKey,
+                    exchange.getIn().getBody(UnsubscribeAssetModified.class)
+                );
+            });
+
+        from(PERSISTENCE_EVENT_TOPIC)
+            .filter(isPersistenceEventForEntityType(Asset.class))
+            .process(exchange -> {
+                PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
+                assetListenerSubscriptions.dispatch(persistenceEvent);
+            });
     }
 
     public AssetInfo[] getRoot(String realm) {
@@ -259,82 +242,4 @@ public class AssetService implements ContainerService {
         if (Arrays.asList(parent.getPath()).contains(asset.getId()))
             throw new IllegalStateException("Parent asset can not be a child of the asset: " + asset.getParentId());
     }
-
-    private AssetModifiedEvent[] createAssetModifiedEvents(PersistenceEvent<Asset> persistenceEvent) {
-        List<AssetModifiedEvent> events = new ArrayList<>();
-
-        Asset asset = persistenceEvent.getEntity();
-        // Assets are a composite structure and we want to be able to fire events that say
-        // "a child was removed/inserted for this or that parent". To do this we need to
-        // compare old and new entity state, figuring out which parent was modified. There
-        // is also the special case of assets without parent: In that case we fire a "children
-        // modified" for a special "empty" asset, which clients should consider to be the root
-        // item of the whole tree. It has no name, no id, no parent, etc.
-        List<String> modifiedParentIds = new ArrayList<>();
-
-        AssetModifiedEvent.Cause cause = null;
-
-        switch (persistenceEvent.getCause()) {
-            case INSERT:
-                cause = AssetModifiedEvent.Cause.CREATE;
-                if (asset.getParentId() != null) {
-                    modifiedParentIds.add(asset.getParentId());
-                } else {
-                    // The "root without id" asset was modified
-                    events.add(new AssetModifiedEvent(new AssetInfo(), AssetModifiedEvent.Cause.CHILDREN_MODIFIED));
-                }
-                break;
-            case UPDATE:
-                cause = AssetModifiedEvent.Cause.UPDATE;
-
-                // Find out if the asset has a new parent
-                String previousParentId = persistenceEvent.getPreviousState("parentId");
-                String currentParentId = persistenceEvent.getCurrentState("parentId");
-                if (previousParentId == null && currentParentId == null) {
-                    // The "root without id" asset was modified
-                    events.add(new AssetModifiedEvent(new AssetInfo(), AssetModifiedEvent.Cause.CHILDREN_MODIFIED));
-                } else {
-                    if (previousParentId == null) {
-                        // The "root without id" asset was modified
-                        events.add(new AssetModifiedEvent(new AssetInfo(), AssetModifiedEvent.Cause.CHILDREN_MODIFIED));
-                        modifiedParentIds.add(currentParentId);
-                    } else if (currentParentId == null) {
-                        // The "root without id" asset was modified
-                        events.add(new AssetModifiedEvent(new AssetInfo(), AssetModifiedEvent.Cause.CHILDREN_MODIFIED));
-                        modifiedParentIds.add(previousParentId);
-                    }
-                }
-
-                // Only send "children modified" of the parent if the name of the asset changed
-                String previousName = persistenceEvent.getPreviousState("name");
-                String currentName = persistenceEvent.getCurrentState("name");
-                boolean isEqualName = Objects.equals(previousName, currentName);
-                if (!isEqualName){
-                    modifiedParentIds.add(asset.getParentId());
-                }
-
-                break;
-            case DELETE:
-                cause = AssetModifiedEvent.Cause.DELETE;
-                if (asset.getParentId() != null) {
-                    modifiedParentIds.add(asset.getParentId());
-                } else {
-                    // The "root without id" asset was modified
-                    events.add(new AssetModifiedEvent(new AssetInfo(), AssetModifiedEvent.Cause.CHILDREN_MODIFIED));
-                }
-                break;
-        }
-
-        events.add(new AssetModifiedEvent(asset, cause));
-
-        for (String modifiedParentId : modifiedParentIds) {
-            Asset parent = get(modifiedParentId);
-            if (parent != null) {
-                events.add(new AssetModifiedEvent(parent, AssetModifiedEvent.Cause.CHILDREN_MODIFIED));
-            }
-        }
-
-        return events.toArray(new AssetModifiedEvent[events.size()]);
-    }
-
 }

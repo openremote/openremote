@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.server.agent;
 
-import org.apache.camel.Exchange;
 import org.apache.camel.FailedToCreateRouteException;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
@@ -28,20 +27,17 @@ import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.util.IdentifierUtil;
-import org.openremote.container.web.WebService;
-import org.openremote.container.web.socket.IsUserInRole;
 import org.openremote.manager.server.asset.AssetService;
 import org.openremote.manager.server.asset.ServerAsset;
-import org.openremote.manager.server.event.EventPredicate;
 import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.shared.agent.Agent;
+import org.openremote.manager.shared.agent.DeviceResourceValueEvent;
 import org.openremote.manager.shared.agent.InventoryModifiedEvent;
-import org.openremote.manager.shared.agent.RefreshInventoryEvent;
 import org.openremote.manager.shared.asset.Asset;
+import org.openremote.manager.shared.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetType;
 import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.connector.ConnectorComponent;
-import org.openremote.manager.shared.util.Util;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -51,69 +47,46 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.apache.camel.builder.PredicateBuilder.not;
 import static org.openremote.container.persistence.PersistenceEvent.Cause.UPDATE;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_EVENT_TOPIC;
-import static org.openremote.container.persistence.PersistenceEvent.matchesEntityType;
+import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForAssetType;
+import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
 
-
-public class AgentService implements ContainerService {
+public class AgentService extends RouteBuilder implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
 
-    protected MessageBrokerService messageBrokerService;
+    final protected Map<String, AgentRoutes> agentInstanceMap = new LinkedHashMap<>();
 
+    protected MessageBrokerService messageBrokerService;
+    protected MessageBrokerContext messageBrokerContext;
     protected AssetService assetService;
     protected ConnectorService connectorService;
-
-    final protected Map<String, AgentRoutes> agentInstanceMap = new LinkedHashMap<>();
+    protected AgentServiceEventRoutes agentServiceEventRoutes;
 
     @Override
     public void init(Container container) throws Exception {
         messageBrokerService = container.getService(MessageBrokerService.class);
+        messageBrokerContext = messageBrokerService.getContext();
         assetService = container.getService(AssetService.class);
         connectorService = container.getService(ConnectorService.class);
 
-        messageBrokerService.getContext().addRoutes(new RouteBuilder() {
+        agentServiceEventRoutes = new AgentServiceEventRoutes(
+            new DeviceResourceSubscriptions(container.getService(EventService.class))
+        ) {
             @Override
-            public void configure() throws Exception {
-
-                // If any agent was modified in the database, reconfigure this service
-                from(PERSISTENCE_EVENT_TOPIC)
-                    .filter(matchesEntityType(Asset.class))
-                    .filter(exchange -> {
-                        PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
-                        Asset asset = (Asset) persistenceEvent.getEntity();
-                        return AssetType.AGENT.equals(asset.getWellKnownType());
-                    })
-                    .process(exchange -> {
-                        PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
-                        Asset agent = (Asset) persistenceEvent.getEntity();
-
-                        ServerAsset[] agents = assetService.findByType(agent.getRealm(), AssetType.AGENT);
-                        LOG.fine("Reconfigure agents of realm '" + agent.getRealm() + "': " + agents.length);
-                        reconfigureAgents(agents, persistenceEvent.getCause() == UPDATE ? agent : null);
-                    });
-
-                // Dynamically route discovery trigger messages to agents
-                from(Agent.TOPIC_TRIGGER_DISCOVERY)
-                    .routingSlip(method(AgentService.this, "triggerDiscoverySlip"))
-                    .ignoreInvalidEndpoints();
-
-                from(EventService.INCOMING_EVENT_QUEUE)
-                    .filter(new EventPredicate<>(RefreshInventoryEvent.class))
-                    .choice()
-                    .when(not(new IsUserInRole("write:assets")))
-                    .to("log:org.openremote.event.forbidden?level=INFO&showAll=true&multiline=true")
-                    .otherwise()
-                    .process(exchange -> {
-                        String agentId = exchange.getIn().getBody(RefreshInventoryEvent.class).getAgentId();
-                        LOG.fine("Refreshing inventory of agent: " + agentId);
-                        clearInventory(agentId);
-                        triggerDiscovery(agentId);
-                    });
+            protected Asset getAsset(String assetId) {
+                return assetService.get(assetId);
             }
-        });
+
+            @Override
+            protected void deleteAssetChildren(String parentAssetId) {
+                assetService.deleteChildren(parentAssetId);
+            }
+        };
+
+        messageBrokerService.getContext().addRoutes(this);
+        messageBrokerService.getContext().addRoutes(agentServiceEventRoutes);
     }
 
     @Override
@@ -129,30 +102,21 @@ public class AgentService implements ContainerService {
 
     @Override
     public void stop(Container container) throws Exception {
-
     }
 
-    protected void clearInventory(String agentId) {
-        assetService.deleteChildren(agentId);
-    }
-
-    protected void triggerDiscovery(String agentId) {
-        if (agentId != null) {
-            messageBrokerService.getProducerTemplate().sendBody(Agent.TOPIC_TRIGGER_DISCOVERY, agentId);
-        } else {
-            /* TODO: Do we need this?
-            if (realm == null || realm.length() == 0) {
-                throw new IllegalArgumentException(
-                    "Realm must be provided to trigger discovery of all agents (in that realm)"
-                );
-            }
-            messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-                Agent.TOPIC_TRIGGER_DISCOVERY,
-                null,
-                Agent.TOPIC_TRIGGER_DISCOVERY_HEADER_REALM, realm
-            );
-            */
-        }
+    @Override
+    public void configure() throws Exception {
+        // If any agent was modified in the database, reconfigure this service
+        from(PERSISTENCE_EVENT_TOPIC)
+            .filter(isPersistenceEventForEntityType(Asset.class))
+            .filter(isPersistenceEventForAssetType(AssetType.AGENT))
+            .process(exchange -> {
+                PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
+                Asset agent = (Asset) persistenceEvent.getEntity();
+                ServerAsset[] agents = assetService.findByType(agent.getRealm(), AssetType.AGENT);
+                LOG.fine("Reconfigure agents of realm '" + agent.getRealm() + "': " + agents.length);
+                reconfigureAgents(agents, persistenceEvent.getCause() == UPDATE ? agent : null);
+            });
     }
 
     protected void reconfigureAgents(ServerAsset[] agents, Asset updatedAgent) {
@@ -160,7 +124,6 @@ public class AgentService implements ContainerService {
             for (ServerAsset agentAsset : agents) {
                 Agent agent = new Agent(new Attributes(agentAsset.getAttributes()));
                 if (agent.isEnabled()) {
-
                     if (!agentInstanceMap.containsKey(agentAsset.getId())) {
                         LOG.fine("Agent is enabled and was not running: " + agentAsset.getId());
                         startAgent(agentAsset);
@@ -244,21 +207,35 @@ public class AgentService implements ContainerService {
                         assetService.delete(combinedAssetId);
                         break;
                 }
+
+                try {
+                    AgentService.this.stopDeviceRoutes(this);
+                    AgentService.this.startDeviceRoutes(agentAsset, this);
+                } catch (Exception ex) {
+                    LOG.log(Level.SEVERE, "Error restarting device routes of agent: " + agentAsset.getId(), ex);
+                    // TODO: We should mark the agent or fire event, or...
+                }
+            }
+
+            @Override
+            protected void handleResourceValueUpdate(String deviceKey, String deviceResourceKey, Object value) {
+                // TODO Value conversion?
+                DeviceResourceValueEvent event = new DeviceResourceValueEvent(
+                    agentAsset.getId(), deviceKey, deviceResourceKey, value != null ? value.toString() : null
+                );
+                agentServiceEventRoutes.getDeviceResourceSubscriptions().dispatch(event);
             }
         };
 
-        agentInstanceMap.put(agentAsset.getId(), agentRoutes);
-
         try {
-
-            MessageBrokerContext context = messageBrokerService.getContext();
-            context.addRoutes(agentRoutes);
-
+            messageBrokerContext.addRoutes(agentRoutes.buildAgentRoutes());
+            startDeviceRoutes(agentAsset, agentRoutes);
+            agentInstanceMap.put(agentAsset.getId(), agentRoutes);
         } catch (FailedToCreateRouteException ex) {
-            LOG.log(Level.SEVERE, "Error starting agent" + agentAsset, ex);
+            LOG.log(Level.SEVERE, "Error starting agent: " + agentAsset, ex);
             // TODO: We should mark the agent or fire event, or...
         } catch (Exception ex) {
-            LOG.log(Level.SEVERE, "Error starting agent" + agentAsset, ex);
+            LOG.log(Level.SEVERE, "Error starting agent: " + agentAsset, ex);
             // TODO: We should mark the agent or fire event, or...
         }
     }
@@ -267,48 +244,30 @@ public class AgentService implements ContainerService {
         LOG.fine("Stopping agent: " + agentId);
         if (agentInstanceMap.containsKey(agentId)) {
             AgentRoutes agentRoutes = agentInstanceMap.remove(agentId);
-            MessageBrokerContext context = messageBrokerService.getContext();
             try {
-                agentRoutes.stop(context);
-            } catch (FailedToCreateRouteException ex) {
-                LOG.log(Level.SEVERE, "Error stopping agent" + agentId, ex);
-                // TODO: We should mark the agent or fire event, or...
+                stopDeviceRoutes(agentRoutes);
+                agentRoutes.stopAgentRoutes(messageBrokerContext);
             } catch (Exception ex) {
-                LOG.log(Level.SEVERE, "Error stopping agent" + agentId, ex);
+                LOG.log(Level.SEVERE, "Error stopping agent: " + agentId, ex);
                 // TODO: We should mark the agent or fire event, or...
             }
         }
     }
 
-    public String triggerDiscoverySlip(String agentAssetId, Exchange exchange) {
-        // Find given or all agents of given realm, add their trigger discovery endpoints to the routing slip
-        List<String> destinations = new ArrayList<>();
-        if (agentAssetId != null && agentAssetId.length() > 0) {
-            Asset agentAsset = assetService.get(agentAssetId);
-            if (agentAsset != null) {
-                LOG.fine("Routing trigger discovery message for agent: " + agentAssetId);
-                destinations.add(
-                    AgentRoutes.TRIGGER_DISCOVERY_ROUTE(agentAssetId)
-                );
-            }
-        } else {
-            String realm = exchange.getIn().getHeader(
-                Agent.TOPIC_TRIGGER_DISCOVERY_HEADER_REALM, String.class
-            );
-            if (realm != null) {
-                LOG.fine("Routing trigger discovery message for all agents of realm: " + realm);
-                Asset[] allAgents = assetService.findByType(realm, AssetType.AGENT);
-                for (Asset agent : allAgents) {
-                    destinations.add(
-                        AgentRoutes.TRIGGER_DISCOVERY_ROUTE(agent.getId())
-                    );
-                }
+    protected void startDeviceRoutes(Asset agentAsset, AgentRoutes agentRoutes) throws Exception {
+        // We start listener routes for all device children of the agent asset
+        // TODO: We should selectively enable this on a per-device basis
+        List<Asset> deviceAssets = new ArrayList<>();
+        AssetInfo[] agentChildren = assetService.getChildren(agentAsset.getId());
+        for (AssetInfo agentChild : agentChildren) {
+            if (agentChild.getWellKnownType() == AssetType.DEVICE) {
+                deviceAssets.add(assetService.get(agentChild.getId()));
             }
         }
+        messageBrokerContext.addRoutes(agentRoutes.buildDeviceRoutes(deviceAssets));
+    }
 
-        LOG.fine("Triggering discovery on agents: " + destinations);
-        return Util.toCommaSeparated(
-            destinations.toArray(new String[destinations.size()])
-        );
+    protected void stopDeviceRoutes(AgentRoutes agentRoutes) throws Exception {
+        agentRoutes.stopDeviceRoutes(messageBrokerContext);
     }
 }

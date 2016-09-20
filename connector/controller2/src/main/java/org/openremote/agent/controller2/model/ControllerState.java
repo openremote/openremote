@@ -97,8 +97,8 @@ public class ControllerState {
     }
 
     public void addSensorListener(SensorListener listener) {
-        if (listener != null && (listener.getDeviceKey() == null || listener.getDeviceResourceKey() == null)) {
-            LOG.warning("Ignoring invalid sensor listener (" + controllerUrl + "), missing device or resource key: " + listener);
+        if (listener != null && (listener.getDeviceKey() == null)) {
+            LOG.warning("Ignoring invalid sensor listener (" + controllerUrl + "), missing device key: " + listener);
             return;
         }
         LOG.fine("Adding sensor listener (" + controllerUrl + "): " + listener);
@@ -120,14 +120,7 @@ public class ControllerState {
             return;
         }
 
-        DeviceResourceMapping resourceMapping = deviceMapping.getResourceMap().get(listener.getDeviceResourceKey());
-
-        if (resourceMapping == null) {
-            LOG.fine("Device resource key for sensor listener cannot be found so ignoring: " + listener.getDeviceResourceKey());
-            return;
-        }
-
-        resourceMapping.removeSensorListener(listener);
+        deviceMapping.removeSensorListener(listener);
     }
 
     public void addDeviceListener(DeviceListener listener) {
@@ -150,6 +143,30 @@ public class ControllerState {
     public void triggerDiscovery() {
         LOG.fine("Triggering discovery (" + controllerUrl + ")");
         deviceListeners.forEach(this::announceDevices);
+    }
+
+    public Object readResource(String deviceKey, String resourceKey) {
+        LOG.fine("Reading resource (" + controllerUrl + "): " + deviceKey + "/" + resourceKey);
+
+        DeviceMapping deviceMapping = deviceMap.get(deviceKey);
+        if (deviceMapping == null) {
+            LOG.info("Request to read to unknown device key '" + deviceKey + "' will be ignored");
+            return null;
+        }
+
+        DeviceResourceMapping resourceMapping = deviceMapping.getResourceMap().get(resourceKey);
+        if (resourceMapping == null) {
+            LOG.info("Request to read to unknown resource key '" + resourceKey + "' will be ignored");
+            return null;
+        }
+
+        if (resourceMapping.getSensor() == null) {
+            LOG.info("Request to read non-sensor device resource '" + resourceKey + "' will be ignored");
+            return null;
+        }
+
+        // TODO: This only reads the cached value?! It doesn't actually call a command on the controller...
+        return resourceMapping.getSensor().getStringValue();
     }
 
     public void writeResource(String deviceKey, String resourceKey, Object resourceValue) {
@@ -230,9 +247,9 @@ public class ControllerState {
                     }
 
                     @Override
-                    public void onSuccess(org.openremote.entities.controller.Device gatewayDevice) {
+                    public void onSuccess(Device device) {
                         LOG.fine("Got device '" + deviceName + "' from the controller");
-                        mapping.setDevice(gatewayDevice);
+                        mapping.setDevice(device);
                         latch.countDown();
                     }
                 });
@@ -241,10 +258,12 @@ public class ControllerState {
 
             {
                 final CountDownLatch latch = new CountDownLatch(1);
-                // Register the gateway device (so we get sensor change events and can send commands), this starts
+                // Register the device (so we get sensor change events and can send commands), this starts
                 // the polling of sensor values - effectively long-lasting HTTP connection for each device!
+                // TODO This will NOT scale! Well, depends on the internal implementation of our HTTP connector...
                 if (mapping.getDevice() != null) {
                     mapping.setRegistrationHandle(
+                        // TODO: Should be documented somewhere that this call blocks if the HTTP connector is not asynchronous
                         controller.registerDevice(mapping.getDevice(), new AsyncRegistrationCallback() {
                             @Override
                             public void onFailure(ControllerResponseCode controllerResponseCode) {
@@ -276,14 +295,8 @@ public class ControllerState {
             return;
         }
 
-        DeviceResourceMapping resourceMapping = deviceMapping.getResourceMap().get(listener.getDeviceResourceKey());
-
-        if (resourceMapping == null) {
-            LOG.fine("Resource for sensor listener cannot be found so ignoring, resource key was: " + listener.getDeviceResourceKey());
-            return;
-        }
-        LOG.fine("Adding sensor listener to device resource mapping: " + resourceMapping.getResource().getName());
-        resourceMapping.addSensorListener(listener);
+        LOG.fine("Adding sensor listener to device mapping: " + listener.getDeviceKey());
+        deviceMapping.addSensorListener(listener);
     }
 
     protected void announceDevices(DeviceListener listener) {
@@ -295,14 +308,12 @@ public class ControllerState {
 
     protected void processWriteRequest(WriteResourceRequest request) {
         DeviceMapping deviceMapping = deviceMap.get(request.getDeviceKey());
-
         if (deviceMapping == null) {
             LOG.info("Request to write to unknown device key '" + request.getDeviceKey() + "' will be ignored");
             return;
         }
 
         DeviceResourceMapping resourceMapping = deviceMapping.getResourceMap().get(request.getResourceKey());
-
         if (resourceMapping == null) {
             LOG.info("Request to write to unknown resource key '" + request.getResourceKey() + "' will be ignored");
             return;
@@ -314,7 +325,7 @@ public class ControllerState {
         if (resourceValue != null && resourceMapping.getSendCommand2() != null) {
             // This is a switch the command to send varies depending on the value
             // (whoever invented this better not raise their hand...)
-            switch(resourceValue.toString().toLowerCase(Locale.ROOT)) {
+            switch (resourceValue.toString().toLowerCase(Locale.ROOT)) {
                 case "off":
                 case "false":
                     resourceValue = "off";
@@ -334,7 +345,7 @@ public class ControllerState {
             return;
         }
 
-        LOG.fine("Sending command on '" + deviceMapping.getDevice().getName() + "': " + sendCommand);
+        LOG.fine("Sending command on '" + deviceMapping.getDevice().getName() + "': " + sendCommand.getName());
         // TODO: Callback handling? Should maybe just log something...
         deviceMapping.getDevice().sendCommand(
             sendCommand,

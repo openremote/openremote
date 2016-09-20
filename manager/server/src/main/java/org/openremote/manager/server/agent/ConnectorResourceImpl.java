@@ -44,7 +44,7 @@ public class ConnectorResourceImpl extends WebResource implements ConnectorResou
             .map(c -> new Connector(
                 c.getDisplayName(),
                 c.getType(),
-                c.isSupportingDiscoveryTrigger(),
+                c.getProducerCapabilities().contains(ConnectorComponent.Capability.discovery),
                 c.getConnectorSettings()
             ))
             .toArray(Connector[]::new);

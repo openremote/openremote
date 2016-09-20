@@ -20,7 +20,6 @@
 package org.openremote.manager.shared.agent;
 
 import elemental.json.Json;
-import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.attribute.*;
 import org.openremote.manager.shared.connector.Connector;
 
@@ -35,20 +34,20 @@ import static org.openremote.manager.shared.connector.Connector.ASSET_ATTRIBUTE_
  * This information is combined with calls to a {@link org.openremote.manager.shared.connector.ConnectorComponent}
  * when routes and endpoint URIs are established.
  * <p>
- * Communication with an agent is available through the messaging endpoint {@link #TOPIC_TRIGGER_DISCOVERY}.
+ * You can communicate with an agent through events:
+ * <ul>
+ *     <li>{@link RefreshInventoryEvent}</li>
+ *     <li>{@link SubscribeDeviceResourceUpdates}</li>
+ *     <li>{@link UnsubscribeDeviceResourceUpdates}</li>
+ *     <li>{@link DeviceResourceWrite}</li>
+ *     <li>{@link DeviceResourceRead}</li>
+ *     <li>{@link DeviceResourceValueEvent}</li>
+ * </ul>
  */
 public class Agent {
 
     private static final Logger LOG = Logger.getLogger(Agent.class.getName());
 
-    /**
-     * Send messages to this endpoint to trigger discovery of the assets available through an agent.
-     * If an agent asset identifier is present in the message body, only that agent will execute
-     * discovery. If the message body is empty, the {@link #TOPIC_TRIGGER_DISCOVERY_HEADER_REALM} header
-     * must be present, then all running agents of that realm will execute discovery.
-     */
-    public static String TOPIC_TRIGGER_DISCOVERY = "seda://urn:openremote:agent:discovery?multipleConsumers=true&waitForTaskToComplete=NEVER";
-    public static final String TOPIC_TRIGGER_DISCOVERY_HEADER_REALM = "TRIGGER_DISCOVERY_REALM";
 
     final protected Attributes attributes;
 

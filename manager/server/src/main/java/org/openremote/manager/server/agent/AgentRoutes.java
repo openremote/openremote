@@ -20,71 +20,186 @@
 package org.openremote.manager.server.agent;
 
 import org.apache.camel.builder.RouteBuilder;
+import org.openremote.agent.controller2.Controller2Component;
 import org.openremote.container.message.MessageBrokerContext;
-import org.openremote.manager.server.event.EventPredicate;
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.agent.InventoryModifiedEvent;
 import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.connector.ConnectorComponent;
+import org.openremote.manager.shared.device.DeviceAttributes;
 
+import java.util.Collection;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.logging.Logger;
+
+import static org.openremote.manager.server.event.EventPredicates.isEventType;
 
 /**
  * The messaging routes of a running agent instance.
+ *
  */
-public abstract class AgentRoutes extends RouteBuilder {
-
-    public static String TRIGGER_DISCOVERY_ROUTE(String agentAssetId) {
-        return "direct:urn:openremote:agent:triggerDiscovery:" + agentAssetId;
-    }
+public abstract class AgentRoutes {
 
     private static final Logger LOG = Logger.getLogger(AgentRoutes.class.getName());
 
+    public static String PRODUCER_INVENTORY_ROUTE(String agentAssetId) {
+        return "direct:urn:openremote:agent:inventory:" + agentAssetId;
+    }
+
+    public static String PRODUCER_DISCOVERY_ROUTE(String agentAssetId) {
+        return "direct:urn:openremote:agent:discovery:" + agentAssetId;
+    }
+
+    public static String PRODUCER_READ_ROUTE(String agentAssetId) {
+        return "direct:urn:openremote:agent:read:" + agentAssetId;
+    }
+
+    public static String PRODUCER_WRITE_ROUTE(String agentAssetId) {
+        return "direct:urn:openremote:agent:write:" + agentAssetId;
+    }
+
+    final protected Set<String> agentRouteIds = new CopyOnWriteArraySet<>();
+    final protected Set<String> deviceRouteIds = new CopyOnWriteArraySet<>();
     final protected Asset agentAsset;
     final protected Agent agent;
     final protected ConnectorComponent connectorComponent;
-    final protected String inventoryUri;
-    final protected String triggerDiscoveryUri;
 
     public AgentRoutes(Asset agentAsset, Agent agent, ConnectorComponent connectorComponent) {
         this.agentAsset = agentAsset;
         this.agent = agent;
         this.connectorComponent = connectorComponent;
-
-        inventoryUri = connectorComponent.getInventoryUri(agentAsset.getId(), agent);
-        triggerDiscoveryUri = connectorComponent.getDiscoveryTriggerUri(agentAsset.getId(), agent);
     }
 
-    @Override
-    public void configure() throws Exception {
-        if (inventoryUri != null) {
-            from(inventoryUri)
-                .routeId("Agent Inventory - " + agentAsset.getId())
-                .filter(new EventPredicate<>(InventoryModifiedEvent.class))
-                .process(exchange -> {
-                    handleInventoryModified(
-                        exchange.getIn().getBody(InventoryModifiedEvent.class)
+    public RouteBuilder buildAgentRoutes() throws Exception {
+        return new RouteBuilder() {
+
+            String routeId;
+            String endpointUri;
+
+            @Override
+            public void configure() throws Exception {
+                for (ConnectorComponent.Capability capability : connectorComponent.getConsumerCapabilities()) {
+                    switch (capability) {
+                        case inventory:
+                            routeId = "Agent Inventory Consumer - " + agentAsset.getId();
+                            endpointUri = connectorComponent.buildConsumerEndpoint(capability, agentAsset.getId(), agent, null);
+                            if (endpointUri == null)
+                                throwCapabilityMismatchException(capability);
+                            from(endpointUri)
+                                .routeId(routeId)
+                                .filter(isEventType(InventoryModifiedEvent.class))
+                                .process(exchange -> {
+                                    handleInventoryModified(
+                                        exchange.getIn().getBody(InventoryModifiedEvent.class)
+                                    );
+                                });
+                            agentRouteIds.add(routeId);
+                            break;
+                    }
+                }
+
+                for (ConnectorComponent.Capability capability : connectorComponent.getProducerCapabilities()) {
+                    switch (capability) {
+                        case discovery:
+                            routeId = "Agent Discovery Producer - " + agentAsset.getId();
+                            endpointUri = connectorComponent.buildProducerEndpoint(capability, agentAsset.getId(), agent);
+                            if (endpointUri == null)
+                                throwCapabilityMismatchException(capability);
+                            from(PRODUCER_DISCOVERY_ROUTE(agentAsset.getId()))
+                                .routeId(routeId)
+                                .to(endpointUri);
+                            agentRouteIds.add(routeId);
+                            break;
+                        case inventory:
+                            routeId = "Agent Inventory Producer - " + agentAsset.getId();
+                            endpointUri = connectorComponent.buildProducerEndpoint(capability, agentAsset.getId(), agent);
+                            if (endpointUri == null)
+                                throwCapabilityMismatchException(capability);
+                            from(PRODUCER_INVENTORY_ROUTE(agentAsset.getId()))
+                                .routeId(routeId)
+                                .to(endpointUri);
+                            agentRouteIds.add(routeId);
+                            break;
+                        case read:
+                            routeId = "Agent Read Producer - " + agentAsset.getId();
+                            endpointUri = connectorComponent.buildProducerEndpoint(capability, agentAsset.getId(), agent);
+                            if (endpointUri == null)
+                                throwCapabilityMismatchException(capability);
+                            from(PRODUCER_READ_ROUTE(agentAsset.getId()))
+                                .routeId(routeId)
+                                .to(endpointUri);
+                            agentRouteIds.add(routeId);
+                            break;
+                        case write:
+                            routeId = "Agent Write Producer - " + agentAsset.getId();
+                            endpointUri = connectorComponent.buildProducerEndpoint(capability, agentAsset.getId(), agent);
+                            if (endpointUri == null)
+                                throwCapabilityMismatchException(capability);
+                            from(PRODUCER_WRITE_ROUTE(agentAsset.getId()))
+                                .routeId(routeId)
+                                .to(endpointUri);
+                            agentRouteIds.add(routeId);
+                            break;
+                    }
+                }
+            }
+        };
+    }
+
+    public RouteBuilder buildDeviceRoutes(Collection<Asset> deviceAssets) throws Exception {
+        if (!connectorComponent.getConsumerCapabilities().contains(ConnectorComponent.Capability.listen)) {
+            throw new IllegalArgumentException(
+                "Connector does not support capability " + ConnectorComponent.Capability.listen + ": " + connectorComponent.getType()
+            );
+        }
+        return new RouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                for (Asset deviceAsset : deviceAssets) {
+                    DeviceAttributes deviceAttributes = new DeviceAttributes(deviceAsset.getAttributes());
+                    String deviceKey = deviceAttributes.getKey();
+                    String routeId = "Agent Listen Consumer - " + agentAsset.getId() + "(" + deviceKey + ")";
+                    String endpointUri = connectorComponent.buildConsumerEndpoint(
+                        ConnectorComponent.Capability.listen, agentAsset.getId(), agent, deviceKey
                     );
-                });
-        }
+                    from(endpointUri)
+                        .routeId(routeId)
+                        .process(exchange -> {
+                            String receivedDeviceKey = exchange.getIn().getHeader(Controller2Component.HEADER_DEVICE_KEY, String.class);
+                            String receivedResourceKey = exchange.getIn().getHeader(Controller2Component.HEADER_DEVICE_RESOURCE_KEY, String.class);
+                            Object value = exchange.getIn().getBody();
+                            handleResourceValueUpdate(receivedDeviceKey, receivedResourceKey, value);
+                        });
+                    deviceRouteIds.add(routeId);
+                }
+            }
+        };
+    }
 
-        if (triggerDiscoveryUri != null) {
-            from(TRIGGER_DISCOVERY_ROUTE(agentAsset.getId()))
-                .routeId("Agent Trigger Discovery - " + agentAsset.getId())
-                .to(triggerDiscoveryUri);
+    public void stopAgentRoutes(MessageBrokerContext context) throws Exception {
+        for (String agentRouteId : agentRouteIds) {
+            LOG.fine("Stopping agent route: " + agentRouteId);
+            context.stopRoute(agentRouteId);
+            context.removeRoute(agentRouteId);
         }
     }
 
-    public void stop(MessageBrokerContext context) throws Exception {
-        if (inventoryUri != null) {
-            context.stopRoute("Agent Inventory - " + agentAsset.getId());
-            context.removeRoute("Agent Inventory - " + agentAsset.getId());
+    public void stopDeviceRoutes(MessageBrokerContext context) throws Exception {
+        for (String deviceRouteId : deviceRouteIds) {
+            LOG.fine("Stopping agent device route: " + deviceRouteId);
+            context.stopRoute(deviceRouteId);
+            context.removeRoute(deviceRouteId);
         }
-        if (triggerDiscoveryUri != null) {
-            context.stopRoute("Agent Trigger Discovery - " + agentAsset.getId());
-            context.removeRoute("Agent Trigger Discovery - " + agentAsset.getId());
-        }
+    }
+
+    protected void throwCapabilityMismatchException(ConnectorComponent.Capability capability) {
+        throw new IllegalStateException(
+            "Capability '" + capability +"' announced but component didn't build endpoint: " + connectorComponent.getType()
+        );
     }
 
     protected abstract void handleInventoryModified(InventoryModifiedEvent event);
+
+    protected abstract void handleResourceValueUpdate(String deviceKey, String deviceResourceKey, Object value);
 }

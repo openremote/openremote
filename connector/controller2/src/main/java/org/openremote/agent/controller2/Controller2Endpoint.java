@@ -23,57 +23,42 @@ import org.apache.camel.Consumer;
 import org.apache.camel.Processor;
 import org.apache.camel.Producer;
 import org.apache.camel.impl.DefaultEndpoint;
-import org.apache.camel.spi.UriEndpoint;
-import org.apache.camel.spi.UriParam;
+import org.openremote.manager.shared.connector.ConnectorComponent;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
 
-@UriEndpoint(
-    scheme = "controller2",
-    title = "OpenRemote Controller 2.x",
-    syntax = Controller2Component.URI_SYNTAX,
-    consumerClass = Controller2Consumer.class
-)
 public class Controller2Endpoint extends DefaultEndpoint {
 
     final protected Controller2AdapterManager adapterManager;
-    final protected boolean isDiscovery;
-    final protected boolean isInventory;
+    final protected ConnectorComponent.Capability capability;
 
-    @UriParam
     protected String host;
-
-    @UriParam
     protected Integer port;
-
-    @UriParam
     protected String username;
-
-    @UriParam
     protected String password;
 
     protected String deviceKey;
-    protected String deviceResourceKey;
 
     protected Controller2Adapter adapter;
 
     public Controller2Endpoint(String endpointUri, Controller2Component component, Controller2AdapterManager adapterManager, Path path) {
         super(endpointUri, component);
-
         this.adapterManager = adapterManager;
-        this.isDiscovery = path.getNameCount() == 1 && path.getName(0).toString().equals("discovery");
-        this.isInventory= path.getNameCount() == 1 && path.getName(0).toString().equals("inventory");
 
-        if (!isDiscovery && !isInventory) {
-            if (path.getNameCount() == 2) {
-                this.deviceKey = path.getName(0).toString();
-                this.deviceResourceKey = path.getName(1).toString();
-            }
-            if (deviceKey == null || deviceKey.length() == 0 || deviceResourceKey ==null || deviceResourceKey.length() ==0) {
+        if (path.getNameCount() <= 0) {
+            throw new IllegalArgumentException(
+                "Desired endpoint capability missing from endpoint URI path: " + endpointUri
+            );
+        }
+
+        capability = ConnectorComponent.Capability.valueOf(path.getName(0).toString());
+
+        if (capability == ConnectorComponent.Capability.listen) {
+            if (path.getNameCount() < 2 || (deviceKey = path.getName(1).toString()).length() == 0) {
                 throw new IllegalArgumentException(
-                    "Both device and resource key must be defined for this endpoint: " + endpointUri
+                    "Listen capability requires /" + ConnectorComponent.Capability.listen.name() + "/<deviceKey> in endpoint URI path: " + endpointUri
                 );
             }
         }
@@ -125,29 +110,28 @@ public class Controller2Endpoint extends DefaultEndpoint {
 
     @Override
     public Producer createProducer() throws Exception {
-        if (isDiscovery) {
-            return new Controller2DiscoveryProducer(this);
+        switch(capability) {
+            case discovery:
+                return new Controller2DiscoveryProducer(this);
+            case inventory:
+                return new Controller2InventoryProducer(this);
+            case read:
+                return new Controller2ReadProducer(this);
+            case write:
+                return new Controller2WriteProducer(this);
         }
-        return new Controller2WriteProducer(this, deviceKey, deviceResourceKey);
+        throw new IllegalStateException("Unsupported producer capability: " + capability);
     }
 
     @Override
     public Consumer createConsumer(Processor processor) throws Exception {
-        if (isDiscovery) {
-            throw new UnsupportedOperationException(
-                "Discovery only supports producers (triggering discovery), use an inventory endpoint to receive devices"
-            );
-        } else if (isInventory) {
-            return new Controller2InventoryConsumer(this, processor);
+        switch(capability) {
+            case inventory:
+                return new Controller2InventoryConsumer(this, processor);
+            case listen:
+                return new Controller2ListenConsumer(this, processor, deviceKey);
         }
-
-        // Read consumer needs specific device and resource so gateway can
-        // deal with providing push notifications whichever way it needs to
-        if (deviceKey != null && deviceResourceKey != null) {
-            return new Controller2ReadConsumer(this, processor, deviceKey, deviceResourceKey);
-        } else {
-            throw new UnsupportedOperationException("Read consumer requires device and resource keys");
-        }
+        throw new IllegalStateException("Unsupported consumer capability: " + capability);
     }
 
     @Override

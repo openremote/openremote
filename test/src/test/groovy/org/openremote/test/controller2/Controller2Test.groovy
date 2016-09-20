@@ -1,23 +1,25 @@
 package org.openremote.test.controller2
 
-import org.apache.camel.Exchange
-import org.apache.camel.Processor
-import org.apache.camel.builder.RouteBuilder
-import org.openremote.container.message.MessageBrokerService
+import org.openremote.manager.client.event.ServerSendEvent
+import org.openremote.manager.client.event.bus.EventBus
 import org.openremote.manager.server.SampleDataService
 import org.openremote.manager.server.asset.AssetService
 import org.openremote.manager.server.event.EventService
+import org.openremote.manager.shared.agent.DeviceResourceRead
+import org.openremote.manager.shared.agent.DeviceResourceValueEvent
+import org.openremote.manager.shared.agent.DeviceResourceWrite
 import org.openremote.manager.shared.agent.RefreshInventoryEvent
+import org.openremote.manager.shared.agent.SubscribeDeviceResourceUpdates
+import org.openremote.manager.shared.agent.UnsubscribeDeviceResourceUpdates
 import org.openremote.manager.shared.asset.Asset
 import org.openremote.manager.shared.asset.AssetModifiedEvent
 import org.openremote.manager.shared.asset.AssetType
 import org.openremote.manager.shared.asset.SubscribeAssetModified
 import org.openremote.manager.shared.attribute.AttributeType
-import org.openremote.manager.shared.device.DeviceAttributes
-import org.openremote.manager.shared.device.DeviceResource
+import org.openremote.manager.shared.device.*
 import org.openremote.test.BlockingWebsocketEndpoint
 import org.openremote.test.ContainerTrait
-import spock.lang.Ignore
+import org.openremote.test.EventBusWebsocketEndpoint
 import spock.lang.Specification
 import spock.util.concurrent.BlockingVariables
 
@@ -39,7 +41,7 @@ class Controller2Test extends Specification implements ContainerTrait {
         def clientTarget = getClientTarget(createClient(container).build(), serverUri(serverPort), realm)
         def websocketClient = createWebsocketClient()
 
-        when: "we wait a bit for initial state"
+        when: "everything has started"
         sleep(2000)
 
         then: "the device assets should be the children of the agent asset"
@@ -67,18 +69,18 @@ class Controller2Test extends Specification implements ContainerTrait {
         def endpoint = new BlockingWebsocketEndpoint(2);
         def session = connect(websocketClient, endpoint, clientTarget, realm, accessToken, EventService.WEBSOCKET_EVENTS);
 
-        and: "we listen to asset modification events"
+        and: "listening to asset modification events"
         session.basicRemote.sendText(container.JSON.writeValueAsString(
                 new SubscribeAssetModified()
         ));
 
-        and: "discovery is triggered"
+        and: "refreshing the agent's inventory"
         session.basicRemote.sendText(container.JSON.writeValueAsString(
                 new RefreshInventoryEvent(agentAsset.getId())
         ));
 
-        and: "we wait a bit for inventory response"
-        endpoint.awaitMessages()
+        and: "waiting for inventory changes"
+        endpoint.awaitMessagesAndCloseOnCompletion()
 
         then: "the device assets should be the children of the agent asset"
         def updatedDeviceAssetInfos = assetService.getChildren(agentAsset.getId())
@@ -97,55 +99,102 @@ class Controller2Test extends Specification implements ContainerTrait {
         stopContainer(container)
     }
 
-
-    def "Write actuator and read updated sensor value"() {
-        given: "a clean result state"
-        def result = new BlockingVariables(5)
-
-        when: "the server container is started"
+    // You might want to GET 192.168.99.100:8083/controller/rest/devices/TestDevice/commands?name=Light1Off
+    // to turn off the light whenever this test failed, so you have a clean state to run the test again...
+    def "Listen to, write, and read device resource value"() {
+        given: "the server container is started"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
 
-        and: "an actuator and a sensor route are started"
-        String deviceResourceEndpoint = "controller2://192.168.99.100:8083/testdevice/light1switch";
-        addRoutes(container, new RouteBuilder() {
-            @Override
-            void configure() throws Exception {
-                from("direct:light1switch")
-                        .to(deviceResourceEndpoint);
+        and: "an authenticated user"
+        def realm = MASTER_REALM;
+        def accessToken = authenticate(container, realm, MANAGER_CLIENT_ID, "admin", "admin").token
 
-                from(deviceResourceEndpoint)
-                        .process(new Processor() {
-                    @Override
-                    void process(Exchange exchange) throws Exception {
-                        switch (exchange.getIn().getBody(String.class)) {
-                            case "ON":
-                                result.sensorSwitchedOn = true;
-                                break;
-                            case "OFF":
-                                result.sensorSwitchedoff = true;
-                                break;
-                            default:
-                                throw new IllegalArgumentException("Don't know how to handle: " + exchange.getIn().getBody())
-                        }
-                    }
-                })
+        and: "a client target"
+        def clientTarget = getClientTarget(createClient(container).build(), serverUri(serverPort), realm)
+        def websocketClient = createWebsocketClient()
+
+        and: "everything has started"
+        sleep(2000)
+
+        and: "an expected result"
+        def result = new BlockingVariables(5)
+
+        and: "connecting a client event bus"
+        def eventBus = new EventBus()
+        def endpoint = new EventBusWebsocketEndpoint(eventBus, container.JSON)
+        connect(websocketClient, endpoint, clientTarget, realm, accessToken, EventService.WEBSOCKET_EVENTS);
+
+        and: "preparing to receive device resource updates"
+        def resourceUpdatesRegistration = eventBus.register(DeviceResourceValueEvent.class) { event ->
+            switch (event.getValue()) {
+                case "ON":
+                    result.lightSwitchedOn = true;
+                    break;
+                case "OFF":
+                    result.lightSwitchedOff = true;
+                    break;
+                default:
+                    throw new IllegalArgumentException("Don't know how to handle: " + event)
             }
-        })
+        }
 
-        and: "the actuator is switched on"
-        getMessageProducerTemplate(container).sendBody("direct:light1switch", "ON")
+        when: "subscribing to device resource updates through an agent"
+        def assetService = container.getService(AssetService.class)
+        def agentAsset = assetService.get(container.getService(SampleDataService.class).SAMPLE_AGENT_ID)
+        eventBus.dispatch(new ServerSendEvent(new SubscribeDeviceResourceUpdates(
+                agentAsset.getId(), "testdevice"
+        )))
 
-        then: "the sensor value should change"
-        result.sensorSwitchedOn
+        and: "the device resource value is written"
+        eventBus.dispatch(new ServerSendEvent(new DeviceResourceWrite(
+                agentAsset.getId(),
+                "testdevice",
+                "light1switch",
+                "ON"
+        )))
 
-        when: "the actuator is switched off"
-        getMessageProducerTemplate(container).sendBody("direct:light1switch", "OFF")
+        then: "the device resource value should change"
+        result.lightSwitchedOn
 
-        then: "the sensor value should change"
-        result.sensorSwitchedoff
+        when: "the device resource value is written again"
+        eventBus.dispatch(new ServerSendEvent(new DeviceResourceWrite(
+                agentAsset.getId(),
+                "testdevice",
+                "light1switch",
+                "OFF"
+        )))
+
+        then: "the device resource value should change again"
+        result.lightSwitchedOff
+
+        when: "unsubscribing from device resource updates"
+        eventBus.dispatch(new ServerSendEvent(new UnsubscribeDeviceResourceUpdates(
+                agentAsset.getId(), "testdevice"
+        )))
+        eventBus.remove(resourceUpdatesRegistration)
+
+        and: "preparing to receive device resource value with a new handler"
+        eventBus.register(DeviceResourceValueEvent.class) { event ->
+            switch (event.getValue()) {
+                case "off":
+                    result.receivedReadValue = true;
+                    break;
+                default:
+                    throw new IllegalArgumentException("Don't know how to handle: " + event)
+            }
+        }
+
+        and: "device resource state is read"
+        eventBus.dispatch(new ServerSendEvent(new DeviceResourceRead(
+                agentAsset.getId(), "testdevice", "light1switch"
+        )))
+
+        then: "the result of that read operation should be received"
+        result.receivedReadValue
 
         cleanup: "the server should be stopped"
+        endpoint.close()
         stopContainer(container)
     }
 }

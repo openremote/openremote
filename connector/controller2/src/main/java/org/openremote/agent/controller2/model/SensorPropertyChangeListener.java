@@ -32,7 +32,12 @@ public class SensorPropertyChangeListener implements PropertyChangeListener {
 
     private static final Logger LOG = Logger.getLogger(SensorPropertyChangeListener.class.getName());
 
-    protected List<SensorListener> listeners = new CopyOnWriteArrayList<>();
+    final protected List<SensorListener> listeners = new CopyOnWriteArrayList<>();
+    final protected String resourceKey;
+
+    public SensorPropertyChangeListener(String resourceKey) {
+        this.resourceKey = resourceKey;
+    }
 
     public void addListener(SensorListener listener) {
         listeners.add(listener);
@@ -46,7 +51,7 @@ public class SensorPropertyChangeListener implements PropertyChangeListener {
     public void propertyChange(PropertyChangeEvent evt) {
         LOG.fine("Propagating controller change event to " + listeners.size() + " sensor listeners: " + evt.getNewValue());
         listeners.stream().forEach(sensorListener -> {
-            sensorListener.onUpdate(evt.getNewValue());
+            sensorListener.onUpdate(resourceKey, evt.getNewValue());
         });
     }
 }

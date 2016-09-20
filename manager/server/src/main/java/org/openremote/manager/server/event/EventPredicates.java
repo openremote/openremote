@@ -17,14 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent.controller2.model;
+package org.openremote.manager.server.event;
 
-/**
- * Listen to all resource value updates of a given device.
- */
-public interface SensorListener {
+import org.apache.camel.Predicate;
+import org.openremote.manager.shared.event.Event;
 
-    String getDeviceKey();
+public class EventPredicates {
 
-    void onUpdate(String resourceKey, Object obj);
+    public static <T extends Event> Predicate isEventType(Class<T> eventType) {
+        return exchange -> exchange.getIn().getBody() != null
+            && eventType.isAssignableFrom(exchange.getIn().getBody().getClass());
+    }
+
 }

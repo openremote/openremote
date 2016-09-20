@@ -28,19 +28,14 @@ import org.openremote.manager.shared.device.DeviceResource;
  */
 public class DeviceResourceMapping {
 
-    final protected SensorPropertyChangeListener sensorPropertyChangeListener = new SensorPropertyChangeListener();
-
     protected DeviceResource resource;
-    protected Sensor gatewaySensor;
+    protected Sensor sensor;
+    protected SensorPropertyChangeListener sensorPropertyChangeListener;
     protected Command sendCommand1;
     protected Command sendCommand2;
 
-    public void addSensorListener(SensorListener listener) {
-        sensorPropertyChangeListener.addListener(listener);
-    }
-
-    public void removeSensorListener(SensorListener listener) {
-        sensorPropertyChangeListener.removeListener(listener);
+    public DeviceResourceMapping(String resourceKey) {
+        sensorPropertyChangeListener = new SensorPropertyChangeListener(resourceKey);
     }
 
     public DeviceResource getResource() {
@@ -51,14 +46,32 @@ public class DeviceResourceMapping {
         this.resource = resource;
     }
 
-    public Sensor getGatewaySensor() {
-        return gatewaySensor;
+    public Sensor getSensor() {
+        return sensor;
     }
 
-    public void setGatewaySensor(Sensor gatewaySensor) {
-        // Yeah, this is just fantastic... another level of callbacks and indirection
-        gatewaySensor.addPropertyChangeListener(sensorPropertyChangeListener);
-        this.gatewaySensor = gatewaySensor;
+    public void setSensor(Sensor sensor) {
+        if (this.sensor != null) {
+            this.sensor.removePropertyChangeListener(sensorPropertyChangeListener);
+        }
+        this.sensor = sensor;
+        this.sensor.addPropertyChangeListener(sensorPropertyChangeListener);
+    }
+
+    public void addSensorListener(SensorListener sensorListener) {
+        if (this.sensor != null) {
+            sensorPropertyChangeListener.addListener(sensorListener);
+        }
+    }
+
+    public void removeSensorListener(SensorListener sensorListener) {
+        sensorPropertyChangeListener.removeListener(sensorListener);
+    }
+
+    public void detachSensorListeners() {
+        if (this.sensor != null) {
+            this.sensor.removePropertyChangeListener(sensorPropertyChangeListener);
+        }
     }
 
     public Command getSendCommand1() {

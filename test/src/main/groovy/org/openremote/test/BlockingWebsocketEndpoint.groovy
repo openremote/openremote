@@ -68,7 +68,7 @@ public class BlockingWebsocketEndpoint extends Endpoint {
         this.startTime = 0
     }
 
-    def awaitMessages() {
+    def awaitMessagesAndCloseOnCompletion() {
         awaitMessages(true)
     }
 

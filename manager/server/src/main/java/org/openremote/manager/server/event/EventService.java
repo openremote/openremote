@@ -25,14 +25,10 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.web.socket.IsUserInRole;
 import org.openremote.container.web.socket.WebsocketConstants;
 import org.openremote.manager.shared.event.Event;
 
-import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static org.apache.camel.builder.PredicateBuilder.not;
 
 public class EventService implements ContainerService {
 
@@ -61,21 +57,13 @@ public class EventService implements ContainerService {
             @Override
             public void configure() throws Exception {
 
-                // TODO This is only a simple example for role checking in routes
-                /*
-                interceptFrom("websocket://" + WEBSOCKET_EVENTS)
-                    .when(not(new IsUserInRole("read")))
-                    .to("log:org.openremote.event.forbidden?level=INFO&showAll=true&multiline=true")
-                    .stop();
-                */
-
                 from("websocket://" + WEBSOCKET_EVENTS)
-                    .routeId("Receive incoming events on WebSocket")
+                    .routeId("Receive incoming events on WebSocket session(s)")
                     .convertBodyTo(Event.class)
                     .to(EventService.INCOMING_EVENT_QUEUE);
 
                 from(EventService.OUTGOING_EVENT_QUEUE)
-                    .routeId("Send outgoing events to all WebSocket sessions")
+                    .routeId("Send outgoing events to WebSocket session(s)")
                     .to("websocket://" + WEBSOCKET_EVENTS);
             }
         });
@@ -91,7 +79,7 @@ public class EventService implements ContainerService {
 
     }
 
-    public static String getSession(Exchange exchange) {
+    public static String getSessionKey(Exchange exchange) {
         return exchange.getIn().getHeader(WebsocketConstants.SESSION_KEY, null, String.class);
     }
 

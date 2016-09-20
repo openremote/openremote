@@ -25,17 +25,15 @@ import org.openremote.agent.controller2.model.SensorListener;
 
 import java.util.logging.Logger;
 
-public class Controller2ReadConsumer extends Controller2Consumer implements SensorListener {
+public class Controller2ListenConsumer extends Controller2Consumer implements SensorListener {
 
-    private static final Logger LOG = Logger.getLogger(Controller2ReadConsumer.class.getName());
+    private static final Logger LOG = Logger.getLogger(Controller2ListenConsumer.class.getName());
 
-    protected String deviceKey;
-    protected String resourceKey;
+    final protected String deviceKey;
 
-    public Controller2ReadConsumer(Controller2Endpoint endpoint, Processor processor, String deviceKey, String resourceKey) {
+    public Controller2ListenConsumer(Controller2Endpoint endpoint, Processor processor, String deviceKey) {
         super(endpoint, processor);
         this.deviceKey = deviceKey;
-        this.resourceKey = resourceKey;
     }
 
     @Override
@@ -56,16 +54,13 @@ public class Controller2ReadConsumer extends Controller2Consumer implements Sens
     }
 
     @Override
-    public String getDeviceResourceKey() {
-        return resourceKey;
-    }
-
-    @Override
-    public void onUpdate(Object newValue) {
+    public void onUpdate(String resourceKey, Object newValue) {
         // Push value into message body and camel type converter can be used to
         // get value into the required type by the next processor in the route
         LOG.fine("Consuming state change from '" + deviceKey + " : " + resourceKey + "': " + newValue);
         Exchange exchange = getEndpoint().createExchange();
+        exchange.getIn().setHeader(Controller2Component.HEADER_DEVICE_KEY, deviceKey);
+        exchange.getIn().setHeader(Controller2Component.HEADER_DEVICE_RESOURCE_KEY, resourceKey);
         exchange.getIn().setBody(newValue);
         try {
             getProcessor().process(exchange);

@@ -210,7 +210,6 @@ public class Asset {
             ", parent ='" + parentId + '\'' +
             ", path ='" + Arrays.toString(path) + '\'' +
             ", coordinates ='" + Arrays.toString(coordinates) + '\'' +
-            ", attributes='" + (attributes != null ? attributes.toJson() : "null") + '\'' +
             '}';
     }
 }

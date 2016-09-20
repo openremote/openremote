@@ -20,30 +20,25 @@
 package org.openremote.agent.controller2;
 
 import org.apache.camel.Endpoint;
-import org.apache.camel.impl.UriEndpointComponent;
+import org.apache.camel.impl.DefaultComponent;
 import org.openremote.manager.shared.agent.Agent;
-import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.attribute.AttributeType;
+import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.connector.ConnectorComponent;
 import org.openremote.manager.shared.connector.ConnectorUtil;
-import org.openremote.manager.shared.connector.ChildAssetSupport;
-import org.openremote.manager.shared.attribute.Attributes;
 
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
-import java.util.logging.Logger;
 
-public class Controller2Component extends UriEndpointComponent implements ConnectorComponent {
-
-    private static final Logger LOG = Logger.getLogger(Controller2Component.class.getName());
+public class Controller2Component extends DefaultComponent implements ConnectorComponent {
 
     public static final String TYPE = "urn:openremote:connector:controller2";
     public static final String DISPLAY_NAME = "OpenRemote Controller";
-    public static final String URI_SYNTAX = "'controller2://<IP or host name>:<port>/([<device key>/<resource key>]|[discovery|inventory])[?username=username&password=secret]";
-    public static final String HEADER_DEVICE_KEY = Controller2Component.class.getCanonicalName() + ".HEADER_DEVICE_KEY";
-    public static final String HEADER_DEVICE_RESOURCE_KEY = Controller2Component.class.getCanonicalName() + ".HEADER_DEVICE_RESOURCE_KEY";
+    public static final String URI_SYNTAX = "'controller2://<IP or host name>:<port>/[discovery|inventory|read|write|listen/<deviceKey>][?username=username&password=secret]";
     protected final Controller2AdapterManager adapterManager;
 
     public static final Attributes SETTINGS;
@@ -83,7 +78,6 @@ public class Controller2Component extends UriEndpointComponent implements Connec
     }
 
     public Controller2Component(Controller2AdapterManager adapterManager) {
-        super(Controller2Endpoint.class);
         this.adapterManager = adapterManager;
     }
 
@@ -129,26 +123,65 @@ public class Controller2Component extends UriEndpointComponent implements Connec
         return SETTINGS;
     }
 
-    // TODO These dynamic routes are safe? Should we escape values before we concatenate strings?
-
     @Override
-    public String getInventoryUri(String agentAssetId, Agent agent) {
-        String host = agent.getAttributes().hasAttribute("host") ? agent.getAttributes().get("host").getValueAsString() : null;
-        Integer port = agent.getAttributes().hasAttribute("port") ? agent.getAttributes().get("port").getValueAsDouble().intValue() : null;
-        // TODO username and password
-        return "controller2://" + host + ":" + port + "/inventory";
+    public Collection<Capability> getConsumerCapabilities() {
+        return Arrays.asList(
+            Capability.inventory,
+            Capability.listen
+        );
     }
 
     @Override
-    public boolean isSupportingDiscoveryTrigger() {
-        return true;
+    public Collection<Capability> getProducerCapabilities() {
+        return Arrays.asList(
+            Capability.discovery,
+            Capability.inventory,
+            Capability.read,
+            Capability.write
+        );
     }
 
     @Override
-    public String getDiscoveryTriggerUri(String agentAssetId, Agent agent) {
-        String host = agent.getAttributes().hasAttribute("host") ? agent.getAttributes().get("host").getValueAsString() : null;
-        Integer port = agent.getAttributes().hasAttribute("port") ? agent.getAttributes().get("port").getValueAsDouble().intValue() : null;
-        // TODO username and password
-        return "controller2://" + host + ":" + port + "/discovery";
+    public String buildConsumerEndpoint(Capability capability, String agentAssetId, Agent agent, String deviceKey) {
+        String host = getAgentAttributeHost(agent.getAttributes());
+        Integer port = getAgentAttributePort(agent.getAttributes());
+        if (host == null || port == null) {
+            throw new IllegalArgumentException("Host and port must be available in agent: " + agentAssetId);
+        }
+        switch (capability) {
+            case inventory:
+                return "controller2://" + host + ":" + port + "/inventory";
+            case listen:
+                return "controller2://" + host + ":" + port + "/listen/" + deviceKey;
+        }
+        throw new UnsupportedOperationException("Can't build endpoint for capability: " + capability);
+    }
+
+    @Override
+    public String buildProducerEndpoint(Capability capability, String agentAssetId, Agent agent) {
+        String host = getAgentAttributeHost(agent.getAttributes());
+        Integer port = getAgentAttributePort(agent.getAttributes());
+        if (host == null || port == null) {
+            throw new IllegalArgumentException("Host and port must be available in agent: " + agentAssetId);
+        }
+        switch (capability) {
+            case discovery:
+                return "controller2://" + host + ":" + port + "/discovery";
+            case inventory:
+                return "controller2://" + host + ":" + port + "/inventory";
+            case read:
+                return "controller2://" + host + ":" + port + "/read";
+            case write:
+                return "controller2://" + host + ":" + port + "/write";
+        }
+        throw new UnsupportedOperationException("Can't build endpoint for capability: " + capability);
+    }
+
+    protected String getAgentAttributeHost(Attributes agentAttributes) {
+        return agentAttributes.hasAttribute("host") ? agentAttributes.get("host").getValueAsString() : null;
+    }
+
+    protected Integer getAgentAttributePort(Attributes agentAttributes) {
+        return agentAttributes.hasAttribute("port") ? agentAttributes.get("port").getValueAsDouble().intValue() : null;
     }
 }

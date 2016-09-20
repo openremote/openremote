@@ -45,6 +45,18 @@ public class DeviceMapping {
     protected DeviceRegistrationHandle registrationHandle;
     protected Map<String, DeviceResourceMapping> resourceMap = new HashMap<>();
 
+    public void addSensorListener(SensorListener listener) {
+        for (DeviceResourceMapping deviceResourceMapping : resourceMap.values()) {
+            deviceResourceMapping.addSensorListener(listener);
+        }
+    }
+
+    public void removeSensorListener(SensorListener listener) {
+        for (DeviceResourceMapping deviceResourceMapping : resourceMap.values()) {
+            deviceResourceMapping.removeSensorListener(listener);
+        }
+    }
+
     public Device getDevice() {
         return device;
     }
@@ -72,6 +84,10 @@ public class DeviceMapping {
     public void update(List<Controller.WidgetCommandInfo> widgetCommandInfos) {
         deviceAsset = null;
         Device device = getDevice();
+
+        // Remove sensor change listeners from sensors
+        // TODO Not sure this is necessary, as we always have fresh instances (Device, Sensor) during update...
+        resourceMap.values().forEach(DeviceResourceMapping::detachSensorListeners);
 
         if (device != null) {
 
@@ -130,17 +146,19 @@ public class DeviceMapping {
                         break;
                 }
 
+                String deviceResourceKey = sensor.getName().toLowerCase(Locale.ROOT);
+
                 DeviceResource deviceResource = new DeviceResource(
                     sensor.getName(),
-                    sensor.getName().toLowerCase(Locale.ROOT),
+                    deviceResourceKey,
                     resourceType,
                     access
                 );
 
-                DeviceResourceMapping resourceMapping = new DeviceResourceMapping();
+                DeviceResourceMapping resourceMapping = new DeviceResourceMapping(deviceResourceKey);
                 resourceMapping.setResource(deviceResource);
-                resourceMapping.setGatewaySensor(sensor);
-                getResourceMap().put(deviceResource.getValueAsString(), resourceMapping);
+                resourceMapping.setSensor(sensor);
+                resourceMap.put(deviceResource.getValueAsString(), resourceMapping);
 
                 deviceAttributes.put(deviceResource);
 
@@ -174,14 +192,17 @@ public class DeviceMapping {
 
             // TODO: All commands are of string type?
             unassignedCommands.forEach(command -> {
+
+                String deviceResourceKey = command.getName().toLowerCase(Locale.ROOT);
+
                 DeviceResource deviceResource = new DeviceResource(
                     command.getName(),
-                    command.getName().toLowerCase(Locale.ROOT),
+                    deviceResourceKey,
                     AttributeType.STRING,
                     DeviceResource.Access.W
                 );
 
-                DeviceResourceMapping resourceMapping = new DeviceResourceMapping();
+                DeviceResourceMapping resourceMapping = new DeviceResourceMapping(deviceResourceKey);
                 resourceMapping.setResource(deviceResource);
                 resourceMapping.setSendCommand1(command);
                 getResourceMap().put(deviceResource.getValueAsString(), resourceMapping);
