@@ -5,7 +5,7 @@
 
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <link rel="icon" type="image/png" href="/static/img/favicon.png" />
+    <link rel="icon" type="image/png" href="/static/img/favicon.png"/>
 
     <script src="/static/js/loader.js"></script>
 
@@ -34,30 +34,48 @@
         });
 
         function loadResources() {
-            Promise.all([
-                load.js("/static/bower_components/webcomponentsjs/webcomponents-lite.min.js"),
-                load.import("/static/bower_components/iron-flex-layout/iron-flex-layout-classes.html"),
-                load.css("/static/bower_components/font-awesome/css/font-awesome.css"),
 
-                load.css("/static/3rdparty/mapbox-gl-js/0.22.0/mapbox-gl.css"),
-                load.js("/static/3rdparty/mapbox-gl-js/0.22.0/mapbox-gl.js"),
+            var loadingMessage = document.createElement("div");
+            loadingMessage.id = "loading-message";
+            loadingMessage.style =
+                    "font-weight: 600; " +
+                    "text-align: center; " +
+                    "margin: 1em auto; " +
+                    "font-size: 14px; " +
+                    "letter-spacing: 0.02em; " +
+                    "font-family: 'Open Sans', Helvetica, Arial, Lucida, sans-serif";
+            loadingMessage.innerHTML = "Loading OpenRemote...";
+            document.body.appendChild(loadingMessage);
 
-                load.import("/static/css/style.html"),
-                load.import("/static/css/theme.html"),
+            setTimeout(function () {
+                Promise.all([
+                    load.js("/static/bower_components/webcomponentsjs/webcomponents-lite.min.js"),
+                    load.import("/static/bower_components/iron-flex-layout/iron-flex-layout-classes.html"),
+                    load.css("/static/bower_components/font-awesome/css/font-awesome.css"),
 
-                load.js("/jsapi")
+                    load.css("/static/3rdparty/mapbox-gl-js/0.24.0/mapbox-gl.css"),
+                    load.js("/static/3rdparty/mapbox-gl-js/0.24.0/mapbox-gl.js"),
 
-            ]).then(function () {
-                console.log("Auxiliary application resources loaded, web components will initialize...");
-            }).catch(function () {
-                alert("Error loading application resources. " + defaultErrorMessage);
-            });
+                    load.import("/static/css/style.html"),
+                    load.import("/static/css/theme.html"),
+
+                    load.js("/jsapi")
+                ]).then(function () {
+                    console.log("Auxiliary application resources loaded, web components will initialize...");
+                }).catch(function () {
+                    alert("Error loading application resources. " + defaultErrorMessage);
+                });
+            }, 10);
         }
 
         window.addEventListener('WebComponentsReady', function () {
             Promise.all([
                 load.js("/static/gwt/Manager/Manager.nocache.js")
             ]).then(function () {
+                setTimeout(function () {
+                    var loadingMessage = document.querySelector("#loading-message");
+                    loadingMessage.parentElement.removeChild(loadingMessage);
+                }, 100);
                 console.log("Main application starting...");
             }).catch(function () {
                 alert("Error loading application resources. " + defaultErrorMessage);
