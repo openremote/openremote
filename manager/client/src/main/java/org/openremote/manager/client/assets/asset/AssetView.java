@@ -19,22 +19,20 @@
  */
 package org.openremote.manager.client.assets.asset;
 
-import com.google.gwt.user.client.ui.InsertPanel;
 import elemental.json.JsonObject;
 import org.openremote.manager.client.assets.browser.AssetBrowsingView;
 import org.openremote.manager.client.assets.device.DeviceAttributesEditor;
 import org.openremote.manager.client.widget.AttributesEditor;
-import org.openremote.manager.client.widget.Form;
 import org.openremote.manager.client.widget.FormView;
 import org.openremote.manager.shared.asset.AssetType;
-import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.map.GeoJSON;
 
 import java.util.Date;
 
 public interface AssetView extends AssetBrowsingView<AssetView.Presenter>, FormView {
 
-    interface Presenter extends AssetBrowsingView.Presenter {
+    interface
+    Presenter extends AssetBrowsingView.Presenter {
 
         void beginParentSelection();
 

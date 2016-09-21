@@ -133,15 +133,16 @@ public class AssetActivity
         view.setTypeSelectionEnabled(false);
         view.setEditable(asset.getWellKnownType().isEditable());
         writeTypeToView();
-        writeAttributesEditorToView();
         if (asset.getParentId() != null) {
             loadAsset(asset.getParentId(), loadedParentAsset -> {
                 this.parentAsset = loadedParentAsset;
                 writeParentToView();
+                writeAttributesEditorToView();
                 view.setFormBusy(false);
             });
         } else {
             writeParentToView();
+            writeAttributesEditorToView();
             view.setFormBusy(false);
         }
     }
@@ -188,6 +189,9 @@ public class AssetActivity
     @Override
     public void onStop() {
         super.onStop();
+        if (attributesEditor != null) {
+            attributesEditor.close();
+        }
         clearViewFieldErrors();
 
         view.setPresenter(null);
@@ -363,11 +367,14 @@ public class AssetActivity
     protected void writeAttributesEditorToView() {
         switch(asset.getWellKnownType()) {
             case DEVICE:
-                attributesEditor = new DeviceAttributesEditor(
-                    environment,
-                    view.getDeviceAttributesEditorContainer(),
-                    new Attributes(asset.getAttributes())
-                );
+                if (parentAsset != null) {
+                    attributesEditor = new DeviceAttributesEditor(
+                        environment,
+                        view.getDeviceAttributesEditorContainer(),
+                        new Attributes(asset.getAttributes()),
+                        parentAsset.getId()
+                    );
+                }
                 break;
             case AGENT:
                 attributesEditor = new AgentAttributesEditor(

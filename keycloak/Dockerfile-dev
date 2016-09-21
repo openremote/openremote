@@ -11,3 +11,11 @@ RUN java -jar /usr/share/java/saxon.jar -s:/opt/jboss/keycloak/standalone/config
 
 ADD keycloak-server-json-dev.jq /opt/jboss/keycloak/config.jq
 RUN INPUT=`cat /opt/jboss/keycloak/standalone/configuration/keycloak-server.json` && echo $INPUT | jq -f /opt/jboss/keycloak/config.jq > /opt/jboss/keycloak/standalone/configuration/keycloak-server.json
+
+USER root
+ADD wait-for-it.sh /opt/wait-for-it.sh
+RUN chmod +x /opt/wait-for-it.sh
+USER jboss
+
+ENTRYPOINT ["/opt/wait-for-it.sh", "postgresql:5432", "-t", "60", "--strict", "--", "/opt/jboss/docker-entrypoint.sh"]
+CMD ["-b", "0.0.0.0"]

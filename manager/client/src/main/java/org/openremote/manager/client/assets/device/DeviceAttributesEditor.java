@@ -21,13 +21,21 @@ package org.openremote.manager.client.assets.device;
 
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.Label;
+import org.eclipse.jetty.server.Server;
 import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.event.CancelRepeatingServerSendEvent;
+import org.openremote.manager.client.event.RepeatingServerSendEvent;
+import org.openremote.manager.client.event.ServerSendEvent;
+import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.widget.*;
+import org.openremote.manager.shared.agent.*;
 import org.openremote.manager.shared.attribute.Attribute;
 import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.device.DeviceAttributes;
 import org.openremote.manager.shared.device.DeviceResource;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 public class DeviceAttributesEditor extends AttributesEditor<DeviceAttributesEditor.Style> {
@@ -43,11 +51,19 @@ public class DeviceAttributesEditor extends AttributesEditor<DeviceAttributesEdi
         String writeButton();
     }
 
+    final String agentAssetId;
     final protected FormGroup deviceActionsGroup = new FormGroup();
     final protected FormCheckBox enableLiveUpdatesCheckBox = new FormCheckBox();
+    final protected DeviceAttributes deviceAttributes;
+    final protected Map<String, FormInputText> deviceResourceInputs = new HashMap<>();
 
-    public DeviceAttributesEditor(Environment environment, Container<DeviceAttributesEditor.Style> container, Attributes attributes) {
+    protected EventRegistration<DeviceResourceValueEvent> deviceResourceValueRegistration;
+
+    public DeviceAttributesEditor(Environment environment, Container<DeviceAttributesEditor.Style> container, Attributes attributes, String agentAssetId) {
         super(environment, container, attributes);
+
+        this.agentAssetId = agentAssetId;
+        this.deviceAttributes = new DeviceAttributes(attributes.getJsonObject());
 
         FormLabel enableLiveUpdates = new FormLabel();
         enableLiveUpdates.addStyleName("larger");
@@ -58,8 +74,27 @@ public class DeviceAttributesEditor extends AttributesEditor<DeviceAttributesEdi
         deviceActionsGroup.addFormField(deviceActionsFormField);
 
         enableLiveUpdatesCheckBox.addValueChangeHandler(event -> {
-            LOG.info("### LIVE UPDATES: " + event.getValue());
+            enableLiveUpdates(event.getValue());
         });
+
+        deviceResourceValueRegistration = environment.getEventBus().register(
+            DeviceResourceValueEvent.class, event -> {
+                if (deviceAttributes.getKey().equals(event.getDeviceKey()) &&
+                    deviceResourceInputs.containsKey(event.getDeviceResourceKey())) {
+                    deviceResourceInputs.get(event.getDeviceResourceKey())
+                        .setText(event.getValue());
+                }
+            }
+        );
+    }
+
+    @Override
+    public void close() {
+        super.close();
+        enableLiveUpdates(false);
+        if (deviceResourceValueRegistration != null) {
+            environment.getEventBus().remove(deviceResourceValueRegistration);
+        }
     }
 
     @Override
@@ -104,14 +139,34 @@ public class DeviceAttributesEditor extends AttributesEditor<DeviceAttributesEdi
             actionPanel.setStyleName("flex layout horizontal center");
 
             FormButton readButton = new FormButton();
+            readButton.addClickHandler(event -> {
+                environment.getEventBus().dispatch(new ServerSendEvent(
+                    new DeviceResourceRead(
+                        agentAssetId,
+                        deviceAttributes.getKey(),
+                        deviceResource.getValueAsString()
+                    )
+                ));
+            });
             readButton.setPrimary(true);
             readButton.addStyleName(container.getStyle().readButton());
             readButton.setText(environment.getMessages().read());
 
             FormInputText readWriteInput = new FormInputText();
+            deviceResourceInputs.put(deviceResource.getValueAsString(), readWriteInput);
             readWriteInput.addStyleName(container.getStyle().readWriteInput());
 
             FormButton writeButton = new FormButton();
+            writeButton.addClickHandler(event -> {
+                environment.getEventBus().dispatch(new ServerSendEvent(
+                    new DeviceResourceWrite(
+                        agentAssetId,
+                        deviceAttributes.getKey(),
+                        deviceResource.getValueAsString(),
+                        readWriteInput.getText()
+                    )
+                ));
+            });
             writeButton.setDanger(true);
             writeButton.addStyleName(container.getStyle().writeButton());
             writeButton.setText(environment.getMessages().write());
@@ -163,5 +218,21 @@ public class DeviceAttributesEditor extends AttributesEditor<DeviceAttributesEdi
     @Override
     protected FormCheckBox createBooleanEditor(Style style, Attribute attribute, boolean readOnly) {
         return super.createBooleanEditor(style, attribute, readOnly || DeviceResource.isDeviceResource(attribute));
+    }
+
+    protected void enableLiveUpdates(boolean enable) {
+        if (enable) {
+            environment.getEventBus().dispatch(new RepeatingServerSendEvent(
+                new SubscribeDeviceResourceUpdates(agentAssetId, deviceAttributes.getKey()),
+                "deviceAttributes-liveUpdate",
+                30000
+            ));
+        } else {
+            environment.getEventBus().dispatch(new CancelRepeatingServerSendEvent(
+                new UnsubscribeDeviceResourceUpdates(agentAssetId, deviceAttributes.getKey()),
+                "deviceAttributes-liveUpdate"
+            ));
+        }
+
     }
 }

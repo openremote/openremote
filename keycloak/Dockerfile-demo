@@ -10,3 +10,11 @@ ADD setProxyForwarding.xsl /opt/jboss/keycloak/
 RUN java -jar /usr/share/java/saxon.jar -s:/opt/jboss/keycloak/standalone/configuration/standalone.xml -xsl:/opt/jboss/keycloak/setProxyForwarding.xsl -o:/opt/jboss/keycloak/standalone/configuration/standalone.xml
 
 ADD theme /opt/jboss/keycloak/themes/openremote
+
+USER root
+ADD wait-for-it.sh /opt/wait-for-it.sh
+RUN chmod +x /opt/wait-for-it.sh
+USER jboss
+
+ENTRYPOINT ["/opt/wait-for-it.sh", "postgresql:5432", "-t", "60", "--strict", "--", "/opt/jboss/docker-entrypoint.sh"]
+CMD ["-b", "0.0.0.0"]

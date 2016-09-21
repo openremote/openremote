@@ -69,8 +69,6 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         this.environment = environment;
         this.container = container;
         this.attributes = attributes;
-
-        buildAttributeFormGroups();
     }
 
     public Attributes getAttributes() {
@@ -115,6 +113,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
     */
 
     public void render() {
+        buildAttributeFormGroups();
         for (FormGroup formGroup : formGroups.values()) {
             container.getPanel().add(formGroup);
         }
@@ -131,6 +130,10 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         for (FormGroup formGroup : formGroups.values()) {
             formGroup.setOpaque(opaque);
         }
+    }
+
+    public void close() {
+        // Subclasses can manage lifecycle
     }
 
     /* ####################################################################### */
