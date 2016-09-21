@@ -21,7 +21,6 @@ package org.openremote.manager.client.assets.device;
 
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.Label;
-import org.eclipse.jetty.server.Server;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.event.CancelRepeatingServerSendEvent;
 import org.openremote.manager.client.event.RepeatingServerSendEvent;
@@ -98,9 +97,9 @@ public class DeviceAttributesEditor extends AttributesEditor<DeviceAttributesEdi
     }
 
     @Override
-    public void render() {
+    public void buildAndRender() {
         container.getPanel().add(deviceActionsGroup);
-        super.render();
+        super.buildAndRender();
     }
 
     @Override

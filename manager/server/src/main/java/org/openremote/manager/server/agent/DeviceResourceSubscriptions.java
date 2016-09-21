@@ -88,6 +88,8 @@ public class DeviceResourceSubscriptions {
     public void removeSubscription(String sessionKey, UnsubscribeDeviceResourceUpdates event) {
         synchronized (subscriptions) {
             Set<DeviceResourceSubscription> subscriptions = this.subscriptions.get(sessionKey);
+            if (subscriptions == null)
+                return;
             Iterator<DeviceResourceSubscription> it = subscriptions.iterator();
             while (it.hasNext()) {
                 DeviceResourceSubscription subscription = it.next();

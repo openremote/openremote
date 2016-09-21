@@ -155,10 +155,10 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
     }
 
     @Override
-    public void render() {
+    public void buildAndRender() {
         container.getPanel().add(connectorDropDownGroup);
         container.getPanel().add(actionsGroup);
-        super.render();
+        super.buildAndRender();
     }
 
     @Override

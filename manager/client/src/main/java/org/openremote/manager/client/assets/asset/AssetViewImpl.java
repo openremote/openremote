@@ -474,7 +474,7 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     public void setAttributesEditor(AttributesEditor editor) {
         this.attributesEditor = editor;
         attributesEditorContainer.clear();
-        editor.render();
+        editor.buildAndRender();
     }
 
     /* ############################################################################ */

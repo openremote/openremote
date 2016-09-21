@@ -112,7 +112,8 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
     }
     */
 
-    public void render() {
+    public void buildAndRender() {
+        formGroups.clear();
         buildAttributeFormGroups();
         for (FormGroup formGroup : formGroups.values()) {
             container.getPanel().add(formGroup);
@@ -120,10 +121,8 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
     }
 
     public void refresh() {
-        formGroups.clear();
-        buildAttributeFormGroups();
         clearContainer();
-        render();
+        buildAndRender();
     }
 
     public void setOpaque(boolean opaque) {
