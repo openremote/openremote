@@ -42,6 +42,12 @@ public class AssetsDashboardActivity
     }
 
     @Override
+    public void onStop() {
+        super.onStop();
+        getView().setPresenter(null);
+    }
+
+    @Override
     protected void onAssetLoaded() {
     }
 

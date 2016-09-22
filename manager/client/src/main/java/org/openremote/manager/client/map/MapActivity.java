@@ -77,6 +77,12 @@ public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implem
     }
 
     @Override
+    public void onStop() {
+        super.onStop();
+        view.setPresenter(null);
+    }
+
+    @Override
     protected void onAssetLoaded() {
         showAssetOnMap();
     }

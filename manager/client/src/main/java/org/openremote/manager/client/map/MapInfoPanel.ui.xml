@@ -1,0 +1,28 @@
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+             xmlns:g="urn:import:com.google.gwt.user.client.ui"
+             xmlns:w="urn:import:org.openremote.manager.client.widget">
+
+    <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
+    <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
+
+    <ui:style>
+        .popup {
+            z-index: 10;
+        }
+
+        .content {
+            overflow: auto;
+            padding: 0.4em;
+        }
+    </ui:style>
+
+    <g:PopupPanel glassEnabled="false" addStyleNames="{style.popup} {widgetStyle.PopupPanel}">
+        <g:HTMLPanel styleName="flex layout vertical"
+                     addStyleNames="{style.content} {widgetStyle.PopupPanelContent}">
+
+            <div>TODO: Asset Info Panel</div>
+
+        </g:HTMLPanel>
+    </g:PopupPanel>
+
+</ui:UiBinder>

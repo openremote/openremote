@@ -211,6 +211,7 @@
                                 </w:field>
                             </w:FormGroup>
                         </w:Form>
+
                         <w:MapWidget ui:field="mapWidget"
                                      addStyleNames="{style.mapWidget} {widgetStyle.ItemWithBorder}"/>
                     </g:HTMLPanel>

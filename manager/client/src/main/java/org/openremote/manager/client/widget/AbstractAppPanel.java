@@ -29,6 +29,12 @@ public abstract class AbstractAppPanel implements AppPanel {
     final protected PopupPanel popupPanel;
 
     protected UIObject target;
+    protected int marginTop;
+    protected int marginRight;
+    protected int marginBottom;
+    protected int marginLeft;
+    protected UIObject bottomRightTarget;
+    protected UIObject topLeftTarget;
 
     public AbstractAppPanel(UiBinder<PopupPanel, AbstractAppPanel> binder) {
         this.popupPanel = binder.createAndBindUi(this);
@@ -44,8 +50,14 @@ public abstract class AbstractAppPanel implements AppPanel {
         });
 
         Window.addResizeHandler(event -> {
-            if (isShowing() && target != null) {
-                popupPanel.showRelativeTo(target);
+            if (isShowing()) {
+                if (target != null) {
+                    popupPanel.showRelativeTo(target);
+                } else if (bottomRightTarget != null) {
+                    showBottomRightOf(bottomRightTarget, marginRight, marginBottom);
+                } else if (topLeftTarget != null) {
+                    showTopLeftOf(topLeftTarget, marginTop, marginLeft);
+                }
             }
         });
     }
@@ -79,6 +91,32 @@ public abstract class AbstractAppPanel implements AppPanel {
         popupPanel.showRelativeTo(target);
         popupPanel.addAutoHidePartner(target.getElement());
         this.target = target;
+    }
+
+    public void showBottomRightOf(UIObject bottomRightTarget, int marginRight, int marginBottom) {
+        this.bottomRightTarget = bottomRightTarget;
+        this.marginRight = marginRight;
+        this.marginBottom = marginBottom;
+        getPopupPanel().setPopupPositionAndShow((offsetWidth, offsetHeight) -> {
+                int bottom = bottomRightTarget.getAbsoluteTop() + bottomRightTarget.getOffsetHeight();
+                int right = bottomRightTarget.getAbsoluteLeft() + bottomRightTarget.getOffsetWidth();
+                int top = bottom - offsetHeight - marginBottom;
+                int left = right - offsetWidth - marginRight;
+                getPopupPanel().setPopupPosition(left, top);
+            }
+        );
+    }
+
+    public void showTopLeftOf(UIObject topLeftTarget, int marginTop, int marginLeft) {
+        this.topLeftTarget = topLeftTarget;
+        this.marginTop = marginTop;
+        this.marginLeft = marginLeft;
+        getPopupPanel().setPopupPositionAndShow((offsetWidth, offsetHeight) -> {
+                int top = topLeftTarget.getAbsoluteTop() + marginTop;
+                int left = topLeftTarget.getAbsoluteLeft() + marginLeft;
+                getPopupPanel().setPopupPosition(left, top);
+            }
+        );
     }
 
     @Override

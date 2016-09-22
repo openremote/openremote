@@ -21,11 +21,13 @@ package org.openremote.manager.client.map;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.Scheduler;
+import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.Label;
+import com.google.inject.Provider;
 import elemental.json.JsonObject;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.widget.FlexSplitPanel;
@@ -42,6 +44,24 @@ public class MapViewImpl extends Composite implements MapView {
     interface UI extends UiBinder<FlexSplitPanel, MapViewImpl> {
     }
 
+    public interface Style extends CssResource {
+
+        String mapLoadingLabel();
+
+        String navItem();
+
+        String mapControls();
+
+        String mapWidget();
+
+        String infoPanel1();
+
+        String infoPanel2();
+    }
+
+    @UiField
+    Style style;
+
     @UiField
     FlexSplitPanel splitPanel;
 
@@ -55,12 +75,16 @@ public class MapViewImpl extends Composite implements MapView {
     MapWidget mapWidget;
 
     final AssetBrowser assetBrowser;
+    final Provider<MapInfoPanel> infoPanelProvider;
+    final MapInfoPanel infoPanel1;
+    final MapInfoPanel infoPanel2;
 
     Presenter presenter;
 
     @Inject
-    public MapViewImpl(AssetBrowser assetBrowser) {
+    public MapViewImpl(AssetBrowser assetBrowser, Provider<MapInfoPanel> infoPanelProvider) {
         this.assetBrowser = assetBrowser;
+        this.infoPanelProvider = infoPanelProvider;
 
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
@@ -69,6 +93,11 @@ public class MapViewImpl extends Composite implements MapView {
 
         mapLoadingLabel.setVisible(true);
         mapWidget.setVisible(false);
+
+        infoPanel1 = infoPanelProvider.get();
+        infoPanel1.addStyleName(style.infoPanel1());
+        infoPanel2 = infoPanelProvider.get();
+        infoPanel2.addStyleName(style.infoPanel2());
     }
 
     @Override
@@ -77,10 +106,14 @@ public class MapViewImpl extends Composite implements MapView {
         if (presenter != null) {
             assetBrowser.asWidget().removeFromParent();
             sidebarContainer.add(assetBrowser.asWidget());
+            if (isMapInitialised()) {
+                showInfoPanels();
+            }
         } else {
             sidebarContainer.clear();
             hideFeaturesAll();
             hideFeaturesSelection();
+            hideInfoPanels();
         }
     }
 
@@ -92,6 +125,7 @@ public class MapViewImpl extends Composite implements MapView {
             mapWidget.addNavigationControl();
             mapWidget.setVisible(true);
             mapWidget.resize();
+            showInfoPanels();
         });
     }
 
@@ -103,6 +137,7 @@ public class MapViewImpl extends Composite implements MapView {
     @Override
     public void refresh() {
         mapWidget.resize();
+        showInfoPanels();
     }
 
     @Override
@@ -128,5 +163,15 @@ public class MapViewImpl extends Composite implements MapView {
     @Override
     public void flyTo(double[] coordinates) {
         mapWidget.flyTo(coordinates);
+    }
+
+    protected void showInfoPanels() {
+        infoPanel1.showTopLeftOf(mapWidget, 10, 10);
+        infoPanel2.showBottomRightOf(mapWidget, 10, 30);
+    }
+
+    protected void hideInfoPanels() {
+        infoPanel1.hide();
+        infoPanel2.hide();
     }
 }

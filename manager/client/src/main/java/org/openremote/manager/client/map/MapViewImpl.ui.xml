@@ -5,7 +5,7 @@
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
 
-    <ui:style>
+    <ui:style type="org.openremote.manager.client.map.MapViewImpl.Style">
         .navItem {
             margin: 0 1em;
         }
@@ -22,6 +22,16 @@
 
         .mapControls {
             z-index: 1;
+        }
+
+        .infoPanel1 {
+            width: 8em;
+            height: 5em;
+        }
+
+        .infoPanel2 {
+            width: 15em;
+            height: 6em;
         }
     </ui:style>
 
