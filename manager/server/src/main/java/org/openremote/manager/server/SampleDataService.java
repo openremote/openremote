@@ -252,15 +252,10 @@ public class SampleDataService implements ContainerService {
         for (Attribute connectorSetting : Controller2Component.SETTINGS.get()) {
             sampleAgent.getAttributes().put(connectorSetting.copy());
         }
-        sampleAgent.getAttributes().get("host").setValue(container.isDevMode() ? "beatrixkanaal.openremote.nl" : "controller");
-        sampleAgent.getAttributes().get("port").setValue(container.isDevMode() ? 443: 8688);
-        sampleAgent.getAttributes().get("secure").setValue(true);
 
-        /*
         sampleAgent.getAttributes().get("host").setValue(container.isDevMode() ? "192.168.99.100" : "controller");
         sampleAgent.getAttributes().get("port").setValue(container.isDevMode() ? 8083 : 8688);
 
-*/
         sampleAgentAsset.setAttributes(sampleAgent.getAttributes().getJsonObject());
 
         sampleAgentAsset = assetService.merge(sampleAgentAsset);
