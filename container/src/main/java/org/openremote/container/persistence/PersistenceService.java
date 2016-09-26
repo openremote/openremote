@@ -141,7 +141,7 @@ public class PersistenceService implements ContainerService {
         generateSchema("drop");
     }
 
-    public void doReturningTransaction(Consumer<EntityManager> entityManagerConsumer) {
+    public void doTransaction(Consumer<EntityManager> entityManagerConsumer) {
         doReturningTransaction(entityManager -> {
             entityManagerConsumer.accept(entityManager);
             return null;

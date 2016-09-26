@@ -178,7 +178,7 @@ public class AssetService extends RouteBuilder implements ContainerService {
     }
 
     public void delete(String assetId) {
-        persistenceService.doReturningTransaction(em -> {
+        persistenceService.doTransaction(em -> {
             Asset asset = em.find(ServerAsset.class, assetId);
             if (asset != null) {
                 em.remove(asset);
@@ -187,7 +187,7 @@ public class AssetService extends RouteBuilder implements ContainerService {
     }
 
     public void deleteChildren(String parentId) {
-        persistenceService.doReturningTransaction(em -> {
+        persistenceService.doTransaction(em -> {
             List<AssetInfo> result =
                 em.createQuery(
                     "select new org.openremote.manager.server.asset.ServerAssetInfo(" +
