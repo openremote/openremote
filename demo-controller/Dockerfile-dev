@@ -2,6 +2,8 @@ FROM openremote/controller:latest
 
 RUN rm -r /opt/or-resources/*
 
+ADD webconsole.war /opt/OpenRemote-Controller/webapps/
+
 ADD config/controller.xml /opt/or-resources/controller.xml
 
 USER root

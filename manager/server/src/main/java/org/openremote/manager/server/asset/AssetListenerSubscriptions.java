@@ -74,7 +74,6 @@ public abstract class AssetListenerSubscriptions {
     public void dispatch(PersistenceEvent persistenceEvent) {
         //noinspection unchecked
         for (AssetModifiedEvent assetModifiedEvent : createAssetModifiedEvents(persistenceEvent)) {
-            LOG.fine("Publishing asset modified event to asset listeners: " + subscriptions.size());
             for (String sessionKey : subscriptions.keySet()) {
                 eventService.sendEvent(sessionKey, assetModifiedEvent);
             }

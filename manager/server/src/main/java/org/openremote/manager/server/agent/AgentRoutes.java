@@ -71,6 +71,14 @@ public abstract class AgentRoutes {
         this.connectorComponent = connectorComponent;
     }
 
+    public Agent getAgent() {
+        return agent;
+    }
+
+    public Asset getAgentAsset() {
+        return agentAsset;
+    }
+
     public RouteBuilder buildAgentRoutes() throws Exception {
         return new RouteBuilder() {
 

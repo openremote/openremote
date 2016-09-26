@@ -28,10 +28,10 @@ public class ServerAssetInfo extends AssetInfo {
     public ServerAssetInfo(String id, long version, String name, String realm, String type, String parentId, Geometry location) {
         super(
             id, version, name, realm, type, parentId,
-            new double[]{
+            location != null ? new double[]{
                 location.getCoordinate().getOrdinate(Coordinate.X),
                 location.getCoordinate().getOrdinate(Coordinate.Y)
-            }
+            } : null
         );
     }
 }

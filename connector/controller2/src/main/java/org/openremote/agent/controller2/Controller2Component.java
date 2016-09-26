@@ -30,15 +30,13 @@ import org.openremote.manager.shared.connector.ConnectorUtil;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 
 public class Controller2Component extends DefaultComponent implements ConnectorComponent {
 
     public static final String TYPE = "urn:openremote:connector:controller2";
     public static final String DISPLAY_NAME = "OpenRemote Controller";
-    public static final String URI_SYNTAX = "'controller2://<IP or host name>:<port>/[discovery|inventory|read|write|listen/<deviceKey>][?username=username&password=secret]";
+    public static final String URI_SYNTAX = "'controller2://<IP or host name>:<port>/[discovery|inventory|read|write|listen/<deviceKey>][?username=username&password=secret&secure=true|false]";
     protected final Controller2AdapterManager adapterManager;
 
     public static final Attributes SETTINGS;
@@ -73,6 +71,13 @@ public class Controller2Component extends DefaultComponent implements ConnectorC
             AttributeType.STRING,
             "Password",
             "The OR Controller Password",
+            false
+        ));
+        SETTINGS.put(ConnectorUtil.buildConnectorSetting(
+            "secure",
+            AttributeType.BOOLEAN,
+            "Secure",
+            "Use HTTPS",
             false
         ));
     }
@@ -148,11 +153,12 @@ public class Controller2Component extends DefaultComponent implements ConnectorC
         if (host == null || port == null) {
             throw new IllegalArgumentException("Host and port must be available in agent: " + agentAssetId);
         }
+        String params = getEndpointParams(agent.getAttributes());
         switch (capability) {
             case inventory:
-                return "controller2://" + host + ":" + port + "/inventory";
+                return "controller2://" + host + ":" + port + "/inventory" + params;
             case listen:
-                return "controller2://" + host + ":" + port + "/listen/" + deviceKey;
+                return "controller2://" + host + ":" + port + "/listen/" + deviceKey + params;
         }
         throw new UnsupportedOperationException("Can't build endpoint for capability: " + capability);
     }
@@ -164,15 +170,16 @@ public class Controller2Component extends DefaultComponent implements ConnectorC
         if (host == null || port == null) {
             throw new IllegalArgumentException("Host and port must be available in agent: " + agentAssetId);
         }
+        String params = getEndpointParams(agent.getAttributes());
         switch (capability) {
             case discovery:
-                return "controller2://" + host + ":" + port + "/discovery";
+                return "controller2://" + host + ":" + port + "/discovery" + params;
             case inventory:
-                return "controller2://" + host + ":" + port + "/inventory";
+                return "controller2://" + host + ":" + port + "/inventory" + params;
             case read:
-                return "controller2://" + host + ":" + port + "/read";
+                return "controller2://" + host + ":" + port + "/read" + params;
             case write:
-                return "controller2://" + host + ":" + port + "/write";
+                return "controller2://" + host + ":" + port + "/write" + params;
         }
         throw new UnsupportedOperationException("Can't build endpoint for capability: " + capability);
     }
@@ -183,5 +190,27 @@ public class Controller2Component extends DefaultComponent implements ConnectorC
 
     protected Integer getAgentAttributePort(Attributes agentAttributes) {
         return agentAttributes.hasAttribute("port") ? agentAttributes.get("port").getValueAsDouble().intValue() : null;
+    }
+
+    protected String getEndpointParams(Attributes agentAttributes) {
+        Boolean secure = agentAttributes.hasAttribute("secure") ? agentAttributes.get("secure").getValueAsBoolean() : null;
+        String username = agentAttributes.hasAttribute("username") ? agentAttributes.get("username").getValueAsString() : null;
+        String password = agentAttributes.hasAttribute("password") ? agentAttributes.get("password").getValueAsString() : null;
+        List<String> params = new ArrayList<>();
+        if (secure != null)
+            params.add("secure=" + secure);
+        if (username != null)
+            params.add("username=" + username);
+        if (password != null)
+            params.add("password=" + password);
+        StringBuilder sb = new StringBuilder();
+        if (params.size() > 0)
+            sb.append("?");
+        for (String param : params) {
+            sb.append(param).append("&");
+        }
+        if (sb.length() > 1)
+            sb.deleteCharAt(sb.length() - 1);
+        return sb.toString();
     }
 }

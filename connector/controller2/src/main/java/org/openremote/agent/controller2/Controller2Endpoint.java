@@ -38,6 +38,7 @@ public class Controller2Endpoint extends DefaultEndpoint {
     protected Integer port;
     protected String username;
     protected String password;
+    protected Boolean secure;
 
     protected String deviceKey;
 
@@ -96,6 +97,14 @@ public class Controller2Endpoint extends DefaultEndpoint {
         this.password = password;
     }
 
+    public Boolean getSecure() {
+        return secure;
+    }
+
+    public void setSecure(Boolean secure) {
+        this.secure = secure;
+    }
+
     @Override
     public Controller2Component getComponent() {
         return (Controller2Component) super.getComponent();
@@ -142,8 +151,8 @@ public class Controller2Endpoint extends DefaultEndpoint {
     public Controller2Adapter getAdapter() {
         if (adapter == null) {
             try {
-                // TODO: HTTPS support should be implemented with a "?secure=true|false" Endpoint URL query param
-                URL controllerUrl = new URL("http", getHost(), getPort(), "/controller");
+                String scheme = secure != null && secure ? "https" : "http";
+                URL controllerUrl = new URL(scheme, getHost(), getPort(), "/controller");
                 adapter = adapterManager.openAdapter(controllerUrl, username, password);
                 if (adapter == null)
                     throw new IllegalStateException("Manager did not open adapter: " + controllerUrl);

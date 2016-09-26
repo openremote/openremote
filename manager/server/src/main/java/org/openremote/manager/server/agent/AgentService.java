@@ -40,10 +40,7 @@ import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.connector.ConnectorComponent;
 
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -97,7 +94,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
     public void start(Container container) throws Exception {
         ServerAsset[] agents = assetService.findByTypeInAllRealms(AssetType.AGENT);
         LOG.fine("Configure agents in all realms:" + agents.length);
-        reconfigureAgents(agents, null);
+        reconfigureAgents(null, agents, null);
     }
 
     @Override
@@ -115,11 +112,11 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 Asset agent = (Asset) persistenceEvent.getEntity();
                 ServerAsset[] agents = assetService.findByType(agent.getRealm(), AssetType.AGENT);
                 LOG.fine("Reconfigure agents of realm '" + agent.getRealm() + "': " + agents.length);
-                reconfigureAgents(agents, persistenceEvent.getCause() == UPDATE ? agent : null);
+                reconfigureAgents(agent.getRealm(), agents, persistenceEvent.getCause() == UPDATE ? agent : null);
             });
     }
 
-    protected void reconfigureAgents(ServerAsset[] agents, Asset updatedAgent) {
+    protected void reconfigureAgents(String realm, ServerAsset[] agents, Asset updatedAgent) {
         synchronized (agentInstanceMap) {
             for (ServerAsset agentAsset : agents) {
                 Agent agent = new Agent(new Attributes(agentAsset.getAttributes()));
@@ -140,18 +137,26 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 }
             }
 
-            for (String agentId : agentInstanceMap.keySet()) {
-                boolean found = false;
+            // Find all running agents of the given realm, stop them if they are no longer present (in database)
+            List<String> agentsToStop = new ArrayList<>();
+            for (Map.Entry<String, AgentRoutes> entry : agentInstanceMap.entrySet()) {
+                if (realm == null || entry.getValue().getAgentAsset().getRealm().equals(realm)) {
+                    agentsToStop.add(entry.getKey());
+                }
+            }
+            Iterator<String> it = agentsToStop.iterator();
+            while (it.hasNext()) {
+                String agentId = it.next();
                 for (ServerAsset agent : agents) {
                     if (agent.getId().equals(agentId)) {
-                        found = true;
+                        it.remove();
                         break;
                     }
                 }
-                if (!found) {
-                    LOG.fine("Agent is not present anymore and still running: " + agentId);
-                    stopAgent(agentId);
-                }
+            }
+            for (String agentId : agentsToStop) {
+                LOG.fine("Agent is not present anymore and still running: " + agentId);
+                stopAgent(agentId);
             }
         }
     }

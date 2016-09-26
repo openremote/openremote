@@ -36,9 +36,9 @@ public class EventService implements ContainerService {
     public static final String WEBSOCKET_EVENTS = "events";
 
     // TODO: Unbounded queue
-    public static final String INCOMING_EVENT_QUEUE = "seda://incomingEvent?multipleConsumers=true&waitForTaskToComplete=NEVER";
+    public static final String INCOMING_EVENT_QUEUE = "seda://IncomingEvent?multipleConsumers=true&waitForTaskToComplete=NEVER";
     // TODO: Unbounded queue
-    public static final String OUTGOING_EVENT_QUEUE = "seda://outgoingEvent?multipleConsumers=true&waitForTaskToComplete=NEVER";
+    public static final String OUTGOING_EVENT_QUEUE = "seda://OutgoingEvent?multipleConsumers=true&waitForTaskToComplete=NEVER";
 
     protected MessageBrokerService messageBrokerService;
 
