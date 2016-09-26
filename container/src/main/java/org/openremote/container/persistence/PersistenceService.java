@@ -54,6 +54,8 @@ public class PersistenceService implements ContainerService {
     public static final int DATABASE_MIN_POOL_SIZE_DEFAULT = 5;
     public static final String DATABASE_MAX_POOL_SIZE = "DATABASE_MAX_POOL_SIZE";
     public static final int DATABASE_MAX_POOL_SIZE_DEFAULT = 20;
+    public static final String DATABASE_CONNECTION_TIMEOUT_SECONDS = "DATABASE_CONNECTION_TIMEOUT_SECONDS";
+    public static final int DATABASE_CONNECTION_TIMEOUT_SECONDS_DEFAULT = 300;
     public static final String DATABASE_CREATE_SCHEMA = "DATABASE_CREATE_SCHEMA";
     public static final boolean DATABASE_CREATE_SCHEMA_DEFAULT = false;
 
@@ -81,8 +83,10 @@ public class PersistenceService implements ContainerService {
         String databasePassword = container.getConfig(DATABASE_PASSWORD, DATABASE_PASSWORD_DEFAULT);
         int databaseMinPoolSize = container.getConfigInteger(DATABASE_MIN_POOL_SIZE, DATABASE_MIN_POOL_SIZE_DEFAULT);
         int databaseMaxPoolSize = container.getConfigInteger(DATABASE_MAX_POOL_SIZE, DATABASE_MAX_POOL_SIZE_DEFAULT);
+        int connectionTimeoutSeconds = container.getConfigInteger(DATABASE_CONNECTION_TIMEOUT_SECONDS, DATABASE_CONNECTION_TIMEOUT_SECONDS_DEFAULT);
+
         persistenceUnitProperties =
-            database.open(connectionUrl, databaseUsername, databasePassword, databaseMinPoolSize, databaseMaxPoolSize);
+            database.open(connectionUrl, databaseUsername, databasePassword, connectionTimeoutSeconds, databaseMinPoolSize, databaseMaxPoolSize);
 
         persistenceUnitProperties.put(
             org.hibernate.cfg.AvailableSettings.SESSION_SCOPED_INTERCEPTOR,
@@ -137,14 +141,14 @@ public class PersistenceService implements ContainerService {
         generateSchema("drop");
     }
 
-    public void doTransaction(Consumer<EntityManager> entityManagerConsumer) {
-        doTransaction(entityManager -> {
+    public void doReturningTransaction(Consumer<EntityManager> entityManagerConsumer) {
+        doReturningTransaction(entityManager -> {
             entityManagerConsumer.accept(entityManager);
             return null;
         });
     }
 
-    public <R> R doTransaction(Function<EntityManager, R> entityManagerFunction) {
+    public <R> R doReturningTransaction(Function<EntityManager, R> entityManagerFunction) {
         EntityManager em = createEntityManager();
         EntityTransaction tx = em.getTransaction();
         try {

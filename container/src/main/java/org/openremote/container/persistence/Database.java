@@ -30,7 +30,7 @@ import java.util.Map;
 
 public interface Database {
 
-    Map<String, Object> open(String connectionUrl, String username, String password, int minIdle, int maxPoolSize);
+    Map<String, Object> open(String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize);
 
     void close();
 
@@ -41,13 +41,14 @@ public interface Database {
             protected HikariDataSource hikariDataSource;
 
             @Override
-            public Map<String, Object> open(String connectionUrl, String username, String password, int minIdle, int maxPoolSize) {
+            public Map<String, Object> open(String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize) {
 
                 hikariConfig = new HikariConfig();
                 hikariConfig.setDataSourceClassName("org.postgresql.ds.PGSimpleDataSource");
                 hikariConfig.addDataSourceProperty("url", connectionUrl);
                 hikariConfig.setUsername(username);
                 hikariConfig.setPassword(password);
+                hikariConfig.setConnectionTimeout(connectionTimeoutSeconds * 1000);
                 hikariConfig.setMinimumIdle(minIdle);
                 hikariConfig.setMaximumPoolSize(maxPoolSize);
 

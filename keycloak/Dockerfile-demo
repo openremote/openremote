@@ -16,5 +16,5 @@ ADD wait-for-it.sh /opt/wait-for-it.sh
 RUN chmod +x /opt/wait-for-it.sh
 USER jboss
 
-ENTRYPOINT ["/opt/wait-for-it.sh", "postgresql:5432", "-t", "60", "--strict", "--", "/opt/jboss/docker-entrypoint.sh"]
+ENTRYPOINT ["/opt/wait-for-it.sh", "postgresql:5432", "-t", "360", "--strict", "--", "/opt/jboss/docker-entrypoint.sh"]
 CMD ["-b", "0.0.0.0"]

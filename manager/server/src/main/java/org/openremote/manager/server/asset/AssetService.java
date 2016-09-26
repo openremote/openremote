@@ -27,7 +27,6 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
-import org.openremote.container.web.socket.WebsocketConstants;
 import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.shared.asset.*;
 
@@ -114,7 +113,7 @@ public class AssetService extends RouteBuilder implements ContainerService {
     public AssetInfo[] getRoot(String realm) {
         if (realm == null || realm.length() == 0)
             throw new IllegalArgumentException("Realm must be provided to query assets");
-        return persistenceService.doTransaction(em -> {
+        return persistenceService.doReturningTransaction(em -> {
             List<AssetInfo> result = em.createQuery(
                 "select new org.openremote.manager.server.asset.ServerAssetInfo(" +
                     "a.id, a.version, a.name, a.realm, a.type, a.parent.id, a.location" +
@@ -128,7 +127,7 @@ public class AssetService extends RouteBuilder implements ContainerService {
     public ServerAsset[] findByType(String realm, AssetType assetType) {
         if (realm == null || realm.length() == 0)
             throw new IllegalArgumentException("Realm must be provided to query assets");
-        return persistenceService.doTransaction(em -> {
+        return persistenceService.doReturningTransaction(em -> {
             List<ServerAsset> result =
                 em.createQuery(
                     "select a from Asset a where a.realm = :realm and a.type = :assetType order by a.createdOn asc",
@@ -141,7 +140,7 @@ public class AssetService extends RouteBuilder implements ContainerService {
     }
 
     public ServerAsset[] findByTypeInAllRealms(AssetType assetType) {
-        return persistenceService.doTransaction(em -> {
+        return persistenceService.doReturningTransaction(em -> {
             List<ServerAsset> result =
                 em.createQuery(
                     "select a from Asset a where a.type = :assetType order by a.createdOn asc",
@@ -153,7 +152,7 @@ public class AssetService extends RouteBuilder implements ContainerService {
     }
 
     public AssetInfo[] getChildren(String parentId) {
-        return persistenceService.doTransaction(em -> {
+        return persistenceService.doReturningTransaction(em -> {
             List<AssetInfo> result =
                 em.createQuery(
                     "select new org.openremote.manager.server.asset.ServerAssetInfo(" +
@@ -166,20 +165,20 @@ public class AssetService extends RouteBuilder implements ContainerService {
     }
 
     public ServerAsset get(String assetId) {
-        return persistenceService.doTransaction(em -> {
+        return persistenceService.doReturningTransaction(em -> {
             return loadAsset(em, assetId);
         });
     }
 
     public ServerAsset merge(ServerAsset asset) {
-        return persistenceService.doTransaction(em -> {
+        return persistenceService.doReturningTransaction(em -> {
             validateParent(em, asset);
             return em.merge(asset);
         });
     }
 
     public void delete(String assetId) {
-        persistenceService.doTransaction(em -> {
+        persistenceService.doReturningTransaction(em -> {
             Asset asset = em.find(ServerAsset.class, assetId);
             if (asset != null) {
                 em.remove(asset);
@@ -188,7 +187,7 @@ public class AssetService extends RouteBuilder implements ContainerService {
     }
 
     public void deleteChildren(String parentId) {
-        persistenceService.doTransaction(em -> {
+        persistenceService.doReturningTransaction(em -> {
             List<AssetInfo> result =
                 em.createQuery(
                     "select new org.openremote.manager.server.asset.ServerAssetInfo(" +
