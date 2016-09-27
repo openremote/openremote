@@ -45,3 +45,5 @@ services:
     environment:
       TZ: "Europe/Zurich"
       BEEHIVE_REMOTE_SERVICE_URI: "urn:disabled"
+    ports:
+      - "8091:8688"

@@ -97,3 +97,7 @@ services:
     environment:
       TZ: "Europe/Zurich"
       BEEHIVE_REMOTE_SERVICE_URI: "urn:disabled"
+    # We expose the demo controller on the public network, so users can sync it with the
+    # OpenRemote Designer and access the Web Console.
+    ports:
+      - "8688:8688"
