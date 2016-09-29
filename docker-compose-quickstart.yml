@@ -38,6 +38,12 @@ services:
       # sample data.
       IMPORT_SAMPLE_DATA: 'true'
 
+      # The sample data contains an Agent configuration, this Agent uses the OpenRemote 2.x
+      # Controller Connector. These are the settings for the Agent, how it can reach the
+      # sample/demo Controller.
+      SAMPLE_CONTROLLER_HOST: controller
+      SAMPLE_CONTROLLER_PORT: 8688
+
       # The service-internal interface and port to listen on. This should not be changed.
       WEBSERVER_LISTEN_HOST: 0.0.0.0
       WEBSERVER_LISTEN_PORT: 8080

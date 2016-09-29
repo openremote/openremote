@@ -20,14 +20,25 @@
 package org.openremote.manager.client.flows;
 
 import com.google.gwt.place.shared.PlaceController;
+import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.assets.AssetInfoArrayMapper;
+import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
+import org.openremote.manager.shared.agent.Agent;
+import org.openremote.manager.shared.asset.AssetInfo;
+import org.openremote.manager.shared.asset.AssetResource;
+import org.openremote.manager.shared.asset.AssetType;
+import org.openremote.manager.shared.attribute.Attributes;
 
 import javax.inject.Inject;
 import java.util.Collection;
 import java.util.logging.Logger;
+
+import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
 public class FlowsActivity
         extends AppActivity<FlowsPlace>
@@ -36,16 +47,25 @@ public class FlowsActivity
     private static final Logger LOG = Logger.getLogger(FlowsActivity.class.getName());
 
     final FlowsView view;
-    final PlaceController placeController;
-    final EventBus eventBus;
+    final Environment environment;
+    final PlaceHistoryMapper historyMapper;
+    final AssetResource assetResource;
+    final AssetInfoArrayMapper assetInfoArrayMapper;
+    final AssetMapper assetMapper;
 
     @Inject
     public FlowsActivity(FlowsView view,
-                         PlaceController placeController,
-                         EventBus eventBus) {
+                         Environment environment,
+                         PlaceHistoryMapper historyMapper,
+                         AssetResource assetResource,
+                         AssetInfoArrayMapper assetInfoArrayMapper,
+                         AssetMapper assetMapper) {
         this.view = view;
-        this.placeController = placeController;
-        this.eventBus = eventBus;
+        this.environment = environment;
+        this.historyMapper = historyMapper;
+        this.assetResource = assetResource;
+        this.assetInfoArrayMapper = assetInfoArrayMapper;
+        this.assetMapper = assetMapper;
     }
 
     @Override
@@ -57,5 +77,60 @@ public class FlowsActivity
     public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
         container.setWidget(view.asWidget());
         view.setPresenter(this);
+        
+        environment.getRequestService().execute(
+            assetInfoArrayMapper,
+            requestParams -> {
+                // TODO We should query only agents with controller2 connectors
+                assetResource.getByType(requestParams, AssetType.AGENT.getValue());
+            },
+            200,
+            view::setAgents,
+            ex -> handleRequestException(ex, environment)
+        );
+    }
+
+    @Override
+    public void onStop() {
+        view.setPresenter(null);
+        super.onStop();
+    }
+
+    @Override
+    public String getFlowsHistoryToken() {
+        return historyMapper.getToken(new FlowsPlace());
+    }
+
+    @Override
+    public void onAgentSelected(AssetInfo assetInfo) {
+        environment.getRequestService().execute(
+            assetMapper,
+            requestParams -> {
+                assetResource.get(requestParams, assetInfo.getId());
+            },
+            200,
+            agentAsset -> {
+                Attributes attributes = new Attributes(agentAsset.getAttributes());
+                Agent agent = new Agent(attributes);
+                if ("urn:openremote:connector:controller2".equals(agent.getConnectorType())) {
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("http://");
+                    sb.append(attributes.get("host").getValueAsString());
+                    sb.append(":");
+                    sb.append(attributes.get("port").getValueAsString());
+                    // TODO hardcoded dimensions
+                    sb.append("/webconsole/?consoleWidth=320&consoleHeight=568&showConsoleFrame=false&showWelcome=false&showToolbar=false&backgroundColor=444444");
+                    sb.append("&controllerURL=");
+                    sb.append("http://");
+                    sb.append(attributes.get("host").getValueAsString());
+                    sb.append(":");
+                    sb.append(attributes.get("port").getValueAsString());
+                    sb.append("/controller");
+                    sb.append("&panelName=iPhone5"); // TODO hardcoded panel name
+                    view.setFrameSourceUrl(sb.toString());
+                }
+            },
+            ex -> handleRequestException(ex, environment)
+        );
     }
 }

@@ -39,6 +39,13 @@ public interface AssetResource {
     AssetInfo[] getRoot(@BeanParam RequestParams requestParams, @QueryParam("realm") String realm);
 
     @GET
+    @Path("type/{assetType}")
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    @RolesAllowed({"read:assets"})
+    AssetInfo[] getByType(@BeanParam RequestParams requestParams, @PathParam("assetType") String assetType);
+
+    @GET
     @Path("{assetId}/children")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)

@@ -20,11 +20,19 @@
 package org.openremote.manager.client.flows;
 
 import com.google.gwt.user.client.ui.IsWidget;
+import org.openremote.manager.shared.asset.AssetInfo;
 
 public interface FlowsView extends IsWidget {
 
     interface Presenter {
+        String getFlowsHistoryToken();
+
+        void onAgentSelected(AssetInfo assetInfo);
     }
 
     void setPresenter(Presenter presenter);
+
+    void setAgents(AssetInfo[] agents);
+
+    void setFrameSourceUrl(String frameSourceUrl);
 }

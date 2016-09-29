@@ -163,6 +163,7 @@ class AdminUsersActivityTest extends Specification implements ContainerTrait, Cl
                 {},
                 {},
                 {},
+                {},
                 {
                     adminUsersActivity = new AdminUsersActivity(
                             environment, adminView, adminNavigationPresenter, adminUsersView, tenantResource, tenantArrayMapper, userResource, userArrayMapper

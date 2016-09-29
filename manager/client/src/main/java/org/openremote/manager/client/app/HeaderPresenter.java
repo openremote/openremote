@@ -32,6 +32,7 @@ import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.flows.FlowsPlace;
 import org.openremote.manager.client.map.MapPlace;
+import org.openremote.manager.client.rules.RulesPlace;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.user.UserControls;
 import org.openremote.manager.shared.Constants;
@@ -104,6 +105,12 @@ public class HeaderPresenter implements HeaderView.Presenter {
         } else {
             placeController.goTo(new AssetsDashboardPlace());
         }
+    }
+
+    @Override
+    public void navigateRules() {
+        placeController.goTo(new RulesPlace());
+
     }
 
     @Override

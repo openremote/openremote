@@ -33,6 +33,8 @@ public interface HeaderView extends IsWidget {
 
         void navigateAssets();
 
+        void navigateRules();
+
         void navigateFlows();
 
         void navigateAdmin();

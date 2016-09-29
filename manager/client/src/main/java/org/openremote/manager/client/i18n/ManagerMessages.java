@@ -236,4 +236,6 @@ public interface ManagerMessages extends Messages {
     String enableAgentDescription();
 
     String confirmationInventoryRefresh(String agent);
+
+    String noAgentsFound();
 }

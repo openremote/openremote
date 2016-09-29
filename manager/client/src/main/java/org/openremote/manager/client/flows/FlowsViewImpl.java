@@ -21,47 +21,94 @@ package org.openremote.manager.client.flows;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.IFrameElement;
+import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
+import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
-import com.google.gwt.user.client.ui.Widget;
+import com.google.gwt.user.client.ui.Label;
+import org.openremote.manager.client.i18n.ManagerMessages;
+import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.util.Timeout;
+import org.openremote.manager.client.widget.FormLabel;
+import org.openremote.manager.client.widget.Hyperlink;
+import org.openremote.manager.client.widget.IconLabel;
+import org.openremote.manager.shared.asset.AssetInfo;
 
 import javax.inject.Inject;
 import java.util.logging.Logger;
 
-public class FlowsViewImpl implements FlowsView {
+public class FlowsViewImpl extends Composite implements FlowsView {
 
     private static final Logger LOG = Logger.getLogger(FlowsViewImpl.class.getName());
 
     interface UI extends UiBinder<HTMLPanel, FlowsViewImpl> {
     }
 
-    private UI ui = GWT.create(UI.class);
-    private HTMLPanel root;
+    interface Style extends CssResource {
 
-    Presenter presenter;
+        String navItem();
+    }
+
+    @UiField
+    ManagerMessages managerMessages;
+    @UiField
+    WidgetStyle widgetStyle;
+
+    @UiField
+    Style style;
+
+    @UiField
+    HTMLPanel agentListPanel;
 
     @UiField
     IFrameElement frame;
 
+    Presenter presenter;
+
     @Inject
     public FlowsViewImpl() {
-        root = ui.createAndBindUi(this);
+        UI ui = GWT.create(UI.class);
+        initWidget(ui.createAndBindUi(this));
     }
 
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
-
-        // TODO ouch
-        Timeout.debounce("setiframefocus", () -> {
-            frame.focus();
-        }, 1000);
+        if (presenter == null) {
+            agentListPanel.clear();
+            frame.setSrc("blank:");
+        }
     }
 
     @Override
-    public Widget asWidget() {
-        return root;
+    public void setAgents(AssetInfo[] agents) {
+        agentListPanel.clear();
+
+        if (agents == null || agents.length == 0) {
+            Label noAgentsLabel = new Label(managerMessages.noAgentsFound());
+            noAgentsLabel.addStyleName(widgetStyle.SecondaryNavItem());
+            agentListPanel.add(noAgentsLabel);
+            return;
+        }
+
+        for (AssetInfo agent : agents) {
+            Hyperlink agentLabel = new Hyperlink();
+            agentLabel.setIcon("cubes");
+            agentLabel.addStyleName(style.navItem());
+            agentLabel.addStyleName(widgetStyle.SecondaryNavItem());
+            agentLabel.setText(agent.getName());
+            agentLabel.setTargetHistoryToken(presenter.getFlowsHistoryToken());
+            agentLabel.addClickHandler(event -> presenter.onAgentSelected(agent));
+            agentListPanel.add(agentLabel);
+        }
+    }
+
+    @Override
+    public void setFrameSourceUrl(String frameSourceUrl) {
+        frame.setSrc(frameSourceUrl);
+        Timeout.debounce("setiframefocus", () -> {
+            frame.focus();
+        }, 500);
     }
 }

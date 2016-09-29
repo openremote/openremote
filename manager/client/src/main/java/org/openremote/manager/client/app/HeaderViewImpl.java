@@ -32,6 +32,7 @@ import org.openremote.manager.client.assets.AssetsPlace;
 import org.openremote.manager.client.admin.AdminPlace;
 import org.openremote.manager.client.flows.FlowsPlace;
 import org.openremote.manager.client.map.MapPlace;
+import org.openremote.manager.client.rules.RulesPlace;
 import org.openremote.manager.client.user.UserAccountPlace;
 import org.openremote.manager.client.widget.PushButton;
 
@@ -84,6 +85,7 @@ public class HeaderViewImpl extends Composite implements HeaderView {
     public void onPlaceChange(Place place) {
         mapButton.removeStyleName("active");
         assetsButton.removeStyleName("active");
+        rulesButton.removeStyleName("active");
         flowsButton.removeStyleName("active");
         adminButton.removeStyleName("active");
         userButton.removeStyleName("active");
@@ -93,6 +95,9 @@ public class HeaderViewImpl extends Composite implements HeaderView {
         }
         if (place instanceof AssetsPlace) {
             assetsButton.addStyleName("active");
+        }
+        if (place instanceof RulesPlace) {
+            rulesButton.addStyleName("active");
         }
         if (place instanceof FlowsPlace) {
             flowsButton.addStyleName("active");
@@ -124,6 +129,11 @@ public class HeaderViewImpl extends Composite implements HeaderView {
     @UiHandler("adminButton")
     void adminClicked(ClickEvent e) {
         presenter.navigateAdmin();
+    }
+
+    @UiHandler("rulesButton")
+    void rulesClicked(ClickEvent e) {
+        presenter.navigateRules();
     }
 
     @UiHandler("flowsButton")

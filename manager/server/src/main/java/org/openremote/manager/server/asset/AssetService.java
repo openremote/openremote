@@ -139,13 +139,13 @@ public class AssetService extends RouteBuilder implements ContainerService {
         });
     }
 
-    public ServerAsset[] findByTypeInAllRealms(AssetType assetType) {
+    public ServerAsset[] findByTypeInAllRealms(String assetType) {
         return persistenceService.doReturningTransaction(em -> {
             List<ServerAsset> result =
                 em.createQuery(
                     "select a from Asset a where a.type = :assetType order by a.createdOn asc",
                     ServerAsset.class)
-                    .setParameter("assetType", assetType.getValue())
+                    .setParameter("assetType", assetType)
                     .getResultList();
             return result.toArray(new ServerAsset[result.size()]);
         });

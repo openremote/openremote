@@ -28,6 +28,8 @@ import org.openremote.manager.shared.http.RequestParams;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AssetResourceImpl extends WebResource implements AssetResource {
 
@@ -44,6 +46,17 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
             realm = getAuthenticatedRealm();
         }
         return assetService.getRoot(realm);
+    }
+
+    // TODO Restrict access to realms!
+    @Override
+    public AssetInfo[] getByType(@BeanParam RequestParams requestParams, String assetType) {
+        ServerAsset[] assets = assetService.findByTypeInAllRealms(assetType);
+        List<AssetInfo> assetInfos = new ArrayList<>();
+        for (ServerAsset asset : assets) {
+            assetInfos.add(new AssetInfo(asset));
+        }
+        return assetInfos.toArray(new AssetInfo[assetInfos.size()]);
     }
 
     // TODO Restrict access to realms!

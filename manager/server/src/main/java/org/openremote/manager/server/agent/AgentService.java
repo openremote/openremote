@@ -92,7 +92,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
-        ServerAsset[] agents = assetService.findByTypeInAllRealms(AssetType.AGENT);
+        ServerAsset[] agents = assetService.findByTypeInAllRealms(AssetType.AGENT.getValue());
         LOG.fine("Configure agents in all realms:" + agents.length);
         reconfigureAgents(null, agents, null);
     }
@@ -166,6 +166,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
 
         Agent agent = new Agent(new Attributes(agentAsset.getAttributes()));
         ConnectorComponent connectorComponent = connectorService.getConnectorComponentByType(agent.getConnectorType());
+        // TODO: Check if we have the component, otherwise mark the agent configuration invalid
         AgentRoutes agentRoutes = new AgentRoutes(agentAsset, agent, connectorComponent) {
             @Override
             protected void handleInventoryModified(InventoryModifiedEvent event) {

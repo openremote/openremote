@@ -30,6 +30,7 @@ import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.flows.FlowsPlace;
 import org.openremote.manager.client.map.MapPlace;
+import org.openremote.manager.client.rules.RulesPlace;
 import org.openremote.manager.client.user.UserAccountPlace;
 
 @WithTokenizers(
@@ -37,6 +38,7 @@ import org.openremote.manager.client.user.UserAccountPlace;
         MapPlace.Tokenizer.class,
         AssetsDashboardPlace.Tokenizer.class,
         AssetPlace.Tokenizer.class,
+        RulesPlace.Tokenizer.class,
         FlowsPlace.Tokenizer.class,
         AdminOverviewPlace.Tokenizer.class,
         AdminTenantsPlace.Tokenizer.class,

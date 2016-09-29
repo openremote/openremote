@@ -23,7 +23,6 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import org.apache.log4j.Logger;
 import org.keycloak.admin.client.resource.*;
-import org.keycloak.common.enums.SslRequired;
 import org.keycloak.representations.idm.*;
 import org.openremote.agent.controller2.Controller2Component;
 import org.openremote.container.Container;
@@ -45,6 +44,7 @@ import rx.Observable;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.openremote.manager.server.SampleDataService.SAMPLE_CONTROLLER_PORT_DEFAULT;
 import static org.openremote.manager.shared.Constants.*;
 import static rx.Observable.fromCallable;
 
@@ -54,6 +54,17 @@ public class SampleDataService implements ContainerService {
 
     public static final String IMPORT_SAMPLE_DATA = "IMPORT_SAMPLE_DATA";
     public static final boolean IMPORT_SAMPLE_DATA_DEFAULT = false;
+
+    public static final String SAMPLE_CONTROLLER_HOST = "SAMPLE_CONTROLLER_HOST";
+    public static final String SAMPLE_CONTROLLER_HOST_DEFAULT = "192.168.99.100";
+    public static final String SAMPLE_CONTROLLER_PORT = "SAMPLE_CONTROLLER_PORT";
+    public static final int SAMPLE_CONTROLLER_PORT_DEFAULT = 8083;
+    public static final String SAMPLE_CONTROLLER_USERNAME = "SAMPLE_CONTROLLER_USERNAME";
+    public static final String SAMPLE_CONTROLLER_USERNAME_DEFAULT = "";
+    public static final String SAMPLE_CONTROLLER_PASSWORD = "SAMPLE_CONTROLLER_PASSWORD";
+    public static final String SAMPLE_CONTROLLER_PASSWORD_DEFAULT = "";
+    public static final String SAMPLE_CONTROLLER_SECURE = "SAMPLE_CONTROLLER_SECURE";
+    public static final boolean SAMPLE_CONTROLLER_SECURE_DEFAULT = false;
 
     public static final String ADMIN_CLI_CLIENT_ID = "admin-cli";
     public static final String ADMIN_PASSWORD = "admin";
@@ -242,7 +253,7 @@ public class SampleDataService implements ContainerService {
         lobby = assetService.merge(lobby);
 
         ServerAsset sampleAgentAsset = new ServerAsset(lobby);
-        sampleAgentAsset.setName("Light & TV Controller");
+        sampleAgentAsset.setName("Sample Controller");
         sampleAgentAsset.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         sampleAgentAsset.setType(AssetType.AGENT);
 
@@ -253,10 +264,26 @@ public class SampleDataService implements ContainerService {
             sampleAgent.getAttributes().put(connectorSetting.copy());
         }
 
-        sampleAgent.getAttributes().get("host").setValue(container.isDevMode() ? "192.168.99.100" : "controller");
-        sampleAgent.getAttributes().get("port").setValue(container.isDevMode() ? 8083 : 8688);
+        sampleAgent.getAttributes().get("host").setValue(
+            container.getConfig(SAMPLE_CONTROLLER_HOST, SAMPLE_CONTROLLER_HOST_DEFAULT)
+        );
+        sampleAgent.getAttributes().get("port").setValue(
+            container.getConfigInteger(SAMPLE_CONTROLLER_PORT, SAMPLE_CONTROLLER_PORT_DEFAULT)
+        );
+        sampleAgent.getAttributes().get("username").setValue(
+            container.getConfig(SAMPLE_CONTROLLER_USERNAME, SAMPLE_CONTROLLER_USERNAME_DEFAULT)
+        );
+        sampleAgent.getAttributes().get("password").setValue(
+            container.getConfig(SAMPLE_CONTROLLER_PASSWORD, SAMPLE_CONTROLLER_PASSWORD_DEFAULT)
+        );
+        sampleAgent.getAttributes().get("secure").setValue(
+            container.getConfigBoolean(SAMPLE_CONTROLLER_SECURE, SAMPLE_CONTROLLER_SECURE_DEFAULT)
+        );
 
         sampleAgentAsset.setAttributes(sampleAgent.getAttributes().getJsonObject());
+
+        LOG.info("Adding sample agent: " + sampleAgentAsset);
+        LOG.info("Configured sample agent attributes: " + sampleAgent.getAttributes());
 
         sampleAgentAsset = assetService.merge(sampleAgentAsset);
 

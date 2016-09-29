@@ -45,6 +45,8 @@ import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.mvp.AppActivityMapper;
 import org.openremote.manager.client.mvp.RoleRequiredException;
+import org.openremote.manager.client.rules.RulesActivity;
+import org.openremote.manager.client.rules.RulesPlace;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.user.UserAccountActivity;
 import org.openremote.manager.client.user.UserAccountPlace;
@@ -62,6 +64,7 @@ public class ManagerActivityMapper implements AppActivityMapper {
     protected final Provider<AssetsDashboardActivity> assetsDashboardActivityProvider;
     protected final Provider<AssetActivity> assetActivityProvider;
     protected final Provider<MapActivity> mapActivityProvider;
+    protected final Provider<RulesActivity> rulesActivityProvider;
     protected final Provider<FlowsActivity> flowsActivityProvider;
     protected final Provider<AdminOverviewActivity> adminOverviewActivityProvider;
     protected final Provider<AdminTenantsActivity> adminTenantsActivityProvider;
@@ -77,6 +80,7 @@ public class ManagerActivityMapper implements AppActivityMapper {
                                  Provider<AssetsDashboardActivity> assetsDashboardActivityProvider,
                                  Provider<AssetActivity> assetActivityProvider,
                                  Provider<MapActivity> mapActivityProvider,
+                                 Provider<RulesActivity> rulesActivityProvider,
                                  Provider<FlowsActivity> flowsActivityProvider,
                                  Provider<AdminOverviewActivity> adminOverviewActivityProvider,
                                  Provider<AdminTenantsActivity> adminTenantsActivityProvider,
@@ -90,6 +94,7 @@ public class ManagerActivityMapper implements AppActivityMapper {
         this.assetsDashboardActivityProvider = assetsDashboardActivityProvider;
         this.assetActivityProvider = assetActivityProvider;
         this.mapActivityProvider = mapActivityProvider;
+        this.rulesActivityProvider= rulesActivityProvider;
         this.flowsActivityProvider = flowsActivityProvider;
         this.adminOverviewActivityProvider = adminOverviewActivityProvider;
         this.adminTenantsActivityProvider = adminTenantsActivityProvider;
@@ -109,6 +114,9 @@ public class ManagerActivityMapper implements AppActivityMapper {
             }
             if (place instanceof MapPlace) {
                 return mapActivityProvider.get().init(securityService, (MapPlace) place);
+            }
+            if (place instanceof RulesPlace) {
+                return rulesActivityProvider.get().init(securityService, (RulesPlace) place);
             }
             if (place instanceof FlowsPlace) {
                 return flowsActivityProvider.get().init(securityService, (FlowsPlace) place);
