@@ -44,10 +44,8 @@
                 </g:HTMLPanel>
 
                 <g:HTMLPanel styleName="flex {widgetStyle.MainContent}">
-                    <div>TODO: Asset browser switches to an advanced UI that needs more space on the left</div>
                     <g:SimplePanel ui:field="assetsContentContainer">
-                        <g:Label
-                                text="TODO: Asset Dashboard view is the starting view, it will an editable Dashboard App"/>
+                        <g:Label text="Please create or select an asset on the left-hand-side."/>
                     </g:SimplePanel>
                 </g:HTMLPanel>
 

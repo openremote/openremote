@@ -58,10 +58,10 @@
                             targetHistoryToken="map:"
                             text="Show all assets"/>
 
-                    <w:Hyperlink
+                    <w:PushButton
+                            ui:field="fullscreenButton"
                             addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                             icon="expand"
-                            targetHistoryToken="map:"
                             text="Fullscreen"/>
 
                     <w:Hyperlink

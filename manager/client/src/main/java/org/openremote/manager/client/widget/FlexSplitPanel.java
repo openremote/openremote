@@ -53,9 +53,7 @@ public class FlexSplitPanel extends Composite {
         mainPanel.add(secondPanel);
 
         firstPanel.setStyleName("flex layout vertical");
-        firstPanel.getElement().getStyle().setOverflow(Style.Overflow.AUTO);
         secondPanel.setStyleName("flex layout vertical");
-        secondPanel.getElement().getStyle().setOverflow(Style.Overflow.AUTO);
 
         resizeHandle.setStyleName("layout horizontal center-center");
         resizeHandle.getElement().getStyle().setCursor(
