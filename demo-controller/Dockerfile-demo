@@ -2,6 +2,10 @@ FROM openremote/controller:latest
 
 RUN rm -r /opt/or-resources/*
 
+ENV rules_data=/opt/or-resources/data/
+ADD config/env.drl /opt/or-resources/rules/env.drl
+ADD config/GVconfig.txt /opt/or-resources/data/GVconfig.txt
+
 ADD webconsole.war /opt/OpenRemote-Controller/webapps/
 
 ADD config/controller.xml /opt/or-resources/controller.xml
