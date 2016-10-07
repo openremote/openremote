@@ -30,9 +30,7 @@ import com.google.gwt.user.client.ui.Label;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.util.Timeout;
-import org.openremote.manager.client.widget.FormLabel;
 import org.openremote.manager.client.widget.Hyperlink;
-import org.openremote.manager.client.widget.IconLabel;
 import org.openremote.manager.shared.asset.AssetInfo;
 
 import javax.inject.Inject;
@@ -64,6 +62,9 @@ public class FlowsViewImpl extends Composite implements FlowsView {
     @UiField
     IFrameElement frame;
 
+    @UiField
+    HTMLPanel placeholder;
+
     Presenter presenter;
 
     @Inject
@@ -78,6 +79,7 @@ public class FlowsViewImpl extends Composite implements FlowsView {
         if (presenter == null) {
             agentListPanel.clear();
             frame.setSrc("blank:");
+            placeholder.setVisible(true);
         }
     }
 
@@ -106,6 +108,7 @@ public class FlowsViewImpl extends Composite implements FlowsView {
 
     @Override
     public void setFrameSourceUrl(String frameSourceUrl) {
+        placeholder.setVisible(false);
         frame.setSrc(frameSourceUrl);
         Timeout.debounce("setiframefocus", () -> {
             frame.focus();

@@ -281,51 +281,51 @@ public class WidgetStyle {
         return "or-FormTreeEmptyMessage";
     }
 
-    public String FormTreeItem(){
+    public String FormTreeItem() {
         return "or-FormTreeItem";
     }
 
-    public String FormTreeItemImage(){
+    public String FormTreeItemImage() {
         return "or-FormTreeItemImage";
     }
 
-    public String FormTreeItemImageValue(){
+    public String FormTreeItemImageValue() {
         return "or-FormTreeItemImageValue";
     }
 
-    public String FormTreeItemValue(){
+    public String FormTreeItemValue() {
         return "or-FormTreeItemValue";
     }
 
-    public String FormTreeKeyboardSelectedItem(){
+    public String FormTreeKeyboardSelectedItem() {
         return "or-FormTreeKeyboardSelectedItem";
     }
 
-    public String FormTreeSelectedItem(){
+    public String FormTreeSelectedItem() {
         return "or-FormTreeSelectedItem";
     }
 
-    public String FormTreeOpenItem(){
+    public String FormTreeOpenItem() {
         return "or-FormTreeOpenItem";
     }
 
-    public String FormTreeShowMoreButton(){
+    public String FormTreeShowMoreButton() {
         return "or-FormTreeShowMoreButton";
     }
 
-    public String FormTreeTopItem(){
+    public String FormTreeTopItem() {
         return "or-FormTreeTopItem";
     }
 
-    public String FormTreeTopItemImage(){
+    public String FormTreeTopItemImage() {
         return "or-FormTreeTopItemImage";
     }
 
-    public String FormTreeTopItemImageValue(){
+    public String FormTreeTopItemImageValue() {
         return "or-FormTreeTopItemImageValue";
     }
 
-    public String FormTreeWidget(){
+    public String FormTreeWidget() {
         return "or-FormTreeWidget";
     }
 
@@ -355,5 +355,13 @@ public class WidgetStyle {
 
     public String ConfirmationDialog() {
         return "or-ConfirmationDialog";
+    }
+
+    public String RightGradient() {
+        return "or-RightGradient";
+    }
+
+    public String LeftGradient() {
+        return "or-LeftGradient";
     }
 }

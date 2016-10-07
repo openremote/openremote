@@ -33,6 +33,7 @@ import org.openremote.manager.shared.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.asset.AssetType;
 import org.openremote.manager.shared.attribute.Attributes;
+import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -128,6 +129,11 @@ public class FlowsActivity
                     sb.append("/controller");
                     sb.append("&panelName=iPhone5"); // TODO hardcoded panel name
                     view.setFrameSourceUrl(sb.toString());
+                } else {
+                    // TODO: Remove when we only have controller2 agents
+                    environment.getEventBus().dispatch(new ShowInfoEvent(
+                        "The selected agent is not an OpenRemote 2.x controller, no console available."
+                    ));
                 }
             },
             ex -> handleRequestException(ex, environment)

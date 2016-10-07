@@ -30,6 +30,7 @@ import com.google.gwt.user.client.ui.SimplePanel;
 import com.google.gwt.user.client.ui.TextBox;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTreeStyle;
+import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.FormInputText;
 import org.openremote.manager.client.widget.PushButton;
 import org.openremote.manager.shared.asset.AssetInfo;
@@ -48,6 +49,8 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
 
     @UiField
     ManagerMessages managerMessages;
+    @UiField
+    WidgetStyle widgetStyle;
 
     @UiField
     SimplePanel assetTreeContainer;
@@ -158,6 +161,8 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
 
         // TODO Page size and paging is not good, do something with onhover autoscroll
         assetTree.setDefaultNodeSize(1000);
+
+        assetTree.addStyleName(widgetStyle.RightGradient());
 
         assetTreeContainer.clear();
         assetTreeContainer.add(assetTree);

@@ -1,5 +1,9 @@
 <style is="custom-style" include="iron-flex iron-flex-alignment iron-flex-factors iron-positioning">
 
+    ::-webkit-scrollbar {
+        width: 1em;
+    }
+
     * html, body {
         font-family: 'Open Sans', Helvetica, Arial, Lucida, sans-serif;
         font-weight: 500 !important;
@@ -74,6 +78,26 @@
     .or-SecondaryNavItem.or-FormControl:hover,
     .or-SecondaryNavItem.or-FormControl:focus {
         opacity: 1;
+    }
+
+    .or-RightGradient::before {
+        background-image: -webkit-linear-gradient(left, transparent 0, rgba(0, 0, 0, 0.5) 100%);
+        content: "\00a0";
+        height: 100%;
+        position: absolute;
+        right: 0;
+        width: 2em;
+        z-index: 9;
+    }
+
+    .or-LeftGradient::before {
+        background-image: -webkit-linear-gradient(right, rgba(255, 255, 255, 0) 0%, rgba(0, 0, 0, 0.5) 100%);
+        content: "\00a0";
+        height: 100%;
+        position: absolute;
+        left: 0;
+        width: 2em;
+        z-index: 9;
     }
 
     .or-MainContent {

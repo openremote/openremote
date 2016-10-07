@@ -21,9 +21,11 @@ package org.openremote.manager.client.map;
 
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.Scheduler;
+import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
+import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.Label;
@@ -32,6 +34,7 @@ import elemental.json.JsonObject;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.widget.FlexSplitPanel;
 import org.openremote.manager.client.widget.MapWidget;
+import org.openremote.manager.client.widget.PushButton;
 import org.openremote.manager.shared.map.GeoJSON;
 
 import javax.inject.Inject;
@@ -73,6 +76,9 @@ public class MapViewImpl extends Composite implements MapView {
 
     @UiField
     MapWidget mapWidget;
+
+    @UiField
+    PushButton fullscreenButton;
 
     final AssetBrowser assetBrowser;
     final Provider<MapInfoPanel> infoPanelProvider;
@@ -165,6 +171,11 @@ public class MapViewImpl extends Composite implements MapView {
         mapWidget.flyTo(coordinates);
     }
 
+    @UiHandler("fullscreenButton")
+    public void onFullscreenClicked(ClickEvent e) {
+        toggleFullscreen();
+    }
+
     protected void showInfoPanels() {
         infoPanel1.showTopLeftOf(mapWidget, 10, 10);
         infoPanel2.showBottomRightOf(mapWidget, 10, 30);
@@ -174,4 +185,30 @@ public class MapViewImpl extends Composite implements MapView {
         infoPanel1.hide();
         infoPanel2.hide();
     }
+
+    protected native void toggleFullscreen() /*-{
+        var doc = $wnd.document;
+        if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+            if (doc.documentElement.requestFullscreen) {
+                doc.documentElement.requestFullscreen();
+            } else if (doc.documentElement.msRequestFullscreen) {
+                doc.documentElement.msRequestFullscreen();
+            } else if (doc.documentElement.mozRequestFullScreen) {
+                doc.documentElement.mozRequestFullScreen();
+            } else if (doc.documentElement.webkitRequestFullscreen) {
+                doc.documentElement.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+            }
+        } else {
+            if (doc.exitFullscreen) {
+                doc.exitFullscreen();
+            } else if (doc.msExitFullscreen) {
+                doc.msExitFullscreen();
+            } else if (doc.mozCancelFullScreen) {
+                doc.mozCancelFullScreen();
+            } else if (doc.webkitExitFullscreen) {
+                doc.webkitExitFullscreen();
+            }
+        }
+
+    }-*/;
 }
