@@ -56,7 +56,7 @@ public class Controller2Component extends DefaultComponent implements ConnectorC
             "Port",
             "The OR Controller network port number",
             true,
-            "8868",
+            "8688",
             null
         ));
         SETTINGS.put(ConnectorUtil.buildConnectorSetting(
