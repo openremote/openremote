@@ -11,6 +11,8 @@ ADD webconsole.war /opt/OpenRemote-Controller/webapps/
 ADD config/controller.xml /opt/or-resources/controller.xml
 
 USER root
+# nc is a great connectivity debug tool
+RUN apt-get update && apt-get -y install netcat
 RUN chown -R openremote.openremote /opt/or-resources
 USER openremote
 
