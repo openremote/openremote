@@ -1,6 +1,6 @@
 build/
 .gradle
-.vertx
+.vagrant
 
 bin/
 .settings/
