@@ -126,7 +126,7 @@ services:
   # The milestone 1 demo designer, which runs in the "RULES" tab as an iframe. This is
   # alpha quality code and should not be enabled in production!
   m1designer:
-    image: openremote/demo-m1-designer:latest
+    image: openremote/m1designer:latest
     environment:
       TZ: "Europe/Zurich"
     ports:
