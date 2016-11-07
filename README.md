@@ -37,7 +37,7 @@ function dcleanup(){
 
 For authentication and authorization we are using [Keycloak](http://keycloak.jboss.org/).
 
-We are using the PostgreSQL as a database backend. Test and sample data will be installed fresh every time you start the services. Note that this is not suitable for a production configuration!
+We are using PostgreSQL as a database backend. Test and demo data will be installed fresh every time you start the services. Note that this is not suitable for a production configuration!
 
 To access the database directly with an SQL console, run:
 
@@ -49,7 +49,7 @@ docker exec -it openremote_postgres_dev_1 su -s /bin/sh - postgres -c "sh -c 'ps
 
 All services required for development can be deployed with Docker Compose, configured in `docker-compose.yml`. Execute `docker-compose up` in the project root to download required images (this might take a while and give no feedback) and run containers.
 
-The default configuration of all `*Service` classes is for host IP `192.168.99.100`. If this is not your Docker host IP, you must set various environment variables (see [Quickstart](https://raw.githubusercontent.com/openremote/openremote/master/docker-compose-quickstart.yml)).
+The default configuration of all `*Service` classes is for host IP `192.168.99.100`. If this is not your Docker host IP, you must set various environment variables (see [Demo](https://raw.githubusercontent.com/openremote/openremote/master/docker-compose-demo.yml)).
 
 ### Run GWT code server
 
@@ -103,6 +103,6 @@ You can extract smaller tilesets with the following procedure:
 
 Build Docker images with `./gradlew clean buildImage`. Remove old images before if you don't want to use the Docker build cache.
 
-You can start and test these images with the `docker-compose-quickstart.yml` configuration.
+You can start and test these images with the `docker-compose-demo.yml` configuration.
 
 You can also directly build and push the image to our [Docker Hub Account](https://hub.docker.com/u/openremote/): `/gradlew clean pushImage -PdockerHubUsername=username -PdockerHubPassword=secret`

@@ -44,32 +44,31 @@ import rx.Observable;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.openremote.manager.server.SampleDataService.SAMPLE_CONTROLLER_PORT_DEFAULT;
 import static org.openremote.manager.shared.Constants.*;
 import static rx.Observable.fromCallable;
 
-public class SampleDataService implements ContainerService {
+public class DemoDataService implements ContainerService {
 
-    private static final Logger LOG = Logger.getLogger(SampleDataService.class.getName());
+    private static final Logger LOG = Logger.getLogger(DemoDataService.class.getName());
 
-    public static final String IMPORT_SAMPLE_DATA = "IMPORT_SAMPLE_DATA";
-    public static final boolean IMPORT_SAMPLE_DATA_DEFAULT = false;
+    public static final String IMPORT_DEMO_DATA = "IMPORT_DEMO_DATA";
+    public static final boolean IMPORT_DEMO_DATA_DEFAULT = false;
 
-    public static final String SAMPLE_CONTROLLER_HOST = "SAMPLE_CONTROLLER_HOST";
-    public static final String SAMPLE_CONTROLLER_HOST_DEFAULT = "192.168.99.100";
-    public static final String SAMPLE_CONTROLLER_PORT = "SAMPLE_CONTROLLER_PORT";
-    public static final int SAMPLE_CONTROLLER_PORT_DEFAULT = 8083;
-    public static final String SAMPLE_CONTROLLER_USERNAME = "SAMPLE_CONTROLLER_USERNAME";
-    public static final String SAMPLE_CONTROLLER_USERNAME_DEFAULT = "";
-    public static final String SAMPLE_CONTROLLER_PASSWORD = "SAMPLE_CONTROLLER_PASSWORD";
-    public static final String SAMPLE_CONTROLLER_PASSWORD_DEFAULT = "";
-    public static final String SAMPLE_CONTROLLER_SECURE = "SAMPLE_CONTROLLER_SECURE";
-    public static final boolean SAMPLE_CONTROLLER_SECURE_DEFAULT = false;
+    public static final String DEMO_CONTROLLER_HOST = "DEMO_CONTROLLER_HOST";
+    public static final String DEMO_CONTROLLER_HOST_DEFAULT = "192.168.99.100";
+    public static final String DEMO_CONTROLLER_PORT = "DEMO_CONTROLLER_PORT";
+    public static final int DEMO_CONTROLLER_PORT_DEFAULT = 8083;
+    public static final String DEMO_CONTROLLER_USERNAME = "DEMO_CONTROLLER_USERNAME";
+    public static final String DEMO_CONTROLLER_USERNAME_DEFAULT = "";
+    public static final String DEMO_CONTROLLER_PASSWORD = "DEMO_CONTROLLER_PASSWORD";
+    public static final String DEMO_CONTROLLER_PASSWORD_DEFAULT = "";
+    public static final String DEMO_CONTROLLER_SECURE = "DEMO_CONTROLLER_SECURE";
+    public static final boolean DEMO_CONTROLLER_SECURE_DEFAULT = false;
 
     public static final String ADMIN_CLI_CLIENT_ID = "admin-cli";
     public static final String ADMIN_PASSWORD = "admin";
 
-    public String SAMPLE_AGENT_ID = null;
+    public String DEMO_AGENT_ID = null;
 
     protected Container container;
     protected PersistenceService persistenceService;
@@ -95,11 +94,11 @@ public class SampleDataService implements ContainerService {
 
     @Override
     public void start(Container container) {
-        if (!container.isDevMode() && !container.getConfigBoolean(IMPORT_SAMPLE_DATA, IMPORT_SAMPLE_DATA_DEFAULT)) {
+        if (!container.isDevMode() && !container.getConfigBoolean(IMPORT_DEMO_DATA, IMPORT_DEMO_DATA_DEFAULT)) {
             return;
         }
 
-        LOG.info("--- CREATING SAMPLE DATA ---");
+        LOG.info("--- IMPORTING DEMO DATA ---");
 
         // Use a non-proxy client to get the access token
         String accessToken = identityService.getKeycloak().getAccessToken(
@@ -110,9 +109,9 @@ public class SampleDataService implements ContainerService {
             deleteRealms(accessToken);
             configureMasterRealm(accessToken);
             createTenants(accessToken);
-            storeSampleAssets();
+            storeDemoAssets();
 
-            LOG.info("--- SAMPLE DATA COMPLETE ---");
+            LOG.info("--- DEMO DATA IMPORT COMPLETE ---");
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -229,7 +228,7 @@ public class SampleDataService implements ContainerService {
         identityService.createTenant(accessToken, customerB);
     }
 
-    protected void storeSampleAssets() {
+    protected void storeDemoAssets() {
 
         GeometryFactory geometryFactory = new GeometryFactory();
 
@@ -252,41 +251,41 @@ public class SampleDataService implements ContainerService {
         lobby.setType(AssetType.ROOM);
         lobby = assetService.merge(lobby);
 
-        ServerAsset sampleAgentAsset = new ServerAsset(lobby);
-        sampleAgentAsset.setName("Sample Controller");
-        sampleAgentAsset.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
-        sampleAgentAsset.setType(AssetType.AGENT);
+        ServerAsset agentAsset = new ServerAsset(lobby);
+        agentAsset.setName("Demo Controller");
+        agentAsset.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+        agentAsset.setType(AssetType.AGENT);
 
-        Agent sampleAgent = new Agent(new Attributes(), true);
-        sampleAgent.setEnabled(true);
-        sampleAgent.setConnectorType("urn:openremote:connector:controller2");
+        Agent agent = new Agent(new Attributes(), true);
+        agent.setEnabled(true);
+        agent.setConnectorType("urn:openremote:connector:controller2");
         for (Attribute connectorSetting : Controller2Component.SETTINGS.get()) {
-            sampleAgent.getAttributes().put(connectorSetting.copy());
+            agent.getAttributes().put(connectorSetting.copy());
         }
 
-        sampleAgent.getAttributes().get("host").setValue(
-            container.getConfig(SAMPLE_CONTROLLER_HOST, SAMPLE_CONTROLLER_HOST_DEFAULT)
+        agent.getAttributes().get("host").setValue(
+            container.getConfig(DEMO_CONTROLLER_HOST, DEMO_CONTROLLER_HOST_DEFAULT)
         );
-        sampleAgent.getAttributes().get("port").setValue(
-            container.getConfigInteger(SAMPLE_CONTROLLER_PORT, SAMPLE_CONTROLLER_PORT_DEFAULT)
+        agent.getAttributes().get("port").setValue(
+            container.getConfigInteger(DEMO_CONTROLLER_PORT, DEMO_CONTROLLER_PORT_DEFAULT)
         );
-        sampleAgent.getAttributes().get("username").setValue(
-            container.getConfig(SAMPLE_CONTROLLER_USERNAME, SAMPLE_CONTROLLER_USERNAME_DEFAULT)
+        agent.getAttributes().get("username").setValue(
+            container.getConfig(DEMO_CONTROLLER_USERNAME, DEMO_CONTROLLER_USERNAME_DEFAULT)
         );
-        sampleAgent.getAttributes().get("password").setValue(
-            container.getConfig(SAMPLE_CONTROLLER_PASSWORD, SAMPLE_CONTROLLER_PASSWORD_DEFAULT)
+        agent.getAttributes().get("password").setValue(
+            container.getConfig(DEMO_CONTROLLER_PASSWORD, DEMO_CONTROLLER_PASSWORD_DEFAULT)
         );
-        sampleAgent.getAttributes().get("secure").setValue(
-            container.getConfigBoolean(SAMPLE_CONTROLLER_SECURE, SAMPLE_CONTROLLER_SECURE_DEFAULT)
+        agent.getAttributes().get("secure").setValue(
+            container.getConfigBoolean(DEMO_CONTROLLER_SECURE, DEMO_CONTROLLER_SECURE_DEFAULT)
         );
 
-        sampleAgentAsset.setAttributes(sampleAgent.getAttributes().getJsonObject());
+        agentAsset.setAttributes(agent.getAttributes().getJsonObject());
 
-        LOG.info("Adding sample agent: " + sampleAgentAsset);
-        LOG.info("Configured sample agent attributes: " + sampleAgent.getAttributes());
+        LOG.info("Adding demo agent: " + agentAsset);
+        LOG.info("Configured demo agent attributes: " + agent.getAttributes());
 
-        sampleAgentAsset = assetService.merge(sampleAgentAsset);
+        agentAsset = assetService.merge(agentAsset);
 
-        SAMPLE_AGENT_ID = sampleAgentAsset.getId();
+        DEMO_AGENT_ID = agentAsset.getId();
     }
 }

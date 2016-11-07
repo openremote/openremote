@@ -20,8 +20,8 @@ dependencies {
 distributions {
     main {
         contents {
-            from("sample") {
-                into "sample"
+            from("config") {
+                into "config"
             }
         }
     }

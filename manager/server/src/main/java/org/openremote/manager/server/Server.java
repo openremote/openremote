@@ -45,7 +45,7 @@ public class Server {
             new AgentService(),
             new AssetService(),
             new MapService(),
-            new SampleDataService()
+            new DemoDataService()
         ).startBackground();
     }
 }

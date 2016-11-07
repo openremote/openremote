@@ -30,6 +30,8 @@ import org.openremote.container.json.ElementalJsonModule;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -41,15 +43,27 @@ import java.util.stream.StreamSupport;
 public class Container {
 
     public static final Logger LOG;
+    public static final String LOGGING_CONFIG_FILE = "LOGGING_CONFIG_FILE";
 
     static {
+        // If no JUL configuration is provided
         if (System.getProperty("java.util.logging.config.file") == null) {
-            try (InputStream is = Container.class.getClassLoader().getResourceAsStream("logging.properties")) {
-                if (is != null) {
+            // Load the logging configuration file specified with an environment variable
+            if (System.getenv(LOGGING_CONFIG_FILE) != null) {
+                try (InputStream is = Files.newInputStream(Paths.get(System.getenv(LOGGING_CONFIG_FILE)))) {
                     LogManager.getLogManager().readConfiguration(is);
+                } catch (Exception ex) {
+                    throw new ExceptionInInitializerError(ex);
                 }
-            } catch (IOException ignore) {
-                // Ignore
+                // Or load a default configuration from the classpath
+            } else {
+                try (InputStream is = Container.class.getClassLoader().getResourceAsStream("logging.properties")) {
+                    if (is != null) {
+                        LogManager.getLogManager().readConfiguration(is);
+                    }
+                } catch (Exception ex) {
+                    throw new ExceptionInInitializerError(ex);
+                }
             }
         }
 

@@ -59,7 +59,7 @@ public class Controller2Adapter {
     }
 
     public Controller2Adapter(URL url, String username, String password, Controller controller) {
-        LOG.info("Creating adapter: " + url);
+        LOG.fine("Creating adapter: " + url);
         this.url = url;
         this.username = username;
         this.password = password;
@@ -122,7 +122,7 @@ public class Controller2Adapter {
     }
 
     public synchronized void close() {
-        LOG.info("Closing adapter: " + url);
+        LOG.fine("Closing adapter: " + url);
         if (controller != null) {
             forceDisconnect = true;
             try {
@@ -148,7 +148,7 @@ public class Controller2Adapter {
         // Push connection task onto separate thread to avoid blocking the caller when delaying reconnection
         connectionScheduler.schedule(
             () -> {
-                LOG.info("Connecting to controller: " + url);
+                LOG.fine("Connecting to controller: " + url);
                 controller.connect(connectCallback);
             },
             doDelay ? RECONNECT_DELAY_SECONDS : 0L,

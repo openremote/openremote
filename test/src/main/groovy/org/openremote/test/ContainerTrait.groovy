@@ -28,7 +28,6 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClient
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
 import org.keycloak.representations.AccessTokenResponse
-import org.openremote.container.Constants
 import org.openremote.container.Container
 import org.openremote.container.ContainerService
 import org.openremote.container.message.MessageBrokerService
@@ -37,7 +36,7 @@ import org.openremote.container.security.AuthForm
 import org.openremote.container.security.IdentityService
 import org.openremote.container.web.WebClient
 import org.openremote.container.web.WebService
-import org.openremote.manager.server.SampleDataService
+import org.openremote.manager.server.DemoDataService
 import org.openremote.manager.server.agent.AgentService
 import org.openremote.manager.server.agent.ConnectorService
 import org.openremote.manager.server.asset.AssetService
@@ -110,7 +109,7 @@ trait ContainerTrait {
                         new AgentService(),
                         new AssetService(),
                         new MapService(),
-                        new SampleDataService()
+                        new DemoDataService()
                 )
         )
     }
