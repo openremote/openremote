@@ -21,9 +21,11 @@ package org.openremote.manager.client.rules;
 
 import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import elemental.client.Browser;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
+import org.openremote.manager.client.service.SecurityService;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -38,14 +40,17 @@ public class RulesActivity
     final RulesView view;
     final PlaceController placeController;
     final EventBus eventBus;
+    final SecurityService securityService;
 
     @Inject
     public RulesActivity(RulesView view,
                          PlaceController placeController,
-                         EventBus eventBus) {
+                         EventBus eventBus,
+                         SecurityService securityService) {
         this.view = view;
         this.placeController = placeController;
         this.eventBus = eventBus;
+        this.securityService = securityService;
     }
 
     @Override
@@ -57,5 +62,11 @@ public class RulesActivity
     public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
         container.setWidget(view.asWidget());
         view.setPresenter(this);
+    }
+
+    @Override
+    public String getFrameSource() {
+        LOG.warning("TODO: Rules iframe handling not implemented for 'localhost', use http://<Your Docker Host>:8084/ instead.");
+        return "http://" + Browser.getWindow().getLocation().getHostname() +  ":8084/?logLevel=OFF#shell";
     }
 }

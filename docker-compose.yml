@@ -30,6 +30,8 @@ services:
       POSTGRES_PASSWORD: secret
       # Create default database when started (also see init.sh files)
       POSTGRES_DB: openremote
+      OPENREMOTE_USERNAME: openremote
+      OPENREMOTE_PASSWORD: secret
     ports:
       - "8082:5432"
   controller_dev:
@@ -42,3 +44,9 @@ services:
       CONTROLLER_CONSOLE_THRESHOLD: "INFO"
     ports:
       - "8083:8688"
+  m1designer:
+    image: openremote/demo-m1-designer:latest
+    environment:
+      TZ: "Europe/Zurich"
+    ports:
+      - "8084:8080"

@@ -1,4 +1,7 @@
 # Demo setup of OpenRemote v3
+#
+# This configuration works with https://www.docker.com/products/overview#/docker_toolbox
+#
 version: '2'
 services:
 
@@ -93,18 +96,20 @@ services:
       POSTGRES_USER: openremote
       POSTGRES_PASSWORD: secret
 
-  # The database service.
+  # DBMS
   postgres:
     image: openremote/postgres:latest
     environment:
       TZ: "Europe/Zurich"
-      # This is the database superuser and password. You should change this, especially if you
-      # expose the database port and make it accessible externally! Internally, we are using a
-      # different user/password combination to access the 'openremote' database (currently
-      # baked into the image).
+      # This is the DBMS superuser and password. You should change this, especially if you
+      # expose the DBMS port and make it accessible externally!
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: secret
+
+      # The database and service connection user, passwords should be changed in production!
       POSTGRES_DB: openremote
+      OPENREMOTE_USERNAME: openremote
+      OPENREMOTE_PASSWORD: secret
 
   # The demo controller (device gateway)
   controller:
@@ -112,7 +117,17 @@ services:
     environment:
       TZ: "Europe/Zurich"
       BEEHIVE_REMOTE_SERVICE_URI: "urn:disabled"
-    # We expose the demo controller on the public network, so users can sync it with the
-    # OpenRemote Designer and access the Web Console.
+    # We expose the demo controller on the host network, so users can sync it with the
+    # OpenRemote Designer and access the Web Console. Do not expose this publicly in
+    # production (no credentials have been set)!
     ports:
       - "8688:8688"
+
+  # The milestone 1 demo designer, which runs in the "RULES" tab as an iframe. This is
+  # alpha quality code and should not be enabled in production!
+  m1designer:
+    image: openremote/demo-m1-designer:latest
+    environment:
+      TZ: "Europe/Zurich"
+    ports:
+      - "8084:8080"

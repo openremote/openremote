@@ -24,6 +24,7 @@ import com.google.gwt.user.client.ui.IsWidget;
 public interface RulesView extends IsWidget {
 
     interface Presenter {
+        String getFrameSource();
     }
 
     void setPresenter(Presenter presenter);

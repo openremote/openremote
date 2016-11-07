@@ -53,6 +53,7 @@ public class RulesViewImpl implements RulesView {
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
+        frame.setSrc(presenter.getFrameSource());
 
         // TODO ouch
         Timeout.debounce("setiframefocus", () -> {
