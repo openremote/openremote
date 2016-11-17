@@ -36,7 +36,7 @@ import org.openremote.manager.client.mvp.AppActivityMapper
 import org.openremote.manager.client.mvp.AppPlaceController
 import org.openremote.manager.client.service.SecurityService
 
-trait ClientTrait {
+trait GwtClientTrait {
 
     protected static class MockPlaceControllerDelegate implements PlaceController.Delegate {
         // TODO: Do we need this?

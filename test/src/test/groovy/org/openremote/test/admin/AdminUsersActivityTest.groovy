@@ -27,7 +27,7 @@ import org.openremote.manager.shared.http.EntityReader
 import org.openremote.manager.shared.security.*
 import org.openremote.manager.shared.validation.ConstraintViolationReport
 import org.openremote.test.ClientObjectMapper
-import org.openremote.test.ClientTrait
+import org.openremote.test.GwtClientTrait
 import org.openremote.test.ContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.BlockingVariables
@@ -35,7 +35,7 @@ import spock.util.concurrent.BlockingVariables
 import static org.openremote.manager.shared.Constants.MANAGER_CLIENT_ID
 import static org.openremote.manager.shared.Constants.MASTER_REALM
 
-class AdminUsersActivityTest extends Specification implements ContainerTrait, ClientTrait {
+class AdminUsersActivityTest extends Specification implements ContainerTrait, GwtClientTrait {
 
     def "List all, create, update, delete user"() {
 
