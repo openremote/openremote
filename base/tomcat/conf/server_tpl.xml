@@ -132,7 +132,7 @@
                 <Realm className="org.apache.catalina.realm.UserDatabaseRealm"
                        resourceName="UserDatabase"/>
                 <Realm className="org.openremote.tomcat.realm.LegacyBeehiveDataSourceRealm"
-                       dataSourceName="jdbc/AuthDB" digest="md5"
+                       dataSourceName="jdbc/AuthDB" digest="md5" debug="99"
                        userTable="user" userNameCol="username" userCredCol="password"
                        userRoleTable="tomcat_user_role" roleNameCol="rolename"/>
             </Realm>

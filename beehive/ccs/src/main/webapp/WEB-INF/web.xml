@@ -88,7 +88,8 @@
         <!-- User roles required to access CCS resources... -->
 
         <auth-constraint>
-            <role-name>ROLE_ADMIN</role-name>
+            <role-name>service-admin</role-name>
+            <role-name>account-owner</role-name>
         </auth-constraint>
 
     </security-constraint>
@@ -98,19 +99,21 @@
 
     <login-config>
         <auth-method>BASIC</auth-method>
-        <realm-name>ControllerProxyAndCommandService</realm-name>
+        <realm-name>Restricted Service</realm-name>
     </login-config>
 
     <!-- Define the security roles... -->
-
     <security-role>
-
         <description>
-            ROLE_ADMIN is the administrator role for a specific account (it's the account owner).
+            The user who owns an account
         </description>
-
-        <role-name>ROLE_ADMIN</role-name>
-
+        <role-name>account-owner</role-name>
+    </security-role>
+    <security-role>
+        <description>
+            The service administrator
+        </description>
+        <role-name>service-admin</role-name>
     </security-role>
 
 </web-app>

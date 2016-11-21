@@ -43,12 +43,12 @@
             <property name="javax.persistence.jdbc.url"
                       value="jdbc:mysql://mysql:3306/openremote?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false"/>
 
+            <!-- TODO Use environment variables -->
             <property name="javax.persistence.jdbc.user" value="openremote"/>
             <property name="javax.persistence.jdbc.password" value="CHANGE_ME_DB_USER_PASSWORD"/>
 
             <property name="hibernate.cache.provider_class" value="org.hibernate.cache.internal.NoCacheProvider"/>
             <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect"/>
-            <property name="hibernate.hbm2ddl.auto" value="validate"/>
             <property name="hibernate.current_session_context_class" value="managed"/>
 
             <property name="hibernate.connection.provider_class"

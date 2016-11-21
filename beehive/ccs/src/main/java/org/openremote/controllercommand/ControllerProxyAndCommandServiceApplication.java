@@ -51,7 +51,7 @@ import java.util.Properties;
 public class ControllerProxyAndCommandServiceApplication extends ResourceConfig {
     static private EntityManagerFactory entityManagerFactory;
 
-    protected final static Logger persistenceLog = LoggerFactory.getLogger(ControllerProxyAndCommandServiceApplication.class);
+    protected final static Logger LOG = LoggerFactory.getLogger(ControllerProxyAndCommandServiceApplication.class);
 
     public ControllerProxyAndCommandServiceApplication() {
 
@@ -66,9 +66,13 @@ public class ControllerProxyAndCommandServiceApplication extends ResourceConfig 
         entityManagerFactory = Persistence.createEntityManagerFactory(config.getProperty("persistenceUnitName", "CCS-MySQL"));
         // TODO THis is never called, no idea why....
         if (config.getProperty("persistenceCreateSchema", "false").equals("true")) {
+            LOG.info("### Creating database schema");
             createSchema();
+        } else {
+            LOG.info("### Not creating database schema");
         }
-        persistenceLog.info("EntityManagerFactory has been created");
+
+        LOG.info("EntityManagerFactory has been created");
         register(EntityPersistence.class);
 
         GenericDAO genericDAO = new GenericDAO();
@@ -82,7 +86,7 @@ public class ControllerProxyAndCommandServiceApplication extends ResourceConfig 
         Integer proxyPort = getIntegerConfiguration(config, "proxy.port", 10000);
         String proxyClientPortRange = config.getProperty("proxy.clientPortRange", "30000-30010");
         Boolean useSSL = getBooleanConfiguration(config, "proxy.useSSL", true);
-        String keystore = config.getProperty("proxy.keystore", "keystore.ks");
+        String keystore = config.getProperty("proxy.keystore", "keystore.jks");
         String keystorePassword = config.getProperty("proxy.keystorePassword", "storepass");
         ProxyServer ps = new ProxyServer(proxyHostname, proxyTimeout, proxyPort, proxyClientPortRange, useSSL, keystore, keystorePassword, controllerCommandService, accountService, this);
         ps.start();
@@ -103,9 +107,9 @@ public class ControllerProxyAndCommandServiceApplication extends ResourceConfig 
     private void testDestroy() {
         try {
             entityManagerFactory.close();
-            persistenceLog.info("EntityManagerFactory has been closed");
+            LOG.info("EntityManagerFactory has been closed");
         } catch (Exception e) {
-            persistenceLog.warn("Could not close EntityManagerFactory");
+            LOG.warn("Could not close EntityManagerFactory");
         }
     }
 
@@ -138,41 +142,41 @@ public class ControllerProxyAndCommandServiceApplication extends ResourceConfig 
     }
 
     public EntityManager createEntityManager() {
-        persistenceLog.trace(">>createEntityManager");
+        LOG.trace(">>createEntityManager");
         EntityManager entityManager = null;
         try {
-            persistenceLog.trace("Before createEntityManager");
+            LOG.trace("Before createEntityManager");
             entityManager = entityManagerFactory.createEntityManager();
-            persistenceLog.debug("Got entityManager " + entityManager);
+            LOG.debug("Got entityManager " + entityManager);
             EntityTransaction tx = entityManager.getTransaction();
-            persistenceLog.debug("Got transaction " + tx);
+            LOG.debug("Got transaction " + tx);
             tx.begin();
-            persistenceLog.debug("Begun transaction");
+            LOG.debug("Begun transaction");
         } catch (Exception e) {
-            persistenceLog.error("Failed to create an EntityManager", e);
+            LOG.error("Failed to create an EntityManager", e);
         }
-        persistenceLog.trace("<<createEntityManager");
+        LOG.trace("<<createEntityManager");
         return entityManager;
     }
 
     public void commitEntityManager(EntityManager entityManager) {
-        persistenceLog.trace(">>commitEntityManager");
+        LOG.trace(">>commitEntityManager");
         if (entityManager.isOpen()) {
-            persistenceLog.debug("entityManager opened, commit transaction");
+            LOG.debug("entityManager opened, commit transaction");
             entityManager.getTransaction().commit();
             entityManager.close();
         }
-        persistenceLog.trace("<<commitEntityManager");
+        LOG.trace("<<commitEntityManager");
     }
 
     public void rollbackEntityManager(EntityManager entityManager) {
-        persistenceLog.trace(">>rollbackEntityManager");
+        LOG.trace(">>rollbackEntityManager");
         if (entityManager.isOpen()) {
-            persistenceLog.debug("entityManager opened, rollback transaction");
+            LOG.debug("entityManager opened, rollback transaction");
             entityManager.getTransaction().rollback();
             entityManager.close();
         }
-        persistenceLog.trace("<<rollbackEntityManager");
+        LOG.trace("<<rollbackEntityManager");
     }
 
     /**
@@ -197,7 +201,7 @@ public class ControllerProxyAndCommandServiceApplication extends ResourceConfig 
                 entityManager.getTransaction().begin();
             } catch (Throwable throwable) {
 
-                persistenceLog.error("Failed to create EntityManager", throwable);
+                LOG.error("Failed to create EntityManager", throwable);
 
                 if (entityManager != null) {
                     EntityTransaction tx = entityManager.getTransaction();
@@ -205,7 +209,7 @@ public class ControllerProxyAndCommandServiceApplication extends ResourceConfig 
                         try {
                             tx.rollback();
                         } catch (Exception e) {
-                            persistenceLog.warn("Failed to rollback transaction ", e);
+                            LOG.warn("Failed to rollback transaction ", e);
                         }
                     }
                 }
@@ -226,22 +230,22 @@ public class ControllerProxyAndCommandServiceApplication extends ResourceConfig 
 
             EntityTransaction tx = entityManager.getTransaction();
 
-            persistenceLog.debug("Transaction is " + tx + " , active ? " + (tx.isActive() ? "yes" : "no"));
+            LOG.debug("Transaction is " + tx + " , active ? " + (tx.isActive() ? "yes" : "no"));
 
             if (tx != null && tx.isActive()) {
                 if (tx.getRollbackOnly() || response.getStatus() >= 400) {
-                    persistenceLog.debug("Rolling back transaction");
+                    LOG.debug("Rolling back transaction");
                     try {
                         tx.rollback();
                     } catch (Exception e) {
-                        persistenceLog.warn("Failed to rollback transaction ", e);
+                        LOG.warn("Failed to rollback transaction ", e);
                     }
                 } else {
-                    persistenceLog.debug("Commit transaction");
+                    LOG.debug("Commit transaction");
                     try {
                         tx.commit();
                     } catch (Exception e) {
-                        persistenceLog.error("Failed to commit transaction ", e);
+                        LOG.error("Failed to commit transaction ", e);
                     }
                 }
             }
@@ -249,7 +253,7 @@ public class ControllerProxyAndCommandServiceApplication extends ResourceConfig 
                 try {
                     entityManager.close();
                 } catch (Exception e) {
-                    persistenceLog.warn("Failed to closed EntityManager", e);
+                    LOG.warn("Failed to closed EntityManager", e);
                 }
             }
         }
@@ -267,11 +271,11 @@ public class ControllerProxyAndCommandServiceApplication extends ResourceConfig 
                     rs = meta.getTables(null, null, "controller", new String[]{"TABLE"});
                     if (!rs.next()) {
                         rs.close();
-                        persistenceLog.warn("NO DATABASE SCHEMA FOUND, ATTEMPTING TO CREATE DATABASE SCHEMA...");
+                        LOG.info("Table CONTROLLER not found, attempting to create database schema");
                         MultipleLinesSqlCommandExtractor extractor = new MultipleLinesSqlCommandExtractor();
                         String[] sqlCommands = extractor.extractCommands(
                             new BufferedReader(new InputStreamReader(
-                                getClass().getClassLoader().getResourceAsStream("sql/CreateTables.sql"))
+                                getClass().getClassLoader().getResourceAsStream("sql/10-CreateSchema.sql"))
                             )
                         );
                         for (String sqlCommand : sqlCommands) {
@@ -285,6 +289,8 @@ public class ControllerProxyAndCommandServiceApplication extends ResourceConfig 
                                 }
                             }
                         }
+                    } else {
+                        LOG.info("Table CONTROLLER found in database schema, not creating schema");
                     }
                 } finally {
                     if (rs != null)
