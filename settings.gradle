@@ -9,5 +9,5 @@ include "base:postgres",
         "manager:shared",
         "manager:server",
         "manager:client",
-        "connector:controller2",
-        "test"
+        "manager:connector:controller2",
+        "manager:test"

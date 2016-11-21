@@ -7,7 +7,7 @@ dependencies {
 
     compile project(":container")
     compile project(":manager:shared")
-    compile project(":connector:controller2")
+    compile project(":manager:connector:controller2")
 
     compile "org.slf4j:slf4j-api:$slf4jVersion"
     compile "org.slf4j:slf4j-jdk14:$slf4jVersion"

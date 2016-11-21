@@ -1,6 +1,10 @@
 #
 # Controller Commmand Service (Remote Proxy)
 #
+# This profile requires dependencies:
+#
+# - mysql
+#
 version: '2'
 services:
 
@@ -8,6 +12,7 @@ services:
     image: openremote/controller:latest
     environment:
       TZ: "Europe/Zurich"
+      JAVA_OPTS: -Djavax.net.ssl.trustStore=\/opt\/or-resources\/truststore.jks
       SSL_KEY_STORE_PASSWORD: "CHANGE_ME_SSL_KEY_STORE_PASSWORD"
       BEEHIVE_REMOTE_SERVICE_URI: "https://css:8443/css/rest"
       CONTROLLER_CONSOLE_THRESHOLD: "INFO"

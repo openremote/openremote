@@ -9,9 +9,7 @@ In an OpenRemote system, servers use certificates to authenticate themselves to 
 ```
 #!/bin/bash
 
-rm /tmp/or-keystore.jks
-rm /tmp/or-truststore.jks
-rm /tmp/or-certificate.cer
+rm /tmp/or-*.jks /tmp/or-*.cer
 
 keytool -genkeypair -alias "openremote" \
     -noprompt -keyalg RSA -validity 9999 -keysize 2048 \
@@ -41,6 +39,8 @@ cp /tmp/or-truststore.jks demo-controller/conf/truststore.jks
 
 ```
 
+TODO: Copy key/trust stores into other projects that need it
+
 At a minimum, you should re-create the stores and private key with your own passwords when deploying OpenRemote.
 
 TODO: Unify default CAs in trust stores in all server systems, which (root) CAs should stay and what is the setup we recommend for OpenRemote users, etc.
@@ -51,4 +51,10 @@ TODO: Old Tomcat can't have separate key and store passwords...
 
 ```
 docker-compose -p <my_project_name> -f profile/mysql.yml -f profile/ccs.yml up
+```
+
+For example, to run a Controller and CCS:
+
+```
+dc -p my_project -f profile/dependencies/mysql.yml -f profile/ccs.yml
 ```

@@ -1,6 +1,10 @@
 #
 # Controller Commmand Service (Remote Proxy)
 #
+# This profile requires dependencies:
+#
+# - mysql
+#
 version: '2'
 services:
 
@@ -10,16 +14,19 @@ services:
       dockerfile: Dockerfile
     environment:
       TZ: "Europe/Zurich"
+      JAVA_OPTS: -Djavax.net.ssl.trustStore=\/opt\/or-resources\/truststore -agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n
       SSL_KEY_STORE_PASSWORD: "CHANGE_ME_SSL_KEY_STORE_PASSWORD"
       BEEHIVE_REMOTE_SERVICE_URI: "https://css:8443/css/rest"
       CONTROLLER_CONSOLE_THRESHOLD: "INFO"
     ports:
       - "8688:8688"
+      - "8000:8000"
 
   ccs:
     image: openremote/ccs:latest
     ports:
-    - "8443:8443"
+      - "8443:8443"
+      - "5005:5005"
     # TODO Why is this necessary? Is CCS connecting with itself?
     extra_hosts:
      - "ccs:127.0.0.1"
@@ -29,5 +36,8 @@ services:
       BEEHIVE_DB_DRIVER: "com.mysql.jdbc.Driver"
       BEEHIVE_DB_URL: "jdbc:mysql://mysql:3306/openremote"
       SSL_KEY_STORE_PASSWORD: "CHANGE_ME_SSL_KEY_STORE_PASSWORD"
+      TOMCAT_DEBUG: "true"
+      JPDA_ADDRESS: "5005"
+      JPDA_SUSPEND: "n"
     links:
       - mysql
