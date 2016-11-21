@@ -39,7 +39,7 @@ allprojects {
         }
     }
 
-    ext.dockerImageName = "$dockerRepository/$project.name:$imageVersion".toString()
+    ext.dockerImageName = "$dockerRepository/$project.name:$imageVersion".toLowerCase(Locale.ROOT)
 
     apply plugin: 'eclipse'
 }

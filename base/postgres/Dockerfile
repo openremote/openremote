@@ -12,7 +12,7 @@
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
 
-FROM postgres:9.6
+FROM postgres:9.6.1
 
 ENV POSTGIS_MAJOR 2.3
 ENV POSTGIS_VERSION 2.3.0+dfsg-2.pgdg80+1
@@ -24,9 +24,7 @@ RUN apt-get update \
            postgis=$POSTGIS_VERSION \
       && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /docker-entrypoint-initdb.d
+ENV POSTGRES_USER postgres
 
-ADD 01-init-user.sh /docker-entrypoint-initdb.d/01-init-user.sh
-ADD 02-init-postgis.sh /docker-entrypoint-initdb.d/02-init-postgis.sh
-
+ADD scripts /docker-entrypoint-initdb.d/
 RUN chmod +x /docker-entrypoint-initdb.d/*.sh

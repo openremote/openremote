@@ -1,0 +1,33 @@
+#
+# Controller Commmand Service (Remote Proxy)
+#
+version: '2'
+services:
+
+  controller:
+    image: openremote/controller:latest
+    environment:
+      TZ: "Europe/Zurich"
+      SSL_KEY_STORE_PASSWORD: "CHANGE_ME_SSL_KEY_STORE_PASSWORD"
+      BEEHIVE_REMOTE_SERVICE_URI: "https://css:8443/css/rest"
+      CONTROLLER_CONSOLE_THRESHOLD: "INFO"
+    links:
+      - ccs
+    ports:
+      - "8688:8688"
+
+  ccs:
+    image: openremote/ccs:latest
+    # TODO Why is this necessary? Is CCS connecting with itself?
+    extra_hosts:
+     - "ccs:127.0.0.1"
+    environment:
+      BEEHIVE_DB_USERNAME: "openremote"
+      BEEHIVE_DB_PASSWORD: "CHANGE_ME_DB_USER_PASSWORD"
+      BEEHIVE_DB_DRIVER: "com.mysql.jdbc.Driver"
+      BEEHIVE_DB_URL: "jdbc:mysql://mysql:3306/openremote"
+      SSL_KEYSTORE_PASSWORD: "CHANGE_ME_SSL_KEY_STORE_PASSWORD"
+    links:
+      - mysql
+    ports:
+      - "8443:8443"

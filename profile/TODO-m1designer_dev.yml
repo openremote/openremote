@@ -1,0 +1,11 @@
+#
+# Milestone1 Designer (prototype)
+#
+version: '2'
+services:
+  m1designer:
+    image: openremote/m1designer:latest
+    environment:
+      TZ: "Europe/Zurich"
+    ports:
+      - "8084:8080"

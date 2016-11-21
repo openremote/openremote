@@ -1,0 +1,18 @@
+#
+# MySQL database service(s)
+#
+version: '2'
+services:
+
+  mysql:
+    image: openremote/mysql:latest
+    environment:
+      TZ: "Europe/Zurich"
+      # This is the database superuser
+      MYSQL_ROOT_PASSWORD: "CHANGE_ME_DB_ROOT_PASSWORD"
+      # Create default database when started (see scripts)
+      MYSQL_DATABASE: openremote
+      MYSQL_USER: openremote
+      MYSQL_PASSWORD: "CHANGE_ME_DB_USER_PASSWORD"
+    ports:
+      - "3306:3306"

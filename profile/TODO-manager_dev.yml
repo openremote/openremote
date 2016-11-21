@@ -1,12 +1,14 @@
-# Development setup of OpenRemote v3
+#
+# Development setup of Manager
+#
 version: '2'
 services:
   keycloak_dev:
     build:
-      context: ./keycloak
+      context: ../keycloak
       dockerfile: Dockerfile-dev
     volumes:
-      - ./keycloak/theme:/opt/jboss/keycloak/themes/openremote
+      - ../keycloak/theme:/opt/jboss/keycloak/themes/openremote
     links:
       - postgres_dev:postgresql
     environment:
@@ -21,14 +23,13 @@ services:
       - "8081:8080"
   postgres_dev:
     build:
-      context: ./postgres
+      context: ../postgres
       dockerfile: Dockerfile-dev
     environment:
       TZ: "Europe/Zurich"
       # This is the database superuser
-      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: secret
-      # Create default database when started (also see init.sh files)
+      # Create default database when started (see scripts)
       POSTGRES_DB: openremote
       OPENREMOTE_USERNAME: openremote
       OPENREMOTE_PASSWORD: secret
@@ -36,7 +37,7 @@ services:
       - "8082:5432"
   controller_dev:
     build:
-      context: ./demo-controller
+      context: ../demo-controller
       dockerfile: Dockerfile-dev
     environment:
       TZ: "Europe/Zurich"
@@ -44,9 +45,3 @@ services:
       CONTROLLER_CONSOLE_THRESHOLD: "INFO"
     ports:
       - "8083:8688"
-  m1designer:
-    image: openremote/m1designer:latest
-    environment:
-      TZ: "Europe/Zurich"
-    ports:
-      - "8084:8080"

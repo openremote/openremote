@@ -2,7 +2,7 @@ import com.bmuschko.gradle.docker.tasks.image.*
 
 task buildImage(type: DockerBuildImage) {
     inputDir = projectDir
-    dockerFile = file("$projectDir/Dockerfile-demo")
+    dockerFile = file("$projectDir/Dockerfile")
     tag = dockerImageName
 }
 

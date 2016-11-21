@@ -4,7 +4,7 @@ ext.dockerImageName = "$dockerRepository/$project.name:$imageVersion".toString()
 
 task buildImage(type: DockerBuildImage) {
     inputDir = projectDir
-    dockerFile = file("$projectDir/Dockerfile-demo")
+    dockerFile = file("$projectDir/Dockerfile")
     tag = dockerImageName
 }
 
