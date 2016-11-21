@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app id="WebApp_ID" version="2.4"
+         xmlns="http://java.sun.com/xml/ns/j2ee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee
+                 http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd">
+    <display-name>DeviceDiscovery Service</display-name>
+
+    <!--
+    =================================================================================================
+
+      Map servlet Java class implementations to URLs.
+
+      This mapping links the JAX-RS 2.0 implementation to Glassfish Jersey based implementation
+      of the API.
+
+    =================================================================================================
+    -->
+
+
+    <servlet>
+        <servlet-name>Jersey Servlet Container for CCS</servlet-name>
+
+        <!-- Jersey implementation -->
+
+        <servlet-class>
+            org.glassfish.jersey.servlet.ServletContainer
+        </servlet-class>
+
+        <!-- JAX-RS 2.0 configuration to link JAX-RS application -->
+
+        <init-param>
+            <param-name>javax.ws.rs.Application</param-name>
+            <param-value>org.openremote.controllercommand.ControllerProxyAndCommandServiceApplication</param-value>
+        </init-param>
+
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+
+
+    <!--
+
+         URL Mapping:
+
+         As per the Beehive REST API design convention, all REST API calls start with '/rest' path.
+
+    -->
+
+    <servlet-mapping>
+        <servlet-name>Jersey Servlet Container for CCS</servlet-name>
+        <url-pattern>/rest/*</url-pattern>
+    </servlet-mapping>
+
+    <!--
+  =================================================================================================
+
+    Security Configuration
+
+    This configuration section establishes role-based access to (by default) all of the CCS resources.
+    Each resource access requires at minimum a basic authentication to access.
+
+  =================================================================================================
+  -->
+
+
+    <security-constraint>
+
+        <display-name>Controller Proxy And Command Service Security</display-name>
+
+        <!--
+             Defines an URL pattern to include all resource access to CCS.
+             The HTTP method elements are not included meaning all HTTP requests must conform
+             to the configured security constraints...
+        -->
+        <web-resource-collection>
+
+            <web-resource-name>All Service Access to CCS</web-resource-name>
+
+            <description>
+                This configuration constraints all HTTP method access to all of the CCS resources.
+            </description>
+
+            <url-pattern>/*</url-pattern>
+
+        </web-resource-collection>
+
+
+        <!-- User roles required to access CCS resources... -->
+
+        <auth-constraint>
+            <role-name>ROLE_ADMIN</role-name>
+        </auth-constraint>
+
+    </security-constraint>
+
+
+    <!-- At minimum, require HTTP Basic authorization... -->
+
+    <login-config>
+        <auth-method>BASIC</auth-method>
+        <realm-name>ControllerProxyAndCommandService</realm-name>
+    </login-config>
+
+    <!-- Define the security roles... -->
+
+    <security-role>
+
+        <description>
+            ROLE_ADMIN is the administrator role for a specific account (it's the account owner).
+        </description>
+
+        <role-name>ROLE_ADMIN</role-name>
+
+    </security-role>
+
+</web-app>

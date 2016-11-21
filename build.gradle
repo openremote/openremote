@@ -19,6 +19,9 @@ allprojects {
         maven {
             url "https://oss.sonatype.org/content/repositories/snapshots/"
         }
+        maven {
+            url "http://m2repo.openremote.com/content/groups/public/"
+        }
     }
 
     version = projectVersion

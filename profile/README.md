@@ -34,8 +34,10 @@ keytool -list -v \
     -keystore /tmp/or-keystore.jks \
     -storepass CHANGE_ME_SSL_KEY_STORE_PASSWORD
 
-cp /tmp/or-keystore.jks demo-controller/conf/keystore.jks
-cp /tmp/or-truststore.jks demo-controller/conf/truststore.jks
+cp /tmp/or-keystore.jks controller/conf/keystore.jks
+cp /tmp/or-truststore.jks controller/conf/truststore.jks
+
+cp /tmp/or-keystore.jks beehive/ccs/conf/keystore.jks
 
 ```
 
@@ -50,11 +52,7 @@ TODO: Old Tomcat can't have separate key and store passwords...
 ## Deploying profiles
 
 ```
+./gradlew -p beehive/ccs clean war
+
 docker-compose -p <my_project_name> -f profile/mysql.yml -f profile/ccs.yml up
-```
-
-For example, to run a Controller and CCS:
-
-```
-dc -p my_project -f profile/dependencies/mysql.yml -f profile/ccs.yml
 ```

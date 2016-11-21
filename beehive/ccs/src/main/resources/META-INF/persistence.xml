@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  OpenRemote, the Home of the Digital Home.
+  Copyright 2008-2016, OpenRemote Inc.
+
+  See the contributors.txt file in the distribution for a
+  full listing of individual contributors.
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as
+  published by the Free Software Foundation; either version 3 of the
+  License, or (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+  GNU Affero General Public License for more details.
+
+  You should have received a copy of the GNU Affero General Public License
+  along with this program; if not, see <http://www.gnu.org/licenses/>.
+-->
+
+<persistence
+        xmlns="http://java.sun.com/xml/ns/persistence"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://java.sun.com/xml/ns/persistence
+                          http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd"
+        version="2.0">
+
+    <persistence-unit name="CCS-MySQL">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+
+        <class>org.openremote.controllercommand.domain.Account</class>
+        <class>org.openremote.controllercommand.domain.User</class>
+        <class>org.openremote.controllercommand.domain.Controller</class>
+        <class>org.openremote.controllercommand.domain.ControllerCommand</class>
+        <class>org.openremote.controllercommand.domain.InitiateProxyControllerCommand</class>
+
+        <properties>
+            <property name="javax.persistence.jdbc.driver" value="com.mysql.jdbc.Driver"/>
+            <!-- TODO Should we use SSL to connect to database? -->
+            <property name="javax.persistence.jdbc.url"
+                      value="jdbc:mysql://mysql:3306/openremote?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false"/>
+
+            <property name="javax.persistence.jdbc.user" value="openremote"/>
+            <property name="javax.persistence.jdbc.password" value="CHANGE_ME_DB_USER_PASSWORD"/>
+
+            <property name="hibernate.cache.provider_class" value="org.hibernate.cache.internal.NoCacheProvider"/>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect"/>
+            <property name="hibernate.hbm2ddl.auto" value="validate"/>
+            <property name="hibernate.current_session_context_class" value="managed"/>
+
+            <property name="hibernate.connection.provider_class"
+                      value="org.hibernate.c3p0.internal.C3P0ConnectionProvider"/>
+            <property name="hibernate.c3p0.min_size" value="5"/>
+            <property name="hibernate.c3p0.max_size" value="20"/>
+            <property name="hibernate.c3p0.acquire_increment" value="5"/>
+            <property name="hibernate.c3p0.max_statements" value="50"/>
+            <property name="hibernate.c3p0.timeout" value="1800"/>
+            <property name="hibernate.c3p0.idle_test_period" value="10"/>
+            <property name="hibernate.c3p0.testConnectionOnCheckin" value="true"/>
+            <property name="hibernate.c3p0.preferredTestQuery" value="SELECT 1"/>
+        </properties>
+
+    </persistence-unit>
+
+</persistence>

@@ -18,7 +18,6 @@ ADD conf/GVconfig.txt /opt/or-resources/data/GVconfig.txt
 
 # Fix some permissions
 USER root
-RUN apt-get update && apt-get -y install netcat
 RUN chown -R openremote.openremote /opt/or-resources
 USER openremote
 

@@ -1,7 +1,5 @@
 import com.bmuschko.gradle.docker.tasks.image.*
 
-ext.dockerImageName = "$dockerRepository/$project.name:$imageVersion".toString()
-
 task buildImage(type: DockerBuildImage) {
     inputDir = projectDir
     dockerFile = file("$projectDir/Dockerfile")
