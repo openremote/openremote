@@ -20,18 +20,18 @@
      Documentation at /docs/config/server.html
  -->
 <Server port="8005" shutdown="SHUTDOWN">
-    <Listener className="org.apache.catalina.startup.VersionLoggerListener" />
+    <Listener className="org.apache.catalina.startup.VersionLoggerListener"/>
     <!-- Security listener. Documentation at /docs/config/listeners.html
     <Listener className="org.apache.catalina.security.SecurityListener" />
     -->
     <!--APR library loader. Documentation at /docs/apr.html -->
-    <Listener className="org.apache.catalina.core.AprLifecycleListener" SSLEngine="on" />
+    <Listener className="org.apache.catalina.core.AprLifecycleListener" SSLEngine="on"/>
     <!--Initialize Jasper prior to webapps are loaded. Documentation at /docs/jasper-howto.html -->
-    <Listener className="org.apache.catalina.core.JasperListener" />
+    <Listener className="org.apache.catalina.core.JasperListener"/>
     <!-- Prevent memory leaks due to use of particular java/javax APIs-->
-    <Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener" />
-    <Listener className="org.apache.catalina.mbeans.GlobalResourcesLifecycleListener" />
-    <Listener className="org.apache.catalina.core.ThreadLocalLeakPreventionListener" />
+    <Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener"/>
+    <Listener className="org.apache.catalina.mbeans.GlobalResourcesLifecycleListener"/>
+    <Listener className="org.apache.catalina.core.ThreadLocalLeakPreventionListener"/>
 
     <!-- Global JNDI resources
          Documentation at /docs/jndi-resources-howto.html
@@ -44,11 +44,12 @@
                   type="org.apache.catalina.UserDatabase"
                   description="User database that can be updated and saved"
                   factory="org.apache.catalina.users.MemoryUserDatabaseFactory"
-                  pathname="conf/tomcat-users.xml" />
+                  pathname="conf/tomcat-users.xml"/>
 
         <Resource name="jdbc/AuthDB" auth="Container" type="javax.sql.DataSource"
                   maxActive="100" maxIdle="30" maxWait="10000"
-                  username="${BEEHIVE_DB_USERNAME}" password="${BEEHIVE_DB_PASSWORD}" driverClassName="${BEEHIVE_DB_DRIVER}"
+                  username="${BEEHIVE_DB_USERNAME}" password="${BEEHIVE_DB_PASSWORD}"
+                  driverClassName="${BEEHIVE_DB_DRIVER}"
                   url="${BEEHIVE_DB_URL}"
                   validationQuery="/* ping */ SELECT 1" testWhileIdle="true"/>
     </GlobalNamingResources>
@@ -97,10 +98,10 @@
                    connectionTimeout="-1"
                    maxThreads="150" SSLEnabled="true" scheme="https" secure="true"
                    keystoreFile="keystore.jks" keystorePass="${SSL_KEY_STORE_PASSWORD}"
-                   clientAuth="false" sslProtocol="TLS" />
+                   clientAuth="false" sslProtocol="TLS"/>
 
         <!-- Define an AJP 1.3 Connector on port 8009 -->
-        <Connector port="8009" protocol="AJP/1.3" redirectPort="8443" />
+        <Connector port="8009" protocol="AJP/1.3" redirectPort="8443"/>
 
 
         <!-- An Engine represents the entry point (within Catalina) that processes
@@ -136,7 +137,7 @@
                        userRoleTable="tomcat_user_role" roleNameCol="rolename"/>
             </Realm>
 
-            <Host name="localhost"  appBase="webapps"
+            <Host name="localhost" appBase="webapps"
                   unpackWARs="true" autoDeploy="true">
 
                 <!-- SingleSignOn valve, share authentication between web applications
@@ -148,10 +149,11 @@
                 <!-- Access log processes all example.
                      Documentation at: /docs/config/valve.html
                      Note: The pattern used is equivalent to using pattern="common" -->
+                <!--
                 <Valve className="org.apache.catalina.valves.AccessLogValve" directory="logs"
                        prefix="localhost_access_log." suffix=".txt"
                        pattern="%h %l %u %t &quot;%r&quot; %s %b" />
-
+                -->
             </Host>
         </Engine>
     </Service>

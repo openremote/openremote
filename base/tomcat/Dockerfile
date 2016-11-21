@@ -1,4 +1,4 @@
-FROM tomcat:7.0-jre7
+FROM tomcat:7.0.73-jre8
 
 # Remove default webapps
 RUN rm -rf /usr/local/tomcat/webapps/*

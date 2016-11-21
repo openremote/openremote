@@ -30,12 +30,6 @@ services:
   ccs:
     build:
       context: ../../beehive/ccs
-    ports:
-      - "8443:8443"
-      - "5005:5005"
-    # TODO Why is this necessary? Is CCS connecting with itself?
-    extra_hosts:
-     - "ccs:127.0.0.1"
     environment:
       BEEHIVE_DB_USERNAME: "openremote"
       BEEHIVE_DB_PASSWORD: "CHANGE_ME_DB_USER_PASSWORD"
@@ -47,3 +41,9 @@ services:
       JPDA_SUSPEND: "n"
     links:
       - mysql
+    ports:
+      - "8443:8443"
+      - "5005:5005"
+    # TODO Why is this necessary? Is CCS connecting with itself?
+    extra_hosts:
+     - "ccs:127.0.0.1"
