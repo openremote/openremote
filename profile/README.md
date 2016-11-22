@@ -52,7 +52,5 @@ TODO: Old Tomcat can't have separate key and store passwords...
 ## Deploying profiles
 
 ```
-./gradlew -p beehive/ccs clean war
-
 docker-compose -p <my_project_name> -f profile/mysql.yml -f profile/ccs.yml up
 ```

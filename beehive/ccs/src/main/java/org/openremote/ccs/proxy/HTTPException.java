@@ -1,7 +1,8 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * OpenRemote, the Home of the Digital Home.
+ * Copyright 2008-2016, OpenRemote Inc.
  *
- * See the CONTRIBUTORS.txt file in the distribution for a
+ * See the contributors.txt file in the distribution for a
  * full listing of individual contributors.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,17 +18,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared;
+package org.openremote.ccs.proxy;
 
-public interface Constants {
+@SuppressWarnings("serial")
+public class HTTPException extends Exception {
 
-    String APP_NAME = "OpenRemote Manager";
-    String APP_CLIENT_ID = "or-manager";
-    String MASTER_REALM = "master";
-    String MASTER_REALM_ADMIN_USER = "admin";
-    String PERSISTENCE_SEQUENCE_ID_GENERATOR = "SEQUENCE_ID_GENERATOR";
-    String PERSISTENCE_UNIQUE_ID_GENERATOR = "UNIQUE_ID_GENERATOR";
-    String PERSISTENCE_JSON_OBJECT_TYPE = "json_object";
-    String PERSISTENCE_JSON_ARRAY_TYPE = "json_array";
-    int ACCESS_TOKEN_LIFESPAN_SECONDS = 300; // 5 minutes
+    private int status;
+    private boolean json;
+    private boolean options;
+
+    public HTTPException(int status, boolean json, boolean options) {
+        super();
+        this.status = status;
+        this.json = json;
+        this.options = options;
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public boolean isJson() {
+        return json;
+    }
+
+    public boolean isOptionsRequest() {
+        return options;
+    }
 }

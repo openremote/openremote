@@ -5,7 +5,7 @@
         parameters = {
             @org.hibernate.annotations.Parameter(
                 name = "sequence_name",
-                value = "OR_MANAGER_SEQUENCE"
+                value = "OPENREMOTE_SEQUENCE"
             ),
             @org.hibernate.annotations.Parameter(
                 name = "initial_value",

@@ -23,7 +23,7 @@ import org.openremote.test.EventBusWebsocketEndpoint
 import spock.lang.Specification
 import spock.util.concurrent.BlockingVariables
 
-import static org.openremote.manager.shared.Constants.MANAGER_CLIENT_ID
+import static org.openremote.manager.shared.Constants.APP_CLIENT_ID
 import static org.openremote.manager.shared.Constants.MASTER_REALM
 
 class Controller2Test extends Specification implements ContainerTrait {
@@ -35,7 +35,7 @@ class Controller2Test extends Specification implements ContainerTrait {
 
         and: "an authenticated user"
         def realm = MASTER_REALM;
-        def accessToken = authenticate(container, realm, MANAGER_CLIENT_ID, "admin", "admin").token
+        def accessToken = authenticate(container, realm, APP_CLIENT_ID, "admin", "admin").token
 
         and: "a client target"
         def clientTarget = getClientTarget(createClient(container).build(), serverUri(serverPort), realm)
@@ -108,7 +108,7 @@ class Controller2Test extends Specification implements ContainerTrait {
 
         and: "an authenticated user"
         def realm = MASTER_REALM;
-        def accessToken = authenticate(container, realm, MANAGER_CLIENT_ID, "admin", "admin").token
+        def accessToken = authenticate(container, realm, APP_CLIENT_ID, "admin", "admin").token
 
         and: "a client target"
         def clientTarget = getClientTarget(createClient(container).build(), serverUri(serverPort), realm)

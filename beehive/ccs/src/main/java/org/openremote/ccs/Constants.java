@@ -17,17 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared;
+package org.openremote.ccs;
 
 public interface Constants {
 
-    String APP_NAME = "OpenRemote Manager";
-    String APP_CLIENT_ID = "or-manager";
+    String APP_NAME = "OpenRemote Controller Command Service";
+    String APP_CLIENT_ID = "or-ccs";
     String MASTER_REALM = "master";
     String MASTER_REALM_ADMIN_USER = "admin";
     String PERSISTENCE_SEQUENCE_ID_GENERATOR = "SEQUENCE_ID_GENERATOR";
-    String PERSISTENCE_UNIQUE_ID_GENERATOR = "UNIQUE_ID_GENERATOR";
-    String PERSISTENCE_JSON_OBJECT_TYPE = "json_object";
-    String PERSISTENCE_JSON_ARRAY_TYPE = "json_array";
-    int ACCESS_TOKEN_LIFESPAN_SECONDS = 300; // 5 minutes
 }

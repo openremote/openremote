@@ -2,7 +2,6 @@ rootProject.name = "openremote"
 
 include "base:postgres",
         "base:mysql",
-        "base:tomcat",
         "base:keycloak",
         "container",
         "controller",

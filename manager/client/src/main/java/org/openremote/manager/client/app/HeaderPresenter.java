@@ -132,6 +132,6 @@ public class HeaderPresenter implements HeaderView.Presenter {
 
     @Override
     public boolean isUserInRole(String role) {
-        return securityService.hasResourceRoleOrIsAdmin(role, Constants.MANAGER_CLIENT_ID);
+        return securityService.hasResourceRoleOrIsAdmin(role, Constants.APP_CLIENT_ID);
     }
 }

@@ -28,11 +28,15 @@ import io.undertow.server.handlers.proxy.SimpleProxyClientProvider;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.keycloak.adapters.KeycloakDeployment;
+import org.keycloak.admin.client.resource.ClientResource;
+import org.keycloak.admin.client.resource.ClientsResource;
 import org.keycloak.admin.client.resource.RealmsResource;
 import org.keycloak.admin.client.resource.ServerInfoResource;
 import org.keycloak.common.enums.SslRequired;
 import org.keycloak.common.util.PemUtils;
 import org.keycloak.representations.adapters.config.AdapterConfig;
+import org.keycloak.representations.idm.ClientRepresentation;
+import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.container.Constants;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
@@ -48,6 +52,8 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -71,6 +77,9 @@ public class IdentityService implements ContainerService {
     public static final String IDENTITY_NETWORK_HOST_DEFAULT = "localhost";
     public static final String IDENTITY_NETWORK_WEBSERVER_PORT = "IDENTITY_NETWORK_WEBSERVER_PORT";
     public static final int IDENTITY_NETWORK_WEBSERVER_PORT_DEFAULT = 8080;
+    public static final String IDENTITY_SESSION_TIMEOUT_SECONDS = "IDENTITY_SESSION_TIMEOUT_SECONDS";
+    public static final int IDENTITY_SESSION_TIMEOUT_SECONDS_DEFAULT = 10800; // 3 hours
+
     public static final String KEYCLOAK_HOST = "KEYCLOAK_HOST";
     public static final String KEYCLOAK_HOST_DEFAULT = "192.168.99.100";
     public static final String KEYCLOAK_PORT = "KEYCLOAK_PORT";
@@ -91,12 +100,14 @@ public class IdentityService implements ContainerService {
     protected LoadingCache<ClientRealm.Key, ClientRealm> clientApplicationCache;
     protected boolean keycloakReverseProxy;
     protected String clientId;
+    protected int sessionTimeoutSeconds;
 
     @Override
     public void init(Container container) throws Exception {
         boolean identityNetworkSecure = container.getConfigBoolean(IDENTITY_NETWORK_SECURE, IDENTITY_NETWORK_SECURE_DEFAULT);
         String identityNetworkHost = container.getConfig(IDENTITY_NETWORK_HOST, IDENTITY_NETWORK_HOST_DEFAULT);
         int identityNetworkPort = container.getConfigInteger(IDENTITY_NETWORK_WEBSERVER_PORT, IDENTITY_NETWORK_WEBSERVER_PORT_DEFAULT);
+        sessionTimeoutSeconds = container.getConfigInteger(IDENTITY_SESSION_TIMEOUT_SECONDS, IDENTITY_SESSION_TIMEOUT_SECONDS_DEFAULT);
 
         UriBuilder externalAuthServerUrl = UriBuilder.fromUri("")
             .scheme(identityNetworkSecure ? "https" : "http")
@@ -267,8 +278,9 @@ public class IdentityService implements ContainerService {
                 LOG.fine("Client '" + clientId + "' for realm '" + realm + "' not found on identity provider");
             } else {
                 LOG.log(
-                    Level.INFO,
-                    "Error loading client '" + clientId + "' for realm '" + realm + "' from identity provider",
+                    Level.WARNING,
+                    "Error loading client '" + clientId + "' for realm '" + realm + "' from identity provider, " +
+                        "exception from call to identity provider follows",
                     ex
                 );
             }
@@ -340,5 +352,44 @@ public class IdentityService implements ContainerService {
 
     public void setClientId(String clientId) {
         this.clientId = clientId;
+    }
+
+    public void configureRealm(RealmRepresentation realmRepresentation, int accessTokenLifespanSeconds) {
+        realmRepresentation.setDisplayNameHtml(
+            "<div class=\"kc-logo-text\"><span>OpenRemote: "
+                + (realmRepresentation.getDisplayName().replaceAll("[^A-Za-z0-9]", ""))
+                + " </span></div>"
+        );
+        realmRepresentation.setAccessTokenLifespan(accessTokenLifespanSeconds);
+        realmRepresentation.setLoginTheme("openremote");
+        realmRepresentation.setAccountTheme("openremote");
+        realmRepresentation.setSsoSessionIdleTimeout(sessionTimeoutSeconds);
+
+        // TODO: Make SSL setup configurable
+        realmRepresentation.setSslRequired(SslRequired.NONE.toString());
+    }
+
+    public ClientRepresentation createClientApplication(String realm, String clientId, String appName, boolean isDevMode) {
+        ClientRepresentation client = new ClientRepresentation();
+
+        client.setClientId(clientId);
+        client.setName(appName);
+        client.setPublicClient(true);
+
+        if (isDevMode) {
+            // We need direct access for integration tests
+            LOG.warning("### Allowing direct access grants for client app '" + appName + "', this must NOT be used in production! ###");
+            client.setDirectAccessGrantsEnabled(true);
+        }
+
+        String callbackUrl = UriBuilder.fromUri("/").path(realm).path("*").build().toString();
+        List<String> redirectUrls = new ArrayList<>();
+        redirectUrls.add(callbackUrl);
+        client.setRedirectUris(redirectUrls);
+
+        String baseUrl = UriBuilder.fromUri("/").path(realm).build().toString();
+        client.setBaseUrl(baseUrl);
+
+        return client;
     }
 }

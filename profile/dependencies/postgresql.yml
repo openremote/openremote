@@ -1,0 +1,19 @@
+#
+# PostgreSQL database service(s)
+#
+version: '2'
+services:
+
+  postgresql:
+    build:
+      context: ../../base/postgres
+    environment:
+      TZ: "Europe/Zurich"
+      # This is the database superuser
+      POSTGRES_PASSWORD: CHANGE_ME_DB_SUPERUSER_PASSWORD
+      # Create default database when started (see scripts)
+      POSTGRES_DB: openremote
+      OPENREMOTE_USERNAME: openremote
+      OPENREMOTE_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
+    ports:
+      - "5432:5432"

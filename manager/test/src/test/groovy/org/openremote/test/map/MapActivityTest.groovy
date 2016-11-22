@@ -15,12 +15,11 @@ import org.openremote.manager.shared.Consumer
 import org.openremote.manager.shared.Runnable
 import org.openremote.manager.shared.http.EntityReader
 import org.openremote.manager.shared.map.MapResource
-import org.openremote.manager.shared.validation.ConstraintViolationReport
 import org.openremote.test.ContainerTrait
 import spock.lang.Ignore
 import spock.lang.Specification
 
-import static org.openremote.manager.shared.Constants.MANAGER_CLIENT_ID
+import static org.openremote.manager.shared.Constants.APP_CLIENT_ID
 import static org.openremote.manager.shared.Constants.MASTER_REALM
 
 // TODO Fix this when we do Asset testing
@@ -42,7 +41,7 @@ class MapActivityTest extends Specification implements ContainerTrait {
 
         and: "An authenticated user"
         def realm = MASTER_REALM;
-        def accessTokenResponse = authenticate(container, realm, MANAGER_CLIENT_ID, "test", "test")
+        def accessTokenResponse = authenticate(container, realm, APP_CLIENT_ID, "test", "test")
         def securityService = Stub(SecurityService) {
             getRealm() >> realm;
             getToken() >> accessTokenResponse.getToken();

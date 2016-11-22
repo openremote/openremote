@@ -18,7 +18,7 @@ import spock.lang.Specification
 
 import javax.ws.rs.NotFoundException
 
-import static org.openremote.manager.shared.Constants.MANAGER_CLIENT_ID
+import static org.openremote.manager.shared.Constants.APP_CLIENT_ID
 import static org.openremote.manager.shared.Constants.MASTER_REALM
 
 @Ignore
@@ -31,7 +31,7 @@ class EntityResourceTest extends Specification implements ContainerTrait {
 
         and: "an authenticated user"
         def realm = MASTER_REALM;
-        def accessTokenResponse = authenticate(container, realm, MANAGER_CLIENT_ID, "test", "test")
+        def accessTokenResponse = authenticate(container, realm, APP_CLIENT_ID, "test", "test")
 
         and: "a test client target"
         def client = createClient(container)
@@ -132,7 +132,7 @@ class EntityResourceTest extends Specification implements ContainerTrait {
 
         and: "an authenticated user"
         def realm = MASTER_REALM;
-        def accessTokenResponse = authenticate(container, realm, MANAGER_CLIENT_ID, "test", "test")
+        def accessTokenResponse = authenticate(container, realm, APP_CLIENT_ID, "test", "test")
 
         and: "a test client target"
         def client = createClient(container)

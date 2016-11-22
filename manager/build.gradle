@@ -6,9 +6,9 @@ task createDockerfile(type: Dockerfile) {
     destFile = project.file("$project.buildDir/install/Dockerfile")
     from "java:8"
     environmentVariable "WEBSERVER_DOCROOT", "webapp"
-    environmentVariable "LOGGING_CONFIG_FILE", "config/logging.properties"
-    environmentVariable "MAP_TILES_PATH", "config/mapdata.mbtiles"
-    environmentVariable "MAP_SETTINGS_PATH", "config/mapsettings.json"
+    environmentVariable "LOGGING_CONFIG_FILE", "conf/logging.properties"
+    environmentVariable "MAP_TILES_PATH", "conf/mapdata.mbtiles"
+    environmentVariable "MAP_SETTINGS_PATH", "conf/mapsettings.json"
     addFile project(':manager:server').distributions.main.baseName, "/opt/app"
     addFile project(':manager:client').distributions.main.baseName, "/opt/app"
     exposePort 8080

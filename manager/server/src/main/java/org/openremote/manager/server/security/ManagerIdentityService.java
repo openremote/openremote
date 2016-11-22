@@ -23,7 +23,6 @@ import org.keycloak.admin.client.resource.ClientResource;
 import org.keycloak.admin.client.resource.ClientsResource;
 import org.keycloak.admin.client.resource.RealmsResource;
 import org.keycloak.admin.client.resource.RolesResource;
-import org.keycloak.common.enums.SslRequired;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
@@ -34,7 +33,6 @@ import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.Constants;
 import org.openremote.manager.shared.security.Tenant;
 
-import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -42,23 +40,18 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import static org.openremote.container.json.JsonUtil.convert;
-import static org.openremote.manager.shared.Constants.MANAGER_CLIENT_ID;
-import static org.openremote.manager.shared.Constants.MANAGE_NAME;
-import static org.openremote.manager.shared.Constants.MASTER_REALM;
+import static org.openremote.manager.shared.Constants.*;
 
 public class ManagerIdentityService extends IdentityService {
 
     private static final Logger LOG = Logger.getLogger(ManagerIdentityService.class.getName());
-
-    public static final String IDENTITY_TIMEOUT_SESSION_SECONDS = "IDENTITY_TIMEOUT_SESSION_SECONDS";
-    public static final int IDENTITY_TIMEOUT_SESSION_SECONDS_DEFAULT = 10800; // 3 hours
 
     protected Container container;
 
     @Override
     public void init(Container container) throws Exception {
         this.container = container;
-        setClientId(Constants.MANAGER_CLIENT_ID);
+        setClientId(Constants.APP_CLIENT_ID);
         super.init(container);
         setKeycloakReverseProxy(true);
     }
@@ -89,32 +82,6 @@ public class ManagerIdentityService extends IdentityService {
         return getRealms(bearerAuth, true);
     }
 
-    public ClientRepresentation createManagerClient(String realm) {
-        ClientRepresentation managerClient = new ClientRepresentation();
-
-        managerClient.setClientId(MANAGER_CLIENT_ID);
-
-        managerClient.setName(MANAGE_NAME);
-
-        managerClient.setPublicClient(true);
-
-        if (container.isDevMode()) {
-            // We need direct access for integration tests
-            LOG.warning("Allowing direct access grants for manager client, this must NOT be used in production");
-            managerClient.setDirectAccessGrantsEnabled(true);
-        }
-
-        String callbackUrl = UriBuilder.fromUri("/").path(realm).path("*").build().toString();
-        List<String> redirectUrls = new ArrayList<>();
-        redirectUrls.add(callbackUrl);
-        managerClient.setRedirectUris(redirectUrls);
-
-        String baseUrl = UriBuilder.fromUri("/").path(realm).build().toString();
-        managerClient.setBaseUrl(baseUrl);
-
-        return managerClient;
-    }
-
     public Tenant[] getTenants(String bearerAuth) {
         List<RealmRepresentation> realms = getRealms(bearerAuth).findAll();
 
@@ -142,6 +109,10 @@ public class ManagerIdentityService extends IdentityService {
         );
     }
 
+    public void configureRealm(RealmRepresentation realmRepresentation) {
+        configureRealm(realmRepresentation, ACCESS_TOKEN_LIFESPAN_SECONDS);
+    }
+
     public void createTenant(String bearerAuth, Tenant tenant) throws Exception {
         LOG.fine("Create tenant: " + tenant);
         RealmRepresentation realmRepresentation = convert(container.JSON, RealmRepresentation.class, tenant);
@@ -151,29 +122,14 @@ public class ManagerIdentityService extends IdentityService {
         createClientApplication(bearerAuth, realmRepresentation.getRealm());
     }
 
-    public void configureRealm(RealmRepresentation realmRepresentation) {
-        realmRepresentation.setDisplayNameHtml(
-            "<div class=\"kc-logo-text\"><span>OpenRemote: "
-                + (realmRepresentation.getDisplayName().replaceAll("[^A-Za-z0-9]", ""))
-                + " </span></div>"
-        );
-        realmRepresentation.setAccessTokenLifespan(Constants.ACCESS_TOKEN_LIFESPAN_SECONDS);
-        realmRepresentation.setLoginTheme("openremote");
-        realmRepresentation.setAccountTheme("openremote");
-        realmRepresentation.setSsoSessionIdleTimeout(
-            container.getConfigInteger(IDENTITY_TIMEOUT_SESSION_SECONDS, IDENTITY_TIMEOUT_SESSION_SECONDS_DEFAULT)
-        );
-
-        // TODO: Make SSL setup configurable
-        realmRepresentation.setSslRequired(SslRequired.NONE.toString());
-    }
-
     public void createClientApplication(String bearerAuth, String realm) {
         ClientsResource clientsResource = getRealms(bearerAuth).realm(realm).clients();
-        ClientRepresentation managerClient = createManagerClient(realm);
-        clientsResource.create(managerClient);
-        managerClient = clientsResource.findByClientId(managerClient.getClientId()).get(0);
-        ClientResource clientResource = clientsResource.get(managerClient.getId());
+        ClientRepresentation client = createClientApplication(
+            realm, APP_CLIENT_ID, APP_NAME, container.isDevMode()
+        );
+        clientsResource.create(client);
+        client = clientsResource.findByClientId(client.getClientId()).get(0);
+        ClientResource clientResource = clientsResource.get(client.getId());
         addDefaultRoles(clientResource.roles());
     }
 

@@ -1,73 +1,52 @@
 apply plugin: "java"
-apply plugin: "war"
+apply plugin: "application"
+
+mainClassName = "org.openremote.ccs.Server"
 
 dependencies {
+
+    compile project(":container")
 
     compile "org.openremote:or-commons:0.1.0"
     compile "org.openremote:or-object-model:0.2.1"
 
+    // TODO Replace with Jackson
     compile "org.json:json:20090211"
-
     compile "net.sf.flexjson:flexjson:$flexjsonVersion"
 
-    compile "org.slf4j:slf4j-api:$slf4jVersion"
-    compile "org.slf4j:slf4j-jdk14:$slf4jVersion"
-    compile "org.slf4j:jcl-over-slf4j:$slf4jVersion"
-    compile "org.slf4j:log4j-over-slf4j:$slf4jVersion"
-
-    compile "org.glassfish.jersey.containers:jersey-container-servlet-core:$jerseyVersion"
-    compile "javax.ws.rs:javax.ws.rs-api:$jaxrsVersion"
-
-    compile "org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1.0.0.Final"
-
-    compile "org.hibernate:hibernate-core:$hibernateVersion"
-    compile "org.hibernate:hibernate-entitymanager:$hibernateVersion"
-    compile "org.hibernate:hibernate-c3p0:$hibernateVersion"
-
-    compile "mysql:mysql-connector-java:$mysqlConnectorVersion"
-
-    compile "commons-lang:commons-lang:$commonsLangVersion"
-    compile "commons-codec:commons-codec:$commonsCodecVersion"
-    compile "commons-dbcp:commons-dbcp:$commonsDbcpVersion"
-
     compile "org.springframework.security:spring-security-core:$springVersion"
-
-    providedCompile "javax.servlet:javax.servlet-api:$servletVersion"
-
-    testCompile "junit:junit:$junitVersion"
 }
 
-war {
-    archiveName = 'ccs.war'
-
-    // TODO: Replace with proper config system
-    if (project.hasProperty("targetEnv")) {
-        def targetEnvFolder = 'environments/' + targetEnv;
-        if (new File(targetEnvFolder).exists()) {
-            from(targetEnvFolder) {
-                include '*.properties'
-                include '*.xml'
-                exclude 'web.xml'
-                into ('WEB-INF/classes')
+distributions {
+    main {
+        contents {
+            from("conf") {
+                into "conf"
             }
-            from(targetEnvFolder) {
-                include 'web.xml'
-                into ('WEB-INF')
-            }
-        } else {
-            println "*** No configuration exists for target environment"
         }
-    } else {
-        println "*** No target environment defined"
     }
+}
+
+installDist {
+    into "${buildDir}/install/$distributions.main.baseName"
 }
 
 import com.bmuschko.gradle.docker.tasks.image.*
 
+task createDockerfile(type: Dockerfile) {
+    destFile = project.file("$project.buildDir/install/Dockerfile")
+    from "java:8"
+    environmentVariable "WEBSERVER_DOCROOT", "webapp"
+    environmentVariable "LOGGING_CONFIG_FILE", "conf/logging.properties"
+    addFile project(':beehive:ccs').distributions.main.baseName, "/opt/app"
+    exposePort 8080
+    workingDir "/opt/app"
+    entryPoint "/opt/app/bin/${project(":beehive:ccs").name}"
+}
+
 task buildImage(type: DockerBuildImage) {
-    dependsOn war
+    dependsOn ":beehive:ccs:installDist", createDockerfile
     inputDir = projectDir
-    dockerFile = file("$projectDir/Dockerfile")
     tag = dockerImageName
 }
 

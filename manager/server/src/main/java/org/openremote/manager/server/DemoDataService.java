@@ -147,7 +147,7 @@ public class DemoDataService implements ContainerService {
         // Find out if there is a client already present for this application, if so, delete it
         fromCallable(clientsResource::findAll)
             .flatMap(Observable::from)
-            .filter(clientRepresentation -> clientRepresentation.getClientId().equals(MANAGER_CLIENT_ID))
+            .filter(clientRepresentation -> clientRepresentation.getClientId().equals(APP_CLIENT_ID))
             .map(ClientRepresentation::getId)
             .subscribe(clientObjectId -> {
                 clientsResource.get(clientObjectId).remove();
@@ -155,7 +155,7 @@ public class DemoDataService implements ContainerService {
 
         identityService.createClientApplication(accessToken, masterRealm.getRealm());
 
-        String clientObjectId = fromCallable(() -> clientsResource.findByClientId(MANAGER_CLIENT_ID))
+        String clientObjectId = fromCallable(() -> clientsResource.findByClientId(APP_CLIENT_ID))
             .flatMap(Observable::from)
             .map(ClientRepresentation::getId)
             .toBlocking().singleOrDefault(null);

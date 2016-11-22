@@ -32,7 +32,7 @@ import org.openremote.test.ContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.BlockingVariables
 
-import static org.openremote.manager.shared.Constants.MANAGER_CLIENT_ID
+import static org.openremote.manager.shared.Constants.APP_CLIENT_ID
 import static org.openremote.manager.shared.Constants.MASTER_REALM
 
 class AdminUsersActivityTest extends Specification implements ContainerTrait, GwtClientTrait {
@@ -45,7 +45,7 @@ class AdminUsersActivityTest extends Specification implements ContainerTrait, Gw
 
         and: "An authenticated user and client security service"
         def realm = MASTER_REALM;
-        def accessToken = authenticate(container, realm, MANAGER_CLIENT_ID, "admin", "admin").token
+        def accessToken = authenticate(container, realm, APP_CLIENT_ID, "admin", "admin").token
         def securityService = Stub(SecurityService) {
             getRealm() >> realm
             getToken() >> accessToken

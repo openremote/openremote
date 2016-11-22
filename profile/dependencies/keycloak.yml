@@ -1,0 +1,21 @@
+#
+# Keycloak identity provider
+#
+version: '2'
+services:
+
+  keycloak:
+    build:
+      context: ../../base/keycloak
+    environment:
+      TZ: "Europe/Zurich"
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+      KEYCLOAK_LOGLEVEL: INFO
+      POSTGRES_DATABASE: openremote
+      POSTGRES_USER: openremote
+      POSTGRES_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
+    links:
+      - postgresql
+    ports:
+      - "8081:8080"

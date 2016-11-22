@@ -135,6 +135,16 @@ public class Container {
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
     }
 
+    public void putConfig(String variable, String value) {
+        config.put(variable, value);
+    }
+
+    public void putConfigIfEmpty(String variable, String value) {
+        if (!config.hasNonNull(variable)) {
+            putConfig(variable, value);
+        }
+    }
+
     public String getConfig(String variable, String defaultValue) {
         return config.has(variable) ? config.get(variable).asText() : defaultValue;
     }
