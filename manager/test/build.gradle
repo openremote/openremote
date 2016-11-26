@@ -10,10 +10,6 @@ dependencies {
     compile project(":manager:connector:controller2")
 
     compile "junit:junit:$junitVersion"
-    compile "org.spockframework:spock-core:$spockVersion"
-    compile "org.objenesis:objenesis:$objenesisVersion"
-    compile "org.glassfish.tyrus:tyrus-client:$tyrusVersion"
-    compile "org.glassfish.tyrus:tyrus-container-grizzly-client:$tyrusVersion"
 }
 
 test {

@@ -1,6 +1,9 @@
 apply plugin: "java"
+apply plugin: "groovy"
 
 dependencies {
+
+    compile "org.codehaus.groovy:groovy-all:$groovyVersion"
 
     compile "org.slf4j:slf4j-api:$slf4jVersion"
     compile "org.slf4j:slf4j-jdk14:$slf4jVersion"
@@ -47,4 +50,10 @@ dependencies {
     compile "org.apache.camel:camel-jackson:$camelVersion"
     compile "org.apache.camel:camel-script:$camelVersion"
     compile "org.apache.camel:camel-groovy:$camelVersion"
+
+    // Test environment dependencies
+    compile "org.glassfish.tyrus:tyrus-client:$tyrusVersion"
+    compile "org.glassfish.tyrus:tyrus-container-grizzly-client:$tyrusVersion"
+    compile "org.objenesis:objenesis:$objenesisVersion"
+
 }

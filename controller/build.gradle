@@ -1,3 +1,20 @@
+apply plugin: "java"
+apply plugin: "application"
+apply plugin: "groovy"
+
+mainClassName = "org.openremote.controller.Main"
+
+dependencies {
+
+    compile project(":container")
+
+    compile "org.drools:drools-compiler:6.5.0.Final"
+    compile "org.drools:drools-decisiontables:6.5.0.Final"
+
+    testCompile "junit:junit:$junitVersion"
+    testCompile "org.spockframework:spock-core:$spockVersion"
+}
+
 import com.bmuschko.gradle.docker.tasks.image.*
 
 task buildImage(type: DockerBuildImage) {

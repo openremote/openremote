@@ -1,0 +1,15 @@
+
+
+Ruleset,     My CSV Rules Examples
+Import,      org.openremote.controller.event.Event
+Variables,   org.openremote.controller.statuscache.RangeFacade ranges
+
+
+,RuleTable,Modify Range Values in Decision Table
+,CONDITION,ACTION
+,evt: Event,
+(descriptions),$name : source,"ranges.name($name).value($param);"
+Case,            Event Source,   New Value
+Fire Alarm,"test level mod 555",55
+Ice Age,"test level mod 666",6666
+Comfort,"test level mod 777",-77

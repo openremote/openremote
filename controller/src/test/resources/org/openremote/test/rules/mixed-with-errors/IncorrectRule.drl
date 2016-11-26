@@ -1,0 +1,10 @@
+package org.openremote.test.rules
+
+import org.openremote.controller.event.*;
+
+rule "Incorrect Event Modification Attempt"
+when
+  $event : Event( sourceID == 123 )
+then
+  $event.setSourceID( 321 );
+end

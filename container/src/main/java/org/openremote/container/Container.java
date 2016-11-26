@@ -27,8 +27,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.container.json.ElementalJsonModule;
+import org.openremote.container.util.LogUtil;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -43,30 +43,9 @@ import java.util.stream.StreamSupport;
 public class Container {
 
     public static final Logger LOG;
-    public static final String LOGGING_CONFIG_FILE = "LOGGING_CONFIG_FILE";
 
     static {
-        // If no JUL configuration is provided
-        if (System.getProperty("java.util.logging.config.file") == null) {
-            // Load the logging configuration file specified with an environment variable
-            if (System.getenv(LOGGING_CONFIG_FILE) != null) {
-                try (InputStream is = Files.newInputStream(Paths.get(System.getenv(LOGGING_CONFIG_FILE)))) {
-                    LogManager.getLogManager().readConfiguration(is);
-                } catch (Exception ex) {
-                    throw new ExceptionInInitializerError(ex);
-                }
-                // Or load a default configuration from the classpath
-            } else {
-                try (InputStream is = Container.class.getClassLoader().getResourceAsStream("logging.properties")) {
-                    if (is != null) {
-                        LogManager.getLogManager().readConfiguration(is);
-                    }
-                } catch (Exception ex) {
-                    throw new ExceptionInInitializerError(ex);
-                }
-            }
-        }
-
+        LogUtil.configureLogging("logging.properties");
         LOG = Logger.getLogger(Container.class.getName());
     }
 
@@ -78,6 +57,7 @@ public class Container {
     protected final ObjectNode config;
     protected final boolean devMode;
 
+    protected boolean running;
     protected final Map<Class<? extends ContainerService>, ContainerService> services = new LinkedHashMap<>();
 
     public Container() {
@@ -161,45 +141,56 @@ public class Container {
         return devMode;
     }
 
-    synchronized public CompletableFuture start() {
+    public CompletableFuture start() {
         return CompletableFuture.runAsync(() -> {
-            LOG.info(">>> Starting runtime container...");
-            try {
-                for (ContainerService service : getServices()) {
-                    LOG.fine("Initializing service: " + service);
-                    service.init(Container.this);
+            synchronized (services) {
+                if (running)
+                    return;
+                LOG.info(">>> Starting runtime container...");
+                try {
+                    for (ContainerService service : getServices()) {
+                        LOG.fine("Initializing service: " + service);
+                        service.init(Container.this);
+                    }
+                    for (int counter = getServices().length - 1; counter >= 0; counter--) {
+                        ContainerService service = getServices()[counter];
+                        LOG.fine("Configuring service: " + service);
+                        service.configure(Container.this);
+                    }
+                    for (ContainerService service : getServices()) {
+                        LOG.fine("Starting service: " + service);
+                        service.start(Container.this);
+                    }
+                } catch (RuntimeException ex) {
+                    throw ex;
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
                 }
-                for (int counter = getServices().length - 1; counter >= 0; counter--) {
-                    ContainerService service = getServices()[counter];
-                    LOG.fine("Configuring service: " + service);
-                    service.configure(Container.this);
-                }
-                for (ContainerService service : getServices()) {
-                    LOG.fine("Starting service: " + service);
-                    service.start(Container.this);
-                }
-            } catch (RuntimeException ex) {
-                throw ex;
-            } catch (Exception ex) {
-                throw new RuntimeException(ex);
+                running = true;
+                LOG.info(">>> Runtime container startup complete");
             }
-            LOG.info(">>> Runtime container startup complete");
         });
     }
 
-    synchronized public void stop() {
-        LOG.info("<<< Stopping runtime container...");
-        List<ContainerService> servicesToStop = Arrays.asList(getServices());
-        Collections.reverse(servicesToStop);
-        for (ContainerService service : servicesToStop) {
-            LOG.fine("Stopping service: " + service);
+    public void stop() {
+        synchronized (services) {
+            if (!running)
+                return;
+            LOG.info("<<< Stopping runtime container...");
+            List<ContainerService> servicesToStop = Arrays.asList(getServices());
+            Collections.reverse(servicesToStop);
             try {
-                service.stop(this);
+                for (ContainerService service : servicesToStop) {
+                    LOG.fine("Stopping service: " + service);
+                    service.stop(this);
+                }
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
+            } finally {
+                running = false;
             }
+            LOG.info("<<< Runtime container stopped");
         }
-        LOG.info("<<< Runtime container stopped");
     }
 
     /**
@@ -222,33 +213,39 @@ public class Container {
         containerThread.start();
     }
 
-    synchronized public void addService(ContainerService service) {
-        services.put(service.getClass(), service);
+    public void addService(ContainerService service) {
+        synchronized (service) {
+            services.put(service.getClass(), service);
+        }
     }
 
-    synchronized public ContainerService[] getServices() {
-        return services.values().toArray(new ContainerService[services.size()]);
+    public ContainerService[] getServices() {
+        synchronized (services) {
+            return services.values().toArray(new ContainerService[services.size()]);
+        }
     }
 
     /**
      * Get a service instance matching the specified type exactly, or if that yields
      * no result, try to get the first service instance that has a matching interface.
      */
-    synchronized public <T extends ContainerService> T getService(Class<T> type) {
-        //noinspection unchecked
-        T service = (T) services.get(type);
-        if (service == null) {
-            for (ContainerService containerService : services.values()) {
-                if (type.isAssignableFrom(containerService.getClass())) {
-                    //noinspection unchecked
-                    service = (T) containerService;
-                    break;
+    public <T extends ContainerService> T getService(Class<T> type) {
+        synchronized (services) {
+            //noinspection unchecked
+            T service = (T) services.get(type);
+            if (service == null) {
+                for (ContainerService containerService : services.values()) {
+                    if (type.isAssignableFrom(containerService.getClass())) {
+                        //noinspection unchecked
+                        service = (T) containerService;
+                        break;
+                    }
                 }
             }
+            if (service == null)
+                throw new IllegalStateException("Missing required service: " + type);
+            return service;
         }
-        if (service == null)
-            throw new IllegalStateException("Missing required service: " + type);
-        return service;
     }
 
 }

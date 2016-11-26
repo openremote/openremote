@@ -1,0 +1,12 @@
+package org.openremote.test.rules
+
+import org.openremote.controller.event.*;
+
+global org.openremote.controller.statuscache.RangeFacade ranges;
+
+rule "Modify Level State Above Max"
+when
+  Event( sourceID == 123, $name : source )
+then
+  ranges.name($name).value( 321 );
+end

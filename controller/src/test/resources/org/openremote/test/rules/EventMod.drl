@@ -1,0 +1,12 @@
+package org.openremote.test.rules;
+
+import org.openremote.controller.event.*;
+
+global org.openremote.controller.statuscache.SwitchFacade switches;
+
+rule "Modify Switch State"
+when
+  $switch : SwitchEvent(sourceID == 123)
+then
+  switches.name($switch.getSource()).off();
+end

@@ -26,7 +26,7 @@ import javax.websocket.MessageHandler
 import javax.websocket.Session
 import java.util.concurrent.TimeoutException
 
-public class BlockingWebsocketEndpoint extends Endpoint {
+class BlockingWebsocketEndpoint extends Endpoint {
 
     static final def DEFAULT_TIMEOUT_MILLIS = 5000
     
