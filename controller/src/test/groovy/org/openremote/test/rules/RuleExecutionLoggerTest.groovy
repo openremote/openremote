@@ -36,7 +36,7 @@ class RuleExecutionLoggerTest extends Specification implements ContainerTrait {
         KieFileSystem kfs = kieServices.newKieFileSystem()
         kfs.writeKModuleXML(kieModuleModel.toXML())
 
-        kfs.write(ResourceFactory.newClassPathResource("org/openremote/test/rules/TestRuleFiring.drl")
+        kfs.write(ResourceFactory.newClassPathResource("org/openremote/test/rules/simple/TestRuleFiring.drl")
         );
         def kieBuilder = kieServices.newKieBuilder(kfs).buildAll();
 

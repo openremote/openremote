@@ -5,5 +5,5 @@ public interface ExecutableCommand extends Command {
     /**
      * Send some executable command to device.
      */
-    void send();
+    void send(String value);
 }

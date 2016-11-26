@@ -10,6 +10,7 @@ dependencies {
     compile project(":manager:connector:controller2")
 
     compile "junit:junit:$junitVersion"
+    compile "org.spockframework:spock-core:$spockVersion"
 }
 
 test {

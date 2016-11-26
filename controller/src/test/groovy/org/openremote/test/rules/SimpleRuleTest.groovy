@@ -21,7 +21,7 @@ import static org.kie.api.io.ResourceType.DRL
  * Basic rule engine test, trigger a rule through an event.
  * The rule dispatches a new event, replacing the original event.
  */
-class EventModTest extends Specification implements ContainerTrait {
+class SimpleRuleTest extends Specification implements ContainerTrait {
 
     def "Sensor event replaced by rule-triggered event"() {
 
@@ -31,7 +31,7 @@ class EventModTest extends Specification implements ContainerTrait {
             protected Stream<Resource> getResources(KieServices kieServices) {
                 Stream.of(
                         kieServices.getResources().newClassPathResource(
-                                "org/openremote/test/rules/EventMod.drl"
+                                "org/openremote/test/rules/simple/EventMod.drl"
                         ).setResourceType(DRL)
                 )
             }

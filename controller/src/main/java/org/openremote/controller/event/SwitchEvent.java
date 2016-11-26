@@ -108,13 +108,14 @@ public class SwitchEvent extends Event<String> {
             && s.getValue().equals(this.getValue());
     }
 
-
     @Override
     public String toString() {
-        return
-            "Switch Event (ID = " + getSourceID() + ", Source = '" + getSource() +
-                "', Switch Value = '" + getValue() + "', Switch State = " + getState() + ")";
+        return "SwitchEvent{" +
+            "sourceId=" + getSourceID() +
+            ", source='" + getSource() + "'" +
+            ", switchValue='" + switchValue + '\'' +
+            ", switchState=" + switchState +
+            '}';
     }
-
 }
 

@@ -1,0 +1,70 @@
+package org.openremote.test.rules;
+
+global org.openremote.controller.event.CommandFacade execute;
+
+import org.openremote.controller.command.*;
+import org.openremote.controller.event.*;
+import org.openremote.controller.model.*;
+
+/*
+ * This example demonstrates creation of new facts from within the rules, in this
+ * case a vacation object that can be used to determine differing behavior on event
+ * actions.
+ */
+
+declare Vacation
+  onVacation : boolean
+end
+
+/* Insert a new vacation fact */
+
+rule "I'm going on vacation"
+when
+  Event ( source == "vacation start" )
+then
+  Vacation vacation = new Vacation();
+  insert ( vacation );
+end
+
+/* Retract the vacation fact */
+
+rule "I'm back from vacation"
+when
+  Event ( source == "vacation end" )
+  $vacation : Vacation()
+then
+  retract ( $vacation );
+end
+
+/* Set night temperatures differently depending on presence of vacation fact */
+
+rule "Set Night Temperature"
+when
+  CustomStateEvent( source == "time of day", value == "night" ) and not Vacation()
+then
+  execute.command("temp", 18);
+end
+
+rule "Set Night Temperature when on Vacation"
+when
+  CustomStateEvent ( source == "time of day", value == "night" ) and exists Vacation()
+then
+  execute.command("temp", 15);
+end
+
+/* Set day temperatures differently depending on the presence of vacation fact */
+
+rule "Set Day Temperature"
+when
+  CustomStateEvent ( source == "time of day", value == "day" ) and not Vacation()
+then
+  execute.command("temp", 21);
+end
+
+rule "Set Day Temperature when on Vacation"
+when
+  Event ( source == "time of day", value == "day" ) and exists Vacation()
+then
+  execute.command("temp", 15);
+end
+

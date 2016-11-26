@@ -3,7 +3,7 @@ package org.openremote.controller.event;
 /**
  * Custom state event is a very basic event type that simply holds any arbitrary string
  * as its value. No semantics or rules are applied to the value string.
- *
+ * <p>
  * Custom state events are associated with 'custom' sensors in controller definition.
  */
 public class CustomStateEvent extends Event<String> {
@@ -74,6 +74,16 @@ public class CustomStateEvent extends Event<String> {
         return cs.getSourceID().equals(this.getSourceID())
             && cs.getSource().equals(this.getSource())
             && cs.getValue().equals(this.getValue());
+    }
+
+    @Override
+    public String toString() {
+        return "CustomStateEvent{" +
+            "sourceId=" + getSourceID() +
+            ", source='" + getSource() + "'" +
+            ", eventValue='" + eventValue + '\'' +
+            ", originalState='" + originalState + '\'' +
+            '}';
     }
 }
 

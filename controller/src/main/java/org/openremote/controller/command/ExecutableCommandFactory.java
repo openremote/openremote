@@ -2,9 +2,9 @@ package org.openremote.controller.command;
 
 import org.openremote.controller.model.CommandDefinition;
 
-public abstract class CommandFactory {
+public abstract class ExecutableCommandFactory {
 
-    public Command getCommand(CommandDefinition commandDefinition) throws Exception {
+    public ExecutableCommand getCommand(CommandDefinition commandDefinition) throws Exception {
         if (commandDefinition == null) {
             throw new Exception("Null reference trying to create a protocol command");
         }
@@ -20,5 +20,5 @@ public abstract class CommandFactory {
         return buildCommand(commandDefinition);
     }
 
-    protected abstract Command buildCommand(CommandDefinition commandDefinition);
+    protected abstract ExecutableCommand buildCommand(CommandDefinition commandDefinition);
 }

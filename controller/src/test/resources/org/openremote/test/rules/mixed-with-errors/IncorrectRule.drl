@@ -1,4 +1,4 @@
-package org.openremote.test.rules
+package org.openremote.test.rules;
 
 import org.openremote.controller.event.*;
 

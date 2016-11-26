@@ -1,11 +1,8 @@
 package org.openremote.controller.model;
 
-import org.openremote.controller.command.Command;
-import org.openremote.controller.command.CommandFactory;
 import org.openremote.controller.command.ExecutableCommand;
-import org.openremote.controller.command.PullCommand;
+import org.openremote.controller.command.ExecutableCommandFactory;
 
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Level;
@@ -21,31 +18,21 @@ public class CommandDefinition {
     private static final Logger LOG = Logger.getLogger(CommandDefinition.class.getName());
 
     /**
-     * Command property name of dynamic command value for slider, colorpicker.
-     * This property is temporary for holding dynamic control command value from REST API.
-     * Take slider for example: 
-     * REST API: http://localhost:8080/controller/rest/control/{slider_id}/10 
-     * <b>10</b> means control command value of slider
-     *
+     * Command property name that contains a logical command name that can be used by scripts,
+     * rules, REST API calls, etc.
      */
-    public static final String DYNAMIC_VALUE_PROPERTY = "dynamicValue";
+    public final static String NAME_PROPERTY = "name";
 
     /**
      * Default value returned by {@link #getName()} if no name has been set in command's properties.
      */
-    public final static String DEFAULT_NAME_PROPERTY_VALUE = "<no name>";
-
-    /**
-     * Command property name that contains a logical command name that can be used by scripts,
-     * rules, REST API calls, etc.
-     */
-    public final static String COMMAND_NAME_PROPERTY = "name";
+    public final static String NAME_PROPERTY_DEFAULT_VALUE = "<no name>";
 
     /**
      * Command factory delegates creation of command execution model to specific protocol specific
      * builders (Such as X10, KNX, one-wire, etc.)
      */
-    final private CommandFactory commandFactory;
+    final private ExecutableCommandFactory executableCommandFactory;
 
     /**
      * Command's protocol identifier, such as 'knx', 'x10', 'onewire', etc. This identifier is
@@ -61,11 +48,11 @@ public class CommandDefinition {
 
     /**
      * List of generic command properties. The correspond to {@code <property>} elements nested
-     * within {@code <command>} element in controller's XML definition. 
-     * 
+     * within {@code <command>} element in controller's XML definition.
+     * <p>
      * An arbitrary list of properties is allowed. Specific property names (such as
-     * {@link #COMMAND_NAME_PROPERTY}) may have a special meaning. 
-     * 
+     * {@link #NAME_PROPERTY}) may have a special meaning.
+     * <p>
      * NOTE: property *names* are *not* case sensitive. All property names are converted to lower
      * case.
      */
@@ -74,33 +61,22 @@ public class CommandDefinition {
     /**
      * Constructs a command data model.
      *
-     * @param commandFactory Command factory is used to construct a protocol specific command execution model
-     *                       (for example, KNX specific commands or X10 specific commands).
-     * @param id             This represents the unique identifier of the command element in controller's
-     *                       XML definition (corresponding to 'id' attribute of {@code <command>} element)
-     * @param protocolType   Protocol type identifier for this command. The protocol type identifier is used
-     *                       with the command factory to identify which plugin (Java bean implementation) is
-     *                       used to construct command's protocol specific execution model.
-     * @param properties     Command's properties. Arbitrary list of properties that can be used to configure
-     *                       command instances. Certain property values such as {@link #COMMAND_NAME_PROPERTY}
-     *                       may have special meaning. The property name,value pairs match the
-     *                       {@code <property>} elements nested within {@code <command>} elements within
-     *                       controller's XML document model.
+     * @param executableCommandFactory Command factory is used to construct a protocol specific command execution model
+     *                                 (for example, KNX specific commands or X10 specific commands).
+     * @param id                       This represents the unique identifier of the command element in controller's
+     *                                 XML definition (corresponding to 'id' attribute of {@code <command>} element)
+     * @param protocolType             Protocol type identifier for this command. The protocol type identifier is used
+     *                                 with the command factory to identify which plugin (Java bean implementation) is
+     *                                 used to construct command's protocol specific execution model.
+     * @param properties               Command's properties. Arbitrary list of properties that can be used to configure
+     *                                 command instances. Certain property values such as {@link #NAME_PROPERTY}
+     *                                 may have special meaning.
      */
-    public CommandDefinition(CommandFactory commandFactory, int id, String protocolType, Map<String, String> properties) {
-        this.commandFactory = commandFactory;
+    public CommandDefinition(ExecutableCommandFactory executableCommandFactory, int id, String protocolType, Map<String, String> properties) {
+        this.executableCommandFactory = executableCommandFactory;
         this.id = id;
         this.protocolType = protocolType;
         this.properties = properties;
-    }
-
-    public CommandDefinition(CommandDefinition original) {
-        this(
-            original.commandFactory,
-            original.id,
-            original.protocolType,
-            new HashMap<>(original.properties)
-        );
     }
 
     /**
@@ -116,13 +92,13 @@ public class CommandDefinition {
     /**
      * Returns a command's name property if present.
      *
-     * @return commands name, or a default {@link #DEFAULT_NAME_PROPERTY_VALUE} string if
+     * @return commands name, or a default {@link #NAME_PROPERTY_DEFAULT_VALUE} string if
      * name property is not present
      */
     public String getName() {
-        String name = getProperty(COMMAND_NAME_PROPERTY);
+        String name = getProperty(NAME_PROPERTY);
         if (name == null || name.equals("")) {
-            return DEFAULT_NAME_PROPERTY_VALUE;
+            return NAME_PROPERTY_DEFAULT_VALUE;
         }
         return name;
     }
@@ -158,30 +134,21 @@ public class CommandDefinition {
     }
 
     /**
-     * Executes a parameterized command. This normally means a device protocol is used to
-     * communicate with some physical device. Command parameterization is typically used
-     * with commands that allow setting distinct values, such as setting a volume to a specific
-     * distinct level, setting blinds to a specific distinct location, etc.
+     * Build an {@link ExecutableCommand} from this definition and execute it with the given argument.
      *
-     * @param param command parameter value
+     * @param arg command parameter value
      */
-    public void execute(String param) {
+    public void execute(String arg) {
         try {
-            // Work on a copy of this, so we can modify it for this execution (bad design)
-            CommandDefinition commandDefinition = new CommandDefinition(this);
-            if (param != null) {
-                commandDefinition.properties.put(CommandDefinition.DYNAMIC_VALUE_PROPERTY, param);
+            ExecutableCommand command = executableCommandFactory.getCommand(this);
+            if (command == null) {
+                LOG.log(Level.WARNING,
+                    "No command was produced (can the protocol build an ExecutableCommand?): " + this
+                );
+                return;
             }
-            Command command = commandFactory.getCommand(commandDefinition);
-
-            if (command instanceof ExecutableCommand) {
-                ExecutableCommand writeCommand = (ExecutableCommand) command;
-                writeCommand.send();
-            } else if (command instanceof PullCommand) {
-                LOG.severe("Execution of read commands not implemented yet.");
-            } else {
-                LOG.log(Level.SEVERE, "Cannot execute: " + this);
-            }
+            LOG.fine("Executing command '" + command + "' with: " + arg);
+            command.send(arg);
         } catch (Throwable t) {
             LOG.log(Level.SEVERE, "Unable to execute command: " + this, t);
         }

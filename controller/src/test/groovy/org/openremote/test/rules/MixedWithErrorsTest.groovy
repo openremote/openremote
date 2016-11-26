@@ -23,7 +23,7 @@ import java.util.stream.Stream
  */
 class MixedWithErrorsTest extends Specification implements ContainerTrait {
 
-    def "Sensor event replaced by rule-triggered event"() {
+    def "Execute good rules - ignore broken rules"() {
 
         given: "some sensor event processors and rules"
         def ruleEngineProcessor = new RuleEngine() {

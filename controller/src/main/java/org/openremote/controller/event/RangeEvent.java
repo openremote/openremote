@@ -75,12 +75,15 @@ public class RangeEvent extends Event<Integer> {
             && r.rangeValue.equals(this.rangeValue);
     }
 
-
     @Override
     public String toString() {
-        return
-            "Range Event (ID = " + getSourceID() + ", Source = '" + getSource() + "', Value = '" +
-                getValue() + "', Boundaries = [" + getMinValue() + "..." + getMaxValue() + "])";
+        return "RangeEvent{" +
+            "sourceId=" + getSourceID() +
+            ", source='" + getSource() + "'" +
+            ", rangeValue=" + rangeValue +
+            ", min=" + min +
+            ", max=" + max +
+            '}';
     }
 }
 

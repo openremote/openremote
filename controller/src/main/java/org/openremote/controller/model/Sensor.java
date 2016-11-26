@@ -18,23 +18,23 @@ import java.util.logging.Logger;
  * Sensors abstract incoming events from devices, either through pulling/polling or
  * listening to devices that actively push their state changes. Sensors operate on
  * commands to execute pull or push operations with devices.
- *
+ * <p>
  * Each pulling sensor (for passive devices) has a thread associated with it. Sensors
  * bound to push commands do not create threads of their own but the command
  * implementations themselves are usually multi-threaded.
- *
+ * <p>
  * Each sensor can have list of properties which it makes available to implementations of
  * push or pull commands. These properties may be used by protocol implementers to
  * direct their event producer output values to suit the sensor's configuration.
- *
+ * <p>
  * Sensors are registered with
  * {@link org.openremote.controller.statuscache.StatusCache device state cache}. Sensors create
  * {@link org.openremote.controller.event.Event} which represent the data from event
  * producers and are passed by cache to
  * {@link org.openremote.controller.event.EventProcessor}s.
- *
+ * <p>
  * Therefore the object hierarchy for sensors is as follows:
- *
+ * <p>
  * <pre>{@code Cache (one) <--> (many) Sensor (one) <--> (one) Event Producer}</pre>
  *
  * Event producers are created by third party integrators where as cache and sensors are part of
@@ -82,7 +82,7 @@ public abstract class Sensor {
      * An event producer is a protocol handler that can be customized to return values to a sensor.
      * Therefore the sensor implementation remains type (as in Java class type) and protocol
      * independent and delegates these protocol specific tasks to event producer implementations.
-     *
+     * <p>
      * Two sub-categories of event producers exist today: pull and push commands. These are dealt
      * differently in that pull commands are actively polled by
      * the sensor while push commands produce events to the controller at their own schedule.
@@ -168,7 +168,7 @@ public abstract class Sensor {
     /**
      * Returns sensor's properties. Properties are simply string based name-value mappings.
      * Concrete sensor implementations may specify which particular properties they expose.
-     *
+     * <p>
      * The returned map does not reference this sensor instance and can be modified freely.
      *
      * @return sensor properties or an empty collection
@@ -183,7 +183,7 @@ public abstract class Sensor {
     /**
      * Call path for push commands. Allow direct update of the sensor's value in the controller's
      * global state cache.
-     *
+     * <p>
      * Before updating the state cache, the value is first validated by concrete sensor
      * implementation's {@link Sensor#processEvent(String)} method.
      *
@@ -373,18 +373,18 @@ public abstract class Sensor {
 
         /**
          * Returns the current state of this sensor.
-         *
+         * <p>
          * If the sensor is bound to a pull command implementation, the command is invoked --
          * this may yield an active request using the connecting transport to device unless the
          * command implementation caches certain values and returns them from memory.
-         *
+         * <p>
          * In case of a push command, this method does not invoke anything on the command itself
          * but returns the last stored state from the controller's device state cache associated with
          * this sensor's ID. A push command implementation is responsible of actively updating and
          * inserting the device state values into the controller's cache.
-         *
+         * <p>
          * In case of errors, {@link #UNKNOWN_STATUS} is returned.
-         *
+         * <p>
          * This default read() implementation does not validate the input from protocol pull commands
          * in any way (other than handling implementation errors that yield runtime exceptions).
          * concrete subclasses should override and implement {@link Sensor#processEvent(String)}
@@ -407,7 +407,7 @@ public abstract class Sensor {
                 // device state...
                 PullCommand command = (PullCommand) eventProducerCommand;
                 try {
-                return command.read(Sensor.this);
+                    return command.read(Sensor.this);
                 } catch (Throwable t) {
                     LOG.log(Level.SEVERE, "Implementation error in pull command: " + eventProducerCommand, t);
                     return UNKNOWN_STATUS;
@@ -425,7 +425,7 @@ public abstract class Sensor {
      * A definition of an event that can be used when either an error occurs in sensor implementation
      * (or in the underlying protocol implementation) or if the initial device state has not been
      * fetched yet.
-     *
+     * <p>
      * The value returned by this event is defined in {@link #UNKNOWN_STATUS}.
      */
     public static class UnknownEvent extends Event<String> {
@@ -466,11 +466,19 @@ public abstract class Sensor {
         public String serialize() {
             return UNKNOWN_STATUS;
         }
+
+        @Override
+        public String toString() {
+            return "UnknownEvent{" +
+                "sourceId=" + getSourceID() +
+                ", source='" + getSource() + "'" +
+                "}";
+        }
     }
 
     /**
      * Test sensor object equality based on unique identifier (as returned by {@link #getSensorID}.
-     *
+     * <p>
      * Subclasses are considered equal, despite what their data values are, as long as the sensor
      * ID is equal.
      *
