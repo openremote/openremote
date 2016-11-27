@@ -4,7 +4,7 @@ import com.luckycatlabs.sunrisesunset.SunriseSunsetCalculator;
 import com.luckycatlabs.sunrisesunset.dto.Location;
 import org.openremote.container.util.TextUtil;
 import org.openremote.controller.command.PushCommand;
-import org.openremote.controller.model.CommandDefinition;
+import org.openremote.controller.deploy.CommandDefinition;
 import org.openremote.controller.model.Sensor;
 
 import java.text.SimpleDateFormat;

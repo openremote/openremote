@@ -1,6 +1,7 @@
 package org.openremote.controller.model;
 
 import org.openremote.controller.command.EventProducerCommand;
+import org.openremote.controller.deploy.SensorDefinition;
 import org.openremote.controller.event.Event;
 import org.openremote.controller.event.LevelEvent;
 

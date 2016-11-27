@@ -2,7 +2,7 @@ package org.openremote.test.rules;
 
 import org.openremote.controller.event.*;
 
-global org.openremote.controller.event.facade.RangeFacade ranges;
+global org.openremote.controller.rules.RangeFacade ranges;
 
 rule "Modify Level State Above Max"
 when

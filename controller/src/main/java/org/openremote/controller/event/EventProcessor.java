@@ -1,6 +1,6 @@
 package org.openremote.controller.event;
 
-import org.openremote.controller.event.facade.CommandFacade;
+import org.openremote.controller.rules.CommandFacade;
 
 public abstract class EventProcessor {
 
@@ -10,7 +10,7 @@ public abstract class EventProcessor {
     public void stop() {
     }
 
-    public abstract void push(EventContext ctx);
+    public abstract void process(EventProcessingContext ctx);
 
     public abstract String getName();
 }

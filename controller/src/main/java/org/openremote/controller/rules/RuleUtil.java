@@ -92,7 +92,6 @@ public class RuleUtil {
     }
 
     /**
-     *
      * @param o A string representation of a double value.
      * @param shift Increments or decrements the parsed value.
      * @param suffix A string appended to the result.

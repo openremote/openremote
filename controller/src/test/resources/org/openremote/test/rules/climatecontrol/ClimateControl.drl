@@ -8,7 +8,7 @@ import org.openremote.controller.model.*;
 import org.openremote.controller.event.*;
 import org.openremote.controller.event.*;
 
-global org.openremote.controller.event.facade.CommandFacade execute;
+global org.openremote.controller.rules.CommandFacade execute;
 global org.openremote.controller.rules.RulePersistence persistence;
 global org.openremote.controller.rules.RuleUtil util;
 global com.fasterxml.jackson.databind.ObjectMapper JSON;

@@ -195,12 +195,16 @@ public class Container {
     /**
      * Starts the container and a non-daemon thread that waits forever.
      */
-    public void startBackground() throws Throwable {
+    public void startBackground() throws Exception {
         // We block here so we die fast if startup fails
         try {
             start().get();
         } catch (ExecutionException ex) {
-            throw ex.getCause();
+            if (ex.getCause() instanceof Exception) {
+                throw (Exception) ex.getCause();
+            } else {
+                throw ex;
+            }
         }
         Thread containerThread = new Thread("container") {
             @Override

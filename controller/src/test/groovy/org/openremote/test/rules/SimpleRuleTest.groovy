@@ -63,8 +63,8 @@ class SimpleRuleTest extends Specification implements ContainerTrait {
         and: "the total event count is 1, as the event fired in the rule terminates processing of our switch event"
         grabProcessor.totalEventCount == 1
 
-        and: "the cache state of the sensor should be 'off'"
-        controllerService.getCache().queryStatus(123) == "off"
+        and: "the data context state of the sensor should be 'off'"
+        controllerService.getDataContext().queryValue(123) == "off"
 
         and: "the deployment model should work"
         controllerService.getDeployment().getCommandDefinition(456).getCommandID() == 456

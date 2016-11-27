@@ -2,7 +2,7 @@
 
 Ruleset,     My CSV Rules Examples
 Import,      org.openremote.controller.event.Event
-Variables,   org.openremote.controller.event.facade.RangeFacade ranges
+Variables,   org.openremote.controller.rules.RangeFacade ranges
 
 
 ,RuleTable,Modify Range Values in Decision Table

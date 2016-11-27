@@ -41,12 +41,8 @@ import org.kie.internal.builder.DecisionTableInputType;
 import org.kie.internal.builder.KnowledgeBuilderFactory;
 import org.openremote.container.Container;
 import org.openremote.controller.event.Event;
-import org.openremote.controller.event.EventContext;
+import org.openremote.controller.event.EventProcessingContext;
 import org.openremote.controller.event.EventProcessor;
-import org.openremote.controller.event.facade.CommandFacade;
-import org.openremote.controller.event.facade.LevelFacade;
-import org.openremote.controller.event.facade.RangeFacade;
-import org.openremote.controller.event.facade.SwitchFacade;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -62,7 +58,7 @@ public abstract class RuleEngine extends EventProcessor {
     private KieBase kb;
     private KieSession knowledgeSession;
     private Map<Integer, FactHandle> eventSources = new HashMap<>();
-    private long factCount;
+    private long currentFactCount;
 
     private SwitchFacade switchFacade;
     private LevelFacade levelFacade;
@@ -76,55 +72,69 @@ public abstract class RuleEngine extends EventProcessor {
     }
 
     @Override
-    public void push(EventContext ctx) {
+    public void process(EventProcessingContext ctx) {
         // if we got no rules, just push event back to next processor...
         if (kb == null) {
             LOG.fine("No knowledge base configured, skipping processing of event: " + ctx.getEvent());
             return;
         }
 
-        Event evt = ctx.getEvent();
+        Event event = ctx.getEvent();
 
         switchFacade.pushEventContext(ctx);
         levelFacade.pushEventContext(ctx);
         rangeFacade.pushEventContext(ctx);
 
         try {
-            long factNewCount;
-            if (!knowledgeSession.getObjects().contains(evt)) {
-                boolean debug = true;
-                if (eventSources.keySet().contains(evt.getSourceID())) {
+            long newFactCount;
+
+            // If this Event fact is not in working memory (considering it's equals() method)...
+            if (!knowledgeSession.getObjects().contains(event)) {
+
+                // ... update or new insert?
+                boolean isUpdate = true;
+
+                // If there already is an Event in wm with the same source ID ...
+                if (eventSources.keySet().contains(event.getSourceID())) {
                     try {
-                        knowledgeSession.delete(eventSources.get(evt.getSourceID()));
+                        // ... retract it from working memory ...
+                        knowledgeSession.delete(eventSources.get(event.getSourceID()));
                     } finally {
-                        // Doing this in the finally to make sure we don't keep a reference to a fact when we should not (ORCJAVA-407)
-                        eventSources.remove(evt.getSourceID());
+                        // ... and make we don't keep a reference to a fact
+                        eventSources.remove(event.getSourceID());
                     }
-                    debug = false;
+                } else {
+                    isUpdate = false;
                 }
 
-                FactHandle handle = knowledgeSession.insert(evt);
-                eventSources.put(evt.getSourceID(), handle);
+                // Put the Event into wm and remember the handle
+                FactHandle handle = knowledgeSession.insert(event);
+                eventSources.put(event.getSourceID(), handle);
 
-                if (debug) {
-                    LOG.fine("Inserted: " + evt);
+                if (isUpdate) {
+                    LOG.fine("Inserted: " + event);
+                } else {
+                    LOG.fine("Updated: " + event);
                 }
-                factNewCount = knowledgeSession.getFactCount();
-                LOG.fine("Fact count: " + factNewCount);
-                if (factNewCount != factCount) {
-                    LOG.fine("Fact count changed from " + factCount + " to " + factNewCount + " on '" + evt.getSource() + "'");
+
+                newFactCount = knowledgeSession.getFactCount();
+                LOG.fine("New fact count: " + newFactCount);
+                if (newFactCount != currentFactCount) {
+                    LOG.fine("Fact count changed from " + currentFactCount + " to " + newFactCount + " on '" + event.getSource() + "'");
                 }
-                factCount = factNewCount;
+                currentFactCount = newFactCount;
             }
 
+            LOG.fine("Firing all rules");
             knowledgeSession.fireAllRules();
 
-            factNewCount = knowledgeSession.getFactCount();
-            if (factNewCount >= 1000) // look for runaway insertion of facts
-                if (factNewCount != factCount) {
-                    LOG.fine("Fact count changed from " + factCount + " to " + factNewCount + " on '" + evt.getSource() + "'");
+            // TODO: This doesn't look right, why would it matter if there are 1000 facts?  Who says that
+            newFactCount = knowledgeSession.getFactCount();
+            if (newFactCount >= 1000) // look for runaway insertion of facts
+                if (newFactCount != currentFactCount) {
+                    LOG.fine("Fact count changed from " + currentFactCount + " to " + newFactCount + " on '" + event.getSource() + "'");
                 }
-            factCount = factNewCount;
+            currentFactCount = newFactCount;
         } catch (Throwable t) {
             LOG.log(Level.SEVERE, "Error in executing rule : evt.getSource() + \":\" + t.getMessage()\n\tEvent " + ctx.getEvent() + " not processed!", t);
             if (t.getCause() != null) {
@@ -262,7 +272,7 @@ public abstract class RuleEngine extends EventProcessor {
     @Override
     public String toString() {
         return "RuleEngine{" +
-            "factCount=" + factCount +
+            "factCount=" + currentFactCount +
             "}";
     }
 }

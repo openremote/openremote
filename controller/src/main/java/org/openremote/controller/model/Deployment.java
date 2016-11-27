@@ -3,7 +3,9 @@ package org.openremote.controller.model;
 import org.openremote.controller.command.Command;
 import org.openremote.controller.command.CommandFactory;
 import org.openremote.controller.command.EventProducerCommand;
-import org.openremote.controller.deploy.ControllerDOM;
+import org.openremote.controller.deploy.CommandDefinition;
+import org.openremote.controller.deploy.DeploymentDefinition;
+import org.openremote.controller.deploy.SensorDefinition;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,15 +16,15 @@ public class Deployment {
     final protected Map<String, Device> devices = new HashMap<>();
     final protected Map<Integer, Sensor> sensors = new HashMap<>();
 
-    public Deployment(ControllerDOM controllerDOM, CommandFactory commandFactory) {
+    public Deployment(DeploymentDefinition deploymentDefinition, CommandFactory commandFactory) {
         this.commandFactory = commandFactory;
 
-        for (SensorDefinition sensorDefinition : controllerDOM.getSensorDefinitions()) {
+        for (SensorDefinition sensorDefinition : deploymentDefinition.getSensorDefinitions()) {
             Sensor sensor = buildSensor(sensorDefinition);
             sensors.put(sensor.getSensorDefinition().getSensorID(), sensor);
         }
 
-        for (CommandDefinition commandDefinition : controllerDOM.getCommandDefinitions()) {
+        for (CommandDefinition commandDefinition : deploymentDefinition.getCommandDefinitions()) {
             Device device = devices.get(commandDefinition.getDeviceName());
             if (device == null) {
                 device = new Device(commandDefinition.getDeviceID(), commandDefinition.getDeviceName());
@@ -83,6 +85,19 @@ public class Deployment {
 
     public Sensor getSensor(int sensorID) {
         return sensors.get(sensorID);
+    }
+
+    public Sensor getSensor(String sensorName) {
+        for (Sensor sensor : sensors.values()) {
+            if (sensor.getSensorDefinition().getName().equals(sensorName))
+                return sensor;
+        }
+        return null;
+    }
+
+    public Integer getSensorID(String sensorName) {
+        Sensor sensor = getSensor(sensorName);
+        return sensor != null ? sensor.getSensorDefinition().getSensorID() : null;
     }
 
     protected Sensor buildSensor(SensorDefinition sensorDefinition) {

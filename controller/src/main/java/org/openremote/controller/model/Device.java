@@ -1,5 +1,7 @@
 package org.openremote.controller.model;
 
+import org.openremote.controller.deploy.CommandDefinition;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 

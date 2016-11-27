@@ -1,4 +1,4 @@
-package org.openremote.controller.model;
+package org.openremote.controller.deploy;
 
 import java.util.HashMap;
 import java.util.Map;

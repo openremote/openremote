@@ -1,4 +1,4 @@
-package org.openremote.controller.event.facade;
+package org.openremote.controller.rules;
 
 import org.openremote.controller.event.Event;
 import org.openremote.controller.model.Sensor;
@@ -6,8 +6,8 @@ import org.openremote.controller.event.SwitchEvent;
 
 public class SwitchFacade extends EventFacade {
 
-    public SwitchAdapter name(String name) throws Exception {
-        Event evt = eventContext.getStatusCache().queryStatus(name);
+    public SwitchAdapter name(String sensorName) throws Exception {
+        Event evt = eventProcessingContext.getDataContext().queryEvent(sensorName);
 
         if (evt instanceof Sensor.UnknownEvent) {
             evt = new SwitchEvent(
@@ -21,7 +21,7 @@ public class SwitchFacade extends EventFacade {
         if (evt instanceof SwitchEvent) {
             return new SwitchAdapter((SwitchEvent) evt);
         } else {
-            throw new Exception("Sensor is not switch type: " + name);
+            throw new Exception("Sensor is not switch type: " + sensorName);
         }
     }
 

@@ -2,6 +2,7 @@ package org.openremote.controller.command.builtin;
 
 import org.openremote.controller.command.ExecutableCommand;
 import org.openremote.controller.command.PullCommand;
+import org.openremote.controller.deploy.CommandDefinition;
 import org.openremote.controller.model.*;
 
 import java.util.Map;
@@ -20,7 +21,7 @@ public class VirtualCommand implements ExecutableCommand, PullCommand {
 
     private static final Logger LOG = Logger.getLogger(VirtualCommand.class.getName());
 
-    private final static Map<String, String> virtualDevices = new ConcurrentHashMap<String, String>(20);
+    private final static Map<String, String> virtualDevices = new ConcurrentHashMap<>(20);
     private String address = null;
     private String command = null;
     private String commandParam = null;
@@ -28,7 +29,7 @@ public class VirtualCommand implements ExecutableCommand, PullCommand {
     public VirtualCommand(CommandDefinition commandDefinition) {
         this(
             commandDefinition.getProperty("address"),
-            commandDefinition.getProperty("status")
+            commandDefinition.getProperty("command")
         );
     }
 

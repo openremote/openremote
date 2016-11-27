@@ -1,4 +1,4 @@
-package org.openremote.controller.event.facade;
+package org.openremote.controller.rules;
 
 import org.openremote.controller.event.LevelEvent;
 

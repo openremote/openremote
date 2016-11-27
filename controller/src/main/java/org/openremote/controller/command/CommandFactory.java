@@ -2,7 +2,7 @@ package org.openremote.controller.command;
 
 import org.openremote.controller.command.builtin.DateTimeCommand;
 import org.openremote.controller.command.builtin.VirtualCommand;
-import org.openremote.controller.model.CommandDefinition;
+import org.openremote.controller.deploy.CommandDefinition;
 
 /**
  * Build protocol- and device-specific command implementation.

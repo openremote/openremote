@@ -3,11 +3,6 @@ package org.openremote.test.rules
 import org.kie.api.KieServices
 import org.kie.api.io.Resource
 import org.openremote.controller.ControllerService
-import org.openremote.controller.command.ExecutableCommand
-import org.openremote.controller.command.CommandFactory
-import org.openremote.controller.event.facade.CommandFacade
-import org.openremote.controller.event.EventProcessorChain
-import org.openremote.controller.model.CommandDefinition
 import org.openremote.controller.rules.RuleEngine
 import org.openremote.test.ContainerTrait
 import org.openremote.test.util.EventGrabProcessor

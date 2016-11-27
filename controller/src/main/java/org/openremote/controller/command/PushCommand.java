@@ -12,7 +12,7 @@ import org.openremote.controller.model.Sensor;
  *
  * Push commands are expected to create their own threads (if needed) which implement the
  * push functionality and also directly push received events to the
- * (global) state cache of the controller using the sensor callback API provided.
+ * data context of the controller using the sensor callback API provided.
  *
  * Push command implementations use the sensor
  * {@link org.openremote.controller.model.Sensor#update} method to push state changes

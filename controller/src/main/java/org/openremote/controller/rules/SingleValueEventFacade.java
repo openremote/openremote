@@ -1,12 +1,12 @@
-package org.openremote.controller.event.facade;
+package org.openremote.controller.rules;
 
 import org.openremote.controller.event.Event;
 import org.openremote.controller.model.Sensor;
 
 public abstract class SingleValueEventFacade<T, U extends Event> extends EventFacade {
 
-    public T name(String name) throws Exception {
-        Event evt = eventContext.getStatusCache().queryStatus(name);
+    public T name(String sensorName) throws Exception {
+        Event evt = eventProcessingContext.getDataContext().queryEvent(sensorName);
 
         if (evt instanceof Sensor.UnknownEvent) {
             evt = createDefaultEvent(evt.getSourceID(), evt.getSource());

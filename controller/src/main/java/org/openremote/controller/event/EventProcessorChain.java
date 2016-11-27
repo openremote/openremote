@@ -1,6 +1,6 @@
 package org.openremote.controller.event;
 
-import org.openremote.controller.event.facade.CommandFacade;
+import org.openremote.controller.rules.CommandFacade;
 
 import java.util.Arrays;
 import java.util.List;
@@ -8,7 +8,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Or, as we call it now, a Camel route.
+ * A chain of event processors that incoming events (values) are passing through before
+ * a value might change in the data context.
+ *
+ * Event processors may modify the existing event payload value, discard events
+ * entirely or spawn multiple other events that are interacting with the data context.
+ *
+ * TODO Or, as we call it now, a Camel route.
  */
 public class EventProcessorChain {
 
@@ -55,12 +61,12 @@ public class EventProcessorChain {
      * modifications of all configured event processors (specifically as returned by the last
      * event processor in the stack).
      */
-    public void push(EventContext ctx) {
+    public void push(EventProcessingContext ctx) {
         for (EventProcessor processor : processors) {
             LOG.fine("Processing: " + ctx.getEvent());
-            processor.push(ctx);
+            processor.process(ctx);
             if (ctx.hasTerminated()) {
-                LOG.log(Level.FINE, "Ignoring event push, context was terminated, stopped event processor chain at: " + processor);
+                LOG.log(Level.FINE, "Ignoring original event, context was terminated (new event?), chain stopped at: " + processor);
                 return;
             } else {
                 LOG.fine("Event '" + ctx.getEvent() + "' processed by: " + processor.getName());

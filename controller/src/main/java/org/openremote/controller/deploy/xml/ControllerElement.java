@@ -1,4 +1,4 @@
-package org.openremote.controller.deploy;
+package org.openremote.controller.deploy.xml;
 
 import org.openremote.container.xml.DOMElement;
 import org.w3c.dom.Element;

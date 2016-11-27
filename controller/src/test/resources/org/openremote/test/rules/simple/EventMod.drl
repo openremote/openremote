@@ -2,7 +2,7 @@ package org.openremote.test.rules;
 
 import org.openremote.controller.event.*;
 
-global org.openremote.controller.event.facade.SwitchFacade switches;
+global org.openremote.controller.rules.SwitchFacade switches;
 
 rule "Modify Switch State"
 when

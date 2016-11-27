@@ -4,7 +4,7 @@ import org.openremote.controller.command.Command;
 import org.openremote.controller.command.CommandFactory;
 import org.openremote.controller.command.ExecutableCommand;
 import org.openremote.controller.command.PullCommand;
-import org.openremote.controller.model.CommandDefinition;
+import org.openremote.controller.deploy.CommandDefinition;
 
 import java.util.logging.Logger;
 

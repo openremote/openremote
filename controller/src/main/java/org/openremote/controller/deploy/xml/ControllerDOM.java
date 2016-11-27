@@ -1,14 +1,22 @@
-package org.openremote.controller.deploy;
+package org.openremote.controller.deploy.xml;
 
 import org.openremote.container.xml.DOM;
-import org.openremote.controller.model.CommandDefinition;
-import org.openremote.controller.model.SensorDefinition;
+import org.openremote.controller.deploy.DeploymentDefinition;
+import org.openremote.controller.deploy.CommandDefinition;
+import org.openremote.controller.deploy.SensorDefinition;
 import org.w3c.dom.Document;
 
 import javax.xml.xpath.XPath;
 import java.util.*;
 
-public class ControllerDOM extends DOM {
+/**
+ * Usage:
+ *
+ * <pre><code>
+ *     ControllerDOM dom = new ControllerDOMParser().parse(deploymentXml);
+ * </code></pre>
+ */
+public class ControllerDOM extends DOM implements DeploymentDefinition {
 
     public static final String NAMESPACE_URI = "http://www.openremote.org";
 
@@ -105,10 +113,12 @@ public class ControllerDOM extends DOM {
         return new ControllerDOM((Document) getW3CDocument().cloneNode(true), xpath);
     }
 
+    @Override
     public CommandDefinition[] getCommandDefinitions() {
         return commandDefinitions;
     }
 
+    @Override
     public SensorDefinition[] getSensorDefinitions() {
         return sensorDefinitions;
     }

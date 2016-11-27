@@ -3,6 +3,7 @@ package org.openremote.controller.model;
 import org.openremote.controller.command.EventProducerCommand;
 import org.openremote.controller.command.PullCommand;
 import org.openremote.controller.command.PushCommand;
+import org.openremote.controller.deploy.SensorDefinition;
 import org.openremote.controller.event.CustomStateEvent;
 import org.openremote.controller.event.Event;
 

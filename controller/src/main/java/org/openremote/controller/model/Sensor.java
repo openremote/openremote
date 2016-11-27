@@ -3,14 +3,14 @@ package org.openremote.controller.model;
 import org.openremote.controller.command.EventProducerCommand;
 import org.openremote.controller.command.PullCommand;
 import org.openremote.controller.command.PushCommand;
+import org.openremote.controller.deploy.SensorDefinition;
 import org.openremote.controller.event.Event;
-import org.openremote.controller.statuscache.StatusCache;
+import org.openremote.controller.context.DataContext;
 
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 
 /**
  * Sensors abstract incoming events from devices, either through pulling/polling or
@@ -25,7 +25,7 @@ import java.util.logging.Logger;
  * push or pull commands. These properties may be used by protocol implementers to
  * direct their event producer output values to suit the sensor's configuration.
  * <p>
- * Sensors are registered with {@link org.openremote.controller.statuscache.StatusCache}.
+ * Sensors are registered with {@link DataContext}.
  * Sensors create {@link org.openremote.controller.event.Event}s, which represent the
  * data from devices.
  */
@@ -50,9 +50,9 @@ public abstract class Sensor {
     private SensorDefinition sensorDefinition;
 
     /**
-     * Reference to the state cache that receives and processes the events generated from this sensor.
+     * Reference to the data context that receives and processes the events generated from this sensor.
      */
-    private StatusCache statusCache;
+    private DataContext dataContext;
 
     /**
      * An event producer command provides values to a sensor, typically through pull or push.
@@ -64,13 +64,6 @@ public abstract class Sensor {
      */
     private SensorReader sensorReader;
 
-    /**
-     * Constructs a new sensor with a given name, ID, sensor datatype (deprecated legacy),
-     * an event producing protocol handler, reference to the managing device state cache,
-     * and a set of sensor properties.
-     *
-     * @param eventProducerCommand protocol handler implementation
-     */
     protected Sensor(SensorDefinition sensorDefinition, EventProducerCommand eventProducerCommand) {
         if (eventProducerCommand == null) {
             throw new IllegalArgumentException("Event producer command required: " + sensorDefinition);
@@ -85,26 +78,25 @@ public abstract class Sensor {
 
     /**
      * Call path for push commands. Allow direct update of the sensor's value in the controller's
-     * global state cache.
-     * <p>
-     * Before updating the state cache, the value is first validated by concrete sensor
+     * data context.
+     *
+     * Before updating the data context, the value is first validated by concrete sensor
      * implementation's {@link Sensor#processEvent(String)} method.
      *
      * @param state the new value for this sensor
      */
     public void update(String state) {
-        if (statusCache == null) {
+        if (dataContext == null) {
             LOG.fine("Ignoring update, sensor is not running: " + getSensorDefinition());
             return;
         }
 
-        // Allow for sensor type specific processing of the value.
-        // This can be used for mappings, validating value ranges, etc. before the value is
-        // pushed into device state cache and event processor chain.
-
+        // Allow for sensor type specific processing of the value. This can be used for
+        // mappings, validating value ranges, etc. before the value is pushed through
+        // the event processor chain and ultimately into the data context.
         Event evt = processEvent(state);
         LOG.fine("Update on ID " + getSensorDefinition().getSensorID() + ", processed '" + state + "', created: " + evt);
-        statusCache.update(evt);
+        dataContext.update(evt);
     }
 
     /**
@@ -119,8 +111,8 @@ public abstract class Sensor {
      * {@link PushCommand#start(Sensor)} method. For {@link PullCommand} implementations,
      * this will start a polling thread to invoke their {@link PullCommand#read(Sensor)} method.
      */
-    public void start(StatusCache statusCache) {
-        this.statusCache = statusCache;
+    public void start(DataContext dataContext) {
+        this.dataContext = dataContext;
         if (isPushCommand()) {
             PushCommand pushCommand = (PushCommand) eventProducerCommand;
             try {
@@ -143,7 +135,7 @@ public abstract class Sensor {
      * is stopped.
      */
     public void stop() {
-        statusCache = null;
+        dataContext = null;
         if (isPushCommand()) {
             PushCommand pushCommand = (PushCommand) eventProducerCommand;
             try {
@@ -163,8 +155,8 @@ public abstract class Sensor {
 
     /**
      * Callback to subclasses to apply their event validations and other processing
-     * if necessary. This method is called both when a value is
-     * pulled or a command pushes a new sensor value to state cache.
+     * if necessary. This method is called both when a value is pulled and when a
+     * command pushes a new sensor value into data context state.
      *
      * @param value value returned by the event producer
      * @return validated and processed value of the event producer

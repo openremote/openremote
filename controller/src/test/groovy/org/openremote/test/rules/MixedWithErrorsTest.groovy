@@ -62,8 +62,8 @@ class MixedWithErrorsTest extends Specification implements ContainerTrait {
         Thread.sleep(500)
 
         then: "the state should match"
-        controllerService.getCache().queryStatus(444) == "12345" // TODO This should be limited to max, which is 1000
-        controllerService.getCache().queryStatus(555) == "55"
+        controllerService.getDataContext().queryValue(444) == "12345" // TODO This should be limited to max, which is 1000
+        controllerService.getDataContext().queryValue(555) == "55"
 
         cleanup: "the server should be stopped"
         stopContainer(container)

@@ -1,7 +1,7 @@
 package org.openremote.test.util;
 
 import org.openremote.controller.event.Event;
-import org.openremote.controller.event.EventContext;
+import org.openremote.controller.event.EventProcessingContext;
 import org.openremote.controller.event.EventProcessor;
 
 public class EventGrabProcessor extends EventProcessor {
@@ -10,7 +10,7 @@ public class EventGrabProcessor extends EventProcessor {
     public int totalEventCount = 0;
 
     @Override
-    public void push(EventContext ctx) {
+    public void process(EventProcessingContext ctx) {
         this.lastEvent = ctx.getEvent();
         totalEventCount++;
     }

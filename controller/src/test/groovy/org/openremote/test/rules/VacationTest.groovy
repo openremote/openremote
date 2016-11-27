@@ -50,7 +50,7 @@ class VacationTest extends Specification implements ContainerTrait {
 
         when: "the time of day is day"
         def customStateEvent = new CustomStateEvent(123, "time of day", "day");
-        controllerService.getCache().update(customStateEvent);
+        controllerService.getDataContext().update(customStateEvent);
 
         and: "we wait a bit for the rules to fire"
         Thread.sleep(100);
@@ -60,7 +60,7 @@ class VacationTest extends Specification implements ContainerTrait {
 
         when: "the time of day is night"
         customStateEvent = new CustomStateEvent(123, "time of day", "night");
-        controllerService.getCache().update(customStateEvent);
+        controllerService.getDataContext().update(customStateEvent);
 
         and: "we wait a bit for the rules to fire"
         Thread.sleep(100);
@@ -70,7 +70,7 @@ class VacationTest extends Specification implements ContainerTrait {
 
         when: "we go on vacation"
         def switchEvent = new SwitchEvent(789, "vacation start", "on", SwitchEvent.State.ON);
-        controllerService.getCache().update(switchEvent);
+        controllerService.getDataContext().update(switchEvent);
 
         and: "we wait a bit for the rules to fire"
         Thread.sleep(100);
@@ -80,7 +80,7 @@ class VacationTest extends Specification implements ContainerTrait {
 
         when: "the time of day is day"
         customStateEvent = new CustomStateEvent(123, "time of day", "day");
-        controllerService.getCache().update(customStateEvent);
+        controllerService.getDataContext().update(customStateEvent);
 
         and: "we wait a bit for the rules to fire"
         Thread.sleep(100);

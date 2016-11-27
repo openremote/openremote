@@ -1,9 +1,9 @@
-package org.openremote.controller.event.facade;
+package org.openremote.controller.rules;
 
 import org.openremote.controller.command.Command;
 import org.openremote.controller.command.ExecutableCommand;
 import org.openremote.controller.event.EventProcessor;
-import org.openremote.controller.model.CommandDefinition;
+import org.openremote.controller.deploy.CommandDefinition;
 import org.openremote.controller.model.Deployment;
 
 import java.util.logging.Level;

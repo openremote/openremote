@@ -1,4 +1,4 @@
-package org.openremote.controller.deploy;
+package org.openremote.controller.deploy.xml;
 
 import org.openremote.container.xml.DOMParser;
 import org.openremote.container.xml.NamespaceContextMap;
@@ -7,6 +7,13 @@ import org.w3c.dom.Document;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.xpath.XPath;
 
+/**
+ * Usage:
+ *
+ * <pre><code>
+ *     ControllerDOM dom = new ControllerDOMParser().parse(deploymentXml);
+ * </code></pre>
+ */
 public class ControllerDOMParser extends DOMParser<ControllerDOM> {
 
     public static final String SCHEMA_XSD = "/org/openremote/controller/schemas/controller-2.0-M7.xsd";
