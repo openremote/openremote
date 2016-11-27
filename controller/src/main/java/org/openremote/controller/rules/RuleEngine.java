@@ -20,19 +20,22 @@
  */
 package org.openremote.controller.rules;
 
-import org.drools.core.builder.conf.impl.DecisionTableConfigurationImpl;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.kie.api.KieBase;
 import org.kie.api.KieServices;
 import org.kie.api.builder.KieBuilder;
 import org.kie.api.builder.KieFileSystem;
-import org.kie.api.builder.KieModule;
 import org.kie.api.builder.Message;
 import org.kie.api.builder.model.KieBaseModel;
 import org.kie.api.builder.model.KieModuleModel;
 import org.kie.api.builder.model.KieSessionModel;
 import org.kie.api.conf.EqualityBehaviorOption;
 import org.kie.api.io.Resource;
-import org.kie.api.io.ResourceConfiguration;
 import org.kie.api.io.ResourceType;
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
@@ -41,9 +44,8 @@ import org.kie.api.runtime.conf.TimedRuleExectionOption;
 import org.kie.api.runtime.rule.FactHandle;
 import org.kie.internal.builder.DecisionTableConfiguration;
 import org.kie.internal.builder.DecisionTableInputType;
-import org.kie.internal.builder.KnowledgeBuilder;
 import org.kie.internal.builder.KnowledgeBuilderFactory;
-import org.kie.internal.io.ResourceTypeImpl;
+import org.openremote.container.Container;
 import org.openremote.controller.event.CommandFacade;
 import org.openremote.controller.event.Event;
 import org.openremote.controller.event.EventContext;
@@ -55,7 +57,6 @@ import org.openremote.controller.statuscache.SwitchFacade;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -72,6 +73,8 @@ public abstract class RuleEngine extends EventProcessor {
     private SwitchFacade switchFacade;
     private LevelFacade levelFacade;
     private RangeFacade rangeFacade;
+    private RulePersistence rulePersistence;
+    private RuleUtil ruleUtil;
 
     @Override
     public String getName() {
@@ -170,6 +173,8 @@ public abstract class RuleEngine extends EventProcessor {
         switchFacade = new SwitchFacade();
         rangeFacade = new RangeFacade();
         levelFacade = new LevelFacade();
+        rulePersistence = new RulePersistence();
+        ruleUtil = new RuleUtil();
 
         try {
             knowledgeSession.setGlobal("execute", commandFacade);
@@ -189,6 +194,26 @@ public abstract class RuleEngine extends EventProcessor {
 
         try {
             knowledgeSession.setGlobal("levels", levelFacade);
+        } catch (Throwable t) {
+        }
+
+        try {
+            knowledgeSession.setGlobal("persistence", rulePersistence);
+        } catch (Throwable t) {
+        }
+
+        try {
+            knowledgeSession.setGlobal("util", ruleUtil);
+        } catch (Throwable t) {
+        }
+
+        try {
+            knowledgeSession.setGlobal("JSON", Container.JSON);
+        } catch (Throwable t) {
+        }
+
+        try {
+            knowledgeSession.setGlobal("LOG", LOG);
         } catch (Throwable t) {
         }
 

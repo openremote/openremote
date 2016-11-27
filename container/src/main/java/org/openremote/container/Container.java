@@ -52,7 +52,17 @@ public class Container {
     public static final String DEV_MODE = "DEV_MODE";
     public static final boolean DEV_MODE_DEFAULT = true;
 
-    public final ObjectMapper JSON;
+    public static final ObjectMapper JSON = new ObjectMapper()
+        .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+        .configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false)
+        .configure(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS, false)
+        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+        .setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE)
+        .setVisibility(PropertyAccessor.SETTER, JsonAutoDetect.Visibility.NONE)
+        .setVisibility(PropertyAccessor.IS_GETTER, JsonAutoDetect.Visibility.NONE)
+        .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.NONE)
+        .registerModule(new ElementalJsonModule());
 
     protected final ObjectNode config;
     protected final boolean devMode;
@@ -85,18 +95,6 @@ public class Container {
     }
 
     public Container(Map<String, String> config, Stream<ContainerService> servicesStream) {
-        JSON = new ObjectMapper();
-        JSON.setSerializationInclusion(JsonInclude.Include.NON_NULL)
-            .configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false)
-            .configure(SerializationFeature.WRITE_EMPTY_JSON_ARRAYS, false)
-            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-            .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
-            .setVisibility(PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE)
-            .setVisibility(PropertyAccessor.SETTER, JsonAutoDetect.Visibility.NONE)
-            .setVisibility(PropertyAccessor.IS_GETTER, JsonAutoDetect.Visibility.NONE)
-            .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.NONE)
-            .registerModule(new ElementalJsonModule());
-
         this.config = JSON.createObjectNode();
         for (Map.Entry<String, String> entry : config.entrySet()) {
             this.config.put(entry.getKey(), entry.getValue());
