@@ -4,11 +4,9 @@ import org.kie.api.KieServices
 import org.kie.api.io.Resource
 import org.openremote.controller.ControllerService
 import org.openremote.controller.command.ExecutableCommand
-import org.openremote.controller.command.ExecutableCommandFactory
-import org.openremote.controller.event.CommandFacade
-import org.openremote.controller.event.CustomStateEvent
+import org.openremote.controller.command.CommandFactory
+import org.openremote.controller.event.facade.CommandFacade
 import org.openremote.controller.event.EventProcessorChain
-import org.openremote.controller.event.SwitchEvent
 import org.openremote.controller.model.CommandDefinition
 import org.openremote.controller.rules.RuleEngine
 import org.openremote.test.ContainerTrait
@@ -21,7 +19,12 @@ class ClimateControlTest extends Specification implements ContainerTrait {
 
     def "Climate control basic test"() {
 
-        given: "event processors and rules"
+        given: "a controller deployment"
+        def controllerDeploymentXml = getClass().getResourceAsStream(
+                "/org/openremote/test/rules/climatecontrol/controller.xml"
+        )
+
+        and: "event processors and rules"
         def ruleEngineProcessor = new RuleEngine() {
             @Override
             protected Stream<Resource> getResources(KieServices kieServices) {
@@ -34,32 +37,15 @@ class ClimateControlTest extends Specification implements ContainerTrait {
         }
         def grabProcessor = new EventGrabProcessor();
 
-        String lastCommandValue = null
-        int totalCommandCount = 0
-        def commandFactory = new ExecutableCommandFactory() {
-            @Override
-            protected ExecutableCommand buildCommand(CommandDefinition commandDefinition) {
-                return new ExecutableCommand() {
-                    @Override
-                    void send(String value) {
-                        lastCommandValue = value
-                        totalCommandCount++
-                    }
-                }
-            }
-        }
-        def commandDefinitions = [
-                new CommandDefinition(commandFactory, 11, "test", [(CommandDefinition.NAME_PROPERTY): "temp"])
-        ]
-        def commandFacade = new CommandFacade(commandDefinitions)
-        def eventProcessorChain = new EventProcessorChain(
-                commandFacade,
+
+        and: "the started controller server"
+        def testCommandFactory = new TestCommandFactory();
+        def controllerService = new ControllerService(
+                controllerDeploymentXml,
+                testCommandFactory,
                 ruleEngineProcessor,
                 grabProcessor
         )
-
-        and: "the started controller server"
-        def controllerService = new ControllerService(eventProcessorChain)
         def services = Stream.of(controllerService)
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), services)

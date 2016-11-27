@@ -1,6 +1,5 @@
-package org.openremote.controller.statuscache;
+package org.openremote.controller.event.facade;
 
-import org.openremote.controller.event.SingleValueEventFacade;
 import org.openremote.controller.event.LevelEvent;
 
 public class LevelFacade extends SingleValueEventFacade<LevelFacade.LevelAdapter, LevelEvent> {
@@ -24,6 +23,7 @@ public class LevelFacade extends SingleValueEventFacade<LevelFacade.LevelAdapter
         }
 
         public void value(int value) {
+            // TODO Duplicate max/min logic?!
             if (value < 0) {
                 value = 0;
             } else if (value > 100) {

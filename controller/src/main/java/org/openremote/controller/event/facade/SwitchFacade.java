@@ -1,7 +1,6 @@
-package org.openremote.controller.statuscache;
+package org.openremote.controller.event.facade;
 
 import org.openremote.controller.event.Event;
-import org.openremote.controller.event.EventFacade;
 import org.openremote.controller.model.Sensor;
 import org.openremote.controller.event.SwitchEvent;
 

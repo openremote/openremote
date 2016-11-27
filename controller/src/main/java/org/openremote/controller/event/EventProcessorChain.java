@@ -1,5 +1,7 @@
 package org.openremote.controller.event;
 
+import org.openremote.controller.event.facade.CommandFacade;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
@@ -22,13 +24,6 @@ public class EventProcessorChain {
     public EventProcessorChain(CommandFacade commandFacade, EventProcessor... processors) {
         this.processors = Arrays.asList(processors);
         this.commandFacade = commandFacade;
-        for (EventProcessor ep : processors) {
-            try {
-                ep.init();
-            } catch (Throwable t) {
-                LOG.log(Level.SEVERE, "Cannot initialize event processor: " + ep.getName(), t);
-            }
-        }
     }
 
     public void start() {
@@ -65,7 +60,7 @@ public class EventProcessorChain {
             LOG.fine("Processing: " + ctx.getEvent());
             processor.push(ctx);
             if (ctx.hasTerminated()) {
-                LOG.log(Level.WARNING, "Ignoring event push, context was terminated, stopped event processor chain at: " + processor);
+                LOG.log(Level.FINE, "Ignoring event push, context was terminated, stopped event processor chain at: " + processor);
                 return;
             } else {
                 LOG.fine("Event '" + ctx.getEvent() + "' processed by: " + processor.getName());

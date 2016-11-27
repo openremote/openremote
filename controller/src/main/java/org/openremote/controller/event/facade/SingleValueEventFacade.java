@@ -1,5 +1,6 @@
-package org.openremote.controller.event;
+package org.openremote.controller.event.facade;
 
+import org.openremote.controller.event.Event;
 import org.openremote.controller.model.Sensor;
 
 public abstract class SingleValueEventFacade<T, U extends Event> extends EventFacade {

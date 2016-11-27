@@ -1,0 +1,2028 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openremote xmlns="http://www.openremote.org"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://www.openremote.org http://www.openremote.org/schemas/controller.xsd">
+  <components>
+    <switch id="1545">
+      <on />
+      <off />
+    </switch>
+    <switch id="1486">
+      <on />
+      <off />
+    </switch>
+    <switch id="1469">
+      <on />
+      <off />
+    </switch>
+    <switch id="1548">
+      <on />
+      <off />
+    </switch>
+    <switch id="2399">
+      <on />
+      <off />
+    </switch>
+    <switch id="1802">
+      <on />
+      <off />
+    </switch>
+    <switch id="2376">
+      <on />
+      <off />
+    </switch>
+    <switch id="1803">
+      <on />
+      <off />
+    </switch>
+    <switch id="1353">
+      <on />
+      <off />
+    </switch>
+    <switch id="1656">
+      <on />
+      <off />
+    </switch>
+    <switch id="1774">
+      <on />
+      <off />
+    </switch>
+    <switch id="1463">
+      <on />
+      <off />
+    </switch>
+    <switch id="1632">
+      <on />
+      <off />
+    </switch>
+    <switch id="2294">
+      <on />
+      <off />
+    </switch>
+    <switch id="2348">
+      <on />
+      <off />
+    </switch>
+    <switch id="1462">
+      <on />
+      <off />
+    </switch>
+    <switch id="1721">
+      <on />
+      <off />
+    </switch>
+    <switch id="1717">
+      <on />
+      <off />
+    </switch>
+    <switch id="2316">
+      <on />
+      <off />
+    </switch>
+    <switch id="1624">
+      <on />
+      <off />
+    </switch>
+    <switch id="1571">
+      <on />
+      <off />
+    </switch>
+    <switch id="1718">
+      <on />
+      <off />
+    </switch>
+    <switch id="1794">
+      <on />
+      <off />
+    </switch>
+    <switch id="1741">
+      <on />
+      <off />
+    </switch>
+    <switch id="2291">
+      <on />
+      <off />
+    </switch>
+    <switch id="2490">
+      <on>
+        <include type="command" ref="2637" />
+      </on>
+      <off>
+        <include type="command" ref="2639" />
+      </off>
+      <include type="sensor" ref="358549" />
+    </switch>
+    <switch id="1546">
+      <on />
+      <off />
+    </switch>
+    <switch id="1403">
+      <on />
+      <off />
+    </switch>
+    <switch id="2315">
+      <on />
+      <off />
+    </switch>
+    <switch id="1435">
+      <on />
+      <off />
+    </switch>
+    <switch id="2503">
+      <on>
+        <include type="command" ref="2636" />
+      </on>
+      <off>
+        <include type="command" ref="2643" />
+      </off>
+      <include type="sensor" ref="358548" />
+    </switch>
+    <switch id="1454">
+      <on />
+      <off />
+    </switch>
+    <switch id="1352">
+      <on />
+      <off />
+    </switch>
+    <switch id="1633">
+      <on />
+      <off />
+    </switch>
+    <switch id="2288">
+      <on />
+      <off />
+    </switch>
+    <switch id="1639">
+      <on />
+      <off />
+    </switch>
+    <switch id="2375">
+      <on />
+      <off />
+    </switch>
+    <switch id="1354">
+      <on />
+      <off />
+    </switch>
+    <switch id="1775">
+      <on />
+      <off />
+    </switch>
+    <switch id="1402">
+      <on />
+      <off />
+    </switch>
+    <switch id="1551">
+      <on />
+      <off />
+    </switch>
+    <switch id="2290">
+      <on />
+      <off />
+    </switch>
+    <switch id="2382">
+      <on />
+      <off />
+    </switch>
+    <switch id="2314">
+      <on />
+      <off />
+    </switch>
+    <switch id="1572">
+      <on />
+      <off />
+    </switch>
+    <switch id="1547">
+      <on />
+      <off />
+    </switch>
+    <switch id="1358">
+      <on />
+      <off />
+    </switch>
+    <switch id="1716">
+      <on />
+      <off />
+    </switch>
+    <switch id="1573">
+      <on />
+      <off />
+    </switch>
+    <switch id="2289">
+      <on />
+      <off />
+    </switch>
+    <switch id="1715">
+      <on />
+      <off />
+    </switch>
+    <switch id="1355">
+      <on />
+      <off />
+    </switch>
+    <switch id="1401">
+      <on />
+      <off />
+    </switch>
+    <switch id="1743">
+      <on />
+      <off />
+    </switch>
+    <switch id="1605">
+      <on />
+      <off />
+    </switch>
+    <switch id="1434">
+      <on />
+      <off />
+    </switch>
+    <switch id="1809">
+      <on />
+      <off />
+    </switch>
+    <switch id="2347">
+      <on />
+      <off />
+    </switch>
+    <switch id="1604">
+      <on />
+      <off />
+    </switch>
+    <switch id="1826">
+      <on />
+      <off />
+    </switch>
+    <switch id="1742">
+      <on />
+      <off />
+    </switch>
+    <switch id="2367">
+      <on />
+      <off />
+    </switch>
+    <button id="2334" />
+    <button id="2517">
+      <include type="command" ref="2611" />
+    </button>
+    <button id="1766" />
+    <button id="1476" />
+    <button id="1708" />
+    <button id="1391" />
+    <button id="2495">
+      <include type="command" ref="2633" />
+    </button>
+    <button id="1782" />
+    <button id="2013" />
+    <button id="1592" />
+    <button id="1345" />
+    <button id="2498">
+      <include type="command" ref="2629" />
+    </button>
+    <button id="1447" />
+    <button id="1392" />
+    <button id="1471" />
+    <button id="2306" />
+    <button id="1477" />
+    <button id="1810" />
+    <button id="2068" />
+    <button id="1657" />
+    <button id="2000" />
+    <button id="2339" />
+    <button id="2521">
+      <include type="command" ref="2621" />
+    </button>
+    <button id="1646" />
+    <button id="2402" />
+    <button id="2303" />
+    <button id="2337" />
+    <button id="1704" />
+    <button id="2281" />
+    <button id="2338" />
+    <button id="2122" />
+    <button id="1537" />
+    <button id="2518">
+      <include type="command" ref="2614" />
+    </button>
+    <button id="1829" />
+    <button id="1783" />
+    <button id="1445" />
+    <button id="1658" />
+    <button id="2500" />
+    <button id="1785" />
+    <button id="1731" />
+    <button id="1614" />
+    <button id="1784" />
+    <button id="2280" />
+    <button id="2305" />
+    <button id="2360" />
+    <button id="1421" />
+    <button id="1487" />
+    <button id="2358" />
+    <button id="1732" />
+    <button id="1343" />
+    <button id="1538" />
+    <button id="1706" />
+    <button id="1564" />
+    <button id="2357" />
+    <button id="1390" />
+    <button id="1811" />
+    <button id="2054" />
+    <button id="1342" />
+    <button id="2282" />
+    <button id="1612" />
+    <button id="1565" />
+    <button id="1762" />
+    <button id="1393" />
+    <button id="1705" />
+    <button id="1816" />
+    <button id="1613" />
+    <button id="1615" />
+    <button id="1640" />
+    <button id="2409" />
+    <button id="1617" />
+    <button id="2422" />
+    <button id="1563" />
+    <button id="1344" />
+    <button id="1596" />
+    <button id="1641" />
+    <button id="2109" />
+    <button id="1828" />
+    <button id="1536" />
+    <button id="1827" />
+    <button id="2108" />
+    <button id="2384" />
+    <button id="2307" />
+    <button id="1490" />
+    <button id="2121" />
+    <button id="2277" />
+    <button id="1660" />
+    <button id="2515">
+      <include type="command" ref="2616" />
+    </button>
+    <button id="2356" />
+    <button id="1561" />
+    <button id="2336" />
+    <button id="2067" />
+    <button id="2389" />
+    <button id="2519">
+      <include type="command" ref="2617" />
+    </button>
+    <button id="2516">
+      <include type="command" ref="2619" />
+    </button>
+    <button id="2390" />
+    <button id="1786" />
+    <button id="1341" />
+    <button id="1443" />
+    <button id="1423" />
+    <button id="1442" />
+    <button id="1659" />
+    <button id="1787" />
+    <button id="1593" />
+    <button id="1534" />
+    <button id="1817" />
+    <button id="2278" />
+    <button id="1734" />
+    <button id="1707" />
+    <button id="2400" />
+    <button id="1763" />
+    <button id="1426" />
+    <button id="1765" />
+    <button id="1709" />
+    <button id="1444" />
+    <button id="1394" />
+    <button id="1446" />
+    <button id="2304" />
+    <button id="1346" />
+    <button id="2355" />
+    <button id="1764" />
+    <button id="2279" />
+    <button id="2522">
+      <include type="command" ref="2607" />
+    </button>
+    <button id="1470" />
+    <button id="2359" />
+    <button id="1735" />
+    <button id="2308" />
+    <button id="2335" />
+    <button id="1488" />
+    <button id="1647" />
+    <button id="2408" />
+    <button id="1539" />
+    <button id="1733" />
+    <button id="1595" />
+    <button id="1830" />
+    <button id="1560" />
+    <button id="2014" />
+    <button id="2403" />
+    <button id="2525" />
+    <button id="2055" />
+    <button id="2496">
+      <include type="command" ref="2634" />
+    </button>
+    <button id="1395" />
+    <button id="2497">
+      <include type="command" ref="2644" />
+    </button>
+    <button id="1591" />
+    <button id="2520">
+      <include type="command" ref="2627" />
+    </button>
+    <button id="1425" />
+    <button id="1730" />
+    <button id="2383" />
+    <button id="1761" />
+    <button id="2401" />
+    <button id="1535" />
+    <button id="1489" />
+    <button id="2421" />
+    <button id="1422" />
+    <label id="2057" />
+    <label id="2494" />
+    <label id="2441" />
+    <label id="1652" />
+    <label id="1428" />
+    <label id="2489" />
+    <label id="1460" />
+    <label id="1412" />
+    <label id="2285" />
+    <label id="1654" />
+    <label id="2345" />
+    <label id="2509" />
+    <label id="1398" />
+    <label id="2085" />
+    <label id="1714" />
+    <label id="2419" />
+    <label id="2369" />
+    <label id="1485" />
+    <label id="2140" />
+    <label id="2072" />
+    <label id="1740" />
+    <label id="1449" />
+    <label id="1767" />
+    <label id="2366" />
+    <label id="2058" />
+    <label id="2153" />
+    <label id="2056" />
+    <label id="2073" />
+    <label id="2119" />
+    <label id="1739" />
+    <label id="1351" />
+    <label id="2434" />
+    <label id="1459" />
+    <label id="1543" />
+    <label id="2035" />
+    <label id="1584" />
+    <label id="2433" />
+    <label id="2146" />
+    <label id="2293" />
+    <label id="1712" />
+    <label id="2089" />
+    <label id="2295" />
+    <label id="2373" />
+    <label id="2453" />
+    <label id="1578" />
+    <label id="2310" />
+    <label id="1414" />
+    <label id="2079" />
+    <label id="2410" />
+    <label id="1599" />
+    <label id="2116" />
+    <label id="2088" />
+    <label id="1566" />
+    <label id="1479" />
+    <label id="2454" />
+    <label id="1629" />
+    <label id="2100" />
+    <label id="2092" />
+    <label id="2143" />
+    <label id="1574" />
+    <label id="2512" />
+    <label id="2530">
+      <include type="sensor" ref="358541" />
+    </label>
+    <label id="2418" />
+    <label id="1772" />
+    <label id="1585" />
+    <label id="1416" />
+    <label id="1723" />
+    <label id="2342" />
+    <label id="1602" />
+    <label id="2128" />
+    <label id="2008" />
+    <label id="1450" />
+    <label id="2029" />
+    <label id="2429" />
+    <label id="1406" />
+    <label id="2514" />
+    <label id="1722" />
+    <label id="1429" />
+    <label id="1483" />
+    <label id="2511" />
+    <label id="1430" />
+    <label id="1555" />
+    <label id="1790" />
+    <label id="1567" />
+    <label id="2398" />
+    <label id="2533">
+      <include type="sensor" ref="358532" />
+    </label>
+    <label id="2436" />
+    <label id="1350" />
+    <label id="2346" />
+    <label id="2312" />
+    <label id="1579" />
+    <label id="2096" />
+    <label id="2502">
+      <include type="sensor" ref="358542" />
+    </label>
+    <label id="1399" />
+    <label id="2133" />
+    <label id="1569" />
+    <label id="2424" />
+    <label id="2510" />
+    <label id="1808" />
+    <label id="2391" />
+    <label id="2341" />
+    <label id="2060" />
+    <label id="1637" />
+    <label id="1771" />
+    <label id="1824" />
+    <label id="2526">
+      <include type="sensor" ref="358538" />
+    </label>
+    <label id="2313" />
+    <label id="2003" />
+    <label id="2487" />
+    <label id="2097" />
+    <label id="1770" />
+    <label id="1756" />
+    <label id="1407" />
+    <label id="1801" />
+    <label id="2423" />
+    <label id="2009" />
+    <label id="2491" />
+    <label id="2080" />
+    <label id="1461" />
+    <label id="2137" />
+    <label id="2323" />
+    <label id="2044" />
+    <label id="2040" />
+    <label id="2531" />
+    <label id="1468" />
+    <label id="2321" />
+    <label id="2152" />
+    <label id="1554" />
+    <label id="2425" />
+    <label id="2322" />
+    <label id="2328" />
+    <label id="1415" />
+    <label id="2125" />
+    <label id="2318" />
+    <label id="2059" />
+    <label id="2041" />
+    <label id="2078" />
+    <label id="2371" />
+    <label id="1805" />
+    <label id="1746" />
+    <label id="1348" />
+    <label id="2126" />
+    <label id="1755" />
+    <label id="2283" />
+    <label id="2136" />
+    <label id="1719" />
+    <label id="2370" />
+    <label id="2066" />
+    <label id="1478" />
+    <label id="2457" />
+    <label id="1628" />
+    <label id="1467" />
+    <label id="2118" />
+    <label id="1650" />
+    <label id="2445" />
+    <label id="1357" />
+    <label id="2098" />
+    <label id="1432" />
+    <label id="2117" />
+    <label id="2112" />
+    <label id="2132" />
+    <label id="2317" />
+    <label id="2016" />
+    <label id="2023" />
+    <label id="2129" />
+    <label id="1457">
+      <include type="sensor" ref="358500" />
+    </label>
+    <label id="1577" />
+    <label id="2426" />
+    <label id="1630" />
+    <label id="1754" />
+    <label id="2141" />
+    <label id="1362" />
+    <label id="2047" />
+    <label id="2438" />
+    <label id="2414" />
+    <label id="2075" />
+    <label id="2456" />
+    <label id="2142" />
+    <label id="2027" />
+    <label id="2440" />
+    <label id="2015" />
+    <label id="1621" />
+    <label id="1753" />
+    <label id="2395" />
+    <label id="2037" />
+    <label id="2529">
+      <include type="sensor" ref="358529" />
+    </label>
+    <label id="1360" />
+    <label id="1653" />
+    <label id="2365" />
+    <label id="2061" />
+    <label id="1791" />
+    <label id="2048" />
+    <label id="2114" />
+    <label id="2534" />
+    <label id="2149" />
+    <label id="2101" />
+    <label id="1580" />
+    <label id="2439" />
+    <label id="1408" />
+    <label id="2145" />
+    <label id="1453" />
+    <label id="2138" />
+    <label id="1598" />
+    <label id="2161" />
+    <label id="1797" />
+    <label id="2444" />
+    <label id="1433" />
+    <label id="1751" />
+    <label id="2394" />
+    <label id="1396" />
+    <label id="2127" />
+    <label id="2430" />
+    <label id="1349" />
+    <label id="1436" />
+    <label id="1738" />
+    <label id="2036" />
+    <label id="1597" />
+    <label id="2099" />
+    <label id="2325" />
+    <label id="1792" />
+    <label id="2455" />
+    <label id="2042" />
+    <label id="2065" />
+    <label id="2363" />
+    <label id="2415" />
+    <label id="2039" />
+    <label id="2488" />
+    <label id="2428" />
+    <label id="2124" />
+    <label id="1724" />
+    <label id="2094" />
+    <label id="1745" />
+    <label id="1458" />
+    <label id="1586" />
+    <label id="2091" />
+    <label id="1821" />
+    <label id="1800" />
+    <label id="1544" />
+    <label id="1737" />
+    <label id="2397" />
+    <label id="2287" />
+    <label id="1720" />
+    <label id="1710" />
+    <label id="1825" />
+    <label id="2396" />
+    <label id="1568" />
+    <label id="2022" />
+    <label id="2006" />
+    <label id="2095" />
+    <label id="1413" />
+    <label id="2032" />
+    <label id="2340" />
+    <label id="2309" />
+    <label id="1464" />
+    <label id="2034" />
+    <label id="1819" />
+    <label id="1540" />
+    <label id="1437">
+      <include type="sensor" ref="358496" />
+    </label>
+    <label id="1552" />
+    <label id="1410" />
+    <label id="2028" />
+    <label id="2329" />
+    <label id="1581" />
+    <label id="1553" />
+    <label id="2372" />
+    <label id="2030" />
+    <label id="2007" />
+    <label id="2493" />
+    <label id="2070" />
+    <label id="1796" />
+    <label id="2435" />
+    <label id="2420" />
+    <label id="2033" />
+    <label id="1626" />
+    <label id="1736" />
+    <label id="2103" />
+    <label id="2102" />
+    <label id="1725" />
+    <label id="2378" />
+    <label id="2113" />
+    <label id="2045" />
+    <label id="2437" />
+    <label id="2298" />
+    <label id="2296" />
+    <label id="2082" />
+    <label id="2344" />
+    <label id="1400" />
+    <label id="2086" />
+    <label id="2350" />
+    <label id="1631" />
+    <label id="2018" />
+    <label id="1622" />
+    <label id="1623" />
+    <label id="2416" />
+    <label id="2019" />
+    <label id="1748" />
+    <label id="2062" />
+    <label id="1606" />
+    <label id="1431" />
+    <label id="1769" />
+    <label id="1749" />
+    <label id="2450" />
+    <label id="1636" />
+    <label id="1776" />
+    <label id="2324" />
+    <label id="2135" />
+    <label id="2524" />
+    <label id="1397" />
+    <label id="1620" />
+    <label id="2049" />
+    <label id="1655" />
+    <label id="1482" />
+    <label id="2020" />
+    <label id="1806" />
+    <label id="2131" />
+    <label id="1452" />
+    <label id="2046" />
+    <label id="2123" />
+    <label id="1356" />
+    <label id="2156" />
+    <label id="2417" />
+    <label id="2024" />
+    <label id="1638" />
+    <label id="1550" />
+    <label id="2069" />
+    <label id="2452" />
+    <label id="2492" />
+    <label id="1619" />
+    <label id="1576" />
+    <label id="1405" />
+    <label id="1427" />
+    <label id="2413" />
+    <label id="2111" />
+    <label id="2392" />
+    <label id="2412" />
+    <label id="2379" />
+    <label id="2081" />
+    <label id="2501">
+      <include type="sensor" ref="358545" />
+    </label>
+    <label id="2380" />
+    <label id="2148" />
+    <label id="1361" />
+    <label id="2026" />
+    <label id="2364" />
+    <label id="1807" />
+    <label id="2005" />
+    <label id="2084" />
+    <label id="2031" />
+    <label id="2527">
+      <include type="sensor" ref="358534" />
+    </label>
+    <label id="1480" />
+    <label id="1600" />
+    <label id="2074" />
+    <label id="1634" />
+    <label id="2284" />
+    <label id="2349" />
+    <label id="2377" />
+    <label id="1793" />
+    <label id="1635" />
+    <label id="2523" />
+    <label id="1627" />
+    <label id="2528">
+      <include type="sensor" ref="358531" />
+    </label>
+    <label id="1409" />
+    <label id="1484" />
+    <label id="2431" />
+    <label id="2090" />
+    <label id="1823" />
+    <label id="2381" />
+    <label id="1788" />
+    <label id="2374" />
+    <label id="2139" />
+    <label id="1798" />
+    <label id="2343" />
+    <label id="1481" />
+    <label id="2021" />
+    <label id="2446" />
+    <label id="1795" />
+    <label id="2134" />
+    <label id="1575" />
+    <label id="1820" />
+    <label id="2362" />
+    <label id="2011" />
+    <label id="1648" />
+    <label id="1789" />
+    <label id="2292" />
+    <label id="1818" />
+    <label id="1804" />
+    <label id="1465" />
+    <label id="2411" />
+    <label id="2025" />
+    <label id="1822" />
+    <label id="2012" />
+    <label id="1747" />
+    <label id="2002" />
+    <label id="2499" />
+    <label id="1744" />
+    <label id="2155" />
+    <label id="2010" />
+    <label id="1618" />
+    <label id="2286" />
+    <label id="2368" />
+    <label id="1541" />
+    <label id="2038" />
+    <label id="1455" />
+    <label id="2115" />
+    <label id="2147" />
+    <label id="2064" />
+    <label id="1542" />
+    <label id="2320" />
+    <label id="2087" />
+    <label id="2326" />
+    <label id="2443" />
+    <label id="2448" />
+    <label id="2513" />
+    <label id="1713" />
+    <label id="1411" />
+    <label id="2393" />
+    <label id="1404" />
+    <label id="1768" />
+    <label id="1651" />
+    <label id="2327" />
+    <label id="2120" />
+    <label id="2071" />
+    <label id="1649" />
+    <label id="1456" />
+    <label id="1773" />
+    <label id="1752" />
+    <label id="2427" />
+    <label id="2043" />
+    <label id="1582" />
+    <label id="1750" />
+    <label id="2150" />
+    <label id="1625" />
+    <label id="2319" />
+    <label id="1601" />
+    <label id="2442" />
+    <label id="1448" />
+    <label id="2151" />
+    <label id="2451" />
+    <label id="2361" />
+    <label id="1607" />
+    <label id="2157" />
+    <label id="1451" />
+    <label id="2004" />
+    <label id="2311" />
+    <label id="1603" />
+    <label id="2532" />
+    <label id="2083" />
+    <label id="2093" />
+    <label id="2504" />
+    <label id="2432" />
+    <label id="1549" />
+    <label id="2449" />
+    <label id="1711" />
+    <label id="2130" />
+    <label id="2110" />
+    <label id="1466" />
+    <label id="1777" />
+    <label id="2447" />
+    <label id="2297" />
+    <label id="2063" />
+    <label id="2077" />
+    <label id="1359" />
+    <label id="2017" />
+    <label id="1347" />
+    <label id="1570" />
+    <label id="1799" />
+    <label id="2154" />
+    <label id="1583" />
+    <label id="2144" />
+  </components>
+  <sensors>
+    <sensor id="358442" name="VETD.Sun" type="custom">
+      <include type="command" ref="2549" />
+    </sensor>
+    <sensor id="358443" name="VETA.Fri" type="custom">
+      <include type="command" ref="2565" />
+    </sensor>
+    <sensor id="358444" name="VETA.dec" type="custom">
+      <include type="command" ref="2544" />
+    </sensor>
+    <sensor id="358445" name="VACATION.inc" type="custom">
+      <include type="command" ref="2552" />
+    </sensor>
+    <sensor id="358446" name="VETD.Mon" type="custom">
+      <include type="command" ref="2576" />
+    </sensor>
+    <sensor id="358447" name="VETA.Thu" type="custom">
+      <include type="command" ref="2542" />
+    </sensor>
+    <sensor id="358448" name="VETA.Mon" type="custom">
+      <include type="command" ref="2545" />
+    </sensor>
+    <sensor id="358449" name="VETD.Wed" type="custom">
+      <include type="command" ref="2559" />
+    </sensor>
+    <sensor id="358450" name="VETD.inc" type="custom">
+      <include type="command" ref="2558" />
+    </sensor>
+    <sensor id="358451" name="VETD" type="custom">
+      <include type="command" ref="2574" />
+    </sensor>
+    <sensor id="358452" name="VACATION" type="custom">
+      <include type="command" ref="2575" />
+    </sensor>
+    <sensor id="358453" name="TimerMMM" type="custom">
+      <include type="command" ref="2569" />
+    </sensor>
+    <sensor id="358454" name="VPRESENCE" type="custom">
+      <include type="command" ref="2541" />
+      <state name="Yes" value="Yes" />
+      <state name="No" value="No" />
+    </sensor>
+    <sensor id="358455" name="VPERSONSENSETIME" type="custom">
+      <include type="command" ref="2577" />
+    </sensor>
+    <sensor id="358456" name="VR1.ET.dec" type="custom">
+      <include type="command" ref="2547" />
+    </sensor>
+    <sensor id="358457" name="TimerEEEE" type="custom">
+      <include type="command" ref="2553" />
+    </sensor>
+    <sensor id="358458" name="VPERSONSENSE" type="custom">
+      <include type="command" ref="2556" />
+    </sensor>
+    <sensor id="358459" name="VETA.Sat" type="custom">
+      <include type="command" ref="2548" />
+    </sensor>
+    <sensor id="358460" name="VR1.ET" type="custom">
+      <include type="command" ref="2562" />
+    </sensor>
+    <sensor id="358461" name="VETD.dec" type="custom">
+      <include type="command" ref="2557" />
+    </sensor>
+    <sensor id="358462" name="VETA.inc" type="custom">
+      <include type="command" ref="2564" />
+    </sensor>
+    <sensor id="358463" name="VETA.Sun" type="custom">
+      <include type="command" ref="2572" />
+    </sensor>
+    <sensor id="358464" name="VATA" type="custom">
+      <include type="command" ref="2573" />
+    </sensor>
+    <sensor id="358465" name="VNEXTACTION" type="custom">
+      <include type="command" ref="2539" />
+    </sensor>
+    <sensor id="358466" name="VETA" type="custom">
+      <include type="command" ref="2568" />
+    </sensor>
+    <sensor id="358467" name="VArrivalBackground" type="custom">
+      <include type="command" ref="2561" />
+      <state name="off" value="off" />
+      <state name="on" value="on" />
+    </sensor>
+    <sensor id="358468" name="VTimer" type="custom">
+      <include type="command" ref="2543" />
+    </sensor>
+    <sensor id="358469" name="TimerHH" type="custom">
+      <include type="command" ref="2567" />
+    </sensor>
+    <sensor id="358470" name="VDepartureBackground" type="custom">
+      <include type="command" ref="2571" />
+      <state name="off" value="off" />
+      <state name="on" value="on" />
+    </sensor>
+    <sensor id="358471" name="VETD.Sat" type="custom">
+      <include type="command" ref="2554" />
+    </sensor>
+    <sensor id="358472" name="VETD.Thu" type="custom">
+      <include type="command" ref="2550" />
+    </sensor>
+    <sensor id="358473" name="Timerd" type="custom">
+      <include type="command" ref="2540" />
+    </sensor>
+    <sensor id="358474" name="VACATION.dec" type="custom">
+      <include type="command" ref="2555" />
+    </sensor>
+    <sensor id="358475" name="VETD.Tue" type="custom">
+      <include type="command" ref="2551" />
+    </sensor>
+    <sensor id="358476" name="VR1.ET.inc" type="custom">
+      <include type="command" ref="2566" />
+    </sensor>
+    <sensor id="358477" name="VETA.Wed" type="custom">
+      <include type="command" ref="2560" />
+    </sensor>
+    <sensor id="358478" name="TimerEEE" type="custom">
+      <include type="command" ref="2570" />
+    </sensor>
+    <sensor id="358479" name="VETD.Fri" type="custom">
+      <include type="command" ref="2546" />
+    </sensor>
+    <sensor id="358480" name="VATD" type="custom">
+      <include type="command" ref="2538" />
+    </sensor>
+    <sensor id="358481" name="VETA.Tue" type="custom">
+      <include type="command" ref="2537" />
+    </sensor>
+    <sensor id="358482" name="VTOTALSCOREr" type="range">
+      <include type="command" ref="2584" />
+      <min value="0" />
+      <max value="1000" />
+    </sensor>
+    <sensor id="358483" name="VTOTALSCORE" type="custom">
+      <include type="command" ref="2584" />
+    </sensor>
+    <sensor id="358484" name="VLEVEL" type="custom">
+      <include type="command" ref="2581" />
+    </sensor>
+    <sensor id="358485" name="VLEAF1" type="custom">
+      <include type="command" ref="2583" />
+      <state name="l1.png" value="l1.png" />
+      <state name="l2.png" value="l2.png" />
+      <state name="l0.png" value="l0.png" />
+    </sensor>
+    <sensor id="358486" name="VTOTALSCOREdisp" type="custom">
+      <include type="command" ref="2580" />
+    </sensor>
+    <sensor id="358487" name="VSCORE" type="custom">
+      <include type="command" ref="2586" />
+    </sensor>
+    <sensor id="358488" name="VLEAVES" type="custom">
+      <include type="command" ref="2582" />
+    </sensor>
+    <sensor id="358489" name="VLEAF3" type="custom">
+      <include type="command" ref="2579" />
+      <state name="l1.png" value="l1.png" />
+      <state name="l2.png" value="l2.png" />
+      <state name="l0.png" value="l0.png" />
+    </sensor>
+    <sensor id="358490" name="VLEAF2" type="custom">
+      <include type="command" ref="2585" />
+      <state name="l1.png" value="l1.png" />
+      <state name="l2.png" value="l2.png" />
+      <state name="l0.png" value="l0.png" />
+    </sensor>
+    <sensor id="358491" name="VSUMMER" type="custom">
+      <include type="command" ref="2599" />
+      <state name="Yes" value="Yes" />
+      <state name="No" value="No" />
+    </sensor>
+    <sensor id="358492" name="VADVICEDONE" type="custom">
+      <include type="command" ref="2598" />
+    </sensor>
+    <sensor id="358493" name="VR1.COMFORT.inc" type="custom">
+      <include type="command" ref="2592" />
+    </sensor>
+    <sensor id="358494" name="VR1.COMFORT" type="custom">
+      <include type="command" ref="2590" />
+    </sensor>
+    <sensor id="358495" name="VOUTSIDE" type="custom">
+      <include type="command" ref="2597" />
+    </sensor>
+    <sensor id="358496" name="VWINDOW" type="custom">
+      <include type="command" ref="2595" />
+      <state name="Open" value="Open" />
+      <state name="Closed" value="Closed" />
+    </sensor>
+    <sensor id="358497" name="VHEATINGSETPOINT" type="custom">
+      <include type="command" ref="2587" />
+    </sensor>
+    <sensor id="358498" name="VR1.TEMPERATURE.inc" type="custom">
+      <include type="command" ref="2591" />
+    </sensor>
+    <sensor id="358499" name="VR1.COMFORT.dec" type="custom">
+      <include type="command" ref="2593" />
+    </sensor>
+    <sensor id="358500" name="VROOMTEMPERATURE" type="custom">
+      <include type="command" ref="2594" />
+    </sensor>
+    <sensor id="358501" name="VHEATING" type="custom">
+      <include type="command" ref="2588" />
+    </sensor>
+    <sensor id="358502" name="VR1.TEMPERATURE.dec" type="custom">
+      <include type="command" ref="2596" />
+    </sensor>
+    <sensor id="358503" name="VR1.TEMPERATURE" type="custom">
+      <include type="command" ref="2589" />
+    </sensor>
+    <sensor id="358504" name="VADVICE" type="custom">
+      <include type="command" ref="2600" />
+    </sensor>
+    <sensor id="358505" name="GVconfig" type="custom">
+      <include type="command" ref="2601" />
+    </sensor>
+    <sensor id="358525" name="PID.sp.dec" type="custom">
+      <include type="command" ref="2625" />
+    </sensor>
+    <sensor id="358526" name="PID.kd.inc" type="custom">
+      <include type="command" ref="2606" />
+    </sensor>
+    <sensor id="358527" name="PID.db.inc" type="custom">
+      <include type="command" ref="2622" />
+    </sensor>
+    <sensor id="358528" name="PID.kp.dec" type="custom">
+      <include type="command" ref="2608" />
+    </sensor>
+    <sensor id="358529" name="PID.Se" type="custom">
+      <include type="command" ref="2609" />
+    </sensor>
+    <sensor id="358530" name="PID.ki.dec" type="custom">
+      <include type="command" ref="2620" />
+    </sensor>
+    <sensor id="358531" name="GV.PID.Sp" type="custom">
+      <include type="command" ref="2610" />
+    </sensor>
+    <sensor id="358532" name="PID.Output" type="custom">
+      <include type="command" ref="2615" />
+    </sensor>
+    <sensor id="358533" name="PID.db.dec" type="custom">
+      <include type="command" ref="2613" />
+    </sensor>
+    <sensor id="358534" name="GV.PID.Ki" type="custom">
+      <include type="command" ref="2604" />
+    </sensor>
+    <sensor id="358535" name="PID.kd.dec" type="custom">
+      <include type="command" ref="2612" />
+    </sensor>
+    <sensor id="358536" name="GV.PID.Db" type="custom">
+      <include type="command" ref="2624" />
+    </sensor>
+    <sensor id="358537" name="PID.sp.inc" type="custom">
+      <include type="command" ref="2626" />
+    </sensor>
+    <sensor id="358538" name="GV.PID.Kp" type="custom">
+      <include type="command" ref="2603" />
+    </sensor>
+    <sensor id="358539" name="PID.kp.inc" type="custom">
+      <include type="command" ref="2628" />
+    </sensor>
+    <sensor id="358540" name="PID.ki.inc" type="custom">
+      <include type="command" ref="2623" />
+    </sensor>
+    <sensor id="358541" name="GV.PID.Kd" type="custom">
+      <include type="command" ref="2602" />
+    </sensor>
+    <sensor id="358542" name="FS.Toutside" type="custom">
+      <include type="command" ref="2638" />
+    </sensor>
+    <sensor id="358543" name="FS.Toutside.inc" type="custom">
+      <include type="command" ref="2635" />
+    </sensor>
+    <sensor id="358544" name="FS.Tinside.dec" type="custom">
+      <include type="command" ref="2641" />
+    </sensor>
+    <sensor id="358545" name="FS.Tinside" type="custom">
+      <include type="command" ref="2632" />
+    </sensor>
+    <sensor id="358546" name="FS.Toutside.dec" type="custom">
+      <include type="command" ref="2640" />
+    </sensor>
+    <sensor id="358547" name="FS.Tinside.inc" type="custom">
+      <include type="command" ref="2642" />
+    </sensor>
+    <sensor id="358548" name="FS.PIR" type="switch">
+      <include type="command" ref="2631" />
+      <state name="on" />
+      <state name="off" />
+    </sensor>
+    <sensor id="358549" name="FS.Window" type="switch">
+      <include type="command" ref="2630" />
+      <state name="on" />
+      <state name="off" />
+    </sensor>
+  </sensors>
+  <commands>
+    <command id="2537" protocol="virtual">
+      <property name="address" value="vetatuesday" />
+      <property name="command" value="status" />
+      <property name="name" value="VETA.Tue" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2538" protocol="virtual">
+      <property name="address" value="VATD" />
+      <property name="command" value="status" />
+      <property name="name" value="VATD" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2539" protocol="virtual">
+      <property name="address" value="VNEXTACTION" />
+      <property name="command" value="status" />
+      <property name="name" value="VNEXTACTION" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2541" protocol="virtual">
+      <property name="address" value="VPRESENCE" />
+      <property name="command" value="status" />
+      <property name="name" value="VPRESENCE" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2542" protocol="virtual">
+      <property name="address" value="vetathursday" />
+      <property name="command" value="status" />
+      <property name="name" value="VETA.Thu" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2543" protocol="virtual">
+      <property name="address" value="VTimer" />
+      <property name="command" value="status" />
+      <property name="name" value="VTimer" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2544" protocol="virtual">
+      <property name="address" value="vetaalldec" />
+      <property name="command" value="ON" />
+      <property name="name" value="VETA.dec" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2545" protocol="virtual">
+      <property name="address" value="vetamonday" />
+      <property name="command" value="status" />
+      <property name="name" value="VETA.Mon" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2546" protocol="virtual">
+      <property name="address" value="vetdfriday" />
+      <property name="command" value="status" />
+      <property name="name" value="VETD.Fri" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2547" protocol="virtual">
+      <property name="address" value="vretdec" />
+      <property name="command" value="ON" />
+      <property name="name" value="VR1.ET.dec" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2548" protocol="virtual">
+      <property name="address" value="vetasat" />
+      <property name="command" value="status" />
+      <property name="name" value="VETA.Sat" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2549" protocol="virtual">
+      <property name="address" value="vetdsun" />
+      <property name="command" value="status" />
+      <property name="name" value="VETD.Sun" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2550" protocol="virtual">
+      <property name="address" value="vetdthursday" />
+      <property name="command" value="status" />
+      <property name="name" value="VETD.Thu" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2551" protocol="virtual">
+      <property name="address" value="vetdtuesday" />
+      <property name="command" value="status" />
+      <property name="name" value="VETD.Tue" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2552" protocol="virtual">
+      <property name="address" value="VABSENTinc" />
+      <property name="command" value="ON" />
+      <property name="name" value="VACATION.inc" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2554" protocol="virtual">
+      <property name="address" value="vetdsat" />
+      <property name="command" value="status" />
+      <property name="name" value="VETD.Sat" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2555" protocol="virtual">
+      <property name="address" value="VABSENTdec" />
+      <property name="command" value="ON" />
+      <property name="name" value="VACATION.dec" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2556" protocol="virtual">
+      <property name="address" value="VPERSONSENSE" />
+      <property name="command" value="status" />
+      <property name="name" value="VPERSONSENSE" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2557" protocol="virtual">
+      <property name="address" value="vetdalldec" />
+      <property name="command" value="ON" />
+      <property name="name" value="VETD.dec" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2558" protocol="virtual">
+      <property name="address" value="vetdallinc" />
+      <property name="command" value="ON" />
+      <property name="name" value="VETD.inc" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2559" protocol="virtual">
+      <property name="address" value="vetdwendsday" />
+      <property name="command" value="status" />
+      <property name="name" value="VETD.Wed" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2560" protocol="virtual">
+      <property name="address" value="vetawendsday" />
+      <property name="command" value="status" />
+      <property name="name" value="VETA.Wed" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2561" protocol="virtual">
+      <property name="address" value="VArrivalBackground" />
+      <property name="command" value="status" />
+      <property name="name" value="VArrivalBackground" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2562" protocol="virtual">
+      <property name="address" value="vret" />
+      <property name="command" value="status" />
+      <property name="name" value="VR1.ET" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2564" protocol="virtual">
+      <property name="address" value="vetaallinc" />
+      <property name="command" value="ON" />
+      <property name="name" value="VETA.inc" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2565" protocol="virtual">
+      <property name="address" value="vetafriday" />
+      <property name="command" value="status" />
+      <property name="name" value="VETA.Fri" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2566" protocol="virtual">
+      <property name="address" value="vretinc" />
+      <property name="command" value="ON" />
+      <property name="name" value="VR1.ET.inc" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2568" protocol="virtual">
+      <property name="address" value="vetaall" />
+      <property name="command" value="status" />
+      <property name="name" value="VETA" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2571" protocol="virtual">
+      <property name="address" value="VDepartureBackground" />
+      <property name="command" value="status" />
+      <property name="name" value="VDepartureBackground" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2572" protocol="virtual">
+      <property name="address" value="vetasun" />
+      <property name="command" value="status" />
+      <property name="name" value="VETA.Sun" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2573" protocol="virtual">
+      <property name="address" value="VATA" />
+      <property name="command" value="status" />
+      <property name="name" value="VATA" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2574" protocol="virtual">
+      <property name="address" value="vetdall" />
+      <property name="command" value="status" />
+      <property name="name" value="VETD" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2575" protocol="virtual">
+      <property name="address" value="VABSENT" />
+      <property name="command" value="status" />
+      <property name="name" value="VACATION" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2576" protocol="virtual">
+      <property name="address" value="vetdmonday" />
+      <property name="command" value="status" />
+      <property name="name" value="VETD.Mon" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2577" protocol="virtual">
+      <property name="address" value="VPERSONSENSETIME" />
+      <property name="command" value="status" />
+      <property name="name" value="VPERSONSENSETIME" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2578" protocol="virtual">
+      <property name="address" value="VTOTALSCOREinc" />
+      <property name="command" value="status" />
+      <property name="name" value="VTOTALSCORE.inc" />
+      <property name="urn:openremote:device-command:device-name" value="Efficiency" />
+      <property name="urn:openremote:device-command:device-id" value="35479" />
+    </command>
+    <command id="2579" protocol="virtual">
+      <property name="address" value="vleafthree" />
+      <property name="command" value="status" />
+      <property name="name" value="VLEAF3" />
+      <property name="urn:openremote:device-command:device-name" value="Efficiency" />
+      <property name="urn:openremote:device-command:device-id" value="35479" />
+    </command>
+    <command id="2580" protocol="virtual">
+      <property name="address" value="VTOTALSCOREdisp" />
+      <property name="command" value="status" />
+      <property name="name" value="VTOTALSCOREdisp" />
+      <property name="urn:openremote:device-command:device-name" value="Efficiency" />
+      <property name="urn:openremote:device-command:device-id" value="35479" />
+    </command>
+    <command id="2581" protocol="virtual">
+      <property name="address" value="VLEVEL" />
+      <property name="command" value="status" />
+      <property name="name" value="VLEVEL" />
+      <property name="urn:openremote:device-command:device-name" value="Efficiency" />
+      <property name="urn:openremote:device-command:device-id" value="35479" />
+    </command>
+    <command id="2582" protocol="virtual">
+      <property name="address" value="VLEAVES" />
+      <property name="command" value="status" />
+      <property name="name" value="VLEAVES" />
+      <property name="urn:openremote:device-command:device-name" value="Efficiency" />
+      <property name="urn:openremote:device-command:device-id" value="35479" />
+    </command>
+    <command id="2583" protocol="virtual">
+      <property name="address" value="vleafone" />
+      <property name="command" value="status" />
+      <property name="name" value="VLEAF1" />
+      <property name="urn:openremote:device-command:device-name" value="Efficiency" />
+      <property name="urn:openremote:device-command:device-id" value="35479" />
+    </command>
+    <command id="2584" protocol="virtual">
+      <property name="address" value="VTOTALSCORE" />
+      <property name="command" value="status" />
+      <property name="name" value="VTOTALSCORE" />
+      <property name="urn:openremote:device-command:device-name" value="Efficiency" />
+      <property name="urn:openremote:device-command:device-id" value="35479" />
+    </command>
+    <command id="2585" protocol="virtual">
+      <property name="address" value="vleaftwo" />
+      <property name="command" value="status" />
+      <property name="name" value="VLEAF2" />
+      <property name="urn:openremote:device-command:device-name" value="Efficiency" />
+      <property name="urn:openremote:device-command:device-id" value="35479" />
+    </command>
+    <command id="2586" protocol="virtual">
+      <property name="address" value="VSCORE" />
+      <property name="command" value="status" />
+      <property name="name" value="VSCORE" />
+      <property name="urn:openremote:device-command:device-name" value="Efficiency" />
+      <property name="urn:openremote:device-command:device-id" value="35479" />
+    </command>
+    <command id="2587" protocol="virtual">
+      <property name="address" value="VHEATINGSETPOINT" />
+      <property name="command" value="status" />
+      <property name="name" value="VHEATINGSETPOINT" />
+      <property name="urn:openremote:device-command:device-name" value="Heating" />
+      <property name="urn:openremote:device-command:device-id" value="35480" />
+    </command>
+    <command id="2588" protocol="virtual">
+      <property name="address" value="VHEATING" />
+      <property name="command" value="status" />
+      <property name="name" value="VHEATING" />
+      <property name="urn:openremote:device-command:device-name" value="Heating" />
+      <property name="urn:openremote:device-command:device-id" value="35480" />
+    </command>
+    <command id="2589" protocol="virtual">
+      <property name="address" value="vrtemperature" />
+      <property name="command" value="status" />
+      <property name="name" value="VR1.TEMPERATURE" />
+      <property name="urn:openremote:device-command:device-name" value="Heating" />
+      <property name="urn:openremote:device-command:device-id" value="35480" />
+    </command>
+    <command id="2590" protocol="virtual">
+      <property name="address" value="vrcomfort" />
+      <property name="command" value="status" />
+      <property name="name" value="VR1.COMFORT" />
+      <property name="urn:openremote:device-command:device-name" value="Heating" />
+      <property name="urn:openremote:device-command:device-id" value="35480" />
+    </command>
+    <command id="2591" protocol="virtual">
+      <property name="address" value="vrtemperatureinc" />
+      <property name="command" value="ON" />
+      <property name="name" value="VR1.TEMPERATURE.inc" />
+      <property name="urn:openremote:device-command:device-name" value="Heating" />
+      <property name="urn:openremote:device-command:device-id" value="35480" />
+    </command>
+    <command id="2592" protocol="virtual">
+      <property name="address" value="vrcomfortinc" />
+      <property name="command" value="ON" />
+      <property name="name" value="VR1.COMFORT.inc" />
+      <property name="urn:openremote:device-command:device-name" value="Heating" />
+      <property name="urn:openremote:device-command:device-id" value="35480" />
+    </command>
+    <command id="2593" protocol="virtual">
+      <property name="address" value="vrcomfortdec" />
+      <property name="command" value="ON" />
+      <property name="name" value="VR1.COMFORT.dec" />
+      <property name="urn:openremote:device-command:device-name" value="Heating" />
+      <property name="urn:openremote:device-command:device-id" value="35480" />
+    </command>
+    <command id="2594" protocol="virtual">
+      <property name="address" value="VROOMTEMPERATURE" />
+      <property name="command" value="status" />
+      <property name="name" value="VROOMTEMPERATURE" />
+      <property name="urn:openremote:device-command:device-name" value="Heating" />
+      <property name="urn:openremote:device-command:device-id" value="35480" />
+    </command>
+    <command id="2595" protocol="virtual">
+      <property name="address" value="VWINDOW" />
+      <property name="command" value="status" />
+      <property name="name" value="VWINDOW" />
+      <property name="urn:openremote:device-command:device-name" value="Heating" />
+      <property name="urn:openremote:device-command:device-id" value="35480" />
+    </command>
+    <command id="2596" protocol="virtual">
+      <property name="address" value="vrtemperaturedec" />
+      <property name="command" value="ON" />
+      <property name="name" value="VR1.TEMPERATURE.dec" />
+      <property name="urn:openremote:device-command:device-name" value="Heating" />
+      <property name="urn:openremote:device-command:device-id" value="35480" />
+    </command>
+    <command id="2597" protocol="virtual">
+      <property name="address" value="VOUTSIDE" />
+      <property name="command" value="status" />
+      <property name="name" value="VOUTSIDE" />
+      <property name="urn:openremote:device-command:device-name" value="Heating" />
+      <property name="urn:openremote:device-command:device-id" value="35480" />
+    </command>
+    <command id="2598" protocol="virtual">
+      <property name="address" value="VADVICEDONE" />
+      <property name="command" value="ON" />
+      <property name="name" value="VADVICEDONE" />
+      <property name="urn:openremote:device-command:device-name" value="Heating" />
+      <property name="urn:openremote:device-command:device-id" value="35480" />
+    </command>
+    <command id="2599" protocol="virtual">
+      <property name="address" value="VSUMMER" />
+      <property name="command" value="status" />
+      <property name="name" value="VSUMMER" />
+      <property name="urn:openremote:device-command:device-name" value="Heating" />
+      <property name="urn:openremote:device-command:device-id" value="35480" />
+    </command>
+    <command id="2600" protocol="virtual">
+      <property name="address" value="VADVICE" />
+      <property name="command" value="status" />
+      <property name="name" value="VADVICE" />
+      <property name="urn:openremote:device-command:device-name" value="Heating" />
+      <property name="urn:openremote:device-command:device-id" value="35480" />
+    </command>
+    <command id="2601" protocol="virtual">
+      <property name="address" value="GVconfig" />
+      <property name="command" value="status" />
+      <property name="name" value="GVconfig" />
+      <property name="urn:openremote:device-command:device-name" value="Config" />
+      <property name="urn:openremote:device-command:device-id" value="35481" />
+    </command>
+    <command id="2602" protocol="virtual">
+      <property name="address" value="pidkd" />
+      <property name="command" value="status" />
+      <property name="name" value="GV.PID.Kd" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2603" protocol="virtual">
+      <property name="address" value="pidkp" />
+      <property name="command" value="status" />
+      <property name="name" value="GV.PID.Kp" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2604" protocol="virtual">
+      <property name="address" value="pidki" />
+      <property name="command" value="status" />
+      <property name="name" value="GV.PID.Ki" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2605" protocol="virtual">
+      <property name="address" value="piddbinc" />
+      <property name="command" value="ON" />
+      <property name="name" value="PID.db.inc.ON" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2606" protocol="virtual">
+      <property name="address" value="pidkdinc" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.kd.inc" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2607" protocol="virtual">
+      <property name="address" value="pidkiinc" />
+      <property name="command" value="ON" />
+      <property name="name" value="PID.ki.inc.ON" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2608" protocol="virtual">
+      <property name="address" value="kpdec" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.kp.dec" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2609" protocol="virtual">
+      <property name="address" value="pidse" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.Se" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2610" protocol="virtual">
+      <property name="address" value="pidsp" />
+      <property name="command" value="status" />
+      <property name="name" value="GV.PID.Sp" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2611" protocol="virtual">
+      <property name="address" value="pidkidec" />
+      <property name="command" value="ON" />
+      <property name="name" value="PID.ki.dec.ON" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2612" protocol="virtual">
+      <property name="address" value="pidkddec" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.kd.dec" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2613" protocol="virtual">
+      <property name="address" value="piddbdec" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.db.dec" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2614" protocol="virtual">
+      <property name="address" value="pidkddec" />
+      <property name="command" value="ON" />
+      <property name="name" value="PID.kd.dec.ON" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2615" protocol="virtual">
+      <property name="address" value="pidoutput" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.Output" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2616" protocol="virtual">
+      <property name="address" value="pidkdinc" />
+      <property name="command" value="ON" />
+      <property name="name" value="PID.kd.inc.ON" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2617" protocol="virtual">
+      <property name="address" value="pidspdec" />
+      <property name="command" value="ON" />
+      <property name="name" value="PID.sp.dec.ON" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2618" protocol="virtual">
+      <property name="address" value="piddbdec" />
+      <property name="command" value="ON" />
+      <property name="name" value="PID.db.dec.ON" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2619" protocol="virtual">
+      <property name="address" value="pidspinc" />
+      <property name="command" value="ON" />
+      <property name="name" value="PID.sp.inc.ON" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2620" protocol="virtual">
+      <property name="address" value="pidkidec" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.ki.dec" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2621" protocol="virtual">
+      <property name="address" value="kpinc" />
+      <property name="command" value="ON" />
+      <property name="name" value="PID.kp.inc.ON" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2622" protocol="virtual">
+      <property name="address" value="piddbinc" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.db.inc" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2623" protocol="virtual">
+      <property name="address" value="pidkiinc" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.ki.inc" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2624" protocol="virtual">
+      <property name="address" value="piddb" />
+      <property name="command" value="status" />
+      <property name="name" value="GV.PID.Db" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2625" protocol="virtual">
+      <property name="address" value="pidspdec" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.sp.dec" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2626" protocol="virtual">
+      <property name="address" value="pidspinc" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.sp.inc" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2627" protocol="virtual">
+      <property name="address" value="kpdec" />
+      <property name="command" value="ON" />
+      <property name="name" value="PID.kp.dec.ON" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2628" protocol="virtual">
+      <property name="address" value="kpinc" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.kp.inc" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2629" protocol="virtual">
+      <property name="address" value="fsoutsideinc" />
+      <property name="command" value="on" />
+      <property name="name" value="FS.Toutside.inc.ON" />
+      <property name="urn:openremote:device-command:device-name" value="Fake sensors" />
+      <property name="urn:openremote:device-command:device-id" value="35488" />
+    </command>
+    <command id="2630" protocol="virtual">
+      <property name="address" value="fswindow" />
+      <property name="command" value="status" />
+      <property name="name" value="FS.Window" />
+      <property name="urn:openremote:device-command:device-name" value="Fake sensors" />
+      <property name="urn:openremote:device-command:device-id" value="35488" />
+    </command>
+    <command id="2631" protocol="virtual">
+      <property name="address" value="fspir" />
+      <property name="command" value="status" />
+      <property name="name" value="FS.PIR" />
+      <property name="urn:openremote:device-command:device-name" value="Fake sensors" />
+      <property name="urn:openremote:device-command:device-id" value="35488" />
+    </command>
+    <command id="2632" protocol="virtual">
+      <property name="address" value="fstinside" />
+      <property name="command" value="status" />
+      <property name="name" value="FS.Tinside" />
+      <property name="urn:openremote:device-command:device-name" value="Fake sensors" />
+      <property name="urn:openremote:device-command:device-id" value="35488" />
+    </command>
+    <command id="2633" protocol="virtual">
+      <property name="address" value="fsoutsidedec" />
+      <property name="command" value="on" />
+      <property name="name" value="FS.Toutside.dec.ON" />
+      <property name="urn:openremote:device-command:device-name" value="Fake sensors" />
+      <property name="urn:openremote:device-command:device-id" value="35488" />
+    </command>
+    <command id="2634" protocol="virtual">
+      <property name="address" value="fstinsidedec" />
+      <property name="command" value="on" />
+      <property name="name" value="FS.Tinside.dec.ON" />
+      <property name="urn:openremote:device-command:device-name" value="Fake sensors" />
+      <property name="urn:openremote:device-command:device-id" value="35488" />
+    </command>
+    <command id="2635" protocol="virtual">
+      <property name="address" value="fsoutsideinc" />
+      <property name="command" value="status" />
+      <property name="name" value="FS.Toutside.inc" />
+      <property name="urn:openremote:device-command:device-name" value="Fake sensors" />
+      <property name="urn:openremote:device-command:device-id" value="35488" />
+    </command>
+    <command id="2636" protocol="virtual">
+      <property name="address" value="fspir" />
+      <property name="command" value="on" />
+      <property name="name" value="FS.PIR.ON" />
+      <property name="urn:openremote:device-command:device-name" value="Fake sensors" />
+      <property name="urn:openremote:device-command:device-id" value="35488" />
+    </command>
+    <command id="2637" protocol="virtual">
+      <property name="address" value="fswindow" />
+      <property name="command" value="on" />
+      <property name="name" value="FS.Window.(ON)" />
+      <property name="urn:openremote:device-command:device-name" value="Fake sensors" />
+      <property name="urn:openremote:device-command:device-id" value="35488" />
+    </command>
+    <command id="2638" protocol="virtual">
+      <property name="address" value="fsoutside" />
+      <property name="command" value="status" />
+      <property name="name" value="FS.Toutside" />
+      <property name="urn:openremote:device-command:device-name" value="Fake sensors" />
+      <property name="urn:openremote:device-command:device-id" value="35488" />
+    </command>
+    <command id="2639" protocol="virtual">
+      <property name="address" value="fswindow" />
+      <property name="command" value="off" />
+      <property name="name" value="FS.Window.(OFF)" />
+      <property name="urn:openremote:device-command:device-name" value="Fake sensors" />
+      <property name="urn:openremote:device-command:device-id" value="35488" />
+    </command>
+    <command id="2640" protocol="virtual">
+      <property name="address" value="fsoutsidedec" />
+      <property name="command" value="status" />
+      <property name="name" value="FS.Toutside.dec" />
+      <property name="urn:openremote:device-command:device-name" value="Fake sensors" />
+      <property name="urn:openremote:device-command:device-id" value="35488" />
+    </command>
+    <command id="2641" protocol="virtual">
+      <property name="address" value="fstinsidedec" />
+      <property name="command" value="status" />
+      <property name="name" value="FS.Tinside.dec" />
+      <property name="urn:openremote:device-command:device-name" value="Fake sensors" />
+      <property name="urn:openremote:device-command:device-id" value="35488" />
+    </command>
+    <command id="2642" protocol="virtual">
+      <property name="address" value="fstinsideinc" />
+      <property name="command" value="status" />
+      <property name="name" value="FS.Tinside.inc" />
+      <property name="urn:openremote:device-command:device-name" value="Fake sensors" />
+      <property name="urn:openremote:device-command:device-id" value="35488" />
+    </command>
+    <command id="2643" protocol="virtual">
+      <property name="address" value="fspir" />
+      <property name="command" value="off" />
+      <property name="name" value="FS.PIR.OFF" />
+      <property name="urn:openremote:device-command:device-name" value="Fake sensors" />
+      <property name="urn:openremote:device-command:device-id" value="35488" />
+    </command>
+    <command id="2644" protocol="virtual">
+      <property name="address" value="fstinsideinc" />
+      <property name="command" value="on" />
+      <property name="name" value="FS.Tinside.inc.ON" />
+      <property name="urn:openremote:device-command:device-name" value="Fake sensors" />
+      <property name="urn:openremote:device-command:device-id" value="35488" />
+    </command>
+    <command id="2540" protocol="datetime">
+      <property name="timezone" value="Europe/Amsterdam" />
+      <property name="command" value="date" />
+      <property name="pollingInterval" value="1m" />
+      <property name="format" value="d" />
+      <property name="name" value="Timerd" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2553" protocol="datetime">
+      <property name="timezone" value="Europe/Amsterdam" />
+      <property name="command" value="date" />
+      <property name="pollingInterval" value="1m" />
+      <property name="format" value="EEEE" />
+      <property name="name" value="TimerEEEE" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2567" protocol="datetime">
+      <property name="timezone" value="Europe/Amsterdam" />
+      <property name="command" value="date" />
+      <property name="pollingInterval" value="1m" />
+      <property name="format" value="HH:mm:ss" />
+      <property name="name" value="TimerHH" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2569" protocol="datetime">
+      <property name="timezone" value="Europe/Amsterdam" />
+      <property name="command" value="date" />
+      <property name="pollingInterval" value="1m" />
+      <property name="format" value="MMM" />
+      <property name="name" value="TimerMMM" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+    <command id="2570" protocol="datetime">
+      <property name="timezone" value="Europe/Amsterdam" />
+      <property name="command" value="date" />
+      <property name="pollingInterval" value="1m" />
+      <property name="format" value="EEE" />
+      <property name="name" value="TimerEEE" />
+      <property name="urn:openremote:device-command:device-name" value="Times" />
+      <property name="urn:openremote:device-command:device-id" value="35478" />
+    </command>
+  </commands>
+  <config>
+    <property name="multicast.address" value="224.0.1.100" />
+    <property name="zwave.pad.host" value="localhost" />
+    <property name="resource.upload.enable" value="true" />
+    <property name="protocol.velbus.classname" value="org.openremote.controller.protocol.velbus.VelbusCommandBuilder" />
+    <property name="copy.lircd.conf.on" value="true" />
+    <property name="lagarto_network.broadcast" value="tcp://127.0.0.1:5001" />
+    <property name="domintell.address" value="192.168.1.1" />
+    <property name="enocean.commLayer" value="RXTX" />
+    <property name="zwave.pad.port" value="7876" />
+    <property name="zwave.commLayer" value="RXTX" />
+    <property name="webapp.port" value="8688" />
+    <property name="protocol.zwave.classname" value="org.openremote.controller.protocol.zwave.ZWaveCommandBuilder" />
+    <property name="controller.groupname" value="floor20" />
+    <property name="lircd.conf.path" value="/etc/lircd.conf" />
+    <property name="multicast.port" value="3333" />
+    <property name="protocol.vera.classname" value="org.openremote.controller.protocol.vera.VeraCommandBuilder" />
+    <property name="velbus.server.ports" value="6000" />
+    <property name="Macro.IR.Execution.Delay" value="500" />
+    <property name="enocean.comPort" value="/dev/ttyUSB0" />
+    <property name="controller.roundrobin.tcpserver.port" value="20000" />
+    <property name="amx_ni.port" value="50000" />
+    <property name="zwave.comPort" value="/dev/ttyUSB0" />
+    <property name="lutron_homeworks.password" value="openremote" />
+    <property name="lutron_homeworks.address" value="192.168.1.1" />
+    <property name="irsend.path" value="/usr/local/bin/irsend" />
+    <property name="controller.applicationname" value="controller" />
+    <property name="protocol.samsungTV.classname" value="org.openremote.controller.protocol.samsungtv.SamsungTVRemoteCommandBuilder" />
+    <property name="enocean.serialProtocol" value="ESP3" />
+    <property name="samsungTV.address" value="" />
+    <property name="controller.roundrobin.multicast.port" value="10000" />
+    <property name="domintell.port" value="17481" />
+    <property name="amx_ni.address" value="192.168.1.1" />
+    <property name="velbus.server.hostnames" value="127.0.0.1" />
+    <property name="lutron_homeworks.username" value="openremote" />
+    <property name="controller.roundrobin.multicast.address" value="224.0.1.200" />
+    <property name="lutron_homeworks.port" value="23" />
+    <property name="controller.groupmember.autodetect.on" value="true" />
+    <property name="marantz_avr.address" value="192.168.1.1" />
+    <property name="vera.address" value="" />
+    <property name="protocol.alarm.classname" value="org.openremote.controller.protocol.alarm.AlarmCommandBuilder" />
+  </config>
+</openremote>
+

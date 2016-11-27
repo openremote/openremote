@@ -1,9 +1,8 @@
 package org.openremote.controller.event;
 
-public abstract class EventProcessor {
+import org.openremote.controller.event.facade.CommandFacade;
 
-    public void init() throws Exception{
-    }
+public abstract class EventProcessor {
 
     public void start(CommandFacade commandFacade) throws Exception{
     }

@@ -8,8 +8,6 @@ import org.openremote.controller.statuscache.StatusCache;
 
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,18 +25,9 @@ import java.util.logging.Logger;
  * push or pull commands. These properties may be used by protocol implementers to
  * direct their event producer output values to suit the sensor's configuration.
  * <p>
- * Sensors are registered with
- * {@link org.openremote.controller.statuscache.StatusCache device state cache}. Sensors create
- * {@link org.openremote.controller.event.Event} which represent the data from event
- * producers and are passed by cache to
- * {@link org.openremote.controller.event.EventProcessor}s.
- * <p>
- * Therefore the object hierarchy for sensors is as follows:
- * <p>
- * <pre>{@code Cache (one) <--> (many) Sensor (one) <--> (one) Event Producer}</pre>
- *
- * Event producers are created by third party integrators where as cache and sensors are part of
- * the controller framework.
+ * Sensors are registered with {@link org.openremote.controller.statuscache.StatusCache}.
+ * Sensors create {@link org.openremote.controller.event.Event}s, which represent the
+ * data from devices.
  */
 public abstract class Sensor {
 
@@ -58,20 +47,7 @@ public abstract class Sensor {
         return value.equals(UNKNOWN_STATUS);
     }
 
-    /**
-     * Human readable sensor name. Used with event processors, logging, etc.
-     */
-    private String sensorName;
-
-    /**
-     * Sensor's unique ID. Must be unique per controller deployment.
-     */
-    private int sensorID;
-
-    /**
-     * Identifier of the the related command that is used to receive sensor values.
-     */
-    private int commandID;
+    private SensorDefinition sensorDefinition;
 
     /**
      * Reference to the state cache that receives and processes the events generated from this sensor.
@@ -79,105 +55,32 @@ public abstract class Sensor {
     private StatusCache statusCache;
 
     /**
-     * An event producer is a protocol handler that can be customized to return values to a sensor.
-     * Therefore the sensor implementation remains type (as in Java class type) and protocol
-     * independent and delegates these protocol specific tasks to event producer implementations.
-     * <p>
-     * Two sub-categories of event producers exist today: pull and push commands. These are dealt
-     * differently in that pull commands are actively polled by
-     * the sensor while push commands produce events to the controller at their own schedule.
+     * An event producer command provides values to a sensor, typically through pull or push.
      */
     private EventProducerCommand eventProducerCommand;
 
     /**
-     * This is a polling thread implementation for sensors that use
-     * {@link PullCommand} instead of
-     * {@link PushCommand}.
+     * This is a polling thread implementation for sensors that use {@link PullCommand}.
      */
-    private DeviceReader deviceReader;
-
-    /**
-     * Sensor properties. These properties can be used by the protocol implementors to direct
-     * their implementation on read commands and event listeners according to sensor configuration.
-     */
-    private Map<String, String> sensorProperties;
+    private SensorReader sensorReader;
 
     /**
      * Constructs a new sensor with a given name, ID, sensor datatype (deprecated legacy),
      * an event producing protocol handler, reference to the managing device state cache,
      * and a set of sensor properties.
      *
-     * @param name                 Human readable name of the sensor. Used with event processors, logging, etc.
-     * @param sensorID             A unique sensor ID. Must be unique per controller deployment.
-     * @param cache                reference to a device state cache this sensor registers itself with and pushes
-     *                             value updates to
      * @param eventProducerCommand protocol handler implementation
-     * @param commandID            A unique command ID. Must be unique per controller deployment.
-     * @param sensorProperties     Additional sensor properties. These properties can be used by the protocol
-     *                             implementors to direct their implementation according to sensor configuration.
      */
-    protected Sensor(String name,
-                     int sensorID,
-                     StatusCache cache,
-                     EventProducerCommand eventProducerCommand,
-                     int commandID,
-                     Map<String, String> sensorProperties) {
+    protected Sensor(SensorDefinition sensorDefinition, EventProducerCommand eventProducerCommand) {
         if (eventProducerCommand == null) {
-            throw new IllegalArgumentException("Sensor requires event producer command: " + sensorID);
+            throw new IllegalArgumentException("Event producer command required: " + sensorDefinition);
         }
-
-        if (sensorProperties == null) {
-            sensorProperties = new HashMap<>(0);
-        }
-
-        this.sensorName = name;
-        this.sensorID = sensorID;
-        this.statusCache = cache;
+        this.sensorDefinition = sensorDefinition;
         this.eventProducerCommand = eventProducerCommand;
-        this.commandID = commandID;
-        this.sensorProperties = sensorProperties;
     }
 
-    /**
-     * Returns the human readable name of this sensor.
-     *
-     * @return sensor's name as defined in tooling and controller's XML definition
-     */
-    public String getName() {
-        return sensorName;
-    }
-
-    /**
-     * Returns this sensor's ID. The sensor ID is unique within a controller deployment.
-     *
-     * @return sensor ID
-     */
-    public int getSensorID() {
-        return sensorID;
-    }
-
-    /**
-     * Returns the identifier of the related command that is used to update sensor values.
-     *
-     * @return the command ID
-     */
-    public int getCommandID() {
-        return commandID;
-    }
-
-    /**
-     * Returns sensor's properties. Properties are simply string based name-value mappings.
-     * Concrete sensor implementations may specify which particular properties they expose.
-     * <p>
-     * The returned map does not reference this sensor instance and can be modified freely.
-     *
-     * @return sensor properties or an empty collection
-     */
-    public Map<String, String> getProperties() {
-        HashMap<String, String> props = new HashMap<>(5);
-        props.putAll(sensorProperties);
-
-        return props;
+    public SensorDefinition getSensorDefinition() {
+        return sensorDefinition;
     }
 
     /**
@@ -190,15 +93,17 @@ public abstract class Sensor {
      * @param state the new value for this sensor
      */
     public void update(String state) {
-        // TODO : signature update to event type -- http://jira.openremote.org/browse/ORCJAVA-97
-        // TODO : event dispatcher thread -- http://jira.openremote.org/browse/ORCJAVA-99
+        if (statusCache == null) {
+            LOG.fine("Ignoring update, sensor is not running: " + getSensorDefinition());
+            return;
+        }
 
         // Allow for sensor type specific processing of the value.
         // This can be used for mappings, validating value ranges, etc. before the value is
         // pushed into device state cache and event processor chain.
 
         Event evt = processEvent(state);
-        LOG.fine("Processed '" + state + "', received: " + evt.getValue());
+        LOG.fine("Update on ID " + getSensorDefinition().getSensorID() + ", processed '" + state + "', created: " + evt);
         statusCache.update(evt);
     }
 
@@ -211,33 +116,34 @@ public abstract class Sensor {
 
     /**
      * Starts this sensor. When this sensor is bound to push command, will invoke its
-     * {@link PushCommand#setSensor(Sensor)} method.
-     * For {@link PullCommand} implementations, this will start a polling thread to invoke
-     * their {@link PullCommand#read(Sensor)} method.
+     * {@link PushCommand#start(Sensor)} method. For {@link PullCommand} implementations,
+     * this will start a polling thread to invoke their {@link PullCommand#read(Sensor)} method.
      */
-    public void start() {
+    public void start(StatusCache statusCache) {
+        this.statusCache = statusCache;
         if (isPushCommand()) {
             PushCommand pushCommand = (PushCommand) eventProducerCommand;
             try {
-                pushCommand.setSensor(this);
+                pushCommand.start(this);
             } catch (Throwable t) {
                 LOG.log(Level.SEVERE, "There was an implementation error in the push command associated with " +
                     " sensor '" + this + "'. The command implementation may not have started correctly.", t);
             }
+        } else if (eventProducerCommand instanceof PullCommand) {
+            sensorReader = new SensorReader((PullCommand) eventProducerCommand);
+            sensorReader.start();
         } else {
-            deviceReader = new DeviceReader();
-            deviceReader.start();
+            LOG.info("No action implemented for command type: " + eventProducerCommand);
         }
     }
 
     /**
-     * Stops this sensor. In case this sensor has been bound to a push command, the stop
-     * invokes its {@link PushCommand#stop(Sensor)} method. In case of a
-     * {@link PullCommand}, the polling thread is stopped.
-     *
-     * @see org.openremote.controller.model.Sensor#start()
+     * Stops this sensor. In case this sensor has been bound to a push command, this invokes the
+     * {@link PushCommand#stop(Sensor)} method. In case of a {@link PullCommand}, the polling thread
+     * is stopped.
      */
     public void stop() {
+        statusCache = null;
         if (isPushCommand()) {
             PushCommand pushCommand = (PushCommand) eventProducerCommand;
             try {
@@ -246,15 +152,13 @@ public abstract class Sensor {
                 LOG.log(Level.SEVERE, "There was an implementation error in the push command associated with " +
                     " sensor '" + this + "'. The command implementation may not have stopped correctly.", t);
             }
-        } else {
-            if (deviceReader != null) {
-                deviceReader.stop();
-            }
+        } else if (sensorReader != null) {
+            sensorReader.stop();
         }
     }
 
     public boolean isRunning() {
-        return deviceReader != null && deviceReader.pollingThreadRunning;
+        return sensorReader != null && sensorReader.pollingThreadRunning;
     }
 
     /**
@@ -264,48 +168,31 @@ public abstract class Sensor {
      *
      * @param value value returned by the event producer
      * @return validated and processed value of the event producer
-     * @see Sensor#update
      */
     protected abstract Event processEvent(String value);
 
     /**
      * Handles the {@link PullCommand#read(Sensor)} polling.
      */
-    private class DeviceReader implements Runnable {
+    private class SensorReader implements Runnable {
+
+        final protected PullCommand pullCommand;
 
         /**
          * Indicates the device polling thread's run state. Notice that for immediate stop, setting
          * this to false is not sufficient, but the thread also must be interrupted. See
-         * {@link DeviceReader#stop}.
+         * {@link SensorReader#stop}.
          */
         private volatile boolean pollingThreadRunning = true;
-
-        /**
-         * The actual thread reference being used by the owning sensor instance when
-         * {@link PullCommand} is used as event producer.
-         */
         private Thread pollingThread;
-
-        /**
-         * The actual interval used
-         */
         private int interval;
 
-        public DeviceReader() {
-            if (eventProducerCommand instanceof PullCommand) {
-                int pollingInterval = ((PullCommand) eventProducerCommand).getPollingInterval();
-                if (pollingInterval > 0) {
-                    this.interval = ((PullCommand) eventProducerCommand).getPollingInterval();
-                } else {
-                    this.interval = PullCommand.POLLING_INTERVAL;
-                }
-            } else {
-                this.interval = PullCommand.POLLING_INTERVAL;
-            }
-            LOG.log(Level.INFO,
-                "Created polling thread for sensor (ID = {0}, name = {1}), polling interval {3}",
-                new Object[]{getSensorID(), getName(), this.interval}
-            );
+        public SensorReader(PullCommand pullCommand) {
+            this.pullCommand = pullCommand;
+            interval = pullCommand.getPollingInterval() > 0
+                ? pullCommand.getPollingInterval()
+                : PullCommand.POLLING_INTERVAL;
+            LOG.info("Created polling thread interval '" + interval + "' for: " + sensorDefinition);
         }
 
         /**
@@ -320,7 +207,7 @@ public abstract class Sensor {
         /**
          * Stops the device polling thread. Notice that stopping the thread will cause it to exit.
          * The same thread cannot be resumed but a new thread will be created via
-         * {@link DeviceReader#start()}.
+         * {@link SensorReader#start()}.
          */
         public void stop() {
             pollingThreadRunning = false;
@@ -334,42 +221,28 @@ public abstract class Sensor {
                     Level.WARNING,
                     "Could not interrupt device polling thread ''{0}'' due to security constraints: {1}\n" +
                         "the thread will exit in {2} milliseconds...",
-                    new Object[]{pollingThread.getName(), e.getMessage(), PullCommand.POLLING_INTERVAL}
+                    new Object[]{pollingThread.getName(), e.getMessage(), interval}
                 );
             }
         }
 
         /**
-         * Once every given interval defined in {@link PullCommand#POLLING_INTERVAL}, invokes a read()
-         * request on the sensor and the underlying event producer. Depending on event producer
-         * implementation this may create a concrete request on the device to read current state, or
-         * it may return a cached value from memory.
+         * Once every given interval defined in {@link PullCommand#POLLING_INTERVAL}, invokes the command.
+         * Depending on command implementation this may create a concrete request on the device to read
+         * current state, or it may return a cached value from memory.
          */
         @Override
         public void run() {
-            LOG.log(
-                Level.INFO,
-                "Started polling thread for sensor (ID = {0}, name = {1}).",
-                new Object[]{getSensorID(), getName()}
-            );
-
             while (pollingThreadRunning) {
+                LOG.fine("Polling: " + Sensor.this);
                 Sensor.this.update(read());
-
                 try {
                     Thread.sleep(this.interval);
                 } catch (InterruptedException e) {
                     pollingThreadRunning = false;
-                    LOG.log(
-                        Level.INFO,
-                        "Shutting down polling thread of sensor (ID = {0}, name = {1}).",
-                        new Object[]{getSensorID(), getName()}
-                    );
-                    Thread.currentThread().interrupt();
                 }
             }
         }
-
 
         /**
          * Returns the current state of this sensor.
@@ -377,11 +250,6 @@ public abstract class Sensor {
          * If the sensor is bound to a pull command implementation, the command is invoked --
          * this may yield an active request using the connecting transport to device unless the
          * command implementation caches certain values and returns them from memory.
-         * <p>
-         * In case of a push command, this method does not invoke anything on the command itself
-         * but returns the last stored state from the controller's device state cache associated with
-         * this sensor's ID. A push command implementation is responsible of actively updating and
-         * inserting the device state values into the controller's cache.
          * <p>
          * In case of errors, {@link #UNKNOWN_STATUS} is returned.
          * <p>
@@ -395,28 +263,11 @@ public abstract class Sensor {
          * {@link #UNKNOWN_STATUS} if value cannot be found.
          */
         private String read() {
-
-            // If this sensor abstracts a push command, the read() will not invoke the protocol
-            // handler associated with this sensor directly -- instead we try to fetch the latest
-            // value produced by a push command from the controller's global device state cache.
-
-            if (isPushCommand()) {
-                return statusCache.queryStatus(sensorID);
-            } else if (eventProducerCommand instanceof PullCommand) {
-                // If we are dealing with pull commands, execute it to explicitly fetch the
-                // device state...
-                PullCommand command = (PullCommand) eventProducerCommand;
-                try {
-                    return command.read(Sensor.this);
-                } catch (Throwable t) {
-                    LOG.log(Level.SEVERE, "Implementation error in pull command: " + eventProducerCommand, t);
-                    return UNKNOWN_STATUS;
-                }
-            } else {
-                throw new IllegalArgumentException(
-                    "Sensor has been initialized with an event producer that is neither a pull nor a push command. " +
-                        "This type can not be handled: " + eventProducerCommand.getClass().getName()
-                );
+            try {
+                return pullCommand.read(Sensor.this);
+            } catch (Throwable t) {
+                LOG.log(Level.SEVERE, "Implementation error in pull command: " + eventProducerCommand, t);
+                return UNKNOWN_STATUS;
             }
         }
     }
@@ -431,7 +282,7 @@ public abstract class Sensor {
     public static class UnknownEvent extends Event<String> {
 
         public UnknownEvent(Sensor sensor) {
-            super(sensor.getSensorID(), sensor.getName());
+            super(sensor.getSensorDefinition().getSensorID(), sensor.getSensorDefinition().getName());
         }
 
         @Override
@@ -476,30 +327,16 @@ public abstract class Sensor {
         }
     }
 
-    /**
-     * Test sensor object equality based on unique identifier (as returned by {@link #getSensorID}.
-     * <p>
-     * Subclasses are considered equal, despite what their data values are, as long as the sensor
-     * ID is equal.
-     *
-     * @param o object to compare to
-     * @return true if equals, false otherwise
-     */
     @Override
     public boolean equals(Object o) {
-        if (o == null)
-            return false;
-
-        if (!(o instanceof Sensor))
-            return false;
-
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         Sensor sensor = (Sensor) o;
-
-        return sensor.getSensorID() == this.getSensorID();
+        return sensorDefinition.equals(sensor.sensorDefinition);
     }
 
     @Override
     public int hashCode() {
-        return sensorID;
+        return sensorDefinition.hashCode();
     }
 }

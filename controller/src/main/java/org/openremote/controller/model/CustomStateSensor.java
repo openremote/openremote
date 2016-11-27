@@ -5,12 +5,10 @@ import org.openremote.controller.command.PullCommand;
 import org.openremote.controller.command.PushCommand;
 import org.openremote.controller.event.CustomStateEvent;
 import org.openremote.controller.event.Event;
-import org.openremote.controller.statuscache.StatusCache;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -25,70 +23,12 @@ import java.util.logging.Logger;
  * <p>
  * See {@link DistinctStates} for more details.
  */
-public class StateSensor extends Sensor {
+public class CustomStateSensor extends Sensor {
 
-    private static final Logger LOG = Logger.getLogger(StateSensor.class.getName());
+    private static final Logger LOG = Logger.getLogger(CustomStateSensor.class.getName());
 
-    /**
-     * The default setting for enforcing strict state mapping rules -- only explicitly declared
-     * state values can be returned from this sensor.
-     */
-    public final static boolean DEFAULT_STRICT_STATE_MAPPING = true;
-
-    /**
-     * Adds distinct states as sensor properties.
-     *
-     * @param include indicates whether the sensor's distinct states should be included as
-     *                properties or if an empty property set should be returned instead
-     * @param states  the distinct states of this sensor
-     * @return sensor's properties, including the distinct state names if included
-     */
-    private static Map<String, String> statesAsProperties(boolean include, DistinctStates states) {
-        if (states == null || !include) {
-            return new HashMap<>(0);
-        }
-        HashMap<String, String> props = new HashMap<>();
-        int index = 1;
-        for (String state : states.getAllStates()) {
-            props.put("state-" + index++, state);
-        }
-        return props;
-    }
-
-    /**
-     * Stores the state values and possible mappings for this sensor.
-     */
-    private DistinctStates states;
-
-
-    /**
-     * Indicates whether this sensor instance should enforce strict state mapping rules -- when
-     * enabled, only state values explicitly declared for this sensor will be accepted and returned.
-     * If set to false, all values are allowed but those with value mappings will be converted.
-     */
-    private boolean hasStrictStateMapping = DEFAULT_STRICT_STATE_MAPPING;
-
-    /**
-     * Constructs a new sensor with a given sensor ID, event producer and distinct state values
-     * this sensor will return.
-     * <p>
-     * The default implementation of a state sensor sends all its state values to event producer
-     * implementations -- therefore protocol implementers can inspect what the expected return
-     * values of a state sensor are and adjust their implementations accordingly. See
-     * {@link PullCommand} and
-     * {@link PushCommand} for details.
-     *
-     * @param name      human-readable name of this sensor
-     * @param sensorID  controller unique identifier
-     * @param cache     reference to the device state cache this sensor will register with
-     * @param producer  the protocol handler that backs this sensor either with a read command
-     *                  or event listener implementation
-     * @param commandID controller unique identifier of related command
-     * @param states    distinct state values and their mappings this sensor will return
-     */
-    public StateSensor(String name, int sensorID, StatusCache cache, EventProducerCommand producer, int commandID, DistinctStates states) {
-        this(name, sensorID, cache, producer, commandID, states, true);
-    }
+    final protected DistinctStates states;
+    final protected boolean strictStateMapping;
 
     /**
      * Constructs a new sensor with a given sensor ID, event producer and distinct state values
@@ -101,40 +41,34 @@ public class StateSensor extends Sensor {
      * states explicit, it may not be necessary to pass the additional property information to
      * event producer implementers.
      *
-     * @param name                      human-readable name of this sensor
-     * @param sensorID                  controller unique identifier
-     * @param cache                     reference to the device state cache this sensor will register with
-     * @param producer                  the protocol handler that backs this sensor either with a read command
-     *                                  or event listener implementation
-     * @param commandID                 controller unique identifier of related command
-     * @param states                    distinct state values and their mappings this sensor will return
-     * @param includeStatesAsProperties indicates whether the sensor implementation should pass the
-     *                                  explicit state strings as sensor properties for event producer implementers
-     *                                  to inspect
+     * @param producer           the data/event producing command implementation that backs this sensor
+     * @param states             distinct state values and their mappings this sensor will return
+     * @param strictStateMapping Indicates whether this sensor instance should enforce strict state mapping rules -- when
+     *                           enabled, only state values explicitly declared for this sensor will be accepted and returned.
+     *                           If set to false, all values are allowed but those with value mappings will be converted.
      */
-    protected StateSensor(String name, int sensorID, StatusCache cache, EventProducerCommand producer,
-                          int commandID, DistinctStates states, boolean includeStatesAsProperties) {
-        super(name, sensorID, cache, producer, commandID, statesAsProperties(includeStatesAsProperties, states));
-
+    protected CustomStateSensor(SensorDefinition sensorDefinition, EventProducerCommand producer, DistinctStates states, boolean strictStateMapping) {
+        super(sensorDefinition, producer);
         if (states == null) {
             this.states = new DistinctStates();
         } else {
             this.states = states;
         }
+        this.strictStateMapping = strictStateMapping;
     }
 
     /**
      * Constructs an event from the raw protocol output string. This implementation checks the
      * incoming value for possible state mappings and returns an event containing the mapped
      * state value where necessary. Arbitrary, non-declared states are rejected unless
-     * {@link #setStrictStateMapping} has been set to false. When set to true, an
+     * {@link #strictStateMapping} has been set to false. When set to true, an
      * instance of {@link org.openremote.controller.model.Sensor.UnknownEvent} is returned
      * for any non-declared state.
      *
      * @return An event containing the state returned by the associated event producer or
      * a translated (mapped) version of the state string. Can return
      * {@link org.openremote.controller.model.Sensor.UnknownEvent} in case where
-     * {@link #setStrictStateMapping} is true and a state value is returned from the
+     * {@link #strictStateMapping} is true and a state value is returned from the
      * event producer that has not been declared as a distinct state for this sensor.
      */
     @Override
@@ -144,14 +78,8 @@ public class StateSensor extends Sensor {
                 return new UnknownEvent(this);
             }
 
-            if (hasStrictStateMapping) {
-                Event evt = new UnknownEvent(this);
-                LOG.log(Level.WARNING,
-                    "Event producer bound to sensor (ID = {0}) returned a value that is not " +
-                        "consistent with sensor''s datatype : {1}  setting sensor value to ''{2}''",
-                    new Object[]{super.getSensorID(), value, evt.getValue()}
-                );
-
+            if (strictStateMapping) {
+                LOG.warning("Event producer's value is not consistent with '" + getSensorDefinition() + "': " + value);
                 return new UnknownEvent(this);
             } else {
                 return createEvent(value);
@@ -165,18 +93,6 @@ public class StateSensor extends Sensor {
         }
     }
 
-
-    /**
-     * When set to true, this sensor can only return values that have been explicitly declared as
-     * its distinct states. When false, any arbitrary value can be returned from the sensor (those
-     * with distinct state mappings will get translated).
-     *
-     * @param strictStateMapping true or false
-     */
-    public void setStrictStateMapping(boolean strictStateMapping) {
-        this.hasStrictStateMapping = strictStateMapping;
-    }
-
     /**
      * Constructs an event for this sensor with a given state value. Subclasses can override this
      * implementation to provide their own specific event types.
@@ -185,10 +101,7 @@ public class StateSensor extends Sensor {
      * @return new event instance associated with this sensor
      */
     protected Event createEvent(String value) {
-        int id = getSensorID();
-        String name = getName();
-
-        return new CustomStateEvent(id, name, value);
+        return new CustomStateEvent(getSensorDefinition().getSensorID(), getSensorDefinition().getName(), value);
     }
 
     /**
@@ -201,10 +114,7 @@ public class StateSensor extends Sensor {
      * @return new event instance associated with this sensor
      */
     protected Event createEvent(String value, String originalValue) {
-        int id = getSensorID();
-        String name = getName();
-
-        return new CustomStateEvent(id, name, value, originalValue);
+        return new CustomStateEvent(getSensorDefinition().getSensorID(), getSensorDefinition().getName(), value, originalValue);
     }
 
     /**
@@ -300,10 +210,9 @@ public class StateSensor extends Sensor {
 
     @Override
     public String toString() {
-        return "StateSensor{" +
-            ", sensorID=" + getSensorID() +
-            ", commandID=" + getCommandID() +
-            ", hasStrictStateMapping=" + hasStrictStateMapping +
+        return getClass().getSimpleName() + "{" +
+            "sensorDefinition=" + getSensorDefinition() +
+            ", hasStrictStateMapping=" + strictStateMapping +
             ", states=" + states +
             '}';
     }

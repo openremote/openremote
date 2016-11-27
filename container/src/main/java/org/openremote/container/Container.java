@@ -35,6 +35,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -194,9 +195,13 @@ public class Container {
     /**
      * Starts the container and a non-daemon thread that waits forever.
      */
-    public void startBackground() throws Exception {
+    public void startBackground() throws Throwable {
         // We block here so we die fast if startup fails
-        start().get();
+        try {
+            start().get();
+        } catch (ExecutionException ex) {
+            throw ex.getCause();
+        }
         Thread containerThread = new Thread("container") {
             @Override
             public void run() {

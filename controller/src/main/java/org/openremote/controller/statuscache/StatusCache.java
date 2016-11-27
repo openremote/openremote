@@ -42,8 +42,8 @@ public class StatusCache {
      */
     private volatile Boolean isShutdownInProcess = false;
 
-    public StatusCache(ChangedStatusTable cst, EventProcessorChain epc) {
-        this.eventProcessorChain = epc;
+    public StatusCache(ChangedStatusTable cst, EventProcessorChain eventProcessorChain) {
+        this.eventProcessorChain = eventProcessorChain;
         this.sensorMap = new SensorMap(cst);
     }
 
@@ -57,29 +57,17 @@ public class StatusCache {
      *
      * @param sensor sensor to register
      */
-    public synchronized void registerSensor(Sensor sensor) {
-        // TODO :
-        //   push thread synchronization down to sensorMap.init() once
-        //   Sensor references are handled there
-        //                                                    [JPL]
-
+    public synchronized void registerAndStartSensor(Sensor sensor) {
         if (isShutdownInProcess) {
             return;
         }
-
-        Sensor previous = sensors.put(sensor.getSensorID(), sensor);
-
-        // Use a specific log category just to log the creation of sensor objects
-        // in this method (happens at startup or soft restart)...
-
+        Sensor previous = sensors.put(sensor.getSensorDefinition().getSensorID(), sensor);
         if (previous != null) {
-            throw new IllegalArgumentException(
-                "Duplicate registration of sensor ID '" + sensor.getSensorID() + "', already registered as sensor named '" + previous.getName()
-            );
+            throw new IllegalArgumentException("Duplicate registration: " + sensor.getSensorDefinition());
         }
-
         sensorMap.init(sensor);
-        LOG.info("Registered sensor: " + sensor);
+        sensor.start(this);
+        LOG.info("Registered and started sensor: " + sensor);
     }
 
     /**
@@ -196,7 +184,6 @@ public class StatusCache {
     private void stopSensors() {
         for (Sensor sensor : sensors.values()) {
             LOG.info("Stopping sensor: " + sensor);
-
             try {
                 sensor.stop();
             } catch (Throwable t) {
@@ -216,8 +203,8 @@ public class StatusCache {
         }
 
         private void init(Sensor sensor) {
-            nameIdIndex.put(sensor.getName(), sensor.getSensorID());
-            currentState.put(sensor.getSensorID(), new Sensor.UnknownEvent(sensor));
+            nameIdIndex.put(sensor.getSensorDefinition().getName(), sensor.getSensorDefinition().getSensorID());
+            currentState.put(sensor.getSensorDefinition().getSensorID(), new Sensor.UnknownEvent(sensor));
         }
 
         private Iterator<Event> getSnapshot() {
@@ -234,7 +221,7 @@ public class StatusCache {
         private void clearDeviceStatusChanges() {
             for (Sensor sensor : sensors.values()) {
                 // Just wake up all the records, acturelly, the status didn't change.
-                deviceStatusChanges.updateStatusChangedIDs(sensor.getSensorID());
+                deviceStatusChanges.updateStatusChangedIDs(sensor.getSensorDefinition().getSensorID());
             }
             deviceStatusChanges.clearAllRecords();
         }

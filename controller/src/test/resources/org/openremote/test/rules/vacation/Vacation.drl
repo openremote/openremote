@@ -1,6 +1,6 @@
 package org.openremote.test.rules;
 
-global org.openremote.controller.event.CommandFacade execute;
+global org.openremote.controller.event.facade.CommandFacade execute;
 
 import org.openremote.controller.command.*;
 import org.openremote.controller.event.*;

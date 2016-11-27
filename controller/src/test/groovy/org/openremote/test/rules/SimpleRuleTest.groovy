@@ -3,19 +3,13 @@ package org.openremote.test.rules
 import org.kie.api.KieServices
 import org.kie.api.io.Resource
 import org.openremote.controller.ControllerService
-import org.openremote.controller.event.CommandFacade
-import org.openremote.controller.event.EventProcessorChain
 import org.openremote.controller.event.SwitchEvent
-import org.openremote.controller.model.SwitchSensor
 import org.openremote.controller.rules.RuleEngine
 import org.openremote.test.ContainerTrait
 import org.openremote.test.util.EventGrabProcessor
-import org.openremote.test.util.TestEventProducerCommand
 import spock.lang.Specification
 
 import java.util.stream.Stream
-
-import static org.kie.api.io.ResourceType.DRL
 
 /**
  * Basic rule engine test, trigger a rule through an event.
@@ -25,57 +19,42 @@ class SimpleRuleTest extends Specification implements ContainerTrait {
 
     def "Sensor event replaced by rule-triggered event"() {
 
-        given: "event processors and rules"
+        given: "a controller deployment"
+        def controllerDeploymentXml = getClass().getResourceAsStream(
+                "/org/openremote/test/rules/simple/controller.xml"
+        )
+
+        and: "event processors and rules"
         def ruleEngineProcessor = new RuleEngine() {
             @Override
             protected Stream<Resource> getResources(KieServices kieServices) {
                 Stream.of(
                         kieServices.getResources().newClassPathResource(
                                 "org/openremote/test/rules/simple/EventMod.drl"
-                        ).setResourceType(DRL)
+                        )
                 )
             }
         }
         def grabProcessor = new EventGrabProcessor();
 
-        def commandDefinitions = []
-        def commandFacade = new CommandFacade(commandDefinitions)
-        def eventProcessorChain = new EventProcessorChain(
-                commandFacade,
+        and: "the started controller server"
+        def controllerService = new ControllerService(
+                controllerDeploymentXml,
+                new TestCommandFactory(),
                 ruleEngineProcessor,
                 grabProcessor
         )
-
-        and: "the started controller server"
-        def controllerService = new ControllerService(eventProcessorChain)
         def services = Stream.of(controllerService)
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), services)
 
-        and: "registered sensor"
-        def sensorName = "test"
-        def sensorId = 123
-        def commandId = 1
-        def switchSensor = new SwitchSensor(
-                sensorName,
-                sensorId,
-                controllerService.getCache(),
-                new TestEventProducerCommand(),
-                commandId
-        );
-        controllerService.getCache().registerSensor(switchSensor);
-
-        when: "the sensor says it has been switched on"
-        def switchEvent = new SwitchEvent(sensorId, sensorName, "on", SwitchEvent.State.ON);
-        controllerService.getCache().update(switchEvent);
-
-        and: "we wait a bit for the rules to fire"
-        Thread.sleep(100);
+        when: "we wait for initial state polling of sensor and rule execution"
+        Thread.sleep(500);
 
         then: "the rules should immediately switch the sensor off again"
         def lastEvent = grabProcessor.lastEvent;
-        lastEvent.getSourceID() == sensorId
-        lastEvent.getSource() == sensorName
+        lastEvent.getSourceID() == 123
+        lastEvent.getSource() == "TestSensor"
         lastEvent instanceof SwitchEvent
         def grabbedSwitchEvent = (SwitchEvent) lastEvent;
         grabbedSwitchEvent.getValue() == "off"
@@ -85,7 +64,27 @@ class SimpleRuleTest extends Specification implements ContainerTrait {
         grabProcessor.totalEventCount == 1
 
         and: "the cache state of the sensor should be 'off'"
-        controllerService.getCache().queryStatus(sensorId) == "off"
+        controllerService.getCache().queryStatus(123) == "off"
+
+        and: "the deployment model should work"
+        controllerService.getDeployment().getCommandDefinition(456).getCommandID() == 456
+        controllerService.getDeployment().getCommandDefinition(123123) == null
+        controllerService.getDeployment().getCommandDefinition("TestDevice", "TestCommand").getCommandID() == 456
+        controllerService.getDeployment().getCommandDefinition("TestDevice", "NoSuchThing") == null
+        controllerService.getDeployment().getCommandDefinition("NoSuchThing", "NoSuchThing") == null
+        controllerService.getDeployment().getCommandDefinition("", "") == null
+        controllerService.getDeployment().getCommandDefinition(null, "") == null
+        controllerService.getDeployment().getCommandDefinition("", null) == null
+        controllerService.getDeployment().getCommandDefinition(null, null) == null
+        controllerService.getDeployment().getCommandDefinition("TestCommand").getCommandID() == 456
+        controllerService.getDeployment().getCommandDefinition("NoSuchThing") == null
+        controllerService.getDeployment().getCommandDefinition("") == null
+        controllerService.getDeployment().getCommandDefinition(null) == null
+        controllerService.getDeployment().getDevices().length == 1
+        controllerService.getDeployment().getDevices()[0].getName() == "TestDevice"
+        controllerService.getDeployment().getDevices()[0].getDeviceID() == 111
+        controllerService.getDeployment().getDevice("TestDevice").getName() == "TestDevice"
+        controllerService.getDeployment().getDevice("TestDevice").getDeviceID() == 111
 
         cleanup: "the server should be stopped"
         stopContainer(container)

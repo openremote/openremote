@@ -3,10 +3,7 @@ package org.openremote.controller.model;
 import org.openremote.controller.command.EventProducerCommand;
 import org.openremote.controller.event.Event;
 import org.openremote.controller.event.RangeEvent;
-import org.openremote.controller.statuscache.StatusCache;
 
-import java.util.HashMap;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class RangeSensor extends Sensor {
@@ -16,8 +13,8 @@ public class RangeSensor extends Sensor {
     private int minValue;
     private int maxValue;
 
-    public RangeSensor(String name, int sensorID, StatusCache cache, EventProducerCommand eventProducerCommand, int commandID, int minValue, int maxValue) {
-        super(name, sensorID, cache, eventProducerCommand, commandID, new HashMap<>());
+    public RangeSensor(SensorDefinition sensorDefinition, EventProducerCommand eventProducerCommand, int minValue, int maxValue) {
+        super(sensorDefinition, eventProducerCommand);
         if (minValue > maxValue)
             throw new IllegalArgumentException("Sensor value min '" + minValue + "' is larger than max '" + maxValue + "'");
         this.minValue = minValue;
@@ -35,14 +32,16 @@ public class RangeSensor extends Sensor {
     @Override
     protected Event processEvent(String value) {
         try {
-            return new RangeEvent(getSensorID(), getName(), new Integer(value.trim()), getMinValue(), getMaxValue());
+            return new RangeEvent(
+                getSensorDefinition().getSensorID(),
+                getSensorDefinition().getName(),
+                new Integer(value.trim()),
+                getMinValue(),
+                getMaxValue()
+            );
         } catch (NumberFormatException exception) {
             if (!isUnknownSensorValue(value)) {
-                LOG.log(
-                    Level.WARNING,
-                    "Sensor ''{0}'' (ID = {1}) is RANGE type but produced a value that is not an integer : ''{2}''",
-                    new Object[]{getName(), getSensorID(), value}
-                );
+                LOG.warning("Range sensor '" + getSensorDefinition() + "' produced a non-integer value: " + value);
             }
             return new UnknownEvent(this);
         }
@@ -51,12 +50,12 @@ public class RangeSensor extends Sensor {
 
     @Override
     public String toString() {
-        return "RangeSensor{" +
-            ", sensorID=" + getSensorID() +
-            ", commandID=" + getCommandID() +
+        return getClass().getSimpleName() + "{" +
+            "sensorDefinition=" + getSensorDefinition() +
             ", minValue=" + minValue +
             ", maxValue=" + maxValue +
             '}';
     }
 }
+
 

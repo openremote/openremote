@@ -82,11 +82,11 @@ public class RuleExecutionLogger extends DefaultAgendaEventListener {
         if (antecedent instanceof Sensor) //may be unnecessary if we never have raw sensor objects in WM
         {
             Sensor theSensor = (Sensor) antecedent;
-            String sensorName = theSensor.getName();
+            String sensorName = theSensor.getSensorDefinition().getName();
             theValue = String.format("Sensor: %s\n", sensorName);
 
             theValue = String.format("%s\t\tSensor Properties\n", theValue);
-            Map<String, String> sensorValues = theSensor.getProperties();
+            Map<String, String> sensorValues = theSensor.getSensorDefinition().getProperties();
 
             for (Map.Entry<String, String> entry : sensorValues.entrySet()) {
                 String entryName = entry.getKey();
@@ -119,7 +119,7 @@ public class RuleExecutionLogger extends DefaultAgendaEventListener {
 
         if (declarationValue instanceof Sensor) //may be unnecessary if we never have raw sensor objects in WM
         {
-            convertedDeclarationValue = ((Sensor) declarationValue).getName();
+            convertedDeclarationValue = ((Sensor) declarationValue).getSensorDefinition().getName();
         }
         if (declarationValue instanceof Event) {
             String sensorName = ((Event) declarationValue).getSource();

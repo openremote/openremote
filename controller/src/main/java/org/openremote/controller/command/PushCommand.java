@@ -10,15 +10,11 @@ import org.openremote.controller.model.Sensor;
  * polling implementation is provided by {@link PullCommand}
  * implementation but push commands can be used to override this default implementation.
  *
- * A push command can be used with the same 'sensor' abstraction (seen for example in
- * the controller's <tt>controller.xml</tt) configuration file) as
- * {@link PullCommand}s.
- *
  * Push commands are expected to create their own threads (if needed) which implement the
  * push functionality and also directly push received events to the
  * (global) state cache of the controller using the sensor callback API provided.
  *
- * Push command implementations can use the sensor
+ * Push command implementations use the sensor
  * {@link org.openremote.controller.model.Sensor#update} method to push state changes
  * into the controller, as shown in the example below:
  *
@@ -61,18 +57,20 @@ import org.openremote.controller.model.Sensor;
  *              therefore a very busy listener can overflow it with too many events. Control
  *              flow must be implemented co-operatively by the listener implementation ensuring
  *              that not too many events are created.
- *
  */
 public interface PushCommand extends EventProducerCommand {
 
   /**
-   * Each event listener is initialized with one or more sensor references the listener is bound to.
-   * If the listener is used as an input for multiple sensors, this callback is invoked multiple
-   * times, once for each associated sensor.
-   * 
-   * @param sensor    sensor this event listener is bound to
+   * This method may be invoked multiple times if the command instance is associated
+   * with several sensors. How many instances of the command exist and how multiple
+   * associations are handled is the responsibility of the command/factory implementation.
    */
-  void setSensor(Sensor sensor);
+  void start(Sensor sensor);
 
+    /**
+     * This method may be invoked multiple times if the command instance is associated
+     * with several sensors. How many instances of the command exist and how multiple
+     * associations are handled is the responsibility of the command/factory implementation.
+     */
   void stop(Sensor sensor);
 }

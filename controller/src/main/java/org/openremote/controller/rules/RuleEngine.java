@@ -20,12 +20,6 @@
  */
 package org.openremote.controller.rules;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import org.kie.api.KieBase;
 import org.kie.api.KieServices;
 import org.kie.api.builder.KieBuilder;
@@ -46,13 +40,13 @@ import org.kie.internal.builder.DecisionTableConfiguration;
 import org.kie.internal.builder.DecisionTableInputType;
 import org.kie.internal.builder.KnowledgeBuilderFactory;
 import org.openremote.container.Container;
-import org.openremote.controller.event.CommandFacade;
 import org.openremote.controller.event.Event;
 import org.openremote.controller.event.EventContext;
 import org.openremote.controller.event.EventProcessor;
-import org.openremote.controller.statuscache.LevelFacade;
-import org.openremote.controller.statuscache.RangeFacade;
-import org.openremote.controller.statuscache.SwitchFacade;
+import org.openremote.controller.event.facade.CommandFacade;
+import org.openremote.controller.event.facade.LevelFacade;
+import org.openremote.controller.event.facade.RangeFacade;
+import org.openremote.controller.event.facade.SwitchFacade;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -140,10 +134,6 @@ public abstract class RuleEngine extends EventProcessor {
     }
 
     @Override
-    public void init() throws Exception {
-    }
-
-    @Override
     public void start(CommandFacade commandFacade) throws Exception {
         KieServices kieServices = KieServices.Factory.get();
         KieModuleModel kieModuleModel = kieServices.newKieModuleModel();
@@ -176,52 +166,20 @@ public abstract class RuleEngine extends EventProcessor {
         rulePersistence = new RulePersistence();
         ruleUtil = new RuleUtil();
 
-        try {
-            knowledgeSession.setGlobal("execute", commandFacade);
-        } catch (Throwable t) {
-            // TODO So, we never see any problems?
-        }
-
-        try {
-            knowledgeSession.setGlobal("switches", switchFacade);
-        } catch (Throwable t) {
-        }
-
-        try {
-            knowledgeSession.setGlobal("ranges", rangeFacade);
-        } catch (Throwable t) {
-        }
-
-        try {
-            knowledgeSession.setGlobal("levels", levelFacade);
-        } catch (Throwable t) {
-        }
-
-        try {
-            knowledgeSession.setGlobal("persistence", rulePersistence);
-        } catch (Throwable t) {
-        }
-
-        try {
-            knowledgeSession.setGlobal("util", ruleUtil);
-        } catch (Throwable t) {
-        }
-
-        try {
-            knowledgeSession.setGlobal("JSON", Container.JSON);
-        } catch (Throwable t) {
-        }
-
-        try {
-            knowledgeSession.setGlobal("LOG", LOG);
-        } catch (Throwable t) {
-        }
+        setGlobal("execute", commandFacade);
+        setGlobal("switches", switchFacade);
+        setGlobal("ranges", rangeFacade);
+        setGlobal("levels", levelFacade);
+        setGlobal("persistence", rulePersistence);
+        setGlobal("util", ruleUtil);
+        setGlobal("JSON", Container.JSON);
+        setGlobal("LOG", LOG);
 
         try {
             RuleExecutionLogger ruleExecutionLogger = new RuleExecutionLogger();
             knowledgeSession.addEventListener(ruleExecutionLogger);
         } catch (Throwable t) {
-            LOG.fine("Exception in addEventListener");
+            throw new Exception(t);
         }
 
         LOG.fine("Rule engine started");
@@ -242,6 +200,14 @@ public abstract class RuleEngine extends EventProcessor {
         eventSources.clear();
 
         kb = null;
+    }
+
+    protected void setGlobal(String identifier, Object object) {
+        try {
+            knowledgeSession.setGlobal(identifier, object);
+        } catch (Throwable t) {
+            // Ignore, Drools complains if the DRL doesn't declare the global, but it works
+        }
     }
 
     protected void addResources(KieServices kieServices, KieFileSystem kfs) {

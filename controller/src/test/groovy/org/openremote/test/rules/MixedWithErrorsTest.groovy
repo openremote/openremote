@@ -3,15 +3,9 @@ package org.openremote.test.rules
 import org.kie.api.KieServices
 import org.kie.api.io.Resource
 import org.openremote.controller.ControllerService
-import org.openremote.controller.event.CommandFacade
-import org.openremote.controller.event.EventProcessorChain
-import org.openremote.controller.event.RangeEvent
-import org.openremote.controller.event.SwitchEvent
-import org.openremote.controller.model.RangeSensor
 import org.openremote.controller.rules.RuleEngine
 import org.openremote.test.ContainerTrait
 import org.openremote.test.util.EventGrabProcessor
-import org.openremote.test.util.TestEventProducerCommand
 import spock.lang.Specification
 
 import java.util.stream.Stream
@@ -25,7 +19,12 @@ class MixedWithErrorsTest extends Specification implements ContainerTrait {
 
     def "Execute good rules - ignore broken rules"() {
 
-        given: "some sensor event processors and rules"
+        given: "a controller deployment"
+        def controllerDeploymentXml = getClass().getResourceAsStream(
+                "/org/openremote/test/rules/mixed-with-errors/controller.xml"
+        )
+
+        and: "some sensor event processors and rules"
         def ruleEngineProcessor = new RuleEngine() {
             @Override
             protected Stream<Resource> getResources(KieServices kieServices) {
@@ -47,164 +46,24 @@ class MixedWithErrorsTest extends Specification implements ContainerTrait {
         }
         def grabProcessor = new EventGrabProcessor()
 
-        def commandDefinitions = []
-        def commandFacade = new CommandFacade(commandDefinitions)
-        def eventProcessorChain = new EventProcessorChain(
-                commandFacade,
+        and: "the started controller server"
+        def testCommandFactory = new TestCommandFactory();
+        def controllerService = new ControllerService(
+                controllerDeploymentXml,
+                testCommandFactory,
                 ruleEngineProcessor,
                 grabProcessor
         )
-
-        and: "the started controller server"
-        def controllerService = new ControllerService(eventProcessorChain)
         def services = Stream.of(controllerService)
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), services)
 
-        when: "a switch event is dispatched"
-        def switchEvent = new SwitchEvent(1, "test", "on", SwitchEvent.State.ON);
-        controllerService.getCache().update(switchEvent)
+        when: "we wait a bit for initial state and rules to fire"
+        Thread.sleep(500)
 
-        and: "we wait a bit for the rules to fire"
-        Thread.sleep(100)
-        def lastEvent = grabProcessor.lastEvent
-
-        then: "the event should not be modified"
-        lastEvent.getSourceID() == 1
-        lastEvent.getSource() == "test"
-        lastEvent.getValue() == "on"
-        lastEvent.serialize() == "on"
-
-        and: "the total event couht should match"
-        grabProcessor.totalEventCount == 1
-
-        when: "a range sensor is registered"
-        controllerService.getCache().registerSensor(
-                new RangeSensor(
-                        "test level mod",
-                        123,
-                        controllerService.getCache(),
-                        new TestEventProducerCommand(),
-                        1,
-                        0,
-                        1000
-                )
-        )
-
-        and: "a range event is dispatched"
-        def rangeEvent = new RangeEvent(123, "test level mod", 30, 0, 1000);
-        controllerService.getCache().update(rangeEvent)
-
-        and: "we wait a bit for the rules to fire"
-        Thread.sleep(100)
-        lastEvent = grabProcessor.lastEvent
-
-        then: "the event should be modified/replaced"
-        lastEvent.getSourceID() == 123
-        lastEvent.getSource() == "test level mod"
-        lastEvent.getValue() == 321
-        lastEvent.serialize() == "321"
-        lastEvent instanceof RangeEvent
-        lastEvent != rangeEvent // Must be replaced by rule!
-
-        and: "the total event couht should match"
-        grabProcessor.totalEventCount == 2
-
-        when: "another range sensor is registered"
-        controllerService.getCache().registerSensor(
-                new RangeSensor(
-                        "test level mod 555",
-                        555,
-                        controllerService.getCache(),
-                        new TestEventProducerCommand(),
-                        1,
-                        0,
-                        10000
-                )
-        )
-
-        and: "a range event is dispatched"
-        rangeEvent = new RangeEvent(555, "test level mod 555", 101, 0, 10000)
-        controllerService.getCache().update(rangeEvent)
-
-        and: "we wait a bit for the rules to fire"
-        Thread.sleep(100)
-        lastEvent = grabProcessor.lastEvent
-
-        then: "the event should be modified/replaced"
-        lastEvent.getSourceID() == 555
-        lastEvent.getSource() == "test level mod 555"
-        lastEvent.getValue() == 55
-        lastEvent.serialize() == "55"
-        lastEvent instanceof RangeEvent
-        lastEvent != rangeEvent // Must be replaced by rule!
-
-        and: "the total event couht should match"
-        grabProcessor.totalEventCount == 3
-
-        when: "another range sensor is registered"
-        controllerService.getCache().registerSensor(
-                new RangeSensor(
-                        "test level mod 666",
-                        666,
-                        controllerService.getCache(),
-                        new TestEventProducerCommand(),
-                        1,
-                        0,
-                        10000
-                )
-        )
-
-        and: "a range event is dispatched"
-        rangeEvent = new RangeEvent(666, "test level mod 666", 1, 1, 10000)
-        controllerService.getCache().update(rangeEvent)
-
-        and: "we wait a bit for the rules to fire"
-        Thread.sleep(100)
-        lastEvent = grabProcessor.lastEvent
-
-        then: "the event should be modified/replaced"
-        lastEvent.getSourceID() == 666
-        lastEvent.getSource() == "test level mod 666"
-        lastEvent.getValue() == 6666
-        lastEvent.serialize() == "6666"
-        lastEvent instanceof RangeEvent
-        lastEvent != rangeEvent // Must be replaced by rule!
-
-        and: "the total event couht should match"
-        grabProcessor.totalEventCount == 4
-
-        when: "another range sensor is registered"
-        controllerService.getCache().registerSensor(
-                new RangeSensor(
-                        "test level mod 777",
-                        777,
-                        controllerService.getCache(),
-                        new TestEventProducerCommand(),
-                        1,
-                        -100,
-                        100
-                )
-        )
-
-        and: "a range event is dispatched"
-        rangeEvent = new RangeEvent(777, "test level mod 777", 10, -100, 100)
-        controllerService.getCache().update(rangeEvent)
-
-        and: "we wait a bit for the rules to fire"
-        Thread.sleep(100)
-        lastEvent = grabProcessor.lastEvent
-
-        then: "the event should be modified/replaced"
-        lastEvent.getSourceID() == 777
-        lastEvent.getSource() == "test level mod 777"
-        lastEvent.getValue() == -77
-        lastEvent.serialize() == "-77"
-        lastEvent instanceof RangeEvent
-        lastEvent != rangeEvent // Must be replaced by rule!
-
-        and: "the total event couht should match"
-        grabProcessor.totalEventCount == 5
+        then: "the state should match"
+        controllerService.getCache().queryStatus(444) == "12345" // TODO This should be limited to max, which is 1000
+        controllerService.getCache().queryStatus(555) == "55"
 
         cleanup: "the server should be stopped"
         stopContainer(container)

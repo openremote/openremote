@@ -1,6 +1,5 @@
-package org.openremote.controller.statuscache;
+package org.openremote.controller.event.facade;
 
-import org.openremote.controller.event.SingleValueEventFacade;
 import org.openremote.controller.event.RangeEvent;
 
 import java.util.logging.Logger;
@@ -11,6 +10,7 @@ public class RangeFacade extends SingleValueEventFacade<RangeFacade.RangeAdapter
 
     @Override
     protected RangeEvent createDefaultEvent(int sourceID, String sourceName) {
+        // TODO We drop the min/max here, not good
         return new RangeEvent(sourceID, sourceName, 0, Integer.MIN_VALUE, Integer.MAX_VALUE);
     }
 
