@@ -34,15 +34,13 @@ class VacationTest extends Specification implements ContainerTrait {
                 )
             }
         }
-        def grabProcessor = new EventGrabProcessor();
 
         and: "the started controller server"
         def testCommandFactory = new TestCommandBuilder();
         def controllerService = new ControllerService(
                 controllerDeploymentXml,
                 testCommandFactory,
-                ruleEngineProcessor,
-                grabProcessor
+                ruleEngineProcessor
         )
         def services = Stream.of(controllerService)
         def serverPort = findEphemeralPort()

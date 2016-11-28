@@ -5,7 +5,6 @@ import org.kie.api.io.Resource
 import org.openremote.controller.ControllerService
 import org.openremote.controller.rules.RuleEngine
 import org.openremote.test.ContainerTrait
-import org.openremote.test.util.EventGrabProcessor
 import spock.lang.Specification
 
 import java.util.stream.Stream
@@ -30,16 +29,13 @@ class ClimateControlTest extends Specification implements ContainerTrait {
                 )
             }
         }
-        def grabProcessor = new EventGrabProcessor();
-
 
         and: "the started controller server"
         def testCommandFactory = new TestCommandBuilder();
         def controllerService = new ControllerService(
                 controllerDeploymentXml,
                 testCommandFactory,
-                ruleEngineProcessor,
-                grabProcessor
+                ruleEngineProcessor
         )
         def services = Stream.of(controllerService)
         def serverPort = findEphemeralPort()
