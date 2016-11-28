@@ -46,10 +46,10 @@ class MixedWithErrorsTest extends Specification implements ContainerTrait {
         }
 
         and: "the started controller server"
-        def testCommandFactory = new TestCommandBuilder();
+        def testCommandBuilder = new TestCommandBuilder();
         def controllerService = new ControllerService(
                 controllerDeploymentXml,
-                testCommandFactory,
+                testCommandBuilder,
                 ruleEngineProcessor
         )
         def services = Stream.of(controllerService)

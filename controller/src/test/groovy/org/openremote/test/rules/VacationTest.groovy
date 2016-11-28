@@ -36,10 +36,10 @@ class VacationTest extends Specification implements ContainerTrait {
         }
 
         and: "the started controller server"
-        def testCommandFactory = new TestCommandBuilder();
+        def testCommandBuilder = new TestCommandBuilder();
         def controllerService = new ControllerService(
                 controllerDeploymentXml,
-                testCommandFactory,
+                testCommandBuilder,
                 ruleEngineProcessor
         )
         def services = Stream.of(controllerService)
@@ -54,7 +54,7 @@ class VacationTest extends Specification implements ContainerTrait {
         Thread.sleep(100);
 
         then: "the temperature change should be executed"
-        testCommandFactory.lastExecutionArgument == "21"
+        testCommandBuilder.lastExecutionArgument == "21"
 
         when: "the time of day is night"
         customStateEvent = new CustomStateEvent(123, "time of day", "night");
@@ -64,7 +64,7 @@ class VacationTest extends Specification implements ContainerTrait {
         Thread.sleep(100);
 
         then: "the temperature change should be executed"
-        testCommandFactory.lastExecutionArgument == "18"
+        testCommandBuilder.lastExecutionArgument == "18"
 
         when: "we go on vacation"
         def switchEvent = new SwitchEvent(789, "vacation start", "on", SwitchEvent.State.ON);
@@ -74,7 +74,7 @@ class VacationTest extends Specification implements ContainerTrait {
         Thread.sleep(100);
 
         then: "the temperature change should be executed"
-        testCommandFactory.lastExecutionArgument == "15"
+        testCommandBuilder.lastExecutionArgument == "15"
 
         when: "the time of day is day"
         customStateEvent = new CustomStateEvent(123, "time of day", "day");
@@ -84,13 +84,13 @@ class VacationTest extends Specification implements ContainerTrait {
         Thread.sleep(100);
 
         then: "the temperature change should be executed"
-        testCommandFactory.lastExecutionArgument == "15"
+        testCommandBuilder.lastExecutionArgument == "15"
 
         when: "we manually set the temperature"
         controllerService.getCommandFacade().command("temp", 19)
 
         then: "the temperature change should be executed"
-        testCommandFactory.lastExecutionArgument == "19"
+        testCommandBuilder.lastExecutionArgument == "19"
 
         cleanup: "the server should be stopped"
         stopContainer(container)
