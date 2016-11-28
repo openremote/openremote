@@ -57,7 +57,7 @@ public class VirtualCommand implements ExecutableCommand, PullCommand {
      *
      * @param address      arbitrary address string that is used to store the command parameter in
      *                     memory
-     * @param command      command name TODO (not used)
+     * @param command      command name TODO (not used) (The whole virtual command makes not much sense...)
      * @param commandParam command parameter value -- stored as a virtual device state value in
      *                     memory and can be later retrieved using this command's {@link #read}
      *                     method.
@@ -79,7 +79,7 @@ public class VirtualCommand implements ExecutableCommand, PullCommand {
      */
     @Override
     public void send(String arg) {
-        // TODO arg
+        // TODO What's with the arg? Never used?
         if (commandParam == null) {
             virtualDevices.put(address, command);
         } else {

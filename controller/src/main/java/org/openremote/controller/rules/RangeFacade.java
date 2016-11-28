@@ -10,7 +10,7 @@ public class RangeFacade extends SingleValueEventFacade<RangeFacade.RangeAdapter
 
     @Override
     protected RangeEvent createDefaultEvent(int sourceID, String sourceName) {
-        // TODO We drop the min/max here, not good
+        // TODO We drop the min/max here? This leads to events that don't restrict boundaries...
         return new RangeEvent(sourceID, sourceName, 0, Integer.MIN_VALUE, Integer.MAX_VALUE);
     }
 

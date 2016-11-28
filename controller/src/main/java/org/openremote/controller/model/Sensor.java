@@ -165,6 +165,8 @@ public abstract class Sensor {
 
     /**
      * Handles the {@link PullCommand#read(Sensor)} polling.
+     *
+     * TODO This is a major problem, every PullCommand uses a separate thread, we have hundreds of threads!
      */
     private class SensorReader implements Runnable {
 

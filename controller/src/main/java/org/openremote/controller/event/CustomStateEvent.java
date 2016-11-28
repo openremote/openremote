@@ -51,7 +51,7 @@ public class CustomStateEvent extends Event<String> {
 
     @Override
     public CustomStateEvent clone(String newValue) {
-        // TODO
+        // TODO What is this?
         throw new Error("NYI");
     }
 

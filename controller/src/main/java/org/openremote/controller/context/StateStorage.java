@@ -10,7 +10,7 @@ public interface StateStorage {
 
     SensorState get(int sensorID);
 
-    /* TODO For offset publishing/polling
+    /* TODO For polling/pushing to external system we need to be able to continue processing events from a known offset
     Iterator<SensorState> getSince(int timestamp);
 
     Iterator<SensorState> getSince(int timestamp, int sensorID);

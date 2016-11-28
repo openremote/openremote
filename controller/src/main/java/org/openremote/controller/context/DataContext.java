@@ -6,7 +6,7 @@ import org.openremote.controller.event.EventProcessorChain;
 import org.openremote.controller.model.Deployment;
 import org.openremote.controller.model.Sensor;
 
-`import java.util.Map;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,10 +21,6 @@ public class DataContext {
     final protected Map<Integer, Sensor> sensors = new ConcurrentHashMap<>();
     final protected StateStorage stateStorage = new InMemoryStateStorage();
 
-    /**
-     * Used to indicate if the data context is in the middle of a shut down process -- this
-     * flag can be used by methods to fail-fast in such cases.
-     */
     private volatile Boolean isShutdownInProcess = false;
 
     public DataContext(Deployment deployment, EventProcessorChain eventProcessorChain) {

@@ -33,6 +33,8 @@ This is the platform project of OpenRemote, where we integrate services and code
 
 TODO: Document other projects
 
+WORK IN PROGRESS:
+
 ```
 docker-compose -p myproject -f profile/dependencies/postgresql.yml -f profile/dependencies/keycloak.yml up
 
@@ -40,4 +42,8 @@ org.openremote.ccs.Server#main()
 
 GET localhost:8080/master/command/controller/123
 (Should result in 403 NOT ALLOWED)
+```
+
+```
+./gradlew -p controller clean test
 ```
