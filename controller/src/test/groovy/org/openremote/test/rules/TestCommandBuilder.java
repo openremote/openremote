@@ -1,16 +1,16 @@
 package org.openremote.test.rules;
 
 import org.openremote.controller.command.Command;
-import org.openremote.controller.command.CommandFactory;
+import org.openremote.controller.command.CommandBuilder;
 import org.openremote.controller.command.ExecutableCommand;
 import org.openremote.controller.command.PullCommand;
 import org.openremote.controller.deploy.CommandDefinition;
 
 import java.util.logging.Logger;
 
-public class TestCommandFactory extends CommandFactory {
+public class TestCommandBuilder extends CommandBuilder {
 
-    private static final Logger LOG = Logger.getLogger(TestCommandFactory.class.getName());
+    private static final Logger LOG = Logger.getLogger(TestCommandBuilder.class.getName());
 
     public String lastExecutionArgument;
 

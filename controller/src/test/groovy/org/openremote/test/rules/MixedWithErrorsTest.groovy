@@ -47,7 +47,7 @@ class MixedWithErrorsTest extends Specification implements ContainerTrait {
         def grabProcessor = new EventGrabProcessor()
 
         and: "the started controller server"
-        def testCommandFactory = new TestCommandFactory();
+        def testCommandFactory = new TestCommandBuilder();
         def controllerService = new ControllerService(
                 controllerDeploymentXml,
                 testCommandFactory,

@@ -15,8 +15,6 @@ public class SensorDefinition {
     final protected Map<String, String> properties;
 
     /**
-     * Constructs a new sensor definition with a given name, ID, and a set of sensor properties.
-     *
      * @param name              Human readable name of the sensor. Used with event processors, logging, etc.
      * @param sensorID          A unique sensor ID. Must be unique per controller deployment.
      * @param type              A sensor type.

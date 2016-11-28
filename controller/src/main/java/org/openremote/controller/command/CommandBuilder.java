@@ -7,7 +7,7 @@ import org.openremote.controller.deploy.CommandDefinition;
 /**
  * Build protocol- and device-specific command implementation.
  */
-public class CommandFactory {
+public class CommandBuilder {
 
     public Command build(CommandDefinition commandDefinition) {
 

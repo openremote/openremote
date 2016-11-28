@@ -2,7 +2,7 @@ package org.openremote.controller;
 
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.controller.command.CommandFactory;
+import org.openremote.controller.command.CommandBuilder;
 import org.openremote.controller.deploy.DeploymentDefinition;
 import org.openremote.controller.deploy.xml.ControllerDOMParser;
 import org.openremote.controller.event.EventProcessor;
@@ -19,7 +19,7 @@ public class ControllerService implements ContainerService {
     final protected ControllerDOMParser controllerDOMParser = new ControllerDOMParser();
     final protected InputStream deploymentXml;
 
-    final protected CommandFactory commandFactory;
+    final protected CommandBuilder commandBuilder;
     final protected EventProcessor[] eventProcessors;
 
     protected DeploymentDefinition deploymentDefinition;
@@ -27,9 +27,9 @@ public class ControllerService implements ContainerService {
     protected CommandFacade commandFacade;
     protected DataContext dataContext;
 
-    public ControllerService(InputStream deploymentXml, CommandFactory commandFactory, EventProcessor[] eventProcessors) {
+    public ControllerService(InputStream deploymentXml, CommandBuilder commandBuilder, EventProcessor[] eventProcessors) {
         this.deploymentXml = deploymentXml;
-        this.commandFactory = commandFactory;
+        this.commandBuilder = commandBuilder;
         this.eventProcessors = eventProcessors;
     }
 
@@ -40,7 +40,7 @@ public class ControllerService implements ContainerService {
 
     @Override
     public void configure(Container container) throws Exception {
-        deployment = new Deployment(deploymentDefinition, commandFactory);
+        deployment = new Deployment(deploymentDefinition, commandBuilder);
 
         commandFacade = new CommandFacade(deployment);
 

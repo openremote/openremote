@@ -40,7 +40,7 @@ class SimpleRuleTest extends Specification implements ContainerTrait {
         and: "the started controller server"
         def controllerService = new ControllerService(
                 controllerDeploymentXml,
-                new TestCommandFactory(),
+                new TestCommandBuilder(),
                 ruleEngineProcessor,
                 grabProcessor
         )

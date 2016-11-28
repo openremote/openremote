@@ -37,7 +37,7 @@ class VacationTest extends Specification implements ContainerTrait {
         def grabProcessor = new EventGrabProcessor();
 
         and: "the started controller server"
-        def testCommandFactory = new TestCommandFactory();
+        def testCommandFactory = new TestCommandBuilder();
         def controllerService = new ControllerService(
                 controllerDeploymentXml,
                 testCommandFactory,
@@ -87,6 +87,12 @@ class VacationTest extends Specification implements ContainerTrait {
 
         then: "the temperature change should be executed"
         testCommandFactory.lastExecutionArgument == "15"
+
+        when: "we manually set the temperature"
+        controllerService.getCommandFacade().command("temp", 19)
+
+        then: "the temperature change should be executed"
+        testCommandFactory.lastExecutionArgument == "19"
 
         cleanup: "the server should be stopped"
         stopContainer(container)

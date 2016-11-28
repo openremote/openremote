@@ -34,7 +34,7 @@ class ClimateControlTest extends Specification implements ContainerTrait {
 
 
         and: "the started controller server"
-        def testCommandFactory = new TestCommandFactory();
+        def testCommandFactory = new TestCommandBuilder();
         def controllerService = new ControllerService(
                 controllerDeploymentXml,
                 testCommandFactory,

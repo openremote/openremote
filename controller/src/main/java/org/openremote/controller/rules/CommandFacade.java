@@ -10,7 +10,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Can be used by {@link EventProcessor}s to trigger {@link ExecutableCommand}s (e.g. in rules).
+ * Can be used directly and/or by {@link EventProcessor}s to trigger
+ * {@link ExecutableCommand}s (e.g. in rules or from simple client call).
  */
 public class CommandFacade {
 
@@ -26,8 +27,8 @@ public class CommandFacade {
         command(commandName, null);
     }
 
-    public void command(String commandName, int value) {
-        command(commandName, Integer.toString(value));
+    public void command(String commandName, int arg) {
+        command(commandName, Integer.toString(arg));
     }
 
     public void command(String commandName, String arg) {
@@ -55,10 +56,10 @@ public class CommandFacade {
     public void execute(CommandDefinition commandDefinition, String arg) {
         Command command;
         try {
-            command = deployment.getCommandFactory().build(commandDefinition);
+            command = deployment.getCommandBuilder().build(commandDefinition);
             if (command == null) {
                 LOG.log(Level.WARNING,
-                    "No command was produced (can the protocol build an ExecutableCommand?): " + commandDefinition
+                    "No command was produced (does the protocol have an ExecutableCommand?): " + commandDefinition
                 );
             } else if (command instanceof ExecutableCommand) {
                 LOG.fine("Executing command '" + command + "' with: " + arg);

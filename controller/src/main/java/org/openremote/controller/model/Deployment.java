@@ -1,7 +1,7 @@
 package org.openremote.controller.model;
 
 import org.openremote.controller.command.Command;
-import org.openremote.controller.command.CommandFactory;
+import org.openremote.controller.command.CommandBuilder;
 import org.openremote.controller.command.EventProducerCommand;
 import org.openremote.controller.deploy.CommandDefinition;
 import org.openremote.controller.deploy.DeploymentDefinition;
@@ -12,12 +12,12 @@ import java.util.Map;
 
 public class Deployment {
 
-    final protected CommandFactory commandFactory;
+    final protected CommandBuilder commandBuilder;
     final protected Map<String, Device> devices = new HashMap<>();
     final protected Map<Integer, Sensor> sensors = new HashMap<>();
 
-    public Deployment(DeploymentDefinition deploymentDefinition, CommandFactory commandFactory) {
-        this.commandFactory = commandFactory;
+    public Deployment(DeploymentDefinition deploymentDefinition, CommandBuilder commandBuilder) {
+        this.commandBuilder = commandBuilder;
 
         for (SensorDefinition sensorDefinition : deploymentDefinition.getSensorDefinitions()) {
             Sensor sensor = buildSensor(sensorDefinition);
@@ -38,8 +38,8 @@ public class Deployment {
         }
     }
 
-    public CommandFactory getCommandFactory() {
-        return commandFactory;
+    public CommandBuilder getCommandBuilder() {
+        return commandBuilder;
     }
 
     public CommandDefinition getCommandDefinition(int commandID) {
@@ -103,13 +103,13 @@ public class Deployment {
     protected Sensor buildSensor(SensorDefinition sensorDefinition) {
         Sensor sensor;
 
-        Command definedCommand = commandFactory.build(sensorDefinition.getCommandDefinition());
+        Command command = commandBuilder.build(sensorDefinition.getCommandDefinition());
         EventProducerCommand sensorCommand;
-        if (definedCommand instanceof EventProducerCommand) {
-            sensorCommand = (EventProducerCommand) definedCommand;
+        if (command instanceof EventProducerCommand) {
+            sensorCommand = (EventProducerCommand) command;
         } else {
             throw new IllegalStateException(
-                "Sensor must reference event producer command, not '" + definedCommand + "': " + sensorDefinition
+                "Sensor must reference EventProducerCommand, not '" + command + "': " + sensorDefinition
             );
         }
 

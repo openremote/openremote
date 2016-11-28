@@ -6,8 +6,7 @@ import org.openremote.controller.event.EventProcessorChain;
 import org.openremote.controller.model.Deployment;
 import org.openremote.controller.model.Sensor;
 
-import java.util.Iterator;
-import java.util.Map;
+`import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -20,7 +19,7 @@ public class DataContext {
     final protected EventProcessorChain eventProcessorChain;
 
     final protected Map<Integer, Sensor> sensors = new ConcurrentHashMap<>();
-    final protected Map<Integer, Event> sensorState = new ConcurrentHashMap<>();
+    final protected StateStorage stateStorage = new InMemoryStateStorage();
 
     /**
      * Used to indicate if the data context is in the middle of a shut down process -- this
@@ -58,7 +57,7 @@ public class DataContext {
                     LOG.log(Level.SEVERE, "Failed to stop sensor: " + sensor, t);
                 }
             }
-            sensorState.clear();
+            stateStorage.clear();
             sensors.clear();
         } finally {
             isShutdownInProcess = false;
@@ -76,7 +75,7 @@ public class DataContext {
         }
 
         // Initial state
-        sensorState.put(sensor.getSensorDefinition().getSensorID(), new Sensor.UnknownEvent(sensor));
+        stateStorage.put(new SensorState(new Sensor.UnknownEvent(sensor)));
 
         sensor.start(this);
         LOG.info("Registered and started sensor: " + sensor);
@@ -98,28 +97,17 @@ public class DataContext {
             return;
         }
 
-        int sourceID = event.getSourceID();
-        if (sensorState.get(sourceID) == null) {
-            LOG.fine("Inserted: " + event);
-            sensorState.put(sourceID, event);
-        } else {
-            Event previousState = sensorState.get(sourceID);
-            if (previousState.isEqual(event)) {
-                return;
-            }
-            LOG.fine("Updated: " + event);
-            sensorState.put(sourceID, event);
-        }
+        stateStorage.put(new SensorState(event));
         LOG.fine("<== Updating status complete for event: " + event);
         // TODO: Trigger notification of client that stuff has changed? Put it in a message broker/queue/topic?
     }
 
     public String queryValue(int sensorID) {
-        if (!sensorState.containsKey(sensorID)) {
+        if (!stateStorage.contains(sensorID)) {
             LOG.info("Requested sensor id '" + sensorID + "' was not found. Defaulting to: " + Sensor.UNKNOWN_STATUS);
             return Sensor.UNKNOWN_STATUS;
         }
-        return sensorState.get(sensorID).serialize();
+        return stateStorage.get(sensorID).getEvent().serialize();
     }
 
     public String queryValue(String sensorName) {
@@ -127,15 +115,11 @@ public class DataContext {
     }
 
     public Event queryEvent(int sensorID) {
-        return sensorState.get(sensorID);
+        return stateStorage.get(sensorID).getEvent();
     }
 
     public Event queryEvent(String sensorName) {
         Integer sensorID = deployment.getSensorID(sensorName);
         return sensorID != null ? queryEvent(sensorID) : null;
-    }
-
-    public Iterator<Event> getFullSnapshot() {
-        return sensorState.values().iterator();
     }
 }
