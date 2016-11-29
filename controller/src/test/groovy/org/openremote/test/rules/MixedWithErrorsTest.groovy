@@ -5,7 +5,6 @@ import org.kie.api.io.Resource
 import org.openremote.controller.ControllerService
 import org.openremote.controller.rules.RuleEngine
 import org.openremote.test.ContainerTrait
-import org.openremote.test.util.EventGrabProcessor
 import spock.lang.Specification
 
 import java.util.stream.Stream
@@ -60,8 +59,8 @@ class MixedWithErrorsTest extends Specification implements ContainerTrait {
         Thread.sleep(500)
 
         then: "the state should match"
-        controllerService.getDataContext().queryValue(444) == "12345" // TODO This should be limited to max, which is 1000
-        controllerService.getDataContext().queryValue(555) == "55"
+        controllerService.getContext().queryValue(444) == "12345" // TODO This should be limited to max, which is 1000
+        controllerService.getContext().queryValue(555) == "55"
 
         cleanup: "the server should be stopped"
         stopContainer(container)

@@ -1,6 +1,6 @@
 package org.openremote.test.rules;
 
-global org.openremote.controller.rules.CommandFacade execute;
+global org.openremote.controller.command.Commands commands;
 
 import org.openremote.controller.command.*;
 import org.openremote.controller.event.*;
@@ -42,14 +42,14 @@ rule "Set Night Temperature"
 when
   CustomStateEvent( source == "time of day", value == "night" ) and not Vacation()
 then
-  execute.command("temp", 18);
+  commands.execute("temp", 18);
 end
 
 rule "Set Night Temperature when on Vacation"
 when
   CustomStateEvent ( source == "time of day", value == "night" ) and exists Vacation()
 then
-  execute.command("temp", 15);
+  commands.execute("temp", 15);
 end
 
 /* Set day temperatures differently depending on the presence of vacation fact */
@@ -58,13 +58,13 @@ rule "Set Day Temperature"
 when
   CustomStateEvent ( source == "time of day", value == "day" ) and not Vacation()
 then
-  execute.command("temp", 21);
+  commands.execute("temp", 21);
 end
 
 rule "Set Day Temperature when on Vacation"
 when
   Event ( source == "time of day", value == "day" ) and exists Vacation()
 then
-  execute.command("temp", 15);
+  commands.execute("temp", 15);
 end
 

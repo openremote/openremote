@@ -28,7 +28,7 @@ public abstract class Event<T> {
 
     /**
      * This method implementation should return an appropriate string representation of the event value.
-     * This value will be returned by {@link org.openremote.controller.context.DataContext#queryValue(int)}.
+     * This value will be returned by {@link org.openremote.controller.context.ControllerContext#queryValue(int)}.
      */
     public abstract String serialize();
 

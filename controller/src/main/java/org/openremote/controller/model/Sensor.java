@@ -3,9 +3,9 @@ package org.openremote.controller.model;
 import org.openremote.controller.command.EventProducerCommand;
 import org.openremote.controller.command.PullCommand;
 import org.openremote.controller.command.PushCommand;
+import org.openremote.controller.context.ControllerContext;
 import org.openremote.controller.deploy.SensorDefinition;
 import org.openremote.controller.event.Event;
-import org.openremote.controller.context.DataContext;
 
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -25,7 +25,7 @@ import java.util.logging.Logger;
  * push or pull commands. These properties may be used by protocol implementers to
  * direct their event producer output values to suit the sensor's configuration.
  * <p>
- * Sensors are registered with {@link DataContext}.
+ * Sensors are registered with {@link ControllerContext}.
  * Sensors create {@link org.openremote.controller.event.Event}s, which represent the
  * data from devices.
  */
@@ -48,15 +48,7 @@ public abstract class Sensor {
     }
 
     private SensorDefinition sensorDefinition;
-
-    /**
-     * Reference to the data context that receives and processes the events generated from this sensor.
-     */
-    private DataContext dataContext;
-
-    /**
-     * An event producer command provides values to a sensor, typically through pull or push.
-     */
+    private ControllerContext controllerContext;
     private EventProducerCommand eventProducerCommand;
 
     /**
@@ -77,26 +69,28 @@ public abstract class Sensor {
     }
 
     /**
-     * Call path for push commands. Allow direct update of the sensor's value in the controller's
-     * data context.
+     * Call path for push commands. Allow direct update of the sensor's value in
+     * the {@link ControllerContext}.
      *
-     * Before updating the data context, the value is first validated by concrete sensor
+     * Before updating the context, the value is first validated by concrete sensor
      * implementation's {@link Sensor#processEvent(String)} method.
      *
      * @param state the new value for this sensor
      */
     public void update(String state) {
-        if (dataContext == null) {
+        if (controllerContext == null) {
             LOG.fine("Ignoring update, sensor is not running: " + getSensorDefinition());
             return;
         }
 
-        // Allow for sensor type specific processing of the value. This can be used for
-        // mappings, validating value ranges, etc. before the value is pushed through
-        // the event processor chain and ultimately into the data context.
+        /*
+         *  Allow for sensor type specific processing of the value. This can be used for
+         * mappings, validating value ranges, etc. before the value is pushed through
+         * the event processor chain and ultimately into context.
+         */
         Event evt = processEvent(state);
         LOG.fine("Update on ID " + getSensorDefinition().getSensorID() + ", processed '" + state + "', created: " + evt);
-        dataContext.update(evt);
+        controllerContext.update(evt);
     }
 
     /**
@@ -111,8 +105,9 @@ public abstract class Sensor {
      * {@link PushCommand#start(Sensor)} method. For {@link PullCommand} implementations,
      * this will start a polling thread to invoke their {@link PullCommand#read(Sensor)} method.
      */
-    public void start(DataContext dataContext) {
-        this.dataContext = dataContext;
+    public void start(ControllerContext controllerContext) {
+        LOG.info("Starting sensor: " + this);
+        this.controllerContext = controllerContext;
         if (isPushCommand()) {
             PushCommand pushCommand = (PushCommand) eventProducerCommand;
             try {
@@ -135,7 +130,8 @@ public abstract class Sensor {
      * is stopped.
      */
     public void stop() {
-        dataContext = null;
+        LOG.info("Stopping sensor: " + this);
+        controllerContext = null;
         if (isPushCommand()) {
             PushCommand pushCommand = (PushCommand) eventProducerCommand;
             try {
@@ -156,7 +152,7 @@ public abstract class Sensor {
     /**
      * Callback to subclasses to apply their event validations and other processing
      * if necessary. This method is called both when a value is pulled and when a
-     * command pushes a new sensor value into data context state.
+     * command pushes a new sensor value into {@link ControllerContext} state.
      *
      * @param value value returned by the event producer
      * @return validated and processed value of the event producer

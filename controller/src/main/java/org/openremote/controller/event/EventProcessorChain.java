@@ -1,18 +1,17 @@
 package org.openremote.controller.event;
 
-import org.openremote.controller.rules.CommandFacade;
+import org.openremote.controller.command.Commands;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * A chain of event processors that incoming events (values) are passing through before
- * a value might change in the data context.
+ * a value might change in the {@link org.openremote.controller.context.ControllerContext}.
  *
  * Event processors may modify the existing event payload value, discard events
- * entirely or spawn multiple other events that are interacting with the data context.
+ * entirely or spawn multiple other events that are interacting with the
+ * @{link {@link org.openremote.controller.context.ControllerContext}.
  *
  * TODO Or, as we call it now, a Camel route.
  */
@@ -20,24 +19,19 @@ public class EventProcessorChain {
 
     private static final Logger LOG = Logger.getLogger(EventProcessorChain.class.getName());
 
-    final protected CommandFacade commandFacade;
+    final protected Commands commands;
+    final protected EventProcessor[] processors;
 
-    /**
-     * Contains the ordered list of configured event processors for this chain.
-     */
-    final protected List<EventProcessor> processors;
-
-    public EventProcessorChain(CommandFacade commandFacade, EventProcessor... processors) {
-        this.processors = Arrays.asList(processors);
-        this.commandFacade = commandFacade;
+    public EventProcessorChain(Commands commands, EventProcessor... eventProcessors) {
+        this.processors = eventProcessors;
+        this.commands = commands;
     }
 
     public void start() {
         for (EventProcessor ep : processors) {
             try {
-                LOG.fine("Starting event processor: " + ep.getName());
-                ep.start(commandFacade);
-                LOG.info("Started event processor: " + ep.getName());
+                LOG.info("Starting event processor: " + ep.getName());
+                ep.start(commands);
             } catch (Throwable t) {
                 LOG.log(Level.SEVERE, "Cannot start event processor: " + ep.getName(), t);
             }
@@ -47,9 +41,8 @@ public class EventProcessorChain {
     public void stop() {
         for (EventProcessor ep : processors) {
             try {
-                LOG.fine("Stopping event processor: " + ep.getName());
+                LOG.info("Stopping event processor: " + ep.getName());
                 ep.stop();
-                LOG.info("Stopped event processor: " + ep.getName());
             } catch (Throwable t) {
                 LOG.log(Level.SEVERE, "Cannot stop event processor: " + ep.getName(), t);
             }

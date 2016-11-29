@@ -1,9 +1,13 @@
 package org.openremote.controller.context;
 
+/**
+ * Store controller context (sensor) state.
+ */
 public interface StateStorage {
 
     void clear();
 
+    // TODO: Trigger notification of client that stuff has changed? Put it in a message broker/queue/topic?
     void put(SensorState sensorState);
 
     boolean contains(int sensorID);

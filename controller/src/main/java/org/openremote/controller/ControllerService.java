@@ -3,14 +3,12 @@ package org.openremote.controller;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.controller.command.CommandBuilder;
+import org.openremote.controller.context.ControllerContext;
+import org.openremote.controller.context.InMemoryStateStorage;
 import org.openremote.controller.deploy.DeploymentDefinition;
 import org.openremote.controller.deploy.xml.ControllerDOMParser;
 import org.openremote.controller.event.EventProcessor;
-import org.openremote.controller.event.EventProcessorChain;
-import org.openremote.controller.rules.CommandFacade;
-import org.openremote.controller.model.Deployment;
-import org.openremote.controller.model.Sensor;
-import org.openremote.controller.context.DataContext;
+import org.openremote.controller.deploy.Deployment;
 
 import java.io.InputStream;
 
@@ -23,9 +21,7 @@ public class ControllerService implements ContainerService {
     final protected EventProcessor[] eventProcessors;
 
     protected DeploymentDefinition deploymentDefinition;
-    protected Deployment deployment;
-    protected CommandFacade commandFacade;
-    protected DataContext dataContext;
+    protected ControllerContext controllerContext;
 
     public ControllerService(InputStream deploymentXml, CommandBuilder commandBuilder, EventProcessor[] eventProcessors) {
         this.deploymentXml = deploymentXml;
@@ -40,41 +36,31 @@ public class ControllerService implements ContainerService {
 
     @Override
     public void configure(Container container) throws Exception {
-        deployment = new Deployment(deploymentDefinition, commandBuilder);
-
-        commandFacade = new CommandFacade(deployment);
-
-        EventProcessorChain eventProcessorChain = new EventProcessorChain(commandFacade, eventProcessors);
-
-        dataContext = new DataContext(deployment, eventProcessorChain);
+        // TODO Support booting of multiple controller instances
+        Deployment deployment = new Deployment(
+            deploymentDefinition,
+            commandBuilder,
+            new InMemoryStateStorage(),
+            eventProcessors
+        );
+        controllerContext = new ControllerContext("OpenRemoteController1", deployment);
     }
 
     @Override
     public void start(Container container) throws Exception {
-        if (dataContext != null) {
-            dataContext.start();
-            for (Sensor sensor : deployment.getSensors()) {
-                dataContext.registerAndStartSensor(sensor);
-            }
+        if (controllerContext != null) {
+            controllerContext.start();
         }
     }
 
     @Override
     public void stop(Container container) throws Exception {
-        if (dataContext != null) {
-            dataContext.stop();
+        if (controllerContext != null) {
+            controllerContext.stop();
         }
     }
 
-    public Deployment getDeployment() {
-        return deployment;
-    }
-
-    public CommandFacade getCommandFacade() {
-        return commandFacade;
-    }
-
-    public DataContext getDataContext() {
-        return dataContext;
+    public ControllerContext getContext() {
+        return controllerContext;
     }
 }

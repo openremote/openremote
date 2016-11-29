@@ -43,6 +43,7 @@ import org.openremote.container.Container;
 import org.openremote.controller.event.Event;
 import org.openremote.controller.event.EventProcessingContext;
 import org.openremote.controller.event.EventProcessor;
+import org.openremote.controller.command.Commands;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -144,7 +145,7 @@ public abstract class RuleEngine extends EventProcessor {
     }
 
     @Override
-    public void start(CommandFacade commandFacade) throws Exception {
+    public void start(Commands commands) throws Exception {
         KieServices kieServices = KieServices.Factory.get();
         KieModuleModel kieModuleModel = kieServices.newKieModuleModel();
 
@@ -176,7 +177,7 @@ public abstract class RuleEngine extends EventProcessor {
         rulePersistence = new RulePersistence();
         ruleUtil = new RuleUtil();
 
-        setGlobal("execute", commandFacade);
+        setGlobal("commands", commands);
         setGlobal("switches", switchFacade);
         setGlobal("ranges", rangeFacade);
         setGlobal("levels", levelFacade);

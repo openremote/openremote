@@ -6,7 +6,7 @@ import org.openremote.controller.model.Sensor;
 public abstract class SingleValueEventFacade<T, U extends Event> extends EventFacade {
 
     public T name(String sensorName) throws Exception {
-        Event evt = eventProcessingContext.getDataContext().queryEvent(sensorName);
+        Event evt = eventProcessingContext.getControllerContext().queryEvent(sensorName);
 
         if (evt instanceof Sensor.UnknownEvent) {
             evt = createDefaultEvent(evt.getSourceID(), evt.getSource());

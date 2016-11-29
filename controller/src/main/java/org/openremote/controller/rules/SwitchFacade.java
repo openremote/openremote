@@ -7,7 +7,7 @@ import org.openremote.controller.event.SwitchEvent;
 public class SwitchFacade extends EventFacade {
 
     public SwitchAdapter name(String sensorName) throws Exception {
-        Event evt = eventProcessingContext.getDataContext().queryEvent(sensorName);
+        Event evt = eventProcessingContext.getControllerContext().queryEvent(sensorName);
 
         if (evt instanceof Sensor.UnknownEvent) {
             evt = new SwitchEvent(

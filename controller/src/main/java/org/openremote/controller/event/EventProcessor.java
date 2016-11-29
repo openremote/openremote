@@ -1,10 +1,13 @@
 package org.openremote.controller.event;
 
-import org.openremote.controller.rules.CommandFacade;
+import org.openremote.controller.command.Commands;
 
+/**
+ * Process events before they are reaching the controller context.
+ */
 public abstract class EventProcessor {
 
-    public void start(CommandFacade commandFacade) throws Exception{
+    public void start(Commands commands) throws Exception{
     }
 
     public void stop() {

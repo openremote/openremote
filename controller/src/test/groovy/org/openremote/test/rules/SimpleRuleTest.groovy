@@ -63,28 +63,29 @@ class SimpleRuleTest extends Specification implements ContainerTrait {
         and: "the total event count is 1, as the event fired in the rule terminates processing of our switch event"
         grabProcessor.totalEventCount == 1
 
-        and: "the data context state of the sensor should be 'off'"
-        controllerService.getDataContext().queryValue(123) == "off"
+        and: "the context state of the sensor should be 'off'"
+        controllerService.getContext().queryValue(123) == "off"
 
         and: "the deployment model should work"
-        controllerService.getDeployment().getCommandDefinition(456).getCommandID() == 456
-        controllerService.getDeployment().getCommandDefinition(123123) == null
-        controllerService.getDeployment().getCommandDefinition("TestDevice", "TestCommand").getCommandID() == 456
-        controllerService.getDeployment().getCommandDefinition("TestDevice", "NoSuchThing") == null
-        controllerService.getDeployment().getCommandDefinition("NoSuchThing", "NoSuchThing") == null
-        controllerService.getDeployment().getCommandDefinition("", "") == null
-        controllerService.getDeployment().getCommandDefinition(null, "") == null
-        controllerService.getDeployment().getCommandDefinition("", null) == null
-        controllerService.getDeployment().getCommandDefinition(null, null) == null
-        controllerService.getDeployment().getCommandDefinition("TestCommand").getCommandID() == 456
-        controllerService.getDeployment().getCommandDefinition("NoSuchThing") == null
-        controllerService.getDeployment().getCommandDefinition("") == null
-        controllerService.getDeployment().getCommandDefinition(null) == null
-        controllerService.getDeployment().getDevices().length == 1
-        controllerService.getDeployment().getDevices()[0].getName() == "TestDevice"
-        controllerService.getDeployment().getDevices()[0].getDeviceID() == 111
-        controllerService.getDeployment().getDevice("TestDevice").getName() == "TestDevice"
-        controllerService.getDeployment().getDevice("TestDevice").getDeviceID() == 111
+        def deployment = controllerService.getContext().getDeployment()
+        deployment.getCommandDefinition(456).getCommandID() == 456
+        deployment.getCommandDefinition(123123) == null
+        deployment.getCommandDefinition("TestDevice", "TestCommand").getCommandID() == 456
+        deployment.getCommandDefinition("TestDevice", "NoSuchThing") == null
+        deployment.getCommandDefinition("NoSuchThing", "NoSuchThing") == null
+        deployment.getCommandDefinition("", "") == null
+        deployment.getCommandDefinition(null, "") == null
+        deployment.getCommandDefinition("", null) == null
+        deployment.getCommandDefinition(null, null) == null
+        deployment.getCommandDefinition("TestCommand").getCommandID() == 456
+        deployment.getCommandDefinition("NoSuchThing") == null
+        deployment.getCommandDefinition("") == null
+        deployment.getCommandDefinition(null) == null
+        deployment.getDevices().length == 1
+        deployment.getDevices()[0].getName() == "TestDevice"
+        deployment.getDevices()[0].getDeviceID() == 111
+        deployment.getDevice("TestDevice").getName() == "TestDevice"
+        deployment.getDevice("TestDevice").getDeviceID() == 111
 
         cleanup: "the server should be stopped"
         stopContainer(container)

@@ -48,7 +48,7 @@ public class CustomStateSensor extends Sensor {
      *                           enabled, only state values explicitly declared for this sensor will be accepted and returned.
      *                           If set to false, all values are allowed but those with value mappings will be converted.
      */
-    protected CustomStateSensor(SensorDefinition sensorDefinition, EventProducerCommand producer, DistinctStates states, boolean strictStateMapping) {
+    public CustomStateSensor(SensorDefinition sensorDefinition, EventProducerCommand producer, DistinctStates states, boolean strictStateMapping) {
         super(sensorDefinition, producer);
         if (states == null) {
             this.states = new DistinctStates();

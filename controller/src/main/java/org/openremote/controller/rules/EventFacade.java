@@ -19,7 +19,7 @@ public abstract class EventFacade {
         eventProcessingContext.terminate();
         LOG.fine("Dispatching on new thread: " + event);
         Thread t = new Thread(
-            () -> eventProcessingContext.getDataContext().update(event)
+            () -> eventProcessingContext.getControllerContext().update(event)
         );
         t.start();
     }

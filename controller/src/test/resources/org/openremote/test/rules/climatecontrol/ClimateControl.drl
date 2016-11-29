@@ -6,9 +6,8 @@ import java.text.SimpleDateFormat;
 import java.io.*;
 import org.openremote.controller.model.*;
 import org.openremote.controller.event.*;
-import org.openremote.controller.event.*;
 
-global org.openremote.controller.rules.CommandFacade execute;
+global org.openremote.controller.command.Commands commands;
 global org.openremote.controller.rules.RulePersistence persistence;
 global org.openremote.controller.rules.RuleUtil util;
 global com.fasterxml.jackson.databind.ObjectMapper JSON;
@@ -21,41 +20,41 @@ end
 rule "-PSB: Init"
 salience 10
 then
-  execute.command("VR1.ET", persistence.readData("VR1.ET","--:--"));
-  execute.command("VR1.ET.inc", "OFF");
-  execute.command("VR1.ET.dec", "OFF");
-  execute.command("VETA.inc", "OFF");
-  execute.command("VETA.dec", "OFF");
-  execute.command("VETD.inc", "OFF");
-  execute.command("VETD.dec", "OFF");
-  execute.command("VR1.COMFORT",persistence.readData("VR1.COMFORT","20.0\u00B0"));
-  execute.command("VR1.COMFORT.inc","OFF");
-  execute.command("VR1.COMFORT.dec","OFF");
-  execute.command("VR1.TEMPERATURE","19.5\u00B0");
-  execute.command("VR1.TEMPERATURE.inc","OFF");
-  execute.command("VR1.TEMPERATURE.dec","OFF");
-  execute.command("VNEXTACTION",persistence.readData("VNEXTACTION","-")); // Earlier arrive with reset
-  execute.command("VPERSONSENSETIME","-");
-  execute.command("VLEAVES", "1.0"); 
-  execute.command("VSCORE", "0");
-  execute.command("VHEATINGSETPOINT", "16");
-  execute.command("VWINDOW","Closed");
-  execute.command("VADVICEDONE", "OFF");
-  execute.command("VSUMMER", "No");
-  execute.command("VADVICE", "You're doing great!");
-  execute.command("VACATION.inc", "OFF");
-  execute.command("VACATION.dec", "OFF");
-  execute.command("VACATION", persistence.readData("VACATION", "0"));
-  execute.command("VTOTALSCORE",persistence.readData("VTOTALSCORE", "0"));
-  execute.command("VLEVEL", persistence.readData("VLEVEL", "0"));
-  execute.command("VATA", persistence.readData("VATA","-"));
-  execute.command("VATD", persistence.readData("VATD","-"));
-  execute.command("VPRESENCE","No");
-  execute.command("GVconfig",persistence.readData("GVconfig", "OpenRemote"));
-  execute.command("GVtestsPassed",persistence.readData("GVtestsPassed", "0"));
-  execute.command("GVtestsFailed",persistence.readData("GVtestsFailed", "0"));
-  execute.command("VArrivalBackground", "on");
-  execute.command("VDepartureBackground", "off");
+  commands.execute("VR1.ET", persistence.readData("VR1.ET","--:--"));
+  commands.execute("VR1.ET.inc", "OFF");
+  commands.execute("VR1.ET.dec", "OFF");
+  commands.execute("VETA.inc", "OFF");
+  commands.execute("VETA.dec", "OFF");
+  commands.execute("VETD.inc", "OFF");
+  commands.execute("VETD.dec", "OFF");
+  commands.execute("VR1.COMFORT",persistence.readData("VR1.COMFORT","20.0\u00B0"));
+  commands.execute("VR1.COMFORT.inc","OFF");
+  commands.execute("VR1.COMFORT.dec","OFF");
+  commands.execute("VR1.TEMPERATURE","19.5\u00B0");
+  commands.execute("VR1.TEMPERATURE.inc","OFF");
+  commands.execute("VR1.TEMPERATURE.dec","OFF");
+  commands.execute("VNEXTACTION",persistence.readData("VNEXTACTION","-")); // Earlier arrive with reset
+  commands.execute("VPERSONSENSETIME","-");
+  commands.execute("VLEAVES", "1.0"); 
+  commands.execute("VSCORE", "0");
+  commands.execute("VHEATINGSETPOINT", "16");
+  commands.execute("VWINDOW","Closed");
+  commands.execute("VADVICEDONE", "OFF");
+  commands.execute("VSUMMER", "No");
+  commands.execute("VADVICE", "You're doing great!");
+  commands.execute("VACATION.inc", "OFF");
+  commands.execute("VACATION.dec", "OFF");
+  commands.execute("VACATION", persistence.readData("VACATION", "0"));
+  commands.execute("VTOTALSCORE",persistence.readData("VTOTALSCORE", "0"));
+  commands.execute("VLEVEL", persistence.readData("VLEVEL", "0"));
+  commands.execute("VATA", persistence.readData("VATA","-"));
+  commands.execute("VATD", persistence.readData("VATD","-"));
+  commands.execute("VPRESENCE","No");
+  commands.execute("GVconfig",persistence.readData("GVconfig", "OpenRemote"));
+  commands.execute("GVtestsPassed",persistence.readData("GVtestsPassed", "0"));
+  commands.execute("GVtestsFailed",persistence.readData("GVtestsFailed", "0"));
+  commands.execute("VArrivalBackground", "on");
+  commands.execute("VDepartureBackground", "off");
 end
 
 rule "PSB: Init ETA when empty"
@@ -63,7 +62,7 @@ salience 9
 when
   Event(source matches "VETA.*", $s: source, value=="")
 then
-  execute.command($s, persistence.readData($s, "09:00"));
+  commands.execute($s, persistence.readData($s, "09:00"));
 end
 
 rule "PSB: Init ETD when empty"
@@ -71,7 +70,7 @@ salience 8
 when
   Event(source matches "VETD.*", $s: source, value=="")
 then
-  execute.command($s, persistence.readData($s, "17:00"));
+  commands.execute($s, persistence.readData($s, "17:00"));
 end
 
 rule "PSB: store values"
@@ -102,9 +101,9 @@ when
   Event(source == "VR1.ET", $v: value)
   Event(source == "VR1.ET.inc" , value == "ON")
 then
-  execute.command("VR1.ET", util.shiftTime($v.toString(), 5));
-  execute.command("VR1.ET.inc", "off");
-  execute.command("VR1.ET.dec", "OFF");
+  commands.execute("VR1.ET", util.shiftTime($v.toString(), 5));
+  commands.execute("VR1.ET.inc", "off");
+  commands.execute("VR1.ET.dec", "OFF");
 end
 
 rule "-PSB: VETA Inc"
@@ -113,9 +112,9 @@ when
   Event(source == "VETA", $v: value)
   Event(source == "VETA.inc" , value == "ON")
 then
-  execute.command("VETA", util.shiftTime($v.toString(), 5));
-  execute.command("VETA.inc", "off");
-  execute.command("VETA.dec", "OFF");
+  commands.execute("VETA", util.shiftTime($v.toString(), 5));
+  commands.execute("VETA.inc", "off");
+  commands.execute("VETA.dec", "OFF");
 end
 
 rule "-PSB: VETD Inc"
@@ -124,9 +123,9 @@ when
   Event(source == "VETD", $v: value)
   Event(source == "VETD.inc" , value == "ON")
 then
-  execute.command("VETD", util.shiftTime($v.toString(), 5));
-  execute.command("VETD.inc", "off");
-  execute.command("VETD.dec", "OFF");
+  commands.execute("VETD", util.shiftTime($v.toString(), 5));
+  commands.execute("VETD.inc", "off");
+  commands.execute("VETD.dec", "OFF");
 end
 
 rule "-PSB: VR1.ET Dec"
@@ -135,9 +134,9 @@ when
   Event(source == "VR1.ET", $v: value)
   Event(source == "VR1.ET.dec" , value == "ON")
 then
-  execute.command("VR1.ET", util.shiftTime($v.toString(), -15));
-  execute.command("VR1.ET.inc", "OFF");
-  execute.command("VR1.ET.dec", "off");
+  commands.execute("VR1.ET", util.shiftTime($v.toString(), -15));
+  commands.execute("VR1.ET.inc", "OFF");
+  commands.execute("VR1.ET.dec", "off");
 end
 
 rule "-PSB: VETA Dec"
@@ -146,9 +145,9 @@ when
   Event(source == "VETA", $v: value)
   Event(source == "VETA.dec" , value == "ON")
 then
-  execute.command("VETA", util.shiftTime($v.toString(), -15));
-  execute.command("VETA.inc", "OFF");
-  execute.command("VETA.dec", "off");
+  commands.execute("VETA", util.shiftTime($v.toString(), -15));
+  commands.execute("VETA.inc", "OFF");
+  commands.execute("VETA.dec", "off");
 end
 
 rule "-PSB: VETD Dec"
@@ -157,9 +156,9 @@ when
   Event(source == "VETD", $v: value)
   Event(source == "VETD.dec" , value == "ON")
 then
-  execute.command("VETD", util.shiftTime($v.toString(), -15));
-  execute.command("VETD.inc", "OFF");
-  execute.command("VETD.dec", "off");
+  commands.execute("VETD", util.shiftTime($v.toString(), -15));
+  commands.execute("VETD.inc", "OFF");
+  commands.execute("VETD.dec", "off");
 end
 
 rule "PSB: VUSERSCHEDULECHANGES change counter"
@@ -176,7 +175,7 @@ when
 then
   // off - changed by user
   // OFF - idle state after restart
-  execute.command($s, "OFF");
+  commands.execute($s, "OFF");
   int cnt = 0;
   try{
     cnt = Integer.parseInt(persistence.readData("VUSERSCHEDULECHANGES","0"));
@@ -199,7 +198,7 @@ when
 )
   Event(source == "VNEXTACTION", value == "-")
 then
-  execute.command("VNEXTACTION", "Departure");
+  commands.execute("VNEXTACTION", "Departure");
 end
 
 rule "PSB: VR1.COMFORT inc"
@@ -208,9 +207,9 @@ when
   Event(source == "VR1.COMFORT", $v: value, eval(util.parseDouble(value) < 24))
   Event(source == "VR1.COMFORT.inc" , value == "ON")
 then
-  execute.command("VR1.COMFORT.inc","off");
-  execute.command("VR1.COMFORT.dec","OFF");
-  execute.command("VR1.COMFORT", util.shiftDouble($v.toString(), 0.5, "\u00B0"));
+  commands.execute("VR1.COMFORT.inc","off");
+  commands.execute("VR1.COMFORT.dec","OFF");
+  commands.execute("VR1.COMFORT", util.shiftDouble($v.toString(), 0.5, "\u00B0"));
 end
 
 rule "PSB: VR1.COMFORT dec"
@@ -219,9 +218,9 @@ when
   Event(source == "VR1.COMFORT", $v: value, eval(util.parseDouble(value) > 18))
   Event(source == "VR1.COMFORT.dec" , value == "ON")
 then
-  execute.command("VR1.COMFORT.inc","OFF");
-  execute.command("VR1.COMFORT.dec","off");
-  execute.command("VR1.COMFORT", util.shiftDouble($v.toString(), -0.5, "\u00B0"));
+  commands.execute("VR1.COMFORT.inc","OFF");
+  commands.execute("VR1.COMFORT.dec","off");
+  commands.execute("VR1.COMFORT", util.shiftDouble($v.toString(), -0.5, "\u00B0"));
 end
 
 rule "PSB: VR1.COMFORT INC/dec" // needed when change on the boundary
@@ -230,8 +229,8 @@ rule "PSB: VR1.COMFORT INC/dec" // needed when change on the boundary
 when
   Event(source == "VR1.COMFORT.inc" , value == "ON")
 then
-  execute.command("VR1.COMFORT.inc","off");
-  execute.command("VR1.COMFORT.dec","OFF");
+  commands.execute("VR1.COMFORT.inc","off");
+  commands.execute("VR1.COMFORT.dec","OFF");
 end
 
 rule "PSB: VR1.COMFORT inc/DEC" // needed when change on the boundary
@@ -240,8 +239,8 @@ rule "PSB: VR1.COMFORT inc/DEC" // needed when change on the boundary
 when
   Event(source == "VR1.COMFORT.dec" , value == "ON")
 then
-  execute.command("VR1.COMFORT.inc","OFF");
-  execute.command("VR1.COMFORT.dec","off");
+  commands.execute("VR1.COMFORT.inc","OFF");
+  commands.execute("VR1.COMFORT.dec","off");
 end
 
 rule "PSB: VR1.TEMPERATURE inc"
@@ -251,9 +250,9 @@ when
   Event(source == "VR1.TEMPERATURE", $v: value, eval(util.parseDouble(value) <26))
   Event(source == "VR1.TEMPERATURE.inc" , value == "ON")
 then
-  execute.command("VR1.TEMPERATURE.inc","off");
-  execute.command("VR1.TEMPERATURE.dec","OFF"); // Do not increase change counter
-  execute.command("VR1.TEMPERATURE",   util.shiftDouble($v.toString(), 0.5, "\u00B0"));
+  commands.execute("VR1.TEMPERATURE.inc","off");
+  commands.execute("VR1.TEMPERATURE.dec","OFF"); // Do not increase change counter
+  commands.execute("VR1.TEMPERATURE",   util.shiftDouble($v.toString(), 0.5, "\u00B0"));
 end
 
 rule "PSB: VR1.TEMPERATURE dec"
@@ -263,9 +262,9 @@ when
   Event(source == "VR1.TEMPERATURE", $v: value, eval(util.parseDouble(value) > 16)) // Lower temp limit
   Event(source == "VR1.TEMPERATURE.dec" , value == "ON")
 then
-  execute.command("VR1.TEMPERATURE.inc","OFF");
-  execute.command("VR1.TEMPERATURE.dec","off");
-  execute.command("VR1.TEMPERATURE", util.shiftDouble($v.toString(), -0.5, "\u00B0"));
+  commands.execute("VR1.TEMPERATURE.inc","OFF");
+  commands.execute("VR1.TEMPERATURE.dec","off");
+  commands.execute("VR1.TEMPERATURE", util.shiftDouble($v.toString(), -0.5, "\u00B0"));
 end
 
 rule "PSB: VR1.TEMPERATURE INC/dec" // needed when on the boundary and in summer
@@ -274,8 +273,8 @@ rule "PSB: VR1.TEMPERATURE INC/dec" // needed when on the boundary and in summer
 when
   Event(source == "VR1.TEMPERATURE.inc" , value == "ON")
 then
-  execute.command("VR1.TEMPERATURE.inc","off");
-  execute.command("VR1.TEMPERATURE.dec","OFF");
+  commands.execute("VR1.TEMPERATURE.inc","off");
+  commands.execute("VR1.TEMPERATURE.dec","OFF");
 end
 
 rule "PSB: VR1.TEMPERATURE inc/DEC" // needed when on the boundary and in summer
@@ -284,8 +283,8 @@ rule "PSB: VR1.TEMPERATURE inc/DEC" // needed when on the boundary and in summer
 when
   Event(source == "VR1.TEMPERATURE.dec" , value == "ON")
 then
-  execute.command("VR1.TEMPERATURE.inc","OFF");
-  execute.command("VR1.TEMPERATURE.dec","off");
+  commands.execute("VR1.TEMPERATURE.inc","OFF");
+  commands.execute("VR1.TEMPERATURE.dec","off");
 end
 
 rule "PSB: VR1.TEMPERATURE change counter"
@@ -300,7 +299,7 @@ when
 then
   // off - changed by user
   // OFF - idle state after restart
-  execute.command($s, "OFF");
+  commands.execute($s, "OFF");
   int cnt = 0;
   try{
     cnt = Integer.parseInt(persistence.readData("VSETTEMPCHANGES","0"));
@@ -319,7 +318,7 @@ when
   Event(source == "VR1.TEMPERATURE.dec", $s: source, value == "ON")
 )
 then
-  execute.command($s, "OFF");
+  commands.execute($s, "OFF");
 end
 
 rule "PSB: set departure on manual TEMPERATURE change after expected attendance"
@@ -335,9 +334,9 @@ when
   Event(source == "VNEXTACTION", value == "-")
 then
   // Set departure time when temp manually adjusted after leave
-  execute.command("VNEXTACTION", "Departure");
-  execute.command("VR1.ET", util.shiftTime($et.toString(), 60));
-  execute.command("VETD", util.shiftTime($et.toString(), 60));
+  commands.execute("VNEXTACTION", "Departure");
+  commands.execute("VR1.ET", util.shiftTime($et.toString(), 60));
+  commands.execute("VETD", util.shiftTime($et.toString(), 60));
 end
 
 rule "PSB: Move ETA to ET at midnight"
@@ -349,10 +348,10 @@ when
   Event(source=="VNEXTACTION", value=="-")
   Event(source=="VACATION", eval(Integer.parseInt(value.toString())==0))
 then
-  execute.command("VR1.ET", $va.toString());
-  execute.command("VETA", $va.toString());
-  execute.command("VETD", $vd.toString());
-  execute.command("VNEXTACTION", "Arrive");
+  commands.execute("VR1.ET", $va.toString());
+  commands.execute("VETA", $va.toString());
+  commands.execute("VETD", $vd.toString());
+  commands.execute("VNEXTACTION", "Arrive");
 end
 
 rule "Move ETA ETD for current day"
@@ -361,22 +360,22 @@ when
   Event(source matches ("VETA."+$e), $va:value)
   Event(source matches ("VETD."+$e), $vd: value)
 then
-  execute.command("VETA", $va.toString());
-  execute.command("VETD", $vd.toString());
+  commands.execute("VETA", $va.toString());
+  commands.execute("VETD", $vd.toString());
 end
 
 rule "PSB: reset VATA"
 when
   Event(source=="VNEXTACTION", value=="Arrive")
 then
-  execute.command("VATA","-");
+  commands.execute("VATA","-");
 end
 
 rule "PSB: reset VATD"
 when
   Event(source=="VATA",value=="-")
 then
-  execute.command("VATD","-");
+  commands.execute("VATD","-");
 end
 
 rule "PSB: decrease vacation counter at midnight"
@@ -384,15 +383,15 @@ when
   $timer: Event(source=="TimerHH", eval(value.toString().substring(0,5).equals("00:00"))) // more reliable than timer(cron: )
   Event(source=="VACATION", $v: value, eval(Integer.parseInt(value.toString())>0), this before $timer)
 then
-  execute.command("VACATION", Integer.parseInt($v.toString())-1);
+  commands.execute("VACATION", Integer.parseInt($v.toString())-1);
 end
 
 rule "PSB: reset action at midnight"
 when
   Event(source=="TimerHH", eval(value.toString().substring(0,5).equals("00:00"))) // more reliable than timer(cron: )
 then
-  execute.command("VR1.ET", "-");
-  execute.command("VNEXTACTION", "-");
+  commands.execute("VR1.ET", "-");
+  commands.execute("VNEXTACTION", "-");
 end
 
 rule "PSB: Move ETD to ET at arrive init"
@@ -405,9 +404,9 @@ when
 //  Event(source=="VNEXTACTION", value=="-")
   Event(source=="VR1.ET", value == "--:--")
 then
-   execute.command("VR1.ET", $vd.toString());
-   execute.command("VETD", $vd.toString());
-   execute.command("VNEXTACTION", "Departure");
+   commands.execute("VR1.ET", $vd.toString());
+   commands.execute("VETD", $vd.toString());
+   commands.execute("VNEXTACTION", "Departure");
 end
 
 rule "PSB: Move ETD to ET at arrive"
@@ -420,8 +419,8 @@ when
   Event(source=="VETA", eval(util.parseTimestamp(value) < util.parseTimestamp($h)))
   Event(source=="VACATION", eval(Integer.parseInt(value.toString())==0))
 then
-   execute.command("VR1.ET", $vd.toString());
-   execute.command("VNEXTACTION", "Departure");
+   commands.execute("VR1.ET", $vd.toString());
+   commands.execute("VNEXTACTION", "Departure");
 end
 
 rule "PSB: actual arrival time earlier when temperature increased and person detected"
@@ -438,7 +437,7 @@ when
   Event(source=="VPERSONSENSE", value == "1")
   Event(source=="VATA",value=="-")
 then
-  execute.command("VR1.ET", $h.toString().substring(0,5));
+  commands.execute("VR1.ET", $h.toString().substring(0,5));
 end
 
 rule "PSB: fetch actual arrival time"
@@ -448,7 +447,7 @@ when
   Event(source=="VNEXTACTION", value=="Departure")
   Event(source=="VPERSONSENSE", value=="1")
 then
-  execute.command("VATA", $h.toString().substring(0,5));
+  commands.execute("VATA", $h.toString().substring(0,5));
 end
 
 rule "PSB: fetch earlier actual arrival time up to 30 min v02"
@@ -460,7 +459,7 @@ when
   Event(source=="VETA", value != "-", value != "--:--")
   Event(source=="VETA", eval(util.parseTimestamp(util.shiftTime(value,-30)) <= util.parseTimestamp($h)))
 then
-  execute.command("VATA", $h.toString().substring(0,5));
+  commands.execute("VATA", $h.toString().substring(0,5));
 end
 
 rule "PSB: Move - to ET at end of work"
@@ -471,16 +470,16 @@ when
   Event(source=="VETD", eval(util.parseTimestamp(value) < util.parseTimestamp($h)))
   Event(source=="VNEXTACTION", value=="Departure")
 then
-  execute.command("VR1.ET", "-");
-  execute.command("VNEXTACTION", "-");
+  commands.execute("VR1.ET", "-");
+  commands.execute("VNEXTACTION", "-");
 end
 
 rule "PSB: Move - to ET on vacation"
 when
   Event(source=="VACATION", eval(Integer.parseInt(value.toString())>0))
 then
-  execute.command("VR1.ET", "-");
-  execute.command("VNEXTACTION", "-");
+  commands.execute("VR1.ET", "-");
+  commands.execute("VNEXTACTION", "-");
 end
 
 rule "PSB: fetch actual departure time"
@@ -490,8 +489,8 @@ when
   Event(source=="VNEXTACTION", value=="-")
   Event(source=="VPERSONSENSETIME", $v:value, eval(value.toString().length()>4))
 then
-  execute.command("VATD", $v.toString().substring(0,5));
-  execute.command("VPERSONSENSETIME","-");
+  commands.execute("VATD", $v.toString().substring(0,5));
+  commands.execute("VPERSONSENSETIME","-");
 end
 
 rule "PSB: fetch later departure time"
@@ -506,8 +505,8 @@ when
                                               eval(util.parseTimestamp(value)<=util.parseTimestamp("23:55"))) 	      	 // Till 23:55 - does	not wrap on midnight
   Event(source=="VACATION", eval(Integer.parseInt(value.toString())==0))
 then
-  execute.command("VATD", $v.toString().substring(0,5));
-  execute.command("VPERSONSENSETIME","-");
+  commands.execute("VATD", $v.toString().substring(0,5));
+  commands.execute("VPERSONSENSETIME","-");
 end
 
 rule "PSB: adjust estimated times at midnight"
@@ -522,10 +521,10 @@ when
 then
   Double alpha = 2.0/(3+1); // 3 stays for 3 days exponential average
   long nt = (long) (alpha*util.parseTimestamp($va) + (1-alpha)*util.parseTimestamp($vea));
-  execute.command("VETA."+$e.toString(), util.formatTimestamp(nt));
+  commands.execute("VETA."+$e.toString(), util.formatTimestamp(nt));
   LOG.fine("EA="+$vea.toString()+" AA="+$va.toString()+" NA="+ util.formatTimestamp(nt));
   nt = (long) (alpha*util.parseTimestamp($vd) + (1-alpha)*util.parseTimestamp($ved));
-  execute.command("VETD."+$e.toString(), util.formatTimestamp(nt));
+  commands.execute("VETD."+$e.toString(), util.formatTimestamp(nt));
   LOG.fine("ED="+$ved.toString()+" AD="+$vd.toString()+" ND="+ util.formatTimestamp(nt));
 end
 
@@ -535,7 +534,7 @@ when
   Event(source=="TimerHH", $h:value)
 then
   LOG.fine("Move sense on "+$s);
-  execute.command("VPERSONSENSETIME", $h.toString());
+  commands.execute("VPERSONSENSETIME", $h.toString());
 end
 
 rule "-PSB: person sense"
@@ -543,7 +542,7 @@ when
   Event($s:source=="FS.PIR", value=="on")
   Event(source=="VPERSONSENSE", value!="1")
 then
-  execute.command("VPERSONSENSE", "1");
+  commands.execute("VPERSONSENSE", "1");
 end
 
 rule "-PSB: no person sense"
@@ -552,28 +551,28 @@ when
   Event(source=="FS.PIR", value!="on")
   Event(source=="VPERSONSENSE", value!="0")
 then
-  execute.command("VPERSONSENSE", "0");
+  commands.execute("VPERSONSENSE", "0");
 end
 
 rule "-PSB: window open sense"
 when
   Event(source=="FS.Window", value=="on")
 then
-  execute.command("VWINDOW","Open");
+  commands.execute("VWINDOW","Open");
 end
 
 rule "-PSB: window closed sense"
 when
   Event(source=="FS.Window", value=="off")
 then
-  execute.command("VWINDOW","Closed");
+  commands.execute("VWINDOW","Closed");
 end
 
 rule "--FS outside temperature sense"
 when
   Event(source=="FS.Toutside", $v: value)
 then
-  execute.command("VOUTSIDE", $v.toString() );
+  commands.execute("VOUTSIDE", $v.toString() );
   LOG.fine("Fake outside temperature: "+$v.toString() );
 end
 
@@ -582,7 +581,7 @@ when
   Event(source=="FS.Tinside", $v: value)
 then
   LOG.fine("Fake inside temperature: "+ $v.toString() );
-  execute.command("VROOMTEMPERATURE", $v.toString() );
+  commands.execute("VROOMTEMPERATURE", $v.toString() );
 end
 
 rule "PSB: Presence"
@@ -590,7 +589,7 @@ when
   Event(source == "VPERSONSENSE", value == "1")
   Event(source=="VNEXTACTION", value=="Departure") // within expected attendance schedule
 then
-  execute.command("VPRESENCE","Yes");
+  commands.execute("VPRESENCE","Yes");
 end
 
 rule "PSB: Absence when 30 min no movement"
@@ -599,7 +598,7 @@ when
   Event(source == "VPERSONSENSE", value == "0")
   Event(source=="VNEXTACTION", value=="Departure") // within expected attendance schedule
 then
-  execute.command("VPRESENCE","No");
+  commands.execute("VPRESENCE","No");
 end
 
 rule "PSB: Absence  after 15 min v02"
@@ -607,14 +606,14 @@ timer(int: 15m)
 when
   Event(source == "VPERSONSENSE", value == "0")
 then
-  execute.command("VPRESENCE","No");
+  commands.execute("VPRESENCE","No");
 end
 
 rule "PSB: Absence after scheduled presence time"
 when
   Event(source=="VNEXTACTION", value!="Departure") // outsidse expected attendance schedule
 then
-  execute.command("VPRESENCE","No");
+  commands.execute("VPRESENCE","No");
 end
 
 rule "-PSB: heating ECO"
@@ -624,7 +623,7 @@ when
   Event(source=="VSUMMER", value=="Yes")
 )
 then
-  execute.command("VHEATING","ECO");
+  commands.execute("VHEATING","ECO");
 end
 
 rule "-PSB: heating Stand-by from ECO"
@@ -635,8 +634,8 @@ when
   Event(source=="VHEATING", value == "ECO")
   Event(source=="VR1.COMFORT", $vc: value)
 then
-  execute.command("VR1.TEMPERATURE", $vc.toString());
-  execute.command("VHEATING", "Stand-by");
+  commands.execute("VR1.TEMPERATURE", $vc.toString());
+  commands.execute("VHEATING", "Stand-by");
 end
 
 rule "-PSB: heating Stand-by from ECO preheating 30 min v02"
@@ -650,8 +649,8 @@ when
   Event(source=="VETA", value != "-", value != "--:--")
   Event(source=="VETA", eval(util.parseTimestamp(util.shiftTime(value,-30)) <= util.parseTimestamp($h)))
 then
-  execute.command("VR1.TEMPERATURE", $vc.toString());
-  execute.command("VHEATING", "Stand-by");
+  commands.execute("VR1.TEMPERATURE", $vc.toString());
+  commands.execute("VHEATING", "Stand-by");
 end
 
 rule "-PSB: heating Stand-by from Comfort"
@@ -663,7 +662,7 @@ when
   Event(source=="VR1.COMFORT", $vc: value)
   Event(source=="VR1.TEMPERATURE", value==$vc) // Only when no manual temperature increase
 then
-  execute.command("VHEATING","Stand-by");
+  commands.execute("VHEATING","Stand-by");
 end
 
 rule "-PSB: heating Comfort on presence"
@@ -672,8 +671,8 @@ when
   Event(source=="VPRESENCE", value=="Yes")
   Event(source=="VR1.COMFORT", $v: value)
 then
-  execute.command("VHEATING","Comfort");
-  execute.command("VR1.TEMPERATURE", $v.toString());
+  commands.execute("VHEATING","Comfort");
+  commands.execute("VR1.TEMPERATURE", $v.toString());
 end
 
 rule "-PSB: heating Comfort on temperature increase"
@@ -684,7 +683,7 @@ when
   Event(source=="VR1.TEMPERATURE", eval(util.parseDouble(value) > util.parseDouble($vc)))
   Event(source=="VHEATING", value != "Comfort")
 then
-  execute.command("VHEATING","Comfort");
+  commands.execute("VHEATING","Comfort");
 end
 
 rule "-PSB: heating setpoint ECO"
@@ -700,8 +699,8 @@ then
   } catch (NumberFormatException e){
     t = 16.0;
   }
-  execute.command("VHEATINGSETPOINT", String.format("%.1f",t));
-  execute.command("VR1.TEMPERATURE", String.format("%.1f\u00B0",t));
+  commands.execute("VHEATINGSETPOINT", String.format("%.1f",t));
+  commands.execute("VR1.TEMPERATURE", String.format("%.1f\u00B0",t));
 end
 
 rule "-PSB: heating setpoint ECO summer"
@@ -712,8 +711,8 @@ when
 then
   String s = $v.toString();
   Double t = java.lang.Math.max(16.0, Double.parseDouble(s.substring(0,s.length()-1))-5); // 5 degrees below comfort
-  execute.command("VHEATINGSETPOINT", String.format("%.1f",t));
-  execute.command("VR1.TEMPERATURE", "-");
+  commands.execute("VHEATINGSETPOINT", String.format("%.1f",t));
+  commands.execute("VR1.TEMPERATURE", "-");
 end
 
 rule "-PSB: heating setpoint Stand-by"
@@ -725,8 +724,8 @@ when
 then
   String s = $v.toString();
   Double t = java.lang.Math.max(16.0, Double.parseDouble(s.substring(0,s.length()-1))-1); // 1 degree below comfort
-  execute.command("VHEATINGSETPOINT", String.format("%.1f",t));
-  execute.command("VR1.TEMPERATURE", s);
+  commands.execute("VHEATINGSETPOINT", String.format("%.1f",t));
+  commands.execute("VR1.TEMPERATURE", s);
 end
 
 rule "-PSB: heating setpoint Comfort"
@@ -738,70 +737,70 @@ when
 then
   String s = $v.toString();
   Double t = java.lang.Math.max(16.0, Double.parseDouble(s.substring(0,s.length()-1)));
-  execute.command("VHEATINGSETPOINT", String.format("%.1f",t));
+  commands.execute("VHEATINGSETPOINT", String.format("%.1f",t));
 end
 
 rule "-PSB: leaves 0"
 when
   Event(source=="VLEAVES", value=="0.0")
 then
-  execute.command("VLEAF1", "l0.png");
-  execute.command("VLEAF2", "l0.png");
-  execute.command("VLEAF3", "l0.png");
+  commands.execute("VLEAF1", "l0.png");
+  commands.execute("VLEAF2", "l0.png");
+  commands.execute("VLEAF3", "l0.png");
 end
   
 rule "-PSB: leaves 0.5"
 when
   Event(source=="VLEAVES", value=="0.5")
 then
-  execute.command("VLEAF1", "l1.png");
-  execute.command("VLEAF2", "l0.png");
-  execute.command("VLEAF3", "l0.png");
+  commands.execute("VLEAF1", "l1.png");
+  commands.execute("VLEAF2", "l0.png");
+  commands.execute("VLEAF3", "l0.png");
 end
   
 rule "-PSB: leaves 1"
 when
   Event(source=="VLEAVES", value=="1.0")
 then
-  execute.command("VLEAF1", "l2.png");
-  execute.command("VLEAF2", "l0.png");
-  execute.command("VLEAF3", "l0.png");
+  commands.execute("VLEAF1", "l2.png");
+  commands.execute("VLEAF2", "l0.png");
+  commands.execute("VLEAF3", "l0.png");
 end
   
 rule "-PSB: leaves 1.5"
 when
   Event(source=="VLEAVES", value=="1.5")
 then
-  execute.command("VLEAF1", "l2.png");
-  execute.command("VLEAF2", "l1.png");
-  execute.command("VLEAF3", "l0.png");
+  commands.execute("VLEAF1", "l2.png");
+  commands.execute("VLEAF2", "l1.png");
+  commands.execute("VLEAF3", "l0.png");
 end
   
 rule "-PSB: leaves 2"
 when
   Event(source=="VLEAVES", value=="2.0")
 then
-  execute.command("VLEAF1", "l2.png");
-  execute.command("VLEAF2", "l2.png");
-  execute.command("VLEAF3", "l0.png");
+  commands.execute("VLEAF1", "l2.png");
+  commands.execute("VLEAF2", "l2.png");
+  commands.execute("VLEAF3", "l0.png");
 end
   
 rule "-PSB: leaves 2.5"
 when
   Event(source=="VLEAVES", value=="2.5")
 then
-  execute.command("VLEAF1", "l2.png");
-  execute.command("VLEAF2", "l2.png");
-  execute.command("VLEAF3", "l1.png");
+  commands.execute("VLEAF1", "l2.png");
+  commands.execute("VLEAF2", "l2.png");
+  commands.execute("VLEAF3", "l1.png");
 end
   
 rule "-PSB: leaves 3"
 when
   Event(source=="VLEAVES", value=="3.0")
 then
-  execute.command("VLEAF1", "l2.png");
-  execute.command("VLEAF2", "l2.png");
-  execute.command("VLEAF3", "l2.png");
+  commands.execute("VLEAF1", "l2.png");
+  commands.execute("VLEAF2", "l2.png");
+  commands.execute("VLEAF3", "l2.png");
 end
 
 rule "-PSB: energy efficiency 1"
@@ -811,8 +810,8 @@ when
   Event(source=="VHEATING", value!="ECO")  // needed because of race
   Event(source=="VPRESENCE", value=="No")
 then
-  execute.command("VLEAVES", "0.0");
-  execute.command("VSCORE", 0);
+  commands.execute("VLEAVES", "0.0");
+  commands.execute("VSCORE", 0);
 end
 
 rule "-PSB: energy efficiency 2"
@@ -823,8 +822,8 @@ when
   Event(source=="VPRESENCE", value=="Yes")
   Event(source=="VWINDOW", value=="Open")
 then
-  execute.command("VLEAVES", "0.5");
-  execute.command("VSCORE", 0);
+  commands.execute("VLEAVES", "0.5");
+  commands.execute("VSCORE", 0);
 end
 
 // v02
@@ -838,8 +837,8 @@ when
   Event(source=="VOUTSIDE", $t: value)
   Event(source=="VR1.TEMPERATURE", eval(util.parseDouble($t) < util.parseDouble(value))) // Lower outside temperature
 then
-  execute.command("VLEAVES", "0.5");
-  execute.command("VSCORE", 0);
+  commands.execute("VLEAVES", "0.5");
+  commands.execute("VSCORE", 0);
 end
 
 rule "-PSB: energy efficiency 2-2 v02"
@@ -850,8 +849,8 @@ when
   Event(source=="VHEATING", value!="ECO")  // needed because of race
   Event(source=="VPRESENCE", value=="No")
 then
-  execute.command("VLEAVES", "0.5");
-  execute.command("VSCORE", 0);
+  commands.execute("VLEAVES", "0.5");
+  commands.execute("VSCORE", 0);
 end
 
 rule "-PSB: energy efficiency 2-3 v02"
@@ -862,8 +861,8 @@ when
   Event(source=="VHEATING", value!="ECO")  // needed because of race
   Event(source=="VPRESENCE", value=="No")
 then
-  execute.command("VLEAVES", "1.0");
-  execute.command("VSCORE", 0);
+  commands.execute("VLEAVES", "1.0");
+  commands.execute("VSCORE", 0);
 end
 // v02
  
@@ -874,8 +873,8 @@ when
   Event(source=="VHEATING", value!="ECO")  // needed because of race
   Event(source=="VPRESENCE", value=="No")
 then
-  execute.command("VLEAVES", "1.0");
-  execute.command("VSCORE", 0);
+  commands.execute("VLEAVES", "1.0");
+  commands.execute("VSCORE", 0);
 end
  
 rule "-PSB: energy efficiency 4"
@@ -886,8 +885,8 @@ when
   Event(source=="VHEATING", value!="ECO")  // needed because of race
   Event(source=="VPRESENCE", value=="Yes")
 then
-  execute.command("VLEAVES", "1.0");
-  execute.command("VSCORE", 0);
+  commands.execute("VLEAVES", "1.0");
+  commands.execute("VSCORE", 0);
 end
 
 rule "-PSB: energy efficiency 5"
@@ -897,8 +896,8 @@ when
   Event(source=="VPRESENCE", value=="No")
   Event(source=="VWINDOW", value=="Open")
 then
-  execute.command("VLEAVES", "1.0");
-  execute.command("VSCORE", 0);
+  commands.execute("VLEAVES", "1.0");
+  commands.execute("VSCORE", 0);
 end
  
 rule "-PSB: energy efficiency 6"
@@ -909,8 +908,8 @@ when
   Event(source=="VPRESENCE", value=="Yes")
   Event(source=="VWINDOW", value=="Open")
 then
-  execute.command("VLEAVES", "1.0");
-  execute.command("VSCORE", 0);
+  commands.execute("VLEAVES", "1.0");
+  commands.execute("VSCORE", 0);
 end
  
 rule "-PSB: energy efficiency 7"
@@ -922,8 +921,8 @@ when
   Event(source=="VOUTSIDE", $t: value)
   Event(source=="VR1.TEMPERATURE", eval(util.parseDouble($t) < util.parseDouble(value))) // Lower outside temperature
 then
-  execute.command("VLEAVES", "1.5");
-  execute.command("VSCORE", 1);
+  commands.execute("VLEAVES", "1.5");
+  commands.execute("VSCORE", 1);
 end
  
 rule "-PSB: energy efficiency 8"
@@ -935,8 +934,8 @@ when
   Event(source=="VOUTSIDE", $t: value)
   Event(source=="VR1.TEMPERATURE", eval(util.parseDouble($t) < util.parseDouble(value))) // Lower outside temperature
 then
-  execute.command("VLEAVES", "1.5");
-  execute.command("VSCORE", 1);
+  commands.execute("VLEAVES", "1.5");
+  commands.execute("VSCORE", 1);
 end
  
 rule "-PSB: energy efficiency 9"
@@ -947,8 +946,8 @@ when
   Event(source=="VHEATING", value!="ECO")  // needed because of race
   Event(source=="VPRESENCE", value=="Yes")
 then
-  execute.command("VLEAVES", "1.5");
-  execute.command("VSCORE", 1);
+  commands.execute("VLEAVES", "1.5");
+  commands.execute("VSCORE", 1);
 end
  
 rule "-PSB: energy efficiency 10"
@@ -961,8 +960,8 @@ when
   Event(source=="VOUTSIDE", $t: value)
   Event(source=="VR1.TEMPERATURE", eval(util.parseDouble($t) < util.parseDouble(value))) // Lower outside temperature
 then
-  execute.command("VLEAVES", "1.5");
-  execute.command("VSCORE", 1);
+  commands.execute("VLEAVES", "1.5");
+  commands.execute("VSCORE", 1);
 end
  
 rule "-PSB: energy efficiency 11"
@@ -973,8 +972,8 @@ when
   Event(source=="VHEATING", value!="ECO")  // needed because of race
   Event(source=="VPRESENCE", value=="Yes")
 then
-  execute.command("VLEAVES", "2.0");
-  execute.command("VSCORE", 2);
+  commands.execute("VLEAVES", "2.0");
+  commands.execute("VSCORE", 2);
 end
  
 rule "-PSB: energy efficiency 12 v02"
@@ -985,8 +984,8 @@ when
   Event(source=="VHEATING", value!="ECO")  // needed because of race
   Event(source=="VPRESENCE", value=="Yes") // v02
 then
-  execute.command("VLEAVES", "2.5");
-  execute.command("VSCORE", 3);
+  commands.execute("VLEAVES", "2.5");
+  commands.execute("VSCORE", 3);
 end
  
 rule "-PSB: energy efficiency 13"
@@ -999,8 +998,8 @@ when
   Event(source=="VOUTSIDE", $t: value)
   Event(source=="VR1.TEMPERATURE", eval(util.parseDouble($t) >= util.parseDouble(value))) // Higher outside temperature
 then
-  execute.command("VLEAVES", "3.0");
-  execute.command("VSCORE", 4);
+  commands.execute("VLEAVES", "3.0");
+  commands.execute("VSCORE", 4);
 end
 
 rule "-PSB: energy efficiency 14"
@@ -1010,8 +1009,8 @@ when
   Event(source=="VHEATING", value=="ECO") 
   Event(source=="VPRESENCE", value=="No")
 then
-  execute.command("VLEAVES", "3.0");
-  execute.command("VSCORE", 4);
+  commands.execute("VLEAVES", "3.0");
+  commands.execute("VSCORE", 4);
 end
 
 rule "-PSB: energy efficiency 15"
@@ -1021,16 +1020,16 @@ when
   Event(source=="VHEATINGSETPOINT", eval(Double.parseDouble(value.toString()) < 20)) // Comfort--
   Event(source=="VPRESENCE", value=="Yes") // No important IMHO
 then
-  execute.command("VLEAVES", "3.0");
-  execute.command("VSCORE", 4);
+  commands.execute("VLEAVES", "3.0");
+  commands.execute("VSCORE", 4);
 end
 
 rule "-PSB: energy efficiency Summer"
 when
   Event(source=="VSUMMER", value=="Yes")
 then
-  execute.command("VLEAVES", "3.0");
-  execute.command("VSCORE", 4);
+  commands.execute("VLEAVES", "3.0");
+  commands.execute("VSCORE", 4);
 end
 
 rule "--PSB: increase total score every 15m"
@@ -1039,7 +1038,7 @@ when
   Event(source=="VSCORE", $s: value)
   Event(source=="VTOTALSCORE", $ts: value, this before $timer)
 then
-  execute.command("VTOTALSCORE", Integer.parseInt($ts.toString())+Integer.parseInt($s.toString()));
+  commands.execute("VTOTALSCORE", Integer.parseInt($ts.toString())+Integer.parseInt($s.toString()));
 end
 
 rule "PSB: reward"
@@ -1048,15 +1047,15 @@ when
   Event(source=="VLEVEL", $l: value, this before $ts)
 then
   Integer i = Integer.parseInt($s.toString());
-  execute.command("VTOTALSCORE", i-1000); // Reset score
-  execute.command("VLEVEL", Integer.parseInt($l.toString())+1);
+  commands.execute("VTOTALSCORE", i-1000); // Reset score
+  commands.execute("VLEVEL", Integer.parseInt($l.toString())+1);
 end
 
 rule "--PSB: display totalscore"
 when
   Event(source=="VTOTALSCORE", $ts: value)
 then
-   execute.command("VTOTALSCOREdisp", $ts+" / 1000");
+   commands.execute("VTOTALSCOREdisp", $ts+" / 1000");
 end
 
 rule "PSB: summer"
@@ -1069,7 +1068,7 @@ when
   Event(source=="VSUMMER", value!="Yes")
 then
   LOG.fine("Summer is ON; outside="+$o.toString());
-  execute.command("VSUMMER", "Yes");
+  commands.execute("VSUMMER", "Yes");
 end
 
 rule "PSB: no summer"
@@ -1082,7 +1081,7 @@ when
   Event(source=="VSUMMER", value!="No")
 then
   LOG.fine("Summer is OFF; outside="+$o.toString());
-  execute.command("VSUMMER", "No");
+  commands.execute("VSUMMER", "No");
 end
 
 rule "-PSB: advice 1"
@@ -1092,8 +1091,8 @@ when
   Event(source=="VHEATINGSETPOINT", $sp: value)
   Event(source=="VOUTSIDE", value!="", eval(Double.parseDouble($sp.toString()) > util.parseDouble(value) )) // Outside temp lower than set point
 then
-  execute.command("VADVICE", "It's more energy efficient to close the windows when it is colder outside than it is inside");
-  execute.command("VADVICEDONE", "OFF");
+  commands.execute("VADVICE", "It's more energy efficient to close the windows when it is colder outside than it is inside");
+  commands.execute("VADVICEDONE", "OFF");
   insert(new AdviceGiven("It's more energy efficient to close the windows when it is colder outside than it is inside"));
 end
 
@@ -1106,8 +1105,8 @@ when
 )
   Event(source=="VADVICE",eval(value.toString().substring(0,9).equals("It's more")))
 then
-  execute.command("VADVICE", "You're doing great!");
-  execute.command("VADVICEDONE", "OFF");
+  commands.execute("VADVICE", "You're doing great!");
+  commands.execute("VADVICEDONE", "OFF");
 end
 
 rule "-PSB: advice 2"
@@ -1115,8 +1114,8 @@ when
   Event(source=="VSUMMER", value=="No")
   Event(source=="VR1.COMFORT", eval(util.parseDouble(value) > 20.5)) // Average is 20 hardcoded or from sensor?
 then
-  execute.command("VADVICE", "Your comfort temperature is set higher than average. You can adjust it on the settings page.");
-  execute.command("VADVICEDONE", "OFF");
+  commands.execute("VADVICE", "Your comfort temperature is set higher than average. You can adjust it on the settings page.");
+  commands.execute("VADVICEDONE", "OFF");
   insert(new AdviceGiven("Your comfort temperature is set higher than average. You can adjust it on the settings page."));
 end
 
@@ -1125,15 +1124,15 @@ when
   Event(source=="VR1.COMFORT", eval(util.parseDouble(value) <= 20.5)) // Average is 20 hardcoded or from sensor?
   Event(source=="VADVICE",eval(value.toString().substring(0,12).equals("Your comfort")))
 then
-  execute.command("VADVICE", "You're doing great!");
-  execute.command("VADVICEDONE", "OFF");
+  commands.execute("VADVICE", "You're doing great!");
+  commands.execute("VADVICEDONE", "OFF");
 end
 
 rule "-PSB: advice 3"
 when
 // irregular attendence
 then
-  execute.command("VADVICEDONE", "OFF");
+  commands.execute("VADVICEDONE", "OFF");
 end
  
 rule "-PSB: advice 4"
@@ -1143,8 +1142,8 @@ when
   Event(source=="VSUMMER", value=="Yes")
 )
 then
-  execute.command("VADVICE", "You're doing great!");
-  execute.command("VADVICEDONE", "OFF");
+  commands.execute("VADVICE", "You're doing great!");
+  commands.execute("VADVICEDONE", "OFF");
   insert(new AdviceGiven("You're doing great!"));
 end
 
@@ -1174,8 +1173,8 @@ when
   Event(source=="VACATION", $v: value)
   Event(source=="VACATION.inc", value=="ON")
 then
-  execute.command("VACATION", Integer.parseInt($v.toString())+1);
-  execute.command("VACATION.inc", "OFF");
+  commands.execute("VACATION", Integer.parseInt($v.toString())+1);
+  commands.execute("VACATION.inc", "OFF");
 end
 
 rule "-PSB: vacation dec"
@@ -1184,8 +1183,8 @@ when
   Event(source=="VACATION", $v: value, eval(Integer.parseInt(value.toString()) > 0))
   Event(source=="VACATION.dec", value=="ON")
 then
-  execute.command("VACATION", Integer.parseInt($v.toString())-1);
-  execute.command("VACATION.dec", "OFF");
+  commands.execute("VACATION", Integer.parseInt($v.toString())-1);
+  commands.execute("VACATION.dec", "OFF");
 end
 
 rule "-PSB: vacation inc/dec" // needed so the ON value does not hang
@@ -1194,7 +1193,7 @@ rule "-PSB: vacation inc/dec" // needed so the ON value does not hang
 when
   Event(source matches "VACATION...c", $s: source, value=="ON")
 then
-  execute.command($s, "OFF");
+  commands.execute($s, "OFF");
 end
 
 rule "PSB: start next week stats"
@@ -1240,7 +1239,7 @@ when
   Event(source=="Timerd", $d: value)
   Event(source=="TimerMMM", $MMM:value)
 then
-  execute.command("VTimer", $EEEE.toString()+" "+$d.toString()+" "+$MMM.toString()+". I will be:");
+  commands.execute("VTimer", $EEEE.toString()+" "+$d.toString()+" "+$MMM.toString()+". I will be:");
 end
 
 rule "-PSB16: background arrival on"
@@ -1249,7 +1248,7 @@ when
   Event(source=="VETA", eval(util.parseTimestamp(value) > util.parseTimestamp($h)) )
   Event(source=="VArrivalBackground", value!="on")
 then
-  execute.command("VArrivalBackground", "on");
+  commands.execute("VArrivalBackground", "on");
 end
 
 rule "-PSB16: background departure on"
@@ -1258,7 +1257,7 @@ when
   Event(source=="VETD", eval(util.parseTimestamp(value) > util.parseTimestamp($h)) )
   Event(source=="VDepartureBackground", value!="on")
 then
-  execute.command("VDepartureBackground", "on");
+  commands.execute("VDepartureBackground", "on");
 end
 
 rule "-PSB16: background arrival off"
@@ -1267,7 +1266,7 @@ when
   Event(source=="VETA", eval(util.parseTimestamp(value) <= util.parseTimestamp($h)) )
   Event(source=="VArrivalBackground", value!="off")
 then
-  execute.command("VArrivalBackground", "off");
+  commands.execute("VArrivalBackground", "off");
 end
 
 rule "-PSB16: background departure off"
@@ -1276,18 +1275,18 @@ when
   Event(source=="VETD", eval(util.parseTimestamp(value) <= util.parseTimestamp($h)) )
   Event(source=="VDepartureBackground", value!="off")
 then
-  execute.command("VDepartureBackground", "off");
+  commands.execute("VDepartureBackground", "off");
 end
 
 // PID controller start
 
 rule "-PID: init"
 then
-  execute.command("GV.PID.Kp",persistence.readData("GV.PID.Kp", "0.6"));
-  execute.command("GV.PID.Ki",persistence.readData("GV.PID.Ki", "0.2"));
-  execute.command("GV.PID.Kd",persistence.readData("GV.PID.Kd", "0.1"));
-  execute.command("GV.PID.Db",persistence.readData("GV.PID.Db", "0.0"));
-  execute.command("GV.PID.Sp",persistence.readData("GV.PID.Sp", "1.0"));
+  commands.execute("GV.PID.Kp",persistence.readData("GV.PID.Kp", "0.6"));
+  commands.execute("GV.PID.Ki",persistence.readData("GV.PID.Ki", "0.2"));
+  commands.execute("GV.PID.Kd",persistence.readData("GV.PID.Kd", "0.1"));
+  commands.execute("GV.PID.Db",persistence.readData("GV.PID.Db", "0.0"));
+  commands.execute("GV.PID.Sp",persistence.readData("GV.PID.Sp", "1.0"));
 end
 
 // PID UI
@@ -1298,8 +1297,8 @@ when
   Event(source=="GV.PID.Kp", $v: value)
   Event($s:source=="PID.kp.inc", value=="ON")
 then
-  execute.command("GV.PID.Kp", String.format("%.1f", Double.parseDouble($v.toString())+0.1) );
-  execute.command($s, "off");
+  commands.execute("GV.PID.Kp", String.format("%.1f", Double.parseDouble($v.toString())+0.1) );
+  commands.execute($s, "off");
 end
 
 rule "-PID: decrease Kp"
@@ -1308,8 +1307,8 @@ when
   Event(source=="GV.PID.Kp", $v: value)
   Event($s:source=="PID.kp.dec", value=="ON")
 then
-  execute.command("GV.PID.Kp", String.format("%.1f", Double.parseDouble($v.toString())-0.1) );
-  execute.command($s, "off");
+  commands.execute("GV.PID.Kp", String.format("%.1f", Double.parseDouble($v.toString())-0.1) );
+  commands.execute($s, "off");
 end
 
 rule "-PID: increase Ki"
@@ -1318,8 +1317,8 @@ when
   Event(source=="GV.PID.Ki", $v: value)
   Event($s:source=="PID.ki.inc", value=="ON")
 then
-  execute.command("GV.PID.Ki", String.format("%.1f", Double.parseDouble($v.toString())+0.1) );
-  execute.command($s, "off");
+  commands.execute("GV.PID.Ki", String.format("%.1f", Double.parseDouble($v.toString())+0.1) );
+  commands.execute($s, "off");
 end
 
 rule "-PID: decrease Ki"
@@ -1328,8 +1327,8 @@ when
   Event(source=="GV.PID.Ki", $v: value)
   Event($s:source=="PID.ki.dec", value=="ON")
 then
-  execute.command("GV.PID.Ki", String.format("%.1f", Double.parseDouble($v.toString())-0.1) );
-  execute.command($s, "off");
+  commands.execute("GV.PID.Ki", String.format("%.1f", Double.parseDouble($v.toString())-0.1) );
+  commands.execute($s, "off");
 end
 
 rule "-PID: increase Kd"
@@ -1338,8 +1337,8 @@ when
   Event(source=="GV.PID.Kd", $v: value)
   Event($s:source=="PID.kd.inc", value=="ON")
 then
-  execute.command("GV.PID.Kd", String.format("%.1f", Double.parseDouble($v.toString())+0.1) );
-  execute.command($s, "off");
+  commands.execute("GV.PID.Kd", String.format("%.1f", Double.parseDouble($v.toString())+0.1) );
+  commands.execute($s, "off");
 end
 
 rule "-PID: decrease Kd"
@@ -1348,8 +1347,8 @@ when
   Event(source=="GV.PID.Kd", $v: value)
   Event($s:source=="PID.kd.dec", value=="ON")
 then
-  execute.command("GV.PID.Kd", String.format("%.1f", Double.parseDouble($v.toString())-0.1) );
-  execute.command($s, "off");
+  commands.execute("GV.PID.Kd", String.format("%.1f", Double.parseDouble($v.toString())-0.1) );
+  commands.execute($s, "off");
 end
 
 rule "-PID: increase Db"
@@ -1358,8 +1357,8 @@ when
   Event(source=="GV.PID.Db", $v: value)
   Event($s:source=="PID.db.inc", value=="ON")
 then
-  execute.command("GV.PID.Db", String.format("%.1f", Double.parseDouble($v.toString())+0.1) );
-  execute.command($s, "off");
+  commands.execute("GV.PID.Db", String.format("%.1f", Double.parseDouble($v.toString())+0.1) );
+  commands.execute($s, "off");
 end
 
 rule "-PID: decrease Db"
@@ -1368,8 +1367,8 @@ when
   Event(source=="GV.PID.Db", $v: value)
   Event($s:source=="PID.db.dec", value=="ON")
 then
-  execute.command("GV.PID.Db", String.format("%.1f", Double.parseDouble($v.toString())-0.1) );
-  execute.command($s, "off");
+  commands.execute("GV.PID.Db", String.format("%.1f", Double.parseDouble($v.toString())-0.1) );
+  commands.execute($s, "off");
 end
 
 rule "-PID: increase Sp"
@@ -1378,8 +1377,8 @@ when
   Event(source=="GV.PID.Sp", $v: value)
   Event($s:source=="PID.sp.inc", value=="ON")
 then
-  execute.command("GV.PID.Sp", String.format("%.1f", Double.parseDouble($v.toString())+0.5) );
-  execute.command($s, "off");
+  commands.execute("GV.PID.Sp", String.format("%.1f", Double.parseDouble($v.toString())+0.5) );
+  commands.execute($s, "off");
 end
 
 rule "-PID: decrease Sp"
@@ -1388,8 +1387,8 @@ when
   Event(source=="GV.PID.Sp", $v: value)
   Event($s:source=="PID.sp.dec", value=="ON")
 then
-  execute.command("GV.PID.Sp", String.format("%.1f", Double.parseDouble($v.toString())-0.5) );
-  execute.command($s, "off");
+  commands.execute("GV.PID.Sp", String.format("%.1f", Double.parseDouble($v.toString())-0.5) );
+  commands.execute($s, "off");
 end
 
 rule "-PID: reset inc/dec"
@@ -1398,7 +1397,7 @@ rule "-PID: reset inc/dec"
 when
   Event($s: source matches "^PID......c$", value!="off")
 then
-  execute.command($s, "off");
+  commands.execute($s, "off");
 end
 
 // PID algorithm
@@ -1454,8 +1453,8 @@ then
   else if(output < $pv.getOutMin()) output = $pv.getOutMin();
   $pv.setOutput(output);
 
-  execute.command("PID.Se", String.format("%.4f",  error) );
-  execute.command("PID.Output", String.format("%.4f", output) );
+  commands.execute("PID.Se", String.format("%.4f",  error) );
+  commands.execute("PID.Output", String.format("%.4f", output) );
 //  LOG.fine($pv.toString() + " error: "+String.format("%f", Double.parseDouble($sp.toString() ) - $pv.getOutput()));
 end
 
@@ -1465,10 +1464,10 @@ end
 
 rule "Fake sensors init"
 then
-  execute.command("FS.Toutside", "15\u00B0");
-  execute.command("FS.Tinside", "19.5\u00B0");
-  execute.command("FS.PIR", "off");
-  execute.command("FS.Window", "off");
+  commands.execute("FS.Toutside", "15\u00B0");
+  commands.execute("FS.Tinside", "19.5\u00B0");
+  commands.execute("FS.PIR", "off");
+  commands.execute("FS.Window", "off");
 end
 
 rule "--Fake sensors Toutside inc"
@@ -1477,8 +1476,8 @@ when
   Event(source == "FS.Toutside", $v: value, eval(util.parseDouble(value) < 50))
   Event(source == "FS.Toutside.inc" , value == "on")
 then
-  execute.command("FS.Toutside.inc","off");
-  execute.command("FS.Toutside", util.shiftDouble($v.toString(), 0.1, "\u00B0"));
+  commands.execute("FS.Toutside.inc","off");
+  commands.execute("FS.Toutside", util.shiftDouble($v.toString(), 0.1, "\u00B0"));
 end
 
 rule "--Fake sensors Toutside dec"
@@ -1487,8 +1486,8 @@ when
   Event(source == "FS.Toutside", $v: value, eval(util.parseDouble(value) > -40))
   Event(source == "FS.Toutside.dec" , value == "on")
 then
-  execute.command("FS.Toutside.dec","off");
-  execute.command("FS.Toutside", util.shiftDouble($v.toString(), -0.1, "\u00B0"));
+  commands.execute("FS.Toutside.dec","off");
+  commands.execute("FS.Toutside", util.shiftDouble($v.toString(), -0.1, "\u00B0"));
 end
 
 rule "--Fake sensors Tinside inc"
@@ -1497,8 +1496,8 @@ when
   Event(source == "FS.Tinside", $v: value, eval(util.parseDouble(value) < 40))
   Event(source == "FS.Tinside.inc" , value == "on")
 then
-  execute.command("FS.Tinside.inc","off");
-  execute.command("FS.Tinside", util.shiftDouble($v.toString(), 0.1, "\u00B0"));
+  commands.execute("FS.Tinside.inc","off");
+  commands.execute("FS.Tinside", util.shiftDouble($v.toString(), 0.1, "\u00B0"));
 end
 
 rule "--Fake sensors Tinside dec"
@@ -1507,8 +1506,8 @@ when
   Event(source == "FS.Tinside", $v: value, eval(util.parseDouble(value) > 0))
   Event(source == "FS.Tinside.dec" , value == "on")
 then
-  execute.command("FS.Tinside.dec","off");
-  execute.command("FS.Tinside", util.shiftDouble($v.toString(), -0.1, "\u00B0"));
+  commands.execute("FS.Tinside.dec","off");
+  commands.execute("FS.Tinside", util.shiftDouble($v.toString(), -0.1, "\u00B0"));
 end
 
 rule "--Fake sensors PIR off"
@@ -1516,7 +1515,7 @@ rule "--Fake sensors PIR off"
 when
   Event(source=="FS.PIR", value=="on")
 then
-  execute.command("FS.PIR", "off");
+  commands.execute("FS.PIR", "off");
 end
 
 // Fake sensors end
