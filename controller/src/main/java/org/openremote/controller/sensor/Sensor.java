@@ -1,11 +1,10 @@
-package org.openremote.controller.model;
+package org.openremote.controller.sensor;
 
-import org.openremote.controller.command.EventProducerCommand;
+import org.openremote.controller.command.SensorUpdateCommand;
 import org.openremote.controller.command.PullCommand;
 import org.openremote.controller.command.PushCommand;
 import org.openremote.controller.context.ControllerContext;
 import org.openremote.controller.deploy.SensorDefinition;
-import org.openremote.controller.event.Event;
 
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -13,55 +12,49 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Sensors abstract incoming events from devices, either through pulling/polling or
- * listening to devices that actively push their state changes. Sensors operate on
- * commands to execute pull or push operations with devices.
+ * Sensors create {@link SensorState}s, which represent the data obtained from devices.
  * <p>
- * Each pulling sensor (for passive devices) has a thread associated with it. Sensors
- * bound to push commands do not create threads of their own but the command
- * implementations themselves are usually multi-threaded.
+ * A sensor is registered with a {@link ControllerContext}. State updates are obtained
+ * either through pulling/polling or listening to devices that actively push their state
+ * changes.
  * <p>
- * Each sensor can have list of properties which it makes available to implementations of
- * push or pull commands. These properties may be used by protocol implementers to
- * direct their event producer output values to suit the sensor's configuration.
+ * A sensor linked with a {@link PullCommand} runs a new thread when started, and executes
+ * a periodic read.
  * <p>
- * Sensors are registered with {@link ControllerContext}.
- * Sensors create {@link org.openremote.controller.event.Event}s, which represent the
- * data from devices.
+ * A sensor linked with a {@link PushCommand} does not create threads, but delegates
+ * threading and calling back with values to the command implementation.
+ * <p>
+ * Each sensor can have list of meta-data properties, used by command implementors.
  */
 public abstract class Sensor {
 
     private static final Logger LOG = Logger.getLogger(Sensor.class.getName());
 
-    public static final String UNKNOWN_STATUS = "N/A";
+    public static final String UNKNOWN_STATE_VALUE = "N/A";
 
     /**
      * Helper method to allow subclasses to check if a given value matches the 'N/A' string that
      * is used for uninitialized or error states in sensor implementations.
-     *
-     * @param value value to compare to
-     * @return true if value matches the string representation of
-     * {@link org.openremote.controller.model.Sensor.UnknownEvent}, false otherwise
      */
     public static boolean isUnknownSensorValue(String value) {
-        return value.equals(UNKNOWN_STATUS);
+        return value.equals(UNKNOWN_STATE_VALUE);
     }
 
-    private SensorDefinition sensorDefinition;
-    private ControllerContext controllerContext;
-    private EventProducerCommand eventProducerCommand;
+    protected SensorDefinition sensorDefinition;
+    protected ControllerContext controllerContext;
+    protected SensorUpdateCommand sensorUpdateCommand;
 
     /**
      * This is a polling thread implementation for sensors that use {@link PullCommand}.
      */
-    private SensorReader sensorReader;
+    protected SensorReader sensorReader;
 
-    protected Sensor(SensorDefinition sensorDefinition, EventProducerCommand eventProducerCommand) {
-        if (eventProducerCommand == null) {
-            throw new IllegalArgumentException("Event producer command required: " + sensorDefinition);
+    protected Sensor(SensorDefinition sensorDefinition, SensorUpdateCommand sensorUpdateCommand) {
+        if (sensorUpdateCommand == null) {
+            throw new IllegalArgumentException("Sensor update command required: " + sensorDefinition);
         }
         this.sensorDefinition = sensorDefinition;
-        this.eventProducerCommand = eventProducerCommand;
+        this.sensorUpdateCommand = sensorUpdateCommand;
     }
 
     public SensorDefinition getSensorDefinition() {
@@ -69,26 +62,16 @@ public abstract class Sensor {
     }
 
     /**
-     * Call path for push commands. Allow direct update of the sensor's value in
-     * the {@link ControllerContext}.
-     *
-     * Before updating the context, the value is first validated by concrete sensor
-     * implementation's {@link Sensor#processEvent(String)} method.
-     *
-     * @param state the new value for this sensor
+     * Callback for {@link PushCommand} implementations. Before updating the controller context, the
+     * given value is first validated and/or transformed by concrete sensor implementation's
+     * {@link Sensor#process} method.
      */
     public void update(String state) {
         if (controllerContext == null) {
             LOG.fine("Ignoring update, sensor is not running: " + getSensorDefinition());
             return;
         }
-
-        /*
-         *  Allow for sensor type specific processing of the value. This can be used for
-         * mappings, validating value ranges, etc. before the value is pushed through
-         * the event processor chain and ultimately into context.
-         */
-        Event evt = processEvent(state);
+        SensorState evt = process(state);
         LOG.fine("Update on ID " + getSensorDefinition().getSensorID() + ", processed '" + state + "', created: " + evt);
         controllerContext.update(evt);
     }
@@ -97,30 +80,30 @@ public abstract class Sensor {
      * Indicates if this sensor is bound to a command that actively pushes new data.
      */
     public boolean isPushCommand() {
-        return eventProducerCommand instanceof PushCommand;
+        return sensorUpdateCommand instanceof PushCommand;
     }
 
     /**
-     * Starts this sensor. When this sensor is bound to push command, will invoke its
+     * Starts this sensor. When this sensor is bound to a push command, this invokes the
      * {@link PushCommand#start(Sensor)} method. For {@link PullCommand} implementations,
-     * this will start a polling thread to invoke their {@link PullCommand#read(Sensor)} method.
+     * this will start a polling thread to invoke the {@link PullCommand#read(Sensor)} method.
      */
     public void start(ControllerContext controllerContext) {
         LOG.info("Starting sensor: " + this);
         this.controllerContext = controllerContext;
         if (isPushCommand()) {
-            PushCommand pushCommand = (PushCommand) eventProducerCommand;
+            PushCommand pushCommand = (PushCommand) sensorUpdateCommand;
             try {
                 pushCommand.start(this);
             } catch (Throwable t) {
                 LOG.log(Level.SEVERE, "There was an implementation error in the push command associated with " +
                     " sensor '" + this + "'. The command implementation may not have started correctly.", t);
             }
-        } else if (eventProducerCommand instanceof PullCommand) {
-            sensorReader = new SensorReader((PullCommand) eventProducerCommand);
+        } else if (sensorUpdateCommand instanceof PullCommand) {
+            sensorReader = new SensorReader((PullCommand) sensorUpdateCommand);
             sensorReader.start();
         } else {
-            LOG.info("No action implemented for command type: " + eventProducerCommand);
+            LOG.info("No action implemented for command type: " + sensorUpdateCommand);
         }
     }
 
@@ -133,7 +116,7 @@ public abstract class Sensor {
         LOG.info("Stopping sensor: " + this);
         controllerContext = null;
         if (isPushCommand()) {
-            PushCommand pushCommand = (PushCommand) eventProducerCommand;
+            PushCommand pushCommand = (PushCommand) sensorUpdateCommand;
             try {
                 pushCommand.stop(this);
             } catch (Throwable t) {
@@ -150,18 +133,15 @@ public abstract class Sensor {
     }
 
     /**
-     * Callback to subclasses to apply their event validations and other processing
+     * Callback to subclasses to apply their state validations and other processing
      * if necessary. This method is called both when a value is pulled and when a
      * command pushes a new sensor value into {@link ControllerContext} state.
-     *
-     * @param value value returned by the event producer
-     * @return validated and processed value of the event producer
      */
-    protected abstract Event processEvent(String value);
+    protected abstract SensorState process(String value);
 
     /**
      * Handles the {@link PullCommand#read(Sensor)} polling.
-     *
+     * <p>
      * TODO This is a major problem, every PullCommand uses a separate thread, we have hundreds of threads!
      */
     private class SensorReader implements Runnable {
@@ -241,37 +221,37 @@ public abstract class Sensor {
          * this may yield an active request using the connecting transport to device unless the
          * command implementation caches certain values and returns them from memory.
          * <p>
-         * In case of errors, {@link #UNKNOWN_STATUS} is returned.
+         * In case of errors, {@link #UNKNOWN_STATE_VALUE} is returned.
          * <p>
          * This default read() implementation does not validate the input from protocol pull commands
          * in any way (other than handling implementation errors that yield runtime exceptions).
-         * concrete subclasses should override and implement {@link Sensor#processEvent(String)}
+         * concrete subclasses should override and implement {@link Sensor#process(String)}
          * to validate the inputs from commands and to ensure the sensor returns values that
          * adhere to its datatype.
          *
          * @return sensor's value, according to its datatype and provided by commands or
-         * {@link #UNKNOWN_STATUS} if value cannot be found.
+         * {@link #UNKNOWN_STATE_VALUE} if value cannot be found.
          */
         private String read() {
             try {
                 return pullCommand.read(Sensor.this);
             } catch (Throwable t) {
-                LOG.log(Level.SEVERE, "Implementation error in pull command: " + eventProducerCommand, t);
-                return UNKNOWN_STATUS;
+                LOG.log(Level.SEVERE, "Implementation error in pull command: " + sensorUpdateCommand, t);
+                return UNKNOWN_STATE_VALUE;
             }
         }
     }
 
     /**
-     * A definition of an event that can be used when either an error occurs in sensor implementation
-     * (or in the underlying protocol implementation) or if the initial device state has not been
-     * fetched yet.
+     * A definition of a sensor state that can be used when either an error occurs in sensor
+     * implementation (or in the underlying protocol implementation) or if the initial device
+     * state has not been fetched yet.
      * <p>
-     * The value returned by this event is defined in {@link #UNKNOWN_STATUS}.
+     * The value returned by this state is defined in {@link #UNKNOWN_STATE_VALUE}.
      */
-    public static class UnknownEvent extends Event<String> {
+    public static class UnknownState extends SensorState<String> {
 
-        public UnknownEvent(Sensor sensor) {
+        public UnknownState(Sensor sensor) {
             super(sensor.getSensorDefinition().getSensorID(), sensor.getSensorDefinition().getName());
         }
 
@@ -286,20 +266,20 @@ public abstract class Sensor {
         }
 
         @Override
-        public UnknownEvent clone(String ignored) {
+        public UnknownState clone(String ignored) {
             return this;
         }
 
         @Override
         public String serialize() {
-            return UNKNOWN_STATUS;
+            return UNKNOWN_STATE_VALUE;
         }
 
         @Override
         public String toString() {
-            return "UnknownEvent{" +
-                "sourceId=" + getSourceID() +
-                ", source='" + getSource() + "'" +
+            return getClass().getSimpleName() + "{" +
+                "sourceId=" + getSensorID() +
+                ", source='" + getSensorName() + "'" +
                 "}";
         }
     }

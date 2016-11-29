@@ -7,7 +7,7 @@ import org.kie.api.builder.model.KieSessionModel
 import org.kie.api.runtime.KieContainer
 import org.kie.api.runtime.KieSession
 import org.kie.internal.io.ResourceFactory
-import org.openremote.controller.event.CustomStateEvent
+import org.openremote.controller.sensor.CustomSensorState
 import org.openremote.controller.rules.RuleExecutionLogger
 import org.openremote.test.ContainerTrait
 import spock.lang.Shared
@@ -65,7 +65,7 @@ class RuleExecutionLoggerTest extends Specification implements ContainerTrait {
      */
     def "Event listener plumbing"() {
         given: "a custom state event"
-        CustomStateEvent newState = new CustomStateEvent(1, TEST_SENSOR_NAME, "ON");
+        CustomSensorState newState = new CustomSensorState(1, TEST_SENSOR_NAME, "ON");
         ksession.insert(newState)
 
         and: "a logger of rule execution"
@@ -82,7 +82,7 @@ class RuleExecutionLoggerTest extends Specification implements ContainerTrait {
 
         String lastLog = String.format("rule \"%s\" // (package org.openremote.test.rules)\n" +
                 "\tDeclarations \n\t\tDeclaration: \"\$e\"\n\t\tValue:\n\t\t\tSensor Name: \"%s\"\n\t\t\tSensor Value: \"ON\"\n" +
-                "\tLHS objects(antecedents)\n\t\tClass: \"CustomStateEvent\"\n\t\tFields: \n\t\t\tEvent Name: \t\"%s\"\n\t\t\tEvent Value: \t\"ON\"\n", "TestRuleFiring", TEST_SENSOR_NAME, TEST_SENSOR_NAME);
+                "\tLHS objects(antecedents)\n\t\tClass: \"CustomSensorState\"\n\t\tFields: \n\t\t\tSensor name: \t\"%s\"\n\t\t\tState value: \t\"ON\"\n", "TestRuleFiring", TEST_SENSOR_NAME, TEST_SENSOR_NAME);
 
         then: "the execution should be logged"
         testLogHandler.lastLevel == Level.FINE

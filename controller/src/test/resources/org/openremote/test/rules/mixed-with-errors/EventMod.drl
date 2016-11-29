@@ -1,12 +1,12 @@
 package org.openremote.test.rules;
 
-import org.openremote.controller.event.*;
+import org.openremote.controller.sensor.*;
 
 global org.openremote.controller.rules.RangeFacade ranges;
 
 rule "Modify Level State Above Max"
 when
-  Event( sourceID == 444, $name : source )
+  SensorState( sensorID == 444, $name : sensorName )
 then
   ranges.name($name).value( 12345 );
 end

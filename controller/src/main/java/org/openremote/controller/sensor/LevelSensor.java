@@ -1,9 +1,7 @@
-package org.openremote.controller.model;
+package org.openremote.controller.sensor;
 
-import org.openremote.controller.command.EventProducerCommand;
+import org.openremote.controller.command.SensorUpdateCommand;
 import org.openremote.controller.deploy.SensorDefinition;
-import org.openremote.controller.event.Event;
-import org.openremote.controller.event.LevelEvent;
 
 import java.util.logging.Logger;
 
@@ -11,14 +9,14 @@ public class LevelSensor extends RangeSensor {
 
     private static final Logger LOG = Logger.getLogger(LevelSensor.class.getName());
 
-    public LevelSensor(SensorDefinition sensorDefinition, EventProducerCommand eventProducerCommand) {
-        super(sensorDefinition, eventProducerCommand, 0, 100);
+    public LevelSensor(SensorDefinition sensorDefinition, SensorUpdateCommand sensorUpdateCommand) {
+        super(sensorDefinition, sensorUpdateCommand, 0, 100);
     }
 
     @Override
-    public Event processEvent(String value) {
+    public SensorState process(String value) {
         try {
-            return new LevelEvent(
+            return new LevelSensorState(
                 getSensorDefinition().getSensorID(),
                 getSensorDefinition().getName(),
                 new Integer(value.trim())
@@ -27,7 +25,7 @@ public class LevelSensor extends RangeSensor {
             if (!isUnknownSensorValue(value)) {
                 LOG.warning("Level sensor '" + getSensorDefinition() + "' produced a non-integer value: " + value);
             }
-            return new UnknownEvent(this);
+            return new UnknownState(this);
         }
     }
 

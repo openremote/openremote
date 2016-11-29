@@ -1,10 +1,11 @@
-package org.openremote.controller.model;
-
-import org.openremote.controller.deploy.CommandDefinition;
+package org.openremote.controller.deploy;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * A device is simply a collection of command definitions.
+ */
 public class Device {
 
     final protected int deviceID;

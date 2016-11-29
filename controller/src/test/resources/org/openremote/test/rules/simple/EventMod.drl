@@ -1,12 +1,12 @@
 package org.openremote.test.rules;
 
-import org.openremote.controller.event.*;
+import org.openremote.controller.sensor.*;
 
 global org.openremote.controller.rules.SwitchFacade switches;
 
 rule "Modify Switch State"
 when
-  $switch : SwitchEvent(sourceID == 123)
+  $switch : SwitchSensorState(sensorID == 123)
 then
-  switches.name($switch.getSource()).off();
+  switches.name($switch.getSensorName()).off();
 end

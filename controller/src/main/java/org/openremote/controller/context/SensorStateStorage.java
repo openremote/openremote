@@ -1,9 +1,11 @@
 package org.openremote.controller.context;
 
+import org.openremote.controller.sensor.SensorState;
+
 /**
  * Store controller context (sensor) state.
  */
-public interface StateStorage {
+public interface SensorStateStorage {
 
     void clear();
 
@@ -14,7 +16,7 @@ public interface StateStorage {
 
     SensorState get(int sensorID);
 
-    /* TODO For polling/pushing to external system we need to be able to continue processing events from a known offset
+    /* TODO For polling/pushing to external system we need to be able to continue processing state from a known offset
     Iterator<SensorState> getSince(int timestamp);
 
     Iterator<SensorState> getSince(int timestamp, int sensorID);

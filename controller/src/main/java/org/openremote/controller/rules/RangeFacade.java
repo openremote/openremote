@@ -1,43 +1,37 @@
 package org.openremote.controller.rules;
 
-import org.openremote.controller.event.RangeEvent;
+import org.openremote.controller.sensor.RangeSensorState;
 
-import java.util.logging.Logger;
-
-public class RangeFacade extends SingleValueEventFacade<RangeFacade.RangeAdapter, RangeEvent> {
-
-    private static final Logger LOG = Logger.getLogger(RangeFacade.class.getName());
+public class RangeFacade extends SingleValueSensorFacade<RangeFacade.RangeAdapter, RangeSensorState> {
 
     @Override
-    protected RangeEvent createDefaultEvent(int sourceID, String sourceName) {
-        // TODO We drop the min/max here? This leads to events that don't restrict boundaries...
-        return new RangeEvent(sourceID, sourceName, 0, Integer.MIN_VALUE, Integer.MAX_VALUE);
+    protected RangeSensorState createDefaultState(int sourceID, String sourceName) {
+        // TODO We drop the min/max here? This leads to updates that don't restrict boundaries...
+        return new RangeSensorState(sourceID, sourceName, 0, Integer.MIN_VALUE, Integer.MAX_VALUE);
     }
 
     @Override
-    protected RangeAdapter createAdapter(RangeEvent event) {
-        return new RangeAdapter(event);
+    protected RangeAdapter createAdapter(RangeSensorState sensorState) {
+        return new RangeAdapter(sensorState);
     }
 
     public class RangeAdapter {
 
-        private RangeEvent rangeEvent;
+        final private RangeSensorState rangeSensorState;
 
-        private RangeAdapter(RangeEvent event) {
-            this.rangeEvent = event;
+        private RangeAdapter(RangeSensorState rangeSensorState) {
+            this.rangeSensorState = rangeSensorState;
         }
 
         public void value(int value) {
-            if (value < rangeEvent.getMinValue()) {
-                value = rangeEvent.getMinValue();
-            } else if (value > rangeEvent.getMaxValue()) {
-                value = rangeEvent.getMaxValue();
+            if (value < rangeSensorState.getMinValue()) {
+                value = rangeSensorState.getMinValue();
+            } else if (value > rangeSensorState.getMaxValue()) {
+                value = rangeSensorState.getMaxValue();
             }
 
-            RangeEvent newRangeEventEvent = rangeEvent.clone(value);
-
-            LOG.fine("Dispatching event (original value was: '" + value + "'): " + newRangeEventEvent);
-            dispatchEvent(newRangeEventEvent);
+            RangeSensorState newRangeSensorState = rangeSensorState.clone(value);
+            terminateAndReplaceWith(newRangeSensorState);
         }
     }
 }

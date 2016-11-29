@@ -5,7 +5,7 @@ import com.luckycatlabs.sunrisesunset.dto.Location;
 import org.openremote.container.util.TextUtil;
 import org.openremote.controller.command.PushCommand;
 import org.openremote.controller.deploy.CommandDefinition;
-import org.openremote.controller.model.Sensor;
+import org.openremote.controller.sensor.Sensor;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -155,7 +155,6 @@ public class DateTimeCommand implements PushCommand, Runnable {
 
     @Override
     public void start(Sensor sensor) {
-        LOG.fine("*** setSensor called as part of EventListener init *** sensor is: " + sensor);
         if (pollingInterval == null) {
             throw new RuntimeException("Could not set sensor because no polling interval was given");
         }

@@ -1,10 +1,10 @@
 package org.openremote.controller.context;
 
-import org.openremote.controller.event.Event;
-import org.openremote.controller.event.EventProcessingContext;
-import org.openremote.controller.event.EventProcessorChain;
-import org.openremote.controller.model.Deployment;
-import org.openremote.controller.model.Sensor;
+import org.openremote.controller.rules.RuleEngine;
+import org.openremote.controller.sensor.SensorState;
+import org.openremote.controller.sensor.SensorStateUpdate;
+import org.openremote.controller.deploy.Deployment;
+import org.openremote.controller.sensor.Sensor;
 import org.openremote.controller.command.Commands;
 
 import java.util.logging.Level;
@@ -19,14 +19,14 @@ public class ControllerContext {
 
     final protected String controllerID;
     final protected Deployment deployment;
-    final protected EventProcessorChain eventProcessorChain;
+    final protected RuleEngine ruleEngine;
 
     private volatile Boolean shutdownInProgress = false;
 
     public ControllerContext(String controllerID, Deployment deployment) {
         this.controllerID = controllerID;
         this.deployment = deployment;
-        this.eventProcessorChain = new EventProcessorChain(deployment);
+        this.ruleEngine  = new RuleEngine(deployment);
     }
 
     public String getControllerID() {
@@ -41,25 +41,25 @@ public class ControllerContext {
         return getDeployment().getCommands();
     }
 
-    protected StateStorage getStateStorage() {
-        return getDeployment().getStateStorage();
+    protected SensorStateStorage getStateStorage() {
+        return getDeployment().getSensorStateStorage();
     }
 
     public synchronized void start() {
         if (shutdownInProgress)
             return;
         LOG.info("Starting context: " + getControllerID());
-        eventProcessorChain.start();
+        ruleEngine.start();
         for (Sensor sensor : deployment.getSensors()) {
             // Put initial state "unknown" for each sensor
-            getStateStorage().put(new SensorState(new Sensor.UnknownEvent(sensor)));
+            getStateStorage().put(new Sensor.UnknownState(sensor));
             sensor.start(this);
         }
     }
 
     /**
      * <ul>
-     * <li>event processors are stopped</li>
+     * <li>rule engine is stopped</li>
      * <li>sensors are stopped</li>
      * <li>the current state is cleared</li>
      * </ul>
@@ -68,7 +68,7 @@ public class ControllerContext {
         try {
             LOG.info("Stopping context: " + getControllerID());
             shutdownInProgress = true;
-            eventProcessorChain.stop();
+            ruleEngine.stop();
             for (Sensor sensor : deployment.getSensors()) {
                 try {
                     sensor.stop();
@@ -82,44 +82,45 @@ public class ControllerContext {
         }
     }
 
-    public synchronized void update(Event event) {
-        LOG.fine("==> Update from event: " + event);
+    public synchronized void update(SensorState sensorState) {
+        LOG.fine("==> Update: " + sensorState);
         if (shutdownInProgress) {
-            LOG.fine("<== Shutting down. Ignoring update from: " + event.getSource());
+            LOG.fine("<== Shutting down. Ignoring update from: " + sensorState.getSensorName());
             return;
         }
 
-        EventProcessingContext ctx = new EventProcessingContext(this, event);
-        eventProcessorChain.push(ctx);
+        SensorStateUpdate sensorStateUpdate = new SensorStateUpdate(this, sensorState);
+
+        ruleEngine.process(sensorStateUpdate);
 
         // Early exist if one of the processors decided to terminate the chain
-        if (ctx.hasTerminated()) {
-            LOG.fine("<== Updating status complete, event context terminated, no update was made for event: " + ctx.getEvent());
+        if (sensorStateUpdate.hasTerminated()) {
+            LOG.fine("<== Update complete, processing terminated, no update was made for: " + sensorStateUpdate.getSensorState());
             return;
         }
 
-        getStateStorage().put(new SensorState(event));
-        LOG.fine("<== Updating status complete for event: " + event);
+        getStateStorage().put(sensorState);
+        LOG.fine("<== Update complete for: " + sensorState);
     }
 
     public String queryValue(int sensorID) {
         if (!getStateStorage().contains(sensorID)) {
-            LOG.info("Requested sensor id '" + sensorID + "' was not found. Defaulting to: " + Sensor.UNKNOWN_STATUS);
-            return Sensor.UNKNOWN_STATUS;
+            LOG.info("Requested sensor id '" + sensorID + "' was not found. Defaulting to: " + Sensor.UNKNOWN_STATE_VALUE);
+            return Sensor.UNKNOWN_STATE_VALUE;
         }
-        return getStateStorage().get(sensorID).getEvent().serialize();
+        return getStateStorage().get(sensorID).serialize();
     }
 
     public String queryValue(String sensorName) {
         return queryValue(deployment.getSensorID(sensorName));
     }
 
-    public Event queryEvent(int sensorID) {
-        return getStateStorage().get(sensorID).getEvent();
+    public SensorState queryState(int sensorID) {
+        return getStateStorage().get(sensorID);
     }
 
-    public Event queryEvent(String sensorName) {
+    public SensorState queryState(String sensorName) {
         Integer sensorID = deployment.getSensorID(sensorName);
-        return sensorID != null ? queryEvent(sensorID) : null;
+        return sensorID != null ? queryState(sensorID) : null;
     }
 }

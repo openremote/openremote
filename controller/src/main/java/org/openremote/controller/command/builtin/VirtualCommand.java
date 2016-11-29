@@ -3,7 +3,7 @@ package org.openremote.controller.command.builtin;
 import org.openremote.controller.command.ExecutableCommand;
 import org.openremote.controller.command.PullCommand;
 import org.openremote.controller.deploy.CommandDefinition;
-import org.openremote.controller.model.*;
+import org.openremote.controller.sensor.*;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -159,7 +159,7 @@ public class VirtualCommand implements ExecutableCommand, PullCommand {
                     return "0";
                 }
             }
-        } else if (sensor instanceof CustomStateSensor) {
+        } else if (sensor instanceof CustomSensor) {
             return (state == null) ? "" : state;
         } else {
             throw new Error(

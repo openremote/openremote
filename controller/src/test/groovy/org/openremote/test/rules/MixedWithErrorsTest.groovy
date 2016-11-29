@@ -3,7 +3,7 @@ package org.openremote.test.rules
 import org.kie.api.KieServices
 import org.kie.api.io.Resource
 import org.openremote.controller.ControllerService
-import org.openremote.controller.rules.RuleEngine
+import org.openremote.controller.rules.RulesProvider
 import org.openremote.test.ContainerTrait
 import spock.lang.Specification
 
@@ -18,15 +18,15 @@ class MixedWithErrorsTest extends Specification implements ContainerTrait {
 
     def "Execute good rules - ignore broken rules"() {
 
-        given: "a controller deployment"
+        given: "a controller deployment with commands and sensors"
         def controllerDeploymentXml = getClass().getResourceAsStream(
                 "/org/openremote/test/rules/mixed-with-errors/controller.xml"
         )
 
-        and: "some sensor event processors and rules"
-        def ruleEngineProcessor = new RuleEngine() {
+        and: "some rules"
+        def rulesProvider = new RulesProvider() {
             @Override
-            protected Stream<Resource> getResources(KieServices kieServices) {
+            Stream<Resource> getResources(KieServices kieServices) {
                 Stream.of(
                         kieServices.getResources().newClassPathResource(
                                 "org/openremote/test/rules/mixed-with-errors/EventMod.drl"
@@ -49,7 +49,7 @@ class MixedWithErrorsTest extends Specification implements ContainerTrait {
         def controllerService = new ControllerService(
                 controllerDeploymentXml,
                 testCommandBuilder,
-                ruleEngineProcessor
+                rulesProvider
         )
         def services = Stream.of(controllerService)
         def serverPort = findEphemeralPort()

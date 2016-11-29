@@ -4,8 +4,8 @@ import org.kie.api.definition.rule.Rule;
 import org.kie.api.event.rule.BeforeMatchFiredEvent;
 import org.kie.api.event.rule.DefaultAgendaEventListener;
 import org.kie.api.runtime.rule.Match;
-import org.openremote.controller.event.Event;
-import org.openremote.controller.model.Sensor;
+import org.openremote.controller.sensor.SensorState;
+import org.openremote.controller.sensor.Sensor;
 
 import java.util.List;
 import java.util.Map;
@@ -47,7 +47,7 @@ public class RuleExecutionLogger extends DefaultAgendaEventListener {
         for (String declarationID : declarationIDs) {
             Object declarationValue = matchEvent.getDeclarationValue(declarationID);
             String declarationValueString = this.declarationValueToString(declarationValue);
-            if (declarationValue instanceof Sensor || declarationValue instanceof Event) {
+            if (declarationValue instanceof Sensor || declarationValue instanceof SensorState) {
                 declarationLog = String.format("%s\t\tDeclaration: \"%s\"\n\t\tValue:\n\t\t\t%s\n", declarationLog, declarationID, declarationValueString);
             } else {
                 declarationLog = String.format("%s\t\tDeclaration: \"%s: %s\"\n", declarationLog, declarationID, declarationValueString);
@@ -94,11 +94,11 @@ public class RuleExecutionLogger extends DefaultAgendaEventListener {
                 theValue = String.format("%sName: \t\"%s\"\n\t\t\tValue: \t\"%s\"", theValue, entryName, entryValue);
             }
         }
-        if (antecedent instanceof Event) {
-            Event theEvent = (Event) antecedent;
-            String sourceName = theEvent.getSource();
-            String eventValue = theEvent.getValue().toString(); //assumes all values can directly cast to String      
-            theValue = String.format("Event Name: \t\"%s\"\n\t\t\tEvent Value: \t\"%s\"", sourceName, eventValue);
+        if (antecedent instanceof SensorState) {
+            SensorState theSensorState = (SensorState) antecedent;
+            String sensorName = theSensorState.getSensorName();
+            String stateValue = theSensorState.getValue().toString(); //assumes all values can directly cast to String
+            theValue = String.format("Sensor name: \t\"%s\"\n\t\t\tState value: \t\"%s\"", sensorName, stateValue);
         }
 
         return theValue;
@@ -121,9 +121,9 @@ public class RuleExecutionLogger extends DefaultAgendaEventListener {
         {
             convertedDeclarationValue = ((Sensor) declarationValue).getSensorDefinition().getName();
         }
-        if (declarationValue instanceof Event) {
-            String sensorName = ((Event) declarationValue).getSource();
-            String sensorValue = ((Event) declarationValue).getValue().toString();
+        if (declarationValue instanceof SensorState) {
+            String sensorName = ((SensorState) declarationValue).getSensorName();
+            String sensorValue = ((SensorState) declarationValue).getValue().toString();
             convertedDeclarationValue = String.format("Sensor Name: \"%s\"\n\t\t\tSensor Value: \"%s\"", sensorName, sensorValue);
         }
 

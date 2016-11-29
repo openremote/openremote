@@ -1,15 +1,13 @@
 package org.openremote.controller.command;
 
-import org.openremote.controller.event.EventProcessor;
 import org.openremote.controller.deploy.CommandDefinition;
-import org.openremote.controller.model.Deployment;
+import org.openremote.controller.deploy.Deployment;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Can be used directly and/or by {@link EventProcessor}s to trigger
- * {@link ExecutableCommand}s (e.g. in rules or from simple client call).
+ * Facade for running {@link ExecutableCommand}s (e.g. in rules or from simple client call).
  */
 public class Commands {
 

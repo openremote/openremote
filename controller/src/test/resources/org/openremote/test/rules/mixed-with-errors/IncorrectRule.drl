@@ -1,10 +1,10 @@
 package org.openremote.test.rules;
 
-import org.openremote.controller.event.*;
+import org.openremote.controller.sensor.*;
 
 rule "Incorrect Event Modification Attempt"
 when
-  $event : Event( sourceID == 123 )
+  $sensorState : SensorState( sensorID == 123 )
 then
-  $event.setSourceID( 321 );
+  $sensorState.setFooBarBazOoops( 321 );
 end

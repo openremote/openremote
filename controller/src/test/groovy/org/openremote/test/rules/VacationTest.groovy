@@ -3,9 +3,9 @@ package org.openremote.test.rules
 import org.kie.api.KieServices
 import org.kie.api.io.Resource
 import org.openremote.controller.ControllerService
-import org.openremote.controller.event.CustomStateEvent
-import org.openremote.controller.event.SwitchEvent
-import org.openremote.controller.rules.RuleEngine
+import org.openremote.controller.rules.RulesProvider
+import org.openremote.controller.sensor.CustomSensorState
+import org.openremote.controller.sensor.SwitchSensorState
 import org.openremote.test.ContainerTrait
 import spock.lang.Specification
 
@@ -17,15 +17,15 @@ class VacationTest extends Specification implements ContainerTrait {
 
     def "Vacation example"() {
 
-        given: "a controller deployment"
+        given: "a controller deployment with commands and sensors"
         def controllerDeploymentXml = getClass().getResourceAsStream(
                 "/org/openremote/test/rules/vacation/controller.xml"
         )
 
-        and: "event processors and rules"
-        def ruleEngineProcessor = new RuleEngine() {
+        and: "some rules"
+        def rulesProvider = new RulesProvider() {
             @Override
-            protected Stream<Resource> getResources(KieServices kieServices) {
+            Stream<Resource> getResources(KieServices kieServices) {
                 Stream.of(
                         kieServices.getResources().newClassPathResource(
                                 "org/openremote/test/rules/vacation/Vacation.drl"
@@ -39,14 +39,14 @@ class VacationTest extends Specification implements ContainerTrait {
         def controllerService = new ControllerService(
                 controllerDeploymentXml,
                 testCommandBuilder,
-                ruleEngineProcessor
+                rulesProvider
         )
         def services = Stream.of(controllerService)
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), services)
 
         when: "the time of day is day"
-        def customStateEvent = new CustomStateEvent(123, "time of day", "day");
+        def customStateEvent = new CustomSensorState(123, "time of day", "day");
         controllerService.getContext().update(customStateEvent);
 
         and: "we wait a bit for the rules to fire"
@@ -56,7 +56,7 @@ class VacationTest extends Specification implements ContainerTrait {
         testCommandBuilder.lastExecutionArgument == "21"
 
         when: "the time of day is night"
-        customStateEvent = new CustomStateEvent(123, "time of day", "night");
+        customStateEvent = new CustomSensorState(123, "time of day", "night");
         controllerService.getContext().update(customStateEvent);
 
         and: "we wait a bit for the rules to fire"
@@ -66,7 +66,7 @@ class VacationTest extends Specification implements ContainerTrait {
         testCommandBuilder.lastExecutionArgument == "18"
 
         when: "we go on vacation"
-        def switchEvent = new SwitchEvent(789, "vacation start", "on", SwitchEvent.State.ON);
+        def switchEvent = new SwitchSensorState(789, "vacation start", "on", SwitchSensorState.State.ON);
         controllerService.getContext().update(switchEvent);
 
         and: "we wait a bit for the rules to fire"
@@ -76,7 +76,7 @@ class VacationTest extends Specification implements ContainerTrait {
         testCommandBuilder.lastExecutionArgument == "15"
 
         when: "the time of day is day"
-        customStateEvent = new CustomStateEvent(123, "time of day", "day");
+        customStateEvent = new CustomSensorState(123, "time of day", "day");
         controllerService.getContext().update(customStateEvent);
 
         and: "we wait a bit for the rules to fire"

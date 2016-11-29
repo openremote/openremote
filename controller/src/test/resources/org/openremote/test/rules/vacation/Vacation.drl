@@ -2,9 +2,7 @@ package org.openremote.test.rules;
 
 global org.openremote.controller.command.Commands commands;
 
-import org.openremote.controller.command.*;
-import org.openremote.controller.event.*;
-import org.openremote.controller.model.*;
+import org.openremote.controller.sensor.*;
 
 /*
  * This example demonstrates creation of new facts from within the rules, in this
@@ -20,7 +18,7 @@ end
 
 rule "I'm going on vacation"
 when
-  Event ( source == "vacation start" )
+  SensorState ( sensorName == "vacation start" )
 then
   Vacation vacation = new Vacation();
   insert ( vacation );
@@ -30,7 +28,7 @@ end
 
 rule "I'm back from vacation"
 when
-  Event ( source == "vacation end" )
+  SensorState ( sensorName == "vacation end" )
   $vacation : Vacation()
 then
   retract ( $vacation );
@@ -40,14 +38,14 @@ end
 
 rule "Set Night Temperature"
 when
-  CustomStateEvent( source == "time of day", value == "night" ) and not Vacation()
+  CustomSensorState( sensorName == "time of day", value == "night" ) and not Vacation()
 then
   commands.execute("temp", 18);
 end
 
 rule "Set Night Temperature when on Vacation"
 when
-  CustomStateEvent ( source == "time of day", value == "night" ) and exists Vacation()
+  CustomSensorState ( sensorName == "time of day", value == "night" ) and exists Vacation()
 then
   commands.execute("temp", 15);
 end
@@ -56,14 +54,14 @@ end
 
 rule "Set Day Temperature"
 when
-  CustomStateEvent ( source == "time of day", value == "day" ) and not Vacation()
+  CustomSensorState ( sensorName == "time of day", value == "day" ) and not Vacation()
 then
   commands.execute("temp", 21);
 end
 
 rule "Set Day Temperature when on Vacation"
 when
-  Event ( source == "time of day", value == "day" ) and exists Vacation()
+  SensorState ( sensorName == "time of day", value == "day" ) and exists Vacation()
 then
   commands.execute("temp", 15);
 end

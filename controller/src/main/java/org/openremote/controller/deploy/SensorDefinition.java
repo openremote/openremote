@@ -11,25 +11,25 @@ public class SensorDefinition {
     final protected int sensorID;
     final protected String name;
     final protected String type;
-    final protected CommandDefinition commandDefinition;
+    final protected CommandDefinition updateCommandDefinition;
     final protected Map<String, String> properties;
 
     /**
-     * @param name              Human readable name of the sensor. Used with event processors, logging, etc.
-     * @param sensorID          A unique sensor ID. Must be unique per controller deployment.
-     * @param type              A sensor type.
-     * @param commandDefinition A command definition used to update sensor values.
-     * @param properties        Additional sensor properties. These properties can be used by the protocol
-     *                          implementors to direct their implementation according to sensor configuration.
+     * @param name                    Human readable name of the sensor.
+     * @param sensorID                A unique sensor ID. Must be unique per controller deployment.
+     * @param type                    A sensor type.
+     * @param updateCommandDefinition A command definition used to update sensor values.
+     * @param properties              Additional sensor properties. These properties can be used by the protocol
+     *                                implementors to direct their implementation according to sensor configuration.
      */
-    public SensorDefinition(int sensorID, String name, String type, CommandDefinition commandDefinition, Map<String, String> properties) {
+    public SensorDefinition(int sensorID, String name, String type, CommandDefinition updateCommandDefinition, Map<String, String> properties) {
         if (properties == null) {
             properties = new HashMap<>(0);
         }
         this.sensorID = sensorID;
         this.name = name;
         this.type = type;
-        this.commandDefinition = commandDefinition;
+        this.updateCommandDefinition = updateCommandDefinition;
         this.properties = properties;
     }
 
@@ -45,8 +45,8 @@ public class SensorDefinition {
         return type;
     }
 
-    public CommandDefinition getCommandDefinition() {
-        return commandDefinition;
+    public CommandDefinition getUpdateCommandDefinition() {
+        return updateCommandDefinition;
     }
 
     /**
@@ -70,7 +70,7 @@ public class SensorDefinition {
             ", name=" + getName() +
             ", type=" + getType() +
             ", properties=" + properties +
-            ", commandDefinition=" + getCommandDefinition() +
+            ", updateCommandDefinition=" + getUpdateCommandDefinition() +
             '}';
     }
 

@@ -1,14 +1,14 @@
 package org.openremote.controller.context;
 
-import org.openremote.controller.event.Event;
+import org.openremote.controller.sensor.SensorState;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-public class InMemoryStateStorage implements StateStorage {
+public class InMemorySensorStateStorage implements SensorStateStorage {
 
-    private static final Logger LOG = Logger.getLogger(InMemoryStateStorage.class.getName());
+    private static final Logger LOG = Logger.getLogger(InMemorySensorStateStorage.class.getName());
 
     final protected Map<Integer, SensorState> sensorStates = new HashMap<>();
 
@@ -19,19 +19,18 @@ public class InMemoryStateStorage implements StateStorage {
 
     @Override
     synchronized public void put(SensorState sensorState) {
-        Event event = sensorState.getEvent();
-        int sourceID = event.getSourceID();
+        int sourceID = sensorState.getSensorID();
         if (sensorStates.get(sourceID) == null) {
-            LOG.fine("Inserted: " + event);
-            sensorStates.put(sourceID, new SensorState(event));
+            LOG.fine("Inserted: " + sensorState);
+            sensorStates.put(sourceID, sensorState);
         } else {
             SensorState previousState = sensorStates.get(sourceID);
-            if (previousState.getEvent().equals(event)) {
-                LOG.fine("No change, stored state equals: " + event);
+            if (previousState.equals(sensorState)) {
+                LOG.fine("No change, stored state equals: " + sensorState);
                 return;
             }
-            LOG.fine("Updated: " + event);
-            sensorStates.put(sourceID, new SensorState(event));
+            LOG.fine("Updated: " + sensorState);
+            sensorStates.put(sourceID, sensorState);
         }
     }
 

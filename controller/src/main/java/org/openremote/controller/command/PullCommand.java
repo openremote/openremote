@@ -1,13 +1,20 @@
 package org.openremote.controller.command;
 
-import org.openremote.controller.model.Sensor;
+import org.openremote.controller.sensor.Sensor;
 
-public interface PullCommand extends EventProducerCommand {
+/**
+ * Pull commands are intended for collecting updates from "passive" devices which must
+ * be called periodically to read state updates.
+ */
+public interface PullCommand extends SensorUpdateCommand {
 
     int POLLING_INTERVAL = 500;
 
     /**
-     * Read a device status and translate it to a sensor's datatype.
+     * Read and return raw device status.
+     *
+     * The {@link Sensor} is only provided as a hint, don't call
+     * {@link Sensor#update} but return the current state instead.
      */
     String read(Sensor sensor);
 

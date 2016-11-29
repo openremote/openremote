@@ -1,12 +1,12 @@
-package org.openremote.controller.event;
+package org.openremote.controller.sensor;
 
-public class RangeEvent extends Event<Integer> {
+public class RangeSensorState extends SensorState<Integer> {
 
     private Integer rangeValue;
     private Integer min;
     private Integer max;
 
-    public RangeEvent(int sourceID, String sourceName, Integer value, Integer min, Integer max) {
+    public RangeSensorState(int sourceID, String sourceName, Integer value, Integer min, Integer max) {
         super(sourceID, sourceName);
         this.min = min;
         this.max = max;
@@ -28,7 +28,7 @@ public class RangeEvent extends Event<Integer> {
 
     @Override
     public void setValue(Integer value) {
-        // TODO: The LevelEvent logs when boundaries are breached, why don't we log here?
+        // TODO: The LevelSensorState logs when boundaries are breached, why don't we log here?
         if (value > max) {
             this.rangeValue = max;
         } else if (value < min) {
@@ -39,14 +39,14 @@ public class RangeEvent extends Event<Integer> {
     }
 
     @Override
-    public RangeEvent clone(Integer newValue) {
+    public RangeSensorState clone(Integer newValue) {
         if (newValue < getMinValue()) {
             newValue = getMinValue();
         } else if (newValue > getMaxValue()) {
             newValue = getMaxValue();
         }
 
-        return new RangeEvent(this.getSourceID(), this.getSource(), newValue, getMinValue(), getMaxValue());
+        return new RangeSensorState(this.getSensorID(), this.getSensorName(), newValue, getMinValue(), getMaxValue());
     }
 
     @Override
@@ -56,12 +56,13 @@ public class RangeEvent extends Event<Integer> {
 
     @Override
     public String toString() {
-        return "RangeEvent{" +
-            "sourceId=" + getSourceID() +
-            ", source='" + getSource() + "'" +
-            ", rangeValue=" + rangeValue +
-            ", min=" + min +
-            ", max=" + max +
+        return getClass().getSimpleName() + "{" +
+            "sensorID=" + getSensorID() +
+            ", sensorName='" + getSensorName() + "'" +
+            ", timestamp=" + getTimestamp() +
+            ", value=" + getValue() +
+            ", min=" + getMinValue() +
+            ", max=" + getMaxValue() +
             '}';
     }
 }

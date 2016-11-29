@@ -1,25 +1,25 @@
 package org.openremote.controller.rules;
 
-import org.openremote.controller.event.LevelEvent;
+import org.openremote.controller.sensor.LevelSensorState;
 
-public class LevelFacade extends SingleValueEventFacade<LevelFacade.LevelAdapter, LevelEvent> {
+public class LevelFacade extends SingleValueSensorFacade<LevelFacade.LevelAdapter, LevelSensorState> {
 
     @Override
-    protected LevelEvent createDefaultEvent(int sourceID, String sourceName) {
-        return new LevelEvent(sourceID, sourceName, 0);
+    protected LevelSensorState createDefaultState(int sourceID, String sourceName) {
+        return new LevelSensorState(sourceID, sourceName, 0);
     }
 
     @Override
-    protected LevelAdapter createAdapter(LevelEvent event) {
-        return new LevelAdapter(event);
+    protected LevelAdapter createAdapter(LevelSensorState sensorState) {
+        return new LevelAdapter(sensorState);
     }
 
     public class LevelAdapter {
 
-        private LevelEvent levelEvent;
+        private LevelSensorState levelSensorState;
 
-        private LevelAdapter(LevelEvent levelEvent) {
-            this.levelEvent = levelEvent;
+        private LevelAdapter(LevelSensorState levelSensorState) {
+            this.levelSensorState = levelSensorState;
         }
 
         public void value(int value) {
@@ -30,9 +30,8 @@ public class LevelFacade extends SingleValueEventFacade<LevelFacade.LevelAdapter
                 value = 100;
             }
 
-            LevelEvent newLevelEventEvent = levelEvent.clone(value);
-
-            dispatchEvent(newLevelEventEvent);
+            LevelSensorState newLevelSensorState = levelSensorState.clone(value);
+            terminateAndReplaceWith(newLevelSensorState);
         }
     }
 }

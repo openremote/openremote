@@ -3,10 +3,8 @@ package org.openremote.test.rules
 import org.kie.api.KieServices
 import org.kie.api.io.Resource
 import org.openremote.controller.ControllerService
-import org.openremote.controller.event.SwitchEvent
-import org.openremote.controller.rules.RuleEngine
+import org.openremote.controller.rules.RulesProvider
 import org.openremote.test.ContainerTrait
-import org.openremote.test.util.EventGrabProcessor
 import spock.lang.Specification
 
 import java.util.stream.Stream
@@ -19,15 +17,15 @@ class SimpleRuleTest extends Specification implements ContainerTrait {
 
     def "Sensor event replaced by rule-triggered event"() {
 
-        given: "a controller deployment"
+        given: "a controller deployment with commands and sensors"
         def controllerDeploymentXml = getClass().getResourceAsStream(
                 "/org/openremote/test/rules/simple/controller.xml"
         )
 
-        and: "event processors and rules"
-        def ruleEngineProcessor = new RuleEngine() {
+        and: "some rules"
+        def rulesProvider = new RulesProvider() {
             @Override
-            protected Stream<Resource> getResources(KieServices kieServices) {
+            Stream<Resource> getResources(KieServices kieServices) {
                 Stream.of(
                         kieServices.getResources().newClassPathResource(
                                 "org/openremote/test/rules/simple/EventMod.drl"
@@ -35,14 +33,12 @@ class SimpleRuleTest extends Specification implements ContainerTrait {
                 )
             }
         }
-        def grabProcessor = new EventGrabProcessor();
 
         and: "the started controller server"
         def controllerService = new ControllerService(
                 controllerDeploymentXml,
                 new TestCommandBuilder(),
-                ruleEngineProcessor,
-                grabProcessor
+                rulesProvider
         )
         def services = Stream.of(controllerService)
         def serverPort = findEphemeralPort()
@@ -52,18 +48,6 @@ class SimpleRuleTest extends Specification implements ContainerTrait {
         Thread.sleep(500);
 
         then: "the rules should immediately switch the sensor off again"
-        def lastEvent = grabProcessor.lastEvent;
-        lastEvent.getSourceID() == 123
-        lastEvent.getSource() == "TestSensor"
-        lastEvent instanceof SwitchEvent
-        def grabbedSwitchEvent = (SwitchEvent) lastEvent;
-        grabbedSwitchEvent.getValue() == "off"
-        grabbedSwitchEvent.getState() == SwitchEvent.State.OFF
-
-        and: "the total event count is 1, as the event fired in the rule terminates processing of our switch event"
-        grabProcessor.totalEventCount == 1
-
-        and: "the context state of the sensor should be 'off'"
         controllerService.getContext().queryValue(123) == "off"
 
         and: "the deployment model should work"

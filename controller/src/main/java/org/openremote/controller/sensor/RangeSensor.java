@@ -1,9 +1,7 @@
-package org.openremote.controller.model;
+package org.openremote.controller.sensor;
 
-import org.openremote.controller.command.EventProducerCommand;
+import org.openremote.controller.command.SensorUpdateCommand;
 import org.openremote.controller.deploy.SensorDefinition;
-import org.openremote.controller.event.Event;
-import org.openremote.controller.event.RangeEvent;
 
 import java.util.logging.Logger;
 
@@ -14,8 +12,8 @@ public class RangeSensor extends Sensor {
     private int minValue;
     private int maxValue;
 
-    public RangeSensor(SensorDefinition sensorDefinition, EventProducerCommand eventProducerCommand, int minValue, int maxValue) {
-        super(sensorDefinition, eventProducerCommand);
+    public RangeSensor(SensorDefinition sensorDefinition, SensorUpdateCommand sensorUpdateCommand, int minValue, int maxValue) {
+        super(sensorDefinition, sensorUpdateCommand);
         if (minValue > maxValue)
             throw new IllegalArgumentException("Sensor value min '" + minValue + "' is larger than max '" + maxValue + "'");
         this.minValue = minValue;
@@ -31,9 +29,9 @@ public class RangeSensor extends Sensor {
     }
 
     @Override
-    protected Event processEvent(String value) {
+    protected SensorState process(String value) {
         try {
-            return new RangeEvent(
+            return new RangeSensorState(
                 getSensorDefinition().getSensorID(),
                 getSensorDefinition().getName(),
                 new Integer(value.trim()),
@@ -44,7 +42,7 @@ public class RangeSensor extends Sensor {
             if (!isUnknownSensorValue(value)) {
                 LOG.warning("Range sensor '" + getSensorDefinition() + "' produced a non-integer value: " + value);
             }
-            return new UnknownEvent(this);
+            return new UnknownState(this);
         }
 
     }

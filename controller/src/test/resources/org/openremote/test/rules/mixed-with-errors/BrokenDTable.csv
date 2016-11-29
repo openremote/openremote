@@ -1,14 +1,14 @@
 
 
 ,   ,Ruleset,     Cannot find the ruleset on this one
-,   ,Import,      org.openremote.controller.event.Event
+,   ,Import,      org.openremote.controller.sensors.SensorState
 
 
               ,RuleTable,Event Mod
 ,              ,CONDITION,ACTION
-,              ,evt: Event,
-,(descriptions),sourceID,evt.setSourceID($param);
-,Case,            Event Source ID,   New Source ID
+,              ,sensorState: SensorState,
+,(descriptions),sensorID,sensorState.setSensorID($param);
+,Case,            Sensor Source ID,   New Source ID
 ,Fire Alarm,555,5555
 ,Ice Age,666,6666
 ,Comfort,777,7777

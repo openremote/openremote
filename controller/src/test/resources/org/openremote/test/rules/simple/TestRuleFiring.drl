@@ -1,12 +1,11 @@
 package org.openremote.test.rules;
 
-import org.openremote.controller.command.*;
-import org.openremote.controller.event.*;
+import org.openremote.controller.sensor.*;
 import org.openremote.controller.rules.*
 
 rule "TestRuleFiring"
 when
-	$e: Event(source == RuleExecutionLoggerTest.TEST_SENSOR_NAME)
+	$e: SensorState(sensorName == RuleExecutionLoggerTest.TEST_SENSOR_NAME)
 then
 // Do Nothing
 end

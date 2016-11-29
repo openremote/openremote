@@ -1,22 +1,18 @@
 package org.openremote.controller.command;
 
-import org.openremote.controller.model.Sensor;
+import org.openremote.controller.sensor.Sensor;
 
 /**
- * Push commands are intended for collecting events from "active" devices which broadcast
+ * Push commands are intended for collecting updates from "active" devices which broadcast
  * them over various transport mechanisms -- examples include bus installations such as
- * KNX bus or IP-network broadcasts. In some cases it is also possible to use event listener
- * interface to implement polling mechanism to "passive" devices -- normally a default
- * polling implementation is provided by {@link PullCommand}
- * implementation but push commands can be used to override this default implementation.
+ * KNX bus or IP-network broadcasts.
  *
  * Push commands are expected to create their own threads (if needed) which implement the
- * push functionality and also directly push received events to the context of the controller
- * using the sensor callback API provided.
+ * push functionality and also push updates to the context of the controller using the
+ * sensor callback API provided.
  *
- * Push command implementations use the sensor
- * {@link org.openremote.controller.model.Sensor#update} method to push state changes
- * into the controller, as shown in the example below:
+ * Push command implementations use the sensor {@link Sensor#update} method to push state
+ * changes into the controller's context, as shown in the example below:
  *
  * <pre><code>
  *
@@ -54,11 +50,11 @@ import org.openremote.controller.model.Sensor;
  *
  *
  * <b>NOTE:</b> The controller at this point does not implement any flow control on its side --
- *              therefore a very busy listener can overflow it with too many events. Control
- *              flow must be implemented co-operatively by the listener implementation ensuring
- *              that not too many events are created.
+ *              therefore a very busy listener can overflow it with too many updates. Control
+ *              flow must be implemented by the listener implementation ensuring that not too
+ *              many updates are created.
  */
-public interface PushCommand extends EventProducerCommand {
+public interface PushCommand extends SensorUpdateCommand {
 
   /**
    * This method may be invoked multiple times if the command instance is associated

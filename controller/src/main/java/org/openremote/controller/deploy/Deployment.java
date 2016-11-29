@@ -1,14 +1,9 @@
-package org.openremote.controller.model;
+package org.openremote.controller.deploy;
 
-import org.openremote.controller.command.Command;
-import org.openremote.controller.command.CommandBuilder;
-import org.openremote.controller.command.Commands;
-import org.openremote.controller.command.EventProducerCommand;
-import org.openremote.controller.context.StateStorage;
-import org.openremote.controller.deploy.CommandDefinition;
-import org.openremote.controller.deploy.DeploymentDefinition;
-import org.openremote.controller.deploy.SensorDefinition;
-import org.openremote.controller.event.EventProcessor;
+import org.openremote.controller.command.*;
+import org.openremote.controller.context.SensorStateStorage;
+import org.openremote.controller.rules.RulesProvider;
+import org.openremote.controller.sensor.*;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <pre>
  * - How protocol-specific commands are build
  * - How controller sensor state is stored
- * - How sensor events are processed
+ * - Which rules process sensor state updates
  * - All known sensors, commands and their devices
  * </pre>
  */
@@ -26,20 +21,20 @@ public class Deployment {
 
     final protected CommandBuilder commandBuilder;
     final protected Commands commands;
-    final protected StateStorage stateStorage;
-    final protected EventProcessor[] eventProcessors;
+    final protected SensorStateStorage sensorStateStorage;
+    final protected RulesProvider rulesProvider;
     final protected Map<String, Device> devices = new ConcurrentHashMap<>();
     final protected Map<Integer, Sensor> sensors = new ConcurrentHashMap<>();
 
     public Deployment(DeploymentDefinition deploymentDefinition,
                       CommandBuilder commandBuilder,
-                      StateStorage stateStorage,
-                      EventProcessor... eventProcessors) {
+                      SensorStateStorage sensorStateStorage,
+                      RulesProvider rulesProvider) {
 
         this.commandBuilder = commandBuilder;
-        this.stateStorage = stateStorage;
-        this.eventProcessors = eventProcessors;
         this.commands = new Commands(this);
+        this.sensorStateStorage = sensorStateStorage;
+        this.rulesProvider = rulesProvider;
 
         for (SensorDefinition sensorDefinition : deploymentDefinition.getSensorDefinitions()) {
             Sensor sensor = buildSensor(sensorDefinition);
@@ -68,12 +63,12 @@ public class Deployment {
         return commands;
     }
 
-    public StateStorage getStateStorage() {
-        return stateStorage;
+    public SensorStateStorage getSensorStateStorage() {
+        return sensorStateStorage;
     }
 
-    public EventProcessor[] getEventProcessors() {
-        return eventProcessors;
+    public RulesProvider getRulesProvider() {
+        return rulesProvider;
     }
 
     public CommandDefinition getCommandDefinition(int commandID) {
@@ -137,13 +132,13 @@ public class Deployment {
     protected Sensor buildSensor(SensorDefinition sensorDefinition) {
         Sensor sensor;
 
-        Command command = commandBuilder.build(sensorDefinition.getCommandDefinition());
-        EventProducerCommand sensorCommand;
-        if (command instanceof EventProducerCommand) {
-            sensorCommand = (EventProducerCommand) command;
+        Command command = commandBuilder.build(sensorDefinition.getUpdateCommandDefinition());
+        SensorUpdateCommand updateCommand;
+        if (command instanceof SensorUpdateCommand) {
+            updateCommand = (SensorUpdateCommand) command;
         } else {
             throw new IllegalStateException(
-                "Sensor must reference EventProducerCommand, not '" + command + "': " + sensorDefinition
+                "Sensor must reference " + SensorUpdateCommand.class.getSimpleName() + ", not '" + command + "': " + sensorDefinition
             );
         }
 
@@ -155,28 +150,28 @@ public class Deployment {
                 String maxValue = sensorDefinition.getProperties().get("range-max");
                 if (maxValue == null)
                     throw new IllegalStateException("Sensor of range type must have min/max value defined: " + sensorDefinition);
-                sensor = new RangeSensor(sensorDefinition, sensorCommand, Integer.valueOf(minValue), Integer.valueOf(maxValue));
+                sensor = new RangeSensor(sensorDefinition, updateCommand, Integer.valueOf(minValue), Integer.valueOf(maxValue));
                 break;
             case "level":
-                sensor = new LevelSensor(sensorDefinition, sensorCommand);
+                sensor = new LevelSensor(sensorDefinition, updateCommand);
                 break;
             case "custom":
-                CustomStateSensor.DistinctStates distinctStates = new CustomStateSensor.DistinctStates();
+                CustomSensor.DistinctStates distinctStates = new CustomSensor.DistinctStates();
                 for (Map.Entry<String, String> entry : sensorDefinition.getProperties().entrySet()) {
                     if (entry.getKey().startsWith("state-")) {
                         distinctStates.addStateMapping(entry.getKey().substring(6), entry.getValue());
                     }
                 }
-                sensor = new CustomStateSensor(sensorDefinition, sensorCommand, distinctStates, false);
+                sensor = new CustomSensor(sensorDefinition, updateCommand, distinctStates, false);
                 break;
             case "switch":
-                distinctStates = new CustomStateSensor.DistinctStates();
+                distinctStates = new CustomSensor.DistinctStates();
                 for (Map.Entry<String, String> entry : sensorDefinition.getProperties().entrySet()) {
                     if (entry.getKey().startsWith("state-")) {
                         distinctStates.addStateMapping(entry.getKey().substring(6), entry.getValue());
                     }
                 }
-                sensor = new SwitchSensor(sensorDefinition, sensorCommand, distinctStates);
+                sensor = new SwitchSensor(sensorDefinition, updateCommand, distinctStates);
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported sensor type: " + sensorDefinition);

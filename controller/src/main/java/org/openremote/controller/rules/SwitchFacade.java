@@ -1,25 +1,26 @@
 package org.openremote.controller.rules;
 
-import org.openremote.controller.event.Event;
-import org.openremote.controller.model.Sensor;
-import org.openremote.controller.event.SwitchEvent;
+import org.openremote.controller.sensor.SensorState;
+import org.openremote.controller.sensor.Sensor;
+import org.openremote.controller.sensor.SwitchSensorState;
 
-public class SwitchFacade extends EventFacade {
+public class SwitchFacade extends SensorFacade<SwitchFacade.SwitchAdapter> {
 
+    @Override
     public SwitchAdapter name(String sensorName) throws Exception {
-        Event evt = eventProcessingContext.getControllerContext().queryEvent(sensorName);
+        SensorState evt = sensorStateUpdate.getControllerContext().queryState(sensorName);
 
-        if (evt instanceof Sensor.UnknownEvent) {
-            evt = new SwitchEvent(
-                evt.getSourceID(),
-                evt.getSource(),
-                SwitchEvent.State.OFF.serialize(),
-                SwitchEvent.State.OFF
+        if (evt instanceof Sensor.UnknownState) {
+            evt = new SwitchSensorState(
+                evt.getSensorID(),
+                evt.getSensorName(),
+                SwitchSensorState.State.OFF.serialize(),
+                SwitchSensorState.State.OFF
             );
         }
 
-        if (evt instanceof SwitchEvent) {
-            return new SwitchAdapter((SwitchEvent) evt);
+        if (evt instanceof SwitchSensorState) {
+            return new SwitchAdapter((SwitchSensorState) evt);
         } else {
             throw new Exception("Sensor is not switch type: " + sensorName);
         }
@@ -27,34 +28,34 @@ public class SwitchFacade extends EventFacade {
 
     public class SwitchAdapter {
 
-        private SwitchEvent switchEvent;
+        private SwitchSensorState switchSensorState;
 
-        private SwitchAdapter(SwitchEvent switchEvent) {
-            this.switchEvent = switchEvent;
+        private SwitchAdapter(SwitchSensorState switchSensorState) {
+            this.switchSensorState = switchSensorState;
         }
 
         public void off() {
             off(null);
         }
 
-        public void off(String eventValue) {
-            if (eventValue == null) {
-                eventValue = SwitchEvent.State.OFF.serialize();
+        public void off(String value) {
+            if (value == null) {
+                value = SwitchSensorState.State.OFF.serialize();
             }
-            SwitchEvent newSwitchEvent = switchEvent.clone(eventValue, SwitchEvent.State.OFF);
-            dispatchEvent(newSwitchEvent);
+            SwitchSensorState newSwitchSensorState = switchSensorState.clone(value, SwitchSensorState.State.OFF);
+            terminateAndReplaceWith(newSwitchSensorState);
         }
 
         public void on() {
             on(null);
         }
 
-        public void on(String eventValue) {
-            if (eventValue == null) {
-                eventValue = SwitchEvent.State.ON.serialize();
+        public void on(String value) {
+            if (value == null) {
+                value = SwitchSensorState.State.ON.serialize();
             }
-            SwitchEvent newSwitchEvent = switchEvent.clone(eventValue, SwitchEvent.State.ON);
-            dispatchEvent(newSwitchEvent);
+            SwitchSensorState newSwitchSensorState = switchSensorState.clone(value, SwitchSensorState.State.ON);
+            terminateAndReplaceWith(newSwitchSensorState);
         }
     }
 }
