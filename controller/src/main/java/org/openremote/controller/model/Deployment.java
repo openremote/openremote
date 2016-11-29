@@ -1,11 +1,14 @@
-package org.openremote.controller.deploy;
+package org.openremote.controller.model;
 
 import org.openremote.controller.command.Command;
 import org.openremote.controller.command.CommandBuilder;
+import org.openremote.controller.command.Commands;
 import org.openremote.controller.command.EventProducerCommand;
 import org.openremote.controller.context.StateStorage;
+import org.openremote.controller.deploy.CommandDefinition;
+import org.openremote.controller.deploy.DeploymentDefinition;
+import org.openremote.controller.deploy.SensorDefinition;
 import org.openremote.controller.event.EventProcessor;
-import org.openremote.controller.model.*;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,12 +19,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * - How protocol-specific commands are build
  * - How controller sensor state is stored
  * - How sensor events are processed
- * - All known sensors and devices
+ * - All known sensors, commands and their devices
  * </pre>
  */
 public class Deployment {
 
     final protected CommandBuilder commandBuilder;
+    final protected Commands commands;
     final protected StateStorage stateStorage;
     final protected EventProcessor[] eventProcessors;
     final protected Map<String, Device> devices = new ConcurrentHashMap<>();
@@ -35,6 +39,7 @@ public class Deployment {
         this.commandBuilder = commandBuilder;
         this.stateStorage = stateStorage;
         this.eventProcessors = eventProcessors;
+        this.commands = new Commands(this);
 
         for (SensorDefinition sensorDefinition : deploymentDefinition.getSensorDefinitions()) {
             Sensor sensor = buildSensor(sensorDefinition);
@@ -57,6 +62,10 @@ public class Deployment {
 
     public CommandBuilder getCommandBuilder() {
         return commandBuilder;
+    }
+
+    public Commands getCommands() {
+        return commands;
     }
 
     public StateStorage getStateStorage() {

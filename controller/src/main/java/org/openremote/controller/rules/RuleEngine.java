@@ -43,7 +43,7 @@ import org.openremote.container.Container;
 import org.openremote.controller.event.Event;
 import org.openremote.controller.event.EventProcessingContext;
 import org.openremote.controller.event.EventProcessor;
-import org.openremote.controller.command.Commands;
+import org.openremote.controller.model.Deployment;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -89,7 +89,7 @@ public abstract class RuleEngine extends EventProcessor {
         try {
             long newFactCount;
 
-            // If this Event fact is not in working memory (considering it's equals() method)...
+            // If this Event fact is not in working memory (considering its equals() method)...
             if (!knowledgeSession.getObjects().contains(event)) {
 
                 // ... update or new insert?
@@ -145,7 +145,7 @@ public abstract class RuleEngine extends EventProcessor {
     }
 
     @Override
-    public void start(Commands commands) throws Exception {
+    public void start(Deployment deployment) throws Exception {
         KieServices kieServices = KieServices.Factory.get();
         KieModuleModel kieModuleModel = kieServices.newKieModuleModel();
 
@@ -177,7 +177,7 @@ public abstract class RuleEngine extends EventProcessor {
         rulePersistence = new RulePersistence();
         ruleUtil = new RuleUtil();
 
-        setGlobal("commands", commands);
+        setGlobal("commands", deployment.getCommands());
         setGlobal("switches", switchFacade);
         setGlobal("ranges", rangeFacade);
         setGlobal("levels", levelFacade);

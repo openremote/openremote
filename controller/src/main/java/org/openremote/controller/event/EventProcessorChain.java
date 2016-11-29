@@ -1,6 +1,6 @@
 package org.openremote.controller.event;
 
-import org.openremote.controller.command.Commands;
+import org.openremote.controller.model.Deployment;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,19 +19,17 @@ public class EventProcessorChain {
 
     private static final Logger LOG = Logger.getLogger(EventProcessorChain.class.getName());
 
-    final protected Commands commands;
-    final protected EventProcessor[] processors;
+    final protected Deployment deployment;
 
-    public EventProcessorChain(Commands commands, EventProcessor... eventProcessors) {
-        this.processors = eventProcessors;
-        this.commands = commands;
+    public EventProcessorChain(Deployment deployment) {
+        this.deployment = deployment;
     }
 
     public void start() {
-        for (EventProcessor ep : processors) {
+        for (EventProcessor ep : deployment.getEventProcessors()) {
             try {
                 LOG.info("Starting event processor: " + ep.getName());
-                ep.start(commands);
+                ep.start(deployment);
             } catch (Throwable t) {
                 LOG.log(Level.SEVERE, "Cannot start event processor: " + ep.getName(), t);
             }
@@ -39,7 +37,7 @@ public class EventProcessorChain {
     }
 
     public void stop() {
-        for (EventProcessor ep : processors) {
+        for (EventProcessor ep : deployment.getEventProcessors()) {
             try {
                 LOG.info("Stopping event processor: " + ep.getName());
                 ep.stop();
@@ -55,7 +53,7 @@ public class EventProcessorChain {
      * event processor in the stack).
      */
     public void push(EventProcessingContext ctx) {
-        for (EventProcessor processor : processors) {
+        for (EventProcessor processor : deployment.getEventProcessors()) {
             LOG.fine("Processing: " + ctx.getEvent());
             processor.process(ctx);
             if (ctx.hasTerminated()) {

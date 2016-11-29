@@ -8,7 +8,7 @@ import org.openremote.controller.context.InMemoryStateStorage;
 import org.openremote.controller.deploy.DeploymentDefinition;
 import org.openremote.controller.deploy.xml.ControllerDOMParser;
 import org.openremote.controller.event.EventProcessor;
-import org.openremote.controller.deploy.Deployment;
+import org.openremote.controller.model.Deployment;
 
 import java.io.InputStream;
 

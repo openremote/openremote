@@ -61,27 +61,6 @@ public class LevelEvent extends RangeEvent {
     }
 
     @Override
-    public boolean isEqual(Object o) {
-        if (o == null) {
-            return false;
-        }
-
-        if (o == this) {
-            return true;
-        }
-
-        if (o.getClass() != this.getClass()) {
-            return false;
-        }
-
-        LevelEvent l = (LevelEvent) o;
-
-        return l.getSourceID().equals(this.getSourceID())
-            && l.getSource().equals(this.getSource())
-            && l.getValue().equals(this.getValue());
-    }
-
-    @Override
     public String toString() {
         return "LevelEvent{" +
             "sourceId=" + getSourceID() +

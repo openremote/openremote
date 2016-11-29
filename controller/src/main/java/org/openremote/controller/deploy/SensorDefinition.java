@@ -64,19 +64,6 @@ public class SensorDefinition {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        SensorDefinition that = (SensorDefinition) o;
-        return sensorID == that.sensorID;
-    }
-
-    @Override
-    public int hashCode() {
-        return sensorID;
-    }
-
-    @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "ID=" + getSensorID() +

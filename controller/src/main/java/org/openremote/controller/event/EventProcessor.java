@@ -1,13 +1,13 @@
 package org.openremote.controller.event;
 
-import org.openremote.controller.command.Commands;
+import org.openremote.controller.model.Deployment;
 
 /**
  * Process events before they are reaching the controller context.
  */
 public abstract class EventProcessor {
 
-    public void start(Commands commands) throws Exception{
+    public void start(Deployment deployment) throws Exception{
     }
 
     public void stop() {

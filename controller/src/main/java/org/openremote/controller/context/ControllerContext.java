@@ -3,7 +3,7 @@ package org.openremote.controller.context;
 import org.openremote.controller.event.Event;
 import org.openremote.controller.event.EventProcessingContext;
 import org.openremote.controller.event.EventProcessorChain;
-import org.openremote.controller.deploy.Deployment;
+import org.openremote.controller.model.Deployment;
 import org.openremote.controller.model.Sensor;
 import org.openremote.controller.command.Commands;
 
@@ -19,7 +19,6 @@ public class ControllerContext {
 
     final protected String controllerID;
     final protected Deployment deployment;
-    final protected Commands commands;
     final protected EventProcessorChain eventProcessorChain;
 
     private volatile Boolean shutdownInProgress = false;
@@ -27,8 +26,7 @@ public class ControllerContext {
     public ControllerContext(String controllerID, Deployment deployment) {
         this.controllerID = controllerID;
         this.deployment = deployment;
-        this.commands = new Commands(deployment);
-        this.eventProcessorChain = new EventProcessorChain(commands, deployment.getEventProcessors());
+        this.eventProcessorChain = new EventProcessorChain(deployment);
     }
 
     public String getControllerID() {
@@ -40,7 +38,7 @@ public class ControllerContext {
     }
 
     public Commands getCommands() {
-        return commands;
+        return getDeployment().getCommands();
     }
 
     protected StateStorage getStateStorage() {

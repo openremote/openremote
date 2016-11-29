@@ -55,27 +55,6 @@ public class RangeEvent extends Event<Integer> {
     }
 
     @Override
-    public boolean isEqual(Object o) {
-        if (o == null) {
-            return false;
-        }
-
-        if (o == this) {
-            return true;
-        }
-
-        if (o.getClass() != this.getClass()) {
-            return false;
-        }
-
-        RangeEvent r = (RangeEvent) o;
-
-        return r.getSourceID().equals(this.getSourceID())
-            && r.getSource().equals(this.getSource())
-            && r.rangeValue.equals(this.rangeValue);
-    }
-
-    @Override
     public String toString() {
         return "RangeEvent{" +
             "sourceId=" + getSourceID() +

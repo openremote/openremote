@@ -88,27 +88,6 @@ public class SwitchEvent extends Event<String> {
     }
 
     @Override
-    public boolean isEqual(Object o) {
-        if (o == null) {
-            return false;
-        }
-
-        if (o == this) {
-            return true;
-        }
-
-        if (o.getClass() != this.getClass()) {
-            return false;
-        }
-
-        SwitchEvent s = (SwitchEvent) o;
-
-        return s.getSourceID().equals(this.getSourceID())
-            && s.getSource().equals(this.getSource())
-            && s.getValue().equals(this.getValue());
-    }
-
-    @Override
     public String toString() {
         return "SwitchEvent{" +
             "sourceId=" + getSourceID() +

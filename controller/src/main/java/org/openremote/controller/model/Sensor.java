@@ -291,19 +291,6 @@ public abstract class Sensor {
         }
 
         @Override
-        public boolean isEqual(Object o) {
-            if (o == null) {
-                return false;
-            }
-            if (o.getClass() != this.getClass()) {
-                return false;
-            }
-            UnknownEvent ue = (UnknownEvent) o;
-            return ue.getSourceID().equals(this.getSourceID())
-                && ue.getSource().equals(this.getSource());
-        }
-
-        @Override
         public String serialize() {
             return UNKNOWN_STATUS;
         }
@@ -315,18 +302,5 @@ public abstract class Sensor {
                 ", source='" + getSource() + "'" +
                 "}";
         }
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Sensor sensor = (Sensor) o;
-        return sensorDefinition.equals(sensor.sensorDefinition);
-    }
-
-    @Override
-    public int hashCode() {
-        return sensorDefinition.hashCode();
     }
 }

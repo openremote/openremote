@@ -26,7 +26,8 @@ public class InMemoryStateStorage implements StateStorage {
             sensorStates.put(sourceID, new SensorState(event));
         } else {
             SensorState previousState = sensorStates.get(sourceID);
-            if (previousState.getEvent().isEqual(event)) {
+            if (previousState.getEvent().equals(event)) {
+                LOG.fine("No change, stored state equals: " + event);
                 return;
             }
             LOG.fine("Updated: " + event);

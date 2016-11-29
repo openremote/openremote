@@ -24,14 +24,15 @@ public abstract class Event<T> {
 
     public abstract void setValue(T value);
 
-    public abstract boolean isEqual(Object o);
-
     /**
      * This method implementation should return an appropriate string representation of the event value.
-     * This value will be returned by {@link org.openremote.controller.context.ControllerContext#queryValue(int)}.
+     * This string will be returned by {@link org.openremote.controller.context.ControllerContext#queryValue}.
      */
     public abstract String serialize();
 
+    /**
+     * Events are compared by ID, source, and value.
+     */
     @Override
     public boolean equals(Object o) {
         if (o == null) {

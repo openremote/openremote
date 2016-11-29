@@ -39,19 +39,4 @@ public class Device {
     public void addCommandDefinition(CommandDefinition commandDefinition) {
         commandDefinitions.put(commandDefinition.getCommandID(), commandDefinition);
     }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Device device = (Device) o;
-
-        return deviceID == device.deviceID;
-    }
-
-    @Override
-    public int hashCode() {
-        return deviceID;
-    }
 }

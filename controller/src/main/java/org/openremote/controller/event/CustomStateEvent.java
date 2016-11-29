@@ -56,27 +56,6 @@ public class CustomStateEvent extends Event<String> {
     }
 
     @Override
-    public boolean isEqual(Object o) {
-        if (o == null) {
-            return false;
-        }
-
-        if (o == this) {
-            return true;
-        }
-
-        if (o.getClass() != this.getClass()) {
-            return false;
-        }
-
-        CustomStateEvent cs = (CustomStateEvent) o;
-
-        return cs.getSourceID().equals(this.getSourceID())
-            && cs.getSource().equals(this.getSource())
-            && cs.getValue().equals(this.getValue());
-    }
-
-    @Override
     public String toString() {
         return "CustomStateEvent{" +
             "sourceId=" + getSourceID() +

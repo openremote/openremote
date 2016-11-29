@@ -2,7 +2,7 @@ package org.openremote.controller.command;
 
 import org.openremote.controller.event.EventProcessor;
 import org.openremote.controller.deploy.CommandDefinition;
-import org.openremote.controller.deploy.Deployment;
+import org.openremote.controller.model.Deployment;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
