@@ -30,6 +30,7 @@ import org.openremote.container.security.AuthForm;
 import rx.Observable;
 
 import static org.openremote.ccs.Constants.*;
+import static org.openremote.container.util.MapAccess.getBoolean;
 import static rx.Observable.fromCallable;
 
 public class DemoDataService implements ContainerService {
@@ -60,7 +61,7 @@ public class DemoDataService implements ContainerService {
 
     @Override
     public void start(Container container) {
-        if (!container.isDevMode() && !container.getConfigBoolean(IMPORT_DEMO_DATA, IMPORT_DEMO_DATA_DEFAULT)) {
+        if (!container.isDevMode() && !getBoolean(container.getConfig(), IMPORT_DEMO_DATA, IMPORT_DEMO_DATA_DEFAULT)) {
             return;
         }
 

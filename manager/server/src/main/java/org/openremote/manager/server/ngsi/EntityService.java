@@ -27,7 +27,9 @@ import org.openremote.container.observable.RetryWithDelay;
 import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.Consumer;
-import org.openremote.manager.shared.ngsi.*;
+import org.openremote.manager.shared.ngsi.Attribute;
+import org.openremote.manager.shared.ngsi.Entity;
+import org.openremote.manager.shared.ngsi.EntryPoint;
 import org.openremote.manager.shared.ngsi.params.SubscriptionParams;
 import rx.Observable;
 
@@ -35,10 +37,12 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
-import java.util.*;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.container.web.WebClient.getTarget;
 
 public class EntityService implements ContainerService {
@@ -67,23 +71,23 @@ public class EntityService implements ContainerService {
         contextBrokerHostUri =
             UriBuilder.fromPath("/")
                 .scheme("http")
-                .host(container.getConfig(CONTEXTBROKER_HOST, CONTEXTBROKER_HOST_DEFAULT))
-                .port(container.getConfigInteger(CONTEXTBROKER_PORT, CONTEXTBROKER_PORT_DEFAULT));
+                .host(getString(container.getConfig(), CONTEXTBROKER_HOST, CONTEXTBROKER_HOST_DEFAULT))
+                .port(getInteger(container.getConfig(), CONTEXTBROKER_PORT, CONTEXTBROKER_PORT_DEFAULT));
 
         LOG.info("Preparing entity service for broker host: " + contextBrokerHostUri.build());
 
         ResteasyClientBuilder clientBuilder =
             new ResteasyClientBuilder()
                 .establishConnectionTimeout(
-                    container.getConfigInteger(CONTEXTBROKER_CONNECT_TIMEOUT, CONTEXTBROKER_CONNECT_TIMEOUT_DEFAULT),
+                    getInteger(container.getConfig(), CONTEXTBROKER_CONNECT_TIMEOUT, CONTEXTBROKER_CONNECT_TIMEOUT_DEFAULT),
                     TimeUnit.MILLISECONDS
                 )
                 .socketTimeout(
-                    container.getConfigInteger(CONTEXTBROKER_REQUEST_TIMEOUT, CONTEXTBROKER_REQUEST_TIMEOUT_DEFAULT),
+                    getInteger(container.getConfig(), CONTEXTBROKER_REQUEST_TIMEOUT, CONTEXTBROKER_REQUEST_TIMEOUT_DEFAULT),
                     TimeUnit.MILLISECONDS
                 )
                 .connectionPoolSize(
-                    container.getConfigInteger(CONTEXTBROKER_CLIENT_POOL_SIZE, CONTEXTBROKER_CLIENT_POOL_SIZE_DEFAULT)
+                    getInteger(container.getConfig(), CONTEXTBROKER_CLIENT_POOL_SIZE, CONTEXTBROKER_CLIENT_POOL_SIZE_DEFAULT)
                 );
 
         this.httpClient = WebClient

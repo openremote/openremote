@@ -1,32 +1,37 @@
 package org.openremote.controller.deploy.xml;
 
 import org.openremote.container.xml.DOM;
-import org.openremote.controller.deploy.DeploymentDefinition;
 import org.openremote.controller.deploy.CommandDefinition;
+import org.openremote.controller.deploy.DeploymentDefinition;
 import org.openremote.controller.deploy.SensorDefinition;
 import org.w3c.dom.Document;
 
 import javax.xml.xpath.XPath;
 import java.util.*;
+import java.util.logging.Logger;
 
 /**
  * Usage:
- *
+ * <p>
  * <pre><code>
  *     ControllerDOM dom = new ControllerDOMParser().parse(deploymentXml);
+ *     Deployment deployment = new Deployment(dom.getDeploymentDefinition(), ...);
  * </code></pre>
  */
-public class ControllerDOM extends DOM implements DeploymentDefinition {
+public class ControllerDOM extends DOM {
+
+    private static final Logger LOG = Logger.getLogger(ControllerDOM.class.getName());
 
     public static final String NAMESPACE_URI = "http://www.openremote.org";
 
     final protected XPath xpath;
-    final protected CommandDefinition[] commandDefinitions;
-    final protected SensorDefinition[] sensorDefinitions;
+    final protected DeploymentDefinition deploymentDefinition;
 
     public ControllerDOM(Document dom, XPath xpath) {
         super(dom);
         this.xpath = xpath;
+
+        this.deploymentDefinition = new DeploymentDefinition();
 
         try {
             List<CommandDefinition> commandDefinitionList = new ArrayList<>();
@@ -42,7 +47,10 @@ public class ControllerDOM extends DOM implements DeploymentDefinition {
                     new CommandDefinition(commandID, protocolType, properties)
                 );
             }
-            commandDefinitions = commandDefinitionList.toArray(new CommandDefinition[commandDefinitionList.size()]);
+            deploymentDefinition.setCommandDefinitions(
+                commandDefinitionList.toArray(new CommandDefinition[commandDefinitionList.size()]
+                )
+            );
 
             List<SensorDefinition> sensorDefinitionList = new ArrayList<>();
             ControllerElement[] sensorElements = getRoot(xpath).getFirstChild("sensors").getChildren();
@@ -91,7 +99,24 @@ public class ControllerDOM extends DOM implements DeploymentDefinition {
                     new SensorDefinition(sensorID, sensorName, sensorType, commandDefinition, properties)
                 );
             }
-            this.sensorDefinitions = sensorDefinitionList.toArray(new SensorDefinition[sensorDefinitionList.size()]);
+            deploymentDefinition.setSensorDefinitions(
+                sensorDefinitionList.toArray(new SensorDefinition[sensorDefinitionList.size()])
+            );
+
+            Map<String, String> config = new HashMap<>();
+            ControllerElement[] configPropertyElements = getRoot(xpath).getFirstChild("config").getChildren();
+            for (ControllerElement configPropertyElement : configPropertyElements) {
+                String name = configPropertyElement.getAttribute("name");
+                String value = configPropertyElement.getAttribute("value");
+                if (name != null) {
+                    if (value != null) {
+                        config.put(name, value);
+                    } else {
+                        LOG.info("Ignoring config property without value: " + name);
+                    }
+                }
+            }
+            deploymentDefinition.setConfig(config);
 
         } catch (Exception ex) {
             throw new RuntimeException("Error building controller model from XML document", ex);
@@ -113,13 +138,7 @@ public class ControllerDOM extends DOM implements DeploymentDefinition {
         return new ControllerDOM((Document) getW3CDocument().cloneNode(true), xpath);
     }
 
-    @Override
-    public CommandDefinition[] getCommandDefinitions() {
-        return commandDefinitions;
-    }
-
-    @Override
-    public SensorDefinition[] getSensorDefinitions() {
-        return sensorDefinitions;
+    public DeploymentDefinition getDeploymentDefinition() {
+        return deploymentDefinition;
     }
 }

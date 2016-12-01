@@ -24,6 +24,7 @@ import org.openremote.container.web.WebService;
 
 import java.nio.file.Paths;
 
+import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.manager.shared.Constants.MASTER_REALM;
 
 public class ManagerWebService extends WebService {
@@ -35,6 +36,8 @@ public class ManagerWebService extends WebService {
     public void init(Container container) throws Exception {
         super.init(container);
         setDefaultRealm(MASTER_REALM);
-        setStaticResourceDocRoot(Paths.get(container.getConfig(WEBSERVER_DOCROOT, WEBSERVER_DOCROOT_DEFAULT)));
+        setStaticResourceDocRoot(Paths.get(
+            getString(container.getConfig(), WEBSERVER_DOCROOT, WEBSERVER_DOCROOT_DEFAULT))
+        );
     }
 }

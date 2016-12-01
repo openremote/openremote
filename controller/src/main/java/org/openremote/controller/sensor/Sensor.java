@@ -40,9 +40,9 @@ public abstract class Sensor {
         return value.equals(UNKNOWN_STATE_VALUE);
     }
 
-    protected SensorDefinition sensorDefinition;
+    final protected SensorDefinition sensorDefinition;
+    final protected SensorUpdateCommand sensorUpdateCommand;
     protected ControllerContext controllerContext;
-    protected SensorUpdateCommand sensorUpdateCommand;
 
     /**
      * This is a polling thread implementation for sensors that use {@link PullCommand}.
@@ -61,19 +61,12 @@ public abstract class Sensor {
         return sensorDefinition;
     }
 
-    /**
-     * Callback for {@link PushCommand} implementations. Before updating the controller context, the
-     * given value is first validated and/or transformed by concrete sensor implementation's
-     * {@link Sensor#process} method.
-     */
-    public void update(String state) {
-        if (controllerContext == null) {
-            LOG.fine("Ignoring update, sensor is not running: " + getSensorDefinition());
-            return;
-        }
-        SensorState evt = process(state);
-        LOG.fine("Update on ID " + getSensorDefinition().getSensorID() + ", processed '" + state + "', created: " + evt);
-        controllerContext.update(evt);
+    public SensorUpdateCommand getSensorUpdateCommand() {
+        return sensorUpdateCommand;
+    }
+
+    public ControllerContext getControllerContext() {
+        return controllerContext;
     }
 
     /**
@@ -128,8 +121,19 @@ public abstract class Sensor {
         }
     }
 
-    public boolean isRunning() {
-        return sensorReader != null && sensorReader.pollingThreadRunning;
+    /**
+     * Callback for {@link PushCommand} implementations. Before updating the controller context, the
+     * given value is first validated and/or transformed by concrete sensor implementation's
+     * {@link Sensor#process} method.
+     */
+    public void update(String state) {
+        if (controllerContext == null) {
+            LOG.fine("Ignoring update, sensor is not running: " + getSensorDefinition());
+            return;
+        }
+        SensorState evt = process(state);
+        LOG.fine("Update on ID " + getSensorDefinition().getSensorID() + ", processed '" + state + "', created: " + evt);
+        controllerContext.update(evt);
     }
 
     /**

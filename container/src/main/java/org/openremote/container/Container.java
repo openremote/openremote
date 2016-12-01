@@ -25,21 +25,18 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.container.json.ElementalJsonModule;
 import org.openremote.container.util.LogUtil;
 
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import static org.openremote.container.util.MapAccess.getBoolean;
 
 public class Container {
 
@@ -65,7 +62,7 @@ public class Container {
         .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.NONE)
         .registerModule(new ElementalJsonModule());
 
-    protected final ObjectNode config;
+    protected final Map<String, String> config = new HashMap<>();
     protected final boolean devMode;
 
     protected boolean running;
@@ -96,12 +93,11 @@ public class Container {
     }
 
     public Container(Map<String, String> config, Stream<ContainerService> servicesStream) {
-        this.config = JSON.createObjectNode();
         for (Map.Entry<String, String> entry : config.entrySet()) {
             this.config.put(entry.getKey(), entry.getValue());
         }
 
-        this.devMode = getConfigBoolean(DEV_MODE, DEV_MODE_DEFAULT);
+        this.devMode = getBoolean(this.config, DEV_MODE, DEV_MODE_DEFAULT);
 
         if (this.devMode) {
             JSON.enable(SerializationFeature.INDENT_OUTPUT);
@@ -114,26 +110,8 @@ public class Container {
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
     }
 
-    public void putConfig(String variable, String value) {
-        config.put(variable, value);
-    }
-
-    public void putConfigIfEmpty(String variable, String value) {
-        if (!config.hasNonNull(variable)) {
-            putConfig(variable, value);
-        }
-    }
-
-    public String getConfig(String variable, String defaultValue) {
-        return config.has(variable) ? config.get(variable).asText() : defaultValue;
-    }
-
-    public boolean getConfigBoolean(String variable, boolean defaultValue) {
-        return config.has(variable) ? config.get(variable).asBoolean() : defaultValue;
-    }
-
-    public int getConfigInteger(String variable, int defaultValue) {
-        return config.has(variable) ? config.get(variable).asInt() : defaultValue;
+    public Map<String, String> getConfig() {
+        return config;
     }
 
     public boolean isDevMode() {

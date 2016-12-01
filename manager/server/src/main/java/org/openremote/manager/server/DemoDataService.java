@@ -44,6 +44,7 @@ import rx.Observable;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.openremote.container.util.MapAccess.*;
 import static org.openremote.manager.shared.Constants.*;
 import static rx.Observable.fromCallable;
 
@@ -94,7 +95,7 @@ public class DemoDataService implements ContainerService {
 
     @Override
     public void start(Container container) {
-        if (!container.isDevMode() && !container.getConfigBoolean(IMPORT_DEMO_DATA, IMPORT_DEMO_DATA_DEFAULT)) {
+        if (!container.isDevMode() && !getBoolean(container.getConfig(), IMPORT_DEMO_DATA, IMPORT_DEMO_DATA_DEFAULT)) {
             return;
         }
 
@@ -264,19 +265,19 @@ public class DemoDataService implements ContainerService {
         }
 
         agent.getAttributes().get("host").setValue(
-            container.getConfig(DEMO_CONTROLLER_HOST, DEMO_CONTROLLER_HOST_DEFAULT)
+            getString(container.getConfig(), DEMO_CONTROLLER_HOST, DEMO_CONTROLLER_HOST_DEFAULT)
         );
         agent.getAttributes().get("port").setValue(
-            container.getConfigInteger(DEMO_CONTROLLER_PORT, DEMO_CONTROLLER_PORT_DEFAULT)
+            getInteger(container.getConfig(), DEMO_CONTROLLER_PORT, DEMO_CONTROLLER_PORT_DEFAULT)
         );
         agent.getAttributes().get("username").setValue(
-            container.getConfig(DEMO_CONTROLLER_USERNAME, DEMO_CONTROLLER_USERNAME_DEFAULT)
+            getString(container.getConfig(), DEMO_CONTROLLER_USERNAME, DEMO_CONTROLLER_USERNAME_DEFAULT)
         );
         agent.getAttributes().get("password").setValue(
-            container.getConfig(DEMO_CONTROLLER_PASSWORD, DEMO_CONTROLLER_PASSWORD_DEFAULT)
+            getString(container.getConfig(), DEMO_CONTROLLER_PASSWORD, DEMO_CONTROLLER_PASSWORD_DEFAULT)
         );
         agent.getAttributes().get("secure").setValue(
-            container.getConfigBoolean(DEMO_CONTROLLER_SECURE, DEMO_CONTROLLER_SECURE_DEFAULT)
+            getBoolean(container.getConfig(), DEMO_CONTROLLER_SECURE, DEMO_CONTROLLER_SECURE_DEFAULT)
         );
 
         agentAsset.setAttributes(agent.getAttributes().getJsonObject());

@@ -33,6 +33,8 @@ import org.openremote.container.web.socket.WebsocketComponent;
 
 import java.util.logging.Logger;
 
+import static org.openremote.container.util.MapAccess.getString;
+
 public class MessageBrokerService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(MessageBrokerService.class.getName());
@@ -77,7 +79,7 @@ public class MessageBrokerService implements ContainerService {
 
         context.getRegistry().put(Container.class.getName(), container);
 
-        String allowedOrigin = container.getConfig(MESSAGE_SESSION_ALLOWED_ORIGIN, MESSAGE_SESSION_ALLOWED_ORIGIN_DEFAULT);
+        String allowedOrigin = getString(container.getConfig(), MESSAGE_SESSION_ALLOWED_ORIGIN, MESSAGE_SESSION_ALLOWED_ORIGIN_DEFAULT);
         WebsocketComponent websocketComponent = new DefaultWebsocketComponent(
             container.getService(WebService.class),
             allowedOrigin

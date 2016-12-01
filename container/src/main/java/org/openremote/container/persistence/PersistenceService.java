@@ -36,6 +36,8 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.openremote.container.util.MapAccess.*;
+
 public class PersistenceService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(PersistenceService.class.getName());
@@ -69,21 +71,21 @@ public class PersistenceService implements ContainerService {
     public void init(Container container) throws Exception {
         this.messageBrokerService = container.getService(MessageBrokerService.class);
 
-        String databaseProduct = container.getConfig(DATABASE_PRODUCT, DATABASE_PRODUCT_DEFAULT);
+        String databaseProduct = getString(container.getConfig(), DATABASE_PRODUCT, DATABASE_PRODUCT_DEFAULT);
         LOG.info("Preparing persistence service for database: " + databaseProduct);
         database = Database.Product.valueOf(databaseProduct);
     }
 
     @Override
     public void configure(Container container) throws Exception {
-        String connectionUrl = container.getConfig(DATABASE_CONNECTION_URL, DATABASE_CONNECTION_URL_DEFAULT);
+        String connectionUrl = getString(container.getConfig(), DATABASE_CONNECTION_URL, DATABASE_CONNECTION_URL_DEFAULT);
         LOG.info("Using database connection URL: " + connectionUrl);
 
-        String databaseUsername = container.getConfig(DATABASE_USERNAME, DATABASE_USERNAME_DEFAULT);
-        String databasePassword = container.getConfig(DATABASE_PASSWORD, DATABASE_PASSWORD_DEFAULT);
-        int databaseMinPoolSize = container.getConfigInteger(DATABASE_MIN_POOL_SIZE, DATABASE_MIN_POOL_SIZE_DEFAULT);
-        int databaseMaxPoolSize = container.getConfigInteger(DATABASE_MAX_POOL_SIZE, DATABASE_MAX_POOL_SIZE_DEFAULT);
-        int connectionTimeoutSeconds = container.getConfigInteger(DATABASE_CONNECTION_TIMEOUT_SECONDS, DATABASE_CONNECTION_TIMEOUT_SECONDS_DEFAULT);
+        String databaseUsername = getString(container.getConfig(), DATABASE_USERNAME, DATABASE_USERNAME_DEFAULT);
+        String databasePassword = getString(container.getConfig(), DATABASE_PASSWORD, DATABASE_PASSWORD_DEFAULT);
+        int databaseMinPoolSize = getInteger(container.getConfig(), DATABASE_MIN_POOL_SIZE, DATABASE_MIN_POOL_SIZE_DEFAULT);
+        int databaseMaxPoolSize = getInteger(container.getConfig(), DATABASE_MAX_POOL_SIZE, DATABASE_MAX_POOL_SIZE_DEFAULT);
+        int connectionTimeoutSeconds = getInteger(container.getConfig(), DATABASE_CONNECTION_TIMEOUT_SECONDS, DATABASE_CONNECTION_TIMEOUT_SECONDS_DEFAULT);
 
         persistenceUnitProperties =
             database.open(connectionUrl, databaseUsername, databasePassword, connectionTimeoutSeconds, databaseMinPoolSize, databaseMaxPoolSize);
@@ -93,7 +95,7 @@ public class PersistenceService implements ContainerService {
             PersistenceEventInterceptor.class.getName()
         );
 
-        persistenceUnitName = container.getConfig(PERSISTENCE_UNIT_NAME, PERSISTENCE_UNIT_NAME_DEFAULT);
+        persistenceUnitName = getString(container.getConfig(), PERSISTENCE_UNIT_NAME, PERSISTENCE_UNIT_NAME_DEFAULT);
     }
 
     @Override
@@ -102,7 +104,7 @@ public class PersistenceService implements ContainerService {
             Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties);
 
         if (container.isDevMode()
-            || container.getConfigBoolean(DATABASE_CREATE_SCHEMA, DATABASE_CREATE_SCHEMA_DEFAULT)) {
+            || getBoolean(container.getConfig(), DATABASE_CREATE_SCHEMA, DATABASE_CREATE_SCHEMA_DEFAULT)) {
             LOG.info("Dropping and re-creating database schema");
             dropSchema();
             createSchema();

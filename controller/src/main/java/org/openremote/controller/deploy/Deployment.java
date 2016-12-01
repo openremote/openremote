@@ -1,6 +1,10 @@
 package org.openremote.controller.deploy;
 
-import org.openremote.controller.command.*;
+import org.openremote.container.util.MapAccess;
+import org.openremote.controller.command.Command;
+import org.openremote.controller.command.CommandBuilder;
+import org.openremote.controller.command.Commands;
+import org.openremote.controller.command.SensorUpdateCommand;
 import org.openremote.controller.context.SensorStateStorage;
 import org.openremote.controller.rules.RulesProvider;
 import org.openremote.controller.sensor.*;
@@ -11,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Encapsulates:
  * <pre>
+ * - General configuration properties
  * - How protocol-specific commands are build
  * - How controller sensor state is stored
  * - Which rules process sensor state updates
@@ -19,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Deployment {
 
+    final protected Map<String, String> config;
     final protected CommandBuilder commandBuilder;
     final protected Commands commands;
     final protected SensorStateStorage sensorStateStorage;
@@ -31,6 +37,7 @@ public class Deployment {
                       SensorStateStorage sensorStateStorage,
                       RulesProvider rulesProvider) {
 
+        this.config = deploymentDefinition.getConfig();
         this.commandBuilder = commandBuilder;
         this.commands = new Commands(this);
         this.sensorStateStorage = sensorStateStorage;
@@ -53,6 +60,10 @@ public class Deployment {
             }
             device.addCommandDefinition(commandDefinition);
         }
+    }
+
+    public Map<String, String> getConfig() {
+        return config;
     }
 
     public CommandBuilder getCommandBuilder() {

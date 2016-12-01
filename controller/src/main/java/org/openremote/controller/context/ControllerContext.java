@@ -85,7 +85,7 @@ public class ControllerContext {
     public synchronized void update(SensorState sensorState) {
         LOG.fine("==> Update: " + sensorState);
         if (shutdownInProgress) {
-            LOG.fine("<== Shutting down. Ignoring update from: " + sensorState.getSensorName());
+            LOG.fine("<== Shutting down. Ignoring update for: " + sensorState);
             return;
         }
 
@@ -93,7 +93,6 @@ public class ControllerContext {
 
         ruleEngine.process(sensorStateUpdate);
 
-        // Early exist if one of the processors decided to terminate the chain
         if (sensorStateUpdate.hasTerminated()) {
             LOG.fine("<== Update complete, processing terminated, no update was made for: " + sensorStateUpdate.getSensorState());
             return;

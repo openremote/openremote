@@ -70,6 +70,9 @@ class SimpleRuleTest extends Specification implements ContainerTrait {
         deployment.getDevices()[0].getDeviceID() == 111
         deployment.getDevice("TestDevice").getName() == "TestDevice"
         deployment.getDevice("TestDevice").getDeviceID() == 111
+        deployment.getConfig().get("someString") == "BAR"
+        deployment.getConfig().get("someBoolean") == "true"
+        deployment.getConfig().get("someInteger") == "333"
 
         cleanup: "the server should be stopped"
         stopContainer(container)

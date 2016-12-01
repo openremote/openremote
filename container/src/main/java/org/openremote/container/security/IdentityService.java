@@ -28,8 +28,6 @@ import io.undertow.server.handlers.proxy.SimpleProxyClientProvider;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.keycloak.adapters.KeycloakDeployment;
-import org.keycloak.admin.client.resource.ClientResource;
-import org.keycloak.admin.client.resource.ClientsResource;
 import org.keycloak.admin.client.resource.RealmsResource;
 import org.keycloak.admin.client.resource.ServerInfoResource;
 import org.keycloak.common.enums.SslRequired;
@@ -37,12 +35,11 @@ import org.keycloak.common.util.PemUtils;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
-import org.openremote.container.Constants;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.observable.RetryWithDelay;
-import org.openremote.container.web.WebClient;
 import org.openremote.container.web.ProxyWebClientBuilder;
+import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebService;
 import rx.Observable;
 
@@ -62,6 +59,7 @@ import java.util.logging.Logger;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static javax.ws.rs.core.Response.Status.Family.REDIRECTION;
 import static javax.ws.rs.core.Response.Status.Family.SUCCESSFUL;
+import static org.openremote.container.util.MapAccess.*;
 import static org.openremote.container.web.WebClient.getTarget;
 
 public class IdentityService implements ContainerService {
@@ -104,10 +102,10 @@ public class IdentityService implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
-        boolean identityNetworkSecure = container.getConfigBoolean(IDENTITY_NETWORK_SECURE, IDENTITY_NETWORK_SECURE_DEFAULT);
-        String identityNetworkHost = container.getConfig(IDENTITY_NETWORK_HOST, IDENTITY_NETWORK_HOST_DEFAULT);
-        int identityNetworkPort = container.getConfigInteger(IDENTITY_NETWORK_WEBSERVER_PORT, IDENTITY_NETWORK_WEBSERVER_PORT_DEFAULT);
-        sessionTimeoutSeconds = container.getConfigInteger(IDENTITY_SESSION_TIMEOUT_SECONDS, IDENTITY_SESSION_TIMEOUT_SECONDS_DEFAULT);
+        boolean identityNetworkSecure = getBoolean(container.getConfig(), IDENTITY_NETWORK_SECURE, IDENTITY_NETWORK_SECURE_DEFAULT);
+        String identityNetworkHost = getString(container.getConfig(), IDENTITY_NETWORK_HOST, IDENTITY_NETWORK_HOST_DEFAULT);
+        int identityNetworkPort = getInteger(container.getConfig(), IDENTITY_NETWORK_WEBSERVER_PORT, IDENTITY_NETWORK_WEBSERVER_PORT_DEFAULT);
+        sessionTimeoutSeconds = getInteger(container.getConfig(), IDENTITY_SESSION_TIMEOUT_SECONDS, IDENTITY_SESSION_TIMEOUT_SECONDS_DEFAULT);
 
         UriBuilder externalAuthServerUrl = UriBuilder.fromUri("")
             .scheme(identityNetworkSecure ? "https" : "http")
@@ -127,8 +125,8 @@ public class IdentityService implements ContainerService {
         keycloakHostUri =
             UriBuilder.fromPath("/")
                 .scheme("http")
-                .host(container.getConfig(KEYCLOAK_HOST, KEYCLOAK_HOST_DEFAULT))
-                .port(container.getConfigInteger(KEYCLOAK_PORT, KEYCLOAK_PORT_DEFAULT));
+                .host(getString(container.getConfig(), KEYCLOAK_HOST, KEYCLOAK_HOST_DEFAULT))
+                .port(getInteger(container.getConfig(), KEYCLOAK_PORT, KEYCLOAK_PORT_DEFAULT));
 
         keycloakServiceUri = keycloakHostUri.clone().replacePath(KeycloakResource.KEYCLOAK_CONTEXT_PATH);
 
@@ -140,22 +138,22 @@ public class IdentityService implements ContainerService {
         ResteasyClientBuilder clientBuilder =
             new ProxyWebClientBuilder(externalAuthServerUri.getHost(), externalAuthServerUri.getPort())
                 .establishConnectionTimeout(
-                    container.getConfigInteger(KEYCLOAK_CONNECT_TIMEOUT, KEYCLOAK_CONNECT_TIMEOUT_DEFAULT),
+                    getInteger(container.getConfig(), KEYCLOAK_CONNECT_TIMEOUT, KEYCLOAK_CONNECT_TIMEOUT_DEFAULT),
                     TimeUnit.MILLISECONDS
                 )
                 .socketTimeout(
-                    container.getConfigInteger(KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT),
+                    getInteger(container.getConfig(), KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT),
                     TimeUnit.MILLISECONDS
                 )
                 .connectionPoolSize(
-                    container.getConfigInteger(KEYCLOAK_CLIENT_POOL_SIZE, KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT)
+                    getInteger(container.getConfig(), KEYCLOAK_CLIENT_POOL_SIZE, KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT)
                 );
 
         this.httpClient = WebClient.registerDefaults(container, clientBuilder).build();
 
         clientApplicationCache = createClientApplicationCache();
 
-        if (container.getConfigBoolean(DISABLE_API_SECURITY, DISABLE_API_SECURITY_DEFAULT)) {
+        if (getBoolean(container.getConfig(), DISABLE_API_SECURITY, DISABLE_API_SECURITY_DEFAULT)) {
             LOG.warning("###################### API SECURITY DISABLED! ######################");
         } else {
             if (getClientId() == null)
@@ -189,7 +187,7 @@ public class IdentityService implements ContainerService {
             SimpleProxyClientProvider proxyClient = new SimpleProxyClientProvider(keycloakHostUri.build());
             ProxyHandler proxyHandler = new ProxyHandler(
                 proxyClient,
-                container.getConfigInteger(KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT),
+                getInteger(container.getConfig(), KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT),
                 ResponseCodeHandler.HANDLE_404
             );
             container.getService(WebService.class).getPrefixRoutes().put(AUTH_PATH, proxyHandler);

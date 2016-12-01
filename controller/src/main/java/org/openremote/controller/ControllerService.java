@@ -35,7 +35,7 @@ public class ControllerService implements ContainerService {
     public void configure(Container container) throws Exception {
         // TODO Support booting of multiple controller instances
         Deployment deployment = new Deployment(
-            controllerDOMParser.parse(deploymentXml, true),
+            controllerDOMParser.parse(deploymentXml, true).getDeploymentDefinition(),
             commandBuilder,
             new InMemorySensorStateStorage(),
             rulesProvider

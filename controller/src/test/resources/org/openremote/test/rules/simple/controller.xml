@@ -24,6 +24,9 @@
     </commands>
 
     <config>
+        <property name="someString" value="BAR"/>
+        <property name="someBoolean" value="true"/>
+        <property name="someInteger" value="333"/>
     </config>
 
 </openremote>

@@ -59,6 +59,8 @@ import java.util.regex.Pattern;
 
 import static javax.ws.rs.core.HttpHeaders.CONTENT_ENCODING;
 import static javax.ws.rs.core.UriBuilder.fromUri;
+import static org.openremote.container.util.MapAccess.getInteger;
+import static org.openremote.container.util.MapAccess.getString;
 
 public abstract class WebService implements ContainerService {
 
@@ -92,8 +94,8 @@ public abstract class WebService implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
-        host = container.getConfig(WEBSERVER_LISTEN_HOST, WEBSERVER_LISTEN_HOST_DEFAULT);
-        port = container.getConfigInteger(WEBSERVER_LISTEN_PORT, WEBSERVER_LISTEN_PORT_DEFAULT);
+        host = getString(container.getConfig(), WEBSERVER_LISTEN_HOST, WEBSERVER_LISTEN_HOST_DEFAULT);
+        port = getInteger(container.getConfig(), WEBSERVER_LISTEN_PORT, WEBSERVER_LISTEN_PORT_DEFAULT);
         String containerHost = host.equalsIgnoreCase("localhost") || host.indexOf("127") == 0 || host.indexOf("0.0.0.0") == 0 ? getLocalIpAddress() : host;
 
         containerHostUri =

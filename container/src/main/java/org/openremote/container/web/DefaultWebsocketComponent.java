@@ -119,6 +119,7 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
         webService.getPrefixRoutes().remove(MessageBrokerService.WEBSOCKET_PATH);
     }
 
+    /* TODO: Security - fix/use this! */
     protected void addCORSFilter() {
         if (allowedOrigin == null)
             return;

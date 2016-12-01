@@ -29,11 +29,15 @@ import org.openremote.container.web.WebService;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.container.web.WebService.STATIC_PATH;
 
 public class MapService implements ContainerService {
@@ -57,14 +61,14 @@ public class MapService implements ContainerService {
     public void init(Container container) throws Exception {
         this.devMode = container.isDevMode();
 
-        mapTilesPath = Paths.get(container.getConfig(MAP_TILES_PATH, MAP_TILES_PATH_DEFAULT));
+        mapTilesPath = Paths.get(getString(container.getConfig(), MAP_TILES_PATH, MAP_TILES_PATH_DEFAULT));
         if (!Files.isRegularFile(mapTilesPath)) {
             throw new IllegalStateException(
                 "MapWidget tiles data file not found: " + mapTilesPath.toAbsolutePath()
             );
         }
 
-        mapSettingsPath = Paths.get(container.getConfig(MAP_SETTINGS_PATH, MAP_SETTINGS_PATH_DEFAULT));
+        mapSettingsPath = Paths.get(getString(container.getConfig(), MAP_SETTINGS_PATH, MAP_SETTINGS_PATH_DEFAULT));
         if (!Files.isRegularFile(mapSettingsPath)) {
             throw new IllegalStateException(
                 "MapWidget settings file not found: " + mapSettingsPath.toAbsolutePath()
