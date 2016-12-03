@@ -1,0 +1,33 @@
+apply plugin: "java"
+apply plugin: "application"
+apply plugin: "groovy"
+
+mainClassName = "org.openremote.agent.Main"
+
+dependencies {
+
+    compile project(":container")
+
+    compile "org.drools:drools-compiler:6.5.0.Final"
+    compile "org.drools:drools-decisiontables:6.5.0.Final"
+
+    compile "com.luckycatlabs:SunriseSunsetCalculator:$sunriseSunsetCalculatorVersion"
+
+    testCompile "junit:junit:$junitVersion"
+    testCompile "org.spockframework:spock-core:$spockVersion"
+}
+
+/* TODO Enable when we build gateway packaging of agent
+import com.bmuschko.gradle.docker.tasks.image.*
+
+task buildImage(type: DockerBuildImage) {
+    inputDir = projectDir
+    dockerFile = file("$projectDir/Dockerfile")
+    tag = dockerImageName
+}
+
+task pushImage(type: DockerPushImage) {
+    dependsOn buildImage
+    imageName = dockerImageName
+}
+*/

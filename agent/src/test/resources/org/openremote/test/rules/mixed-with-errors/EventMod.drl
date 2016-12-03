@@ -1,0 +1,12 @@
+package org.openremote.test.rules;
+
+import org.openremote.agent.sensor.*;
+
+global org.openremote.agent.rules.RangeFacade ranges;
+
+rule "Modify Level State Above Max"
+when
+  SensorState( sensorID == 444, $name : sensorName )
+then
+  ranges.name($name).value( 12345 );
+end

@@ -27,14 +27,12 @@ com.fasterxml.jackson.core:*: APACHE LICENSE, VERSION 2.0
 com.fasterxml.jackson.module:*: APACHE LICENSE, VERSION 2.0
 com.fasterxml.jackson.jaxrs:*: APACHE LICENSE, VERSION 2.0
 com.fasterxml:classmate: APACHE LICENSE, VERSION 2.0
-com.github.gwtmaterialdesign:*: APACHE LICENSE, VERSION 2.0
 com.google.code.findbugs: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 3
 com.google.errorprone:error_prone_annotations: APACHE LICENSE, VERSION 2.0
 com.google.guava:*: APACHE LICENSE, VERSION 2.0
 com.google.gwt:*: APACHE LICENSE, VERSION 2.0
 com.google.gwt.inject:*: APACHE LICENSE, VERSION 2.0
 com.google.j2objc:j2objc-annotations: APACHE LICENSE, VERSION 2.0
-org.mariadb.jdbc:mariadb-java-client: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 3
 com.ning:async-http-client: APACHE LICENSE, VERSION 2.0
 com.sun.xml.bind:*: GNU GENERAL PUBLIC LICENSE, VERSION 2.0 WITH CLASSPATH EXCEPTION
 com.zaxxer:HikariCP: APACHE LICENSE, VERSION 2.0
@@ -51,8 +49,6 @@ javax.validation:validation-api: APACHE LICENSE, VERSION 2.0
 javax.activation:activation: COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0
 javax.mail:mail: COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0
 jdom:jdom: APACHE LICENSE, VERSION 2.0
-mikaelhg:urlbuilder: APACHE LICENSE, VERSION 2.0
-net.sf.flexjson:flexjson: APACHE LICENSE, VERSION 2.0
 net.jcip:jcip-annotations: Creative Commons Attribution License (http://creativecommons.org/licenses/by/2.5), see http://www.jcip.net
 org.apache.camel:*: APACHE LICENSE, VERSION 2.0
 org.apache.httpcomponents:*: APACHE LICENSE, VERSION 2.0
@@ -91,9 +87,6 @@ org.openremote:or-commons: GNU AFFERO GENERAL PUBLIC LICENSE, VERSION 3
 org.openremote:or-controller: GNU AFFERO GENERAL PUBLIC LICENSE, VERSION 3
 org.openremote:or-shared: GNU AFFERO GENERAL PUBLIC LICENSE, VERSION 3
 org.openremote:or-zwave: TODO Proprietary?
-org.seamless:seamless-http: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
-org.seamless:seamless-util: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
-org.seamless:seamless-xml: GNU LESSER GENERAL PUBLIC LICENSE, VERSION 2.1
 org.slf4j:*: SLF4J LICENSE
 xml-apis:xml-apis: APACHE LICENSE, VERSION 2.0
 org.xerial:sqlite-jdbc: APACHE LICENSE, VERSION 2.0

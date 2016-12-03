@@ -1,5 +1,7 @@
 # OpenRemote Deployment Profiles
 
+TODO: This doc is outdated
+
 Mix and match these [Docker Compose](https://docs.docker.com/compose/) configurations to customize an OpenRemote system.
 
 ## Configuring security

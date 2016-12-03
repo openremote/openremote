@@ -1,0 +1,10 @@
+package org.openremote.test.rules;
+
+import org.openremote.agent.sensor.*;
+
+rule "Incorrect Event Modification Attempt"
+when
+  $sensorState : SensorState( sensorID == 123 )
+then
+  $sensorState.setFooBarBazOoops( 321 );
+end

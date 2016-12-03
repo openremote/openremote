@@ -42,6 +42,7 @@ public class ProxyWebClientBuilder extends ResteasyClientBuilder {
         this.proxyPort = proxyPort;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     protected ClientHttpEngine initDefaultEngine() {
         ApacheHttpClient4Engine engine = (ApacheHttpClient4Engine) super.initDefaultEngine();

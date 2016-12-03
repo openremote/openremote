@@ -1,11 +1,9 @@
 rootProject.name = "openremote"
 
-include "base:postgres",
-        "base:mysql",
-        "base:keycloak",
+include "postgres",
+        "keycloak",
         "container",
-        "controller",
-        "beehive:ccs",
+        "agent",
         "manager:shared",
         "manager:server",
         "manager:client",

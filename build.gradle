@@ -28,7 +28,7 @@ allprojects {
 
     tasks.withType(JavaCompile) {
         sourceCompatibility = "1.8"
-        options.warnings = false
+        // Don't even try to disable deprecation/unsafe warnings of javac, it will not work...
     }
 
     apply plugin: "com.bmuschko.docker-remote-api"
