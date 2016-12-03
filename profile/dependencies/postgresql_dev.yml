@@ -1,10 +1,10 @@
 #
-# PostgreSQL DBMS
+# PostgreSQL DBMS (development)
 #
 version: '2'
 services:
 
-  postgresql:
+  postgresql_dev:
     build:
       context: ../../postgresql
     environment:
@@ -15,3 +15,5 @@ services:
       POSTGRES_DB: openremote
       OPENREMOTE_USERNAME: openremote
       OPENREMOTE_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
+    ports:
+      - "5432:5432"

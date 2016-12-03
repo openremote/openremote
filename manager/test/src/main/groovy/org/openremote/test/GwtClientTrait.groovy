@@ -19,6 +19,7 @@
  */
 package org.openremote.test
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gwt.event.logical.shared.ValueChangeHandler
 import com.google.gwt.event.shared.HandlerRegistration
 import com.google.gwt.place.shared.Place
@@ -30,13 +31,46 @@ import com.google.gwt.place.shared.WithTokenizers
 import com.google.gwt.user.client.Window
 import com.google.gwt.user.client.ui.AcceptsOneWidget
 import com.google.web.bindery.event.shared.SimpleEventBus
+import elemental.json.JsonValue
+import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
 import org.openremote.manager.client.event.bus.EventBus
 import org.openremote.manager.client.mvp.AppActivityManager
 import org.openremote.manager.client.mvp.AppActivityMapper
 import org.openremote.manager.client.mvp.AppPlaceController
 import org.openremote.manager.client.service.SecurityService
+import org.openremote.manager.shared.http.Request
+import org.openremote.manager.shared.http.RequestParams
+import org.openremote.manager.shared.http.SuccessStatusCode
+import org.spockframework.mock.IMockMethod
+
+import javax.ws.rs.ClientErrorException
+import javax.ws.rs.Produces
+import javax.ws.rs.core.Response
+import java.lang.reflect.Method
+
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON
 
 trait GwtClientTrait {
+
+    static class UnsupportedXMLHttpRequest implements Request.XMLHttpRequest {
+        @Override
+        String getResponseHeader(String header) {
+            throw new UnsupportedOperationException("Can't access response headers in test framework")
+        }
+    }
+
+    static class ResponseWrapperXMLHttpRequest implements Request.XMLHttpRequest {
+        final Response response
+
+        ResponseWrapperXMLHttpRequest(Response response) {
+            this.response = response
+        }
+
+        @Override
+        String getResponseHeader(String header) {
+            return response.getHeaderString(header)
+        }
+    }
 
     protected static class MockPlaceControllerDelegate implements PlaceController.Delegate {
         // TODO: Do we need this?
@@ -93,5 +127,71 @@ trait GwtClientTrait {
     static void startActivityManager(AcceptsOneWidget activityDisplay, AppActivityMapper activityMapper, EventBus eventBus) {
         def activityManager = new AppActivityManager("Test ActivityManager", activityMapper, eventBus)
         activityManager.setDisplay(activityDisplay);
+    }
+
+    // This emulates how a GWT client calls a REST service, we intercept and route through Resteasy Client proxy
+    static void callResourceProxy(ObjectMapper jsonMapper, ResteasyWebTarget clientTarget, mockInvocation) {
+        // If the first parameter of the method we want to call is RequestParams
+        List<Object> args = mockInvocation.getArguments()
+        if (!(args[0] instanceof RequestParams)) {
+            throw new UnsupportedOperationException("Don't know how to handle service API: " + mockInvocation.getMethod)
+        }
+
+        RequestParams requestParams = (RequestParams) args[0]
+        IMockMethod mockMethod = mockInvocation.getMethod()
+
+        // Get a Resteasy client proxy for the resource
+        Class mockedResourceType = mockInvocation.getMockObject().getType()
+        Method mockedResourceMethod = mockedResourceType.getDeclaredMethod(
+                mockMethod.name,
+                mockMethod.parameterTypes.toArray(new Class[mockMethod.parameterTypes.size()])
+        )
+        def resourceProxy = clientTarget.proxy(mockedResourceType)
+
+        // Try to find out what the expected success status code is
+        SuccessStatusCode successStatusCode =
+                mockedResourceMethod.getDeclaredAnnotation(SuccessStatusCode.class)
+        int statusCode = successStatusCode != null ? successStatusCode.value() : 200
+
+        // Call the proxy
+        Object result
+        boolean resultPassthrough = false
+        // Fake an XMLHttpRequest for later (we want to access headers if there is an exception...)
+        Request.XMLHttpRequest xmlHttpRequest = new UnsupportedXMLHttpRequest()
+        try {
+            result = resourceProxy."$mockMethod.name"(args)
+        } catch (ClientErrorException ex) {
+            statusCode = ex.getResponse().getStatus()
+            xmlHttpRequest = new ResponseWrapperXMLHttpRequest(ex.getResponse())
+            try {
+                result = ex.getResponse().readEntity(String.class)
+            } catch (IllegalStateException ise) {
+                // Ignore, this happens when the response is closed already
+            }
+            resultPassthrough = true
+        }
+
+        String responseText = null
+
+        if (result != null) {
+            // If the method produces JSON, we need to turn whatever the proxy delivered back into JSON string
+            Produces producesAnnotation = mockedResourceMethod.getDeclaredAnnotation(Produces.class)
+            if (!resultPassthrough
+                    && producesAnnotation != null
+                    && Arrays.asList(producesAnnotation.value()).contains(APPLICATION_JSON)) {
+                // Handle elemental JsonValue special, don't use Jackson
+                if (result instanceof JsonValue) {
+                    JsonValue jsonValue = (JsonValue) result
+                    responseText = jsonValue.toJson()
+                } else {
+                    responseText = jsonMapper.writeValueAsString(result)
+                }
+            } else {
+                responseText = result.toString()
+            }
+        }
+
+        // Pass the result to the callback, so it looks asynchronous for client code
+        requestParams.callback.call(statusCode, xmlHttpRequest, responseText)
     }
 }

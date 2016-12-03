@@ -1,19 +1,16 @@
 # OpenRemote v3
 
-* **Docker Images**: https://hub.docker.com/u/openremote/
-* **Documentation/Wiki:** https://github.com/openremote/Documentation/wiki
-* **Community:** https://groups.google.com/forum/#!forum/openremotecommunity
-* **Issues:** https://github.com/openremote/openremote/issues
+[Source](https://github.com/openremote/openremote) **·** [Documentation](https://github.com/openremote/openremote/wiki) **·** [Community](https://groups.google.com/forum/#!forum/openremotecommunity) **·** [Issues](https://github.com/openremote/openremote/issues) **·** [Docker Images](https://hub.docker.com/u/openremote/) **·** [OpenRemote Inc.](http://openremote.com)
 
 ## Getting started with OpenRemote
 
-We are currently working on v3 of the OpenRemote platform. *No installable released version are available at this time.*
+We are currently working on v3 of the OpenRemote platform. *No installable released versions are available at this time.*
 
-If you want to try OpenRemote v2, please see our [documentation](https://github.com/openremote/Documentation/wiki) for more information.
+If you want to try OpenRemote v2, [read the OpenRemote v2 documentation](https://github.com/openremote/Documentation/wiki).
 
 ## Contributing to OpenRemote
 
-We work with Java, Groovy, Gradle, Docker, and wide range of APIs and protocol implementations. Clone or checkout this project and send us pull requests.
+We work with Java, Groovy, Gradle, Docker, and wide range of APIs and protocol implementations. Clone or checkout this project and send us pull requests. For more information and how to set up a development environment, see the [Developer Guide](https://github.com/openremote/openremote/wiki).
 
 ## Discuss OpenRemote
 

@@ -31,7 +31,7 @@ import org.openremote.manager.server.map.MapService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebService;
 
-public class Server {
+public class Main {
 
     public static void main(String[] args) throws Exception {
         new Container(

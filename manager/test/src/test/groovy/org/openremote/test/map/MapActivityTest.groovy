@@ -16,6 +16,7 @@ import org.openremote.manager.shared.Runnable
 import org.openremote.manager.shared.http.EntityReader
 import org.openremote.manager.shared.map.MapResource
 import org.openremote.test.ContainerTrait
+import org.openremote.test.GwtClientTrait
 import spock.lang.Ignore
 import spock.lang.Specification
 
@@ -24,7 +25,7 @@ import static org.openremote.manager.shared.Constants.MASTER_REALM
 
 // TODO Fix this when we do Asset testing
 @Ignore
-class MapActivityTest extends Specification implements ContainerTrait {
+class MapActivityTest extends Specification implements ContainerTrait, GwtClientTrait {
 
     def "Initialize map"() {
         given: "The fake client environment"

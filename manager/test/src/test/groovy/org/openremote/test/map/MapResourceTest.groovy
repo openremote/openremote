@@ -2,13 +2,13 @@ package org.openremote.test.map
 
 import groovy.json.JsonSlurper
 import org.openremote.manager.shared.map.MapResource
-import org.openremote.test.ContainerTrait
+import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 
 import static org.openremote.manager.shared.Constants.APP_CLIENT_ID
 import static org.openremote.manager.shared.Constants.MASTER_REALM
 
-class MapResourceTest extends Specification implements ContainerTrait {
+class MapResourceTest extends Specification implements ManagerContainerTrait {
 
     def "Retrieve map settings"() {
         given: "the server container is started"

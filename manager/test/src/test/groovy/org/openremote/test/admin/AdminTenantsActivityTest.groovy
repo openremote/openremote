@@ -32,14 +32,14 @@ import org.openremote.manager.shared.security.TenantResource
 import org.openremote.manager.shared.validation.ConstraintViolationReport
 import org.openremote.test.ClientObjectMapper
 import org.openremote.test.GwtClientTrait
-import org.openremote.test.ContainerTrait
+import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.BlockingVariables
 
-import static org.openremote.manager.shared.Constants.APP_CLIENT_ID
-import static org.openremote.manager.shared.Constants.MASTER_REALM
+import static org.openremote.manager.server.DemoDataService.ADMIN_PASSWORD
+import static org.openremote.manager.shared.Constants.*
 
-class AdminTenantsActivityTest extends Specification implements ContainerTrait, GwtClientTrait {
+class AdminTenantsActivityTest extends Specification implements ManagerContainerTrait, GwtClientTrait {
 
     def "List all, create, update, delete tenant"() {
 
@@ -49,7 +49,7 @@ class AdminTenantsActivityTest extends Specification implements ContainerTrait, 
 
         and: "An authenticated user and client security service"
         def realm = MASTER_REALM;
-        def accessToken = authenticate(container, realm, APP_CLIENT_ID, "admin", "admin").token
+        def accessToken = authenticate(container, realm, APP_CLIENT_ID, MASTER_REALM_ADMIN_USER, ADMIN_PASSWORD).token
         def securityService = Stub(SecurityService) {
             getRealm() >> realm
             getToken() >> accessToken

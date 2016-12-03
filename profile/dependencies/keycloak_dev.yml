@@ -1,19 +1,24 @@
 #
-# Keycloak identity provider
+# Keycloak identity provider (development)
 #
 version: '2'
 services:
 
-  keycloak:
+  keycloak_dev:
     build:
       context: ../../keycloak
+      dockerfile: Dockerfile-dev
+    volumes:
+      - ../../keycloak/theme:/opt/jboss/keycloak/themes/openremote
     environment:
       TZ: "Europe/Zurich"
       KEYCLOAK_USER: admin
       KEYCLOAK_PASSWORD: CHANGE_ME_ADMIN_PASSWORD
-      KEYCLOAK_LOGLEVEL: INFO
+      KEYCLOAK_LOGLEVEL: DEBUG
       POSTGRES_DATABASE: openremote
       POSTGRES_USER: openremote
       POSTGRES_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
     links:
-      - postgresql
+      - postgresql_dev:postgresql
+    ports:
+      - "8081:8080"

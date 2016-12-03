@@ -67,7 +67,7 @@ public class DemoDataService implements ContainerService {
     public static final boolean DEMO_CONTROLLER_SECURE_DEFAULT = false;
 
     public static final String ADMIN_CLI_CLIENT_ID = "admin-cli";
-    public static final String ADMIN_PASSWORD = "admin";
+    public static final String ADMIN_PASSWORD = "CHANGE_ME_ADMIN_PASSWORD";
 
     public String DEMO_AGENT_ID = null;
 
@@ -257,6 +257,7 @@ public class DemoDataService implements ContainerService {
         agentAsset.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         agentAsset.setType(AssetType.AGENT);
 
+        /*
         Agent agent = new Agent(new Attributes(), true);
         agent.setEnabled(true);
         agent.setConnectorType("urn:openremote:connector:controller2");
@@ -286,6 +287,7 @@ public class DemoDataService implements ContainerService {
         LOG.info("Configured demo agent attributes: " + agent.getAttributes());
 
         agentAsset = assetService.merge(agentAsset);
+        */
 
         DEMO_AGENT_ID = agentAsset.getId();
     }
