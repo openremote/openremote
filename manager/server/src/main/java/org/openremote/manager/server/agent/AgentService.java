@@ -19,47 +19,25 @@
  */
 package org.openremote.manager.server.agent;
 
-import org.apache.camel.FailedToCreateRouteException;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
-import org.openremote.container.persistence.PersistenceEvent;
-import org.openremote.container.util.IdentifierUtil;
 import org.openremote.manager.server.asset.AssetService;
 import org.openremote.manager.server.asset.ServerAsset;
-import org.openremote.manager.server.event.EventService;
-import org.openremote.manager.shared.agent.Agent;
-import org.openremote.manager.shared.agent.DeviceResourceValueEvent;
-import org.openremote.manager.shared.agent.InventoryModifiedEvent;
-import org.openremote.manager.shared.asset.Asset;
-import org.openremote.manager.shared.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetType;
-import org.openremote.manager.shared.attribute.Attributes;
-import org.openremote.manager.shared.connector.ConnectorComponent;
 
-import java.nio.charset.Charset;
-import java.util.*;
-import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static org.openremote.container.persistence.PersistenceEvent.Cause.UPDATE;
-import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_EVENT_TOPIC;
-import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForAssetType;
-import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
 
 public class AgentService extends RouteBuilder implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
 
-    final protected Map<String, AgentRoutes> agentInstanceMap = new LinkedHashMap<>();
-
     protected MessageBrokerService messageBrokerService;
     protected MessageBrokerContext messageBrokerContext;
     protected AssetService assetService;
     protected ConnectorService connectorService;
-    protected AgentServiceEventRoutes agentServiceEventRoutes;
 
     @Override
     public void init(Container container) throws Exception {
@@ -67,23 +45,6 @@ public class AgentService extends RouteBuilder implements ContainerService {
         messageBrokerContext = messageBrokerService.getContext();
         assetService = container.getService(AssetService.class);
         connectorService = container.getService(ConnectorService.class);
-
-        agentServiceEventRoutes = new AgentServiceEventRoutes(
-            new DeviceResourceSubscriptions(container.getService(EventService.class))
-        ) {
-            @Override
-            protected Asset getAsset(String assetId) {
-                return assetService.get(assetId);
-            }
-
-            @Override
-            protected void deleteAssetChildren(String parentAssetId) {
-                assetService.deleteChildren(parentAssetId);
-            }
-        };
-
-        messageBrokerService.getContext().addRoutes(this);
-        messageBrokerService.getContext().addRoutes(agentServiceEventRoutes);
     }
 
     @Override
@@ -94,7 +55,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
     public void start(Container container) throws Exception {
         ServerAsset[] agents = assetService.findByTypeInAllRealms(AssetType.AGENT.getValue());
         LOG.fine("Configure agents in all realms:" + agents.length);
-        reconfigureAgents(null, agents, null);
+        // reconfigureAgents(null, agents, null);
     }
 
     @Override
@@ -103,6 +64,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
 
     @Override
     public void configure() throws Exception {
+        /*
         // If any agent was modified in the database, reconfigure this service
         from(PERSISTENCE_EVENT_TOPIC)
             .filter(isPersistenceEventForEntityType(Asset.class))
@@ -114,8 +76,10 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 LOG.fine("Reconfigure agents of realm '" + agent.getRealm() + "': " + agents.length);
                 reconfigureAgents(agent.getRealm(), agents, persistenceEvent.getCause() == UPDATE ? agent : null);
             });
+            */
     }
 
+    /*
     protected void reconfigureAgents(String realm, ServerAsset[] agents, Asset updatedAgent) {
         synchronized (agentInstanceMap) {
             for (ServerAsset agentAsset : agents) {
@@ -259,21 +223,5 @@ public class AgentService extends RouteBuilder implements ContainerService {
             }
         }
     }
-
-    protected void startDeviceRoutes(Asset agentAsset, AgentRoutes agentRoutes) throws Exception {
-        // We start listener routes for all device children of the agent asset
-        // TODO: We should selectively enable this on a per-device basis
-        List<Asset> deviceAssets = new ArrayList<>();
-        AssetInfo[] agentChildren = assetService.getChildren(agentAsset.getId());
-        for (AssetInfo agentChild : agentChildren) {
-            if (agentChild.getWellKnownType() == AssetType.DEVICE) {
-                deviceAssets.add(assetService.get(agentChild.getId()));
-            }
-        }
-        messageBrokerContext.addRoutes(agentRoutes.buildDeviceRoutes(deviceAssets));
-    }
-
-    protected void stopDeviceRoutes(AgentRoutes agentRoutes) throws Exception {
-        agentRoutes.stopDeviceRoutes(messageBrokerContext);
-    }
+    */
 }

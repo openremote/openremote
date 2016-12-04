@@ -20,64 +20,114 @@
 package org.openremote.manager.shared.attribute;
 
 import elemental.json.Json;
+import elemental.json.JsonArray;
 import elemental.json.JsonObject;
+import org.openremote.manager.shared.Function;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Metadata {
 
-    final protected JsonObject jsonObject;
+    final protected JsonArray jsonArray;
 
     public Metadata() {
-        this(Json.createObject());
+        this(Json.createArray());
     }
 
-    public Metadata(JsonObject jsonObject) {
-        this.jsonObject = jsonObject;
+    public Metadata(JsonArray jsonArray) {
+        this.jsonArray = jsonArray;
     }
 
-    public JsonObject getJsonObject() {
-        return jsonObject;
+    public JsonArray getJsonArray() {
+        return jsonArray;
     }
 
-    public MetadataElement[] getElements() {
-        Set<MetadataElement> elements = new LinkedHashSet<>();
+    public MetadataItem[] all() {
+        List<MetadataItem> list = asList();
+        return list.toArray(new MetadataItem[list.size()]);
+    }
 
-        String[] keys = jsonObject.keys();
-        for (String key : keys) {
-            MetadataElement element = new MetadataElement(key, jsonObject.getObject(key));
-            elements.add(element);
+    public MetadataItem[] get(String name) {
+        List<MetadataItem> list = asList(
+            item -> item.getName().equals(name)
+        );
+        return list.toArray(new MetadataItem[list.size()]);
+    }
+
+    public MetadataItem get(int index) {
+        return index > 0 && index < jsonArray.length()
+            ? new MetadataItem(jsonArray.getObject(index))
+            : null;
+    }
+
+    public MetadataItem first(String name) {
+        List<MetadataItem> list = asList();
+        for (MetadataItem item : list) {
+            if (item.getName().equals(name))
+                return item;
         }
-
-        return elements.toArray(new MetadataElement[elements.size()]);
+        return null;
     }
 
-    public MetadataElement getElement(String name) {
-        return hasElement(name) ? new MetadataElement(name, jsonObject.getObject(name)) : null;
+    public boolean contains(String name) {
+        return first(name) != null;
     }
 
-    public boolean hasElement(String name) {
-        return jsonObject.hasKey(name);
+    public int indexOf(MetadataItem item) {
+        for (int i = 0; i < all().length; i++) {
+            MetadataItem metadataItem = all()[i];
+            if (metadataItem.getName().equals(item.getName()))
+                return i;
+        }
+        return -1;
     }
 
-    public Metadata putElement(MetadataElement element) {
-        jsonObject.put(element.getName(), element.getJsonObject());
+    public Metadata add(MetadataItem item) {
+        jsonArray.set(jsonArray.length(), item.getJsonObject());
         return this;
     }
 
-    public Metadata removeElement(String name) {
-        if (jsonObject.hasKey(name))
-            jsonObject.remove(name);
+    public Metadata removeAll(String name) {
+        for (int i = 0; i < jsonArray.length(); i++) {
+            JsonObject jsonObject = jsonArray.getObject(i);
+            MetadataItem item = new MetadataItem(jsonObject);
+            if (name.equals(item.getName()))
+                jsonArray.remove(i);
+        }
+        return this;
+    }
+
+    public Metadata remove(int index) {
+        if (index > 0 && index < jsonArray.length())
+            jsonArray.remove(index);
         return this;
     }
 
     public Metadata copy() {
-        return new Metadata(Json.parse(getJsonObject().toJson()));
+        return new Metadata((JsonArray) Json.parse(getJsonArray().toJson()));
+    }
+
+    protected List<MetadataItem> asList() {
+        return asList(null);
+    }
+
+    protected List<MetadataItem> asList(Function<MetadataItem, Boolean> filter) {
+        List<MetadataItem> list = new ArrayList<>();
+        for (int i = 0; i < jsonArray.length(); i++) {
+            JsonObject jsonObject = jsonArray.getObject(i);
+            MetadataItem item = new MetadataItem(jsonObject);
+            if (filter == null) {
+                list.add(item);
+            } else if (filter.apply(item)) {
+                list.add(item);
+            }
+        }
+        return list;
     }
 
     @Override
     public String toString() {
-        return jsonObject.toJson();
+        return jsonArray.toJson();
     }
 }

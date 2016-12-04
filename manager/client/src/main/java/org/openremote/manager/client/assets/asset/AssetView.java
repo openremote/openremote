@@ -72,7 +72,7 @@ public interface AssetView extends AssetBrowsingView<AssetView.Presenter>, FormV
 
     boolean isMapInitialised();
 
-    void setLocation(String location);
+    void setLocation(double[] coordinates);
 
     void refreshMap();
 

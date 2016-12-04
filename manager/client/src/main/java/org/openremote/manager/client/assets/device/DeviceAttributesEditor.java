@@ -97,9 +97,9 @@ public class DeviceAttributesEditor extends AttributesEditor<DeviceAttributesEdi
     }
 
     @Override
-    public void buildAndRender() {
+    public void build() {
         container.getPanel().add(deviceActionsGroup);
-        super.buildAndRender();
+        super.build();
     }
 
     @Override

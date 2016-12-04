@@ -40,6 +40,8 @@ import org.openremote.manager.shared.asset.AssetType;
 import org.openremote.manager.shared.map.GeoJSON;
 
 import javax.inject.Inject;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -290,9 +292,17 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     }
 
     @Override
-    public void setLocation(String location) {
-        locationLabel.setText(location != null ? location : managerMessages.selectLocation());
-        centerMapButton.setEnabled(location != null);
+    public void setLocation(double[] coordinates) {
+        if (coordinates != null && coordinates.length == 2) {
+            // TODO: This assumes 0 is Lng and 1 is Lat, which is true for PostGIS backend
+            // TODO: Because Lat/Lng is the 'right way', we flip it here for display
+            // TODO: Rounding to 5 decimals gives us precision of about 1 meter, should be enough
+            locationLabel.setText(round(coordinates[1], 5) + " " + round(coordinates[0], 5) + " Lat|Lng");
+            centerMapButton.setEnabled(true);
+        } else {
+            locationLabel.setText(managerMessages.selectLocation());
+            centerMapButton.setEnabled(false);
+        }
     }
 
     @Override
@@ -474,7 +484,6 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     public void setAttributesEditor(AttributesEditor editor) {
         this.attributesEditor = editor;
         attributesEditorContainer.clear();
-        editor.buildAndRender();
     }
 
     /* ############################################################################ */
@@ -523,5 +532,9 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
         if (attributesEditor != null)
             attributesEditor.setOpaque(opaque);
         submitButtonGroup.setOpaque(opaque);
+    }
+
+    protected String round(double d, int places) {
+        return new BigDecimal(d).setScale(places, RoundingMode.HALF_UP).toString();
     }
 }

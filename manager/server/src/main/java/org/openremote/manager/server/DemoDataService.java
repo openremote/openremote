@@ -21,10 +21,10 @@ package org.openremote.manager.server;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
+import elemental.json.Json;
 import org.apache.log4j.Logger;
 import org.keycloak.admin.client.resource.*;
 import org.keycloak.representations.idm.*;
-import org.openremote.agent.controller2.Controller2Component;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -34,18 +34,22 @@ import org.openremote.manager.server.agent.ConnectorService;
 import org.openremote.manager.server.asset.AssetService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.asset.AssetType;
 import org.openremote.manager.shared.attribute.Attribute;
+import org.openremote.manager.shared.attribute.AttributeType;
 import org.openremote.manager.shared.attribute.Attributes;
+import org.openremote.manager.shared.attribute.Metadata;
 import org.openremote.manager.shared.security.Tenant;
 import rx.Observable;
 
 import java.util.Arrays;
 import java.util.List;
 
-import static org.openremote.container.util.MapAccess.*;
+import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.manager.shared.Constants.*;
+import static org.openremote.manager.shared.asset.AssetAttributeMeta.*;
+import static org.openremote.manager.shared.asset.AssetType.BUILDING;
+import static org.openremote.manager.shared.attribute.AttributeType.STRING;
 import static rx.Observable.fromCallable;
 
 public class DemoDataService implements ContainerService {
@@ -237,7 +241,31 @@ public class DemoDataService implements ContainerService {
         smartOffice.setRealm(MASTER_REALM);
         smartOffice.setName("Smart Office");
         smartOffice.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
-        smartOffice.setType(AssetType.BUILDING);
+        smartOffice.setType(BUILDING);
+        Attributes smartOfficeAttributes = new Attributes();
+        smartOfficeAttributes.put(
+            new Attribute("geoStreet", STRING, Json.create("Torenallee 20"))
+                .setMetadata(new Metadata()
+                    .add(createMetadataItem(LABEL, Json.create("Street")))
+                    .add(createMetadataItem(ABOUT, Json.create("http://project-haystack.org/tag/geoStreet")))
+                ),
+            new Attribute("geoPostalCode", AttributeType.INTEGER, Json.create(5617))
+                .setMetadata(new Metadata()
+                    .add(createMetadataItem(LABEL, Json.create("Postal Code")))
+                    .add(createMetadataItem(ABOUT, Json.create("http://project-haystack.org/tag/geoPostalCode")))
+                ),
+            new Attribute("geoCity", STRING, Json.create("Eindhoven"))
+                .setMetadata(new Metadata()
+                    .add(createMetadataItem(LABEL, Json.create("City")))
+                    .add(createMetadataItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCity")))
+                ),
+            new Attribute("geoCountry", STRING, Json.create("Netherlands"))
+                .setMetadata(new Metadata()
+                    .add(createMetadataItem(LABEL, Json.create("Country")))
+                    .add(createMetadataItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCountry")))
+                )
+        );
+        smartOffice.setAttributes(smartOfficeAttributes.getJsonObject());
         smartOffice = assetService.merge(smartOffice);
 
         ServerAsset groundfloor = new ServerAsset(smartOffice);
@@ -252,12 +280,12 @@ public class DemoDataService implements ContainerService {
         lobby.setType(AssetType.ROOM);
         lobby = assetService.merge(lobby);
 
+        /*
         ServerAsset agentAsset = new ServerAsset(lobby);
         agentAsset.setName("Demo Controller");
         agentAsset.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         agentAsset.setType(AssetType.AGENT);
 
-        /*
         Agent agent = new Agent(new Attributes(), true);
         agent.setEnabled(true);
         agent.setConnectorType("urn:openremote:connector:controller2");
@@ -287,8 +315,8 @@ public class DemoDataService implements ContainerService {
         LOG.info("Configured demo agent attributes: " + agent.getAttributes());
 
         agentAsset = assetService.merge(agentAsset);
-        */
 
         DEMO_AGENT_ID = agentAsset.getId();
+        */
     }
 }

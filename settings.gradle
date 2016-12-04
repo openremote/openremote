@@ -7,5 +7,4 @@ include "postgresql",
         "manager:shared",
         "manager:server",
         "manager:client",
-        "manager:connector:controller2",
         "manager:test"

@@ -7,8 +7,11 @@ import org.openremote.manager.shared.ngsi.KeyValueEntity
 import org.openremote.manager.shared.ngsi.Metadata
 import org.openremote.manager.shared.ngsi.Model
 import org.openremote.manager.shared.ngsi.ModelValidationError
+import spock.lang.Ignore
 import spock.lang.Specification
 
+// TODO We don't use NGSI anymore
+@Ignore
 class EntityModelTest extends Specification {
 
     def "Invalid characters in NGSI fields"() {
@@ -74,11 +77,11 @@ class EntityModelTest extends Specification {
         assert entity.hasAttribute("temperature");
 
         def pressure = entity.getAttribute("pressure");
-        assert pressure.getValue().asNumber() == 720;
-        assert pressure.getMetadata().getElements().length == 0;
+        assert pressure.getName().asNumber() == 720;
+        assert pressure.getMetadata().all().length == 0;
 
         def temperature = entity.getAttribute("temperature");
-        assert temperature.getValue().asNumber() == new Double(26.5);
+        assert temperature.getName().asNumber() == new Double(26.5);
 
         Metadata temperatureMetadata = temperature.getMetadata();
         assert temperatureMetadata.getElements().length == 1;
@@ -123,9 +126,9 @@ class EntityModelTest extends Specification {
         assert entity.hasAttribute("temperature");
 
         def pressure = entity.getAttribute("pressure");
-        assert pressure.getValue().asNumber() == 720;
+        assert pressure.getName().asNumber() == 720;
 
         def temperature = entity.getAttribute("temperature");
-        assert temperature.getValue().asNumber() == new Double(26.5);
+        assert temperature.getName().asNumber() == new Double(26.5);
     }
 }

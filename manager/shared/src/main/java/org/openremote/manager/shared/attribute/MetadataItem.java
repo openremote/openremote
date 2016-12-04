@@ -23,29 +23,22 @@ import elemental.json.Json;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 
-public class MetadataElement {
+public class MetadataItem {
 
-    final protected String name;
     final protected JsonObject jsonObject;
 
-    public MetadataElement(String name) {
-        this(name, Json.createObject());
-    }
-
-    public MetadataElement(String name, String type) {
-        this(name, Json.createObject());
-        setType(type);
-    }
-
-    public MetadataElement(String name, String type, JsonValue value) {
-        this(name, Json.createObject());
-        setType(type);
-        setValue(value);
-    }
-
-    public MetadataElement(String name, JsonObject jsonObject) {
-        this.name = name;
+    public MetadataItem(JsonObject jsonObject) {
         this.jsonObject = jsonObject;
+    }
+
+    public MetadataItem(String name) {
+        this(name, null);
+    }
+
+    public MetadataItem(String name, JsonValue value) {
+        this.jsonObject = Json.createObject();
+        setName(name);
+        setValue(value);
     }
 
     public JsonObject getJsonObject() {
@@ -53,29 +46,30 @@ public class MetadataElement {
     }
 
     public String getName() {
-        return name;
+        return jsonObject.hasKey("name") ? jsonObject.get("name").asString() : null;
+    }
+
+    public MetadataItem setName(String name) {
+        if (name == null || name.length() == 0)
+            throw new IllegalArgumentException("Name can not be empty");
+        jsonObject.put("name", name);
+        return this;
     }
 
     public JsonValue getValue() {
         return jsonObject.hasKey("value") ? jsonObject.get("value") : null;
     }
 
-    public MetadataElement setValue(JsonValue value) {
-        jsonObject.put("value", value);
+    public MetadataItem setValue(JsonValue value) {
+        if (value != null) {
+            jsonObject.put("value", value);
+        }
         return this;
     }
 
-    public String getType() {
-        return jsonObject.hasKey("type") ? jsonObject.get("type").asString() : null;
-    }
 
-    public MetadataElement setType(String type) {
-        jsonObject.put("type", type);
-        return this;
-    }
-
-    public MetadataElement copy() {
-        return new MetadataElement(getName(), Json.parse(getJsonObject().toJson()));
+    public MetadataItem copy() {
+        return new MetadataItem(Json.parse(getJsonObject().toJson()));
     }
 
     @Override

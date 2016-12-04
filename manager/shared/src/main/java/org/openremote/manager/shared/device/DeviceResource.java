@@ -23,8 +23,6 @@ import elemental.json.Json;
 import elemental.json.JsonObject;
 import org.openremote.manager.shared.attribute.Attribute;
 import org.openremote.manager.shared.attribute.AttributeType;
-import org.openremote.manager.shared.attribute.Metadata;
-import org.openremote.manager.shared.attribute.MetadataElement;
 
 /**
  * An attribute of an asset that represents a device resource.
@@ -56,11 +54,14 @@ public class DeviceResource extends Attribute {
 
     public static boolean isDeviceResource(Attribute attribute) {
         // The given attribute must satisfy the API of this class
+        return false;
+/*
         return attribute.hasMetadataElement(DEVICE_RESOURCE)
-            && attribute.getMetadata().getElement(DEVICE_RESOURCE).getType().equals(DEVICE_RESOURCE_TYPE)
+            && attribute.getMetadata().getElement(DEVICE_RESOURCE).getName().equals(DEVICE_RESOURCE_TYPE)
             && AttributeType.isValid(attribute.getMetadata().getElement(DEVICE_RESOURCE).getValue().asString())
             && attribute.hasMetadataElement(ACCESS)
-            && attribute.getMetadata().getElement(ACCESS).getType().equals(ACCESS_TYPE);
+            && attribute.getMetadata().getElement(ACCESS).getName().equals(ACCESS_TYPE);
+*/
     }
 
     public DeviceResource(Attribute attribute) {
@@ -73,6 +74,7 @@ public class DeviceResource extends Attribute {
 
     public DeviceResource(String name, String key, AttributeType resourceType, Access access) {
         super(name, AttributeType.STRING, Json.create(key));
+        /*
         setMetadata(new Metadata()
             .putElement(
                 new MetadataElement(DEVICE_RESOURCE, DEVICE_RESOURCE_TYPE, Json.create(resourceType.getValue()))
@@ -81,26 +83,37 @@ public class DeviceResource extends Attribute {
                 new MetadataElement(ACCESS, ACCESS_TYPE, Json.create(access.name()))
             )
         );
+        */
     }
 
     public AttributeType getResourceType() {
+        return null;
+/*
         return getMetadata().hasElement(DEVICE_RESOURCE)
             && AttributeType.isValid(getMetadata().getElement(DEVICE_RESOURCE).getValue().asString())
             ? AttributeType.fromValue(getMetadata().getElement(DEVICE_RESOURCE).getValue().asString())
             : null;
+*/
     }
 
     public Access getAccess() {
+        return null;
+/*
         return getMetadata().hasElement(ACCESS)
             ? Access.valueOf(getMetadata().getElement(ACCESS).getValue().asString())
             : null;
+*/
     }
 
     public boolean isPassive() {
+        return false;
+/*
         return getMetadata().hasElement(PASSIVE) && getMetadata().getElement(PASSIVE).getValue().asBoolean();
+*/
     }
 
     public DeviceResource setPassive(boolean passive) {
+/*
         if (passive) {
             getMetadata().putElement(
                 new MetadataElement(PASSIVE, AttributeType.BOOLEAN.getValue(), Json.create(true))
@@ -108,14 +121,19 @@ public class DeviceResource extends Attribute {
         } else {
             getMetadata().removeElement(PASSIVE);
         }
+*/
         return this;
     }
 
     public boolean isConstant() {
+        return false;
+/*
         return getMetadata().hasElement(CONSTANT) && getMetadata().getElement(CONSTANT).getValue().asBoolean();
+*/
     }
 
     public DeviceResource setConstant(boolean constant) {
+/*
         if (constant) {
             getMetadata().putElement(
                 new MetadataElement(CONSTANT, AttributeType.BOOLEAN.getValue(), Json.create(true))
@@ -123,6 +141,7 @@ public class DeviceResource extends Attribute {
         } else {
             getMetadata().removeElement(CONSTANT);
         }
+*/
         return this;
     }
 

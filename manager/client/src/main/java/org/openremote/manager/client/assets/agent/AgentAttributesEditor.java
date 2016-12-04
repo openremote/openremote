@@ -118,7 +118,7 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
             }
 
             container.getFormView().setFormBusy(false);
-            refresh();
+            clearBuild();
         });
     }
 
@@ -138,6 +138,7 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
         return formLabel;
     }
 
+    /* TODO
     @Override
     protected String getDescription(Attribute attribute) {
         String description = super.getDescription(attribute);
@@ -146,6 +147,7 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
         }
         return description;
     }
+    */
 
     @Override
     public void buildAttributeFormGroups() {
@@ -155,10 +157,10 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
     }
 
     @Override
-    public void buildAndRender() {
+    public void build() {
         container.getPanel().add(connectorDropDownGroup);
         container.getPanel().add(actionsGroup);
-        super.buildAndRender();
+        super.build();
     }
 
     @Override
@@ -200,7 +202,7 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
             agent.removeConnectorType();
             refreshInventoryButton.setEnabled(false);
         }
-        refresh();
+        clearBuild();
     }
 
     protected void loadConnectors(Consumer<Connector[]> onSuccess) {

@@ -19,11 +19,8 @@
  */
 package org.openremote.manager.shared.connector;
 
-import elemental.json.Json;
 import org.openremote.manager.shared.attribute.Attribute;
 import org.openremote.manager.shared.attribute.AttributeType;
-import org.openremote.manager.shared.attribute.Metadata;
-import org.openremote.manager.shared.attribute.MetadataElement;
 
 public class ConnectorUtil {
     protected ConnectorUtil() {}
@@ -34,6 +31,7 @@ public class ConnectorUtil {
 
     public static Attribute buildConnectorSetting(String attributeName, AttributeType type, String displayName, String description, boolean required, String defaultValue, String defaultValueNote) {
         Attribute attribute = new Attribute(attributeName, type);
+        /*
         attribute.setMetadata(new Metadata(Json.createObject()));
 
         if (displayName != null && displayName.length() > 0) {
@@ -75,6 +73,7 @@ public class ConnectorUtil {
                             .setValue(Json.create(true))
             );
         }
+        */
 
         return attribute;
     }

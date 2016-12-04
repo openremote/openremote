@@ -202,7 +202,7 @@ public class AssetActivity
     public void onMapClicked(double lng, double lat) {
         selectedCoordinates = new double[]{lng, lat};
         view.showMapPopup(lng, lat, environment.getMessages().selectedLocation());
-        view.setLocation(getLocation(selectedCoordinates));
+        view.setLocation(selectedCoordinates);
     }
 
     @Override
@@ -340,7 +340,7 @@ public class AssetActivity
         view.setName(asset.getName());
         view.setRealm(asset.getRealm());
         view.setCreatedOn(asset.getCreatedOn());
-        view.setLocation(getLocation(asset.getCoordinates()));
+        view.setLocation(asset.getCoordinates());
         if (asset != null && asset.getId() != null) {
             view.showFeaturesSelection(getFeature(asset));
             view.flyTo(asset.getCoordinates());
@@ -395,6 +395,7 @@ public class AssetActivity
                 );
         }
         view.setAttributesEditor(attributesEditor);
+        attributesEditor.build();
     }
 
     protected void readFromView() {
@@ -422,13 +423,6 @@ public class AssetActivity
 
     protected void clearViewFieldErrors() {
         // TODO: Validation
-    }
-
-    protected String getLocation(double[] coordinates) {
-        if (coordinates != null && coordinates.length == 2) {
-            return coordinates[0] + " " + coordinates[1];
-        }
-        return null;
     }
 
 }

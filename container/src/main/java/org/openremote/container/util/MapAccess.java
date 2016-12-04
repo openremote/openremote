@@ -22,15 +22,9 @@ package org.openremote.container.util;
 import java.util.Map;
 
 /**
- * Adds convenience getters to HashMap.
+ * Convenience functions for accessing {@link Map}.
  */
 public class MapAccess {
-
-    static public void putIfEmpty(Map<String, String> map, String variable, String value) {
-        if (!map.containsKey(variable)) {
-            map.put(variable, value);
-        }
-    }
 
     static public String getString(Map<String, String> map, String key, String defaultValue) {
         return map.containsKey(key) ? map.get(key) : defaultValue;

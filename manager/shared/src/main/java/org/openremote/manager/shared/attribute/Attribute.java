@@ -127,17 +127,17 @@ public class Attribute {
         return jsonObject.hasKey("metadata");
     }
 
-    public boolean hasMetadataElement(String name) {
-        return hasMetadata() && getMetadata().hasElement(name);
+    public boolean hasMetadataItem(String name) {
+        return hasMetadata() && getMetadata().contains(name);
     }
 
     public Metadata getMetadata() {
-        return hasMetadata() ? new Metadata(jsonObject.getObject("metadata")) : null;
+        return hasMetadata() ? new Metadata(jsonObject.getArray("metadata")) : null;
     }
 
     public Attribute setMetadata(Metadata metadata) {
         if (metadata != null) {
-            jsonObject.put("metadata", metadata.getJsonObject());
+            jsonObject.put("metadata", metadata.getJsonArray());
         } else if (jsonObject.hasKey("metadata")) {
             jsonObject.remove("metadata");
         }

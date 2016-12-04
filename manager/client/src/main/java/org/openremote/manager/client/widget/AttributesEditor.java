@@ -28,10 +28,12 @@ import org.openremote.manager.shared.Runnable;
 import org.openremote.manager.shared.attribute.Attribute;
 import org.openremote.manager.shared.attribute.AttributeType;
 import org.openremote.manager.shared.attribute.Attributes;
-import org.openremote.manager.shared.attribute.MetadataElement;
+import org.openremote.manager.shared.attribute.MetadataItem;
 
 import java.util.*;
 import java.util.logging.Logger;
+
+import static org.openremote.manager.shared.asset.AssetAttributeMeta.*;
 
 public class AttributesEditor<S extends AttributesEditor.Style> {
 
@@ -112,7 +114,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
     }
     */
 
-    public void buildAndRender() {
+    public void build() {
         formGroups.clear();
         buildAttributeFormGroups();
         for (FormGroup formGroup : formGroups.values()) {
@@ -120,9 +122,11 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         }
     }
 
-    public void refresh() {
-        clearContainer();
-        buildAndRender();
+    public void clearBuild() {
+        while (container.getPanel().getWidgetCount() > 0) {
+            container.getPanel().remove(0);
+        }
+        build();
     }
 
     public void setOpaque(boolean opaque) {
@@ -136,12 +140,6 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
     }
 
     /* ####################################################################### */
-
-    protected void clearContainer() {
-        while (container.getPanel().getWidgetCount() > 0) {
-            container.getPanel().remove(0);
-        }
-    }
 
     protected FormGroup createFormGroup(Attribute attribute) {
 
@@ -167,9 +165,9 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
             );
         }
 
-        String description = getDescription(attribute);
+        MetadataItem description = getFirstMetadataItem(attribute, DESCRIPTION);
         if (description != null) {
-            formGroup.addInfolabel(new Label(description));
+            formGroup.addInfolabel(new Label(description.getValue().asString()));
         }
 
         return formGroup;
@@ -178,11 +176,9 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
     protected FormLabel buildFormLabel(Attribute attribute) {
         FormLabel formLabel = new FormLabel();
         String label = attribute.getName();
-        if (attribute.hasMetadataElement("label")) {
-            MetadataElement metadataLabel = attribute.getMetadata().getElement("label");
-            if (metadataLabel.getType().equals(AttributeType.STRING.getValue())) {
-                label = metadataLabel.getValue().asString();
-            }
+        MetadataItem labelItem = getFirstMetadataItem(attribute, LABEL);
+        if (labelItem != null) {
+            label = labelItem.getValue().asString();
         }
         formLabel.setText(TextUtil.ellipsize(label, 30));
         formLabel.addStyleName("larger");
@@ -195,10 +191,10 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
     protected FormInputText createStringEditor(S style, Attribute attribute, boolean readOnly) {
         FormInputText input = createFormInputText(style.attributeStringEditor());
 
-        MetadataElement defaultValue;
+        MetadataItem defaultValue;
         if (attribute.getValue() != null) {
             input.setValue(attribute.getValue().asString());
-        } else if ((defaultValue = getDefaultValue(attribute)) != null) {
+        } else if ((defaultValue = getFirstMetadataItem(attribute, DEFAULT)) != null) {
             input.setValue(defaultValue.getValue().asString());
         }
 
@@ -217,10 +213,10 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
     protected FormInputNumber createIntegerEditor(S style, Attribute attribute, boolean readOnly) {
         FormInputNumber input = createFormInputNumber(style.attributeIntegerEditor());
 
-        MetadataElement defaultValue;
+        MetadataItem defaultValue;
         if (attribute.getValue() != null) {
             input.setValue(attribute.getValue().asString());
-        } else if ((defaultValue = getDefaultValue(attribute)) != null) {
+        } else if ((defaultValue = getFirstMetadataItem(attribute, DEFAULT)) != null) {
             input.setValue(defaultValue.getValue().asString());
         }
 
@@ -242,10 +238,10 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
     protected FormInputText createFloatEditor(S style, Attribute attribute, boolean readOnly) {
         FormInputText input = createFormInputText(style.attributeFloatEditor());
 
-        MetadataElement defaultValue;
+        MetadataItem defaultValue;
         if (attribute.getValue() != null) {
             input.setValue(attribute.getValue().asString());
-        } else if ((defaultValue = getDefaultValue(attribute)) != null) {
+        } else if ((defaultValue = getFirstMetadataItem(attribute, DEFAULT)) != null) {
             input.setValue(defaultValue.getValue().asString());
         }
 
@@ -268,10 +264,10 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         FormCheckBox input = createFormInputCheckBox(style.attributeBooleanEditor());
 
         Boolean value = null;
-        MetadataElement defaultValue;
+        MetadataItem defaultValue;
         if (attribute.getValueAsBoolean() != null) {
             value = attribute.getValueAsBoolean();
-        } else if ((defaultValue = getDefaultValue(attribute)) != null) {
+        } else if ((defaultValue = getFirstMetadataItem(attribute, DEFAULT)) != null) {
             defaultValue.getValue().asBoolean();
         }
 
@@ -308,23 +304,6 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
     }
 
     /* ####################################################################### */
-
-    protected String getDescription(Attribute attribute) {
-        if (attribute.hasMetadataElement("description")) {
-            MetadataElement metadataDescription = attribute.getMetadata().getElement("description");
-            if (metadataDescription.getType().equals(AttributeType.STRING.getValue())) {
-                return metadataDescription.getValue().asString();
-            }
-        }
-        return null;
-    }
-
-    protected MetadataElement getDefaultValue(Attribute attribute) {
-        if (attribute.hasMetadataElement("defaultValue")) {
-            return attribute.getMetadata().getElement("defaultValue");
-        }
-        return null;
-    }
 
     protected boolean isDefaultReadOnly(Attribute attribute) {
         return false;
