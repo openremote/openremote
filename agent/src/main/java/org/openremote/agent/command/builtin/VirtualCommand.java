@@ -14,8 +14,8 @@ import java.util.logging.Logger;
  * <p>
  * Maintains a virtual-machine-wide state for each address. This can be used for testing.
  * Incoming read() and send() requests operate on a map where the command's {@code <address>}
- * field is used as a key and either the command name, or command parameter (if provided) is
- * stored as a virtual device state value for that address.
+ * field is used as a key and either the command name, or configured command parameter, or
+ * the argument of send() is stored as a virtual device state value for that address.
  */
 public class VirtualCommand implements ExecutableCommand, PullCommand {
 
@@ -24,7 +24,6 @@ public class VirtualCommand implements ExecutableCommand, PullCommand {
     private final static Map<String, String> virtualDevices = new ConcurrentHashMap<>(20);
     private String address = null;
     private String command = null;
-    private String commandParam = null;
 
     public VirtualCommand(CommandDefinition commandDefinition) {
         this(
@@ -49,42 +48,15 @@ public class VirtualCommand implements ExecutableCommand, PullCommand {
     }
 
     /**
-     * Constructs a new "virtual" device command with a given address, command, and command parameter.
-     * <p>
-     * When this command's {@link #send(String)} method is called, the command's parameter value is stored
-     * as a virtual device state value for the given address. This type of command can therefore
-     * be used to test components such as sliders that send values as command parameters.
-     *
-     * @param address      arbitrary address string that is used to store the command parameter in
-     *                     memory
-     * @param command      command name TODO (not used) (The whole virtual command makes not much sense...)
-     * @param commandParam command parameter value -- stored as a virtual device state value in
-     *                     memory and can be later retrieved using this command's {@link #read}
-     *                     method.
-     */
-    public VirtualCommand(String address, String command, String commandParam) {
-        this(address, command);
-        this.commandParam = commandParam;
-    }
-
-    /**
      * Allows this command implementation to be used with components that require write command
      * implementations.
      * <p>
-     * Stores the command name (or command parameter, if provided) as a "virtual" device state
+     * Stores the argument (or command parameter, if no argument is provided) as a "virtual" device state
      * value when a send() is triggered. The state is stored and indexed by this command's address.
-     * <p>
-     * If command parameter has been provided (such as slider value) then that is stored as device
-     * state instead of command's name.
      */
     @Override
     public void send(String arg) {
-        // TODO What's with the arg? Never used?
-        if (commandParam == null) {
-            virtualDevices.put(address, command);
-        } else {
-            virtualDevices.put(address, commandParam);
-        }
+        virtualDevices.put(address, arg != null && arg.length() > 0 ? arg : command);
     }
 
     /**
@@ -174,7 +146,6 @@ public class VirtualCommand implements ExecutableCommand, PullCommand {
         return "VirtualCommand{" +
             "address='" + address + '\'' +
             ", command='" + command + '\'' +
-            ", commandParam='" + commandParam + '\'' +
             '}';
     }
 }
