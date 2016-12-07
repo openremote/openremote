@@ -23,6 +23,7 @@ import com.google.gwt.user.client.ui.InsertPanel;
 import com.google.gwt.user.client.ui.Label;
 import elemental.json.Json;
 import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.util.TextUtil;
 import org.openremote.manager.shared.Runnable;
 import org.openremote.manager.shared.attribute.Attribute;
@@ -34,6 +35,7 @@ import java.util.*;
 import java.util.logging.Logger;
 
 import static org.openremote.manager.shared.asset.AssetAttributeMeta.*;
+import static org.openremote.manager.shared.util.Util.sortMap;
 
 public class AttributesEditor<S extends AttributesEditor.Style> {
 
@@ -49,6 +51,8 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         void showConfirmation(String title, String text, Runnable onConfirm);
 
         void showConfirmation(String title, String text, Runnable onConfirm, Runnable onCancel);
+
+        ManagerMessages getMessages();
     }
 
     public interface Style {
@@ -65,7 +69,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
     final protected Environment environment;
     final protected Container<S> container;
     final protected Attributes attributes;
-    final protected Map<Attribute, FormGroup> formGroups = new LinkedHashMap<>();
+    final protected LinkedHashMap<Attribute, FormGroup> formGroups = new LinkedHashMap<>();
 
     public AttributesEditor(Environment environment, Container<S> container, Attributes attributes) {
         this.environment = environment;
@@ -83,7 +87,6 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
             return;
         }
         List<Attribute> attributeList = Arrays.asList(attributes.get());
-        Collections.sort(attributeList, (o1, o2) -> o1.getName().compareTo(o2.getName()));
         for (Attribute attribute : attributeList) {
             LOG.fine("Building form group for attribute: " + attribute.getName());
             FormGroup formGroup = createFormGroup(attribute);
@@ -91,6 +94,8 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
                 formGroups.put(attribute, formGroup);
             }
         }
+        // Sort form groups by label text ascending
+        sortMap(formGroups, (a, b) -> a.getFormLabel().getText().compareTo(b.getFormLabel().getText()));
     }
 
     /* TODO Finish attribute add/remove, metadata editing
@@ -169,6 +174,21 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         if (description != null) {
             formGroup.addInfolabel(new Label(description.getValue().asString()));
         }
+
+        // TODO Finish actions/metadata editing
+        FormGroupActions formGroupActions = new FormGroupActions();
+
+        FormButton deleteButton = new FormButton();
+        deleteButton.setText(container.getMessages().deleteAttribute());
+        deleteButton.setIcon("remove");
+        formGroupActions.add(deleteButton);
+
+        FormButton editMetaButton = new FormButton();
+        editMetaButton.setText(container.getMessages().editAttributeMeta());
+        editMetaButton.setIcon("edit");
+        formGroupActions.add(editMetaButton);
+
+        formGroup.add(formGroupActions);
 
         return formGroup;
     }

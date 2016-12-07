@@ -32,6 +32,7 @@ public class FormGroup extends FlowPanel implements HasWidgets {
     protected FlowPanel labelPanel = new FlowPanel();
     protected FormLabel formLabel;
     protected FormField formField;
+    protected FormGroupActions formGroupActions;
     protected Label infoLabel;
 
     public FormGroup() {
@@ -58,6 +59,12 @@ public class FormGroup extends FlowPanel implements HasWidgets {
         if (this.formLabel != null) {
             formField.setFormFieldId(this.formLabel.getFormFieldId());
         }
+    }
+
+    @UiChild(tagname = "actions", limit = 1)
+    public void addFormGroupActions(FormGroupActions formGroupActions) {
+        this.formGroupActions = formGroupActions;
+        add(formGroupActions);
     }
 
     @UiChild(tagname = "info", limit = 1)

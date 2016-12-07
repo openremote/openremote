@@ -28,7 +28,7 @@
     <ui:style field="attributesEditorStyle"
               type="org.openremote.manager.client.assets.asset.AssetViewImpl.AttributesEditorStyle">
         .attributeStringEditor {
-            width: 26em;
+            width: 100%;
         }
 
         .attributeIntegerEditor {

@@ -20,37 +20,75 @@
 package org.openremote.manager.shared.asset;
 
 import elemental.json.Json;
-import elemental.json.JsonString;
+import elemental.json.JsonObject;
+import org.openremote.manager.shared.attribute.Attribute;
+import org.openremote.manager.shared.attribute.AttributeType;
+import org.openremote.manager.shared.attribute.Attributes;
+import org.openremote.manager.shared.attribute.Metadata;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.openremote.manager.shared.asset.AssetAttributeMeta.*;
+import static org.openremote.manager.shared.attribute.AttributeType.INTEGER;
+import static org.openremote.manager.shared.attribute.AttributeType.STRING;
+
 /**
  * Asset type is an arbitrary string. It should be URI. This enum contains
  * the well-known URIs for functionality we want to depend on in our platform.
- *
+ * <p>
  * TODO https://people.eecs.berkeley.edu/~arka/papers/buildsys2015_metadatasurvey.pdf
  */
 public enum AssetType {
 
-    CUSTOM(null),
-    TENANT("urn:openremote:asset:tenant", false),
-    AGENT("urn:openremote:asset:agent"),
-    DEVICE("urn:openremote:asset:device", false),
-    BUILDING("urn:openremote:asset:building"),
-    FLOOR("urn:openremote:asset:floor"),
-    ROOM("urn:openremote:asset:room");
+    CUSTOM(null, true, null),
+
+    TENANT("urn:openremote:asset:tenant", false, null),
+
+    // TODO Arbitrary group of assets? Semantics?
+    GROUP("urn:openremote:asset:group", true, null),
+
+    BUILDING("urn:openremote:asset:building", true, new Attributes().put(
+        new Attribute("area", INTEGER)
+            .setMetadata(new Metadata()
+                .add(createMetadataItem(LABEL, Json.create("Surface area")))
+                .add(createMetadataItem(DESCRIPTION, Json.create("Floor area of building measured in m²")))
+                .add(createMetadataItem(ABOUT, Json.create("http://project-haystack.org/tag/area")))
+            ),
+        new Attribute("geoStreet", STRING)
+            .setMetadata(new Metadata()
+                .add(createMetadataItem(LABEL, Json.create("Street")))
+                .add(createMetadataItem(ABOUT, Json.create("http://project-haystack.org/tag/geoStreet")))
+            ),
+        new Attribute("geoPostalCode", AttributeType.INTEGER)
+            .setMetadata(new Metadata()
+                .add(createMetadataItem(LABEL, Json.create("Postal Code")))
+                .add(createMetadataItem(ABOUT, Json.create("http://project-haystack.org/tag/geoPostalCode")))
+            ),
+        new Attribute("geoCity", STRING)
+            .setMetadata(new Metadata()
+                .add(createMetadataItem(LABEL, Json.create("City")))
+                .add(createMetadataItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCity")))
+            ),
+        new Attribute("geoCountry", STRING)
+            .setMetadata(new Metadata()
+                .add(createMetadataItem(LABEL, Json.create("Country")))
+                .add(createMetadataItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCountry")))
+            )
+    ).getJsonObject()),
+
+    FLOOR("urn:openremote:asset:floor", true, null),
+
+    ROOM("urn:openremote:asset:room", true, null);
 
     final protected String value;
     final protected boolean editable;
+    final protected JsonObject defaultAttributes;
 
-    AssetType(String value, boolean editable) {
+    AssetType(String value, boolean editable, JsonObject defaultAttributes) {
         this.value = value;
         this.editable = editable;
-    }
-
-    AssetType(String value) {
-        this(value, true);
+        this.defaultAttributes = defaultAttributes;
     }
 
     public String getValue() {
@@ -61,8 +99,8 @@ public enum AssetType {
         return editable;
     }
 
-    public JsonString getJsonValue() {
-        return Json.create(getValue());
+    public JsonObject getDefaultAttributes() {
+        return defaultAttributes;
     }
 
     public static AssetType[] editable() {
@@ -85,6 +123,7 @@ public enum AssetType {
     }
 
     public static boolean isLeaf(AssetType wellKnownType) {
-        return wellKnownType != null && wellKnownType.equals(DEVICE);
+        return false;
+        // TODO return wellKnownType != null && wellKnownType.equals(DEVICE);
     }
 }

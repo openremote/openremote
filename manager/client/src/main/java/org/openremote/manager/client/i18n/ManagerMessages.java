@@ -238,4 +238,10 @@ public interface ManagerMessages extends Messages {
     String confirmationInventoryRefresh(String agent);
 
     String noAgentsFound();
+
+    String deleteAttribute();
+
+    String editAttributeMeta();
+
+    String addAttribute();
 }

@@ -366,6 +366,7 @@ public class AssetActivity
 
     protected void writeAttributesEditorToView() {
         switch(asset.getWellKnownType()) {
+            /* TODO
             case DEVICE:
                 if (parentAsset != null) {
                     attributesEditor = new DeviceAttributesEditor(
@@ -387,11 +388,16 @@ public class AssetActivity
                     connectorArrayMapper
                 );
                 break;
+            */
             default:
                 attributesEditor = new AttributesEditor<>(
                     environment,
                     view.getAttributesEditorContainer(),
-                    new Attributes(asset.getAttributes())
+                    new Attributes(
+                        isCreateAsset
+                            ? asset.getWellKnownType().getDefaultAttributes()
+                            : asset.getAttributes()
+                    )
                 );
         }
         view.setAttributesEditor(attributesEditor);

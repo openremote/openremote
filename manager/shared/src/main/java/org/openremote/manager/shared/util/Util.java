@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.shared.util;
 
-import java.util.Locale;
+import java.util.*;
 
 public class Util {
 
@@ -87,6 +87,15 @@ public class Util {
         if (commaWords == null)
             return new String[0];
         return commaWords.split(",");
+    }
+
+    public static <K, V> void sortMap(LinkedHashMap<K, V> map, Comparator<? super V> c) {
+        List<Map.Entry<K, V>> entries = new ArrayList<>(map.entrySet());
+        Collections.sort(entries, (lhs, rhs) -> c.compare(lhs.getValue(), rhs.getValue()));
+        map.clear();
+        for(Map.Entry<K, V> e : entries) {
+            map.put(e.getKey(), e.getValue());
+        }
     }
 
 }

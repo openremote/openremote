@@ -33,6 +33,7 @@ import elemental.json.JsonObject;
 import org.openremote.manager.client.app.dialog.ConfirmationDialog;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.device.DeviceAttributesEditor;
+import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.widget.*;
 import org.openremote.manager.client.widget.PushButton;
 import org.openremote.manager.shared.Runnable;
@@ -447,6 +448,11 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
             public void showConfirmation(String title, String text, Runnable onConfirm, Runnable onCancel) {
                 AssetViewImpl.this.showConfirmation(title, text, onConfirm, onCancel);
             }
+
+            @Override
+            public ManagerMessages getMessages(){
+                return managerMessages;
+            }
         };
     }
 
@@ -476,6 +482,11 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
             @Override
             public void showConfirmation(String title, String text, Runnable onConfirm, Runnable onCancel) {
                 AssetViewImpl.this.showConfirmation(title, text, onConfirm, onCancel);
+            }
+
+            @Override
+            public ManagerMessages getMessages(){
+                return managerMessages;
             }
         };
     }

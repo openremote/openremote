@@ -53,9 +53,11 @@ public class AgentService extends RouteBuilder implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
+        /*
         ServerAsset[] agents = assetService.findByTypeInAllRealms(AssetType.AGENT.getValue());
         LOG.fine("Configure agents in all realms:" + agents.length);
-        // reconfigureAgents(null, agents, null);
+        reconfigureAgents(null, agents, null);
+        */
     }
 
     @Override

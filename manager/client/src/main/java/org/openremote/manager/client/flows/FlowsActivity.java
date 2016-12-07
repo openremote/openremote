@@ -78,7 +78,7 @@ public class FlowsActivity
     public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
         container.setWidget(view.asWidget());
         view.setPresenter(this);
-        
+/* TODO
         environment.getRequestService().execute(
             assetInfoArrayMapper,
             requestParams -> {
@@ -89,6 +89,7 @@ public class FlowsActivity
             view::setAgents,
             ex -> handleRequestException(ex, environment)
         );
+        */
     }
 
     @Override

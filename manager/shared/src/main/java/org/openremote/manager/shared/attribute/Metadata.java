@@ -75,9 +75,9 @@ public class Metadata {
     }
 
     public int indexOf(MetadataItem item) {
-        for (int i = 0; i < all().length; i++) {
-            MetadataItem metadataItem = all()[i];
-            if (metadataItem.getName().equals(item.getName()))
+        List<MetadataItem> list = asList();
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).getName().equals(item.getName()))
                 return i;
         }
         return -1;
