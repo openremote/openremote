@@ -19,6 +19,7 @@
  */
 package org.openremote.container.util;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 /**
@@ -45,6 +46,17 @@ public class MapAccess {
         if (map.containsKey(key)) {
             try {
                 return Integer.valueOf(map.get(key));
+            } catch (Exception ex) {
+                return defaultValue;
+            }
+        }
+        return defaultValue;
+    }
+
+    static public BigDecimal getDecimal(Map<String, String> map, String key, BigDecimal defaultValue) {
+        if (map.containsKey(key)) {
+            try {
+                return new BigDecimal(map.get(key));
             } catch (Exception ex) {
                 return defaultValue;
             }
