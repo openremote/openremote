@@ -26,14 +26,16 @@ public enum AttributeType {
     OBJECT("Object", JsonType.OBJECT),
     STRING("String", JsonType.STRING),
     INTEGER("Integer", JsonType.NUMBER),
-    FLOAT("Float", JsonType.NUMBER),
+    DECIMAL("Decimal", JsonType.NUMBER),
     BOOLEAN("Boolean", JsonType.BOOLEAN),
     OBJECT_ARRAY("Object[]", JsonType.ARRAY),
     STRING_ARRAY("String[]", JsonType.ARRAY),
     INTEGER_ARRAY("Integer[]", JsonType.ARRAY),
-    FLOAT_ARRAY("Float[]", JsonType.ARRAY),
+    DECIMAL_ARRAY("Decimal[]", JsonType.ARRAY),
     BOOLEAN_ARRAY("Boolean[]", JsonType.ARRAY),
-    DATETIME("DateTime", JsonType.STRING);
+    TIMESTAMP("Timestamp", JsonType.STRING), // Unix timestamp
+    DATE("Date", JsonType.STRING), // ISO 8601, e.g. "2012-04-23T18:25:43.511Z"
+    COLOR("Color", JsonType.OBJECT); // RGB integers
 
     private String value;
     private JsonType jsonType;

@@ -35,7 +35,7 @@
             width: 5em;
         }
 
-        .attributeFloatEditor {
+        .attributeDecimalEditor {
             width: 5em;
         }
 
@@ -53,7 +53,7 @@
             width: 5em;
         }
 
-        .attributeFloatEditor {
+        .attributeDecimalEditor {
             width: 5em;
         }
 

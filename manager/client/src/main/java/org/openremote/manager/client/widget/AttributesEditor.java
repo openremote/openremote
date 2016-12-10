@@ -61,7 +61,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
 
         String attributeIntegerEditor();
 
-        String attributeFloatEditor();
+        String attributeDecimalEditor();
 
         String attributeBooleanEditor();
     }
@@ -160,8 +160,8 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
             formGroup.getFormField().add(createStringEditor(container.getStyle(), attribute, isDefaultReadOnly(attribute)));
         } else if (attribute.getType().equals(AttributeType.INTEGER)) {
             formGroup.getFormField().add(createIntegerEditor(container.getStyle(), attribute, isDefaultReadOnly(attribute)));
-        } else if (attribute.getType().equals(AttributeType.FLOAT)) {
-            formGroup.getFormField().add(createFloatEditor(container.getStyle(), attribute, isDefaultReadOnly(attribute)));
+        } else if (attribute.getType().equals(AttributeType.DECIMAL)) {
+            formGroup.getFormField().add(createDecimalEditor(container.getStyle(), attribute, isDefaultReadOnly(attribute)));
         } else if (attribute.getType().equals(AttributeType.BOOLEAN)) {
             formGroup.getFormField().add(createBooleanEditor(container.getStyle(), attribute, isDefaultReadOnly(attribute)));
         } else {
@@ -255,8 +255,8 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         return input;
     }
 
-    protected FormInputText createFloatEditor(S style, Attribute attribute, boolean readOnly) {
-        FormInputText input = createFormInputText(style.attributeFloatEditor());
+    protected FormInputText createDecimalEditor(S style, Attribute attribute, boolean readOnly) {
+        FormInputText input = createFormInputText(style.attributeDecimalEditor());
 
         MetadataItem defaultValue;
         if (attribute.getValue() != null) {

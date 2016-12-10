@@ -70,7 +70,7 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
 
         String attributeIntegerEditor();
 
-        String attributeFloatEditor();
+        String attributeDecimalEditor();
 
         String attributeStringEditor();
 
@@ -81,7 +81,7 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
 
         String attributeIntegerEditor();
 
-        String attributeFloatEditor();
+        String attributeDecimalEditor();
 
         String attributeStringEditor();
 

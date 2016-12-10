@@ -210,8 +210,8 @@ public class DeviceAttributesEditor extends AttributesEditor<DeviceAttributesEdi
     }
 
     @Override
-    protected FormInputText createFloatEditor(Style style, Attribute attribute, boolean readOnly) {
-        return super.createFloatEditor(style, attribute, readOnly || DeviceResource.isDeviceResource(attribute));
+    protected FormInputText createDecimalEditor(Style style, Attribute attribute, boolean readOnly) {
+        return super.createDecimalEditor(style, attribute, readOnly || DeviceResource.isDeviceResource(attribute));
     }
 
     @Override

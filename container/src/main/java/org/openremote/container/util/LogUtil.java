@@ -30,7 +30,15 @@ public class LogUtil {
 
     public static final String LOGGING_CONFIG_FILE = "LOGGING_CONFIG_FILE";
 
-    public static void configureLogging(String defaultLoggingProperties) {
+    /**
+     * If system property <code>java.util.logging.config.file</code> has not been set, try to load the
+     * logging configuration specified in environment variable <code>LOGGING_CONFIG_FILE</code> as a file.
+     * If this also wasn't set, load the given default logging configuration from the classpath.
+     *
+     * This method should be called in a <code>static { ... }</code> block in the "first" class of your
+     * application (typically where your <code>main()</code> method is located).
+     */
+    public static void configureLogging(String defaultLoggingProperties) throws ExceptionInInitializerError {
         // If no JUL configuration is provided
         if (System.getProperty("java.util.logging.config.file") == null) {
             // Load the logging configuration file specified with an environment variable

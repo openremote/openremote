@@ -42,7 +42,12 @@ public enum AssetAttributeMeta {
     LABEL("urn:openremote:asset:meta:label", false),
 
     /**
-     * A human-friendly string describing the purpose of an attribute.
+     * Format string that can be used to render the attribute value, see {@link java.util.Formatter}.
+     */
+    FORMAT("urn:openremote:asset:meta:format", true),
+
+    /**
+     * A human-friendly string describing the purpose of an attribute, useful when rendering editors.
      */
     DESCRIPTION("urn:openremote:asset:meta:description", false),
 
@@ -52,9 +57,34 @@ public enum AssetAttributeMeta {
     ABOUT("urn:openremote:asset:meta:about"),
 
     /**
+     * Marks the attribute as read-only.
+     */
+    READ_ONLY("urn:openremote:asset:meta:readOnly", true),
+
+    /**
      * Default value that might be used when editing an attribute.
      */
-    DEFAULT("urn:openremote:asset:meta:default", false);
+    DEFAULT("urn:openremote:asset:meta:default", false),
+
+    /**
+     * Minimum range constraint for numeric attribute values.
+     */
+    RANGE_MIN("urn:openremote:asset:meta:rangeMin", true),
+
+    /**
+     * Maximum range constraint for numeric attribute values.
+     */
+    RANGE_MAX("urn:openremote:asset:meta:rangeMax", true),
+
+    /**
+     * Step increment/decrement constraint for numeric attribute values.
+     */
+    STEP("urn:openremote:asset:meta:step", true),
+
+    /**
+     * Regex (Java syntax) constraint for string attribute values.
+     */
+    PATTERN("urn:openremote:asset:meta:pattern", true);
 
     final protected String name;
     final protected boolean editable;

@@ -79,7 +79,11 @@ public enum AssetType {
 
     FLOOR("urn:openremote:asset:floor", true, null),
 
-    ROOM("urn:openremote:asset:room", true, null);
+    ROOM("urn:openremote:asset:room", true, null),
+
+    AGENT("urn:openremote:asset:agent", true, null),
+
+    THING("urn:openremote:asset:thing", true, null);
 
     final protected String value;
     final protected boolean editable;
