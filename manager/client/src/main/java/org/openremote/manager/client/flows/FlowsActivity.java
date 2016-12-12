@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.client.flows;
 
-import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
@@ -31,9 +30,8 @@ import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetResource;
-import org.openremote.manager.shared.asset.AssetType;
-import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
+import org.openremote.model.Attributes;
 
 import javax.inject.Inject;
 import java.util.Collection;

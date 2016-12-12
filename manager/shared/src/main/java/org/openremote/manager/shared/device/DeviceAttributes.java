@@ -22,7 +22,9 @@ package org.openremote.manager.shared.device;
 import com.fasterxml.jackson.annotation.JsonIgnoreType;
 import elemental.json.Json;
 import elemental.json.JsonObject;
-import org.openremote.manager.shared.attribute.*;
+import org.openremote.model.Attribute;
+import org.openremote.model.AttributeType;
+import org.openremote.model.Attributes;
 
 import java.util.ArrayList;
 import java.util.List;

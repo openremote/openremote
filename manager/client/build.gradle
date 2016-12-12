@@ -123,6 +123,7 @@ task gwtSuperDev(dependsOn: classes, type: JavaExec) {
             "org.openremote.manager.Manager", // Your GWT module
             "-workDir", gwtWorkDir,
             "-launcherDir", gwtLauncherDir,
+            "-src", project(":shared").sourceSets.main.java.srcDirs[0], // Help code server detect source changes
             "-src", project(":manager:shared").sourceSets.main.java.srcDirs[0], // Help code server detect source changes
             "-logLevel", "INFO",
             "-noincremental",

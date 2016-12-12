@@ -1,6 +1,6 @@
 package org.openremote.manager.shared.device;
 
-import org.openremote.manager.shared.attribute.Attributes;
+import org.openremote.model.Attributes;
 
 /**
  * Analogous to an Object in LWM2M; note the mandatory field

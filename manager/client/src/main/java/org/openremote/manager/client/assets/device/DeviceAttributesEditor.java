@@ -28,10 +28,10 @@ import org.openremote.manager.client.event.ServerSendEvent;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.widget.*;
 import org.openremote.manager.shared.agent.*;
-import org.openremote.manager.shared.attribute.Attribute;
-import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.device.DeviceAttributes;
 import org.openremote.manager.shared.device.DeviceResource;
+import org.openremote.model.Attribute;
+import org.openremote.model.Attributes;
 
 import java.util.HashMap;
 import java.util.Map;

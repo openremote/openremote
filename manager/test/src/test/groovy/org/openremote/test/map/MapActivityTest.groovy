@@ -11,8 +11,8 @@ import org.openremote.manager.client.map.MapActivity
 import org.openremote.manager.client.map.MapView
 import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.service.SecurityService
-import org.openremote.manager.shared.Consumer
-import org.openremote.manager.shared.Runnable
+import org.openremote.Consumer
+import org.openremote.Runnable
 import org.openremote.manager.shared.http.EntityReader
 import org.openremote.manager.shared.map.MapResource
 import org.openremote.test.ContainerTrait

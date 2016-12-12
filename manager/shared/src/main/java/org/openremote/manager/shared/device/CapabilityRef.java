@@ -1,9 +1,9 @@
 package org.openremote.manager.shared.device;
 
 import elemental.json.JsonObject;
-import org.openremote.manager.shared.attribute.Attribute;
-import org.openremote.manager.shared.attribute.AttributeType;
-import org.openremote.manager.shared.attribute.Attributes;
+import org.openremote.model.Attribute;
+import org.openremote.model.AttributeType;
+import org.openremote.model.Attributes;
 
 // TODO Not used
 public class CapabilityRef extends Attribute {

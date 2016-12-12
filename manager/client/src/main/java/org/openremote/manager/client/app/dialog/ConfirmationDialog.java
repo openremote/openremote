@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.client.app.dialog;
 
-import org.openremote.manager.shared.Runnable;
+import org.openremote.Runnable;
 
 public interface ConfirmationDialog {
 

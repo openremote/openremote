@@ -22,16 +22,18 @@ package org.openremote.manager.client.widget;
 import com.google.gwt.user.client.ui.InsertPanel;
 import com.google.gwt.user.client.ui.Label;
 import elemental.json.Json;
+import org.openremote.Runnable;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.util.TextUtil;
-import org.openremote.manager.shared.Runnable;
-import org.openremote.manager.shared.attribute.Attribute;
-import org.openremote.manager.shared.attribute.AttributeType;
-import org.openremote.manager.shared.attribute.Attributes;
-import org.openremote.manager.shared.attribute.MetadataItem;
+import org.openremote.model.Attribute;
+import org.openremote.model.AttributeType;
+import org.openremote.model.Attributes;
+import org.openremote.model.MetadataItem;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.logging.Logger;
 
 import static org.openremote.manager.shared.asset.AssetAttributeMeta.*;

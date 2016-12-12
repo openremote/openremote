@@ -26,8 +26,8 @@ import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.interop.keycloak.*;
 import org.openremote.manager.shared.Constants;
-import org.openremote.manager.shared.Consumer;
-import org.openremote.manager.shared.Runnable;
+import org.openremote.Consumer;
+import org.openremote.Runnable;
 
 import java.util.logging.Logger;
 

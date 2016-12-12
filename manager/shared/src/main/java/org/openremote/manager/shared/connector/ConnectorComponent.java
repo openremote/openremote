@@ -21,7 +21,7 @@ package org.openremote.manager.shared.connector;
 
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.agent.InventoryModifiedEvent;
-import org.openremote.manager.shared.attribute.Attributes;
+import org.openremote.model.Attributes;
 
 import java.util.Collection;
 

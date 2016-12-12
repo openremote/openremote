@@ -20,7 +20,6 @@
 package org.openremote.manager.shared.asset;
 
 import elemental.json.JsonObject;
-import org.openremote.manager.shared.attribute.Attributes;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -38,8 +37,8 @@ import static org.openremote.manager.shared.Constants.PERSISTENCE_UNIQUE_ID_GENE
  * items, and a valid parent identifier for sub-items.
  * <p>
  * Each asset has dynamically typed optional attributes with an underlying
- * {@link elemental.json.Json} object model. Use the {@link Attributes} class to work with
- * this API.
+ * {@link elemental.json.Json} object model. Use the {@link org.openremote.model.Attributes}
+ * class to work with this API.
  * <p>
  * The location of an asset is stored as a pair of LNG/LAT coordinates.
  */

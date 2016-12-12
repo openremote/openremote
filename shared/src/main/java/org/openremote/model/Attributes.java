@@ -17,11 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.attribute;
+package org.openremote.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import elemental.json.Json;
 import elemental.json.JsonObject;
 
@@ -32,8 +30,6 @@ import java.util.*;
  *
  * Modifies the given or an empty object.
  */
-@JsonSerialize(using = AttributesSerializer.class)
-@JsonDeserialize(using = AttributesDeserializer.class)
 public class Attributes {
 
     final protected JsonObject jsonObject;

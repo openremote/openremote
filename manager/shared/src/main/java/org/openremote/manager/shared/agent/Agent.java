@@ -20,8 +20,10 @@
 package org.openremote.manager.shared.agent;
 
 import elemental.json.Json;
-import org.openremote.manager.shared.attribute.*;
 import org.openremote.manager.shared.connector.Connector;
+import org.openremote.model.Attribute;
+import org.openremote.model.AttributeType;
+import org.openremote.model.Attributes;
 
 import java.util.logging.Logger;
 

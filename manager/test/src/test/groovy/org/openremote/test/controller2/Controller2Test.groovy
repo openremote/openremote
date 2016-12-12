@@ -15,7 +15,7 @@ import org.openremote.manager.shared.asset.Asset
 import org.openremote.manager.shared.asset.AssetModifiedEvent
 import org.openremote.manager.shared.asset.AssetType
 import org.openremote.manager.shared.asset.SubscribeAssetModified
-import org.openremote.manager.shared.attribute.AttributeType
+import org.openremote.model.AttributeType
 import org.openremote.manager.shared.device.*
 import org.openremote.test.BlockingWebsocketEndpoint
 import org.openremote.test.ContainerTrait

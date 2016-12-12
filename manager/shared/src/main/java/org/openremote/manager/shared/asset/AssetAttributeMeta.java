@@ -22,8 +22,8 @@ package org.openremote.manager.shared.asset;
 import elemental.json.Json;
 import elemental.json.JsonString;
 import elemental.json.JsonValue;
-import org.openremote.manager.shared.attribute.Attribute;
-import org.openremote.manager.shared.attribute.MetadataItem;
+import org.openremote.model.Attribute;
+import org.openremote.model.MetadataItem;
 
 import java.util.ArrayList;
 import java.util.List;

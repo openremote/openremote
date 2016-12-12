@@ -41,7 +41,7 @@ public interface WebClient {
 
     static ResteasyClientBuilder registerDefaults(Container container, ResteasyClientBuilder builder) {
         return builder
-            .register(new JacksonConfig(container))
+            .register(new JacksonConfig())
             .register(ElementalMessageBodyConverter.class)
             .register(new ProxyClientRequestFilter())
             .register(new BearerAuthClientRequestFilter())

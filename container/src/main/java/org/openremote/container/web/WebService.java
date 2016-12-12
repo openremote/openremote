@@ -37,7 +37,6 @@ import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.keycloak.adapters.KeycloakConfigResolver;
-import org.openremote.container.ConfigurationException;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.json.ElementalMessageBodyConverter;
@@ -242,7 +241,7 @@ public abstract class WebService implements ContainerService {
             throw new RuntimeException(ex);
         }
         if (!Files.isDirectory(docRoot))
-            throw new ConfigurationException("Missing document root directory: " + docRoot);
+            throw new RuntimeException("Missing document root directory: " + docRoot);
         LOG.info("Static document root directory: " + docRoot);
         ResourceManager staticResourcesManager = new FileResourceManager(docRoot.toFile(), 0, true, false);
 
@@ -341,7 +340,7 @@ public abstract class WebService implements ContainerService {
         resteasyDeployment.setApplication(webApplication);
 
         // Custom providers (these only apply to server applications, not client calls)
-        resteasyDeployment.getProviders().add(new JacksonConfig(container));
+        resteasyDeployment.getProviders().add(new JacksonConfig());
         resteasyDeployment.getActualProviderClasses().add(ElementalMessageBodyConverter.class);
         resteasyDeployment.getActualProviderClasses().add(AlreadyGzippedWriterInterceptor.class);
         resteasyDeployment.getActualProviderClasses().add(ClientErrorExceptionHandler.class);

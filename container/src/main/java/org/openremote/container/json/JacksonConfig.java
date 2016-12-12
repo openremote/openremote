@@ -31,14 +31,8 @@ import javax.ws.rs.ext.Provider;
 @Produces(MediaType.APPLICATION_JSON)
 public class JacksonConfig implements ContextResolver<ObjectMapper> {
 
-    final protected Container container;
-
-    public JacksonConfig(Container container) {
-        this.container = container;
-    }
-
     @Override
     public ObjectMapper getContext(Class<?> type) {
-        return container.JSON;
+        return Container.JSON;
     }
 }

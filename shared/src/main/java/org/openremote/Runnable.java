@@ -17,26 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.container;
+package org.openremote;
 
-public class ConfigurationException extends RuntimeException {
+import jsinterop.annotations.JsFunction;
 
-    public ConfigurationException() {
-    }
-
-    public ConfigurationException(String message) {
-        super(message);
-    }
-
-    public ConfigurationException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public ConfigurationException(Throwable cause) {
-        super(cause);
-    }
-
-    public ConfigurationException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
-    }
+/**
+ * TODO: Remove this when GWT emulates JDK 8
+ */
+@FunctionalInterface
+@JsFunction
+public interface Runnable {
+    void run();
 }

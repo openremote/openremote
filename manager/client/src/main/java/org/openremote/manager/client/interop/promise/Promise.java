@@ -22,9 +22,9 @@ package org.openremote.manager.client.interop.promise;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
-import org.openremote.manager.shared.BiConsumer;
-import org.openremote.manager.shared.Consumer;
-import org.openremote.manager.shared.Function;
+import org.openremote.BiConsumer;
+import org.openremote.Consumer;
+import org.openremote.Function;
 
 @JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "Promise")
 public class Promise<T,U> {

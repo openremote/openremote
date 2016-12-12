@@ -23,7 +23,7 @@ import com.google.gwt.user.client.ui.Label;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.PushButton;
-import org.openremote.manager.shared.Runnable;
+import org.openremote.Runnable;
 
 import javax.inject.Inject;
 

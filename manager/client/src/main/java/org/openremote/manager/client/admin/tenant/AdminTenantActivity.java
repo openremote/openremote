@@ -28,7 +28,7 @@ import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
-import org.openremote.manager.shared.Consumer;
+import org.openremote.Consumer;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;

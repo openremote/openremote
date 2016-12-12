@@ -19,8 +19,9 @@
  */
 package org.openremote.manager.shared.connector;
 
-import org.openremote.manager.shared.attribute.Attribute;
-import org.openremote.manager.shared.attribute.AttributeType;
+
+import org.openremote.model.Attribute;
+import org.openremote.model.AttributeType;
 
 public class ConnectorUtil {
     protected ConnectorUtil() {}

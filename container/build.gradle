@@ -3,6 +3,8 @@ apply plugin: "groovy"
 
 dependencies {
 
+    compile project(":shared")
+
     compile "org.codehaus.groovy:groovy-all:$groovyVersion"
 
     compile "org.slf4j:slf4j-api:$slf4jVersion"
@@ -13,8 +15,6 @@ dependencies {
     compile "io.reactivex:rxjava:$rxjavaVersion"
     compile "com.google.guava:guava:$guavaVersion"
 
-    compile "com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion"
-    compile "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:$jacksonVersion"
 
     compile "io.undertow:undertow-servlet:$undertowVersion"
@@ -31,8 +31,6 @@ dependencies {
     compile "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
     compile "org.keycloak:keycloak-undertow-adapter:$keycloakVersion"
     compile "org.keycloak:keycloak-admin-client:$keycloakVersion"
-
-    compile "com.google.gwt:gwt-elemental:$gwtVersion"
 
     compile "org.postgresql:postgresql:$postgresJdbcVersion"
     compile "com.zaxxer:HikariCP:$hikaricpVersion"

@@ -20,7 +20,7 @@
 package org.openremote.manager.shared.connector;
 
 import org.openremote.manager.shared.asset.Asset;
-import org.openremote.manager.shared.attribute.Attributes;
+import org.openremote.model.Attributes;
 
 /**
  * TODO This is a more sophisticated API, we should implement what we can in the Next Generation

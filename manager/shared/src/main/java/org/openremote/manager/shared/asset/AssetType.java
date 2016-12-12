@@ -21,17 +21,17 @@ package org.openremote.manager.shared.asset;
 
 import elemental.json.Json;
 import elemental.json.JsonObject;
-import org.openremote.manager.shared.attribute.Attribute;
-import org.openremote.manager.shared.attribute.AttributeType;
-import org.openremote.manager.shared.attribute.Attributes;
-import org.openremote.manager.shared.attribute.Metadata;
+import org.openremote.model.Attribute;
+import org.openremote.model.AttributeType;
+import org.openremote.model.Attributes;
+import org.openremote.model.Metadata;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.openremote.manager.shared.asset.AssetAttributeMeta.*;
-import static org.openremote.manager.shared.attribute.AttributeType.INTEGER;
-import static org.openremote.manager.shared.attribute.AttributeType.STRING;
+import static org.openremote.model.AttributeType.INTEGER;
+import static org.openremote.model.AttributeType.STRING;
 
 /**
  * Asset type is an arbitrary string. It should be URI. This enum contains

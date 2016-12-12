@@ -35,10 +35,10 @@ import org.openremote.manager.server.asset.AssetService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.asset.AssetType;
-import org.openremote.manager.shared.attribute.Attribute;
-import org.openremote.manager.shared.attribute.AttributeType;
-import org.openremote.manager.shared.attribute.Attributes;
-import org.openremote.manager.shared.attribute.Metadata;
+import org.openremote.model.Attribute;
+import org.openremote.model.AttributeType;
+import org.openremote.model.Attributes;
+import org.openremote.model.Metadata;
 import org.openremote.manager.shared.security.Tenant;
 import rx.Observable;
 
@@ -49,7 +49,7 @@ import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.manager.shared.Constants.*;
 import static org.openremote.manager.shared.asset.AssetAttributeMeta.*;
 import static org.openremote.manager.shared.asset.AssetType.BUILDING;
-import static org.openremote.manager.shared.attribute.AttributeType.STRING;
+import static org.openremote.model.AttributeType.STRING;
 import static rx.Observable.fromCallable;
 
 public class DemoDataService implements ContainerService {

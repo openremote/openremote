@@ -25,7 +25,7 @@ import elemental.html.Location;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
-import org.openremote.manager.shared.Consumer;
+import org.openremote.Consumer;
 import org.openremote.manager.shared.http.*;
 import org.openremote.manager.shared.validation.ConstraintViolationReport;
 

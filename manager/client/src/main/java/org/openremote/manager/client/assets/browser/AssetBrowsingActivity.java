@@ -20,13 +20,13 @@
 package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import org.openremote.Consumer;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.util.TextUtil;
-import org.openremote.manager.shared.Consumer;
 import org.openremote.manager.shared.asset.Asset;
 import org.openremote.manager.shared.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetResource;

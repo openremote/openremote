@@ -23,15 +23,15 @@ import com.google.gwt.text.shared.AbstractRenderer;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.event.ServerSendEvent;
 import org.openremote.manager.client.widget.*;
-import org.openremote.manager.shared.Consumer;
+import org.openremote.Consumer;
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.agent.RefreshInventoryEvent;
 import org.openremote.manager.shared.asset.Asset;
-import org.openremote.manager.shared.attribute.Attribute;
-import org.openremote.manager.shared.attribute.Attributes;
 import org.openremote.manager.shared.connector.Connector;
 import org.openremote.manager.shared.connector.ConnectorResource;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
+import org.openremote.model.Attribute;
+import org.openremote.model.Attributes;
 
 import java.util.Arrays;
 import java.util.List;

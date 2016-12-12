@@ -1,6 +1,6 @@
 package org.openremote.manager.shared.connector;
 
-import org.openremote.manager.shared.attribute.Attributes;
+import org.openremote.model.Attributes;
 
 public class Connector {
 

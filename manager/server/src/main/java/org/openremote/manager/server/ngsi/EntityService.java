@@ -26,7 +26,7 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.observable.RetryWithDelay;
 import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebService;
-import org.openremote.manager.shared.Consumer;
+import org.openremote.Consumer;
 import org.openremote.manager.shared.ngsi.Attribute;
 import org.openremote.manager.shared.ngsi.Entity;
 import org.openremote.manager.shared.ngsi.EntryPoint;

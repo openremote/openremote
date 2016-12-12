@@ -21,8 +21,8 @@ import org.openremote.manager.client.service.EventService
 import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.service.SecurityService
 import org.openremote.manager.client.style.WidgetStyle
-import org.openremote.manager.shared.Consumer
-import org.openremote.manager.shared.Runnable
+import org.openremote.Consumer
+import org.openremote.Runnable
 import org.openremote.manager.shared.event.Event
 import org.openremote.manager.shared.event.ui.ShowFailureEvent
 import org.openremote.manager.shared.event.ui.ShowInfoEvent

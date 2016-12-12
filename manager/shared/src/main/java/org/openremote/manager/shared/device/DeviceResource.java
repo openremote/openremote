@@ -21,8 +21,8 @@ package org.openremote.manager.shared.device;
 
 import elemental.json.Json;
 import elemental.json.JsonObject;
-import org.openremote.manager.shared.attribute.Attribute;
-import org.openremote.manager.shared.attribute.AttributeType;
+import org.openremote.model.Attribute;
+import org.openremote.model.AttributeType;
 
 /**
  * An attribute of an asset that represents a device resource.
