@@ -19,15 +19,12 @@
  */
 package org.openremote.agent3.protocol;
 
-import org.openremote.model.asset.ThingAttribute;
 import org.openremote.container.ContainerService;
+import org.openremote.model.asset.ThingAttribute;
 
 import java.util.Collection;
-import java.util.logging.Logger;
 
 public interface Protocol extends ContainerService {
-
-    Logger LOG = Logger.getLogger(Protocol.class.getName());
 
     // TODO: Some of these options should be configurable depending on expected load etc.
 
@@ -41,6 +38,6 @@ public interface Protocol extends ContainerService {
 
     void linkAttributes(Collection<ThingAttribute> attributes) throws Exception;
 
-    void unlinkAttributes(String entityId) throws Exception;
+    void unlinkAttributes(String thingId) throws Exception;
 
 }

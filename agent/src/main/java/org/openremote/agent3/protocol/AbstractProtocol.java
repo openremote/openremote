@@ -112,12 +112,12 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     @Override
-    public void unlinkAttributes(String entityId) throws Exception {
+    public void unlinkAttributes(String thingId) throws Exception {
         synchronized (linkedAttributes) {
             Iterator<Map.Entry<AttributeRef, ThingAttribute>> entryIterator = linkedAttributes.entrySet().iterator();
             while (entryIterator.hasNext()) {
                 Map.Entry<AttributeRef, ThingAttribute> entry = entryIterator.next();
-                if (entry.getKey().getEntityId().equals(entityId)) {
+                if (entry.getKey().getEntityId().equals(thingId)) {
                     LOG.fine("Attribute moved on '" + getProtocolName() + "': " + entry.getValue());
                     onAttributeRemoved(entry.getValue());
                     entryIterator.remove();
