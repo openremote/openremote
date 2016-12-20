@@ -26,7 +26,7 @@ import org.openremote.manager.client.widget.*;
 import org.openremote.Consumer;
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.agent.RefreshInventoryEvent;
-import org.openremote.manager.shared.asset.Asset;
+import org.openremote.model.asset.Asset;
 import org.openremote.manager.shared.connector.Connector;
 import org.openremote.manager.shared.connector.ConnectorResource;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;

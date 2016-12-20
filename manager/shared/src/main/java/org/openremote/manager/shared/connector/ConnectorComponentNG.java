@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.shared.connector;
 
-import org.openremote.manager.shared.asset.Asset;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.Attributes;
 
 /**

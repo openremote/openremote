@@ -36,7 +36,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.logging.Logger;
 
-import static org.openremote.manager.shared.asset.AssetAttributeMeta.*;
+import static org.openremote.model.asset.AssetAttributeMeta.*;
 import static org.openremote.manager.shared.util.Util.sortMap;
 
 public class AttributesEditor<S extends AttributesEditor.Style> {

@@ -21,8 +21,8 @@ package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.view.client.SingleSelectionModel;
 import com.google.gwt.view.client.TreeViewModel;
-import org.openremote.manager.shared.asset.AssetInfo;
-import org.openremote.manager.shared.asset.AssetType;
+import org.openremote.model.asset.AssetInfo;
+import org.openremote.model.asset.AssetType;
 
 import java.util.logging.Logger;
 

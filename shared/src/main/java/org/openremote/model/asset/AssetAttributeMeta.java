@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.asset;
+package org.openremote.model.asset;
 
 import elemental.json.Json;
 import elemental.json.JsonString;
@@ -132,7 +132,7 @@ public enum AssetAttributeMeta {
     }
 
     public static MetadataItem getFirstMetadataItem(Attribute attribute, AssetAttributeMeta meta) {
-        return attribute.hasMetadataItem(meta.getName())
+        return attribute.hasMetaItem(meta.getName())
             ? attribute.getMetadata().first(meta.getName())
             : null;
     }

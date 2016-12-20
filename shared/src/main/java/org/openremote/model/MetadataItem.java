@@ -23,12 +23,10 @@ import elemental.json.Json;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 
-public class MetadataItem {
-
-    final protected JsonObject jsonObject;
+public class MetadataItem extends AbstractValueHolder<MetadataItem> {
 
     public MetadataItem(JsonObject jsonObject) {
-        this.jsonObject = jsonObject;
+        super(jsonObject);
     }
 
     public MetadataItem(String name) {
@@ -36,7 +34,7 @@ public class MetadataItem {
     }
 
     public MetadataItem(String name, JsonValue value) {
-        this.jsonObject = Json.createObject();
+        super(Json.createObject());
         setName(name);
         setValue(value);
     }
@@ -56,25 +54,7 @@ public class MetadataItem {
         return this;
     }
 
-    public JsonValue getValue() {
-        return jsonObject.hasKey("value") ? jsonObject.get("value") : null;
-    }
-
-    public MetadataItem setValue(JsonValue value) {
-        if (value != null) {
-            jsonObject.put("value", value);
-        }
-        return this;
-    }
-
-
     public MetadataItem copy() {
         return new MetadataItem(Json.parse(getJsonObject().toJson()));
     }
-
-    @Override
-    public String toString() {
-        return jsonObject.toJson();
-    }
-
 }

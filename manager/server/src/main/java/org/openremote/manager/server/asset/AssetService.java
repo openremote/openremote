@@ -29,6 +29,9 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.shared.asset.*;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetInfo;
+import org.openremote.model.asset.AssetType;
 
 import javax.persistence.EntityManager;
 import java.sql.PreparedStatement;
@@ -139,6 +142,19 @@ public class AssetService extends RouteBuilder implements ContainerService {
         });
     }
 
+    public ServerAsset[] findChildrenByType(String parentId, AssetType assetType) {
+        return persistenceService.doReturningTransaction(em -> {
+            List<ServerAsset> result =
+                em.createQuery(
+                    "select a from Asset a where a.type = :assetType and a.parentId = :parentId order by a.createdOn asc",
+                    ServerAsset.class)
+                    .setParameter("assetType", assetType.getValue())
+                    .setParameter("parentId", parentId)
+                    .getResultList();
+            return result.toArray(new ServerAsset[result.size()]);
+        });
+    }
+
     public ServerAsset[] findByTypeInAllRealms(String assetType) {
         return persistenceService.doReturningTransaction(em -> {
             List<ServerAsset> result =
@@ -165,9 +181,7 @@ public class AssetService extends RouteBuilder implements ContainerService {
     }
 
     public ServerAsset get(String assetId) {
-        return persistenceService.doReturningTransaction(em -> {
-            return loadAsset(em, assetId);
-        });
+        return persistenceService.doReturningTransaction(em -> loadAsset(em, assetId));
     }
 
     public ServerAsset merge(ServerAsset asset) {
@@ -186,6 +200,7 @@ public class AssetService extends RouteBuilder implements ContainerService {
         });
     }
 
+    /* TODO: What is the asset lifecycle and how do we handle tree integrity?
     public void deleteChildren(String parentId) {
         persistenceService.doTransaction(em -> {
             List<AssetInfo> result =
@@ -203,6 +218,7 @@ public class AssetService extends RouteBuilder implements ContainerService {
             }
         });
     }
+    */
 
     protected ServerAsset loadAsset(EntityManager em, String assetId) {
         ServerAsset asset = em.find(ServerAsset.class, assetId);

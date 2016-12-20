@@ -70,31 +70,15 @@ public class Container {
     protected boolean running;
     protected final Map<Class<? extends ContainerService>, ContainerService> services = new LinkedHashMap<>();
 
-    public Container() {
-        this(
-            System.getenv(),
-            StreamSupport.stream(ServiceLoader.load(ContainerService.class).spliterator(), false)
-        );
-    }
-
-    public Container(Map<String, String> config) {
-        this(
-            config,
-            StreamSupport.stream(ServiceLoader.load(ContainerService.class).spliterator(), false)
-        );
-    }
-
     public Container(ContainerService... services) {
-        this(
-            System.getenv(),
-            Stream.concat(
-                StreamSupport.stream(ServiceLoader.load(ContainerService.class).spliterator(), false),
-                Stream.of(services)
-            )
-        );
+        this(Arrays.asList(services));
     }
 
-    public Container(Map<String, String> config, Stream<ContainerService> servicesStream) {
+    public Container(Iterable<ContainerService> services) {
+        this(System.getenv(), services);
+    }
+
+    public Container(Map<String, String> config, Iterable<ContainerService> services) {
         for (Map.Entry<String, String> entry : config.entrySet()) {
             this.config.put(entry.getKey(), entry.getValue());
         }
@@ -105,8 +89,8 @@ public class Container {
             JSON.enable(SerializationFeature.INDENT_OUTPUT);
         }
 
-        if (servicesStream != null) {
-            servicesStream.forEach(this::addService);
+        if (services != null) {
+            services.forEach(this::addService);
         }
 
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
@@ -209,6 +193,19 @@ public class Container {
     public ContainerService[] getServices() {
         synchronized (services) {
             return services.values().toArray(new ContainerService[services.size()]);
+        }
+    }
+
+    public <T extends ContainerService> Collection<T> getServices(Class<T> type) {
+        synchronized (services) {
+            Set<T> result = new HashSet<>();
+            for (ContainerService containerService : services.values()) {
+                if (type.isAssignableFrom(containerService.getClass())) {
+                    //noinspection unchecked
+                    result.add((T) containerService);
+                }
+            }
+            return result;
         }
     }
 

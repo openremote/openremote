@@ -24,7 +24,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 import org.openremote.container.persistence.IdentifiableEntity;
-import org.openremote.manager.shared.asset.Asset;
+import org.openremote.model.asset.Asset;
 
 import javax.persistence.*;
 

@@ -37,9 +37,8 @@ class ClimateControlTest extends Specification implements ContainerTrait {
                 testCommandBuilder,
                 rulesProvider
         )
-        def services = Stream.of(agentService)
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), services)
+        def container = startContainer(defaultConfig(serverPort), [agentService])
 
         // TODO Write tests
 

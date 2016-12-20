@@ -17,17 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.asset;
+package org.openremote.model.asset;
 
 import elemental.json.JsonObject;
+import org.openremote.Constants;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.util.Arrays;
 import java.util.Date;
 
-import static org.openremote.manager.shared.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
-import static org.openremote.manager.shared.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
+import static org.openremote.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
+import static org.openremote.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 
 /**
  * The main model class of this software.

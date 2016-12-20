@@ -20,7 +20,7 @@
 package org.openremote.manager.client.flows;
 
 import com.google.gwt.user.client.ui.IsWidget;
-import org.openremote.manager.shared.asset.AssetInfo;
+import org.openremote.model.asset.AssetInfo;
 
 public interface FlowsView extends IsWidget {
 

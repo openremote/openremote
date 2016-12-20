@@ -22,15 +22,14 @@ package org.openremote.manager.server.asset;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.shared.asset.*;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetInfo;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 // TODO this is quite a hack to get some publish/subscribe system going, it will have to be replaced
@@ -43,7 +42,14 @@ public abstract class AssetListenerSubscriptions {
 
     final protected EventService eventService;
     final protected Map<String, Long> subscriptions = new ConcurrentHashMap<>();
-    final protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    final protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(
+        1,
+        r -> {
+            Thread t = Executors.defaultThreadFactory().newThread(r);
+            t.setDaemon(true);
+            return t;
+        }
+    );
 
     public AssetListenerSubscriptions(EventService eventService) {
         this.eventService = eventService;
@@ -129,7 +135,7 @@ public abstract class AssetListenerSubscriptions {
                 String previousName = persistenceEvent.getPreviousState("name");
                 String currentName = persistenceEvent.getCurrentState("name");
                 boolean isEqualName = Objects.equals(previousName, currentName);
-                if (!isEqualName){
+                if (!isEqualName) {
                     modifiedParentIds.add(asset.getParentId());
                 }
 

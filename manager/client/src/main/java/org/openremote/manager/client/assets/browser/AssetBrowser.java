@@ -23,8 +23,8 @@ import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.view.client.HasData;
 import org.openremote.manager.client.event.bus.EventListener;
 import org.openremote.manager.client.event.bus.EventRegistration;
-import org.openremote.manager.shared.asset.Asset;
-import org.openremote.manager.shared.asset.AssetInfo;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetInfo;
 
 public interface AssetBrowser extends IsWidget {
 

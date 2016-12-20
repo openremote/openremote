@@ -32,6 +32,9 @@ import org.openremote.manager.shared.Constants;
 import org.openremote.manager.shared.asset.*;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetInfo;
+import org.openremote.model.asset.AssetType;
 
 import javax.inject.Inject;
 import java.util.ArrayList;

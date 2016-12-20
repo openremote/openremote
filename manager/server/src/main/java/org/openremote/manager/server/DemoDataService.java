@@ -25,21 +25,24 @@ import elemental.json.Json;
 import org.apache.log4j.Logger;
 import org.keycloak.admin.client.resource.*;
 import org.keycloak.representations.idm.*;
+import org.openremote.model.asset.AgentAttributes;
+import org.openremote.model.asset.ThingAttribute;
+import org.openremote.model.asset.ThingAttributes;
+import org.openremote.model.asset.ProtocolConfiguration;
+import org.openremote.agent3.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.AuthForm;
 import org.openremote.manager.server.agent.AgentService;
-import org.openremote.manager.server.agent.ConnectorService;
 import org.openremote.manager.server.asset.AssetService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.manager.shared.asset.AssetType;
-import org.openremote.model.Attribute;
-import org.openremote.model.AttributeType;
-import org.openremote.model.Attributes;
-import org.openremote.model.Metadata;
 import org.openremote.manager.shared.security.Tenant;
+import org.openremote.model.*;
+import org.openremote.model.asset.AssetAttributeMeta;
+import org.openremote.model.asset.AssetType;
+import org.openremote.model.asset.Color;
 import rx.Observable;
 
 import java.util.Arrays;
@@ -47,9 +50,9 @@ import java.util.List;
 
 import static org.openremote.container.util.MapAccess.getBoolean;
 import static org.openremote.manager.shared.Constants.*;
-import static org.openremote.manager.shared.asset.AssetAttributeMeta.*;
-import static org.openremote.manager.shared.asset.AssetType.BUILDING;
-import static org.openremote.model.AttributeType.STRING;
+import static org.openremote.model.AttributeType.*;
+import static org.openremote.model.asset.AssetAttributeMeta.*;
+import static org.openremote.model.asset.AssetType.BUILDING;
 import static rx.Observable.fromCallable;
 
 public class DemoDataService implements ContainerService {
@@ -73,12 +76,12 @@ public class DemoDataService implements ContainerService {
     public static final String ADMIN_CLI_CLIENT_ID = "admin-cli";
     public static final String ADMIN_PASSWORD = "CHANGE_ME_ADMIN_PASSWORD";
 
-    public String DEMO_AGENT_ID = null;
+    public static String DEMO_AGENT_ID = null;
+    public static String DEMO_THING_ID = null;
 
     protected Container container;
     protected PersistenceService persistenceService;
     protected ManagerIdentityService identityService;
-    protected ConnectorService connectorService;
     protected AgentService agentService;
     protected AssetService assetService;
 
@@ -87,7 +90,6 @@ public class DemoDataService implements ContainerService {
         this.container = container;
         persistenceService = container.getService(PersistenceService.class);
         identityService = container.getService(ManagerIdentityService.class);
-        connectorService = container.getService(ConnectorService.class);
         agentService = container.getService(AgentService.class);
         assetService = container.getService(AssetService.class);
     }
@@ -280,43 +282,96 @@ public class DemoDataService implements ContainerService {
         lobby.setType(AssetType.ROOM);
         lobby = assetService.merge(lobby);
 
-        /*
-        ServerAsset agentAsset = new ServerAsset(lobby);
-        agentAsset.setName("Demo Controller");
-        agentAsset.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
-        agentAsset.setType(AssetType.AGENT);
+        ServerAsset agent = new ServerAsset(lobby);
+        agent.setName("Demo Agent");
+        agent.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+        agent.setType(AssetType.AGENT);
+        AgentAttributes agentAttributes = new AgentAttributes();
+        agentAttributes.setEnabled(false);
+        ProtocolConfiguration protocolConfigSimulator123 = new ProtocolConfiguration("simulator123", SimulatorProtocol.PROTOCOL_NAME);
+        agentAttributes.put(protocolConfigSimulator123);
+        agent.setAttributes(agentAttributes.getJsonObject());
+        agent = assetService.merge(agent);
+        DEMO_AGENT_ID = agent.getId();
 
-        Agent agent = new Agent(new Attributes(), true);
-        agent.setEnabled(true);
-        agent.setConnectorType("urn:openremote:connector:controller2");
-        for (Attribute connectorSetting : Controller2Component.SETTINGS.get()) {
-            agent.getAttributes().put(connectorSetting.copy());
-        }
+        ServerAsset thing = new ServerAsset(agent);
+        thing.setName("Demo Thing");
+        thing.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+        thing.setType(AssetType.THING);
+        ThingAttributes thingAttributes = new ThingAttributes(thing);
+        thingAttributes.put(
+            new Attribute("light1Toggle", BOOLEAN, Json.create(true))
+                .setMetadata(new Metadata()
+                    .add(new MetadataItem(
+                        AssetAttributeMeta.DESCRIPTION.getName(),
+                        Json.create("The switch for the light in the living room"))
+                    )
+                    .add(new MetadataItem(
+                        ThingAttribute.META_NAME_LINK, new AttributeRef(agent.getId(), "simulator123").asJsonValue()
+                    ))
+                    .add(new MetadataItem(
+                        SimulatorProtocol.META_NAME_ELEMENT, Json.create("switch")
+                    ))
+                ),
+            new Attribute("light1Dimmer", INTEGER, Json.create(55))
+                .setMetadata(new Metadata()
+                    .add(new MetadataItem(
+                        AssetAttributeMeta.DESCRIPTION.getName(),
+                        Json.create("The dimmer for the light in the living room"))
+                    )
+                    .add(new MetadataItem(
+                        AssetAttributeMeta.RANGE_MIN.getName(),
+                        Json.create(0))
+                    )
+                    .add(new MetadataItem(
+                        AssetAttributeMeta.RANGE_MAX.getName(),
+                        Json.create(100))
+                    )
+                    .add(new MetadataItem(
+                        ThingAttribute.META_NAME_LINK, new AttributeRef(agent.getId(), "simulator123").asJsonValue()
+                    ))
+                    .add(new MetadataItem(
+                        SimulatorProtocol.META_NAME_ELEMENT, Json.create("range")
+                    ))
+                ),
+            new Attribute("light1Color", COLOR, new Color(88, 123, 88).asJsonValue())
+                .setMetadata(new Metadata()
+                    .add(new MetadataItem(
+                        AssetAttributeMeta.DESCRIPTION.getName(),
+                        Json.create("The color of the living room light"))
+                    )
+                    .add(new MetadataItem(
+                        ThingAttribute.META_NAME_LINK, new AttributeRef(agent.getId(), "simulator123").asJsonValue()
+                    ))
+                    .add(new MetadataItem(
+                        SimulatorProtocol.META_NAME_ELEMENT, Json.create("color")
+                    ))
+                ),
+            new Attribute("light1PowerConsumption", DECIMAL, Json.create(12.345))
+                .setMetadata(new Metadata()
+                    .add(new MetadataItem(
+                        AssetAttributeMeta.DESCRIPTION.getName(),
+                        Json.create("The total power consumption of the living room light"))
+                    )
+                    .add(new MetadataItem(
+                        AssetAttributeMeta.READ_ONLY.getName(),
+                        Json.create(true))
+                    )
+                    .add(new MetadataItem(
+                        AssetAttributeMeta.FORMAT.getName(),
+                        Json.create("%3d kWh"))
+                    )
+                    .add(new MetadataItem(
+                        ThingAttribute.META_NAME_LINK, new AttributeRef(agent.getId(), "simulator123").asJsonValue()
+                    ))
+                    .add(new MetadataItem(
+                        SimulatorProtocol.META_NAME_ELEMENT, Json.create("decimal")
+                    ))
+                )
+            );
+        thing.setAttributes(thingAttributes.getJsonObject());
+        thing = assetService.merge(thing);
+        DEMO_THING_ID = thing.getId();
 
-        agent.getAttributes().get("host").setValue(
-            getString(container.getConfig(), DEMO_CONTROLLER_HOST, DEMO_CONTROLLER_HOST_DEFAULT)
-        );
-        agent.getAttributes().get("port").setValue(
-            getInteger(container.getConfig(), DEMO_CONTROLLER_PORT, DEMO_CONTROLLER_PORT_DEFAULT)
-        );
-        agent.getAttributes().get("username").setValue(
-            getString(container.getConfig(), DEMO_CONTROLLER_USERNAME, DEMO_CONTROLLER_USERNAME_DEFAULT)
-        );
-        agent.getAttributes().get("password").setValue(
-            getString(container.getConfig(), DEMO_CONTROLLER_PASSWORD, DEMO_CONTROLLER_PASSWORD_DEFAULT)
-        );
-        agent.getAttributes().get("secure").setValue(
-            getBoolean(container.getConfig(), DEMO_CONTROLLER_SECURE, DEMO_CONTROLLER_SECURE_DEFAULT)
-        );
-
-        agentAsset.setAttributes(agent.getAttributes().getJsonObject());
-
-        LOG.info("Adding demo agent: " + agentAsset);
-        LOG.info("Configured demo agent attributes: " + agent.getAttributes());
-
-        agentAsset = assetService.merge(agentAsset);
-
-        DEMO_AGENT_ID = agentAsset.getId();
-        */
     }
 }

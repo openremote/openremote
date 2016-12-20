@@ -21,9 +21,9 @@ package org.openremote.container.persistence;
 
 public class PersistenceEvent<T> {
 
-    // TODO: Unbounded queue
+    // TODO: Make configurable
     public static final String PERSISTENCE_EVENT_TOPIC =
-        "seda:" + PersistenceEvent.class.getSimpleName() + "?multipleConsumers=true&discardIfNoConsumers=true";
+        "seda://PersistenceTopic?multipleConsumers=true&discardIfNoConsumers=true";
 
     public static final String HEADER_ENTITY_TYPE = PersistenceEvent.class.getSimpleName() + ".ENTITY_TYPE";
 

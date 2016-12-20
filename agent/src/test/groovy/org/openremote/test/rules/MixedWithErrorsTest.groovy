@@ -51,9 +51,8 @@ class MixedWithErrorsTest extends Specification implements ContainerTrait {
                 testCommandBuilder,
                 rulesProvider
         )
-        def services = Stream.of(agentService)
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), services)
+        def container = startContainer(defaultConfig(serverPort), [agentService])
 
         when: "we wait a bit for initial state and rules to fire"
         Thread.sleep(500)

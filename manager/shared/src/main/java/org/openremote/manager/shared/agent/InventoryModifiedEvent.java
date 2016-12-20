@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.shared.agent;
 
-import org.openremote.manager.shared.asset.Asset;
+import org.openremote.model.asset.Asset;
 import org.openremote.manager.shared.event.Event;
 
 public class InventoryModifiedEvent extends Event {

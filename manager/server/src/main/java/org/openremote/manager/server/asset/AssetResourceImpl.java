@@ -20,8 +20,8 @@
 package org.openremote.manager.server.asset;
 
 import org.openremote.container.web.WebResource;
-import org.openremote.manager.shared.asset.Asset;
-import org.openremote.manager.shared.asset.AssetInfo;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.http.RequestParams;
 

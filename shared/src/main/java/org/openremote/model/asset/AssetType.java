@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.asset;
+package org.openremote.model.asset;
 
 import elemental.json.Json;
 import elemental.json.JsonObject;
@@ -29,7 +29,7 @@ import org.openremote.model.Metadata;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.openremote.manager.shared.asset.AssetAttributeMeta.*;
+import static org.openremote.model.asset.AssetAttributeMeta.*;
 import static org.openremote.model.AttributeType.INTEGER;
 import static org.openremote.model.AttributeType.STRING;
 

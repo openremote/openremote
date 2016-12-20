@@ -23,7 +23,7 @@ import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
-import org.openremote.manager.shared.asset.AssetInfo;
+import org.openremote.model.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetResource;
 
 import javax.inject.Inject;

@@ -20,6 +20,8 @@
 package org.openremote.manager.shared.asset;
 
 import org.openremote.manager.shared.event.Event;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetInfo;
 
 public class AssetModifiedEvent extends Event {
 
