@@ -66,25 +66,26 @@ public class ThingAttributes extends Attributes {
         return result;
     }
 
-    protected ThingAttribute getLinkedAttribute(Function<AttributeRef, ProtocolConfiguration> linkResolver,
-                                                Attribute attribute) {
-        if (attribute == null)
-            return null;
-        if (ThingAttribute.isLinkedAttribute(attribute)) {
-
-            AttributeRef agentLink = ThingAttribute.getAgentLink(attribute);
-            if (agentLink == null)
-                return null;
-
-            ProtocolConfiguration protocolConfiguration = linkResolver.apply(agentLink);
-            if (protocolConfiguration == null) {
-                LOG.info("Protocol configuration not found in agent '" + agentLink + "', ignoring: " + attribute);
-                return null;
-            }
-
-            return new ThingAttribute(getThingId(), protocolConfiguration, attribute);
-        }
-        return null;
+    public ThingAttribute getLinkedAttribute(Function<AttributeRef, ProtocolConfiguration> linkResolver,
+                                             String attributeName) {
+        return getLinkedAttribute(linkResolver, get(attributeName));
     }
 
+    protected ThingAttribute getLinkedAttribute(Function<AttributeRef, ProtocolConfiguration> linkResolver,
+                                                Attribute attribute) {
+        if (attribute == null || !ThingAttribute.isLinkedAttribute(attribute))
+            return null;
+
+        AttributeRef agentLink = ThingAttribute.getAgentLink(attribute);
+        if (agentLink == null)
+            return null;
+
+        ProtocolConfiguration protocolConfiguration = linkResolver.apply(agentLink);
+        if (protocolConfiguration == null) {
+            LOG.info("Protocol configuration not found in agent '" + agentLink + "', ignoring: " + attribute);
+            return null;
+        }
+
+        return new ThingAttribute(getThingId(), protocolConfiguration, attribute);
+    }
 }

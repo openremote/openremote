@@ -20,9 +20,6 @@
 package org.openremote.manager.server.agent;
 
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.model.asset.AgentAttributes;
-import org.openremote.model.asset.ThingAttribute;
-import org.openremote.model.asset.ThingAttributes;
 import org.openremote.agent3.protocol.Protocol;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
@@ -30,7 +27,8 @@ import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.server.asset.AssetService;
-import org.openremote.model.asset.Asset;
+import org.openremote.model.AttributeValueChange;
+import org.openremote.model.asset.*;
 
 import java.util.Collection;
 import java.util.List;
@@ -38,6 +36,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.openremote.agent3.protocol.Protocol.SENSOR_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_EVENT_TOPIC;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForAssetType;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
@@ -82,6 +81,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
 
     @Override
     public void configure() throws Exception {
+
         // If any agent or thing was modified in the database, deploy the changes
         from(PERSISTENCE_EVENT_TOPIC)
             .filter(isPersistenceEventForEntityType(Asset.class))
@@ -93,6 +93,20 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 } else if (isPersistenceEventForAssetType(THING).matches(exchange)) {
                     deployThing(asset, persistenceEvent.getCause());
                 }
+            });
+
+        // Update thing asset when attribute change value messages are published on the sensor topic
+        from(SENSOR_TOPIC)
+            .filter(body().isInstanceOf(AttributeValueChange.class))
+            .process(exchange -> {
+                AttributeValueChange attributeValueChange =
+                    exchange.getIn().getBody(AttributeValueChange.class);
+                // Note that this is a _direct_ update of the attribute value in the database, it will
+                // not trigger a persistence event - we don't want to redeploy a thing just because an
+                // attribute value changed!
+                boolean success = assetService.updateThingAttributeValue(attributeValueChange);
+                // TODO If success then... notify asset listener clients? If not, then handle error?
+
             });
     }
 
@@ -117,16 +131,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
 
         // Linked attributes have a reference to an agent, and a protocol configuration attribute of that agent
         Map<String, List<ThingAttribute>> linkedAttributes = thingAttributes.getLinkedAttributes(
-            agentLink -> {
-                // Resolve the agent and the protocol configuration
-                // TODO This is very inefficient and requires Hibernate second-level caching
-                Asset agent = assetService.get(agentLink.getEntityId());
-                if (agent != null && agent.getWellKnownType().equals(AGENT)) {
-                    AgentAttributes agentAttributes = new AgentAttributes(agent);
-                    return agentAttributes.getProtocolConfiguration(agentLink.getAttributeName());
-                }
-                return null;
-            }
+            assetService.getAgentLinkResolver()
         );
 
         LOG.fine("Thing has attribute links to " + linkedAttributes.size() + " protocol(s): " + thing);

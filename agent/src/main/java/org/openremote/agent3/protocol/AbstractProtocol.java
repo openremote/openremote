@@ -118,7 +118,7 @@ public abstract class AbstractProtocol implements Protocol {
             while (entryIterator.hasNext()) {
                 Map.Entry<AttributeRef, ThingAttribute> entry = entryIterator.next();
                 if (entry.getKey().getEntityId().equals(thingId)) {
-                    LOG.fine("Attribute moved on '" + getProtocolName() + "': " + entry.getValue());
+                    LOG.fine("Attribute removed on '" + getProtocolName() + "': " + entry.getValue());
                     onAttributeRemoved(entry.getValue());
                     entryIterator.remove();
                 }
