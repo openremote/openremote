@@ -1,0 +1,105 @@
+
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<dom-module id="table-schedule">
+  <template>
+    <style type="text/css">
+      table{
+        border:0;
+        border-spacing: 0;
+      }
+      th,td {
+        width:20%;
+        border-spacing:0px;
+        border-bottom: 1px solid #e4e4e4;
+        border-right: 1px solid #e4e4e4;
+
+        text-align: center;
+      }
+      th {
+          background-color: #c0d62e;
+          color: white;
+      }
+      td:first-child{
+        background-color:#e4e4e4;
+        border-bottom: 1px solid #FFFFFF;
+      }
+    </style>
+    <table style="width: 100%;" border="0">
+      <tbody>
+        <tr>
+          <th>&nbsp;</th>
+          <th>Morning</th>
+          <th>Away</th>
+          <th>Evening</th>
+          <th>Night</th>
+        </tr>
+        <tr>
+          <td>Mon</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+        </tr>
+        <tr>
+          <td>Tue</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+        </tr>
+        <tr>
+          <td>Wed</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+        </tr>
+        <tr>
+          <td>Thu</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+        </tr>
+        <tr>
+          <td>Fri</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+        </tr>
+        <tr>
+          <td>Sat</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+        </tr>
+        <tr>
+          <td>Sun</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+          <td>&nbsp;</td>
+        </tr>
+      </tbody>
+    </table>
+  </template>
+
+   <script>
+
+    Polymer({
+      is: 'table-schedule'
+    });
+
+  </script>
+</dom-module>

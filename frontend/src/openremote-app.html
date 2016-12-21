@@ -1,0 +1,420 @@
+
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+
+<link rel="import" href="../bower_components/app-layout/app-drawer-layout/app-drawer-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer/app-drawer.html">
+<link rel="import" href="../bower_components/app-layout/app-header/app-header.html">
+<link rel="import" href="../bower_components/app-layout/app-header-layout/app-header-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
+
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
+
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-checkbox/paper-checkbox.html">
+<link rel="import" href="../bower_components/paper-menu/paper-menu.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../bower_components/paper-styles/color.html">
+
+<link rel="import" href="openremote-login.html">
+<link rel="import" href="components/input-temperature.html">
+<link rel="import" href="components/input-switch-blok.html">
+<link rel="import" href="components/table-schedule.html">
+
+<dom-module id="openremote-app">
+
+  <template>
+    <style>
+      app-drawer-layout{
+        position: relative;
+        z-index: 9999;
+
+      }
+      app-toolbar {
+        background-color: #374c4f;
+        color:#FFFFFF;
+      }
+      .main-header {
+        box-shadow: 0px 5px 6px -3px rgba(0, 0, 0, 0.4);
+      }
+      .page-overlay{
+        position: absolute;
+        width:100%;
+        height:100%;
+        top:0;
+        z-index: 999999;
+      }
+      .page-overlay-inner{
+        background-color: #f2f2f2;
+        top:0;
+        width:100%;
+        height:100%;
+        position: absolute;
+        overflow-y:scroll;
+      }
+
+      paper-tabs {
+        --paper-tabs-selection-bar-color: #c0d62e;
+        color:black;
+        background-color: rgba(255,255,255,1);
+        height:54px;
+      }
+
+      paper-tab {
+        --paper-tab-ink: #c0d62e;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      paper-toggle-button.green { 
+          margin-left: auto;
+          float: right;   
+          opacity:1;
+        --paper-toggle-button-checked-bar-color: #374c4f;
+        --paper-toggle-button-checked-button-color:  #c0d62e;
+        --paper-toggle-button-checked-ink-color: #374c4f;
+      }
+       paper-toggle-button.center.green { 
+        float:none;
+        margin:auto;
+       }
+      .panel{
+        background-color:rgba(255,255,255,0.87);
+        margin:10px;
+        border-radius: 5px;
+      }
+      .inner-panel{
+        padding:15px;
+      }
+      .small {
+        --iron-icon-height: auto;
+        --iron-icon-width: 15px;
+      }
+      .normal {
+        --iron-icon-height: auto;
+        --iron-icon-width: 30px;
+      }
+      .big {
+        --iron-icon-height: auto;
+        --iron-icon-width: 72px;
+        margin:auto;
+        display: block;
+      }
+      .panel paper-toggle-button{
+        margin:5px 0 0 0;
+      }
+      .panel .row span{
+        margin-left: 20px;
+      }
+      .center{
+        text-align: center;
+        margin: auto;
+        display: block;
+      }
+      .row{
+        width:100%;
+        margin:10px 0;
+        clear:both;
+      }
+      .container {
+        position: relative;
+        display: flex;
+        flex-flow: row wrap;
+      }
+      .item {
+        box-sizing: border-box;
+        padding: 10px;
+        flex: 1;
+      }
+    }
+    </style>
+    <app-location route="{{route}}"></app-location>
+    <app-route
+        route="{{route}}"
+        pattern="/:view"
+        data="{{selected}}"></app-route>
+
+    <app-drawer-layout force-narrow>
+      <app-drawer>  
+        <paper-item name="full-smart"> <span>Full Smart</span><paper-toggle-button class="green"></paper-toggle-button></paper-item>
+        <hr />
+        <paper-menu selected="{{selected}}" attr-for-selected="name">
+          <template is="dom-repeat" items="{{items}}">
+            <paper-item name="{{item}}">{{item}}</paper-item>
+          </template>
+          <hr />
+          <paper-item name="Account">Account</paper-item>
+          <paper-item name="log-out">Log out</paper-item>
+        </paper-menu>
+      </app-drawer>
+      <app-header-layout>
+         <app-header id="header" effects="waterfall" fixed>
+          <app-toolbar>
+            <paper-icon-button icon="menu" drawer-toggle></paper-icon-button>
+            <div main-title>Home</div>
+            <a id="settings-btn">
+              <paper-icon-button icon="settings"></paper-icon-button>
+            </a>
+          </app-toolbar>
+
+          <paper-tabs selected="{{selected}}" attr-for-selected="name">
+            <template is="dom-repeat" items="{{items}}">
+              <paper-tab name="{{item}}">{{item}}</paper-tab>
+            </template>
+          </paper-tabs>
+
+        </app-header>
+      </app-header-layout>
+    </app-drawer-layout>
+      <iron-pages id="pages" selected="{{selected}}" attr-for-selected="name">
+          <div name="Login" class="page-overlay">
+            <div class="page-overlay-inner">
+              <app-toolbar>
+                <div main-title>Home</div>
+              </app-toolbar>
+               <div class="panel">
+                <div class="inner-panel">
+                  <openremote-login></openremote-login>
+                 </div>
+               </div>
+            </div>
+          </div>
+
+          <div name="Light">
+            <div class="panel">
+              <div class="inner-panel">
+                <div class="row">
+                  <iron-icon class="normal" src="../images/panel/light_off.png"></iron-icon>
+                  <span >Smart - Lightning</span>
+                  <paper-toggle-button class="green"></paper-toggle-button>
+                </div>
+              </div>
+            </div>
+             <div class="panel">
+              <div class="inner-panel">
+                <label class="center" id="lightning">Lightning Scenes</label>
+                  <input-switch-blok></input-switch-blok>
+              </div>
+            </div>
+          </div>
+
+          <div name="Start">
+            <div class="panel">
+              <div class="inner-panel">
+                <div class="row">
+                  <iron-icon class="normal" src="../images/panel/home_on.png"></iron-icon>
+                  <span >Smart - Smart Start</span>
+                  <paper-toggle-button class="green"></paper-toggle-button>
+                </div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="inner-panel">
+                <span class="center">Smart Start Devices</span>
+                 <div class="row">
+                  <iron-icon class="normal" src="../images/panel/home_on.png"></iron-icon>
+                  <span >Dishwasher</span>
+                  <paper-toggle-button class="green"></paper-toggle-button>
+                </div>
+                 <div class="row">
+                  <iron-icon class="normal" src="../images/panel/home_on.png"></iron-icon>
+                  <span >Washing</span>
+                  <paper-toggle-button class="green"></paper-toggle-button>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="inner-panel">
+                <span class="center">Energy Monitor</span>
+              </div>
+            </div>
+          </div>
+
+          <div name="Safety">
+            <div class="panel">
+              <div class="inner-panel">
+                <div class="row">
+                  <iron-icon class="normal" src="../images/panel/alarm_large_off.png"></iron-icon>
+                  <span >Smart - Safety</span>
+                  <paper-toggle-button class="green"></paper-toggle-button>
+                </div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="inner-panel">
+                <span class="center">Alarm</span>
+                 <div class="row">
+                  <iron-icon class="big" src="../images/panel/alarm_large_off.png"></iron-icon>
+                  <paper-toggle-button class="green center"></paper-toggle-button>
+                </div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="inner-panel">
+                 <div class="row">
+                  <iron-icon class="normal" src="../images/panel/home_on.png"></iron-icon>
+                  <span >Windows</span>
+                  <span class="right">Open</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div name="Climate">
+            <div class="panel">
+              <div class="inner-panel">
+                <div class="row">
+                  <iron-icon class="small" src="../images/panel/temperature_gauge_100.png"></iron-icon>
+                  <span >Smart - Climate</span>
+                  <paper-toggle-button class="green"></paper-toggle-button>
+                </div>
+              </div>
+            </div>
+             <div class="panel">
+              <div class="inner-panel">
+                <div class="container">
+                  <div class="item"><span style="font-size:52px;">18.0</div>
+                  <div class="item">
+                     <input-temperature></input-temperature>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="inner-panel">
+                <span class="center">Heating scenes</span>
+                 <div class="row">
+                  <iron-icon class="small" src="../images/panel/temperature_gauge_100.png"></iron-icon>
+                  <span >Day</span>
+                  <span >21</span>
+                  <paper-toggle-button class="green"></paper-toggle-button>
+                </div>
+                <div class="row">
+                  <iron-icon class="small" src="../images/panel/temperature_gauge_100.png"></iron-icon>
+                  <span >Night</span>
+                  <span >18</span>
+                  <paper-toggle-button class="green"></paper-toggle-button>
+                </div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="inner-panel">
+                <span class="center">Ventilation</span>
+                <div class="row">
+                  <iron-icon class="small" src="../images/panel/temperature_gauge_100.png"></iron-icon>
+                  <span >Auto-ventilation</span>
+                  <span >home</span>
+                  <paper-toggle-button class="green"></paper-toggle-button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div name="Account" class="page-overlay">
+            <div class="page-overlay-inner"> 
+              <app-toolbar>
+                <paper-icon-button class="back-btn" icon="arrow-back" drawer-toggle></paper-icon-button>
+                <div main-title>Home</div>
+              </app-toolbar>
+              <div class="panel">
+                <div class="inner-panel">
+                  <span class="center">Account</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div name="Settings" class="page-overlay">
+            <div class="page-overlay-inner"> 
+              <app-toolbar>
+                <paper-icon-button class="back-btn" icon="arrow-back" drawer-toggle></paper-icon-button>
+                <div main-title>Home</div>
+              </app-toolbar>
+              <div class="panel">
+                <div class="inner-panel">
+                  <span class="center">Vacation Settings</span>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="inner-panel">
+                  <span class="center">Current predicted weekschedule:</span>
+                  <table-schedule></table-schedule>
+                </div>
+              </div>
+            </div>
+          </div>
+
+      </iron-pages>
+    </div>
+  </template>
+
+  <script>
+    Polymer({
+     ready: function () {
+        var pages = document.querySelector("#pages");
+        var settings = document.querySelector("#settings-btn");
+        settings.addEventListener("click", function(){
+            pages.selected = 'Settings';
+        });
+
+        var backFunction = function() {
+            pages.selectPrevious();
+        }
+        var backbtn = document.getElementsByClassName("back-btn");
+        for (var i = 0; i < backbtn.length; i++) {
+            backbtn[i].addEventListener('click', backFunction, false);
+        }
+      },
+      is: 'openremote-app',
+
+      properties: {
+        selected: {
+          type: String,
+          value: 'Login'
+        },
+
+        wideLayout: {
+          type: Boolean,
+          value: false,
+          observer: 'onLayoutChange',
+        },
+        behaviors: [
+          Polymer.IronOverlayBehavior
+        ],
+        items: {
+          type: Array,
+          value: function() {
+            return ['Light', 'Start', 'Safety', 'Climate'];
+          }
+        }
+      },
+
+      onLayoutChange: function(wide) {
+        var drawer = this.$.drawer;
+
+        if (wide && drawer.opened) {
+          drawer.opened = false;
+        }
+      }
+    });
+
+  </script>
+
+</dom-module>
