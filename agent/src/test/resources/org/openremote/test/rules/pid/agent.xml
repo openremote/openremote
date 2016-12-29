@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openremote xmlns="http://www.openremote.org/schemas/agent/3">
+  <sensors>
+    <sensor id="358525" name="PID.sp.dec" type="custom">
+      <include type="command" ref="2625" />
+    </sensor>
+    <sensor id="358526" name="PID.kd.inc" type="custom">
+      <include type="command" ref="2606" />
+    </sensor>
+    <sensor id="358527" name="PID.db.inc" type="custom">
+      <include type="command" ref="2622" />
+    </sensor>
+    <sensor id="358528" name="PID.kp.dec" type="custom">
+      <include type="command" ref="2608" />
+    </sensor>
+    <sensor id="358529" name="PID.Se" type="custom">
+      <include type="command" ref="2609" />
+    </sensor>
+    <sensor id="358530" name="PID.ki.dec" type="custom">
+      <include type="command" ref="2620" />
+    </sensor>
+    <sensor id="358531" name="GV.PID.Sp" type="custom">
+      <include type="command" ref="2610" />
+    </sensor>
+    <sensor id="358532" name="PID.Output" type="custom">
+      <include type="command" ref="2615" />
+    </sensor>
+    <sensor id="358533" name="PID.db.dec" type="custom">
+      <include type="command" ref="2613" />
+    </sensor>
+    <sensor id="358534" name="GV.PID.Ki" type="custom">
+      <include type="command" ref="2604" />
+    </sensor>
+    <sensor id="358535" name="PID.kd.dec" type="custom">
+      <include type="command" ref="2612" />
+    </sensor>
+    <sensor id="358536" name="GV.PID.Db" type="custom">
+      <include type="command" ref="2624" />
+    </sensor>
+    <sensor id="358537" name="PID.sp.inc" type="custom">
+      <include type="command" ref="2626" />
+    </sensor>
+    <sensor id="358538" name="GV.PID.Kp" type="custom">
+      <include type="command" ref="2603" />
+    </sensor>
+    <sensor id="358539" name="PID.kp.inc" type="custom">
+      <include type="command" ref="2628" />
+    </sensor>
+    <sensor id="358540" name="PID.ki.inc" type="custom">
+      <include type="command" ref="2623" />
+    </sensor>
+    <sensor id="358541" name="GV.PID.Kd" type="custom">
+      <include type="command" ref="2602" />
+    </sensor>
+  </sensors>
+  <commands>
+    <command id="2602" protocol="virtual">
+      <property name="address" value="pidkd" />
+      <property name="command" value="status" />
+      <property name="name" value="GV.PID.Kd" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2603" protocol="virtual">
+      <property name="address" value="pidkp" />
+      <property name="command" value="status" />
+      <property name="name" value="GV.PID.Kp" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2604" protocol="virtual">
+      <property name="address" value="pidki" />
+      <property name="command" value="status" />
+      <property name="name" value="GV.PID.Ki" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2605" protocol="virtual">
+      <property name="address" value="piddbinc" />
+      <property name="command" value="ON" />
+      <property name="name" value="PID.db.inc.ON" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2606" protocol="virtual">
+      <property name="address" value="pidkdinc" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.kd.inc" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2607" protocol="virtual">
+      <property name="address" value="pidkiinc" />
+      <property name="command" value="ON" />
+      <property name="name" value="PID.ki.inc.ON" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2608" protocol="virtual">
+      <property name="address" value="kpdec" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.kp.dec" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2609" protocol="virtual">
+      <property name="address" value="pidse" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.Se" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2610" protocol="virtual">
+      <property name="address" value="pidsp" />
+      <property name="command" value="status" />
+      <property name="name" value="GV.PID.Sp" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2611" protocol="virtual">
+      <property name="address" value="pidkidec" />
+      <property name="command" value="ON" />
+      <property name="name" value="PID.ki.dec.ON" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2612" protocol="virtual">
+      <property name="address" value="pidkddec" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.kd.dec" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2613" protocol="virtual">
+      <property name="address" value="piddbdec" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.db.dec" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2614" protocol="virtual">
+      <property name="address" value="pidkddec" />
+      <property name="command" value="ON" />
+      <property name="name" value="PID.kd.dec.ON" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2615" protocol="virtual">
+      <property name="address" value="pidoutput" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.Output" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2616" protocol="virtual">
+      <property name="address" value="pidkdinc" />
+      <property name="command" value="ON" />
+      <property name="name" value="PID.kd.inc.ON" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2617" protocol="virtual">
+      <property name="address" value="pidspdec" />
+      <property name="command" value="ON" />
+      <property name="name" value="PID.sp.dec.ON" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2618" protocol="virtual">
+      <property name="address" value="piddbdec" />
+      <property name="command" value="ON" />
+      <property name="name" value="PID.db.dec.ON" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2619" protocol="virtual">
+      <property name="address" value="pidspinc" />
+      <property name="command" value="ON" />
+      <property name="name" value="PID.sp.inc.ON" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2620" protocol="virtual">
+      <property name="address" value="pidkidec" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.ki.dec" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2621" protocol="virtual">
+      <property name="address" value="kpinc" />
+      <property name="command" value="ON" />
+      <property name="name" value="PID.kp.inc.ON" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2622" protocol="virtual">
+      <property name="address" value="piddbinc" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.db.inc" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2623" protocol="virtual">
+      <property name="address" value="pidkiinc" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.ki.inc" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2624" protocol="virtual">
+      <property name="address" value="piddb" />
+      <property name="command" value="status" />
+      <property name="name" value="GV.PID.Db" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2625" protocol="virtual">
+      <property name="address" value="pidspdec" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.sp.dec" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2626" protocol="virtual">
+      <property name="address" value="pidspinc" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.sp.inc" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2627" protocol="virtual">
+      <property name="address" value="kpdec" />
+      <property name="command" value="ON" />
+      <property name="name" value="PID.kp.dec.ON" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+    <command id="2628" protocol="virtual">
+      <property name="address" value="kpinc" />
+      <property name="command" value="status" />
+      <property name="name" value="PID.kp.inc" />
+      <property name="urn:openremote:device-command:device-name" value="PID" />
+      <property name="urn:openremote:device-command:device-id" value="35487" />
+    </command>
+  </commands>
+  <config>
+  </config>
+</openremote>
+

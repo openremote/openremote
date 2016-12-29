@@ -16,3 +16,5 @@ bin/
 *~
 manager/.factorypath
 manager/src/
+
+out/
