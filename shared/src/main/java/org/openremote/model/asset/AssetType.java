@@ -83,6 +83,10 @@ public enum AssetType {
 
     AGENT("urn:openremote:asset:agent", true, null),
 
+    /**
+     *  When a Thing asset is modified (created, updated, deleted), its attributes are examined
+     *  and linked to and unlinked from the configured Protocol.
+     */
     THING("urn:openremote:asset:thing", true, null);
 
     final protected String value;

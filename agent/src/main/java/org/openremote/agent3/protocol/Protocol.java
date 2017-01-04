@@ -24,6 +24,31 @@ import org.openremote.model.asset.ThingAttribute;
 
 import java.util.Collection;
 
+/**
+ * A Protocol implementation must have a unique name in a VM. TODO This is not enforced.
+ * <p>
+ * OpenRemote protocols are in {@link org.openremote.Constants#PROTOCOL_NAMESPACE}.
+ * <p>
+ * The Protocol implementation can receive {@link org.openremote.model.AttributeValueChange} messages on the
+ * {@link #ACTUATOR_TOPIC}. It can produce {@link org.openremote.model.AttributeValueChange} messages on the
+ * {@link #SENSOR_TOPIC}.
+ * <p>
+ * The linked attributes of a protocol provide the model for the protocol to perform these operations. How
+ * attributes and value changes map to actual device and service calls is up to the implementation.
+ * <p>
+ * The linked protocol handles south-bound read and write of the attribute value: If the user writes
+ * a new value into the Thing attribute, the protocol translates this value change into a
+ * device (or service) action. If the actual state of the device (or service) changes, the linked
+ * protocol writes the new state into the attribute value and the asset system user is notified of the change.
+ * <p>
+ * Data type conversion is also delegated to the Protocol implementation: If an attribute has a particular
+ * AttributeType and therefore a certain JsonValue, the Protocol must receive and send value change messages
+ * with values of that type.
+ * TODO: Some kind of converter system can be introduced later, although I find JsonValue#asXXX() is already a good utility for protocol implementators.
+ * <p>
+ * Protocol-specific meta items required for the link can be added to Thing attributes, such as the
+ * Hue light identifier or the ZWave node and command.
+ */
 public interface Protocol extends ContainerService {
 
     // TODO: Some of these options should be configurable depending on expected load etc.

@@ -22,7 +22,7 @@ package org.openremote.container.persistence;
 public class PersistenceEvent<T> {
 
     // TODO: Make configurable
-    public static final String PERSISTENCE_EVENT_TOPIC =
+    public static final String PERSISTENCE_TOPIC =
         "seda://PersistenceTopic?multipleConsumers=true&discardIfNoConsumers=true";
 
     public static final String HEADER_ENTITY_TYPE = PersistenceEvent.class.getSimpleName() + ".ENTITY_TYPE";

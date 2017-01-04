@@ -20,7 +20,6 @@
 package org.openremote.model.asset;
 
 import elemental.json.JsonObject;
-import org.openremote.Constants;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -34,7 +33,7 @@ import static org.openremote.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
  * The main model class of this software.
  * <p>
  * An asset is an identifiable item in a composite relationship with other assets. This tree
- * of assets can managed through a <code>null</code> {@link #parentId} property for root
+ * of assets can be managed through a <code>null</code> {@link #parentId} property for root
  * items, and a valid parent identifier for sub-items.
  * <p>
  * Each asset has dynamically typed optional attributes with an underlying
