@@ -45,7 +45,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
-import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_EVENT_TOPIC;
+import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
 import static org.openremote.manager.server.event.EventPredicates.isEventType;
 import static org.openremote.model.asset.AssetType.AGENT;
@@ -125,7 +125,7 @@ public class AssetService extends RouteBuilder implements ContainerService {
                 );
             });
 
-        from(PERSISTENCE_EVENT_TOPIC)
+        from(PERSISTENCE_TOPIC)
             .filter(isPersistenceEventForEntityType(Asset.class))
             .process(exchange -> {
                 PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);

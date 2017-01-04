@@ -37,7 +37,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.agent3.protocol.Protocol.SENSOR_TOPIC;
-import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_EVENT_TOPIC;
+import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForAssetType;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
 import static org.openremote.model.asset.AssetType.AGENT;
@@ -83,7 +83,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
     public void configure() throws Exception {
 
         // If any agent or thing was modified in the database, deploy the changes
-        from(PERSISTENCE_EVENT_TOPIC)
+        from(PERSISTENCE_TOPIC)
             .filter(isPersistenceEventForEntityType(Asset.class))
             .process(exchange -> {
                 PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
@@ -129,8 +129,9 @@ public class AgentService extends RouteBuilder implements ContainerService {
         LOG.fine("Deploy thing: " + thing);
         ThingAttributes thingAttributes = new ThingAttributes(thing);
 
-        // Linked attributes have a reference to an agent, and a protocol configuration attribute of that agent
+        // Attributes grouped by protocol name
         Map<String, List<ThingAttribute>> linkedAttributes = thingAttributes.getLinkedAttributes(
+            // Linked attributes have a reference to an agent, and a protocol configuration attribute of that agent
             assetService.getAgentLinkResolver()
         );
 
@@ -148,7 +149,6 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 linkAttributes(thing, protocols, linkedAttributes);
                 break;
             case DELETE:
-                // TODO: Are we sure that all attributes are captured here? What if someone modifies attributes and then clicks on "Delete"?
                 unlinkAttributes(thing, protocols, linkedAttributes);
                 break;
         }

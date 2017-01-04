@@ -121,9 +121,9 @@ public abstract class Sensor {
             LOG.fine("Ignoring update, sensor is not running: " + getSensorDefinition());
             return;
         }
-        SensorState evt = process(state);
-        LOG.fine("Update on ID " + getSensorDefinition().getSensorID() + ", processed '" + state + "', created: " + evt);
-        agentContext.update(evt);
+        SensorState resultState = process(state);
+        LOG.fine("Update on ID " + getSensorDefinition().getSensorID() + ", input string: '" + state + "', result state: " + resultState);
+        agentContext.update(resultState);
     }
 
     /**
