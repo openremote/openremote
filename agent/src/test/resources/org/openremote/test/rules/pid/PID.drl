@@ -119,7 +119,7 @@ then
   commands.execute($s, "off");
 end
 
-rule "-PID: decrease Sp"
+rule "PID: decrease Sp"
   timer(int:300ms)
 when
   SensorState(sensorName=="GV.PID.Sp", $v: value)
