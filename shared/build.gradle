@@ -4,6 +4,8 @@ dependencies {
     compile "com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion"
     compile "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     compile "com.google.gwt:gwt-elemental:$gwtVersion"
+    compile "org.hibernate.javax.persistence:hibernate-jpa-2.1-api:$javaxPersistenceVersion"
+    compile "org.hibernate:hibernate-core:$hibernateVersion"
 }
 
 jar {

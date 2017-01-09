@@ -1,0 +1,209 @@
+@font-face {
+    font-family: 'robotoregular';
+    /* TODO webcomponent.js bug fixed in 0.6 */
+    src: url('Roboto-Regular-webfont.woff') format('woff'), url('panels/demo/Roboto-Regular-webfont.woff') format('woff');
+}
+
+@font-face {
+    font-family: 'robotoregular';
+    /* TODO webcomponent.js bug fixed in 0.6 */
+    src: url('Roboto-Bold-webfont.woff') format('woff'), url('panels/demo/Roboto-Bold-webfont.woff') format('woff');
+    font-weight: bold;
+}
+
+@font-face {
+    font-family: "robotocondensed";
+    /* TODO webcomponent.js bug fixed in 0.6 */
+    src: url("RobotoCondensed-Regular-webfont.woff") format("woff"), url("panels/demo/RobotoCondensed-Regular-webfont.woff") format("woff");
+}
+
+@font-face {
+    font-family: "robotocondensed";
+    /* TODO webcomponent.js bug fixed in 0.6 */
+    src: url("RobotoCondensed-Bold-webfont.woff") format("woff"), url("panels/demo/RobotoCondensed-Bold-webfont.woff") format("woff");
+    font-weight: bold;
+}
+
+or-console-frontend {
+    font-family: robotoregular, sans-serif;
+    background-color: white;
+    color: #333333;
+}
+
+or-console-frontend /deep/ core-drawer-panel core-header-panel {
+    background-color: #374C4F;
+    color: white;
+}
+
+or-console-frontend /deep/ core-drawer-panel core-toolbar {
+    font-family: robotocondensed, sans-serif;
+    background-color: #C0D62E;
+    color: #333333;
+}
+
+or-console-frontend /deep/ .menu .panelItem {
+}
+
+or-console-frontend /deep/ .menu .groupItem {
+}
+
+or-console-frontend /deep/ .menu .screenItem {
+}
+
+or-console-frontend /deep/ .menu .selected {
+    color: #C0D62E;
+    font-weight: bold;
+}
+
+or-console-frontend /deep/ paper-tabs {
+    font-family: robotoregular, sans-serif;
+    font-weight: bold;
+    background-color: #F2F2F2;
+    color: #666666;
+}
+
+or-console-frontend /deep/ paper-tabs::shadow #selectionBar {
+    background-color: #C0D62E;
+}
+
+or-console-frontend /deep/ paper-tabs paper-tab::shadow #ink {
+    color: #C0D62E;
+}
+
+or-console-frontend /deep/ .screens {
+    font-family: robotoregular, sans-serif;
+    background-color: white;
+    color: black;
+}
+
+or-console-frontend /deep/ .unfocused-underline {
+    background-color: #cccccc;
+    height: 2px;
+}
+
+or-console-frontend /deep/ .focused-underline {
+    background-color: #C0D62E;
+    height: 2px;
+}
+
+or-console-frontend /deep/ paper-ripple {
+  color: #C0D62E;
+}
+
+or-console-frontend /deep/ paper-slider::shadow #sliderBar::shadow #activeProgress {
+    background-color: #C0D62E;
+}
+
+or-console-frontend /deep/ paper-slider::shadow #sliderKnobInner {
+    background-color: #C0D62E;
+}
+
+or-console-frontend /deep/ paper-slider::shadow .ring > #sliderKnob > #sliderKnobInner {
+    border-color: #C0D62E;
+    background-color: #C0D62E;
+}
+
+or-console-frontend /deep/ paper-slider::shadow #sliderKnobInner::before {
+    background-color: #333333;
+}
+
+or-console-frontend /deep/ paper-slider::shadow #sliderKnob > #sliderKnobInner::after {
+    color: white;
+}
+
+or-console-frontend /deep/ paper-slider::shadow #sliderBar::shadow #progressContainer {
+    background-color: #374C4F;
+}
+
+or-console-frontend /deep/ paper-slider::shadow paper-input::shadow paper-input-decorator {
+    padding: 0.5em 0;
+}
+
+or-console-frontend /deep/ paper-slider::shadow /deep/ .unfocused-underline {
+    display: none;
+}
+
+or-console-frontend /deep/ paper-toggle-button::shadow .toggle-bar {
+    background-color: black;
+}
+
+or-console-frontend /deep/ paper-toggle-button::shadow .toggle-button {
+    background-color: #666666;
+}
+
+or-console-frontend /deep/ paper-toggle-button::shadow [checked] .toggle-bar {
+    background-color: black;
+}
+
+or-console-frontend /deep/ paper-toggle-button::shadow [checked] .toggle-button {
+    background-color: #C0D62E;
+}
+
+or-console-frontend /deep/ paper-toggle-button::shadow .toggle-ink {
+    color: #C0D62E;
+}
+
+or-console-frontend /deep/ paper-toggle-button::shadow [checked] .toggle-ink {
+    color: #374C4F;
+}
+
+or-console-frontend /deep/ paper-radio-button::shadow #onRadio {
+    background-color: #C0D62E;
+}
+
+or-console-frontend /deep/ paper-radio-button[checked]::shadow #offRadio {
+    border-color: #C0D62E;
+    background-color: white;
+}
+
+or-console-frontend /deep/ paper-radio-button::shadow #offRadio {
+    border-color: #333333;
+    background-color: white;
+}
+
+or-console-frontend /deep/ paper-radio-button::shadow #ink[checked] {
+    color: #C0D62E;
+}
+
+or-console-frontend /deep/ paper-radio-button::shadow #ink {
+    color: #374C4F;
+}
+
+or-console-frontend /deep/ paper-checkbox::shadow #ink[checked] {
+    color: #C0D62E;
+}
+
+or-console-frontend /deep/ paper-checkbox::shadow #checkbox.checked {
+    background-color: #C0D62E;
+    border-color: #C0D62E;
+}
+
+or-console-frontend /deep/ paper-checkbox::shadow #checkbox {
+    border-color: #333333;
+}
+
+or-console-frontend /deep/ paper-checkbox::shadow #ink {
+    color: #374C4F;
+}
+
+or-console-frontend /deep/ or-console-label::shadow .on {
+    color: #C0D62E;
+}
+
+or-console-frontend /deep/ or-console-label::shadow .off {
+    color: #374C4F;
+}
+
+or-console-frontend /deep/ .box {
+    height: 100%;
+}
+
+or-console-frontend /deep/ .box.border {
+    border: 1px solid #666666;
+}
+
+or-console-frontend /deep/ .box.solid {
+    background-color: #CCCCCC;
+}
+
+

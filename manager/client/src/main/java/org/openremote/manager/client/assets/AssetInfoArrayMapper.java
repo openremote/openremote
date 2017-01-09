@@ -22,7 +22,7 @@ package org.openremote.manager.client.assets;
 import com.github.nmorel.gwtjackson.client.ObjectMapper;
 import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
 import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
-import org.openremote.manager.shared.asset.AssetInfo;
+import org.openremote.model.asset.AssetInfo;
 import org.openremote.manager.shared.http.EntityReader;
 
 @JsonMixIns({@JsonMixIns.JsonMixIn(target = AssetInfo.class, mixIn = DefaultJsonMixin.class)})

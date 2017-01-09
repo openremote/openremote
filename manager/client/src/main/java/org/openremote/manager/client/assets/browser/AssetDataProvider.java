@@ -21,7 +21,7 @@ package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.view.client.AsyncDataProvider;
 import com.google.gwt.view.client.HasData;
-import org.openremote.manager.shared.asset.AssetInfo;
+import org.openremote.model.asset.AssetInfo;
 
 class AssetDataProvider extends AsyncDataProvider<AssetInfo> {
 

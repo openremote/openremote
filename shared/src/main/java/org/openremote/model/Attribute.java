@@ -21,10 +21,11 @@ package org.openremote.model;
 
 import elemental.json.*;
 
-public class Attribute {
+import java.util.NoSuchElementException;
+
+public class Attribute extends AbstractValueHolder<Attribute> {
 
     final protected String name;
-    final protected JsonObject jsonObject;
 
     public Attribute(String name) {
         this(name, Json.createObject());
@@ -36,12 +37,12 @@ public class Attribute {
     }
 
     public Attribute(String name, JsonObject jsonObject) {
+        super(jsonObject);
         this.name = name;
-        this.jsonObject = jsonObject;
     }
 
     public Attribute(String name, AttributeType type, JsonValue value) {
-        this(name, elemental.json.Json.createObject());
+        this(name, Json.createObject());
         setType(type);
         setValue(value);
     }
@@ -68,67 +69,8 @@ public class Attribute {
         return this;
     }
 
-    public JsonValue getValue() {
-        return jsonObject.hasKey("value") ? jsonObject.get("value") : null;
-    }
-
-    public String getValueAsString() {
-        return jsonObject.hasKey("value") ? jsonObject.get("value").asString() : null;
-    }
-
-    public Boolean getValueAsBoolean() {
-        return (jsonObject.hasKey("value") && jsonObject.get("value").getType() == JsonType.BOOLEAN)
-            ? jsonObject.get("value").asBoolean()
-            : null;
-    }
-
-    public boolean isValueTrue() {
-        return getValueAsBoolean() != null && getValueAsBoolean();
-    }
-
-    public boolean isValueFalse() {
-        return getValueAsBoolean() != null && !getValueAsBoolean();
-    }
-
-    public Double getValueAsDouble() {
-        return jsonObject.hasKey("value") ? jsonObject.get("value").asNumber() : null;
-    }
-
-    public JsonObject getValueAsObject() {
-        return jsonObject.hasKey("value") ? jsonObject.getObject("value") : null;
-    }
-
-    public JsonArray getValueAsArray() {
-        return jsonObject.hasKey("value") ? jsonObject.getArray("value") : null;
-    }
-
-    public Attribute setValue(JsonValue value) {
-        jsonObject.put("value", value);
-        return this;
-    }
-
-    public Attribute setValue(String value) {
-        return setValue(Json.create(value));
-    }
-
-    public Attribute setValue(Integer value) {
-        return setValue(Json.create(value));
-    }
-
-    public Attribute setValue(double value) {
-        return setValue(Json.create(value));
-    }
-
-    public Attribute setValue(boolean value) {
-        return setValue(Json.create(value));
-    }
-
     public boolean hasMetadata() {
         return jsonObject.hasKey("metadata");
-    }
-
-    public boolean hasMetadataItem(String name) {
-        return hasMetadata() && getMetadata().contains(name);
     }
 
     public Metadata getMetadata() {
@@ -144,13 +86,32 @@ public class Attribute {
         return this;
     }
 
+    public boolean hasMetaItem(String name) {
+        return hasMetadata() && getMetadata().contains(name);
+    }
+
+    public JsonValue firstMetaItem(String name) {
+        return hasMetaItem(name) ? getMetadata().first(name).getValue() : null;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends JsonValue> T firstMetaItem(Class<T> valueType, String name) {
+        return (T) firstMetaItem(name);
+    }
+
+    public <T extends JsonValue> T firstMetaItem(Class<T> valueType, String name, T defaultValue) {
+        T result = firstMetaItem(valueType, name);
+        return result != null ? result : defaultValue;
+    }
+
+    public <T extends JsonValue> T firstMetaItemOrThrow(Class<T> valueType, String name) throws NoSuchElementException {
+        T result = firstMetaItem(valueType, name);
+        if (result != null)
+            return result;
+        throw new NoSuchElementException("Missing item: " + name);
+    }
+
     public Attribute copy() {
         return new Attribute(getName(), Json.parse(getJsonObject().toJson()));
     }
-
-    @Override
-    public String toString() {
-        return jsonObject.toJson();
-    }
-
 }

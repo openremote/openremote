@@ -31,7 +31,7 @@ import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.util.Timeout;
 import org.openremote.manager.client.widget.Hyperlink;
-import org.openremote.manager.shared.asset.AssetInfo;
+import org.openremote.model.asset.AssetInfo;
 
 import javax.inject.Inject;
 import java.util.logging.Logger;

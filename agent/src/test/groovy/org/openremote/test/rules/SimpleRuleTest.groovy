@@ -40,9 +40,8 @@ class SimpleRuleTest extends Specification implements ContainerTrait {
                 new TestCommandBuilder(),
                 rulesProvider
         )
-        def services = Stream.of(agentService)
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), services)
+        def container = startContainer(defaultConfig(serverPort), [agentService])
 
         when: "we wait for initial state polling of sensor and rule execution"
         Thread.sleep(500);

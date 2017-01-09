@@ -1,0 +1,74 @@
+<link rel="import" href="../../bower_components/paper-radio-button/paper-radio-button.html">
+<link rel="import" href="../../bower_components/paper-radio-group/paper-radio-group.html">
+<dom-module id="input-switch-blok">
+  <template>
+    <style type="text/css">
+      paper-radio-group.square-group{
+        position:relative;
+        display:block;
+        height: 220px;
+        margin: 20px auto;
+        width:240px;
+      }
+      paper-radio-button{
+        position: relative;
+        width: 120px;
+        height: 120px;
+        float: left;
+        display: block;
+        padding: 0
+      }
+      paper-radio-group paper-radio-button.square > ::content #radioContainer{
+        width:100px;
+        height:100px;
+        margin:10px;
+      }
+      paper-radio-group paper-radio-button.square  > ::content #radioContainer #offRadio{
+        background-color:#374c4f;
+        border:0;
+      }
+      paper-radio-group paper-radio-button.square  > ::content #radioContainer #onRadio{
+        -webkit-transform: scale(1);
+        transform: scale(1);
+        opacity: 0;
+        background-color:#c0d62e;
+
+        transition: opacity ease 0.28s;
+      }
+      paper-radio-group paper-radio-button.square[checked] > ::content #radioContainer #onRadio{
+        opacity: 1;
+      }
+      paper-radio-group paper-radio-button.square > ::content #radioContainer .paper-radio-button{
+        border-radius: 0;
+      }
+      paper-radio-group paper-radio-button.square.break{
+        clear:both;
+      }
+      paper-radio-group paper-radio-button.square > ::content #radioLabel.paper-radio-button{
+        color:#FFFFFF;
+        line-height: 100px;
+        text-align: center;
+        position: absolute;
+        left: 0;
+        top: 10px;
+        width: 100px;    
+      }
+    </style>
+    <paper-radio-group selected="morning" class="square-group" allow-empty-selection>
+      <content>
+        <paper-radio-button class="square" name="morning">Morning</paper-radio-button>
+        <paper-radio-button class="square" name="away">Away</paper-radio-button>
+        <paper-radio-button class="square break" name="evening">Evening</paper-radio-button>
+        <paper-radio-button class="square" name="night">Night</paper-radio-button>
+      </content>
+    </paper-radio-group>
+  </template>
+
+   <script>
+
+    Polymer({
+      is: 'input-switch-blok'
+    });
+
+  </script>
+</dom-module>

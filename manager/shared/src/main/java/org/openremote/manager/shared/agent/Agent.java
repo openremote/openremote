@@ -24,13 +24,14 @@ import org.openremote.manager.shared.connector.Connector;
 import org.openremote.model.Attribute;
 import org.openremote.model.AttributeType;
 import org.openremote.model.Attributes;
+import org.openremote.model.asset.Asset;
 
 import java.util.logging.Logger;
 
 import static org.openremote.manager.shared.connector.Connector.ASSET_ATTRIBUTE_CONNECTOR;
 
 /**
- * Runtime instance of an agent {@link org.openremote.manager.shared.asset.Asset}.
+ * Runtime instance of an agent {@link Asset}.
  * <p>
  * This is a message routing table that can be dynamically built from {@link Connector} settings.
  * This information is combined with calls to a {@link org.openremote.manager.shared.connector.ConnectorComponent}

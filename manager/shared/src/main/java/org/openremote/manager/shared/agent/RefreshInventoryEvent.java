@@ -20,10 +20,11 @@
 package org.openremote.manager.shared.agent;
 
 import org.openremote.manager.shared.event.Event;
+import org.openremote.model.asset.AssetType;
 
 /**
  * Tell an agent to delete and re-discover all it's child assets (which are
- * {@link org.openremote.manager.shared.asset.AssetType#DEVICE}). You will
+ * {@link AssetType#DEVICE}). You will
  * receive {@link org.openremote.manager.shared.asset.AssetModifiedEvent}s for
  * any detected changes.
  */

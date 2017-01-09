@@ -20,31 +20,46 @@
 package org.openremote.manager.server.agent;
 
 import org.apache.camel.builder.RouteBuilder;
+import org.openremote.agent3.protocol.Protocol;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.server.asset.AssetService;
-import org.openremote.manager.server.asset.ServerAsset;
-import org.openremote.manager.shared.asset.AssetType;
+import org.openremote.model.AttributeValueChange;
+import org.openremote.model.asset.*;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static org.openremote.agent3.protocol.Protocol.SENSOR_TOPIC;
+import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
+import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForAssetType;
+import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
+import static org.openremote.model.asset.AssetType.AGENT;
+import static org.openremote.model.asset.AssetType.THING;
 
 public class AgentService extends RouteBuilder implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
 
+    protected Container container;
     protected MessageBrokerService messageBrokerService;
     protected MessageBrokerContext messageBrokerContext;
     protected AssetService assetService;
-    protected ConnectorService connectorService;
 
     @Override
     public void init(Container container) throws Exception {
+        this.container = container;
         messageBrokerService = container.getService(MessageBrokerService.class);
         messageBrokerContext = messageBrokerService.getContext();
         assetService = container.getService(AssetService.class);
-        connectorService = container.getService(ConnectorService.class);
+
+        messageBrokerService.getContext().addRoutes(this);
     }
 
     @Override
@@ -53,11 +68,11 @@ public class AgentService extends RouteBuilder implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
-        /*
-        ServerAsset[] agents = assetService.findByTypeInAllRealms(AssetType.AGENT.getValue());
-        LOG.fine("Configure agents in all realms:" + agents.length);
-        reconfigureAgents(null, agents, null);
-        */
+        Asset[] agents = assetService.findByTypeInAllRealms(AGENT.getValue());
+        LOG.fine("Deploy all agents in all realms: " + agents.length);
+        for (Asset agent : agents) {
+            deployAgent(agent, PersistenceEvent.Cause.UPDATE);
+        }
     }
 
     @Override
@@ -66,164 +81,108 @@ public class AgentService extends RouteBuilder implements ContainerService {
 
     @Override
     public void configure() throws Exception {
-        /*
-        // If any agent was modified in the database, reconfigure this service
-        from(PERSISTENCE_EVENT_TOPIC)
+
+        // If any agent or thing was modified in the database, deploy the changes
+        from(PERSISTENCE_TOPIC)
             .filter(isPersistenceEventForEntityType(Asset.class))
-            .filter(isPersistenceEventForAssetType(AssetType.AGENT))
             .process(exchange -> {
                 PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
-                Asset agent = (Asset) persistenceEvent.getEntity();
-                ServerAsset[] agents = assetService.findByType(agent.getRealm(), AssetType.AGENT);
-                LOG.fine("Reconfigure agents of realm '" + agent.getRealm() + "': " + agents.length);
-                reconfigureAgents(agent.getRealm(), agents, persistenceEvent.getCause() == UPDATE ? agent : null);
+                Asset asset = (Asset) persistenceEvent.getEntity();
+                if (isPersistenceEventForAssetType(AGENT).matches(exchange)) {
+                    deployAgent(asset, persistenceEvent.getCause());
+                } else if (isPersistenceEventForAssetType(THING).matches(exchange)) {
+                    deployThing(asset, persistenceEvent.getCause());
+                }
             });
-            */
+
+        // Update thing asset when attribute change value messages are published on the sensor topic
+        from(SENSOR_TOPIC)
+            .filter(body().isInstanceOf(AttributeValueChange.class))
+            .process(exchange -> {
+                AttributeValueChange attributeValueChange =
+                    exchange.getIn().getBody(AttributeValueChange.class);
+                // Note that this is a _direct_ update of the attribute value in the database, it will
+                // not trigger a persistence event - we don't want to redeploy a thing just because an
+                // attribute value changed!
+                boolean success = assetService.updateThingAttributeValue(attributeValueChange);
+                // TODO If success then... notify asset listener clients? If not, then handle error?
+
+            });
     }
 
-    /*
-    protected void reconfigureAgents(String realm, ServerAsset[] agents, Asset updatedAgent) {
-        synchronized (agentInstanceMap) {
-            for (ServerAsset agentAsset : agents) {
-                Agent agent = new Agent(new Attributes(agentAsset.getAttributes()));
-                if (agent.isEnabled()) {
-                    if (!agentInstanceMap.containsKey(agentAsset.getId())) {
-                        LOG.fine("Agent is enabled and was not running: " + agentAsset.getId());
-                        startAgent(agentAsset);
-                    } else if (updatedAgent != null && agentAsset.getId().equals(updatedAgent.getId())) {
-                        LOG.fine("Agent is enabled and already running, restarting due to update: " + agentAsset.getId());
-                        stopAgent(agentAsset.getId());
-                        startAgent(agentAsset);
-                    }
+    protected void deployAgent(Asset agent, PersistenceEvent.Cause cause) {
+        LOG.fine("Deploy agent: " + agent);
+        switch (cause) {
+            case UPDATE:
+                Asset[] things = assetService.findChildrenByType(agent.getId(), THING);
+                for (Asset thing : things) {
+                    deployThing(thing, PersistenceEvent.Cause.UPDATE);
+                }
+                break;
+            case DELETE:
+                // TODO The 'things' children must be deleted first, although we don't have foreign key constraint enforcing this!
+                throw new UnsupportedOperationException("TODO not implemented");
+        }
+    }
 
-                    // Agent is not enabled anymore but still running
-                } else if (agentInstanceMap.containsKey(agentAsset.getId())) {
-                    LOG.fine("Agent is disabled and still running: " + agentAsset.getId());
-                    stopAgent(agentAsset.getId());
-                }
-            }
+    protected void deployThing(Asset thing, PersistenceEvent.Cause cause) {
+        LOG.fine("Deploy thing: " + thing);
+        ThingAttributes thingAttributes = new ThingAttributes(thing);
 
-            // Find all running agents of the given realm, stop them if they are no longer present (in database)
-            List<String> agentsToStop = new ArrayList<>();
-            for (Map.Entry<String, AgentRoutes> entry : agentInstanceMap.entrySet()) {
-                if (realm == null || entry.getValue().getAgentAsset().getRealm().equals(realm)) {
-                    agentsToStop.add(entry.getKey());
-                }
-            }
-            Iterator<String> it = agentsToStop.iterator();
-            while (it.hasNext()) {
-                String agentId = it.next();
-                for (ServerAsset agent : agents) {
-                    if (agent.getId().equals(agentId)) {
-                        it.remove();
-                        break;
+        // Attributes grouped by protocol name
+        Map<String, List<ThingAttribute>> linkedAttributes = thingAttributes.getLinkedAttributes(
+            // Linked attributes have a reference to an agent, and a protocol configuration attribute of that agent
+            assetService.getAgentLinkResolver()
+        );
+
+        LOG.fine("Thing has attribute links to " + linkedAttributes.size() + " protocol(s): " + thing);
+
+        Collection<Protocol> protocols = container.getServices(Protocol.class);
+
+        switch (cause) {
+            case INSERT:
+                linkAttributes(thing, protocols, linkedAttributes);
+                break;
+            case UPDATE:
+                // TODO Not very efficient
+                unlinkAttributes(thing, protocols, linkedAttributes);
+                linkAttributes(thing, protocols, linkedAttributes);
+                break;
+            case DELETE:
+                unlinkAttributes(thing, protocols, linkedAttributes);
+                break;
+        }
+    }
+
+    protected void linkAttributes(Asset thing,
+                                  Collection<Protocol> protocols,
+                                  Map<String, List<ThingAttribute>> attributes) {
+        for (String protocolName : attributes.keySet()) {
+            for (Protocol protocol : protocols) {
+                if (protocol.getProtocolName().equals(protocolName)) {
+                    try {
+                        protocol.linkAttributes(attributes.get(protocolName));
+                    } catch (Exception ex) {
+                        // TODO: Better error handling?
+                        LOG.log(Level.INFO, "Ignoring error on attribute unlink for: " + thing, ex);
                     }
                 }
-            }
-            for (String agentId : agentsToStop) {
-                LOG.fine("Agent is not present anymore and still running: " + agentId);
-                stopAgent(agentId);
             }
         }
     }
 
-    protected void startAgent(Asset agentAsset) {
-        LOG.fine("Starting agent: " + agentAsset);
-
-        Agent agent = new Agent(new Attributes(agentAsset.getAttributes()));
-        ConnectorComponent connectorComponent = connectorService.getConnectorComponentByType(agent.getConnectorType());
-        // TODO: Check if we have the component, otherwise mark the agent configuration invalid
-        AgentRoutes agentRoutes = new AgentRoutes(agentAsset, agent, connectorComponent) {
-            @Override
-            protected void handleInventoryModified(InventoryModifiedEvent event) {
-                Asset deviceAsset = event.getDeviceAsset();
-
-                // We must combine the device and the agent identifiers to uniquely identify a
-                // discovered device - the same device id might be given to several agents (and
-                // these agents can be in different realms)
-                String combinedAssetId = IdentifierUtil.getEncodedHash(
-                    agentAsset.getId().getBytes(Charset.forName("utf-8")),
-                    deviceAsset.getId().getBytes(Charset.forName("utf-8"))
-                );
-
-                switch (event.getCause()) {
-                    case PUT:
-                        LOG.fine("Put child asset of agent '" + agentAsset.getId() + "': " + deviceAsset);
-
-                        ServerAsset deviceServerAsset = assetService.get(combinedAssetId);
-                        if (deviceServerAsset == null) {
-                            deviceServerAsset = ServerAsset.map(
-                                deviceAsset,
-                                new ServerAsset(),
-                                agentAsset.getRealm(),
-                                agentAsset.getId(),
-                                agentAsset.getCoordinates()
-                            );
-                            deviceServerAsset.setId(combinedAssetId);
-                            LOG.fine("Child asset of agent is new, merging: " + deviceServerAsset);
-                            deviceServerAsset = assetService.merge(deviceServerAsset);
-                        } else {
-                            deviceServerAsset = ServerAsset.map(
-                                deviceAsset,
-                                deviceServerAsset,
-                                agentAsset.getRealm(),
-                                agentAsset.getId(),
-                                agentAsset.getCoordinates()
-                            );
-                            LOG.fine("Child asset of agent already exists, merging: " + deviceServerAsset);
-                            deviceServerAsset = assetService.merge(deviceServerAsset);
-                        }
-                        break;
-                    case DELETE:
-                        LOG.fine("Delete child asset of agent '" + agentAsset.getId() + "': " + deviceAsset);
-                        assetService.delete(combinedAssetId);
-                        break;
-                }
-
+    protected void unlinkAttributes(Asset thing,
+                                    Collection<Protocol> protocols,
+                                    Map<String, List<ThingAttribute>> attributes) {
+        for (Protocol protocol : protocols) {
+            if (attributes.containsKey(protocol.getProtocolName())) {
                 try {
-                    AgentService.this.stopDeviceRoutes(this);
-                    AgentService.this.startDeviceRoutes(agentAsset, this);
+                    protocol.unlinkAttributes(thing.getId());
                 } catch (Exception ex) {
-                    LOG.log(Level.SEVERE, "Error restarting device routes of agent: " + agentAsset.getId(), ex);
-                    // TODO: We should mark the agent or fire event, or...
+                    // TODO: Better error handling?
+                    LOG.log(Level.INFO, "Ignoring error on attribute unlink for: " + thing, ex);
                 }
             }
-
-            @Override
-            protected void handleResourceValueUpdate(String deviceKey, String deviceResourceKey, Object value) {
-                // TODO Value conversion?
-                DeviceResourceValueEvent event = new DeviceResourceValueEvent(
-                    agentAsset.getId(), deviceKey, deviceResourceKey, value != null ? value.toString() : null
-                );
-                agentServiceEventRoutes.getDeviceResourceSubscriptions().dispatch(event);
-            }
-        };
-
-        try {
-            messageBrokerContext.addRoutes(agentRoutes.buildAgentRoutes());
-            startDeviceRoutes(agentAsset, agentRoutes);
-            agentInstanceMap.put(agentAsset.getId(), agentRoutes);
-        } catch (FailedToCreateRouteException ex) {
-            LOG.log(Level.SEVERE, "Error starting agent: " + agentAsset, ex);
-            // TODO: We should mark the agent or fire event, or...
-        } catch (Exception ex) {
-            LOG.log(Level.SEVERE, "Error starting agent: " + agentAsset, ex);
-            // TODO: We should mark the agent or fire event, or...
         }
     }
-
-    protected void stopAgent(String agentId) {
-        LOG.fine("Stopping agent: " + agentId);
-        if (agentInstanceMap.containsKey(agentId)) {
-            AgentRoutes agentRoutes = agentInstanceMap.remove(agentId);
-            try {
-                stopDeviceRoutes(agentRoutes);
-                agentRoutes.stopAgentRoutes(messageBrokerContext);
-            } catch (Exception ex) {
-                LOG.log(Level.SEVERE, "Error stopping agent: " + agentId, ex);
-                // TODO: We should mark the agent or fire event, or...
-            }
-        }
-    }
-    */
 }

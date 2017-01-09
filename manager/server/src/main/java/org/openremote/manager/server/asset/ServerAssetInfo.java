@@ -21,7 +21,7 @@ package org.openremote.manager.server.asset;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
-import org.openremote.manager.shared.asset.AssetInfo;
+import org.openremote.model.asset.AssetInfo;
 
 public class ServerAssetInfo extends AssetInfo {
 

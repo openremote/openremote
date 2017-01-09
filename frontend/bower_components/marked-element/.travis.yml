@@ -1,0 +1,23 @@
+language: node_js
+sudo: required
+node_js: stable
+addons:
+  firefox: '46.0'
+  sauce_connect: true
+  apt:
+    sources:
+    - google-chrome
+    packages:
+    - google-chrome-stable
+before_script:
+- npm install -g bower polylint web-component-tester
+- bower install
+- polylint
+script:
+- xvfb-run wct
+- if [ "${TRAVIS_PULL_REQUEST}" = "false" ]; then wct -s 'default'; fi
+env:
+  global:
+  - secure: U0eSc8MeNqZ4XfBrG3qxHXiKK5iK/AQvaaip+xW1HhUehyD+Z4NRZ6EQ/dnVOBsrruZOTXb0bsz2VDzjB3dp1N9rEyQNbgbzL+KgkTqyyBEmY5JdnmAtTMPUCEdVkd8i+4Aqzwez4pFe3YeGUqqkhbF2YppRwPQ8W67iXc/veh8=
+  - secure: NG1pVv8ehGHEY7Rx/86ADvdseqy8iCOod3sSGU3IbCO7NUhs8lpwtkbaUS75JvsqDBcSjlWK3tkw0iOa97/cP7O8pT2fgNfn3OLzoI7bgQCH7Qq5Am1fzdU+o/EfZuseOkxmnnuWATE+4mPP2JD3XOKvuuSAnRM6dipqRu3I0NA=
+dist: trusty

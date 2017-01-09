@@ -28,7 +28,7 @@ import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.agent.Agent;
-import org.openremote.manager.shared.asset.AssetInfo;
+import org.openremote.model.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 import org.openremote.model.Attributes;

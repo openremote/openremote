@@ -54,7 +54,7 @@ trait ContainerTrait {
         ]
     }
 
-    static Container startContainer(Map<String, String> config, Stream<ContainerService> services) {
+    static Container startContainer(Map<String, String> config, Iterable<ContainerService> services) {
         def container = new Container(config, services)
         container.startBackground()
         container

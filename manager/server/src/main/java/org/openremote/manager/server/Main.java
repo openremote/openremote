@@ -19,11 +19,12 @@
  */
 package org.openremote.manager.server;
 
+import org.openremote.agent3.protocol.Protocol;
 import org.openremote.container.Container;
+import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.manager.server.agent.AgentService;
-import org.openremote.manager.server.agent.ConnectorService;
 import org.openremote.manager.server.asset.AssetService;
 import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.i18n.I18NService;
@@ -31,21 +32,33 @@ import org.openremote.manager.server.map.MapService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebService;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.ServiceLoader;
+
 public class Main {
 
     public static void main(String[] args) throws Exception {
-        new Container(
-            new I18NService(),
-            new ManagerWebService(),
-            new ManagerIdentityService(),
-            new MessageBrokerService(),
-            new PersistenceService(),
-            new EventService(),
-            new ConnectorService(),
-            new AgentService(),
-            new AssetService(),
-            new MapService(),
-            new DemoDataService()
-        ).startBackground();
+        List<ContainerService> services = new ArrayList<ContainerService>() {
+            {
+                addAll(Arrays.asList(
+                    new I18NService(),
+                    new ManagerWebService(),
+                    new ManagerIdentityService(),
+                    new MessageBrokerService(),
+                    new PersistenceService(),
+                    new EventService(),
+                    new AssetService(),
+                    new AgentService()
+                ));
+                ServiceLoader.load(Protocol.class).forEach(this::add);
+                addAll(Arrays.asList(
+                    new MapService(),
+                    new DemoDataService()
+                ));
+            }
+        };
+        new Container(services).startBackground();
     }
 }

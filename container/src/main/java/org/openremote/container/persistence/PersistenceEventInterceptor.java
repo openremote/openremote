@@ -112,7 +112,7 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
 
                     for (PersistenceEvent persistenceEvent : persistenceEvents) {
                         messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-                            PersistenceEvent.PERSISTENCE_EVENT_TOPIC,
+                            PersistenceEvent.PERSISTENCE_TOPIC,
                             ExchangePattern.InOnly,
                             persistenceEvent,
                             PersistenceEvent.HEADER_ENTITY_TYPE,

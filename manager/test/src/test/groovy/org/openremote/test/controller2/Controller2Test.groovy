@@ -11,9 +11,9 @@ import org.openremote.manager.shared.agent.DeviceResourceWrite
 import org.openremote.manager.shared.agent.RefreshInventoryEvent
 import org.openremote.manager.shared.agent.SubscribeDeviceResourceUpdates
 import org.openremote.manager.shared.agent.UnsubscribeDeviceResourceUpdates
-import org.openremote.manager.shared.asset.Asset
+import org.openremote.model.asset.Asset
 import org.openremote.manager.shared.asset.AssetModifiedEvent
-import org.openremote.manager.shared.asset.AssetType
+import org.openremote.model.asset.AssetType
 import org.openremote.manager.shared.asset.SubscribeAssetModified
 import org.openremote.model.AttributeType
 import org.openremote.manager.shared.device.*

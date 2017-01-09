@@ -21,8 +21,8 @@ package org.openremote.manager.server.asset;
 
 import org.apache.camel.Predicate;
 import org.openremote.container.persistence.PersistenceEvent;
-import org.openremote.manager.shared.asset.Asset;
-import org.openremote.manager.shared.asset.AssetType;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetType;
 
 public class AssetPredicates {
 

@@ -27,7 +27,7 @@ import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
-import org.openremote.manager.shared.asset.AssetInfo;
+import org.openremote.model.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.map.MapResource;
 

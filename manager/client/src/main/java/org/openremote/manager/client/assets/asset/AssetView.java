@@ -24,7 +24,7 @@ import org.openremote.manager.client.assets.browser.AssetBrowsingView;
 import org.openremote.manager.client.assets.device.DeviceAttributesEditor;
 import org.openremote.manager.client.widget.AttributesEditor;
 import org.openremote.manager.client.widget.FormView;
-import org.openremote.manager.shared.asset.AssetType;
+import org.openremote.model.asset.AssetType;
 import org.openremote.manager.shared.map.GeoJSON;
 
 import java.util.Date;

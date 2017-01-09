@@ -25,9 +25,5 @@ public interface Constants {
     String APP_CLIENT_ID = "or-manager";
     String MASTER_REALM = "master";
     String MASTER_REALM_ADMIN_USER = "admin";
-    String PERSISTENCE_SEQUENCE_ID_GENERATOR = "SEQUENCE_ID_GENERATOR";
-    String PERSISTENCE_UNIQUE_ID_GENERATOR = "UNIQUE_ID_GENERATOR";
-    String PERSISTENCE_JSON_OBJECT_TYPE = "json_object";
-    String PERSISTENCE_JSON_ARRAY_TYPE = "json_array";
     int ACCESS_TOKEN_LIFESPAN_SECONDS = 300; // 5 minutes
 }

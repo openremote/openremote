@@ -19,8 +19,10 @@
  */
 package org.openremote.manager.server.asset;
 
+import elemental.json.JsonValue;
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
+import org.openremote.Function;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
@@ -28,24 +30,45 @@ import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.event.EventService;
-import org.openremote.manager.shared.asset.*;
+import org.openremote.manager.shared.asset.SubscribeAssetModified;
+import org.openremote.manager.shared.asset.UnsubscribeAssetModified;
+import org.openremote.model.AttributeRef;
+import org.openremote.model.AttributeValueChange;
+import org.openremote.model.asset.*;
+import org.postgresql.util.PGobject;
 
 import javax.persistence.EntityManager;
+import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Logger;
 
-import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_EVENT_TOPIC;
+import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
 import static org.openremote.manager.server.event.EventPredicates.isEventType;
+import static org.openremote.model.asset.AssetType.AGENT;
+import static org.openremote.model.asset.AssetType.THING;
 
 public class AssetService extends RouteBuilder implements ContainerService {
+
+    private static final Logger LOG = Logger.getLogger(AssetService.class.getName());
 
     protected MessageBrokerService messageBrokerService;
     protected EventService eventService;
     protected PersistenceService persistenceService;
     protected AssetListenerSubscriptions assetListenerSubscriptions;
+    final protected Function<AttributeRef, ProtocolConfiguration> agentLinkResolver = agentLink -> {
+        // Resolve the agent and the protocol configuration
+        // TODO This is very inefficient and requires Hibernate second-level caching
+        Asset agent = get(agentLink.getEntityId());
+        if (agent != null && agent.getWellKnownType().equals(AGENT)) {
+            AgentAttributes agentAttributes = new AgentAttributes(agent);
+            return agentAttributes.getProtocolConfiguration(agentLink.getAttributeName());
+        }
+        return null;
+    };
 
     @Override
     public void init(Container container) throws Exception {
@@ -102,12 +125,16 @@ public class AssetService extends RouteBuilder implements ContainerService {
                 );
             });
 
-        from(PERSISTENCE_EVENT_TOPIC)
+        from(PERSISTENCE_TOPIC)
             .filter(isPersistenceEventForEntityType(Asset.class))
             .process(exchange -> {
                 PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
                 assetListenerSubscriptions.dispatch(persistenceEvent);
             });
+    }
+
+    public Function<AttributeRef, ProtocolConfiguration> getAgentLinkResolver() {
+        return agentLinkResolver;
     }
 
     public AssetInfo[] getRoot(String realm) {
@@ -139,6 +166,19 @@ public class AssetService extends RouteBuilder implements ContainerService {
         });
     }
 
+    public ServerAsset[] findChildrenByType(String parentId, AssetType assetType) {
+        return persistenceService.doReturningTransaction(em -> {
+            List<ServerAsset> result =
+                em.createQuery(
+                    "select a from Asset a where a.type = :assetType and a.parentId = :parentId order by a.createdOn asc",
+                    ServerAsset.class)
+                    .setParameter("assetType", assetType.getValue())
+                    .setParameter("parentId", parentId)
+                    .getResultList();
+            return result.toArray(new ServerAsset[result.size()]);
+        });
+    }
+
     public ServerAsset[] findByTypeInAllRealms(String assetType) {
         return persistenceService.doReturningTransaction(em -> {
             List<ServerAsset> result =
@@ -165,9 +205,7 @@ public class AssetService extends RouteBuilder implements ContainerService {
     }
 
     public ServerAsset get(String assetId) {
-        return persistenceService.doReturningTransaction(em -> {
-            return loadAsset(em, assetId);
-        });
+        return persistenceService.doReturningTransaction(em -> loadAsset(em, assetId));
     }
 
     public ServerAsset merge(ServerAsset asset) {
@@ -186,6 +224,7 @@ public class AssetService extends RouteBuilder implements ContainerService {
         });
     }
 
+    /* TODO: What is the asset lifecycle and how do we handle tree integrity?
     public void deleteChildren(String parentId) {
         persistenceService.doTransaction(em -> {
             List<AssetInfo> result =
@@ -202,6 +241,39 @@ public class AssetService extends RouteBuilder implements ContainerService {
                 }
             }
         });
+    }
+    */
+
+    public boolean updateThingAttributeValue(AttributeValueChange attributeValueChange) {
+        // TODO: More fine-grained return to distinguish failures ("wrong value type" is not the same as "not found")
+
+        AttributeRef attributeRef = attributeValueChange.getAttributeRef();
+        ServerAsset thing = get(attributeRef.getEntityId());
+        if (thing == null) {
+            LOG.fine("Ignoring attribute update for unknown asset: " + attributeValueChange);
+            return false;
+        }
+        if (thing.getWellKnownType() != THING) {
+            LOG.fine("Ignoring attribute update '" + attributeValueChange + "' for non-thing asset: " + thing);
+            return false;
+        }
+        ThingAttributes thingAttributes = new ThingAttributes(thing);
+        ThingAttribute thingAttribute = thingAttributes.getLinkedAttribute(
+            agentLinkResolver, attributeRef.getAttributeName()
+        );
+        if (thingAttribute == null) {
+            LOG.fine("Ignoring attribute update '" + attributeValueChange + "' for unknown/unlinked attribute: " + thing);
+            return false;
+        }
+
+        if (thingAttribute.getType().getJsonType() != attributeValueChange.getValue().getType()) {
+            LOG.fine("Ignoring attribute update '" + attributeValueChange + "', wrong value type '" + attributeValueChange.getValue().getType() + "': " + thing);
+            return false;
+        }
+        LOG.fine("Applying attribute update '" + attributeValueChange + "' on: " + thing);
+        thingAttribute.setValue(attributeValueChange.getValue());
+
+        return updateAttributeValue(thing.getId(), thingAttribute.getName(), thingAttribute.getValue());
     }
 
     protected ServerAsset loadAsset(EntityManager em, String assetId) {
@@ -240,5 +312,37 @@ public class AssetService extends RouteBuilder implements ContainerService {
             throw new IllegalStateException("Parent asset not found: " + asset.getParentId());
         if (Arrays.asList(parent.getPath()).contains(asset.getId()))
             throw new IllegalStateException("Parent asset can not be a child of the asset: " + asset.getParentId());
+    }
+
+    protected boolean updateAttributeValue(String assetId, String attributeName, JsonValue value) {
+        return persistenceService.doReturningTransaction(entityManager ->
+            entityManager.unwrap(Session.class).doReturningWork(connection -> {
+                String update =
+                    "UPDATE ASSET" +
+                        " SET ATTRIBUTES = jsonb_set(ATTRIBUTES, ?, ?, FALSE)" +
+                        " WHERE ID = ? AND ATTRIBUTES -> ? IS NOT NULL";
+                int result;
+                try (PreparedStatement statement = connection.prepareStatement(update)) {
+
+                    Array attributePath = connection.createArrayOf(
+                        "text",
+                        new String[]{attributeName, "value"}
+                    );
+                    statement.setArray(1, attributePath);
+
+                    PGobject pgJsonValue = new PGobject();
+                    pgJsonValue.setType("jsonb");
+                    pgJsonValue.setValue(value.toJson());
+                    statement.setObject(2, pgJsonValue);
+
+                    statement.setString(3, assetId);
+
+                    statement.setString(4, attributeName);
+
+                    result = statement.executeUpdate();
+                    return result == 1;
+                }
+            })
+        );
     }
 }
