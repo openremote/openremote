@@ -1,0 +1,30 @@
+<html><head><link rel="import" href="../bower_components/paper-stepper/paper-stepper.html">
+<link rel="import" href="../bower_components/paper-stepper/paper-step.html">
+
+<link rel="import" href="components/template-scenes-input.html">
+
+</head><body><dom-module id="openremote-intro">
+  <template>
+    <style is="custom-style">
+      #stepper {
+        background-color: transparent;
+      }
+      paper-button.default-button {
+        background: #c0d62e;
+        color:#FFFFFF;
+        float:right;
+      }
+    </style>
+
+    <paper-stepper id="stepper" vertical="">
+      <paper-step label="Home" editable=""><template-scenes-input></template-scenes-input></paper-step>
+      <paper-step label="Away" editable=""><template-scenes-input></template-scenes-input></paper-step>
+      <paper-step label="Evening" editable=""><template-scenes-input></template-scenes-input></paper-step>
+      <paper-step label="Night" editable=""><template-scenes-input></template-scenes-input></paper-step>
+    </paper-stepper>
+    <paper-button class="default-button" raised="" name="Home" onclick="_changeToApp(event)" id="finish">Finish</paper-button>
+    <script>function _changeToApp(e){var c=document.querySelector("#pages");c.selected="Home"}</script>
+  </template>
+
+   <script>Polymer({is:"openremote-intro"});</script>
+</dom-module></body></html>
