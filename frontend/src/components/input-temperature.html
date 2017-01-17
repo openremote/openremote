@@ -1,7 +1,7 @@
 <html><head><link rel="import" href="../../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
 <link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
-</head><body><dom-module id="input-temperature" attributes="size">
+</head><body><dom-module id="input-temperature" attributes={"size", "active", "data"}>
   <template>
     <style type="text/css">
       paper-dropdown-menu.custom{
@@ -51,23 +51,10 @@
 
     </style>
      <paper-dropdown-menu class$="custom {{size}}">
-      <paper-listbox class="dropdown-content">
-        <paper-item>17.0</paper-item>
-        <paper-item>17.5</paper-item>
-        <paper-item>18.0</paper-item>
-        <paper-item>18.5</paper-item>
-        <paper-item>19.0</paper-item>
-        <paper-item>19.5</paper-item>
-        <paper-item>20.0</paper-item>
-        <paper-item>20.5</paper-item>
-        <paper-item>21.0</paper-item>
-        <paper-item>21.5</paper-item>
-        <paper-item>22.0</paper-item>
-        <paper-item>22.5</paper-item>
-        <paper-item>23.0</paper-item>
-        <paper-item>23.5</paper-item>
-        <paper-item>24.0</paper-item>
-        <paper-item>24.5</paper-item>
+      <paper-listbox class="dropdown-content" attr-for-selected="label" selected="{{active}}">
+       <template is="dom-repeat" items="{{data}}">
+          <paper-item label="{{item}}" >{{item}}</paper-item>
+        </template>
       </paper-listbox>
     </paper-dropdown-menu>
   </template>

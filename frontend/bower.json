@@ -21,7 +21,8 @@
     "paper-spinner": "PolymerElements/paper-spinner#^1.2.1",
     "webcomponentsjs": "webcomponents/webcomponentsjs#^0.7.23",
     "iron-resizable-behavior": "PolymerElements/iron-resizable-behavior#^1.0.5",
-    "app-route": "PolymerElements/app-route#^0.9.3"
+    "app-route": "PolymerElements/app-route#^0.9.3",
+    "iron-ajax": "PolymerElements/iron-ajax#^1.4.3"
   },
   "devDependencies": {
     "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",

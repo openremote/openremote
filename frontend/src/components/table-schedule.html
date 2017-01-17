@@ -1,4 +1,4 @@
-<html><head></head><body><dom-module id="table-schedule">
+<html><head></head><body><dom-module id="table-schedule" attributes={"data", "header"}>
   <template>
     <style type="text/css">
       table{
@@ -10,76 +10,38 @@
         border-spacing:0px;
         border-bottom: 1px solid #e4e4e4;
         border-right: 1px solid #e4e4e4;
-
+        font-weight: normal;
         text-align: center;
       }
       th {
           background-color: #c0d62e;
           color: white;
+        padding:5px 0;
+      }
+      th:first-child{
+        background-color: #FFFFFF;
       }
       td:first-child{
         background-color:#e4e4e4;
         border-bottom: 1px solid #FFFFFF;
+        padding:10px 0;
       }
     </style>
     <table style="width: 100%" border="0">
       <tbody>
         <tr>
-          <th>&nbsp;</th>
-          <th>Morning</th>
-          <th>Away</th>
-          <th>Evening</th>
-          <th>Night</th>
+          <th></th>
+          <template is="dom-repeat" items="{{header}}">
+            <th>{{item}}</th>
+          </template>
         </tr>
-        <tr>
-          <td>Mon</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td>Tue</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td>Wed</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td>Thu</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td>Fri</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td>Sat</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td>Sun</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-          <td>&nbsp;</td>
-        </tr>
+        <template is="dom-repeat" items="{{data}}">
+          <tr>
+            <template is="dom-repeat" items="{{item}}">
+             <td>{{item}}</td>
+          </template>
+          </tr>
+        </template>
       </tbody>
     </table>
   </template>

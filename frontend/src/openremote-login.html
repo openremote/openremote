@@ -45,7 +45,30 @@
       <paper-button raised="" onclick="_reset(event)">Reset</paper-button>
       <div class="output"></div>
     </form>
-    <script>function _delayedSubmit(e){spinner.active=!0,spinner.hidden=!1,eventsDemoSubmit.disabled=!0,setTimeout(function(){var e=document.querySelector("#pages");e.selected="Intro"},1e3)}function _reset(e){var t=Polymer.dom(e).localTarget.parentElement;t.reset(),t.querySelector(".output").innerHTML=""}eventsDemo.addEventListener("change",function(e){eventsDemoSubmit.disabled=!eventsDemo.validate()}),document.getElementById("eventsDemo").addEventListener("iron-form-submit",function(e){spinner.active=!1,spinner.hidden=!0,eventsDemoSubmit.disabled=!1,this.querySelector(".output").innerHTML=JSON.stringify(e.detail)});</script>
+    <script> eventsDemo.addEventListener('change', function(event) {
+        eventsDemoSubmit.disabled = !eventsDemo.validate();
+      });
+      function _delayedSubmit(event) {
+        spinner.active = true;
+        spinner.hidden = false;
+        eventsDemoSubmit.disabled = true;
+        setTimeout(function() {
+            localStorage.setItem("jwt", "WQEOqweoopiasopi293812903iopweopqweipqwei");
+            window.location = '#/Intro'
+        }, 1000);
+      }
+      function _reset(event) {
+        var form = Polymer.dom(event).localTarget.parentElement
+        form.reset();
+        form.querySelector('.output').innerHTML = '';
+      }
+      document.getElementById('eventsDemo').addEventListener('iron-form-submit', function(event) {
+        spinner.active = false;
+        spinner.hidden = true;
+        eventsDemoSubmit.disabled = false;
+        this.querySelector('.output').innerHTML = JSON.stringify(event.detail);
+      });
+      </script>
   </template>
 
    <script>Polymer({is:"openremote-login"});</script>

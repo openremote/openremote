@@ -1,63 +1,11 @@
-<!--
-@license
-Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
-This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
-The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
-The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
-Code distributed by Google as part of the polymer project is also
-subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
--->
-
-<link rel="import" href="../polymer/polymer.html">
+<html><head><link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../paper-styles/default-theme.html">
 <link rel="import" href="../paper-behaviors/paper-checked-element-behavior.html">
 
-<!--
-Material design: [Checkbox](https://www.google.com/design/spec/components/selection-controls.html#selection-controls-checkbox)
 
-`paper-checkbox` is a button that can be either checked or unchecked.  User
-can tap the checkbox to check or uncheck it.  Usually you use checkboxes
-to allow user to select multiple options from a set.  If you have a single
-ON/OFF option, avoid using a single checkbox and use `paper-toggle-button`
-instead.
 
-Example:
-
-    <paper-checkbox>label</paper-checkbox>
-
-    <paper-checkbox checked> label</paper-checkbox>
-
-### Styling
-
-The following custom properties and mixins are available for styling:
-
-Custom property | Description | Default
-----------------|-------------|----------
-`--paper-checkbox-unchecked-background-color` | Checkbox background color when the input is not checked | `transparent`
-`--paper-checkbox-unchecked-color` | Checkbox border color when the input is not checked | `--primary-text-color`
-`--paper-checkbox-unchecked-ink-color` | Selected/focus ripple color when the input is not checked | `--primary-text-color`
-`--paper-checkbox-checked-color` | Checkbox color when the input is checked | `--primary-color`
-`--paper-checkbox-checked-ink-color` | Selected/focus ripple color when the input is checked | `--primary-color`
-`--paper-checkbox-checkmark-color` | Checkmark color | `white`
-`--paper-checkbox-label-color` | Label color | `--primary-text-color`
-`--paper-checkbox-label-checked-color` | Label color when the input is checked | `--paper-checkbox-label-color`
-`--paper-checkbox-label-spacing` | Spacing between the label and the checkbox | `8px`
-`--paper-checkbox-label` | Mixin applied to the label | `{}`
-`--paper-checkbox-label-checked` | Mixin applied to the label when the input is checked | `{}`
-`--paper-checkbox-error-color` | Checkbox color when invalid | `--error-color`
-`--paper-checkbox-size` | Size of the checkbox | `18px`
-`--paper-checkbox-ink-size` | Size of the ripple | `48px`
-`--paper-checkbox-margin` | Margin around the checkbox container | `initial`
-`--paper-checkbox-vertical-align` | Vertical alignment of the checkbox container | `middle`
-
-This element applies the mixin `--paper-font-common-base` but does not import `paper-styles/typography.html`.
-In order to apply the `Roboto` font to this element, make sure you've imported `paper-styles/typography.html`.
-
-@demo demo/index.html
--->
-
-<dom-module id="paper-checkbox">
-  <template strip-whitespace>
+</head><body><dom-module id="paper-checkbox">
+  <template strip-whitespace="">
     <style>
       :host {
         display: inline-block;
@@ -235,77 +183,6 @@ In order to apply the `Roboto` font to this element, make sure you've imported `
     <div id="checkboxLabel"><content></content></div>
   </template>
 
-  <script>
-    Polymer({
-      is: 'paper-checkbox',
-
-      behaviors: [
-        Polymer.PaperCheckedElementBehavior
-      ],
-
-      hostAttributes: {
-        role: 'checkbox',
-        'aria-checked': false,
-        tabindex: 0
-      },
-
-      properties: {
-        /**
-         * Fired when the checked state changes due to user interaction.
-         *
-         * @event change
-         */
-
-        /**
-         * Fired when the checked state changes.
-         *
-         * @event iron-change
-         */
-        ariaActiveAttribute: {
-          type: String,
-          value: 'aria-checked'
-        }
-      },
-
-      attached: function() {
-        var inkSize = this.getComputedStyleValue('--calculated-paper-checkbox-ink-size').trim();
-        // If unset, compute and set the default `--paper-checkbox-ink-size`.
-        if (inkSize === '-1px') {
-          var checkboxSize = parseFloat(this.getComputedStyleValue('--calculated-paper-checkbox-size').trim());
-          var defaultInkSize = Math.floor((8 / 3) * checkboxSize);
-
-          // The checkbox and ripple need to have the same parity so that their
-          // centers align.
-          if (defaultInkSize % 2 !== checkboxSize % 2) {
-            defaultInkSize++;
-          }
-
-          this.customStyle['--paper-checkbox-ink-size'] = defaultInkSize + 'px';
-          this.updateStyles();
-        }
-      },
-
-      _computeCheckboxClass: function(checked, invalid) {
-        var className = '';
-        if (checked) {
-          className += 'checked ';
-        }
-        if (invalid) {
-          className += 'invalid';
-        }
-        return className;
-      },
-
-      _computeCheckmarkClass: function(checked) {
-        return checked ? '' : 'hidden';
-      },
-
-      // create ripple inside the checkboxContainer
-      _createRipple: function() {
-        this._rippleContainer = this.$.checkboxContainer;
-        return Polymer.PaperInkyFocusBehaviorImpl._createRipple.call(this);
-      }
-
-    });
-  </script>
+  <script>Polymer({is:"paper-checkbox",behaviors:[Polymer.PaperCheckedElementBehavior],hostAttributes:{role:"checkbox","aria-checked":!1,tabindex:0},properties:{ariaActiveAttribute:{type:String,value:"aria-checked"}},attached:function(){var e=this.getComputedStyleValue("--calculated-paper-checkbox-ink-size").trim();if("-1px"===e){var t=parseFloat(this.getComputedStyleValue("--calculated-paper-checkbox-size").trim()),a=Math.floor(8/3*t);a%2!==t%2&&a++,this.customStyle["--paper-checkbox-ink-size"]=a+"px",this.updateStyles()}},_computeCheckboxClass:function(e,t){var a="";return e&&(a+="checked "),t&&(a+="invalid"),a},_computeCheckmarkClass:function(e){return e?"":"hidden"},_createRipple:function(){return this._rippleContainer=this.$.checkboxContainer,Polymer.PaperInkyFocusBehaviorImpl._createRipple.call(this)}});</script>
 </dom-module>
+</body></html>

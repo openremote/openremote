@@ -1,62 +1,13 @@
-<!--
-@license
-Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
-This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
-The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
-The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
-Code distributed by Google as part of the polymer project is also
-subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
--->
-
-<link rel="import" href="../polymer/polymer.html">
+<html><head><link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../paper-styles/color.html">
 <link rel="import" href="../paper-styles/default-theme.html">
 <link rel="import" href="../paper-behaviors/paper-checked-element-behavior.html">
 
-<!--
-Material design: [Switch](https://www.google.com/design/spec/components/selection-controls.html#selection-controls-switch)
 
-`paper-toggle-button` provides a ON/OFF switch that user can toggle the state
-by tapping or by dragging the switch.
 
-Example:
-
-    <paper-toggle-button></paper-toggle-button>
-
-### Styling
-
-The following custom properties and mixins are available for styling:
-
-Custom property | Description | Default
-----------------|-------------|----------
-`--paper-toggle-button-unchecked-bar-color` | Slider color when the input is not checked | `#000000`
-`--paper-toggle-button-unchecked-button-color` | Button color when the input is not checked | `--paper-grey-50`
-`--paper-toggle-button-unchecked-ink-color` | Selected/focus ripple color when the input is not checked | `--dark-primary-color`
-`--paper-toggle-button-checked-bar-color` | Slider button color when the input is checked | `--primary-color`
-`--paper-toggle-button-checked-button-color` | Button color when the input is checked | `--primary-color`
-`--paper-toggle-button-checked-ink-color` | Selected/focus ripple color when the input is checked | `--primary-color`
-`--paper-toggle-button-invalid-bar-color` | Slider button color when the input is invalid | `--error-color`
-`--paper-toggle-button-invalid-button-color` | Button color when the input is invalid | `--error-color`
-`--paper-toggle-button-invalid-ink-color` | Selected/focus ripple color when the input is invalid | `--error-color`
-`--paper-toggle-button-unchecked-bar` | Mixin applied to the slider when the input is not checked | `{}`
-`--paper-toggle-button-unchecked-button` | Mixin applied to the slider button when the input is not checked | `{}`
-`--paper-toggle-button-checked-bar` | Mixin applied to the slider when the input is checked | `{}`
-`--paper-toggle-button-checked-button` | Mixin applied to the slider button when the input is checked | `{}`
-`--paper-toggle-button-label-color` | Label color | `--primary-text-color`
-`--paper-toggle-button-label-spacing` | Spacing between the label and the button | `8px`
-
-This element applies the mixin `--paper-font-common-base` but does not import `paper-styles/typography.html`.
-In order to apply the `Roboto` font to this element, make sure you've imported `paper-styles/typography.html`.
-
-@group Paper Elements
-@element paper-toggle-button
-@hero hero.svg
-@demo demo/index.html
--->
-
-<dom-module id="paper-toggle-button">
-  <template strip-whitespace>
+</head><body><dom-module id="paper-toggle-button">
+  <template strip-whitespace="">
 
     <style>
       :host {
@@ -195,87 +146,6 @@ In order to apply the `Roboto` font to this element, make sure you've imported `
 
   </template>
 
-  <script>
-    Polymer({
-      is: 'paper-toggle-button',
-
-      behaviors: [
-        Polymer.PaperCheckedElementBehavior
-      ],
-
-      hostAttributes: {
-        role: 'button',
-        'aria-pressed': 'false',
-        tabindex: 0
-      },
-
-      properties: {
-        /**
-         * Fired when the checked state changes due to user interaction.
-         *
-         * @event change
-         */
-        /**
-         * Fired when the checked state changes.
-         *
-         * @event iron-change
-         */
-      },
-
-      listeners: {
-        track: '_ontrack'
-      },
-
-      attached: function() {
-        Polymer.RenderStatus.afterNextRender(this, function() {
-          this.setScrollDirection('y');
-        });
-      },
-
-      _ontrack: function(event) {
-        var track = event.detail;
-        if (track.state === 'start') {
-          this._trackStart(track);
-        } else if (track.state === 'track') {
-          this._trackMove(track);
-        } else if (track.state === 'end') {
-          this._trackEnd(track);
-        }
-      },
-
-      _trackStart: function(track) {
-        this._width = this.$.toggleBar.offsetWidth / 2;
-        /*
-         * keep an track-only check state to keep the dragging behavior smooth
-         * while toggling activations
-         */
-        this._trackChecked = this.checked;
-        this.$.toggleButton.classList.add('dragging');
-      },
-
-      _trackMove: function(track) {
-        var dx = track.dx;
-        this._x = Math.min(this._width,
-            Math.max(0, this._trackChecked ? this._width + dx : dx));
-        this.translate3d(this._x + 'px', 0, 0, this.$.toggleButton);
-        this._userActivate(this._x > (this._width / 2));
-      },
-
-      _trackEnd: function(track) {
-        this.$.toggleButton.classList.remove('dragging');
-        this.transform('', this.$.toggleButton);
-      },
-
-      // customize the element's ripple
-      _createRipple: function() {
-        this._rippleContainer = this.$.toggleButton;
-        var ripple = Polymer.PaperRippleBehavior._createRipple();
-        ripple.id = 'ink';
-        ripple.setAttribute('recenters', '');
-        ripple.classList.add('circle', 'toggle-ink');
-        return ripple;
-      }
-
-    });
-  </script>
+  <script>Polymer({is:"paper-toggle-button",behaviors:[Polymer.PaperCheckedElementBehavior],hostAttributes:{role:"button","aria-pressed":"false",tabindex:0},properties:{},listeners:{track:"_ontrack"},attached:function(){Polymer.RenderStatus.afterNextRender(this,function(){this.setScrollDirection("y")})},_ontrack:function(t){var e=t.detail;"start"===e.state?this._trackStart(e):"track"===e.state?this._trackMove(e):"end"===e.state&&this._trackEnd(e)},_trackStart:function(t){this._width=this.$.toggleBar.offsetWidth/2,this._trackChecked=this.checked,this.$.toggleButton.classList.add("dragging")},_trackMove:function(t){var e=t.dx;this._x=Math.min(this._width,Math.max(0,this._trackChecked?this._width+e:e)),this.translate3d(this._x+"px",0,0,this.$.toggleButton),this._userActivate(this._x>this._width/2)},_trackEnd:function(t){this.$.toggleButton.classList.remove("dragging"),this.transform("",this.$.toggleButton)},_createRipple:function(){this._rippleContainer=this.$.toggleButton;var t=Polymer.PaperRippleBehavior._createRipple();return t.id="ink",t.setAttribute("recenters",""),t.classList.add("circle","toggle-ink"),t}});</script>
 </dom-module>
+</body></html>

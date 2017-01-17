@@ -1,31 +1,31 @@
 <html><head><link rel="import" href="../../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
 <link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
-</head><body><dom-module id="input-speed">
+</head><body><dom-module id="input-dropdown" attributes={"data", "active"}>
   <template>
     <style type="text/css">
-      paper-dropdown-menu.speed{
+      paper-dropdown-menu.custom{
         background-color: #374c4f;
        }
 
-      paper-dropdown-menu.speed{
+      paper-dropdown-menu.custom{
         width:80px;
       }
       .paper-input{
         padding:0;
       }
-       paper-dropdown-menu.speed > ::content paper-input-container{
+       paper-dropdown-menu.custom > ::content paper-input-container{
         padding:0;
         margin:5px 0;
       }
-      paper-dropdown-menu.speed > ::content .floated-label-placeholder{
+      paper-dropdown-menu.custom > ::content .floated-label-placeholder{
         display: none;
        }
-      paper-dropdown-menu.speed > ::content .label-and-input-container input{
+      paper-dropdown-menu.custom > ::content .label-and-input-container input{
         text-align: center;
       }
 
-      paper-dropdown-menu.speed {
+      paper-dropdown-menu.custom {
       --paper-input-container-input: {
             color:#FFFFFF;
           }
@@ -42,15 +42,14 @@
        }
     };
     </style>
-     <paper-dropdown-menu class="speed">
-      <paper-listbox class="dropdown-content">
-        <paper-item>Auto</paper-item>
-        <paper-item>Low</paper-item>
-        <paper-item>Medium</paper-item>
-        <paper-item>High</paper-item>
+     <paper-dropdown-menu class="custom">
+      <paper-listbox class="dropdown-content" attr-for-selected="label" selected="{{active}}">
+        <template is="dom-repeat" items="{{data}}">
+          <paper-item label="{{item}}" >{{item}}</paper-item>
+        </template>
       </paper-listbox>
     </paper-dropdown-menu>
   </template>
 
-   <script>Polymer({is:"input-speed"});</script>
+   <script>Polymer({is:"input-dropdown"});</script>
 </dom-module></body></html>

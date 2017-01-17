@@ -1,6 +1,6 @@
 <html><head><link rel="import" href="../../bower_components/paper-radio-button/paper-radio-button.html">
 <link rel="import" href="../../bower_components/paper-radio-group/paper-radio-group.html">
-</head><body><dom-module id="input-switch-blok">
+</head><body><dom-module id="input-switch-blok" attributes={"active"}>
   <template>
     <style type="text/css">
       paper-radio-group.square-group{
@@ -55,12 +55,12 @@
         padding: 20px;
       }
     </style>
-    <paper-radio-group selected="morning" class="square-group" allow-empty-selection="">
+    <paper-radio-group selected="{{active}}" class="square-group" allow-empty-selection="">
       <content>
-        <paper-radio-button class="square" name="morning"><strong>Morning</strong></paper-radio-button>
-        <paper-radio-button class="square" name="away"><strong>Away</strong></paper-radio-button>
-        <paper-radio-button class="square break" name="evening">Expected<br><strong>Evening</strong><br>  at 18:11</paper-radio-button>
-        <paper-radio-button class="square" name="night">Expected<br><strong>Night</strong><br> at 23:45</paper-radio-button>
+        <paper-radio-button class="square" name="Morning"><strong>Morning</strong></paper-radio-button>
+        <paper-radio-button class="square" name="Away"><strong>Away</strong></paper-radio-button>
+        <paper-radio-button class="square break" name="Evening"><strong>Evening</strong></paper-radio-button>
+        <paper-radio-button class="square" name="Night"><strong>Night</strong></paper-radio-button>
       </content>
     </paper-radio-group>
   </template>

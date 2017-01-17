@@ -22,6 +22,7 @@
       .container-column {
         box-sizing: border-box;
         padding: 0 5px;
+        height:60px;
       }
       .container-column:first-child{
         padding-right:20px;
@@ -33,12 +34,20 @@
         margin-left: auto;
       }
     </style>
+     <div class="container">
+      <div class="container-column">
+        <iron-icon class="small" src="../../images/panel/temperature_gauge_100.png"></iron-icon>
+      </div>
+      <div class="container-column">Living Room</div>
+      <div class="container-column">
+         <input-temperature size="small"></input-temperature>
+      </div>
+    </div>
     <div class="container">
       <div class="container-column">
         <iron-icon class="small" src="../../images/panel/temperature_gauge_100.png"></iron-icon>
       </div>
       <div class="container-column">Bedroom</div>
-      <div class="container-column">21,0</div>
       <div class="container-column">
          <input-temperature size="small"></input-temperature>
       </div>
@@ -48,9 +57,17 @@
         <iron-icon class="small" src="../../images/panel/temperature_gauge_100.png"></iron-icon>
       </div>
       <div class="container-column">Bathroom</div>
-      <div class="container-column">21,0</div>
       <div class="container-column">
          <input-temperature size="small"></input-temperature>
+      </div>
+    </div>
+    <div class="container">
+      <div class="container-column">
+        <iron-icon class="small" src="../../images/panel/alarm_off.png"></iron-icon>
+      </div>
+      <div class="container-column">Alarm</div>
+      <div class="container-column">
+        <paper-toggle-button class="green"></paper-toggle-button>
       </div>
     </div>
   </template>
