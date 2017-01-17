@@ -36,6 +36,10 @@
     <iron-ajax auto url="../../../api/settings/current/get_current_settings.json" on-response="handleResponse" handle-as="json"></iron-ajax>
 
     <style>
+    a{
+      color:#FFFFFF;
+      text-decoration: none;
+    }
       app-drawer-layout{
         position: relative;
         z-index: 9999;
@@ -185,6 +189,13 @@
         flex: 1 1 auto;
 
       }
+      .full_width{
+        margin-top:20px;
+        width:100%;
+      }
+      .bg-darkgreen{
+        background-color: #374c4f;
+      }
     }
     </style>
       <app-location use-hash-as-path route="{{route}}"></app-location>
@@ -228,6 +239,7 @@
           <div name="Intro" class="page-overlay" route="{{subroute}}">
             <div class="page-overlay-inner">
               <app-toolbar>
+                <paper-icon-button class="back-btn" icon="arrow-back" drawer-toggle=""></paper-icon-button>
                 <div main-title="">Smart 61</div>
               </app-toolbar>
                <div class="panel transparent">
@@ -398,7 +410,7 @@
             <div class="page-overlay-inner"> 
               <app-toolbar>
                 <paper-icon-button class="back-btn" icon="arrow-back" drawer-toggle=""></paper-icon-button>
-                <div main-title="">Home</div>
+                <div main-title="">Smart 61</div>
               </app-toolbar>
               <div class="panel">
                 <div class="inner-panel">
@@ -415,7 +427,7 @@
                 <div class="inner-panel">
                   <span class="center">Scene settings</span>
                   <table-schedule data="{{data.scenes.data}}"  header="{{data.scenes.header}}"></table-schedule>
-                   <paper-button name="">Scene Wizard</paper-button>
+                   <a href="#/Intro"><paper-button class="full_width bg-darkgreen">Scene Wizard</paper-button></a>
                 </div>
               </div>
             </div>
