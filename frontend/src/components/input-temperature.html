@@ -1,67 +1,63 @@
-<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<html><head><link rel="import" href="../../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
 <link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
-<dom-module id="input-temperature">
+</head><body><dom-module id="input-temperature" attributes={"size", "active", "data"}>
   <template>
     <style type="text/css">
       paper-dropdown-menu.custom{
         background-color: #374c4f;
-        padding: 20px;
        }
-      paper-dropdown-menu.custom {
-      --paper-input-container-label: {
-        color: #FFFFFF;
-        font-size
+
+      paper-dropdown-menu.custom.small{
+        width:80px;
       }
-      --paper-input-container-input: {
-        font-size:36px;
-        color:#FFFFFF;
+      .paper-input{
+        padding:0;
       }
 
+      paper-dropdown-menu.custom.small > ::content paper-input-container{
+        padding:0;
+        margin:5px 0;
+      }
+      paper-dropdown-menu.custom > ::content .floated-label-placeholder{
+        display: none;
+       }
+      paper-dropdown-menu.custom > ::content .label-and-input-container input{
+        text-align: center;
+      }
+      paper-dropdown-menu.custom.large > ::content .label-and-input-container input{
+        font-size:42px;
+      }
+      paper-dropdown-menu.custom.large{
+        padding:30px 20px;
+       }
+
+      paper-dropdown-menu.custom {
+      --paper-input-container-input: {
+            color:#FFFFFF;
+          }
+      --paper-input-container-label: {
+        display:none;
+      }
       --paper-input-container-underline: {
-        border-color:#c0d62e;
+        border-color:transparent;
       }
 
         --paper-input-container-focus-color:{
-         color:#c0d62e;
-         border-color:#c0d62e;
+         color:transparent;
+         border-color:transparent;
        }
     };
 
     </style>
-     <paper-dropdown-menu class="custom" label="Set">
-      <paper-listbox class="dropdown-content">
-        <paper-item>15.0</paper-item>
-        <paper-item>15.5</paper-item>
-        <paper-item>16.0</paper-item>
-        <paper-item>16.5</paper-item>
-        <paper-item>17.0</paper-item>
-        <paper-item>17.5</paper-item>
-        <paper-item>18.0</paper-item>
-        <paper-item>18.5</paper-item>
-        <paper-item>19.0</paper-item>
-        <paper-item>19.5</paper-item>
-        <paper-item>20.0</paper-item>
-        <paper-item>20.5</paper-item>
-        <paper-item>21.0</paper-item>
-        <paper-item>21.5</paper-item>
-        <paper-item>22.0</paper-item>
-        <paper-item>22.5</paper-item>
-        <paper-item>23.0</paper-item>
-        <paper-item>23.5</paper-item>
-        <paper-item>24.0</paper-item>
-        <paper-item>24.5</paper-item>
-        <paper-item>25.0</paper-item>
-        <paper-item>25.5</paper-item>
+     <paper-dropdown-menu class$="custom {{size}}">
+      <paper-listbox class="dropdown-content" attr-for-selected="label" selected="{{active}}">
+       <template is="dom-repeat" items="{{data}}">
+          <paper-item label="{{item}}" >{{item}}</paper-item>
+        </template>
       </paper-listbox>
     </paper-dropdown-menu>
   </template>
 
-   <script>
-
-    Polymer({
-      is: 'input-temperature'
-    });
-
-  </script>
-</dom-module>
+   <script>Polymer({is:"input-temperature"});</script>
+</dom-module></body></html>

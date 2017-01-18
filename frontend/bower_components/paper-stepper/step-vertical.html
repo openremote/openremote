@@ -1,0 +1,144 @@
+<html><head><link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../paper-styles/color.html">
+<link rel="import" href="../paper-styles/default-theme.html">
+<link rel="import" href="../paper-styles/typography.html">
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../iron-icons/editor-icons.html">
+<link rel="import" href="../iron-collapse/iron-collapse.html">
+<link rel="import" href="step-label-behavior.html">
+<link rel="import" href="step-label-shared-styles.html">
+
+</head><body><dom-module id="step-vertical">
+  <template>
+    <style include="step-label-shared-styles">
+      :host {
+        @apply(--layout-vertical);
+      }
+      #connectedBadge, #textWrapper {
+        pointer-events: none;
+        /* to be above paper-ripple*/
+        z-index: 1;
+      }
+      #collapse {
+        --iron-collapse-transition-duration: var(--paper-vertical-step-transition-duration, 500ms);
+        @apply(--layout-horizontal);
+      }
+      /**
+       * Content
+       */
+      #connectedStep {
+        @apply(--layout-horizontal);
+      }
+      #contentConnectorLine {
+        width: 1px;
+        background: var(--divider-color, --paper-grey-300);
+        margin-left: 36px;
+        margin-right: 24px;
+      }
+      #stepWrapper {
+        @apply(--layout-flex);
+        /*should be 48px on large screen?*/
+        padding-right: 24px;
+      }
+      #paperStepWrapper {
+        max-height: calc(var(--paper-vertical-step-max-height, 400px) - 92px);
+        @apply(--layout-scroll);
+      }
+
+      /**
+       * Buttons
+       */
+      #buttonsWrapper {
+        height: 48px;
+        padding-top: 16px;
+        padding-bottom: 28px;
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+        @apply(--layout-flex-none);
+      }
+      #buttonsWrapper > paper-button {
+        margin-right: 8px;
+        margin-left: 0;
+      }
+      #continueButton {
+        --paper-button: {
+          background: var(--paper-vertical-step-continue-button-background, --primary-color);
+          color: var(--paper-vertical-step-continue-button-color, --dark-theme-text-color);
+        };
+      }
+      /**
+       * Label
+       */
+      #textWrapper {
+        @apply(--layout-vertical);
+        padding: 20px 0 20px 12px;
+      }
+      #label {
+        @apply(--layout-horizontal);
+      }
+      #connectedBadge {
+        @apply(--layout-vertical);
+        @apply(--layout-center);
+        margin-left: 24px;
+      }
+      #beforeConnectorLine, #afterConnectorLine {
+        width: 1px;
+        background: var(--paper-step-connector-line-color, --divider-color);
+      }
+      #beforeConnectorLine {
+        height: 10px;
+      }
+      #afterConnectorLine {
+        @apply(--layout-flex);
+      }
+      #badge {
+        margin: 8px 0;
+      }
+      :host(.first-step) #beforeConnectorLine, :host(.lastStep) #contentConnectorLine{
+        visibility: hidden;
+      }
+      :host(.last-step:not([opened])) #afterConnectorLine {
+        display: none;
+      }
+    </style>
+
+    <div id="label">
+      <div id="connectedBadge">
+        <div id="beforeConnectorLine"></div>
+        <div id="badge">
+          <iron-icon hidden$="{{!_computeIsIconBadge(icon)}}" icon="{{icon}}"></iron-icon>
+          <span hidden$="{{_computeIsIconBadge(icon)}}">{{index}}</span>
+        </div>
+        <div id="afterConnectorLine" class="connectorLine"></div>
+      </div>
+      <div id="textWrapper">
+        <span id="textLabel">[[label]]</span>
+        <template is="dom-if" if="[[optional]]">
+          <span id="optional">[[stepperData.optionalText]]</span>
+        </template>
+      </div>
+    </div>
+    <iron-collapse id="collapse" opened="[[opened]]">
+      <div id="contentConnectorLine"></div>
+      <div id="stepWrapper">
+        <div id="paperStepWrapper">
+          <content></content>
+        </div>
+        <div id="buttonsWrapper">
+          <paper-button id="continueButton" on-tap="continue">{{choosePrimaryButtonText(_attrForPrimaryButtonText, stepperData.continueText, stepperData.finishText, stepperData.updateText)}}</paper-button>
+          <paper-button id="backButton" disabled="[[!hasBackStep]]" on-tap="back" hidden$="[[!stepperData.hasBackButton]]">
+            [[stepperData.backText]]
+          </paper-button>
+          <paper-button id="skipButton" disabled="[[!canSkip]]" on-tap="skip" hidden$="[[!stepperData.hasSkipButton]]">
+            [[stepperData.skipText]]
+          </paper-button>
+        </div>
+      </div>
+    </iron-collapse>
+  </template>
+  <script>Polymer({is:"step-vertical",properties:{canSkip:{type:Boolean},_attrForPrimaryButtonText:{type:String,value:!1},hasBackStep:Boolean},behaviors:[Stepper.StepLabelBehavior],skip:function(){this.fire("paper-step-vertical-skip-tapped")},back:function(){this.fire("paper-step-vertical-back-tapped")},continue:function(){this.fire("paper-step-vertical-continue-tapped")},choosePrimaryButtonText:function(e){return this.stepperData[e]}});</script>
+</dom-module>
+</body></html>

@@ -1,6 +1,6 @@
-<link rel="import" href="../bower_components/iron-form/iron-form.html">
+<html><head><link rel="import" href="../bower_components/iron-form/iron-form.html">
 
-<dom-module id="openremote-login">
+</head><body><dom-module id="openremote-login">
   <template>
      <style is="custom-style">
     .output {
@@ -37,16 +37,15 @@
   </style>
 
     <form is="iron-form" method="get" action="/" id="eventsDemo">
-      <paper-input name="name" label="Name" required auto-validate></paper-input>
-      <paper-input name="password" label="Password" type="password" required auto-validate></paper-input>
-      <paper-checkbox name="read" required>You must check this box</paper-checkbox><br>
-      <paper-button raised onclick="_delayedSubmit(event)" disabled id="eventsDemoSubmit">
-        <paper-spinner id="spinner" hidden></paper-spinner>Submit</paper-button>
-      <paper-button raised onclick="_reset(event)">Reset</paper-button>
+      <paper-input name="name" label="Name" required="" auto-validate=""></paper-input>
+      <paper-input name="password" label="Password" type="password" required="" auto-validate=""></paper-input>
+      <paper-checkbox name="read" required="">You must check this box</paper-checkbox><br>
+      <paper-button raised="" onclick="_delayedSubmit(event)" disabled="" id="eventsDemoSubmit">
+        <paper-spinner id="spinner" hidden=""></paper-spinner>Submit</paper-button>
+      <paper-button raised="" onclick="_reset(event)">Reset</paper-button>
       <div class="output"></div>
     </form>
-    <script>
-      eventsDemo.addEventListener('change', function(event) {
+    <script> eventsDemo.addEventListener('change', function(event) {
         eventsDemoSubmit.disabled = !eventsDemo.validate();
       });
       function _delayedSubmit(event) {
@@ -54,8 +53,8 @@
         spinner.hidden = false;
         eventsDemoSubmit.disabled = true;
         setTimeout(function() {
-            var pages = document.querySelector("#pages");
-            pages.selected = 'Light';
+            localStorage.setItem("jwt", "WQEOqweoopiasopi293812903iopweopqweipqwei");
+            window.location = '#/Intro'
         }, 1000);
       }
       function _reset(event) {
@@ -69,14 +68,8 @@
         eventsDemoSubmit.disabled = false;
         this.querySelector('.output').innerHTML = JSON.stringify(event.detail);
       });
-    </script>
+      </script>
   </template>
 
-   <script>
-
-    Polymer({
-      is: 'openremote-login'
-    });
-
-  </script>
-</dom-module>
+   <script>Polymer({is:"openremote-login"});</script>
+</dom-module></body></html>

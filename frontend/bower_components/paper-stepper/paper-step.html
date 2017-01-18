@@ -1,0 +1,69 @@
+<html><head><link rel="import" href="../iron-validatable-behavior/iron-validatable-behavior.html">
+<link rel="import" href="../paper-item/paper-item-behavior.html">
+<link rel="import" href="../paper-behaviors/paper-ripple-behavior.html">
+<link rel="import" href="../neon-animation/neon-animatable-behavior.html">
+<link rel="import" href="../paper-styles/default-theme.html">
+<link rel="import" href="step-horizontal-label.html">
+<link rel="import" href="step-vertical.html">
+<link rel="import" href="../polymer/polymer.html">
+
+
+</head><body><dom-module id="paper-step">
+  <template>
+    <style>
+      :host {
+        display: block;
+        box-sizing: border-box;
+        outline: 0;
+      }
+      :host(:not([vertical])) {
+        overflow: hidden;
+        @apply(--layout);
+        @apply(--layout-flex);
+      }
+      :host(:not([vertical]):hover){
+        overflow: visible;
+      }
+      :host(:not([opened]):not(.neon-animating)) #slideshowViewport{
+        display: none;
+      }
+      #slideshowViewport {
+        position: absolute;
+        bottom: 84px;
+        left: 0;
+        right: 0;
+        overflow: hidden;
+      }
+      #contentWrapper {
+        padding: 24px 24px 0 24px;
+        @apply(--layout-scroll);
+        @apply(--layout-fit);
+        pointer-events: auto;
+      }
+      :host(:focus:not([opened]):not([saved])) step-horizontal-label ::content #badge {
+        background: var(--paper-step-selectable-hovered-badge-background, --paper-grey-500);
+      }
+    </style>
+
+    
+
+    <template is="dom-if" if="[[!vertical]]">
+      <step-horizontal-label id="horizontalStepLabel" editable="[[editable]]" label="[[label]]" alternative-label="[[_alternativeLabel]]" optional="[[optional]]" opened="[[opened]]" selectable="[[selectable]]" index="[[index]]" saved="[[saved]]" stepper-data="[[_stepperData]]">
+      </step-horizontal-label>
+      <div id="slideshowViewport">
+        <div id="contentWrapper">
+        </div>
+      </div>
+    </template>
+
+    
+
+    <template is="dom-if" if="[[vertical]]">
+      <step-vertical id="verticalStepLabel" editable="[[editable]]" label="[[label]]" optional="[[optional]]" opened="[[opened]]" selectable="[[selectable]]" stepper-data="[[_stepperData]]" index="[[index]]" saved="[[saved]]" _attr-for-primary-button-text="[[_attrForPrimaryButtonText]]" can-skip="[[_canSkip]]" has-back-step="[[_hasBackStep]]">
+      </step-vertical>
+    </template>
+  </template>
+
+  <script>Polymer({is:"paper-step",behaviors:[Polymer.IronValidatableBehavior,Polymer.NeonAnimatableBehavior,Polymer.PaperItemBehavior,Polymer.PaperRippleBehavior],properties:{saved:{type:Boolean,value:!1,notify:!0,readOnly:!0},editable:{type:Boolean,value:!1},index:{type:Number,notify:!0,readOnly:!0},_previousSaved:{type:Boolean,readOnly:!0},optional:{type:Boolean,value:!1},selectable:{type:Boolean,computed:"_computeSelectable(_stepperData.linear, saved, editable, _previousSaved)",reflectToAttribute:!0,notify:!0},disabled:{computed:"_computeDisabled(selectable)"},label:{type:String,value:""},opened:{type:Boolean,value:!1},animationConfig:{readOnly:!0},entryAnimation:{readOnly:!0},exitAnimation:{readOnly:!0},vertical:{type:Boolean,readOnly:!0,reflectToAttribute:!0},horizontalHigherEntryAnimation:{type:String},horizontalHigherExitAnimation:{type:String},horizontalLowerEntryAnimation:{type:String},horizontalLowerExitAnimation:{type:String},_alternativeLabel:{type:Boolean,readOnly:!0},_optionalText:{type:Boolean,readOnly:!0},_attrForPrimaryButtonText:{type:String,readOnly:!0},_stepper:{type:Object,readOnly:!0},_stepperData:{type:Object,readOnly:!0},_canSkip:{type:Boolean,readOnly:!0},_hasBackStep:{type:Boolean,readOnly:!0}},listeners:{"paper-step-vertical-skip-tapped":"skip","paper-step-vertical-back-tapped":"back","paper-step-vertical-continue-tapped":"continue",tap:"_tapHandler"},observers:["_toggleClassPosition(index, _stepperData.stepNumber, vertical)","_updateSlideshowViewportTop(optional, _alternativeLabel, vertical)","_verticalChange(vertical)","_focusedChanged(receivedFocusFromKeyboard)","_labelElementChanged(_labelElement)"],_focusedChanged:function(e){if(e){this.ensureRipple();var t=Polymer.dom(this._rippleContainer).querySelector("#badge"),i=t.getBoundingClientRect(),a=i.left+12,n=i.top+12;this._ripple.downAction({detail:{x:a,y:n}})}this.hasRipple()&&(this._ripple.holdDown=e)},_tapHandler:function(e){var t=Polymer.dom(e).rootTarget;t!==this&&t!==this._rippleContainer&&e.stopImmediatePropagation()},skip:function(){this._stepper.progress()},back:function(){this._stepper.back()},save:function(){return!(this.saved&&!this.editable||!this.validate())&&(this.saved?this.fire("paper-step-updated"):(this._setSaved(!0),this.fire("paper-step-saved")),!0)},continue:function(){return!!this.save()&&(this._stepper.progress(),!0)},_removeAnimatingClass:function(){this._animationCanceled?this._set_animationCanceled(!1):this.toggleClass("neon-animating",!1)},_cancelAnimation:function(){this._set_animationCanceled(!0),this.toggleClass("neon-animating",!1)},_updateSlideshowViewportTop:function(e,t,i){i||this.async(function(){this.$$("#slideshowViewport").style.top=this.clientHeight+"px",this.fire("step-horizontal-label-resize")})},_toggleClassPosition:function(e,t,i){this.async(function(){var a=this.$$(i?"#verticalStepLabel":"#horizontalStepLabel");this.toggleClass("first-step",1==e,a),this.toggleClass("last-step",e==t,a)})},_updateAnimationConfig:function(){var e=this.$$("#contentWrapper");this._setAnimationConfig({"higher-step-entry":{node:e,name:this.horizontalHigherEntryAnimation},"higher-step-exit":{node:e,name:this.horizontalHigherExitAnimation},"lower-step-entry":{node:e,name:this.horizontalLowerEntryAnimation},"lower-step-exit":{node:e,name:this.horizontalLowerExitAnimation}})},_verticalChange:function(e){this.async(function(){Polymer.dom(this.$$(e?"#verticalStepLabel":"#contentWrapper")).appendChild(this.$$("content")||this.create("content")),this._ripple=!1,this._rippleContainer=e?this.$$("#verticalStepLabel").$.label:this.$$("#horizontalStepLabel").$.label,e||this._updateAnimationConfig()}.bind(this))},_computeSelectable:function(e,t,i,a){return(!e||a)&&(!t||i)||i&&t},_computeDisabled:function(e){return!e}});</script>
+</dom-module>
+</body></html>

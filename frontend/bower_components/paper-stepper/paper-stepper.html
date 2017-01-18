@@ -1,0 +1,111 @@
+<html><head><link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../iron-selector/iron-selectable.html">
+<link rel="import" href="../iron-menu-behavior/iron-menu-behavior.html">
+<link rel="import" href="../neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../paper-styles/default-theme.html">
+<link rel="import" href="../paper-styles/shadow.html">
+<link rel="import" href="../iron-collapse/iron-collapse.html">
+<link rel="import" href="../iron-resizable-behavior/iron-resizable-behavior.html">
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="animations/fade-in-slide-from-right-animation.html">
+<link rel="import" href="animations/fade-out-slide-right-animation.html">
+<link rel="import" href="animations/fade-in-slide-from-left-animation.html">
+<link rel="import" href="animations/fade-out-slide-left-animation.html">
+<link rel="import" href="paper-step.html">
+
+
+</head><body><dom-module id="paper-stepper">
+  <template>
+    <style>
+      :host {
+        display: block;
+        box-sizing: border-box;
+        @apply(--layout-vertical);
+        @apply(--shadow-elevation-2dp);
+        background: white;
+        border-radius: 1px;
+      }
+      #verticalResponsiveWidth {
+        width: var(--paper-stepper-vertical-responsive-width, 0px);
+        visibility: hidden;
+      }
+
+      /* Horizontal layout styles */
+
+      :host([vertical]) {
+        padding: 4px 0;
+        @apply(--layout-scroll);
+        max-height: var(--paper-stepper-vertical-max-height);
+      }
+      :host(:not([vertical])) {
+        position: relative;
+        /* Note: this variable is updated by the stepper itself, don't use it on user side */
+        height: var(--label-wrapper-height);
+        max-height: var(--label-wrapper-height);
+        transition: max-height var(--paper-stepper-horizontal-opening-transition-duration, 300ms), box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      :host(:not([vertical]):not([opened]):not(.collapsing)) {
+        @apply(--shadow-none);
+      }
+      :host(:not([vertical])[opened]) {
+        max-height: var(--paper-stepper-horizontal-opened-height, 450px);
+      }
+      :host(:not([vertical])[opened]), :host(:not([vertical]).collapsing) {
+        height: var(--paper-stepper-horizontal-opened-height, 450px);
+      }
+      :host(:not([vertical])) #content-wrapper {
+        @apply(--shadow-elevation-2dp);
+        @apply(--layout-horizontal);
+        @apply(--layout-flex-none);
+        @apply(--layout-justified);
+        background: var(--paper-stepper-horizontal-label-wrapper-background, --primary-background-color);
+        border-radius: 1px;
+        overflow: hidden;
+      }
+      .flex {
+        @apply(--layout-flex);
+      }
+      #buttonsWrapper {
+        @apply(--layout-horizontal);
+        margin: 0 24px 24px 24px;
+        overflow: hidden;
+      }
+      #continueButton:not([disabled]) {
+        color: var(--primary-color);
+      }
+      paper-button[disabled] {
+        background-color: transparent;
+      }
+      [hidden] {
+        display: none;
+      }
+      :host(:not[vertical]) #content-wrapper:not(:hover) ::content paper-step[opened] {
+        overflow: visible;
+      }
+    </style>
+    
+    
+    <div id="verticalResponsiveWidth"></div>
+    
+    
+    <div id="content-wrapper">
+      <content select="[[selectable]]"></content>
+    </div>
+
+    
+    <template is="dom-if" if="[[!vertical]]">
+      <div class="flex"></div>
+      <div id="buttonsWrapper">
+        <paper-button hidden$="[[!hasBackButton]]" disabled="[[!_hasBackStep]]" on-tap="back">[[backText]]</paper-button>
+        <span class="flex"></span>
+        <paper-button hidden$="[[!hasSkipButton]]" disabled="[[!_canSkip]]" on-tap="progress">[[skipText]]</paper-button>
+        <paper-button id="continueButton" on-tap="continue">{{_choosePrimaryButtonText(_attrForSelectedStepPrimaryButtonText, finishText, continueText, updateText)}}</paper-button>
+      </div>
+    </template>
+
+  </template>
+
+  <script>"use strict";Polymer({is:"paper-stepper",behaviors:[Polymer.IronMenuBehavior,Polymer.NeonAnimationRunnerBehavior,Polymer.IronResizableBehavior],properties:{opened:{type:Boolean,computed:"_computeOpened(_selectedIndex)",observer:"_openedChanged",notify:!0,reflectToAttribute:!0},alternativeLabel:{type:Boolean,value:!1},vertical:{type:Boolean,value:!1,reflectToAttribute:!0},backText:{type:String,value:"BACK"},finishText:{type:String,value:"FINISH"},continueText:{type:String,value:"CONTINUE"},skipText:{type:String,value:"SKIP"},optionalText:{type:String,value:"Optional"},updateText:{type:String,value:"UPDATE"},linear:{type:Boolean,value:!1},completed:{type:Boolean,value:!1,notify:!0,computed:"_computeCompleted(stepNumber, savedStepNumber)"},hasSkipButton:{type:Boolean,value:!1},hasBackButton:{type:Boolean,value:!1},stepNumber:{type:Number,notify:!0,computed:"_computeStepNumber(items.length)"},savedStepNumber:{type:Number,notify:!0,readOnly:!0},selectedAttribute:{value:"opened",readOnly:!0},selectable:{value:"paper-step"},mutli:{value:!1,readOnly:!0},responsiveCheckFrequence:{type:Number,value:200},animateInitialSelection:{type:Boolean,value:!1},horizontalHigherEntryAnimation:{type:String,value:"fade-in-slide-from-right-animation"},horizontalHigherExitAnimation:{type:String,value:"fade-out-slide-right-animation"},horizontalLowerEntryAnimation:{type:String,value:"fade-in-slide-from-left-animation"},horizontalLowerExitAnimation:{type:String,value:"fade-out-slide-left-animation"},_skipStepIndex:{type:Number,computed:"_compute_skipStepIndex(_selectedIndex)"},_canSkip:{type:Boolean,notify:!0,computed:"_isntNull(_skipStepIndex)"},_backStepIndex:{type:Number,computed:"_compute_backStepIndex(_selectedIndex)"},_hasBackStep:{type:Boolean,computed:"_isntNull(_backStepIndex)"},_selectedIndex:{type:Number,observer:"_selectedIndexChanged",readOnly:!0,value:-1},_attrForSelectedStepPrimaryButtonText:{type:String,computed:"_compute__attrForSelectedStepPrimaryButtonText(_selectedIndex, stepNumber)"},_previousAnimatedStep:{type:Object,value:null,readOnly:!0},_previousSelected:{type:Object,readOnly:!0}},keyBindings:{left:"_onLeftKey",right:"_onRightKey"},listeners:{"iron-items-changed":"_initializeSteps","paper-step-saved":"_stepSaved",transitionend:"_transitionEnd","step-horizontal-label-resize":"_updateStepperClosedMaxHeight","iron-resize":"_resizeHandler","neon-animation-finish":"_onNeonAnimationFinish"},observers:["_forwardCanSkip(_canSkip, selectedItem)","_forwardHasBackStep(_hasBackStep, selectedItem)","_forwardVertical(vertical)","_forwardAlternativeLabel(alternativeLabel)","_forwardStepperData(linear, backText, optionalText, finishText, continueText, skipText, updateText, hasSkipButton, hasBackButton)"],attached:function(){this._responsiveCheck()},back:function(){this.selectIndex(this._backStepIndex)},continue:function(){this.selectedItem&&this.selectedItem.save()&&this.progress()},progress:function(){if(!this.stepNumber)return!1;if(this.completed)return this.selected=null,!0;for(var e=(this._selectedIndex+1)%this.stepNumber;e!=this._selectedIndex;e=(e+1)%this.stepNumber)if(this.items[e].selectable&&!this.items[e].saved)return this.selectIndex(e),this.fire("paper-stepper-progressed"),!0;return!1},reset:function(){this._setSavedStepNumber(0),this.selected=null,this.items.length&&(this.items.map(function(e){e._setSaved(!1),e._set_previousSaved(!1)}),this.items[0]._set_previousSaved(!0))},get _isRTL(){return"rtl"===window.getComputedStyle(this).direction},_onLeftKey:function(e){this._isRTL?this._focusNext():this._focusPrevious(),e.detail.keyboardEvent.preventDefault()},_onRightKey:function(e){this._isRTL?this._focusPrevious():this._focusNext(),e.detail.keyboardEvent.preventDefault()},_selectSelected:function(e){var t=this._valueToItem(this.selected);if(t){var i=t.selectable;if(void 0==i)return;if(!i)return this._previousSelected&&this._previousSelected.selectable?this.selected=this._valueForItem(this.previousSelected):this.selected=null,void this._set_previousSelected(null)}this._selection.select(t),this._set_previousSelected(t),this._set_selectedIndex(this.indexOf(t)),this.fallbackSelection&&this.items.length&&void 0===this._selection.get()&&(this.selected=this.fallbackSelection)},_updateStepperClosedMaxHeight:function(){this.debounce("updateStepperClosedMaxHeight",function(){this.customStyle["--label-wrapper-height"]=this.$$("#content-wrapper").clientHeight+"px",this.updateStyles("--label-wrapper-height")})},_openedChanged:function(e,t){this.vertical||void 0==t||this.toggleClass("collapsing",!0)},_transitionEnd:function(e){"max-height"==e.propertyName&&this.toggleClass("collapsing",!1)},_computeOpened:function(e){return e>=0},_stepSaved:function(e){var t=this.items[this.indexOf(e.target)+1];t&&t._set_previousSaved(!0),this._setSavedStepNumber(this.savedStepNumber+1)},_forwardVertical:function(e){this.stepNumber&&this.items.map(function(t){t._setVertical(e)}),this.setAttribute("role",e?"menu":"menubar")},_forwardStepperData:function(e,t,i,n,s,a,o,r,l){this.stepNumber&&this.items.map(function(p){p._set_stepperData({linear:e,backText:t,optionalText:i,finishText:n,continueText:s,skipText:a,updateText:o,hasSkipButton:r,hasBackButton:l,stepNumber:this.stepNumber})}.bind(this))},_forwardAlternativeLabel:function(e){this.stepNumber&&this.items.map(function(t){t._set_alternativeLabel(e)})},_computeStepNumber:function(e){return e},_selectedIndexChanged:function(e,t){if(!this.vertical&&e>=0&&t>=0){var i=this.items[t],n=this.items[e];n.classList.contains("neon-animating")&&this.cancelAnimation(),this._previousAnimatedStep&&this._previousAnimatedStep.classList.contains("neon-animating")&&(this.cancelAnimation(),this.toggleClass("neon-animating",!1,this._previousAnimatedStep));var s=e-t>0;this.animationConfig={"new-step-entry":{animatable:n,type:s?n.horizontalHigherEntryAnimation&&"higher-step-entry":n.horizontalLowerEntryAnimation&&"lower-step-entry"},"old-step-exit":{animatable:i,type:s?i.horizontalLowerExitAnimation&&"lower-step-exit":i.horizontalHigherExitAnimation&&"higher-step-exit"}},this.animationConfig["new-step-entry"].type&&(this.playAnimation("new-step-entry",{step:n}),this.toggleClass("neon-animating",!0,n)),this.animationConfig["old-step-exit"].type&&(this.playAnimation("old-step-exit",{step:i}),this.toggleClass("neon-animating",!0,i)),this._set_previousAnimatedStep(i)}},_onNeonAnimationFinish:function(e){var t=e.detail.step;t&&this.toggleClass("neon-animating",!1,t)},_forwardCanSkip:function(e,t){t._set_canSkip(e)},_forwardHasBackStep:function(e,t){t._set_hasBackStep(e)},_compute__attrForSelectedStepPrimaryButtonText:function(e){if(e<0)return null;var t=this.selectedItem.saved?"updateText":this.stepNumber-this.savedStepNumber==1?"finishText":"continueText";return this.selectedItem._set_attrForPrimaryButtonText(t),t},_initializeSteps:function(){var e=0,t={linear:this.linear,backText:this.backText,optionalText:this.optionalText,finishText:this.finishText,continueText:this.continueText,skipText:this.skipText,updateText:this.updateText,hasSkipButton:this.hasSkipButton,hasBackButton:this.hasBackButton,stepNumber:this.stepNumber};this.items.map(function(i,n){this.horizontalHigherEntryAnimation&&!i.horizontalHigherEntryAnimation&&(i.horizontalHigherEntryAnimation=this.horizontalHigherEntryAnimation),this.horizontalHigherExitAnimation&&!i.horizontalHigherExitAnimation&&(i.horizontalHigherExitAnimation=this.horizontalHigherExitAnimation),this.horizontalLowerEntryAnimation&&!i.horizontalLowerEntryAnimation&&(i.horizontalLowerEntryAnimation=this.horizontalLowerEntryAnimation),this.horizontalLowerExitAnimation&&!i.horizontalLowerExitAnimation&&(i.horizontalLowerExitAnimation=this.horizontalLowerExitAnimation),i._setIndex(n+1),i._set_stepper(this),i._setVertical(this.vertical),i._set_alternativeLabel(this.alternativeLabel),i._set_stepperData(t),i._set_previousSaved(!n),i.saved&&e++}.bind(this)),this._setSavedStepNumber(e),this._updateSelected()},_compute_skipStepIndex:function(e){if(e>=0&&!this.completed)for(var t=(e+1)%this.stepNumber;t!=e;t=(t+1)%this.stepNumber)if(this.items[t].selectable&&!this.items[t].saved)return t;return null},_compute_backStepIndex:function(e){if(e>=0)for(var t=e-1;t>=0;t--)if(this.items[t].selectable)return t;return null},_isntNull:function(e){return null!=e},_computeCompleted:function(e,t){var i=t==e;return!!i&&(this.fire("paper-stepper-completed"),!0)},_choosePrimaryButtonText:function(e){return this[e]},_resizeHandler:function(){this.debounce("paper-stepper-responsive-check",function(){this._responsiveCheck()},this.responsiveCheckFrequence)},_responsiveCheck:function(){var e=this.$.verticalResponsiveWidth.clientWidth;e&&(this.vertical=!(this.clientWidth>e))}});</script>
+</dom-module>
+</body></html>
