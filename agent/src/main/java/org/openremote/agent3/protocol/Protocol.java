@@ -27,9 +27,10 @@ import java.util.Collection;
 /**
  * A Protocol implementation must have a unique name in a VM. TODO This is not enforced.
  * <p>
- * OpenRemote protocols are in {@link org.openremote.Constants#PROTOCOL_NAMESPACE}.
+ * OpenRemote protocols are in {@link org.openremote.Constants#PROTOCOL_NAMESPACE}, third-party protocols
+ * should use their own URN namespace identifier.
  * <p>
- * The Protocol implementation can receive {@link org.openremote.model.AttributeValueChange} messages on the
+ * The protocol implementation can receive {@link org.openremote.model.AttributeValueChange} messages on the
  * {@link #ACTUATOR_TOPIC}. It can produce {@link org.openremote.model.AttributeValueChange} messages on the
  * {@link #SENSOR_TOPIC}.
  * <p>

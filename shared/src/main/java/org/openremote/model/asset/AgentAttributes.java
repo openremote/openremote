@@ -30,8 +30,7 @@ import java.util.List;
 public class AgentAttributes extends Attributes {
 
     public AgentAttributes() {
-        super();
-        initialize();
+        setEnabled(false);
     }
 
     public AgentAttributes(Asset agentAsset) {
@@ -54,10 +53,6 @@ public class AgentAttributes extends Attributes {
         if (attribute == null || !ProtocolConfiguration.isProtocolConfiguration(attribute))
             return null;
         return new ProtocolConfiguration(attribute);
-    }
-
-    public void initialize() {
-        setEnabled(false);
     }
 
     public boolean isEnabled() {

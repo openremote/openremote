@@ -85,6 +85,9 @@ public class SimulatorProtocol extends AbstractProtocol {
         putState(attributeRef, value, true);
     }
 
+    /**
+     * @param isSensorUpdate <code>true</code> if an {@link AttributeValueChange} message should be produced
+     */
     public void putState(AttributeRef attributeRef, JsonValue value, boolean isSensorUpdate) {
         synchronized (elements) {
             LOG.fine("Put state '" + attributeRef + "': " + (value != null ? value.asString() : "null"));

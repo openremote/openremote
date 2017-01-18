@@ -57,8 +57,11 @@ public class Toast {
         return maxAgeMillis;
     }
 
+    public boolean isDurableFailure() {
+        return getText() != null && getType().equals(Type.DURABLE_FAILURE);
+    }
+
     public boolean isExpired() {
-        return !getType().equals(Type.DURABLE_FAILURE)
-            && (getTimestamp() + getMaxAgeMillis()) <= System.currentTimeMillis();
+        return !isDurableFailure() && (getTimestamp() + getMaxAgeMillis()) <= System.currentTimeMillis();
     }
 }
