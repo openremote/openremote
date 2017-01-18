@@ -114,6 +114,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
         LOG.fine("Deploy agent: " + agent);
         switch (cause) {
             case UPDATE:
+                // TODO: Find everything with this agent ID in the asset tree not just children
                 Asset[] things = assetService.findChildrenByType(agent.getId(), THING);
                 for (Asset thing : things) {
                     deployThing(thing, PersistenceEvent.Cause.UPDATE);
