@@ -1,11 +1,21 @@
 rootProject.name = "openremote"
 
-include "postgresql",
-        "keycloak",
-        "shared",
-        "container",
-        "agent",
-        "manager:shared",
-        "manager:server",
-        "manager:client",
-        "manager:test"
+String rootDir = new File('.').canonicalPath
+FileTree tree = fileTree(dir: '.', include: '**/build.gradle')
+
+tree
+        .filter { it.parent != rootDir }
+        .each {
+            String projectName = it.parent.replace(rootDir, "").replace("\\", ":").replace("/", ":")
+            include projectName
+        }
+
+//include "postgresql",
+//        "keycloak",
+//        "shared",
+//        "container",
+//        "agent",
+//        "manager:shared",
+//        "manager:server",
+//        "manager:client",
+//        "manager:test"
