@@ -13,5 +13,5 @@ dependencies {
 }
 
 test {
-    workingDir = resolveProject(":").projectDir
+    workingDir = findProject(":openremote") != null ? resolveProject("").projectDir : rootProject.projectDir
 }
