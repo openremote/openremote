@@ -160,6 +160,8 @@ public class AgentService extends RouteBuilder implements ContainerService {
                                   Map<String, List<ThingAttribute>> attributes) {
         for (String protocolName : attributes.keySet()) {
             for (Protocol protocol : protocols) {
+                if (protocol.getProtocolName() == null || protocol.getProtocolName().length() ==0)
+                    throw new IllegalStateException("Protocol can't have empty name: " + protocol.getClass());
                 if (protocol.getProtocolName().equals(protocolName)) {
                     try {
                         protocol.linkAttributes(attributes.get(protocolName));
