@@ -22,11 +22,15 @@ package org.openremote.model;
 import elemental.json.Json;
 import elemental.json.JsonArray;
 import elemental.json.JsonObject;
-import org.openremote.Function;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * An array of {@link MetadataItem} elements.
+ *
+ * Note that duplicate item names are allowed for multi-valued elements.
+ */
 public class Metadata {
 
     final protected JsonArray jsonArray;

@@ -25,7 +25,7 @@ import org.openremote.manager.server.ngsi.EntityMessageBodyConverter
 import org.openremote.manager.server.ngsi.EntityProvider
 import org.openremote.manager.server.ngsi.EntityService
 import org.openremote.manager.server.ngsi.EntryPointMessageBodyConverter
-import org.openremote.Consumer
+import org.openremote.model.Consumer
 import org.openremote.manager.shared.ngsi.Attribute
 import org.openremote.manager.shared.ngsi.AttributeType
 import org.openremote.manager.shared.ngsi.ContextEntity

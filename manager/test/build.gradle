@@ -5,13 +5,13 @@ dependencies {
 
     compile "org.codehaus.groovy:groovy-all:$groovyVersion"
 
-    compile project(":manager:server")
-    compile project(":manager:client")
+    compile resolveProject(":manager:server")
+    compile resolveProject(":manager:client")
 
     compile "junit:junit:$junitVersion"
     compile "org.spockframework:spock-core:$spockVersion"
 }
 
 test {
-    workingDir = project.rootProject.projectDir
+    workingDir = findProject(":openremote") != null ? resolveProject("").projectDir : rootProject.projectDir
 }

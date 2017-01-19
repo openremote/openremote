@@ -12,6 +12,8 @@ buildscript {
 
 allprojects {
 
+    apply from: "${findProject(":openremote") != null ? project(":openremote").projectDir : rootDir}/functions.gradle"
+
     repositories {
         mavenLocal()
         mavenCentral()

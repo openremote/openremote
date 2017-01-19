@@ -1,11 +1,8 @@
 rootProject.name = "openremote"
 
-include "postgresql",
-        "keycloak",
-        "shared",
-        "container",
-        "agent",
-        "manager:shared",
-        "manager:server",
-        "manager:client",
-        "manager:test"
+// Include sub-projects dynamically, every directory with a build.gradle
+String rootDir = new File('.').canonicalPath
+fileTree(dir: '.', include: '**/build.gradle').filter { it.parent != rootDir }.each {
+    String projectName = it.parent.replace(rootDir, "").replace("\\", ":").replace("/", ":")
+    include projectName
+}

@@ -1,0 +1,18 @@
+/**
+ * Prefix path with ":openremote" if this project is running as a subproject.
+ */
+def resolveProject(String path) {
+    project(findProject(":openremote") != null ? ":openremote" + path : path)
+}
+
+/**
+ * Prefix path with ":openremote" if this project is running as a subproject.
+ */
+def resolveTask(String path) {
+    task(findProject(":openremote") != null ? ":openremote" + path : path)
+}
+
+ext {
+    resolveProject = this.&resolveProject
+    resolveTask = this.&resolveTask
+}

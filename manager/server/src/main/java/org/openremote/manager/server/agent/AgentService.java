@@ -114,6 +114,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
         LOG.fine("Deploy agent: " + agent);
         switch (cause) {
             case UPDATE:
+                // TODO: Find everything with this agent ID in the asset tree not just children
                 Asset[] things = assetService.findChildrenByType(agent.getId(), THING);
                 for (Asset thing : things) {
                     deployThing(thing, PersistenceEvent.Cause.UPDATE);
@@ -159,6 +160,8 @@ public class AgentService extends RouteBuilder implements ContainerService {
                                   Map<String, List<ThingAttribute>> attributes) {
         for (String protocolName : attributes.keySet()) {
             for (Protocol protocol : protocols) {
+                if (protocol.getProtocolName() == null || protocol.getProtocolName().length() ==0)
+                    throw new IllegalStateException("Protocol can't have empty name: " + protocol.getClass());
                 if (protocol.getProtocolName().equals(protocolName)) {
                     try {
                         protocol.linkAttributes(attributes.get(protocolName));

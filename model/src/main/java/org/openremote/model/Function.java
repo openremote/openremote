@@ -17,14 +17,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote;
+package org.openremote.model;
 
-public interface Constants {
+import jsinterop.annotations.JsFunction;
 
-    String PERSISTENCE_SEQUENCE_ID_GENERATOR = "SEQUENCE_ID_GENERATOR";
-    String PERSISTENCE_UNIQUE_ID_GENERATOR = "UNIQUE_ID_GENERATOR";
-    String PERSISTENCE_JSON_OBJECT_TYPE = "json_object";
-    String PERSISTENCE_JSON_ARRAY_TYPE = "json_array";
-    String PROTOCOL_NAMESPACE = "urn:openremote:protocol";
-
+/**
+ * TODO: Remove this when GWT emulates JDK 8
+ */
+@FunctionalInterface
+@JsFunction
+public interface Function<T,U> {
+    U apply(T object);
 }

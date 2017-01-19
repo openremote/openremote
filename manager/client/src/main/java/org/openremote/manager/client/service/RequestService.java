@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.client.service;
 
-import org.openremote.Consumer;
+import org.openremote.model.Consumer;
 import org.openremote.manager.shared.http.EntityReader;
 import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.manager.shared.http.RequestException;

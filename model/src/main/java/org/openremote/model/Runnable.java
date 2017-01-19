@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote;
+package org.openremote.model;
 
 import jsinterop.annotations.JsFunction;
 
@@ -26,6 +26,6 @@ import jsinterop.annotations.JsFunction;
  */
 @FunctionalInterface
 @JsFunction
-public interface Function<T,U> {
-    U apply(T object);
+public interface Runnable {
+    void run();
 }

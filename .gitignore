@@ -1,8 +1,13 @@
+*~
+.DS_*
+.local/
+
 build/
 .gradle
 .vagrant
 
 bin/
+out/
 .settings/
 .classpath
 .project
@@ -11,10 +16,6 @@ bin/
 *.ipr
 *.iws
 .idea/
-.local/
 
-*~
+# TODO when is this used?
 manager/.factorypath
-manager/src/
-
-out/
