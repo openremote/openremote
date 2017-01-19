@@ -4,14 +4,12 @@ import org.kie.api.KieServices
 import org.kie.api.io.Resource
 import org.openremote.agent.AgentService
 import org.openremote.agent.rules.RulesProvider
-import org.openremote.agent.sensor.CustomSensorState
 import org.openremote.test.ContainerTrait
-import spock.lang.Ignore
 import spock.lang.Specification
+import spock.util.concurrent.PollingConditions
 
 import java.util.stream.Stream
 
-// @Ignore // TODO: Fix test, use BlockingVariables, PollingConditions, etc.
 class PIDTest extends Specification implements ContainerTrait {
 
     def "PID controller basic test"() {
@@ -20,6 +18,7 @@ class PIDTest extends Specification implements ContainerTrait {
         def deploymentXml = getClass().getResourceAsStream(
                 "/org/openremote/test/rules/pid/agent.xml"
         )
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.5, factor: 0.25)
 
         and: "some rules"
         def rulesProvider = new RulesProvider() {
@@ -34,7 +33,7 @@ class PIDTest extends Specification implements ContainerTrait {
         }
 
         and: "the started server"
-        def testCommandBuilder = new TestCommandBuilder();
+        def testCommandBuilder = new TestCommandBuilder()
         def agentService = new AgentService(
                 deploymentXml,
                 testCommandBuilder,
@@ -51,29 +50,24 @@ class PIDTest extends Specification implements ContainerTrait {
         // Send a command linked with the button:
         agentService.getContext().getCommands().execute("PID.sp.inc.ON")
 
-        and: "we wait"
-        Thread.sleep(2000);
-        
         then: "set point should be 1.5"
-        agentService.getContext().queryValue("GV.PID.Sp") == "1.5"
-        agentService.getContext().queryValue("PID.Output") == "1.5000"
+        conditions.eventually {
+            assert agentService.getContext().queryValue("GV.PID.Sp") == "1.5"
+            assert agentService.getContext().queryValue("PID.Output") == "1.5000"
+        }
+
 
         when: "we decrease Sp"
         agentService.getContext().getCommands().execute("PID.sp.dec.ON")
 
-        and: "we wait"
-        Thread.sleep(2000);
-
         then: "the PID output should be 1.0"
-        agentService.getContext().queryValue("GV.PID.Sp") == "1.0" // set point
-        agentService.getContext().queryValue("PID.Output") == "1.0000" // PID output
+        conditions.eventually {
+            assert agentService.getContext().queryValue("GV.PID.Sp") == "1.0" // set point
+            assert agentService.getContext().queryValue("PID.Output") == "1.0000" // PID output
+        }
 
         // TODO: how can I test if there is no overshot?
         // TODO: how can I test if there are no oscillations?
-
-        // Problem: sometimes it passes, sometimes fails...
-        // timing is not correct and requires manual tweaking - not desired. Better way would be to wait for desired
-        // output (with a timeout).
 
         cleanup: "the server should be stopped"
         stopContainer(container)
