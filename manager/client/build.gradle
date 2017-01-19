@@ -1,11 +1,11 @@
-evaluationDependsOn(":manager:shared")
+evaluationDependsOn(resolveProject(":manager:shared").path)
 
 apply plugin: "java"
 apply plugin: "distribution"
 
 dependencies {
 
-    compile project(":manager:shared")
+    compile resolveProject(":manager:shared")
 
     compile "com.google.gwt:gwt-user:$gwtVersion"
     compile "com.google.gwt:gwt-dev:$gwtVersion"
@@ -80,6 +80,7 @@ task compileGwt(dependsOn: classes, type: JavaExec) {
             "-localWorkers", "2",
             "-extra", gwtExtraDir,
             "-generateJsInteropExports",
+            "-logLevel", "TRACE",
             "-style", "PRETTY"
     ]
 }
@@ -123,8 +124,8 @@ task gwtSuperDev(dependsOn: classes, type: JavaExec) {
             "org.openremote.manager.Manager", // Your GWT module
             "-workDir", gwtWorkDir,
             "-launcherDir", gwtLauncherDir,
-            "-src", project(":shared").sourceSets.main.java.srcDirs[0], // Help code server detect source changes
-            "-src", project(":manager:shared").sourceSets.main.java.srcDirs[0], // Help code server detect source changes
+            "-src", resolveProject(":shared").sourceSets.main.java.srcDirs[0], // Help code server detect source changes
+            "-src", resolveProject(":manager:shared").sourceSets.main.java.srcDirs[0], // Help code server detect source changes
             "-logLevel", "INFO",
             "-noincremental",
             "-noprecompile",
@@ -152,5 +153,5 @@ distributions {
 }
 
 installDist {
-    into "${project(":manager").buildDir}/install/$distributions.main.baseName"
+    into "${resolveProject(":manager").buildDir}/install/$distributions.main.baseName"
 }

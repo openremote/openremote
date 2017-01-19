@@ -5,9 +5,9 @@ mainClassName = "org.openremote.manager.server.Server"
 
 dependencies {
 
-    compile project(":container")
-    compile project(":agent")
-    compile project(":manager:shared")
+    compile resolveProject(":container")
+    compile resolveProject(":agent")
+    compile resolveProject(":manager:shared")
 
     compile "org.xerial:sqlite-jdbc:$sqliteVersion"
 }
@@ -23,5 +23,5 @@ distributions {
 }
 
 installDist {
-    into "${project(":manager").buildDir}/install/$distributions.main.baseName"
+    into "${resolveProject(":manager").buildDir}/install/$distributions.main.baseName"
 }

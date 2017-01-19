@@ -9,15 +9,15 @@ task createDockerfile(type: Dockerfile) {
     environmentVariable "LOGGING_CONFIG_FILE", "conf/logging.properties"
     environmentVariable "MAP_TILES_PATH", "conf/mapdata.mbtiles"
     environmentVariable "MAP_SETTINGS_PATH", "conf/mapsettings.json"
-    addFile project(':manager:server').distributions.main.baseName, "/opt/app"
-    addFile project(':manager:client').distributions.main.baseName, "/opt/app"
+    addFile resolveProject(':manager:server').distributions.main.baseName, "/opt/app"
+    addFile resolveProject(':manager:client').distributions.main.baseName, "/opt/app"
     exposePort 8080
     workingDir "/opt/app"
-    entryPoint "/opt/app/bin/${project(":manager:server").name}"
+    entryPoint "/opt/app/bin/${resolveProject(":manager:server").name}"
 }
 
 task buildImage(type: DockerBuildImage) {
-    dependsOn ":manager:server:installDist", ":manager:client:installDist", createDockerfile
+    dependsOn resolveTask(":manager:server:installDist"), resolveTask(":manager:client:installDist"), createDockerfile
     inputDir = createDockerfile.destFile.parentFile
     tag = dockerImageName
 }

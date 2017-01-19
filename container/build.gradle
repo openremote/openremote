@@ -3,7 +3,7 @@ apply plugin: "groovy"
 
 dependencies {
 
-    compile project(":shared")
+    compile resolveProject(":shared")
 
     compile "org.codehaus.groovy:groovy-all:$groovyVersion"
 
