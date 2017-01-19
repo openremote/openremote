@@ -80,7 +80,7 @@ task compileGwt(dependsOn: classes, type: JavaExec) {
             "-localWorkers", "2",
             "-extra", gwtExtraDir,
             "-generateJsInteropExports",
-            "-logLevel", "TRACE",
+            "-logLevel", "INFO",
             "-style", "PRETTY"
     ]
 }
@@ -124,7 +124,7 @@ task gwtSuperDev(dependsOn: classes, type: JavaExec) {
             "org.openremote.manager.Manager", // Your GWT module
             "-workDir", gwtWorkDir,
             "-launcherDir", gwtLauncherDir,
-            "-src", resolveProject(":shared").sourceSets.main.java.srcDirs[0], // Help code server detect source changes
+            "-src", resolveProject(":model").sourceSets.main.java.srcDirs[0], // Help code server detect source changes
             "-src", resolveProject(":manager:shared").sourceSets.main.java.srcDirs[0], // Help code server detect source changes
             "-logLevel", "INFO",
             "-noincremental",

@@ -20,7 +20,7 @@
 package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
-import org.openremote.Consumer;
+import org.openremote.model.Consumer;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.event.bus.EventBus;

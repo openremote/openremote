@@ -19,8 +19,6 @@
  */
 package org.openremote.model;
 
-import org.openremote.Function;
-
 import java.util.LinkedList;
 
 /**

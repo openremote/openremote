@@ -17,12 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.asset;
+package org.openremote.manager.server.agent;
 
 import elemental.json.Json;
 import org.openremote.model.Attribute;
 import org.openremote.model.AttributeType;
 import org.openremote.model.Attributes;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.ProtocolConfiguration;
 
 import java.util.ArrayList;
 import java.util.List;

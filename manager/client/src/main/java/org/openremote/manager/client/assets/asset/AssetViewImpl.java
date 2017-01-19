@@ -36,7 +36,7 @@ import org.openremote.manager.client.assets.device.DeviceAttributesEditor;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.widget.*;
 import org.openremote.manager.client.widget.PushButton;
-import org.openremote.Runnable;
+import org.openremote.model.Runnable;
 import org.openremote.model.asset.AssetType;
 import org.openremote.manager.shared.map.GeoJSON;
 

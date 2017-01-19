@@ -26,8 +26,8 @@ import javax.validation.constraints.NotNull;
 import java.util.Arrays;
 import java.util.Date;
 
-import static org.openremote.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
-import static org.openremote.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
+import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
+import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 
 /**
  * The main model class of this software.

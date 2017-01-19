@@ -28,7 +28,7 @@ import com.google.inject.Provider;
 import org.openremote.manager.client.app.dialog.ConfirmationDialog;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.WidgetStyle;
-import org.openremote.Runnable;
+import org.openremote.model.Runnable;
 
 public class FormViewImpl extends Composite implements FormView {
 

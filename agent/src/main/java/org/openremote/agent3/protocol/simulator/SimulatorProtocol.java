@@ -34,7 +34,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import static org.openremote.Constants.PROTOCOL_NAMESPACE;
+import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.asset.AssetAttributeMeta.RANGE_MAX;
 import static org.openremote.model.asset.AssetAttributeMeta.RANGE_MIN;
 

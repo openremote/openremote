@@ -26,7 +26,7 @@ import org.openremote.container.Container;
 import org.openremote.container.util.IdentifierUtil;
 import org.openremote.container.web.WebResource;
 import org.openremote.container.web.WebService;
-import org.openremote.Consumer;
+import org.openremote.model.Consumer;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.ngsi.*;
 import org.openremote.manager.shared.ngsi.params.*;

@@ -20,7 +20,7 @@
 package org.openremote.manager.server.ngsi;
 
 import org.openremote.container.Container;
-import org.openremote.Consumer;
+import org.openremote.model.Consumer;
 import org.openremote.manager.shared.ngsi.Entity;
 import org.openremote.manager.shared.ngsi.params.SubscriptionParams;
 
