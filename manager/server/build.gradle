@@ -1,7 +1,7 @@
 apply plugin: "java"
 apply plugin: "application"
 
-mainClassName = "org.openremote.manager.server.Server"
+mainClassName = "org.openremote.manager.server.Main"
 
 dependencies {
 

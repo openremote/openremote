@@ -9,7 +9,7 @@ def resolveProject(String path) {
  * Prefix path with ":openremote" if this project is running as a subproject.
  */
 def resolveTask(String path) {
-    task(findProject(":openremote") != null ? ":openremote" + path : path)
+    tasks.getByPath(findProject(":openremote") != null ? ":openremote" + path : path)
 }
 
 ext {

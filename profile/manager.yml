@@ -20,9 +20,8 @@ services:
 
     # This service needs access to other services on the Docker network.
     links:
-      - postgres
+      - postgresql
       - keycloak
-      - controller
 
     environment:
 
@@ -42,13 +41,6 @@ services:
       # demo data.
       IMPORT_DEMO_DATA: 'true'
 
-      # The demo data contains an Agent configuration, this Agent uses the OpenRemote 2.x
-      # Controller Connector. These are the settings for the Agent, how it can reach the
-      # example/demo Controller. You should set it to the same value as
-      # IDENTITY_NETWORK_HOST if you are exposting the controller on that host.
-      DEMO_CONTROLLER_HOST: controller
-      DEMO_CONTROLLER_PORT: 8688
-
       # The service-internal interface and port to listen on. This should not be changed.
       WEBSERVER_LISTEN_HOST: 0.0.0.0
       WEBSERVER_LISTEN_PORT: 8080
@@ -64,11 +56,11 @@ services:
       IDENTITY_NETWORK_WEBSERVER_PORT: 8080
 
       # The service-internal JDBC connection URL for the database service.
-      DATABASE_CONNECTION_URL: jdbc:postgresql://postgres/openremote
+      DATABASE_CONNECTION_URL: jdbc:postgresql://postgresql/openremote
 
       # The database connection settings, passwords should be changed in production!
       DATABASE_USERNAME: openremote
-      DATABASE_PASSWORD: secret
+      DATABASE_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
       DATABASE_MIN_POOL_SIZE: 5
       DATABASE_MAX_POOL_SIZE: 20
       DATABASE_CONNECTION_TIMEOUT_SECONDS: 300
@@ -77,57 +69,7 @@ services:
       KEYCLOAK_HOST: keycloak
       KEYCLOAK_PORT: 8080
 
-  # The identity provider, we use OAuth2 and bearer tokens for all API access.
-  keycloak:
-    image: openremote/keycloak:latest
-    links:
-      - postgres:postgresql
-    environment:
-      TZ: "Europe/Zurich"
-      KEYCLOAK_USER: admin
-
-      # Change the admin root password if you make this application publicly accessible! Note
-      # that imported demo data also creates a 'test' user with password 'test'. This should
-      # not be imported in production.
-      KEYCLOAK_PASSWORD: admin
-
-      # Configure how Keycloak connects to the database
-      POSTGRES_DATABASE: openremote
-      POSTGRES_USER: openremote
-      POSTGRES_PASSWORD: secret
-
-  # DBMS
-  postgres:
-    image: openremote/postgres:latest
-    environment:
-      TZ: "Europe/Zurich"
-      # This is the DBMS superuser and password. You should change this, especially if you
-      # expose the DBMS port and make it accessible externally!
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: secret
-
-      # The database and service connection user, passwords should be changed in production!
-      POSTGRES_DB: openremote
-      OPENREMOTE_USERNAME: openremote
-      OPENREMOTE_PASSWORD: secret
-
-  # The demo controller (device gateway)
-  controller:
-    image: openremote/demo-controller:latest
-    environment:
-      TZ: "Europe/Zurich"
-      BEEHIVE_REMOTE_SERVICE_URI: "urn:disabled"
-    # We expose the demo controller on the host network, so users can sync it with the
-    # OpenRemote Designer and access the Web Console. Do not expose this publicly in
-    # production (no credentials have been set)!
-    ports:
-      - "8688:8688"
-
-  # The milestone 1 demo designer, which runs in the "RULES" tab as an iframe. This is
-  # alpha quality code and should not be enabled in production!
-  m1designer:
-    image: openremote/m1designer:latest
-    environment:
-      TZ: "Europe/Zurich"
-    ports:
-      - "8084:8080"
+    # Configure logging of the container, see manager/server/conf/logging.properties
+    logging:
+        options:
+            max-size: "10m"

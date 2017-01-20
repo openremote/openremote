@@ -4,13 +4,29 @@
 
 ## Getting started with OpenRemote
 
-We are currently working on v3 of the OpenRemote platform. *No installable released versions are available at this time.*
+We are currently working on v3 of the OpenRemote platform.
+
+*No installable released versions are available at this time.*
 
 If you want to try OpenRemote v2, [read the OpenRemote v2 documentation](https://github.com/openremote/Documentation/wiki).
 
 ## Contributing to OpenRemote
 
-We work with Java, Groovy, Gradle, Docker, and wide range of APIs and protocol implementations. Clone or checkout this project and send us pull requests. For more information and how to set up a development environment, see the [Developer Guide](https://github.com/openremote/openremote/wiki).
+We work with Java, Groovy, Gradle, Docker, and wide range of APIs and protocol implementations. Clone or checkout this project and send us pull requests.
+
+A demo preview can be started with Docker Compose:
+
+```
+docker-compose -p openremote \
+    -f profile/dependencies/postgresql.yml \
+    -f profile/dependencies/keycloak.yml \
+    -f profile/manager.yml \
+    up
+```
+
+Access the manager UI and API on http://192.168.99.100:8080/ with username `admin` and password `CHANGE_ME_ADMIN_PASSWORD`.
+
+For more information and how to set up a development environment, see the [Developer Guide](https://github.com/openremote/openremote/wiki).
 
 ## Discuss OpenRemote
 
