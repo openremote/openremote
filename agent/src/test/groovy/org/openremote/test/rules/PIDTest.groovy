@@ -18,7 +18,7 @@ class PIDTest extends Specification implements ContainerTrait {
         def deploymentXml = getClass().getResourceAsStream(
                 "/org/openremote/test/rules/pid/agent.xml"
         )
-        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.5, factor: 0.25)
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
 
         and: "some rules"
         def rulesProvider = new RulesProvider() {
