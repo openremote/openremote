@@ -19,8 +19,8 @@ import org.openremote.manager.client.service.EventService
 import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.service.SecurityService
 import org.openremote.manager.client.style.WidgetStyle
-import org.openremote.Consumer
-import org.openremote.Runnable
+import org.openremote.model.Consumer
+import org.openremote.model.Runnable
 import org.openremote.manager.shared.event.Event
 import org.openremote.manager.shared.event.ui.ShowInfoEvent
 import org.openremote.manager.shared.http.EntityReader

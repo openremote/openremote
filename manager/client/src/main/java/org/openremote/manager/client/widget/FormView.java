@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.client.widget;
 
-import org.openremote.Runnable;
+import org.openremote.model.Runnable;
 
 public interface FormView {
 

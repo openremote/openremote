@@ -23,7 +23,7 @@ import com.google.gwt.text.shared.AbstractRenderer;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.event.ServerSendEvent;
 import org.openremote.manager.client.widget.*;
-import org.openremote.Consumer;
+import org.openremote.model.Consumer;
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.agent.RefreshInventoryEvent;
 import org.openremote.model.asset.Asset;

@@ -17,12 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.asset;
+package org.openremote.manager.server.agent;
 
 import elemental.json.Json;
 import org.openremote.model.Attribute;
 import org.openremote.model.AttributeType;
 import org.openremote.model.Attributes;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.ProtocolConfiguration;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,8 +32,7 @@ import java.util.List;
 public class AgentAttributes extends Attributes {
 
     public AgentAttributes() {
-        super();
-        initialize();
+        setEnabled(false);
     }
 
     public AgentAttributes(Asset agentAsset) {
@@ -54,10 +55,6 @@ public class AgentAttributes extends Attributes {
         if (attribute == null || !ProtocolConfiguration.isProtocolConfiguration(attribute))
             return null;
         return new ProtocolConfiguration(attribute);
-    }
-
-    public void initialize() {
-        setEnabled(false);
     }
 
     public boolean isEnabled() {

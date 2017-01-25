@@ -4,14 +4,12 @@ import org.kie.api.KieServices
 import org.kie.api.io.Resource
 import org.openremote.agent.AgentService
 import org.openremote.agent.rules.RulesProvider
-import org.openremote.agent.sensor.CustomSensorState
 import org.openremote.test.ContainerTrait
-import spock.lang.Ignore
 import spock.lang.Specification
+import spock.util.concurrent.PollingConditions
 
 import java.util.stream.Stream
 
-@Ignore // TODO: Fix test, use BlockingVariables, PollingConditions, etc.
 class PIDTest extends Specification implements ContainerTrait {
 
     def "PID controller basic test"() {
@@ -20,6 +18,7 @@ class PIDTest extends Specification implements ContainerTrait {
         def deploymentXml = getClass().getResourceAsStream(
                 "/org/openremote/test/rules/pid/agent.xml"
         )
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.5, factor: 0.25)
 
         and: "some rules"
         def rulesProvider = new RulesProvider() {
@@ -34,7 +33,7 @@ class PIDTest extends Specification implements ContainerTrait {
         }
 
         and: "the started server"
-        def testCommandBuilder = new TestCommandBuilder();
+        def testCommandBuilder = new TestCommandBuilder()
         def agentService = new AgentService(
                 deploymentXml,
                 testCommandBuilder,
@@ -44,32 +43,31 @@ class PIDTest extends Specification implements ContainerTrait {
         def container = startContainer(defaultConfig(serverPort), [agentService])
 
         when: "we increase Sp"
-        // can we run PID.sp.inc.ON command instead?
-        def customStateEvent = new CustomSensorState(358537, "PID.sp.inc", "ON");
-        agentService.getContext().update(customStateEvent);
+        // 2 ways of increasing the set point.
+        // Set the value of sensor directly:
+        //def customStateEvent = new CustomSensorState(358537, "PID.sp.inc", "ON");
+        //agentService.getContext().update(customStateEvent);
+        // Send a command linked with the button:
+        agentService.getContext().getCommands().execute("PID.sp.inc.ON")
 
-        and: "we wait"
-        Thread.sleep(1000);
-        
         then: "set point should be 1.5"
-        agentService.getContext().queryValue(358531) == "1.5" // can we check sensors by name?
-        agentService.getContext().queryValue(358532) == "1.5000" // PID output
+        conditions.eventually {
+            assert agentService.getContext().queryValue("GV.PID.Sp") == "1.5"
+            assert agentService.getContext().queryValue("PID.Output") == "1.5000"
+        }
+
 
         when: "we decrease Sp"
-        customStateEvent = new CustomSensorState(358525, "PID.sp.dec", "ON");
-        agentService.getContext().update(customStateEvent);
+        agentService.getContext().getCommands().execute("PID.sp.dec.ON")
 
-        and: "we wait"
-        Thread.sleep(1000);
+        then: "the PID output should be 1.0"
+        conditions.eventually {
+            assert agentService.getContext().queryValue("GV.PID.Sp") == "1.0" // set point
+            assert agentService.getContext().queryValue("PID.Output") == "1.0000" // PID output
+        }
 
-        then: "set point should be 1.0"
-        agentService.getContext().queryValue(358531) == "1.0" // set point
-        agentService.getContext().queryValue(358532) == "1.0000" // PID output
-
-        // how can I test if there is no overshot?
-        // how can I test if there are no oscillations?
-
-        // Problem: sometimes it passes, sometimes fails...
+        // TODO: how can I test if there is no overshot?
+        // TODO: how can I test if there are no oscillations?
 
         cleanup: "the server should be stopped"
         stopContainer(container)

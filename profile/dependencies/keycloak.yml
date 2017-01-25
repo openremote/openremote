@@ -5,15 +5,21 @@ version: '2'
 services:
 
   keycloak:
-    build:
-      context: ../../keycloak
+    image: openremote/keycloak:latest
+    links:
+      - postgresql
     environment:
       TZ: "Europe/Zurich"
-      KEYCLOAK_USER: admin
-      KEYCLOAK_PASSWORD: CHANGE_ME_ADMIN_PASSWORD
+
       KEYCLOAK_LOGLEVEL: INFO
+
+      KEYCLOAK_USER: admin
+      # Change the admin root password if you make this application publicly accessible! Note
+      # that imported demo data uses the admin account and also creates a 'test' user with
+      # password 'test'. This should not be imported in production.
+      KEYCLOAK_PASSWORD: CHANGE_ME_ADMIN_PASSWORD
+
+      # Configure how Keycloak connects to the database
       POSTGRES_DATABASE: openremote
       POSTGRES_USER: openremote
       POSTGRES_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
-    links:
-      - postgresql

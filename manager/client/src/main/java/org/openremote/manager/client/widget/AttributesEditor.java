@@ -22,7 +22,7 @@ package org.openremote.manager.client.widget;
 import com.google.gwt.user.client.ui.InsertPanel;
 import com.google.gwt.user.client.ui.Label;
 import elemental.json.Json;
-import org.openremote.Runnable;
+import org.openremote.model.Runnable;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.util.TextUtil;
