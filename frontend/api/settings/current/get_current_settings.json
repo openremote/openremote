@@ -12,7 +12,8 @@
     },
     "start_devices": [
       {"label":"Dishwasher", "time": "15:30", "status": "false"},
-      {"label":"Washing ", "time": "12:30", "status": "true"}
+      {"label":"Washer ", "time": "12:30", "status": "true"},
+      {"label":"Dryer ", "time": "12:30", "status": "true"}
     ],
     "energy" : {"usage": "0.9", "main_power": "0", "solar": "0.9"},
     "alarm": "true",
@@ -29,23 +30,29 @@
     "ventilation": "Low"
   },
   "scenes":{
-    "header":["Home","Away","Evening","Night"],
+    "header":["Climate","Home","Away","Evening","Night"],
     "data":[
       ["Living","21", "19", "22", "18"],
       ["Bed","21", "19", "22", "18"],
       ["Bath","21", "19", "22", "18"]
     ]
   },
-  "predicted_schedule":{
-    "header":["Home","Away","Evening","Night"],
+  "alarms":{
+    "header":["Alarm","Home","Away","Evening","Night"],
     "data":[
-      ["Mon","9:00", "10:00", "17:00", "23:00"],
-      ["Tue","9:00", "10:00", "17:00", "23:00"],
-      ["Wed","9:00", "10:00", "17:00", "23:00"],
-      ["Thu","9:00", "10:00", "17:00", "23:00"],
-      ["Fri","9:00", "10:00", "17:00", "23:00"],
-      ["Sat","9:00", "10:00", "17:00", "23:00"],
-      ["Sun","9:00", "10:00", "17:00", "23:00"]
+      ["Arm","true", "false", "false", "false"]
+    ]
+  },
+  "predicted_schedule":{
+    "header":["","Home","Away","Evening","Night"],
+    "data":[
+      ["Mon","09:00", "10:00", "17:00", "23:00"],
+      ["Tue","09:00", "10:00", "17:00", "23:00"],
+      ["Wed","09:00", "10:00", "17:00", "23:00"],
+      ["Thu","09:00", "10:00", "17:00", "23:00"],
+      ["Fri","09:00", "10:00", "17:00", "23:00"],
+      ["Sat","09:00", "10:00", "17:00", "23:00"],
+      ["Sun","09:00", "10:00", "17:00", "23:00"]
     ]
   }
 

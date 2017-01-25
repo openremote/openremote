@@ -39,6 +39,10 @@
       --paper-input-container-label: {
         display:none;
       }
+       --paper-input-container-label:after {
+        content: "\00b0"
+        
+       }
       --paper-input-container-underline: {
         border-color:transparent;
       }
@@ -47,13 +51,16 @@
          color:transparent;
          border-color:transparent;
        }
+      .celsius:after{
+        content: "\00b0"
+      }
     };
 
     </style>
      <paper-dropdown-menu class$="custom {{size}}">
       <paper-listbox class="dropdown-content" attr-for-selected="label" selected="{{active}}">
        <template is="dom-repeat" items="{{data}}">
-          <paper-item label="{{item}}" >{{item}}</paper-item>
+          <paper-item label="{{item}}" class="celsius">{{item}}</paper-item>
         </template>
       </paper-listbox>
     </paper-dropdown-menu>

@@ -9,10 +9,10 @@
 <link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
+<link rel="import" href="../bower_components/iron-collapse/iron-collapse.html">
 <link rel="import" href="../bower_components/iron-pages/iron-pages.html">
 <link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../bower_components/iron-resizable-behavior/iron-resizable-behavior.html">
-
 <link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../bower_components/paper-button/paper-button.html">
@@ -21,6 +21,7 @@
 <link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
 <link rel="import" href="../bower_components/paper-toggle-button/paper-toggle-button.html">
 <link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
 <link rel="import" href="../bower_components/paper-styles/color.html">
 
 <link rel="import" href="openremote-login.html">
@@ -29,6 +30,8 @@
 <link rel="import" href="components/input-dropdown.html">
 <link rel="import" href="components/input-switch-blok.html">
 <link rel="import" href="components/table-schedule.html">
+<link rel="import" href="components/table-schedule-edit.html">
+<link rel="import" href="components/table-toggles.html">
 
 </head><body><dom-module id="openremote-app">
 
@@ -39,6 +42,9 @@
     a{
       color:#FFFFFF;
       text-decoration: none;
+      font-weight: 100;
+      font-family: 'Roboto', sans-serif;
+      font-size:16px;
     }
       app-drawer-layout{
         position: relative;
@@ -48,6 +54,9 @@
       app-toolbar {
         background-color: #374c4f;
         color:#FFFFFF;
+      }
+      .header-layout{
+        z-index:999;
       }
       .main-header {
         box-shadow: 0px 5px 6px -3px rgba(0, 0, 0, 0.4);
@@ -79,6 +88,7 @@
         border:0;    
         font-family: 'Roboto', sans-serif;
         font-size:16px;
+        line-height:30px;
       }
 
       paper-tab {
@@ -115,14 +125,22 @@
         --iron-icon-width: 15px;
       }
       .normal {
-        --iron-icon-height: auto;
+        --iron-icon-height: 30px;
         --iron-icon-width: 30px;
+      }
+      .normal > ::content img {
+        width:auto!important;
       }
       .big {
         --iron-icon-height: auto;
         --iron-icon-width: 72px;
         margin:auto;
         display: block;
+      }
+      .background-image{
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size:120px auto;
       }
       .panel paper-toggle-button{
         margin:5px 0 0 0;
@@ -135,6 +153,9 @@
         margin: auto;
         display: block;
       }
+      .right{
+        float:right;
+      }
       .row{
         width:100%;
         margin:10px 0;
@@ -144,9 +165,13 @@
         @apply(--layout-horizontal);
       }
       .container {
+        margin:25px 0;
         position: relative;
         display: flex;
         flex-flow: row wrap;
+      }
+      .container.no-margin {
+        margin:0;
       }
       .item {
         box-sizing: border-box;
@@ -156,16 +181,30 @@
       .container-column {
         box-sizing: border-box;
         padding: 0 5px;
+        line-height:30px;
       }
+
       .container-column:first-child{
         padding-right:20px;
       }
+
       .container-column:nth-child(2){
         width:30%;
       }
-
+      .container-column.col_2:nth-child(2){
+        width:50%;
+      }
+      .container-column-3{
+        width:33.3%;
+      }
+      .container-column span{
+        line-height:30px;
+      }
       .container-column:last-child{
         margin-left: auto;
+      }
+      .celsius:after{
+        content: "\00b0"
       }
       #settings-btn{
         color:#FFFFFF;
@@ -206,7 +245,7 @@
           tail="{{subroute}}">
       </app-route>
 
-      <app-header-layout>
+      <app-header-layout class="header-layout">
          <app-header id="header" effects="waterfall" fixed="">
           <app-toolbar>
             <div main-title="">Smart 61</div>
@@ -250,10 +289,14 @@
           <div name="Home" route="{{subroute}}">
             <div class="panel">
               <div class="inner-panel">
-                <div class="row">
-                  <iron-icon class="normal" src="../images/panel/light_off.png"></iron-icon>
-                  <span>Full Smart 61</span>
-                  <paper-toggle-button data-target="smart.fullsmart" checked="[[checkStatus(data.current_scene.smart.fullsmart)]]" class="green"></paper-toggle-button>
+                <div class="container no-margin">
+                    <div class="container-column">
+                      <iron-icon class="normal" src="../images/panel/star.png"></iron-icon>
+                    </div>
+                    <div class="container-column col_2">Full Smart 61</div>
+                    <div class="container-column">
+                        <paper-toggle-button data-target="smart.fullsmart" checked="[[checkStatus(data.current_scene.smart.fullsmart)]]" class="green"></paper-toggle-button>
+                    </div>
                 </div>
               </div>
             </div>
@@ -267,10 +310,14 @@
           <div name="Light" route="{{subroute}}">
             <div class="panel">
               <div class="inner-panel">
-                <div class="row">
-                  <iron-icon class="normal" src="../images/panel/light_off.png"></iron-icon>
-                  <span>Smart 61 - Lighting</span>
-                  <paper-toggle-button data-target="smart.light" checked="[[checkStatus(data.current_scene.smart.light)]]" class="green"></paper-toggle-button>
+                  <div class="container no-margin">
+                    <div class="container-column">
+                      <iron-icon class="normal" src="../images/panel/light_on.png"></iron-icon>
+                    </div>
+                    <div class="container-column col_2">Smart 61 - Lighting</div>
+                    <div class="container-column">
+                      <paper-toggle-button data-target="smart.light" checked="[[checkStatus(data.current_scene.smart.light)]]" class="green"></paper-toggle-button>
+                    </div>
                 </div>
               </div>
             </div>
@@ -283,10 +330,14 @@
           <div name="Start" route="{{subroute}}">
             <div class="panel">
               <div class="inner-panel">
-                <div class="row">
-                  <iron-icon class="normal" src="../images/panel/home_on.png"></iron-icon>
-                  <span>Smart - Smart Start</span>
-                  <paper-toggle-button data-target="smart.start" checked="[[checkStatus(data.current_scene.smart.start)]]" class="green"></paper-toggle-button>
+                <div class="container no-margin">
+                    <div class="container-column">
+                      <iron-icon class="normal" src="../images/panel/home_on.png"></iron-icon>
+                    </div>
+                    <div class="container-column col_2">Smart - Smart Start</div>
+                    <div class="container-column">
+                      <paper-toggle-button data-target="smart.start" checked="[[checkStatus(data.current_scene.smart.start)]]" class="green"></paper-toggle-button>
+                    </div>
                 </div>
               </div>
             </div>
@@ -318,6 +369,19 @@
             <div class="panel">
               <div class="inner-panel">
                 <span class="center">Energy Monitor</span>
+                 <div class="row background-image" style="background-image: url(../images/panel/energy_no_battery.png);">
+                   <div class="container">
+                    <div class="row">
+                      <div class="container-column-3 right">{{data.current_scene.energy.solar}}kW<div>Solar & Battery</div></div>
+                    </div>
+                     <div class="row">
+                      <div class="container-column-3 center">{{data.current_scene.energy.usage}}kW<div>Usage</div></div>
+                    </div>
+                    <div class="row">
+                      <div class="container-column-3">{{data.current_scene.energy.main_power}}kW<div>Mains power</div></div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -325,10 +389,14 @@
           <div name="Safety" route="{{subroute}}">
             <div class="panel">
               <div class="inner-panel">
-                <div class="row">
-                  <iron-icon class="normal" src="../images/panel/alarm_large_off.png"></iron-icon>
-                  <span>Smart - Safety</span>
-                  <paper-toggle-button data-target="smart.safety" checked="[[checkStatus(data.current_scene.smart.safety)]]" class="green"></paper-toggle-button>
+                <div class="container no-margin">
+                    <div class="container-column">
+                      <iron-icon class="normal" src="../images/panel/alarm_large_off.png"></iron-icon>
+                    </div>
+                    <div class="container-column col_2">Smart 61 - Safety</div>
+                    <div class="container-column">
+                      <paper-toggle-button data-target="smart.safety" checked="[[checkStatus(data.current_scene.smart.safety)]]" class="green"></paper-toggle-button>
+                    </div>
                 </div>
               </div>
             </div>
@@ -346,10 +414,14 @@
           <div name="Climate" route="{{subroute}}">
             <div class="panel">
               <div class="inner-panel">
-                <div class="row">
-                  <iron-icon class="small" src="../images/panel/temperature_gauge_100.png"></iron-icon>
-                  <span>Smart - Climate</span>
-                  <paper-toggle-button data-target="smart.climate" checked="[[checkStatus(data.current_scene.smart.climate)]]" class="green"></paper-toggle-button>
+                <div class="container no-margin">
+                    <div class="container-column">
+                      <iron-icon class="normal" src="../images/panel/temperature_gauge_100.png"></iron-icon>
+                    </div>
+                    <div class="container-column col_2">Smart 61 - Climate</div>
+                    <div class="container-column">
+                      <paper-toggle-button data-target="smart.climate" checked="[[checkStatus(data.current_scene.smart.climate)]]" class="green"></paper-toggle-button>
+                    </div>
                 </div>
               </div>
             </div>
@@ -357,7 +429,7 @@
               <div class="inner-panel">
                 <span class="center">Heating</span>
                 <div class="container">
-                  <div class="item"><span style="float:left">Living Room</span><span style="font-size:62px">{{data.current_scene.temperature_actual.living_room}}</span></div>
+                  <div class="item"><span style="float:left">Living Room</span><span style="font-size:62px" class="celsius">{{data.current_scene.temperature_actual.living_room}}</span></div>
                   <div class="item">
                      <input-temperature size="large" data="{{temperatures}}" active="{{data.current_scene.temperature_program.living_room}}"></input-temperature>
                   </div>
@@ -372,7 +444,7 @@
                       <iron-icon class="small" src="../images/panel/temperature_gauge_100.png"></iron-icon>
                     </div>
                     <div class="container-column">Bedroom</div>
-                    <div class="container-column">{{data.current_scene.temperature_actual.bedroom}}</div>
+                    <div class="container-column celsius">{{data.current_scene.temperature_actual.bedroom}}</div>
                     <div class="container-column">
                        <input-temperature size="small" data="{{temperatures}}" active="{{data.current_scene.temperature_program.bedroom}}"></input-temperature>
                     </div>
@@ -382,7 +454,7 @@
                       <iron-icon class="small" src="../images/panel/temperature_gauge_100.png"></iron-icon>
                     </div>
                     <div class="container-column">Bathroom</div>
-                    <div class="container-column">{{data.current_scene.temperature_actual.bathroom}}</div>
+                    <div class="container-column celsius">{{data.current_scene.temperature_actual.bathroom}}</div>
                     <div class="container-column">
                        <input-temperature size="small" data="{{temperatures}}" active="{{data.current_scene.temperature_program.bathroom}}"></input-temperature>
                     </div>
@@ -395,9 +467,9 @@
                 
                   <div class="container">
                     <div class="container-column">
-                      <iron-icon class="small" src="../images/panel/temperature_gauge_100.png"></iron-icon>
+                      <iron-icon class="normal" src="../images/panel/ventilation.png"></iron-icon>
                     </div>
-                    <div class="container-column">Air flow speed</div>
+                    <div class="container-column col_2">Air flow speed</div>
                     <div class="container-column">
                        <input-dropdown data="{{ventilation_options}}" active="{{data.current_scene.ventilation}}"></input-dropdown>
                     </div>
@@ -411,26 +483,58 @@
               <app-toolbar>
                 <paper-icon-button class="back-btn" icon="arrow-back" drawer-toggle=""></paper-icon-button>
                 <div main-title="">Smart 61</div>
+                <a href="#/Login" on-click="logOut" class="right">Log out</a>
               </app-toolbar>
               <div class="panel">
-                <div class="inner-panel">
+                <div class="inner-panel" on-click="toggleVacation">
                   <span class="center">Vacation Settings</span>
+                  <iron-collapse id="collapseVacation">
+                    <p>Vacation</p>
+                  </iron-collapse>
                 </div>
               </div>
-              <div class="panel">
-                <div class="inner-panel">
+              <div class="panel">                
+                <div class="inner-panel" on-click="toggleWeek">
                   <span class="center">Predicted Week Schedule:</span>
-                  <table-schedule data="{{data.predicted_schedule.data}}"  header="{{data.predicted_schedule.header}}"></table-schedule>
+                  <iron-collapse id="collapseWeek">
+                    <table-schedule data="{{data.predicted_schedule.data}}"  header="{{data.predicted_schedule.header}}"></table-schedule>
+                    <a class=""><paper-button  class="bg-darkgreen" onclick="actions.open()">EDIT</paper-button></a>
+                  </iron-collapse>
                 </div>
               </div>
               <div class="panel">
-                <div class="inner-panel">
+                <div class="inner-panel" on-click="toggleScenes">
                   <span class="center">Scene settings</span>
-                  <table-schedule data="{{data.scenes.data}}"  header="{{data.scenes.header}}"></table-schedule>
-                   <a href="#/Intro"><paper-button class="full_width bg-darkgreen">Scene Wizard</paper-button></a>
-                </div>
+                  <iron-collapse id="collapseScenes">
+                  <div class="row">
+                      <a href="#/Intro"><paper-button class="full_width bg-darkgreen">Scene Wizard</paper-button></a>
+                    </div>
+                    <div class="row">
+                      <table-toggles data="{{data.alarms.data}}"  header="{{data.alarms.header}}"></table-toggles>                  
+                    </div>
+                    <div class="row">
+                      <table-schedule data="{{data.scenes.data}}"  header="{{data.scenes.header}}"></table-schedule>  
+                    </div>
+                  </div>
+                </iron-collapse>
               </div>
             </div>
+            <paper-dialog id="scrolling">
+              
+              <table-schedule data="{{data.predicted_schedule.data}}"  header="{{data.predicted_schedule.header}}"></table-schedule>
+              <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button dialog-confirm autofocus>OK</paper-button>
+              </div>
+            </paper-dialog>
+
+            <paper-dialog id="actions" withBackdrop>
+              <table-schedule-edit data="{{data.predicted_schedule.data}}"  header="{{data.predicted_schedule.header}}"></table-schedule-edit>
+              <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button dialog-confirm autofocus>Save</paper-button>
+              </div>
+            </paper-dialog>
           </div>
       </iron-pages>
     
@@ -461,6 +565,18 @@
           behaviors: [
             Polymer.IronOverlayBehavior,
           ],
+        },
+        toggleVacation: function() {
+           this.$.collapseVacation.toggle();
+        },
+        toggleWeek: function() {
+           this.$.collapseWeek.toggle();
+        },
+        toggleScenes: function() {
+           this.$.collapseScenes.toggle();
+        },
+        logOut: function(){
+          localStorage.clear();
         },
         setValueToDict: function(value, stringPath){
           var path = stringPath.split(".");

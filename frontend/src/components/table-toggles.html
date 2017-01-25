@@ -1,4 +1,6 @@
-<html><head></head><body><dom-module id="table-schedule" attributes={"data", "header"}>
+<html><head>
+<link rel="import" href="../../bower_components/paper-toggle-button/paper-toggle-button.html">
+</head><body><dom-module id="table-toggles" attributes={"data", "header"}>
   <template>
     <style type="text/css">
       table{
@@ -27,6 +29,14 @@
         border-bottom: 1px solid #FFFFFF;
         padding:10px 0;
       }
+      paper-toggle-button.green { 
+          margin-left: auto;
+          float: right;   
+          opacity:1;
+        --paper-toggle-button-checked-bar-color: #374c4f;
+        --paper-toggle-button-checked-button-color:  #c0d62e;
+        --paper-toggle-button-checked-ink-color: #374c4f;
+      }
     </style>
     <table style="width: 100%" border="0">
       <tbody>
@@ -38,7 +48,7 @@
         <template is="dom-repeat" items="{{data}}">
           <tr>
             <template is="dom-repeat" items="{{item}}">
-             <td>{{item}}</td>
+             <td><paper-toggle-button checked="[[checkStatus(item)]]" class="green"></paper-toggle-button></td>
           </template>
           </tr>
         </template>
@@ -46,5 +56,15 @@
     </table>
   </template>
 
-   <script>Polymer({is:"table-schedule"});</script>
+   <script>Polymer({
+    is:"table-toggles",
+    checkStatus: function(status){
+        if(status == "true"){
+          var s = true;
+        }else{
+          var s = false;
+        }
+        return s;
+    }
+ });</script>
 </dom-module></body></html>

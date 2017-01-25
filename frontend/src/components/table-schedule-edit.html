@@ -1,4 +1,4 @@
-<html><head></head><body><dom-module id="table-schedule" attributes={"data", "header"}>
+<html><head></head><body><dom-module id="table-schedule-edit" attributes={"data", "header"}>
   <template>
     <style type="text/css">
       table{
@@ -21,11 +21,20 @@
       th:first-child{
         color:#000000;
         background-color: #FFFFFF;
+        display:none;
       }
       td:first-child{
         background-color:#e4e4e4;
         border-bottom: 1px solid #FFFFFF;
         padding:10px 0;
+        display:none;
+      }
+      input[type="time"]{
+        background-color: transparent;
+        border:0;    
+        font-family: 'Roboto', sans-serif;
+        font-size:16px;
+        line-height:30px;
       }
     </style>
     <table style="width: 100%" border="0">
@@ -38,13 +47,21 @@
         <template is="dom-repeat" items="{{data}}">
           <tr>
             <template is="dom-repeat" items="{{item}}">
-             <td>{{item}}</td>
-          </template>
+              <td><input type="time" value="{{item}}"></td>
+            </template>
           </tr>
         </template>
       </tbody>
     </table>
   </template>
 
-   <script>Polymer({is:"table-schedule"});</script>
+   <script>Polymer({
+    is:"table-schedule-edit",
+    hideFirst: function(i){
+        if(1 != index)
+        { return true; } 
+        else 
+        { return false; }
+    }
+ });</script>
 </dom-module></body></html>
