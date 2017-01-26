@@ -1,0 +1,6 @@
+<html><head><link rel="import" href="../../polymer/polymer.html">
+<link rel="import" href="../../neon-animation/neon-animation-behavior.html">
+<link rel="import" href="../../neon-animation/web-animations.html">
+
+<script>Polymer({is:"fade-in-slide-from-right-animation",behaviors:[Polymer.NeonAnimationBehavior],configure:function(r){var i=r.node;return this._effect=new KeyframeEffect(i,[{transform:"translateX(100%)",opacity:"0"},{transform:"translateX(50%)",opacity:"0"},{transform:"none",opacity:"1"}],this.timingFromConfig(r)),r.transformOrigin?this.setPrefixedProperty(i,"transformOrigin",r.transformOrigin):this.setPrefixedProperty(i,"transformOrigin","0 50%"),this._effect}});</script>
+</head><body></body></html>

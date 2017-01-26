@@ -1,0 +1,79 @@
+<html><head><link rel="import" href="../bower_components/paper-stepper/paper-stepper.html">
+<link rel="import" href="../bower_components/paper-stepper/paper-step.html">
+
+<link rel="import" href="components/template-scenes-input.html">
+
+</head><body><dom-module id="openremote-intro">
+  <template>
+    <style is="custom-style">
+      #stepper {
+        background-color: transparent;
+        box-shadow: none;
+      }
+      paper-button.default-button {
+        background: #c0d62e;
+        color:#FFFFFF;
+        float:right;
+      }
+      paper-step > ::content #buttonsWrapper.step-vertical > #continueButton.step-vertical{
+          margin-right: 0;
+          margin-left: auto;
+      }
+      paper-step > ::content #textWrapper.step-vertical{
+        width: 100%;
+        text-align: center;
+        padding:12px 0;
+      }
+      paper-step > ::content #badge.step-vertical{
+        margin:0;
+      }
+      paper-step > ::content #contentConnectorLine.step-vertical{
+        margin-left: 0;
+        background: none;
+      }
+      paper-step > ::content #stepWrapper{
+        padding-top:10px;
+      }
+      paper-step > ::content #badge.step-vertical{
+        background-color: transparent;
+        border:2px solid #c0d62e;
+        width: 20px;
+        height: 20px;
+      }
+       paper-step > ::content #label:hover #badge.step-vertical{
+        background-color: #c0d62e;
+       }
+      paper-step > ::content  #connectedBadge{
+        position: absolute;
+        right:20px;
+      }
+      paper-step{
+        background-color: #FFFFFF;
+        border-radius: 5px;
+        margin-bottom: 10px;
+
+        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+      }
+    </style>
+
+    <paper-stepper on-paper-stepper-completed="completed" id="stepper" vertical="" continue-text="Next" finish-text="Finish">
+      <paper-step label="Home"><template-scenes-input></template-scenes-input></paper-step>
+      <paper-step label="Away" ><template-scenes-input></template-scenes-input></paper-step>
+      <paper-step label="Evening" ><template-scenes-input></template-scenes-input></paper-step>
+      <paper-step label="Night" ><template-scenes-input></template-scenes-input></paper-step>
+    </paper-stepper>
+  </template>
+
+   <script>Polymer({
+      is:"openremote-intro",
+      listeners: {
+        'completed': 'completed',
+      },
+
+      completed: function(e) {
+        localStorage.setItem("settings", "qweqweqwe");
+        window.location = '#/Home'
+      },
+ });
+   </script>
+</dom-module></body></html>
