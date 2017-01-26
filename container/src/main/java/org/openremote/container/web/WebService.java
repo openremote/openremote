@@ -341,6 +341,7 @@ public abstract class WebService implements ContainerService {
 
         // Custom providers (these only apply to server applications, not client calls)
         resteasyDeployment.getProviders().add(new JacksonConfig());
+        resteasyDeployment.getProviders().add(new CORSFilter());
         resteasyDeployment.getActualProviderClasses().add(ElementalMessageBodyConverter.class);
         resteasyDeployment.getActualProviderClasses().add(AlreadyGzippedWriterInterceptor.class);
         resteasyDeployment.getActualProviderClasses().add(ClientErrorExceptionHandler.class);
