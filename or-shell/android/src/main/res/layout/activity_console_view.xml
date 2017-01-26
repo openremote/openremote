@@ -1,0 +1,26 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                tools:context="org.openremote.android.ConsoleViewActivity">
+
+    <WebView android:id="@+id/consoleView"
+             android:layout_width="fill_parent"
+             android:layout_height="fill_parent"
+             android:visibility="gone"/>
+
+    <RelativeLayout
+            android:id="@+id/consoleViewLoading"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:visibility="visible">
+        <ProgressBar
+                android:id="@+id/consoleViewLoadingProgress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:indeterminate="true"
+                android:indeterminateTint="@color/light_green"
+                android:indeterminateTintMode="multiply"/>
+    </RelativeLayout>
+</RelativeLayout>

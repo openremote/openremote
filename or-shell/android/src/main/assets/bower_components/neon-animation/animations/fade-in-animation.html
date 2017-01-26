@@ -1,0 +1,8 @@
+<html><head><link rel="import" href="../../polymer/polymer.html">
+<link rel="import" href="../neon-animation-behavior.html">
+<link rel="import" href="../web-animations.html">
+
+
+
+<script>Polymer({is:"fade-in-animation",behaviors:[Polymer.NeonAnimationBehavior],configure:function(i){var e=i.node;return this._effect=new KeyframeEffect(e,[{opacity:"0"},{opacity:"1"}],this.timingFromConfig(i)),this._effect}});</script>
+</head><body></body></html>

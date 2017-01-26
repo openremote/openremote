@@ -1,0 +1,251 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-styles/default-theme.html">
+<link rel="import" href="../paper-styles/typography.html">
+
+
+
+</head><body><dom-module id="paper-input-container">
+  <template>
+    <style>
+      :host {
+        display: block;
+        padding: 8px 0;
+
+        @apply(--paper-input-container);
+      }
+
+      :host([inline]) {
+        display: inline-block;
+      }
+
+      :host([disabled]) {
+        pointer-events: none;
+        opacity: 0.33;
+
+        @apply(--paper-input-container-disabled);
+      }
+
+      :host([hidden]) {
+        display: none !important;
+      }
+
+      .floated-label-placeholder {
+        @apply(--paper-font-caption);
+      }
+
+      .underline {
+        height: 2px;
+        position: relative;
+      }
+
+      .focused-line {
+        @apply(--layout-fit);
+
+        border-bottom: 2px solid var(--paper-input-container-focus-color, --primary-color);
+
+        -webkit-transform-origin: center center;
+        transform-origin: center center;
+        -webkit-transform: scale3d(0,1,1);
+        transform: scale3d(0,1,1);
+
+        @apply(--paper-input-container-underline-focus);
+      }
+
+      .underline.is-highlighted .focused-line {
+        -webkit-transform: none;
+        transform: none;
+        -webkit-transition: -webkit-transform 0.25s;
+        transition: transform 0.25s;
+
+        @apply(--paper-transition-easing);
+      }
+
+      .underline.is-invalid .focused-line {
+        border-color: var(--paper-input-container-invalid-color, --error-color);
+        -webkit-transform: none;
+        transform: none;
+        -webkit-transition: -webkit-transform 0.25s;
+        transition: transform 0.25s;
+
+        @apply(--paper-transition-easing);
+      }
+
+      .unfocused-line {
+        @apply(--layout-fit);
+
+        border-bottom: 1px solid var(--paper-input-container-color, --secondary-text-color);
+
+        @apply(--paper-input-container-underline);
+      }
+
+      :host([disabled]) .unfocused-line {
+        border-bottom: 1px dashed;
+        border-color: var(--paper-input-container-color, --secondary-text-color);
+
+        @apply(--paper-input-container-underline-disabled);
+      }
+
+      .label-and-input-container {
+        @apply(--layout-flex-auto);
+        @apply(--layout-relative);
+
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .input-content {
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+
+        position: relative;
+      }
+
+      .input-content ::content label,
+      .input-content ::content .paper-input-label {
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        width: 100%;
+        font: inherit;
+        color: var(--paper-input-container-color, --secondary-text-color);
+        -webkit-transition: -webkit-transform 0.25s, width 0.25s;
+        transition: transform 0.25s, width 0.25s;
+        -webkit-transform-origin: left top;
+        transform-origin: left top;
+
+        @apply(--paper-font-common-nowrap);
+        @apply(--paper-font-subhead);
+        @apply(--paper-input-container-label);
+        @apply(--paper-transition-easing);
+      }
+
+      .input-content.label-is-floating ::content label,
+      .input-content.label-is-floating ::content .paper-input-label {
+        -webkit-transform: translateY(-75%) scale(0.75);
+        transform: translateY(-75%) scale(0.75);
+
+        /* Since we scale to 75/100 of the size, we actually have 100/75 of the
+        original space now available */
+        width: 133%;
+
+        @apply(--paper-input-container-label-floating);
+      }
+
+      :host-context([dir="rtl"]) .input-content.label-is-floating ::content label,
+      :host-context([dir="rtl"]) .input-content.label-is-floating ::content .paper-input-label {
+        /* TODO(noms): Figure out why leaving the width at 133% before the animation
+         * actually makes
+         * it wider on the right side, not left side, as you would expect in RTL */
+        width: 100%;
+        -webkit-transform-origin: right top;
+        transform-origin: right top;
+      }
+
+      .input-content.label-is-highlighted ::content label,
+      .input-content.label-is-highlighted ::content .paper-input-label {
+        color: var(--paper-input-container-focus-color, --primary-color);
+
+        @apply(--paper-input-container-label-focus);
+      }
+
+      .input-content.is-invalid ::content label,
+      .input-content.is-invalid ::content .paper-input-label {
+        color: var(--paper-input-container-invalid-color, --error-color);
+      }
+
+      .input-content.label-is-hidden ::content label,
+      .input-content.label-is-hidden ::content .paper-input-label {
+        visibility: hidden;
+      }
+
+      .input-content ::content input,
+      .input-content ::content textarea,
+      .input-content ::content iron-autogrow-textarea,
+      .input-content ::content .paper-input-input {
+        position: relative; /* to make a stacking context */
+        outline: none;
+        box-shadow: none;
+        padding: 0;
+        width: 100%;
+        max-width: 100%;
+        background: transparent;
+        border: none;
+        color: var(--paper-input-container-input-color, --primary-text-color);
+        -webkit-appearance: none;
+        text-align: inherit;
+        vertical-align: bottom;
+
+        @apply(--paper-font-subhead);
+        @apply(--paper-input-container-input);
+      }
+
+      .input-content ::content input::-webkit-outer-spin-button,
+      .input-content ::content input::-webkit-inner-spin-button {
+        @apply(--paper-input-container-input-webkit-spinner);
+      }
+
+      ::content [prefix] {
+        @apply(--paper-font-subhead);
+
+        @apply(--paper-input-prefix);
+        @apply(--layout-flex-none);
+      }
+
+      ::content [suffix] {
+        @apply(--paper-font-subhead);
+
+        @apply(--paper-input-suffix);
+        @apply(--layout-flex-none);
+      }
+
+      /* Firefox sets a min-width on the input, which can cause layout issues */
+      .input-content ::content input {
+        min-width: 0;
+      }
+
+      .input-content ::content textarea {
+        resize: none;
+      }
+
+      .add-on-content {
+        position: relative;
+      }
+
+      .add-on-content.is-invalid ::content * {
+        color: var(--paper-input-container-invalid-color, --error-color);
+      }
+
+      .add-on-content.is-highlighted ::content * {
+        color: var(--paper-input-container-focus-color, --primary-color);
+      }
+    </style>
+
+    <template is="dom-if" if="[[!noLabelFloat]]">
+      <div class="floated-label-placeholder" aria-hidden="true">&nbsp;</div>
+    </template>
+
+    <div class$="[[_computeInputContentClass(noLabelFloat,alwaysFloatLabel,focused,invalid,_inputHasContent)]]">
+      <content select="[prefix]" id="prefix"></content>
+
+      <div class="label-and-input-container" id="labelAndInputContainer">
+        <content select=":not([add-on]):not([prefix]):not([suffix])"></content>
+      </div>
+
+      <content select="[suffix]"></content>
+    </div>
+
+    <div class$="[[_computeUnderlineClass(focused,invalid)]]">
+      <div class="unfocused-line"></div>
+      <div class="focused-line"></div>
+    </div>
+
+    <div class$="[[_computeAddOnContentClass(focused,invalid)]]">
+      <content id="addOnContent" select="[add-on]"></content>
+    </div>
+  </template>
+</dom-module>
+
+<script>Polymer({is:"paper-input-container",properties:{noLabelFloat:{type:Boolean,value:!1},alwaysFloatLabel:{type:Boolean,value:!1},attrForValue:{type:String,value:"bind-value"},autoValidate:{type:Boolean,value:!1},invalid:{observer:"_invalidChanged",type:Boolean,value:!1},focused:{readOnly:!0,type:Boolean,value:!1,notify:!0},_addons:{type:Array},_inputHasContent:{type:Boolean,value:!1},_inputSelector:{type:String,value:"input,textarea,.paper-input-input"},_boundOnFocus:{type:Function,value:function(){return this._onFocus.bind(this)}},_boundOnBlur:{type:Function,value:function(){return this._onBlur.bind(this)}},_boundOnInput:{type:Function,value:function(){return this._onInput.bind(this)}},_boundValueChanged:{type:Function,value:function(){return this._onValueChanged.bind(this)}}},listeners:{"addon-attached":"_onAddonAttached","iron-input-validate":"_onIronInputValidate"},get _valueChangedEvent(){return this.attrForValue+"-changed"},get _propertyForValue(){return Polymer.CaseMap.dashToCamelCase(this.attrForValue)},get _inputElement(){return Polymer.dom(this).querySelector(this._inputSelector)},get _inputElementValue(){return this._inputElement[this._propertyForValue]||this._inputElement.value},ready:function(){this._addons||(this._addons=[]),this.addEventListener("focus",this._boundOnFocus,!0),this.addEventListener("blur",this._boundOnBlur,!0)},attached:function(){this.attrForValue?this._inputElement.addEventListener(this._valueChangedEvent,this._boundValueChanged):this.addEventListener("input",this._onInput),""!=this._inputElementValue?this._handleValueAndAutoValidate(this._inputElement):this._handleValue(this._inputElement)},_onAddonAttached:function(t){this._addons||(this._addons=[]);var n=t.target;this._addons.indexOf(n)===-1&&(this._addons.push(n),this.isAttached&&this._handleValue(this._inputElement))},_onFocus:function(){this._setFocused(!0)},_onBlur:function(){this._setFocused(!1),this._handleValueAndAutoValidate(this._inputElement)},_onInput:function(t){this._handleValueAndAutoValidate(t.target)},_onValueChanged:function(t){this._handleValueAndAutoValidate(t.target)},_handleValue:function(t){var n=this._inputElementValue;n||0===n||"number"===t.type&&!t.checkValidity()?this._inputHasContent=!0:this._inputHasContent=!1,this.updateAddons({inputElement:t,value:n,invalid:this.invalid})},_handleValueAndAutoValidate:function(t){if(this.autoValidate){var n;n=t.validate?t.validate(this._inputElementValue):t.checkValidity(),this.invalid=!n}this._handleValue(t)},_onIronInputValidate:function(t){this.invalid=this._inputElement.invalid},_invalidChanged:function(){this._addons&&this.updateAddons({invalid:this.invalid})},updateAddons:function(t){for(var n,e=0;n=this._addons[e];e++)n.update(t)},_computeInputContentClass:function(t,n,e,i,a){var u="input-content";if(t)a&&(u+=" label-is-hidden");else{var o=this.querySelector("label");n||a?(u+=" label-is-floating",this.$.labelAndInputContainer.style.position="static",i?u+=" is-invalid":e&&(u+=" label-is-highlighted")):o&&(this.$.labelAndInputContainer.style.position="relative")}return u},_computeUnderlineClass:function(t,n){var e="underline";return n?e+=" is-invalid":t&&(e+=" is-highlighted"),e},_computeAddOnContentClass:function(t,n){var e="add-on-content";return n?e+=" is-invalid":t&&(e+=" is-highlighted"),e}});</script>
+</body></html>

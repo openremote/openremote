@@ -1,0 +1,10 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:tools="http://schemas.android.com/tools"
+      tools:context="org.openremote.android.ShellActivity">
+
+    <item android:id="@+id/action_find_controllers"
+          android:title="@string/action_find_controllers"
+          android:orderInCategory="100"
+          android:showAsAction="never"/>
+
+</menu>

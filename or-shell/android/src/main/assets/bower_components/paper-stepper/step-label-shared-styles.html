@@ -1,0 +1,75 @@
+<html><head><link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-styles/default-theme.html">
+<link rel="import" href="../paper-styles/color.html">
+<link rel="import" href="../paper-styles/typography.html">
+<link rel="import" href="../polymer/polymer.html">
+
+</head><body><dom-module id="step-label-shared-styles">
+  <template>
+    <style>
+      :host {
+        display: block;
+        box-sizing: border-box;
+        @apply(--paper-font-common-base);
+        @apply(--layout-flex);
+      }
+      #textWrapper {
+        color: var(--paper-step-disabled-label-text-color, --paper-grey-400);
+      }
+      #textLabel {
+        font-size: var(--paper-step-label-text-font-size, 14px);
+      }
+      #optional{
+        font-size: var(--paper-step-label-optional-text-font-size, 12px);
+      }
+      :host([selectable]) #textWrapper {
+        color: var(--paper-step-selectable-label-text-color, --paper-grey-600);
+      }
+      :host([opened]) #textLabel {
+        color: var(--paper-step-opened-label-text-color, --light-theme-text-color);
+        font-weight: 500;
+      }
+      #label {
+        cursor: default;
+        pointer-events: none;
+        /* For paper-ripple */
+        position: relative;
+      }
+      :host([selectable]) #label {
+        cursor: pointer;
+        pointer-events: auto;
+      }
+      #label:hover {
+        /* using alpha chanel for .connectorLine to grow dark */
+        background: var(--paper-step-label-hover-background, rgba(0,0,0,0.04));
+      }
+      #badge {
+        width: 24px;
+        height: 24px;
+        background: var(--paper-step-badge-background, --paper-grey-300);
+        border-radius: 50%;
+        color: var(--paper-step-badge-color, --dark-theme-text-color);
+        font-size: 12px;
+        @apply(--layout);
+        @apply(--layout-center-center);
+      }
+      #badge iron-icon {
+        --iron-icon-height: var(--paper-step-badge-icon-width, 16px);
+        --iron-icon-width: var(--paper-step-badge-icon-height, 16px);  
+      }
+      :host([opened]) #badge {
+        background: var(--paper-step-opened-badge-background, --primary-color);
+      }
+      :host([saved]) #badge {
+        background: var(--paper-step-saved-badge-background, --primary-color);
+      }
+      :host([selectable]:not([opened]):not([saved])) #label:hover #badge {
+        background: var(--paper-step-selectable-hovered-badge-background, --paper-grey-500);
+      }
+      paper-ripple {
+        color: var(--paper-step-ink-color, --paper-grey-400);
+      }
+    </style>
+  </template>
+</dom-module>
+</body></html>
