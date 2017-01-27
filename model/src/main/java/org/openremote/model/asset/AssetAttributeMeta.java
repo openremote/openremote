@@ -119,12 +119,12 @@ public enum AssetAttributeMeta {
         return list.toArray(new AssetAttributeMeta[list.size()]);
     }
 
-    public static boolean isEditable(String name) {
-        try {
-            return AssetAttributeMeta.valueOf(name).isEditable();
-        } catch (IllegalArgumentException ex) {
-            return false;
+    public static Boolean isEditable(String name) {
+        for (AssetAttributeMeta assetAttributeMeta : editable()) {
+            if (assetAttributeMeta.getName().equals(name))
+                return assetAttributeMeta.isEditable();
         }
+        return null;
     }
 
     public static MetadataItem createMetadataItem(AssetAttributeMeta name, JsonValue value) {
@@ -135,5 +135,12 @@ public enum AssetAttributeMeta {
         return attribute.hasMetaItem(meta.getName())
             ? attribute.getMetadata().first(meta.getName())
             : null;
+    }
+
+    public static JsonValue getFirstMetadataItemValue(Attribute attribute, AssetAttributeMeta meta) {
+        MetadataItem item = attribute.hasMetaItem(meta.getName())
+            ? attribute.getMetadata().first(meta.getName())
+            : null;
+        return item != null ? item.getValue() : null;
     }
 }

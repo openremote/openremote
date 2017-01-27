@@ -23,22 +23,52 @@ import com.google.gwt.dom.client.Style;
 import com.google.gwt.uibinder.client.UiChild;
 import com.google.gwt.user.client.ui.*;
 
+import java.util.logging.Logger;
+
 /**
- * A form has form groups, each group is a combination of label,
- * control field, etc. typically rendered in a single line/block.
+ * A form group has a main and optional extension panel that can be expanded/collapsed on demand.
+ * <p>
+ * The main panel renders a {@link FormLabel}, optional secondary info label, a {@link FormField}, and {@link FormGroupActions} in a block.
+ * <p>
+ * The extension panel renders any widget in a collapsible block after the main panel.
  */
 public class FormGroup extends FlowPanel implements HasWidgets {
 
+    private static final Logger LOG = Logger.getLogger(FormGroup.class.getName());
+
+    protected FlowPanel mainPanel = new FlowPanel();
+
     protected FlowPanel labelPanel = new FlowPanel();
     protected FormLabel formLabel;
-    protected FormField formField;
-    protected FormGroupActions formGroupActions;
     protected Label infoLabel;
 
+    protected FormField formField;
+
+    protected FormGroupActions formGroupActions;
+
+    protected FormButton toggleExtensionButton = new FormButton();
+
+    protected FlowPanel extensionPanel = new FlowPanel();
+
+    protected boolean expanded;
+
     public FormGroup() {
-        getElement().addClassName("layout horizontal center or-FormGroup");
+        setStyleName("layout vertical or-FormGroup");
+
+        mainPanel.setStyleName("layout horizontal center");
+        add(mainPanel);
+
         labelPanel.setStyleName("layout vertical");
-        add(labelPanel);
+        mainPanel.add(labelPanel);
+
+        toggleExtensionButton.setVisible(false);
+        toggleExtensionButton.setIcon("caret-down");
+        toggleExtensionButton.addClickHandler(clickEvent -> {
+            setExpanded(!isExpanded());
+        });
+        mainPanel.add(toggleExtensionButton);
+
+        extensionPanel.setStyleName("or-FormGroupExtension");
     }
 
     @UiChild(tagname = "label", limit = 1)
@@ -54,7 +84,11 @@ public class FormGroup extends FlowPanel implements HasWidgets {
         if (this.formField != null)
             throw new IllegalStateException("Form field already set");
         this.formField = formField;
-        add(formField);
+        mainPanel.insert(formField,
+            mainPanel.getWidgetIndex(formGroupActions) > 0
+                ? mainPanel.getWidgetIndex(formGroupActions)
+                : mainPanel.getWidgetIndex(toggleExtensionButton)
+        );
 
         if (this.formLabel != null) {
             formField.setFormFieldId(this.formLabel.getFormFieldId());
@@ -64,7 +98,7 @@ public class FormGroup extends FlowPanel implements HasWidgets {
     @UiChild(tagname = "actions", limit = 1)
     public void addFormGroupActions(FormGroupActions formGroupActions) {
         this.formGroupActions = formGroupActions;
-        add(formGroupActions);
+        mainPanel.insert(formGroupActions, mainPanel.getWidgetIndex(toggleExtensionButton));
     }
 
     @UiChild(tagname = "info", limit = 1)
@@ -74,6 +108,12 @@ public class FormGroup extends FlowPanel implements HasWidgets {
         this.infoLabel = infoLabel;
         infoLabel.setStyleName("or-FormInfoLabel");
         labelPanel.add(infoLabel);
+    }
+
+    @UiChild(tagname = "expansion")
+    public void addExtension(Widget widget) {
+        toggleExtensionButton.setVisible(true);
+        extensionPanel.add(widget);
     }
 
     public FormLabel getFormLabel() {
@@ -93,26 +133,47 @@ public class FormGroup extends FlowPanel implements HasWidgets {
     }
 
     public void setError(boolean error) {
-        getElement().removeClassName("error");
+        removeStyleName("error");
         if (error) {
-            getElement().addClassName("error");
+            addStyleName("error");
         }
     }
 
     public void setAlignStart(boolean alignStart) {
         if (alignStart) {
-            removeStyleName("center");
-            addStyleName("start");
+            mainPanel.removeStyleName("center");
+            mainPanel.addStyleName("start");
         } else {
-            removeStyleName("start");
-            addStyleName("center");
+            mainPanel.removeStyleName("start");
+            mainPanel.addStyleName("center");
         }
     }
 
     public void setOpaque(boolean opaque) {
-        getElement().removeClassName("opaque");
+        removeStyleName("opaque");
         if (opaque) {
-            getElement().addClassName("opaque");
+            addStyleName("opaque");
         }
+    }
+
+    public void setExpanded(boolean expanded) {
+        this.expanded = expanded;
+        if (expanded) {
+            add(extensionPanel);
+            addStyleName("expanded");
+            toggleExtensionButton.setIcon("caret-up");
+            toggleExtensionButton.addStyleName("or-FormButtonPrimary");
+            toggleExtensionButton.removeStyleName("or-FormButton");
+        } else {
+            remove(extensionPanel);
+            removeStyleName("expanded");
+            toggleExtensionButton.setIcon("caret-down");
+            toggleExtensionButton.removeStyleName("or-FormButtonPrimary");
+            toggleExtensionButton.addStyleName("or-FormButton");
+        }
+    }
+
+    public boolean isExpanded() {
+        return expanded;
     }
 }

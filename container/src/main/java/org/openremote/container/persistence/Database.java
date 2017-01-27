@@ -29,6 +29,9 @@ import java.util.Map;
 
 public interface Database {
 
+    /**
+     * @return Persistence unit properties used to call <code>Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties)</code>
+     */
     Map<String, Object> open(String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize);
 
     void close();

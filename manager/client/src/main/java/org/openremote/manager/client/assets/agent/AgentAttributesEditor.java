@@ -130,8 +130,8 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
     }
 
     @Override
-    protected FormLabel buildFormLabel(Attribute attribute) {
-        FormLabel formLabel = super.buildFormLabel(attribute);
+    protected FormLabel createFormLabel(Attribute attribute) {
+        FormLabel formLabel = super.createFormLabel(attribute);
         if (attribute.getName().equals("enabled")) {
             formLabel.setText(environment.getMessages().enabled());
         }

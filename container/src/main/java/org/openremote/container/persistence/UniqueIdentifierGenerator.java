@@ -26,6 +26,10 @@ import org.openremote.container.util.IdentifierUtil;
 
 import java.io.Serializable;
 
+/**
+ * Generate a globally unique identifier value if the persisted entity instance is of
+ * type {@link IdentifiableEntity} and if its {@link IdentifiableEntity#getId()} method returns <code>null</code>.
+ */
 public class UniqueIdentifierGenerator implements IdentifierGenerator {
 
     @Override

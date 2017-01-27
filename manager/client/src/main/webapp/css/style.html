@@ -134,8 +134,8 @@
         opacity: inherit;
     }
 
-    .or-PushButtonIcon {
-        margin: 0 0.4em;
+    .or-PushButtonIcon + .html-face {
+        margin-left: 0.6em;
     }
 
     .or-PushButton.or-PushButton-up-disabled {
@@ -160,7 +160,7 @@
     }
 
     .or-HyperlinkIcon {
-        width: 1em;
+        width: 0.6em;
     }
 
     .or-Hyperlink a,
@@ -246,6 +246,18 @@
         opacity: 0.44;
     }
 
+    .or-FormGroup.expanded .or-FormGroup {
+        margin-bottom: 0;
+    }
+
+    .or-FormGroup.expanded .or-FormGroup .or-FormLabel {
+        font-size: 0.8em;
+    }
+
+    .or-FormGroupExtension {
+        margin: .8em;
+    }
+
     .or-FormLabel {
         min-width: 10em;
         font-weight: 600;
@@ -258,6 +270,10 @@
 
     .or-FormLabel.larger {
         min-width: 15em;
+    }
+
+    .or-FormLabel.largest {
+        min-width: 30em;
     }
 
     .or-FormLabel .required {

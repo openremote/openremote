@@ -109,8 +109,8 @@ public class DeviceAttributesEditor extends AttributesEditor<DeviceAttributesEdi
     }
 
     @Override
-    protected FormLabel buildFormLabel(Attribute attribute) {
-        FormLabel formLabel = super.buildFormLabel(attribute);
+    protected FormLabel createFormLabel(Attribute attribute) {
+        FormLabel formLabel = super.createFormLabel(attribute);
 
         if (DeviceResource.isDeviceResource(attribute)) {
             DeviceResource deviceResource = new DeviceResource(attribute);
@@ -199,6 +199,7 @@ public class DeviceAttributesEditor extends AttributesEditor<DeviceAttributesEdi
         return DeviceAttributes.isReadOnly(attribute) || super.isDefaultReadOnly(attribute);
     }
 
+/*
     @Override
     protected FormInputText createStringEditor(Style style, Attribute attribute, boolean readOnly) {
         return super.createStringEditor(style, attribute, readOnly || DeviceResource.isDeviceResource(attribute));
@@ -218,6 +219,7 @@ public class DeviceAttributesEditor extends AttributesEditor<DeviceAttributesEdi
     protected FormCheckBox createBooleanEditor(Style style, Attribute attribute, boolean readOnly) {
         return super.createBooleanEditor(style, attribute, readOnly || DeviceResource.isDeviceResource(attribute));
     }
+*/
 
     protected void enableLiveUpdates(boolean enable) {
         if (enable) {

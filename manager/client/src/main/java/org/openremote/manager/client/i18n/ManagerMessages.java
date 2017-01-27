@@ -157,6 +157,8 @@ public interface ManagerMessages extends Messages {
 
     String unsupportedAttributeType(String name);
 
+    String unsupportedMetaItemType(String jsonType);
+
     String loadingAssets();
 
     String assetName();
@@ -241,7 +243,13 @@ public interface ManagerMessages extends Messages {
 
     String deleteAttribute();
 
-    String editAttributeMeta();
+    String showAttributeMeta();
+
+    String hideAttributeMeta();
 
     String addAttribute();
+
+    String itemName();
+
+    String deleteItem();
 }

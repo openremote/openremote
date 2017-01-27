@@ -19,31 +19,33 @@
  */
 package org.openremote.manager.client.widget;
 
+import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.InsertPanel;
+import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.Label;
 import elemental.json.Json;
-import org.openremote.model.Runnable;
+import elemental.json.JsonValue;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.util.TextUtil;
-import org.openremote.model.Attribute;
-import org.openremote.model.AttributeType;
-import org.openremote.model.Attributes;
-import org.openremote.model.MetadataItem;
+import org.openremote.manager.shared.event.ui.ShowInfoEvent;
+import org.openremote.model.*;
+import org.openremote.model.Runnable;
+import org.openremote.model.asset.AssetAttributeMeta;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.logging.Logger;
 
-import static org.openremote.model.asset.AssetAttributeMeta.*;
 import static org.openremote.manager.shared.util.Util.sortMap;
+import static org.openremote.model.asset.AssetAttributeMeta.getFirstMetadataItemValue;
 
 public class AttributesEditor<S extends AttributesEditor.Style> {
 
     private static final Logger LOG = Logger.getLogger(AttributesEditor.class.getName());
 
-    public interface Container<S> {
+    public interface Container<S extends AttributesEditor.Style> {
         FormView getFormView();
 
         S getStyle();
@@ -100,27 +102,6 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         sortMap(formGroups, (a, b) -> a.getFormLabel().getText().compareTo(b.getFormLabel().getText()));
     }
 
-    /* TODO Finish attribute add/remove, metadata editing
-
-    public void buildActionsFormGroup() {
-        FormGroup formGroup = new FormGroup();
-        FormButton addButton = new FormButton();
-        FormInputText newAttributeNameInput  =new FormInputText();
-        addButton.addClickHandler(event -> {
-            if (newAttributeNameInput.getValue() != null) {
-                String attributeName = newAttributeNameInput.getValue();
-                if (!attributes.hasAttribute(attributeName)) {
-                    Attribute newAttribute = new Attribute(attributeName, AttributeType.STRING);
-                    attributes.add(newAttribute);
-                    FormGroup newAttributeFormGroup = createFormGroup(newAttribute);
-                    formGroups.add(newAttributeFormGroup);
-                    container.add(newAttributeFormGroup);
-                }
-            }
-        });
-    }
-    */
-
     public void build() {
         formGroups.clear();
         buildAttributeFormGroups();
@@ -152,53 +133,39 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
 
         FormGroup formGroup = new FormGroup();
 
-        FormLabel formLabel = buildFormLabel(attribute);
+        FormLabel formLabel = createFormLabel(attribute);
         formGroup.addFormLabel(formLabel);
 
-        FormField attributeField = new FormField();
-        formGroup.addFormField(attributeField);
+        FormField formField = new FormField();
+        formGroup.addFormField(formField);
+        formField.add(createEditor(attribute));
 
-        if (attribute.getType().equals(AttributeType.STRING)) {
-            formGroup.getFormField().add(createStringEditor(container.getStyle(), attribute, isDefaultReadOnly(attribute)));
-        } else if (attribute.getType().equals(AttributeType.INTEGER)) {
-            formGroup.getFormField().add(createIntegerEditor(container.getStyle(), attribute, isDefaultReadOnly(attribute)));
-        } else if (attribute.getType().equals(AttributeType.DECIMAL)) {
-            formGroup.getFormField().add(createDecimalEditor(container.getStyle(), attribute, isDefaultReadOnly(attribute)));
-        } else if (attribute.getType().equals(AttributeType.BOOLEAN)) {
-            formGroup.getFormField().add(createBooleanEditor(container.getStyle(), attribute, isDefaultReadOnly(attribute)));
-        } else {
-            formGroup.getFormField().add(
-                new Label(environment.getMessages().unsupportedAttributeType(attribute.getType().getValue()))
-            );
-        }
-
-        MetadataItem description = getFirstMetadataItem(attribute, DESCRIPTION);
+        MetadataItem description = AssetAttributeMeta.getFirstMetadataItem(attribute, AssetAttributeMeta.DESCRIPTION);
         if (description != null) {
             formGroup.addInfolabel(new Label(description.getValue().asString()));
         }
 
-        // TODO Finish actions/metadata editing
         FormGroupActions formGroupActions = new FormGroupActions();
 
         FormButton deleteButton = new FormButton();
         deleteButton.setText(container.getMessages().deleteAttribute());
         deleteButton.setIcon("remove");
+        deleteButton.addClickHandler(clickEvent -> {
+            environment.getEventBus().dispatch(new ShowInfoEvent("TODO: Not implemented"));
+        });
         formGroupActions.add(deleteButton);
 
-        FormButton editMetaButton = new FormButton();
-        editMetaButton.setText(container.getMessages().editAttributeMeta());
-        editMetaButton.setIcon("edit");
-        formGroupActions.add(editMetaButton);
+        formGroup.addFormGroupActions(formGroupActions);
 
-        formGroup.add(formGroupActions);
+        addAttributeMetaEditor(attribute, formGroup);
 
         return formGroup;
     }
 
-    protected FormLabel buildFormLabel(Attribute attribute) {
+    protected FormLabel createFormLabel(Attribute attribute) {
         FormLabel formLabel = new FormLabel();
         String label = attribute.getName();
-        MetadataItem labelItem = getFirstMetadataItem(attribute, LABEL);
+        MetadataItem labelItem = AssetAttributeMeta.getFirstMetadataItem(attribute, AssetAttributeMeta.LABEL);
         if (labelItem != null) {
             label = labelItem.getValue().asString();
         }
@@ -208,99 +175,165 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         return formLabel;
     }
 
+    protected void addAttributeMetaEditor(Attribute attribute, FormGroup formGroup) {
+        MetaEditor metaEditor = new MetaEditor(attribute);
+        formGroup.addExtension(metaEditor);
+    }
+
     /* ####################################################################### */
 
-    protected FormInputText createStringEditor(S style, Attribute attribute, boolean readOnly) {
+    protected IsWidget createEditor(Attribute attribute) {
+        IsWidget editor;
+        S style = container.getStyle();
+        Consumer<JsonValue> updateConsumer = isDefaultReadOnly(attribute) ? null : attribute::setValue;
+        JsonValue currentValue = attribute.getValue();
+        JsonValue defaultValue = getFirstMetadataItemValue(attribute, AssetAttributeMeta.DEFAULT);
+
+        if (attribute.getType().equals(AttributeType.STRING)) {
+            editor = createStringEditor(style, currentValue, defaultValue, updateConsumer);
+        } else if (attribute.getType().equals(AttributeType.INTEGER)) {
+            editor = createIntegerEditor(style, currentValue, defaultValue, updateConsumer);
+        } else if (attribute.getType().equals(AttributeType.DECIMAL)) {
+            editor = createDecimalEditor(style, currentValue, defaultValue, updateConsumer);
+        } else if (attribute.getType().equals(AttributeType.BOOLEAN)) {
+            editor = createBooleanEditor(style, currentValue, defaultValue, updateConsumer);
+        } else {
+            FormField unsupportedField = new FormField();
+            unsupportedField.add(new FormOutputText(
+                environment.getMessages().unsupportedAttributeType(attribute.getType().getValue())
+            ));
+            editor = unsupportedField;
+        }
+        return editor;
+    }
+
+    protected IsWidget createEditor(MetadataItem item) {
+        IsWidget editor;
+
+        S style = container.getStyle();
+        JsonValue currentValue = item.getValue();
+        // For some metadata items we know if we can edit them or not... custom items are always editable
+        Boolean isEditable = AssetAttributeMeta.isEditable(item.getName());
+        Consumer<JsonValue> updateConsumer = isEditable != null && isEditable ? item::setValue : null;
+
+        // TODO: We should support more JSON types, and have special editors for well-known meta items
+        switch (currentValue.getType()) {
+            case STRING:
+                editor = createStringEditor(style, currentValue, null, updateConsumer);
+                break;
+            case NUMBER:
+                editor = createIntegerEditor(style, currentValue, null, updateConsumer);
+                break;
+            case BOOLEAN:
+                editor = createBooleanEditor(style, currentValue, null, updateConsumer);
+                break;
+            default:
+                FormField unsupportedField = new FormField();
+                unsupportedField.add(new FormOutputText(
+                    environment.getMessages().unsupportedMetaItemType(currentValue.getType().name())
+                ));
+                editor = unsupportedField;
+        }
+        return editor;
+    }
+
+    protected FormInputText createStringEditor(S style,
+                                               JsonValue currentValue,
+                                               JsonValue defaultValue,
+                                               Consumer<JsonValue> updateConsumer) {
         FormInputText input = createFormInputText(style.attributeStringEditor());
 
-        MetadataItem defaultValue;
-        if (attribute.getValue() != null) {
-            input.setValue(attribute.getValue().asString());
-        } else if ((defaultValue = getFirstMetadataItem(attribute, DEFAULT)) != null) {
-            input.setValue(defaultValue.getValue().asString());
+        if (currentValue != null) {
+            input.setValue(currentValue.asString());
+        } else if ((defaultValue) != null) {
+            input.setValue(defaultValue.asString());
         }
 
-        if (readOnly) {
-            input.setReadOnly(true);
-        } else {
+        if (updateConsumer != null) {
             input.addValueChangeHandler(
-                event -> attribute.setValue(
+                event -> updateConsumer.accept(
                     Json.create(event.getValue())
                 )
             );
+        } else {
+            input.setReadOnly(true);
         }
         return input;
     }
 
-    protected FormInputNumber createIntegerEditor(S style, Attribute attribute, boolean readOnly) {
+    protected FormInputNumber createIntegerEditor(S style,
+                                                  JsonValue currentValue,
+                                                  JsonValue defaultValue,
+                                                  Consumer<JsonValue> updateConsumer) {
         FormInputNumber input = createFormInputNumber(style.attributeIntegerEditor());
 
-        MetadataItem defaultValue;
-        if (attribute.getValue() != null) {
-            input.setValue(attribute.getValue().asString());
-        } else if ((defaultValue = getFirstMetadataItem(attribute, DEFAULT)) != null) {
-            input.setValue(defaultValue.getValue().asString());
+        if (currentValue != null) {
+            input.setValue(currentValue.asString());
+        } else if (defaultValue != null) {
+            input.setValue(defaultValue.asString());
         }
 
-        if (readOnly) {
-            input.setReadOnly(true);
-        } else {
+        if (updateConsumer != null) {
             input.addValueChangeHandler(event -> {
                 try {
                     Integer value = Integer.valueOf(event.getValue());
-                    attribute.setValue(Json.create(value));
+                    updateConsumer.accept(Json.create(value));
                 } catch (NumberFormatException ex) {
                     // TODO Do nothing? can we hook this up into validation?
                 }
             });
+        } else {
+            input.setReadOnly(true);
         }
         return input;
     }
 
-    protected FormInputText createDecimalEditor(S style, Attribute attribute, boolean readOnly) {
+    protected FormInputText createDecimalEditor(S style,
+                                                JsonValue currentValue,
+                                                JsonValue defaultValue,
+                                                Consumer<JsonValue> updateConsumer) {
         FormInputText input = createFormInputText(style.attributeDecimalEditor());
 
-        MetadataItem defaultValue;
-        if (attribute.getValue() != null) {
-            input.setValue(attribute.getValue().asString());
-        } else if ((defaultValue = getFirstMetadataItem(attribute, DEFAULT)) != null) {
-            input.setValue(defaultValue.getValue().asString());
+        if (currentValue != null) {
+            input.setValue(currentValue.asString());
+        } else if (defaultValue != null) {
+            input.setValue(defaultValue.asString());
         }
 
-        if (readOnly) {
-            input.setReadOnly(true);
-        } else {
+        if (updateConsumer != null) {
             input.addValueChangeHandler(event -> {
                 try {
                     Double value = Double.valueOf(event.getValue());
-                    attribute.setValue(Json.create(value));
+                    updateConsumer.accept(Json.create(value));
                 } catch (NumberFormatException ex) {
                     // TODO Do nothing? can we hook this up into validation?
                 }
             });
+        } else {
+            input.setReadOnly(true);
         }
         return input;
     }
 
-    protected FormCheckBox createBooleanEditor(S style, Attribute attribute, boolean readOnly) {
+    protected FormCheckBox createBooleanEditor(S style,
+                                               JsonValue currentValue,
+                                               JsonValue defaultValue,
+                                               Consumer<JsonValue> updateConsumer) {
         FormCheckBox input = createFormInputCheckBox(style.attributeBooleanEditor());
 
         Boolean value = null;
-        MetadataItem defaultValue;
-        if (attribute.getValueAsBoolean() != null) {
-            value = attribute.getValueAsBoolean();
-        } else if ((defaultValue = getFirstMetadataItem(attribute, DEFAULT)) != null) {
-            defaultValue.getValue().asBoolean();
+        if (currentValue != null) {
+            value = currentValue.asBoolean();
+        } else if (defaultValue != null) {
+            defaultValue.asBoolean();
         }
 
         input.setValue(value);
 
-        if (readOnly) {
-            input.setEnabled(false);
+        if (updateConsumer != null) {
+            input.addValueChangeHandler(event -> updateConsumer.accept(Json.create(input.getValue())));
         } else {
-            input.addValueChangeHandler(event -> {
-                attribute.setValue(Json.create(input.getValue()));
-            });
+            input.setEnabled(false);
         }
         return input;
     }
@@ -329,5 +362,45 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
 
     protected boolean isDefaultReadOnly(Attribute attribute) {
         return false;
+    }
+
+    /* ####################################################################### */
+
+    public class MetaEditor extends FlowPanel {
+
+        final protected Attribute attribute;
+
+        public MetaEditor(Attribute attribute) {
+            this.attribute = attribute;
+
+            if (attribute.hasMetadata()) {
+                for (MetadataItem item : attribute.getMetadata().all()) {
+                    FormGroup formGroup = new FormGroup();
+
+                    FormLabel label = new FormLabel();
+                    label.addStyleName("largest");
+                    label.setText(item.getName());
+                    formGroup.addFormLabel(label);
+
+                    FormField formField = new FormField();
+                    formField.add(createEditor(item));
+                    formGroup.addFormField(formField);
+
+                    FormGroupActions formGroupActions = new FormGroupActions();
+
+                    FormButton deleteButton = new FormButton();
+                    deleteButton.setText(container.getMessages().deleteItem());
+                    deleteButton.setIcon("remove");
+                    deleteButton.addClickHandler(clickEvent -> {
+                        environment.getEventBus().dispatch(new ShowInfoEvent("TODO: Not implemented"));
+                    });
+                    formGroupActions.add(deleteButton);
+
+                    formGroup.addFormGroupActions(formGroupActions);
+
+                    add(formGroup);
+                }
+            }
+        }
     }
 }
