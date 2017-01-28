@@ -27,15 +27,6 @@ public class RuleExecutionLogger extends DefaultAgendaEventListener {
         final Rule rule = event.getMatch().getRule();
         String ruleName = rule.getName();
 
-        if (ruleName.startsWith("--")) {
-            return;
-        }
-
-        if (ruleName.startsWith("-")) {
-            LOG.fine("Rule: " + ruleName + ": SKIPPED LOGGER");
-            return;
-        }
-
         String rulePackage = rule.getPackageName();
         ruleName = "\"" + ruleName + "\" // (package " + rulePackage + ")";
 
@@ -61,7 +52,21 @@ public class RuleExecutionLogger extends DefaultAgendaEventListener {
             objectLog = String.format("%s\t\tClass: \"%s\"\n\t\tFields: \n\t\t\t%s\n", objectLog, theClass, theValue);
         }
 
-        LOG.fine(String.format("rule %s\n" +
+        if (ruleName.startsWith("\"--")) {
+            LOG.finest(String.format("rule %s\n" +
+                    "\tDeclarations \n%s" +
+                    "\tLHS objects(antecedents)\n%s", ruleName, declarationLog, objectLog));
+            return;
+        }
+
+        if (ruleName.startsWith("\"-")) {
+            LOG.fine(String.format("rule %s\n" +
+                    "\tDeclarations \n%s" +
+                    "\tLHS objects(antecedents)\n%s", ruleName, declarationLog, objectLog));
+            return;
+        }
+
+        LOG.info(String.format("rule %s\n" +
             "\tDeclarations \n%s" +
             "\tLHS objects(antecedents)\n%s", ruleName, declarationLog, objectLog));
     }

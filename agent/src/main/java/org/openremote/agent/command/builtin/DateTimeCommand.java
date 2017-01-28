@@ -97,18 +97,28 @@ public class DateTimeCommand implements PushCommand, Runnable {
     }
 
     public String calculateData() {
+        return calculateData("");
+    }
+
+    public String calculateData(String customTime) {
+        // customTime should be in format "hhhh:mm:ss" or "" for current time.
+        // hours filed can be more than one day. For example "25:00:00" is 1:00:00 the next day.
+        Calendar now = Calendar.getInstance(this.timezone);
+        if(customTime != null && !customTime.isEmpty()) {
+            String[] timeParts = customTime.split(":");
+            now.set(Calendar.HOUR_OF_DAY, Integer.parseInt(timeParts[0]));
+            now.set(Calendar.MINUTE, Integer.parseInt(timeParts[1]));
+            now.set(Calendar.SECOND, Integer.parseInt(timeParts[2]));
+        }
         if (command.equalsIgnoreCase("date")) {
-            return dateFormatter.format(Calendar.getInstance(this.timezone).getTime());
+            return dateFormatter.format(now.getTime());
         } else if (command.equalsIgnoreCase("sunrise")) {
-            Calendar now = Calendar.getInstance(timezone);
             Calendar officialSunriseDate = calculator.getOfficialSunriseCalendarForDate(now);
             return dateFormatter.format(officialSunriseDate.getTime());
         } else if (command.equalsIgnoreCase("sunset")) {
-            Calendar now = Calendar.getInstance(timezone);
             Calendar officialSunsetDate = calculator.getOfficialSunsetCalendarForDate(now);
             return dateFormatter.format(officialSunsetDate.getTime());
         } else if (command.equalsIgnoreCase("minutesUntilSunrise")) {
-            Calendar now = Calendar.getInstance(timezone);
             Calendar officialSunriseDate = calculator.getOfficialSunriseCalendarForDate(now);
             if (now.after(officialSunriseDate)) {
                 Calendar tomorrow = (Calendar) now.clone();
@@ -120,7 +130,6 @@ public class DateTimeCommand implements PushCommand, Runnable {
             int minutesUntilSunrise = officialSunriseDate.get(Calendar.MINUTE) - now.get(Calendar.MINUTE);
             return Integer.toString((daysUntilSunrise * 24 * 60) + (hoursUntilSunrise * 60) + minutesUntilSunrise);
         } else if (command.equalsIgnoreCase("minutesUntilSunset")) {
-            Calendar now = Calendar.getInstance(timezone);
             Calendar officialSunsetDate = calculator.getOfficialSunsetCalendarForDate(now);
             if (now.after(officialSunsetDate)) {
                 Calendar tomorrow = (Calendar) now.clone();
@@ -132,7 +141,6 @@ public class DateTimeCommand implements PushCommand, Runnable {
             int minutesUntilSunset = officialSunsetDate.get(Calendar.MINUTE) - now.get(Calendar.MINUTE);
             return Integer.toString((daysUntilSunset * 24 * 60) + (hoursUntilSunset * 60) + minutesUntilSunset);
         } else if (command.equalsIgnoreCase("isDay")) {
-            Calendar now = Calendar.getInstance(timezone);
             Calendar officialSunriseDate = calculator.getOfficialSunriseCalendarForDate(now);
             Calendar officialSunsetDate = calculator.getOfficialSunsetCalendarForDate(now);
             if (now.after(officialSunriseDate) && now.before(officialSunsetDate)) {
@@ -141,7 +149,6 @@ public class DateTimeCommand implements PushCommand, Runnable {
                 return "false";
             }
         } else if (command.equalsIgnoreCase("isNight")) {
-            Calendar now = Calendar.getInstance(timezone);
             Calendar officialSunriseDate = calculator.getOfficialSunriseCalendarForDate(now);
             Calendar officialSunsetDate = calculator.getOfficialSunsetCalendarForDate(now);
             if (now.after(officialSunriseDate) && now.before(officialSunsetDate)) {

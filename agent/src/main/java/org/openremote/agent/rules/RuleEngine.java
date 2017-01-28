@@ -174,27 +174,31 @@ public class RuleEngine {
                 stateSources.put(sensorState.getSensorID(), handle);
 
                 if (isUpdate) {
-                    LOG.fine("Inserted: " + sensorState);
+                    LOG.finest("Inserted: " + sensorState);
                 } else {
-                    LOG.fine("Updated: " + sensorState);
+                    LOG.finest("Updated: " + sensorState);
                 }
 
                 newFactCount = knowledgeSession.getFactCount();
-                LOG.fine("New fact count: " + newFactCount);
+                LOG.finest("New fact count: " + newFactCount);
                 if (newFactCount != currentFactCount) {
-                    LOG.fine("Fact count changed from " + currentFactCount + " to " + newFactCount + " on '" + sensorState.getSensorName() + "'");
+                    LOG.finest("Fact count changed from " + currentFactCount + " to " + newFactCount + " on '" + sensorState.getSensorName() + "'");
                 }
                 currentFactCount = newFactCount;
             }
 
-            LOG.fine("Firing all rules");
+            LOG.finest("Firing all rules");
             knowledgeSession.fireAllRules();
 
             // TODO: This doesn't look right, why would it matter if there are 1000 facts?  Who says that
+            // MR: this is heuristic number which comes good for finding facts memory leak in the drl file.
+            // problem - when you are not careful then drl can insert new facts till memory exhaustion. As there
+            // are usually few 100 facts in drl's I'm working with, putting arbitrary number gives me early feedback
+            // that there is potential problem. Perhaps we should think about a better solution to this problem?
             newFactCount = knowledgeSession.getFactCount();
             if (newFactCount >= 1000) // look for runaway insertion of facts
                 if (newFactCount != currentFactCount) {
-                    LOG.fine("Fact count changed from " + currentFactCount + " to " + newFactCount + " on '" + sensorState.getSensorName() + "'");
+                    LOG.info("Fact count changed from " + currentFactCount + " to " + newFactCount + " on '" + sensorState.getSensorName() + "'");
                 }
             currentFactCount = newFactCount;
 

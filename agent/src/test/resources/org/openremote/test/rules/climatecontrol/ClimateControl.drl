@@ -54,7 +54,7 @@ then
   commands.execute("VDepartureBackground", "off");
 end
 
-rule "PSB: Init ETA when empty"
+rule "-PSB: Init ETA when empty"
 salience 9
 when
   SensorState(sensorName matches "VETA.*", $s: sensorName, value=="")
@@ -62,7 +62,7 @@ then
   commands.execute($s, persistence.readData($s, "09:00"));
 end
 
-rule "PSB: Init ETD when empty"
+rule "-PSB: Init ETD when empty"
 salience 8
 when
   SensorState(sensorName matches "VETD.*", $s: sensorName, value=="")
@@ -70,7 +70,19 @@ then
   commands.execute($s, persistence.readData($s, "17:00"));
 end
 
-rule "PSB: store values"
+rule "Show timers"
+salience 10
+timer(int:100)
+when
+        SensorState(sensorName=="Timerd", value!="N/A")
+        SensorState(sensorName=="TimerEEEE", value!="N/A")
+        SensorState(sensorName=="TimerHH", value!="N/A")
+        SensorState(sensorName=="TimerMMM", value!="N/A")
+        SensorState(sensorName=="TimerEEE", value!="N/A")
+then
+end
+
+rule "--PSB: store values"
 timer(int: 2s)
 when
 (
@@ -336,7 +348,7 @@ then
   commands.execute("VETD", util.shiftTime($et.toString(), 60));
 end
 
-rule "PSB: Move ETA to ET at midnight"
+rule "-PSB: Move ETA to ET at midnight"
 when
   SensorState(sensorName=="TimerEEE", $e:value)
   SensorState(sensorName=="TimerHH",$h:value,eval(util.parseTimestamp(value) >= util.parseTimestamp("00:02"))) // Wait 2 minutes to be sure that $e is OK
@@ -351,7 +363,7 @@ then
   commands.execute("VNEXTACTION", "Arrive");
 end
 
-rule "Move ETA ETD for current day"
+rule "-Move ETA ETD for current day"
 when
   SensorState(sensorName=="TimerEEE", $e:value)
   SensorState(sensorName matches ("VETA."+$e), $va:value)
@@ -361,14 +373,14 @@ then
   commands.execute("VETD", $vd.toString());
 end
 
-rule "PSB: reset VATA"
+rule "-PSB: reset VATA"
 when
   SensorState(sensorName=="VNEXTACTION", value=="Arrive")
 then
   commands.execute("VATA","-");
 end
 
-rule "PSB: reset VATD"
+rule "-PSB: reset VATD"
 when
   SensorState(sensorName=="VATA",value=="-")
 then
@@ -377,7 +389,7 @@ end
 
 rule "PSB: decrease vacation counter at midnight"
 when
-  $timer: SensorState(sensorName=="TimerHH", eval(value.toString().substring(0,5).equals("00:00"))) // more reliable than timer(cron: )
+  $timer: SensorState(sensorName=="TimerHH", value!="N/A", eval(value.toString().substring(0,5).equals("00:00"))) // more reliable than timer(cron: )
   SensorState(sensorName=="VACATION", $v: value, eval(Integer.parseInt(value.toString())>0), this before $timer)
 then
   commands.execute("VACATION", Integer.parseInt($v.toString())-1);
@@ -385,13 +397,13 @@ end
 
 rule "PSB: reset action at midnight"
 when
-  SensorState(sensorName=="TimerHH", eval(value.toString().substring(0,5).equals("00:00"))) // more reliable than timer(cron: )
+  SensorState(sensorName=="TimerHH", value!="N/A", eval(value.toString().substring(0,5).equals("00:00"))) // more reliable than timer(cron: )
 then
   commands.execute("VR1.ET", "-");
   commands.execute("VNEXTACTION", "-");
 end
 
-rule "PSB: Move ETD to ET at arrive init"
+rule "-PSB: Move ETD to ET at arrive init"
 // This one is needed for cases when system is restart after arrive time
 when
   SensorState(sensorName=="TimerEEE",$e:value)
@@ -406,7 +418,7 @@ then
    commands.execute("VNEXTACTION", "Departure");
 end
 
-rule "PSB: Move ETD to ET at arrive"
+rule "-PSB: Move ETD to ET at arrive"
 when
   SensorState(sensorName=="TimerEEE",$e:value)
   SensorState(sensorName=="TimerHH",$h:value)
@@ -509,7 +521,7 @@ end
 rule "PSB: adjust estimated times at midnight"
 when
   SensorState(sensorName=="TimerEEE", $e: value)
-  $timer: SensorState(sensorName=="TimerHH", eval(value.toString().substring(0,5).equals("23:58"))) // more reliable than timer(cron: )
+  $timer: SensorState(sensorName=="TimerHH", value!="N/A", eval(value.toString().substring(0,5).equals("23:58"))) // more reliable than timer(cron: )
   SensorState(sensorName matches ("VETD."+$e), $ved:value, this before $timer) // Loop cut
   SensorState(sensorName matches ("VETA."+$e), $vea:value, this before $timer)
   SensorState(sensorName=="VATD", $vd:value, value!="-")
@@ -606,7 +618,7 @@ then
   commands.execute("VPRESENCE","No");
 end
 
-rule "PSB: Absence after scheduled presence time"
+rule "-PSB: Absence after scheduled presence time"
 when
   SensorState(sensorName=="VNEXTACTION", value!="Departure") // outsidse expected attendance schedule
 then
@@ -1031,7 +1043,7 @@ end
 
 rule "--PSB: increase total score every 15m"
 when
-  $timer: SensorState(sensorName=="TimerHH", eval(Integer.parseInt(value.toString().substring(3,5)) % 15 == 0)) // more reliable than timer(cron: )
+  $timer: SensorState(sensorName=="TimerHH", value!="N/A", eval(Integer.parseInt(value.toString().substring(3,5)) % 15 == 0)) // more reliable than timer(cron: )
   SensorState(sensorName=="VSCORE", $s: value)
   SensorState(sensorName=="VTOTALSCORE", $ts: value, this before $timer)
 then
@@ -1277,7 +1289,7 @@ end
 
 // Fake sensors start
 
-rule "Fake sensors init"
+rule "-Fake sensors init"
 then
   commands.execute("FS.Toutside", "15\u00B0");
   commands.execute("FS.Tinside", "19.5\u00B0");
