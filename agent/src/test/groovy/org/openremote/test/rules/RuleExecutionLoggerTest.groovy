@@ -85,7 +85,7 @@ class RuleExecutionLoggerTest extends Specification implements ContainerTrait {
                 "\tLHS objects(antecedents)\n\t\tClass: \"CustomSensorState\"\n\t\tFields: \n\t\t\tSensor name: \t\"%s\"\n\t\t\tState value: \t\"ON\"\n", "TestRuleFiring", TEST_SENSOR_NAME, TEST_SENSOR_NAME);
 
         then: "the execution should be logged"
-        testLogHandler.lastLevel == Level.FINE
+        testLogHandler.lastLevel == Level.INFO
         testLogHandler.lastMessage == lastLog
     }
 
