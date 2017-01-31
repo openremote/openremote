@@ -116,7 +116,8 @@ public class RuleEngine {
             throw new RuntimeException(t);
         }
 
-        LOG.fine("Rule engine started");
+        LOG.info("Rule engine started");
+        LOG.info(kieBaseModel.toString());
 
         knowledgeSession.fireAllRules();
     }

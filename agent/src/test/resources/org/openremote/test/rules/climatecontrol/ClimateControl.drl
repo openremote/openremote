@@ -80,6 +80,11 @@ when
         SensorState(sensorName=="TimerMMM", value!="N/A")
         SensorState(sensorName=="TimerEEE", value!="N/A")
 then
+  LOG.info("Drools SessionClock() is: "+
+         (new java.util.Date(drools.getWorkingMemory()
+                                   .getSessionClock()
+                                   .getCurrentTime()))
+         .toString());
 end
 
 rule "--PSB: store values"
