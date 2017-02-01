@@ -43,9 +43,6 @@ dependencies {
     compile "mikaelhg:urlbuilder:$urlbuilderVersion"
     compile "com.squareup.okhttp:okhttp:$okhttpVersion"
     compile "org.fourthline.cling:cling-core:$clingVersion"
-    compile "org.eclipse.jetty:jetty-server:$jettyVersion"
-    compile "org.eclipse.jetty:jetty-servlet:$jettyVersion"
-    compile "org.eclipse.jetty:jetty-client:$jettyVersion"
     compile "org.slf4j:slf4j-jdk14:$slf4jVersion"
     compile "org.apache.commons:commons-lang3:$commonsLangVersion"
     compile 'com.android.support:support-v4:23.1.0'
