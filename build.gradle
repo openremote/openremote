@@ -36,15 +36,39 @@ allprojects {
     apply plugin: "com.bmuschko.docker-remote-api"
 
     docker {
-        url = "$System.env.DOCKER_HOST".replace("tcp:", "https:")
-        certPath = new File("$System.env.DOCKER_CERT_PATH")
+        url = dockerHostUrl()
+        certPath = dockerCertPath()
         registryCredentials {
             username = project.properties.dockerHubUsername
             password = project.properties.dockerHubPassword
         }
     }
 
+
     ext.dockerImageName = "$dockerRepository/$project.name:$imageVersion".toLowerCase(Locale.ROOT)
 
     apply plugin: 'eclipse'
+}
+
+URI dockerHostEnv() {
+    String uri = System.getenv('DOCKER_HOST')
+    uri ? new URI(uri) : null
+}
+
+String dockerHostUrl() {
+    if (dockerHostEnv()) {
+        URI uri = dockerHostEnv()
+        if (uri.scheme == 'unix') {
+            uri
+        } else if (uri.scheme == 'tcp') {
+            (new URI(uri.scheme != 'tcp' ?: 'https' , uri.userInfo, uri.host, uri.port, uri.path, uri.query, uri.fragment)).toString()
+        }
+    } else {
+        org.gradle.internal.os.OperatingSystem.current().isLinux() ? 'unix:///var/run/docker.sock' : 'http://localhost:2375'
+    }
+}
+
+File dockerCertPath() {
+    String certPathEnv = System.getenv('DOCKER_CERT_PATH')
+    certPathEnv ? file(certPathEnv) : null;
 }

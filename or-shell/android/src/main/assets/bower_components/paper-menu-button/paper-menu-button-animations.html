@@ -1,0 +1,7 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../neon-animation/web-animations.html">
+<link rel="import" href="../neon-animation/neon-animation-behavior.html">
+<script>Polymer({is:"paper-menu-grow-height-animation",behaviors:[Polymer.NeonAnimationBehavior],configure:function(e){var i=e.node,t=i.getBoundingClientRect(),n=t.height;return this._effect=new KeyframeEffect(i,[{height:n/2+"px"},{height:n+"px"}],this.timingFromConfig(e)),this._effect}}),Polymer({is:"paper-menu-grow-width-animation",behaviors:[Polymer.NeonAnimationBehavior],configure:function(e){var i=e.node,t=i.getBoundingClientRect(),n=t.width;return this._effect=new KeyframeEffect(i,[{width:n/2+"px"},{width:n+"px"}],this.timingFromConfig(e)),this._effect}}),Polymer({is:"paper-menu-shrink-width-animation",behaviors:[Polymer.NeonAnimationBehavior],configure:function(e){var i=e.node,t=i.getBoundingClientRect(),n=t.width;return this._effect=new KeyframeEffect(i,[{width:n+"px"},{width:n-n/20+"px"}],this.timingFromConfig(e)),this._effect}}),Polymer({is:"paper-menu-shrink-height-animation",behaviors:[Polymer.NeonAnimationBehavior],configure:function(e){var i=e.node,t=i.getBoundingClientRect(),n=t.height;t.top;return this.setPrefixedProperty(i,"transformOrigin","0 0"),this._effect=new KeyframeEffect(i,[{height:n+"px",transform:"translateY(0)"},{height:n/2+"px",transform:"translateY(-20px)"}],this.timingFromConfig(e)),this._effect}});</script>
+
+
+</head><body></body></html>

@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">OpenRemote</string>
+
+    <string name="action_find_controllers">Find controllers</string>
+
+    <string name="controller_url">Controller URL</string>
+    <string name="connect_automatically">Connect automatically</string>
+    <string name="connect">Connect</string>
+    <string name="find_controllers">Find controllers</string>
+
+</resources>

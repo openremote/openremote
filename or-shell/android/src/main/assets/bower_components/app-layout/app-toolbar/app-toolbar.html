@@ -1,0 +1,58 @@
+<html><head><link rel="import" href="../../polymer/polymer.html">
+<link rel="import" href="../../iron-flex-layout/iron-flex-layout.html">
+
+
+
+</head><body><dom-module id="app-toolbar">
+  <template>
+    <style>
+      :host {
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+        position: relative;
+        height: 64px;
+        padding: 0 16px;
+        pointer-events: none;
+        font-size: var(--app-toolbar-font-size, 20px);
+      }
+
+      ::content > * {
+        pointer-events: auto;
+      }
+
+      ::content > paper-icon-button {
+        /* paper-icon-button/issues/33 */
+        font-size: 0;
+      }
+
+      ::content > [main-title],
+      ::content > [condensed-title] {
+        pointer-events: none;
+        @apply(--layout-flex);
+      }
+
+      ::content > [bottom-item] {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+      }
+
+      ::content > [top-item] {
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+      }
+
+      ::content > [spacer] {
+        margin-left: 64px;
+      }
+    </style>
+
+    <content></content>
+  </template>
+
+  <script>Polymer({is:"app-toolbar"});</script>
+</dom-module>
+</body></html>

@@ -1,0 +1,91 @@
+buildscript {
+
+    repositories {
+        jcenter();
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.2.3'
+    }
+}
+
+// TODO THE IDIOTIC ANDROID BUILD SYSTEM CAN'T DEAL WITH gradle.properties!
+version = "3.0-SNAPSHOT"
+ext {
+    versionCode = 2 // TODO MUST BE INCREMENTED FOR EVERY RELEASE!
+}
+
+repositories {
+    jcenter();
+    mavenLocal();
+    mavenCentral()
+    maven {
+        url "https://oss.sonatype.org/content/repositories/snapshots/"
+    }
+    maven {
+        url "http://4thline.org/m2"
+    }
+    maven {
+        url "http://maven2.gueck.com/releases"
+    }
+    maven {
+        url "http://nexus.seamless.org/content/groups/public/"
+    }
+}
+
+apply plugin: "com.android.application"
+
+dependencies {
+    compile "org.openremote:or-shared:$orSharedVersion"
+    compile "org.jboss.aerogear:aerogear-android-authz:$aerogearVersion"
+    compile "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    compile "mikaelhg:urlbuilder:$urlbuilderVersion"
+    compile "com.squareup.okhttp:okhttp:$okhttpVersion"
+    compile "org.fourthline.cling:cling-core:$clingVersion"
+    compile "org.slf4j:slf4j-jdk14:$slf4jVersion"
+    compile "org.apache.commons:commons-lang3:$commonsLangVersion"
+    compile 'com.android.support:support-v4:23.1.0'
+    compile 'com.android.support:appcompat-v7:22.2.1'
+}
+
+android {
+    compileSdkVersion 25
+    buildToolsVersion "25.0.1"
+
+    defaultConfig {
+        applicationId "org.openremote.android.v3"
+        minSdkVersion 21
+        targetSdkVersion 22
+        versionCode project.versionCode // Try to use properties here, I dare you!
+        versionName project.version
+    }
+
+    dexOptions {
+        javaMaxHeapSize "2g"
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+
+    packagingOptions {
+        exclude "META-INF/LICENSE"
+        exclude "META-INF/NOTICE"
+        // TODO What is wrong with you android clowns, seriously
+        /*
+        > Duplicate files copied in APK org/openremote/persistence/CreateScript.sql
+        File 1: /Users/cb/.gradle/caches/modules-2/files-2.1/org.openremote/or-shared/3.0-SNAPSHOT/d66b3248af9a17a90ec7336806c7da0d61808a75/or-shared-3.0-SNAPSHOT.jar
+        File 2: /Users/cb/.gradle/caches/modules-2/files-2.1/org.openremote/or-shared/3.0-SNAPSHOT/d66b3248af9a17a90ec7336806c7da0d61808a75/or-shared-3.0-SNAPSHOT.jar
+         */
+        exclude "org/openremote/persistence/CreateScript.sql"
+        exclude "org/openremote/persistence/DropScript.sql"
+        exclude "org/openremote/persistence/LoadScript.sql"
+    }
+
+    buildTypes {
+        applicationVariants.all { variant ->
+            // ...
+        }
+    }
+}

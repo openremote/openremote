@@ -1,0 +1,26 @@
+<resources>
+
+    <style name="OpenRemoteTheme"
+           parent="@android:style/Theme.DeviceDefault.Light.DarkActionBar">
+        <item name="android:actionBarStyle">@style/OpenRemoteActionBar</item>
+        <item name="android:actionMenuTextColor">@color/dark_grey</item>
+    </style>
+
+    <style name="OpenRemoteActionBar"
+           parent="@android:style/Widget.DeviceDefault.Light.ActionBar">
+        <item name="android:background">@color/light_green</item>
+        <item name="android:titleTextStyle">@style/OpenRemoteActionBarText</item>
+        <item name="android:icon">@android:color/transparent</item>
+    </style>
+
+    <style name="OpenRemoteActionBarText">
+        <item name="android:textColor">@color/dark_grey</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">20sp</item>
+    </style>
+
+    <style name="ConsoleView" parent="android:Theme.Black.NoTitleBar.Fullscreen">
+        <item name="android:background">@color/white</item>
+    </style>
+
+</resources>
