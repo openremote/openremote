@@ -14,7 +14,7 @@ If you want to try OpenRemote v2, [read the OpenRemote v2 documentation](https:/
 
 We work with Java, Groovy, JavaScript, Gradle, Docker, and a wide range of APIs and protocol implementations. Clone or checkout this project and send us pull requests.
 
-A demo preview can be started with Docker Compose (get started quickly with [Docker Toolbox](https://www.docker.com/products/docker-toolbox)):
+A demo preview can be started with Docker Compose (install [Docker Toolbox](https://www.docker.com/products/docker-toolbox)):
 
 ```
 docker-compose -p openremote \
