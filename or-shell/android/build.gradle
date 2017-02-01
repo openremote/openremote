@@ -53,8 +53,8 @@ dependencies {
 }
 
 android {
-    compileSdkVersion 22
-    buildToolsVersion "23.0.1"
+    compileSdkVersion 25
+    buildToolsVersion "25.0.1"
 
     defaultConfig {
         applicationId "org.openremote.android.v3"
