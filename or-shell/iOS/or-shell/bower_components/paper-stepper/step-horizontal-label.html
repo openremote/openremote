@@ -1,0 +1,108 @@
+<html><head><link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../iron-icons/editor-icons.html">
+<link rel="import" href="../paper-styles/color.html">
+<link rel="import" href="../paper-styles/typography.html">
+<link rel="import" href="../paper-styles/default-theme.html">
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="step-label-behavior.html">
+<link rel="import" href="step-label-shared-styles.html">
+
+</head><body><dom-module id="step-horizontal-label">
+  <template>
+    <style include="step-label-shared-styles">
+      :host{
+        overflow: hidden;
+      }
+      :host([alternative-label]) {
+        @apply(--layout);
+      }
+      #textWrapper {
+        @apply(--layout-vertical);
+        padding-right: 8px;
+        overflow: hidden;
+      }
+      #textLabel, #optional {
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+      }
+      #badge {
+        margin: 0 8px;
+      }
+      #badgeWrapper, #textWrapper {
+        pointer-events: none;
+        /* to be above paper-ripple*/
+        z-index: 1;
+      }
+      :host(:not([alternative-label])) #label {
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+        height: 72px;
+      }
+      :host(.firstStep:not([alternative-label])) #badge {
+        margin-left: 24px;
+      }
+      :host(.lastStep:not([alternative-label])) #textWrapper {
+        padding-right: 24px;
+      }
+      :host(:not([alternative-label]):not(.first-step)) #label::before, 
+      :host(:not([alternative-label]):not(.last-step)) #label::after,
+      :host([alternative-label]) #badgeWrapper::before,
+      :host([alternative-label]) #badgeWrapper::after  {
+        height: 1px;
+        min-width: 16px;
+        background: var(--paper-step-connector-line-color, --divider-color);
+        @apply(--layout-flex);
+        content: '';
+      }
+      :host([alternative-label].first-step) #badgeWrapper::before,
+      :host([alternative-label].last-step) #badgeWrapper::after {
+        visibility: hidden;
+      }
+      :host([alternative-label]) #textWrapper{
+        padding: 0 16px;
+        @apply(--layout-vertical);
+        @apply(--layout-center);
+      }
+      :host([alternative-label]) #textLabel, :host([alternative-label]) #optional{
+        text-align: center;
+        @apply(--layout-self-stretch);
+      }
+      :host([alternative-label]) #label{
+        @apply(--layout-vertical);
+        @apply(--layout-self-stretch);
+        padding: 24px 0;
+        width: 100%;
+      }
+      :host([alternative-label]) #badgeWrapper {
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+        padding-bottom: 16px;
+      }
+      :host(.first-step:not([alternative-label])) #label {
+        padding-left: 16px;
+      }
+      :host(.last-step:not([alternative-label])) #label {
+        padding-right: 16px;
+      }
+    </style>
+    
+    <div id="label">
+      <div id="badgeWrapper">
+        <div id="badge">
+          <iron-icon hidden$="{{!_computeIsIconBadge(icon)}}" icon="{{icon}}"></iron-icon>
+          <span hidden$="{{_computeIsIconBadge(icon)}}">{{index}}</span>
+        </div>
+      </div>
+      <div id="textWrapper">
+        <span id="textLabel">[[label]]</span>
+        <template is="dom-if" if="[[optional]]">
+          <span id="optional">[[stepperData.optionalText]]</span>
+        </template>
+      </div>
+    </div>
+  </template>
+  <script>Polymer({is:"step-horizontal-label",behaviors:[Stepper.StepLabelBehavior],properties:{alternativeLabel:{type:Boolean,value:!1,reflectToAttribute:!0}}});</script>
+</dom-module>
+</body></html>

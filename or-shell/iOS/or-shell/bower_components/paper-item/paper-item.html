@@ -1,0 +1,26 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="paper-item-behavior.html">
+<link rel="import" href="paper-item-shared-styles.html">
+
+
+
+</head><body><dom-module id="paper-item">
+  <template>
+    <style include="paper-item-shared-styles"></style>
+    <style>
+      :host {
+        @apply(--layout-horizontal);
+        @apply(--layout-center);
+        @apply(--paper-font-subhead);
+
+        @apply(--paper-item);
+      }
+    </style>
+
+    <content></content>
+  </template>
+
+  <script>Polymer({is:"paper-item",behaviors:[Polymer.PaperItemBehavior]});</script>
+</dom-module>
+</body></html>

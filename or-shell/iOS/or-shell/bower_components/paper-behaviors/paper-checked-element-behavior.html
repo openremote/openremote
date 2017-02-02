@@ -1,0 +1,6 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-checked-element-behavior/iron-checked-element-behavior.html">
+<link rel="import" href="paper-inky-focus-behavior.html">
+
+<script>Polymer.PaperCheckedElementBehaviorImpl={_checkedChanged:function(){Polymer.IronCheckedElementBehaviorImpl._checkedChanged.call(this),this.hasRipple()&&(this.checked?this._ripple.setAttribute("checked",""):this._ripple.removeAttribute("checked"))},_buttonStateChanged:function(){Polymer.PaperRippleBehavior._buttonStateChanged.call(this),this.disabled||this.isAttached&&(this.checked=this.active)}},Polymer.PaperCheckedElementBehavior=[Polymer.PaperInkyFocusBehavior,Polymer.IronCheckedElementBehavior,Polymer.PaperCheckedElementBehaviorImpl];</script>
+</head><body></body></html>

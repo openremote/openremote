@@ -1,0 +1,70 @@
+<html><head>
+<link rel="import" href="../../bower_components/paper-toggle-button/paper-toggle-button.html">
+</head><body><dom-module id="table-toggles" attributes={"data", "header"}>
+  <template>
+    <style type="text/css">
+      table{
+        border:0;
+        border-spacing: 0;
+      }
+      th,td {
+        width:20%;
+        border-spacing:0px;
+        border-bottom: 1px solid #e4e4e4;
+        border-right: 1px solid #e4e4e4;
+        font-weight: normal;
+        text-align: center;
+      }
+      th {
+          background-color: #c0d62e;
+          color: white;
+        padding:5px 0;
+      }
+      th:first-child{
+        color:#000000;
+        background-color: #FFFFFF;
+      }
+      td:first-child{
+        background-color:#e4e4e4;
+        border-bottom: 1px solid #FFFFFF;
+        padding:10px 0;
+      }
+      paper-toggle-button.green { 
+          margin-left: auto;
+          float: right;   
+          opacity:1;
+        --paper-toggle-button-checked-bar-color: #374c4f;
+        --paper-toggle-button-checked-button-color:  #c0d62e;
+        --paper-toggle-button-checked-ink-color: #374c4f;
+      }
+    </style>
+    <table style="width: 100%" border="0">
+      <tbody>
+        <tr>
+          <template is="dom-repeat" items="{{header}}">
+            <th>{{item}}</th>
+          </template>
+        </tr>
+        <template is="dom-repeat" items="{{data}}">
+          <tr>
+            <template is="dom-repeat" items="{{item}}">
+             <td><paper-toggle-button checked="[[checkStatus(item)]]" class="green"></paper-toggle-button></td>
+          </template>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </template>
+
+   <script>Polymer({
+    is:"table-toggles",
+    checkStatus: function(status){
+        if(status == "true"){
+          var s = true;
+        }else{
+          var s = false;
+        }
+        return s;
+    }
+ });</script>
+</dom-module></body></html>

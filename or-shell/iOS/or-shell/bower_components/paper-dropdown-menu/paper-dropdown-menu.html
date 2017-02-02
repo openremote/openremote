@@ -1,0 +1,38 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-a11y-keys-behavior/iron-a11y-keys-behavior.html">
+<link rel="import" href="../iron-behaviors/iron-button-state.html">
+<link rel="import" href="../iron-behaviors/iron-control-state.html">
+<link rel="import" href="../iron-form-element-behavior/iron-form-element-behavior.html">
+<link rel="import" href="../iron-icon/iron-icon.html">
+<link rel="import" href="../iron-validatable-behavior/iron-validatable-behavior.html">
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../paper-menu-button/paper-menu-button.html">
+<link rel="import" href="../paper-ripple/paper-ripple.html">
+<link rel="import" href="../paper-styles/default-theme.html">
+
+<link rel="import" href="paper-dropdown-menu-icons.html">
+<link rel="import" href="paper-dropdown-menu-shared-styles.html">
+
+
+
+</head><body><dom-module id="paper-dropdown-menu">
+  <template>
+    <style include="paper-dropdown-menu-shared-styles"></style>
+
+    
+    <span role="button"></span>
+    <paper-menu-button id="menuButton" vertical-align="[[verticalAlign]]" horizontal-align="[[horizontalAlign]]" dynamic-align="[[dynamicAlign]]" vertical-offset="[[_computeMenuVerticalOffset(noLabelFloat)]]" disabled="[[disabled]]" no-animations="[[noAnimations]]" on-iron-select="_onIronSelect" on-iron-deselect="_onIronDeselect" opened="{{opened}}" close-on-activate="" allow-outside-scroll="[[allowOutsideScroll]]">
+      <div class="dropdown-trigger">
+        <paper-ripple></paper-ripple>
+        
+        <paper-input type="text" invalid="[[invalid]]" readonly="" disabled="[[disabled]]" value="[[selectedItemLabel]]" placeholder="[[placeholder]]" error-message="[[errorMessage]]" always-float-label="[[alwaysFloatLabel]]" no-label-float="[[noLabelFloat]]" label="[[label]]">
+          <iron-icon icon="paper-dropdown-menu:arrow-drop-down" suffix=""></iron-icon>
+        </paper-input>
+      </div>
+      <content id="content" select=".dropdown-content"></content>
+    </paper-menu-button>
+  </template>
+
+  <script>!function(){"use strict";Polymer({is:"paper-dropdown-menu",behaviors:[Polymer.IronButtonState,Polymer.IronControlState,Polymer.IronFormElementBehavior,Polymer.IronValidatableBehavior],properties:{selectedItemLabel:{type:String,notify:!0,readOnly:!0},selectedItem:{type:Object,notify:!0,readOnly:!0},value:{type:String,notify:!0,readOnly:!0},label:{type:String},placeholder:{type:String},errorMessage:{type:String},opened:{type:Boolean,notify:!0,value:!1,observer:"_openedChanged"},allowOutsideScroll:{type:Boolean,value:!1},noLabelFloat:{type:Boolean,value:!1,reflectToAttribute:!0},alwaysFloatLabel:{type:Boolean,value:!1},noAnimations:{type:Boolean,value:!1},horizontalAlign:{type:String,value:"right"},verticalAlign:{type:String,value:"top"},dynamicAlign:{type:Boolean}},listeners:{tap:"_onTap"},keyBindings:{"up down":"open",esc:"close"},hostAttributes:{role:"combobox","aria-autocomplete":"none","aria-haspopup":"true"},observers:["_selectedItemChanged(selectedItem)"],attached:function(){var e=this.contentElement;e&&e.selectedItem&&this._setSelectedItem(e.selectedItem)},get contentElement(){return Polymer.dom(this.$.content).getDistributedNodes()[0]},open:function(){this.$.menuButton.open()},close:function(){this.$.menuButton.close()},_onIronSelect:function(e){this._setSelectedItem(e.detail.item)},_onIronDeselect:function(e){this._setSelectedItem(null)},_onTap:function(e){Polymer.Gestures.findOriginalTarget(e)===this&&this.open()},_selectedItemChanged:function(e){var t="";t=e?e.label||e.getAttribute("label")||e.textContent.trim():"",this._setValue(t),this._setSelectedItemLabel(t)},_computeMenuVerticalOffset:function(e){return e?-4:8},_getValidity:function(e){return this.disabled||!this.required||this.required&&!!this.value},_openedChanged:function(){var e=this.opened?"true":"false",t=this.contentElement;t&&t.setAttribute("aria-expanded",e)}})}();</script>
+</dom-module>
+</body></html>

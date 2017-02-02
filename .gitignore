@@ -19,3 +19,5 @@ out/
 
 # TODO when is this used?
 manager/.factorypath
+or-shell/iOS/DerivedData
+or-shell/iOS/Pods

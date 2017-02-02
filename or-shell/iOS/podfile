@@ -1,0 +1,4 @@
+target 'or-shell' do
+use_frameworks!
+pod 'AeroGearOAuth2'
+end

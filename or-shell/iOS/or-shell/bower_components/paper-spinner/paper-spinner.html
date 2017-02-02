@@ -1,0 +1,38 @@
+<html><head><link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../paper-styles/color.html">
+<link rel="import" href="paper-spinner-behavior.html">
+<link rel="import" href="paper-spinner-styles.html">
+
+
+
+</head><body><dom-module id="paper-spinner">
+  <template strip-whitespace="">
+    <style include="paper-spinner-styles"></style>
+
+    <div id="spinnerContainer" class-name="[[__computeContainerClasses(active, __coolingDown)]]">
+      <div class="spinner-layer layer-1">
+        <div class="circle-clipper left"></div>
+        <div class="circle-clipper right"></div>
+      </div>
+
+      <div class="spinner-layer layer-2">
+        <div class="circle-clipper left"></div>
+        <div class="circle-clipper right"></div>
+      </div>
+
+      <div class="spinner-layer layer-3">
+        <div class="circle-clipper left"></div>
+        <div class="circle-clipper right"></div>
+      </div>
+
+      <div class="spinner-layer layer-4">
+        <div class="circle-clipper left"></div>
+        <div class="circle-clipper right"></div>
+      </div>
+    </div>
+  </template>
+
+  <script>Polymer({is:"paper-spinner",behaviors:[Polymer.PaperSpinnerBehavior]});</script>
+</dom-module>
+</body></html>
