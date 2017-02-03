@@ -109,8 +109,8 @@ public class DeviceAttributesEditor extends AttributesEditor<DeviceAttributesEdi
     }
 
     @Override
-    protected FormLabel createFormLabel(Attribute attribute) {
-        FormLabel formLabel = super.createFormLabel(attribute);
+    protected FormLabel createAttributeLabel(Attribute attribute) {
+        FormLabel formLabel = super.createAttributeLabel(attribute);
 
         if (DeviceResource.isDeviceResource(attribute)) {
             DeviceResource deviceResource = new DeviceResource(attribute);
@@ -123,8 +123,8 @@ public class DeviceAttributesEditor extends AttributesEditor<DeviceAttributesEdi
     }
 
     @Override
-    protected FormGroup createFormGroup(Attribute attribute) {
-        FormGroup formGroup = super.createFormGroup(attribute);
+    protected FormGroup createAttributeGroup(Attribute attribute) {
+        FormGroup formGroup = super.createAttributeGroup(attribute);
         if (DeviceResource.isDeviceResource(attribute)) {
             formGroup.addInfolabel(
                 new Label(environment.getMessages().resourceKey())

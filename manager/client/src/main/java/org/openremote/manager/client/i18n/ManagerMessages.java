@@ -243,13 +243,48 @@ public interface ManagerMessages extends Messages {
 
     String deleteAttribute();
 
-    String showAttributeMeta();
-
-    String hideAttributeMeta();
-
     String addAttribute();
 
     String itemName();
 
     String deleteItem();
+
+    String newItem();
+
+    String addItem();
+
+    String type();
+
+    String value();
+
+    String metaItems();
+
+    String or();
+
+    String and();
+
+    String selectStandard();
+
+    String enterCustomAssetAttributeMetaName();
+
+    String selectType();
+
+    String enterNameAndValue();
+
+    String enterOnlyDecimals();
+
+    String enterOnlyNumbers();
+
+    String attributeDeleted(String name);
+
+    String attributeAdded(String name);
+
+    String newAttribute();
+
+    String attributes();
+
+    String attributeName();
+
+    String enterNameAndSelectType();
+
 }

@@ -21,7 +21,6 @@ package org.openremote.model.asset;
 
 import elemental.json.JsonArray;
 import elemental.json.JsonObject;
-import elemental.json.JsonType;
 import org.openremote.model.Attribute;
 import org.openremote.model.AttributeRef;
 
@@ -38,8 +37,7 @@ public class ThingAttribute extends Attribute {
 
     static public AttributeRef getAgentLink(Attribute attribute) {
         JsonArray array = attribute.hasMetaItem(META_NAME_LINK)
-            && attribute.firstMetaItem(META_NAME_LINK).getType() == JsonType.ARRAY
-            ? attribute.firstMetaItem(JsonArray.class, META_NAME_LINK)
+            ? attribute.firstMetaItem(META_NAME_LINK).getValueAsArray()
             : null;
         if (array == null || array.length() != 2)
             return null;

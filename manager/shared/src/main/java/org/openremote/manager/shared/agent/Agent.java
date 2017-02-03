@@ -78,7 +78,7 @@ public class Agent {
 
     public Agent setEnabled(boolean enabled) {
         if (attributes.hasAttribute("enabled")) {
-            attributes.get("enabled").setValue(Json.create(enabled));
+            attributes.get("enabled").setValue(enabled);
         } else {
             attributes.put(new Attribute("enabled", AttributeType.BOOLEAN, Json.create(enabled)));
         }

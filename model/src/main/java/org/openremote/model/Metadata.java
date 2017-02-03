@@ -103,7 +103,7 @@ public class Metadata {
     }
 
     public Metadata remove(int index) {
-        if (index > 0 && index < jsonArray.length())
+        if (index >= 0 && index < jsonArray.length())
             jsonArray.remove(index);
         return this;
     }

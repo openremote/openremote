@@ -27,37 +27,37 @@
 
     <ui:style field="attributesEditorStyle"
               type="org.openremote.manager.client.assets.asset.AssetViewImpl.AttributesEditorStyle">
-        .attributeStringEditor {
+        .stringEditor {
             width: 100%;
         }
 
-        .attributeIntegerEditor {
+        .integerEditor {
             width: 5em;
         }
 
-        .attributeDecimalEditor {
+        .decimalEditor {
             width: 5em;
         }
 
-        .attributeBooleanEditor {
+        .booleanEditor {
         }
     </ui:style>
 
     <ui:style field="deviceAttributesEditorStyle"
               type="org.openremote.manager.client.assets.asset.AssetViewImpl.DeviceAttributesEditorStyle">
-        .attributeStringEditor {
+        .stringEditor {
             width: 44%;
         }
 
-        .attributeIntegerEditor {
+        .integerEditor {
             width: 5em;
         }
 
-        .attributeDecimalEditor {
+        .decimalEditor {
             width: 5em;
         }
 
-        .attributeBooleanEditor {
+        .booleanEditor {
         }
 
         .readWriteInput {
@@ -138,16 +138,18 @@
                                 </w:label>
                                 <w:field>
                                     <w:FormField>
-                                        <g:FlowPanel styleName="flex layout horizontal center">
-                                            <g:Label ui:field="createdOnLabel"
-                                                     addStyleNames="flex {widgetStyle.FormControl} {widgetStyle.FormValueLabel}"/>
-                                            <w:FormButton ui:field="showHistoryButton"
-                                                          text="{managerMessages.showHistory}"
-                                                          enabled="false"
-                                                          icon="history"/>
-                                        </g:FlowPanel>
+                                        <g:Label ui:field="createdOnLabel"
+                                                 addStyleNames="flex {widgetStyle.FormControl} {widgetStyle.FormValueLabel}"/>
                                     </w:FormField>
                                 </w:field>
+                                <w:actions>
+                                    <w:FormGroupActions>
+                                        <w:FormButton ui:field="showHistoryButton"
+                                                      text="{managerMessages.showHistory}"
+                                                      enabled="false"
+                                                      icon="history"/>
+                                    </w:FormGroupActions>
+                                </w:actions>
                             </w:FormGroup>
 
                             <w:FormGroup ui:field="realmGroup">
@@ -170,22 +172,24 @@
                                 </w:label>
                                 <w:field>
                                     <w:FormField addStyleNames="larger">
-                                        <g:FlowPanel styleName="flex layout horizontal center">
-                                            <w:FormInputText ui:field="parentLabel" readOnly="true"
-                                                             addStyleNames="flex"/>
-                                            <w:FormButton ui:field="selectParentButton"
-                                                          text="{managerMessages.selectParentAsset}"
-                                                          icon="external-link-square"/>
-                                            <w:FormButton ui:field="setRootParentSelectionButton" visible="false"
-                                                          text="{managerMessages.setRootParentAsset}"
-                                                          icon="minus-square"/>
-                                            <w:FormButton ui:field="resetParentSelectionButton" visible="false"
-                                                          text="{managerMessages.reset}" icon="undo"/>
-                                            <w:FormButton ui:field="confirmParentSelectionButton" primary="true"
-                                                          visible="false" text="{managerMessages.OK}" icon="check"/>
-                                        </g:FlowPanel>
+                                        <w:FormInputText ui:field="parentLabel" readOnly="true"
+                                                         addStyleNames="flex"/>
                                     </w:FormField>
                                 </w:field>
+                                <w:actions>
+                                    <w:FormGroupActions>
+                                        <w:FormButton ui:field="selectParentButton"
+                                                      text="{managerMessages.selectParentAsset}"
+                                                      icon="external-link-square"/>
+                                        <w:FormButton ui:field="setRootParentSelectionButton" visible="false"
+                                                      text="{managerMessages.setRootParentAsset}"
+                                                      icon="minus-square"/>
+                                        <w:FormButton ui:field="resetParentSelectionButton" visible="false"
+                                                      text="{managerMessages.reset}" icon="undo"/>
+                                        <w:FormButton ui:field="confirmParentSelectionButton" primary="true"
+                                                      visible="false" text="{managerMessages.OK}" icon="check"/>
+                                    </w:FormGroupActions>
+                                </w:actions>
                                 <w:info>
                                     <g:Label ui:field="selectParentInfoLabel"
                                              visible="false"
@@ -199,16 +203,18 @@
                                 </w:label>
                                 <w:field>
                                     <w:FormField>
-                                        <g:FlowPanel styleName="flex layout horizontal center">
-                                            <g:Label ui:field="locationLabel"
-                                                     addStyleNames="flex {widgetStyle.FormControl} {widgetStyle.FormValueLabel}"/>
-                                            <w:FormButton ui:field="centerMapButton"
-                                                          enabled="false"
-                                                          text="{managerMessages.centerMap}"
-                                                          icon="location-arrow"/>
-                                        </g:FlowPanel>
+                                        <g:Label ui:field="locationLabel"
+                                                 addStyleNames="flex {widgetStyle.FormControl} {widgetStyle.FormValueLabel}"/>
                                     </w:FormField>
                                 </w:field>
+                                <w:actions>
+                                    <w:FormGroupActions>
+                                        <w:FormButton ui:field="centerMapButton"
+                                                      enabled="false"
+                                                      text="{managerMessages.centerMap}"
+                                                      icon="location-arrow"/>
+                                    </w:FormGroupActions>
+                                </w:actions>
                             </w:FormGroup>
                         </w:Form>
 
@@ -226,7 +232,7 @@
                                 <w:field>
                                     <w:FormField addStyleNames="larger">
                                         <g:FlowPanel styleName="layout horizontal center">
-                                            <w:FormDropDown ui:field="typeDropDown"/>
+                                            <w:FormValueListBox ui:field="typeListBox"/>
                                             <w:FormInputText ui:field="typeInput"
                                                              addStyleNames="{style.typeInput}"
                                                              visible="false"/>

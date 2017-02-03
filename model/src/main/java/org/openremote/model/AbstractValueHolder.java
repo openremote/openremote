@@ -29,18 +29,34 @@ public abstract class AbstractValueHolder<T extends AbstractValueHolder> {
         this.jsonObject = jsonObject;
     }
 
-    public JsonValue getValue() {
-        return jsonObject.hasKey("value") ? jsonObject.get("value") : null;
+    public boolean hasValue() {
+        return jsonObject.hasKey("value");
     }
 
     public String getValueAsString() {
-        return jsonObject.hasKey("value") ? jsonObject.get("value").asString() : null;
+        return hasValue() ? getValue_TODO_BUG_IN_JAVASCRIPT().asString() : null;
+    }
+
+    public Integer getValueAsInteger() {
+        return hasValue()? Integer.valueOf(getValue_TODO_BUG_IN_JAVASCRIPT().asString()) : null;
+    }
+
+    public Double getValueAsDecimal() {
+        return hasValue() ? getValue_TODO_BUG_IN_JAVASCRIPT().asNumber() : null;
     }
 
     public Boolean getValueAsBoolean() {
-        return (jsonObject.hasKey("value") && jsonObject.get("value").getType() == JsonType.BOOLEAN)
-            ? jsonObject.get("value").asBoolean()
-            : null;
+        // TODO This is also broken somehow...
+        // return hasValue() ? getValue_TODO_BUG_IN_JAVASCRIPT().asBoolean() : null;
+        return hasValue() ? jsonObject.getBoolean("value") : null;
+    }
+
+    public JsonObject getValueAsObject() {
+        return hasValue() ? jsonObject.getObject("value") : null;
+    }
+
+    public JsonArray getValueAsArray() {
+        return hasValue() ? jsonObject.getArray("value") : null;
     }
 
     public boolean isValueTrue() {
@@ -51,28 +67,15 @@ public abstract class AbstractValueHolder<T extends AbstractValueHolder> {
         return getValueAsBoolean() != null && !getValueAsBoolean();
     }
 
-    public Double getValueAsNumber() {
-        return jsonObject.hasKey("value") ? jsonObject.get("value").asNumber() : null;
-    }
-
-    public JsonObject getValueAsObject() {
-        return jsonObject.hasKey("value") ? jsonObject.getObject("value") : null;
-    }
-
-    public JsonArray getValueAsArray() {
-        return jsonObject.hasKey("value") ? jsonObject.getArray("value") : null;
-    }
-
-    public T setValue(JsonValue value) {
-        jsonObject.put("value", value);
-        return (T) this;
+    public void clearValue() {
+        jsonObject.remove("value");
     }
 
     public T setValue(String value) {
         return setValue(Json.create(value));
     }
 
-    public T setValue(Integer value) {
+    public T setValue(int value) {
         return setValue(Json.create(value));
     }
 
@@ -82,6 +85,17 @@ public abstract class AbstractValueHolder<T extends AbstractValueHolder> {
 
     public T setValue(boolean value) {
         return setValue(Json.create(value));
+    }
+
+    // You can NOT perform null-checks on whatever is returned here!
+    // TODO https://github.com/gwtproject/gwt/issues/9484
+    public JsonValue getValue_TODO_BUG_IN_JAVASCRIPT() {
+        return hasValue() ? jsonObject.get("value") : null;
+    }
+
+    public T setValue(JsonValue value) {
+        jsonObject.put("value", value);
+        return (T) this;
     }
 
     @Override

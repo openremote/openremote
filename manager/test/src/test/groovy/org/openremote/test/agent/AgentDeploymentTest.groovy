@@ -90,8 +90,8 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         conditions.eventually {
             def thing = assetService.get(DEMO_THING_ID)
             def attributes = new Attributes(thing.getAttributes())
-            attributes.get("light1Dimmer").getValue().getType() == JsonType.NUMBER
-            attributes.get("light1Dimmer").getValue().asNumber() == 77
+            attributes.get("light1Dimmer").getValue_TODO_BUG_IN_JAVASCRIPT().getType() == JsonType.NUMBER
+            attributes.get("light1Dimmer").getValueAsInteger() == 77
         }
 
         cleanup: "the server should be stopped"

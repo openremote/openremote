@@ -275,7 +275,7 @@ public class AssetService extends RouteBuilder implements ContainerService {
         LOG.fine("Applying attribute update '" + attributeValueChange + "' on: " + thing);
         thingAttribute.setValue(attributeValueChange.getValue());
 
-        return updateAttributeValue(thing.getId(), thingAttribute.getName(), thingAttribute.getValue());
+        return updateAttributeValue(thing.getId(), thingAttribute.getName(), thingAttribute.getValue_TODO_BUG_IN_JAVASCRIPT());
     }
 
     protected ServerAsset loadAsset(EntityManager em, String assetId) {

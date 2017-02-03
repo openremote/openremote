@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -19,23 +19,17 @@
  */
 package org.openremote.manager.client.widget;
 
-import com.google.gwt.text.shared.Renderer;
-import com.google.gwt.user.client.ui.ValueListBox;
-import com.google.gwt.view.client.ProvidesKey;
+import com.google.gwt.dom.client.Element;
+import com.google.gwt.user.client.ui.ListBox;
 
-public class FormDropDown<T> extends ValueListBox<T> {
+public class FormListBox extends ListBox {
 
-    public FormDropDown(Renderer<? super T> renderer) {
-        super(renderer);
-        setStyleName("or-FormControl or-FormDropDown");
+    public FormListBox() {
+        setStyleName("or-FormControl or-FormListBox");
     }
 
-    public FormDropDown(Renderer<? super T> renderer, ProvidesKey<T> keyProvider) {
-        super(renderer, keyProvider);
-        setStyleName("or-FormControl or-FormDropDown");
-    }
-
-    public FormDropDown() {
-        setStyleName("or-FormControl or-FormDropDown");
+    public FormListBox(Element element) {
+        super(element);
+        setStyleName("or-FormControl or-FormListBox");
     }
 }

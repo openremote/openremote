@@ -47,8 +47,8 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
     final protected ConnectorResource connectorResource;
     final protected ConnectorArrayMapper connectorArrayMapper;
 
-    final protected FormGroup connectorDropDownGroup = new FormGroup();
-    final protected FormDropDown<Connector> connectorDropDown;
+    final protected FormGroup connectorListBoxGroup = new FormGroup();
+    final protected FormValueListBox<Connector> connectorListBox;
 
     final protected FormGroup actionsGroup = new FormGroup();
     final protected FormButton refreshInventoryButton = new FormButton();
@@ -73,13 +73,13 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
         this.connectorResource = connectorResource;
         this.connectorArrayMapper = connectorArrayMapper;
 
-        connectorDropDown = createConnectorDropDown();
-        FormLabel connectorDropDownLabel = new FormLabel();
-        connectorDropDownLabel.setText(environment.getMessages().connector());
-        FormField connectorDropDownField = new FormField();
-        connectorDropDownField.add(connectorDropDown);
-        connectorDropDownGroup.addFormLabel(connectorDropDownLabel);
-        connectorDropDownGroup.addFormField(connectorDropDownField);
+        connectorListBox = createConnectorListBox();
+        FormLabel connectorListBoxLabel = new FormLabel();
+        connectorListBoxLabel.setText(environment.getMessages().connector());
+        FormField connectorListBoxField = new FormField();
+        connectorListBoxField.add(connectorListBox);
+        connectorListBoxGroup.addFormLabel(connectorListBoxLabel);
+        connectorListBoxGroup.addFormField(connectorListBoxField);
 
         FormLabel actionsLabel = new FormLabel();
         actionsLabel.setText(environment.getMessages().actions());
@@ -99,12 +99,12 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
         loadConnectors(connectors -> {
             availableConnectors = Arrays.asList(connectors);
 
-            connectorDropDown.setValue(null);
-            connectorDropDown.setAcceptableValues(availableConnectors);
+            connectorListBox.setValue(null);
+            connectorListBox.setAcceptableValues(availableConnectors);
 
             Connector connector = getConnector();
             if (connector != null) {
-                connectorDropDown.setValue(connector);
+                connectorListBox.setValue(connector);
                 refreshInventoryButton.setEnabled(
                     connector.isSupportsInventoryRefresh() && agentAsset.getId() != null
                 );
@@ -114,24 +114,24 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
                     agent.getConnectorType() +
                         " (" + environment.getMessages().connectorNotInstalled() + ")"
                 );
-                connectorDropDown.setValue(notFoundConnector);
+                connectorListBox.setValue(notFoundConnector);
             }
 
             container.getFormView().setFormBusy(false);
-            clearBuild();
+            //clearBuild();
         });
     }
 
     @Override
-    protected FormGroup createFormGroup(Attribute attribute) {
+    protected FormGroup createAttributeGroup(Attribute attribute) {
         if (attribute.getName().equals(ASSET_ATTRIBUTE_CONNECTOR))
             return null;
-        return super.createFormGroup(attribute);
+        return super.createAttributeGroup(attribute);
     }
 
     @Override
-    protected FormLabel createFormLabel(Attribute attribute) {
-        FormLabel formLabel = super.createFormLabel(attribute);
+    protected FormLabel createAttributeLabel(Attribute attribute) {
+        FormLabel formLabel = super.createAttributeLabel(attribute);
         if (attribute.getName().equals("enabled")) {
             formLabel.setText(environment.getMessages().enabled());
         }
@@ -150,15 +150,8 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
     */
 
     @Override
-    public void buildAttributeFormGroups() {
-        if (availableConnectors != null) {
-            super.buildAttributeFormGroups();
-        }
-    }
-
-    @Override
     public void build() {
-        container.getPanel().add(connectorDropDownGroup);
+        container.getPanel().add(connectorListBoxGroup);
         container.getPanel().add(actionsGroup);
         super.build();
     }
@@ -166,12 +159,12 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
     @Override
     public void setOpaque(boolean opaque) {
         super.setOpaque(opaque);
-        connectorDropDownGroup.setOpaque(opaque);
+        connectorListBoxGroup.setOpaque(opaque);
         actionsGroup.setOpaque(opaque);
     }
 
-    protected FormDropDown<Connector> createConnectorDropDown() {
-        FormDropDown<Connector> connectorDropDown = new FormDropDown<>(
+    protected FormValueListBox<Connector> createConnectorListBox() {
+        FormValueListBox<Connector> listBox = new FormValueListBox<>(
             new AbstractRenderer<Connector>() {
                 @Override
                 public String render(Connector connector) {
@@ -181,11 +174,11 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
                 }
             }
         );
-        connectorDropDown.addValueChangeHandler(event -> {
+        listBox.addValueChangeHandler(event -> {
             Connector connector = event.getValue();
             onConnectorSelected(connector);
         });
-        return connectorDropDown;
+        return listBox;
     }
 
     protected void onConnectorSelected(Connector connector) {
@@ -202,7 +195,7 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
             agent.removeConnectorType();
             refreshInventoryButton.setEnabled(false);
         }
-        clearBuild();
+        // clearBuild();
     }
 
     protected void loadConnectors(Consumer<Connector[]> onSuccess) {

@@ -60,7 +60,7 @@ public class GeoJSONFeature {
         return setProperty(name, Json.create(value));
     }
 
-    public GeoJSONFeature setProperty(String name, JsonValue value) {
+    protected GeoJSONFeature setProperty(String name, JsonValue value) {
         JsonObject properties = jsonObject.hasKey("properties") ? jsonObject.getObject("properties") : Json.createObject();
         properties.put(name, value);
         if (!jsonObject.hasKey("properties"))

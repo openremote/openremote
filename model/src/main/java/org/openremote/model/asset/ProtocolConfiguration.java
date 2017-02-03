@@ -38,7 +38,7 @@ public class ProtocolConfiguration extends Attribute {
      */
     public static boolean isProtocolConfiguration(Attribute attribute) {
         return attribute.getType() == AttributeType.STRING
-            && attribute.getValue() != null
+            && attribute.hasValue()
             && attribute.getValueAsString().toLowerCase(Locale.ROOT).startsWith("urn:");
     }
 
@@ -55,7 +55,7 @@ public class ProtocolConfiguration extends Attribute {
     }
 
     public String getProtocolName() {
-        return getValue() != null ? getValueAsString() : null;
+        return getValueAsString();
     }
 
 }

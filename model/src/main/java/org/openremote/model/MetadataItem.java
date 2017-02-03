@@ -25,6 +25,10 @@ import elemental.json.JsonValue;
 
 public class MetadataItem extends AbstractValueHolder<MetadataItem> {
 
+    public MetadataItem() {
+        this(Json.createObject());
+    }
+
     public MetadataItem(JsonObject jsonObject) {
         super(jsonObject);
     }
@@ -48,13 +52,15 @@ public class MetadataItem extends AbstractValueHolder<MetadataItem> {
     }
 
     public MetadataItem setName(String name) {
-        if (name == null || name.length() == 0)
-            throw new IllegalArgumentException("Name can not be empty");
         jsonObject.put("name", name);
         return this;
     }
 
     public MetadataItem copy() {
         return new MetadataItem(Json.parse(getJsonObject().toJson()));
+    }
+
+    public boolean isValid() {
+        return getName() != null && getName().length() > 0 && hasValue();
     }
 }

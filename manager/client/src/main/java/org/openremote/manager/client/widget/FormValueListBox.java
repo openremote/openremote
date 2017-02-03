@@ -19,30 +19,23 @@
  */
 package org.openremote.manager.client.widget;
 
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.HasWidgets;
-import com.google.gwt.user.client.ui.Widget;
+import com.google.gwt.text.shared.Renderer;
+import com.google.gwt.user.client.ui.ValueListBox;
+import com.google.gwt.view.client.ProvidesKey;
 
-public class FormField extends FlowPanel implements HasWidgets {
+public class FormValueListBox<T> extends ValueListBox<T> {
 
-    protected String formFieldId;
-
-    public FormField() {
-        getElement().addClassName("flex layout horizontal center or-FormField");
+    public FormValueListBox(Renderer<? super T> renderer) {
+        super(renderer);
+        setStyleName("or-FormControl or-FormValueListBox");
     }
 
-    public void setFormFieldId(String formFieldId) {
-        this.formFieldId = formFieldId;
-        if (getWidgetCount() > 0 && getWidget(0) != null) {
-            getWidget(0).getElement().setId(formFieldId);
-        }
+    public FormValueListBox(Renderer<? super T> renderer, ProvidesKey<T> keyProvider) {
+        super(renderer, keyProvider);
+        setStyleName("or-FormControl or-FormValueListBox");
     }
 
-    @Override
-    public void add(Widget w) {
-        if (formFieldId != null && getWidgetCount() == 0) {
-            w.getElement().setId(formFieldId);
-        }
-        super.add(w);
+    public FormValueListBox() {
+        setStyleName("or-FormControl or-FormValueListBox");
     }
 }

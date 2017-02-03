@@ -31,6 +31,10 @@ public class FormLabel extends ComplexPanel {
     protected boolean required;
 
     public FormLabel() {
+        this(null);
+    }
+
+    public FormLabel(String text) {
         setElement(Document.get().createElement(DivElement.TAG));
         getElement().addClassName("or-FormLabel layout horizontal center");
 
@@ -47,6 +51,8 @@ public class FormLabel extends ComplexPanel {
         requiredElement.setInnerText("*");
         requiredElement.getStyle().setVisibility(Style.Visibility.HIDDEN);
         getElement().appendChild(requiredElement);
+
+        setText(text);
     }
 
     public String getText() {

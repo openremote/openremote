@@ -37,7 +37,7 @@ public class Request<T> {
         void call(int responseCode, XMLHttpRequest xmlHttpRequest, String responseText);
     }
 
-    public static class InternalCallbackImpl implements InternalCallback {
+    final public static class InternalCallbackImpl implements InternalCallback {
 
         final protected RequestCallback requestCallback;
 

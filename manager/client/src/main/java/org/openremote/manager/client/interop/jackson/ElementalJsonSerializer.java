@@ -25,12 +25,10 @@ import com.github.nmorel.gwtjackson.client.JsonSerializerParameters;
 import com.github.nmorel.gwtjackson.client.stream.JsonWriter;
 import elemental.json.JsonValue;
 
-import javax.annotation.Nonnull;
-
 public class ElementalJsonSerializer extends JsonSerializer<JsonValue> {
 
     @Override
-    protected void doSerialize(JsonWriter writer, @Nonnull JsonValue value, JsonSerializationContext ctx, JsonSerializerParameters params) {
+    protected void doSerialize(JsonWriter writer, JsonValue value, JsonSerializationContext ctx, JsonSerializerParameters params) {
         writer.rawValue(value.toJson());
     }
 }

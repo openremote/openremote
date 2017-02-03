@@ -19,30 +19,16 @@
  */
 package org.openremote.manager.client.widget;
 
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.HasWidgets;
-import com.google.gwt.user.client.ui.Widget;
+import com.google.gwt.user.client.ui.Label;
 
-public class FormField extends FlowPanel implements HasWidgets {
+public class FormSectionLabel extends Label {
 
-    protected String formFieldId;
-
-    public FormField() {
-        getElement().addClassName("flex layout horizontal center or-FormField");
+    public FormSectionLabel() {
+        setStyleName("or-FormSectionLabel");
     }
 
-    public void setFormFieldId(String formFieldId) {
-        this.formFieldId = formFieldId;
-        if (getWidgetCount() > 0 && getWidget(0) != null) {
-            getWidget(0).getElement().setId(formFieldId);
-        }
-    }
-
-    @Override
-    public void add(Widget w) {
-        if (formFieldId != null && getWidgetCount() == 0) {
-            w.getElement().setId(formFieldId);
-        }
-        super.add(w);
+    public FormSectionLabel(String text) {
+        super(text);
+        setStyleName("or-FormSectionLabel");
     }
 }

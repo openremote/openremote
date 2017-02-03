@@ -116,6 +116,21 @@ public class FormGroup extends FlowPanel implements HasWidgets {
         extensionPanel.add(widget);
     }
 
+    public int getExtensionWidgetIndex(Widget widget) {
+        return extensionPanel.getWidgetIndex(widget);
+    }
+
+    public void insertExtension(Widget widget, int beforeIndex) {
+        toggleExtensionButton.setVisible(true);
+        extensionPanel.insert(widget, beforeIndex);
+    }
+    public boolean removeExtension(Widget widget) {
+        boolean removed = extensionPanel.remove(widget);
+        if (removed && extensionPanel.getWidgetCount() == 0)
+            toggleExtensionButton.setVisible(false);
+        return removed;
+    }
+
     public FormLabel getFormLabel() {
         return formLabel;
     }

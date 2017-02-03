@@ -139,9 +139,13 @@
         background-image: -moz-linear-gradient(45deg, var(--theme-lightergrey) 0%, transparent 100%);
     }
 
-    .or-FormGroup.expanded .or-FormGroup {
+    .or-FormGroupExtension .or-FormGroup {
         background-image: none;
         background: var(--theme-white);
+    }
+
+    .or-Form .or-FormSectionLabel {
+        color: var(--theme-mediumgrey);
     }
 
     .or-FormGroup.error .or-FormControl {
@@ -216,11 +220,13 @@
         border-color: transparent;
     }
 
-    .or-FormDropDown {
+    .or-FormListBox,
+    .or-FormValueListBox {
         border-color: var(--theme-darkgrey);
     }
 
-    .or-FormDropDown:focus {
+    .or-FormListBox:focus,
+    .or-FormValueListBox:focus {
         border-color: var(--theme-lightgreen);
     }
 

@@ -29,4 +29,8 @@ public class JsUtil {
         console.log(({}).toString.call(o).match(/\s([a-zA-Z]+)/)[1].toLowerCase());
     }-*/;
 
+    public native static String typeOf(Object o) /*-{
+        return typeof o;
+    }-*/;
+
 }

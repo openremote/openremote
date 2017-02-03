@@ -10,6 +10,7 @@ import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.ext.Provider;
 
+// TODO: use built-in resteasy CORS Filter, correctly configure origin
 @Provider
 public class CORSFilter implements ContainerResponseFilter {
     private static final Logger LOG = Logger.getLogger(CORSFilter.class.getName());
