@@ -153,8 +153,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
     protected FormGroup createAttributeNameEditor(Attribute attribute) {
         FormGroup formGroup = new FormGroup();
 
-        FormLabel label = new FormLabel();
-        label.setText(environment.getMessages().newAttribute());
+        FormLabel label = new FormLabel(environment.getMessages().newAttribute());
         formGroup.addFormLabel(label);
 
         FormField formField = new FormField();
@@ -219,13 +218,12 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
     }
 
     protected FormLabel createAttributeLabel(Attribute attribute) {
-        FormLabel formLabel = new FormLabel();
         String label = attribute.getName();
         MetadataItem labelItem = AssetAttributeMeta.getFirst(attribute, AssetAttributeMeta.LABEL);
         if (labelItem != null) {
             label = labelItem.getValueAsString();
         }
-        formLabel.setText(TextUtil.ellipsize(label, 30));
+        FormLabel formLabel = new FormLabel(TextUtil.ellipsize(label, 30));
         formLabel.addStyleName("larger");
 
         return formLabel;
@@ -504,9 +502,8 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
                 MetadataItem item = items[i];
                 FormGroup formGroup = new FormGroup();
 
-                FormLabel label = new FormLabel();
+                FormLabel label = new FormLabel(item.getName());
                 label.addStyleName("largest");
-                label.setText(item.getName());
                 formGroup.addFormLabel(label);
 
                 FormField formField = new FormField();
@@ -589,8 +586,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         protected FormGroup createItemNameEditor(MetadataItem item, FormListBox typeListBox) {
             FormGroup formGroup = new FormGroup();
 
-            FormLabel label = new FormLabel();
-            label.setText(environment.getMessages().itemName());
+            FormLabel label = new FormLabel(environment.getMessages().itemName());
             label.addStyleName("largest");
             formGroup.addFormLabel(label);
 
@@ -642,8 +638,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         protected FormGroup createItemValueEditor(MetadataItem item, FormListBox typeListBox) {
             FormGroup formGroup = new FormGroup();
 
-            FormLabel label = new FormLabel();
-            label.setText(environment.getMessages().value());
+            FormLabel label = new FormLabel(environment.getMessages().value());
             label.addStyleName("largest");
             formGroup.addFormLabel(label);
 
