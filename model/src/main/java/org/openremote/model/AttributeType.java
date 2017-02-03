@@ -19,10 +19,12 @@
  */
 package org.openremote.model;
 
+import elemental.js.util.StringUtil;
 import elemental.json.JsonType;
 
 public enum AttributeType {
 
+    UNKNOWN("Unknown", JsonType.STRING),
     OBJECT("Object", JsonType.OBJECT),
     STRING("String", JsonType.STRING),
     INTEGER("Integer", JsonType.NUMBER),
@@ -35,7 +37,8 @@ public enum AttributeType {
     BOOLEAN_ARRAY("Boolean[]", JsonType.ARRAY),
     TIMESTAMP("Timestamp", JsonType.STRING), // Unix timestamp
     DATE("Date", JsonType.STRING), // ISO 8601, e.g. "2012-04-23T18:25:43.511Z"
-    COLOR("Color", JsonType.OBJECT); // RGB integers
+    COLOR("Color", JsonType.OBJECT), // RGB integers
+    TEMPERATURE("Temperature", JsonType.NUMBER);
 
     private String value;
     private JsonType jsonType;
@@ -54,11 +57,13 @@ public enum AttributeType {
     }
 
     public static AttributeType fromValue(String value) {
-        AttributeType[] values = AttributeType.values();
-        for (AttributeType v : values) {
-            if (v.getValue().equalsIgnoreCase(value))
-                return v;
+        if (value != null && !"".equals(value)) {
+            AttributeType[] values = AttributeType.values();
+            for (AttributeType v : values) {
+                if (v.getValue().equalsIgnoreCase(value))
+                    return v;
+            }
         }
-        return null;
+        return UNKNOWN;
     }
 }
