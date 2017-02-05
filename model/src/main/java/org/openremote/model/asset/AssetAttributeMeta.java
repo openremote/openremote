@@ -133,4 +133,28 @@ public enum AssetAttributeMeta {
             ? attribute.getMetadata().first(meta.getName())
             : null;
     }
+
+    // In theory, meta item values can be of any JSON type. In practice, these are the types we can edit.
+    public enum ValueType {
+        STRING("String", JsonType.STRING),
+        DECIMAL("Decimal", JsonType.NUMBER),
+        BOOLEAN("Boolean", JsonType.BOOLEAN);
+
+        ValueType(String name, JsonType valueType) {
+            this.name = name;
+            this.valueType = valueType;
+        }
+
+        public final String name;
+        public final JsonType valueType;
+
+        public static ValueType byValueType(JsonType valueType) {
+            for (ValueType vt : values()) {
+                if (vt.valueType == valueType)
+                    return vt;
+            }
+            return null;
+        }
+    }
+
 }

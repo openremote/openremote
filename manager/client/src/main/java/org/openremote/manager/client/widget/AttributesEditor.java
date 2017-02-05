@@ -468,6 +468,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
 
     /* ####################################################################### */
 
+
     public class MetaEditor extends FlowPanel {
 
         final protected Attribute attribute;
@@ -614,16 +615,9 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
                     AssetAttributeMeta assetAttributeMeta = AssetAttributeMeta.values()[wellknownListBox.getSelectedIndex() - 1];
                     itemNameInput.setText(assetAttributeMeta.getName());
                     item.setName(assetAttributeMeta.getName());
-                    switch (assetAttributeMeta.getValueType()) {
-                        case NUMBER:
-                            typeListBox.setSelectedIndex(2);
-                            break;
-                        case BOOLEAN:
-                            typeListBox.setSelectedIndex(3);
-                            break;
-                        default:
-                            typeListBox.setSelectedIndex(1);
-                    }
+                    typeListBox.setSelectedIndex(
+                        AssetAttributeMeta.ValueType.byValueType(assetAttributeMeta.getValueType()).ordinal() + 1
+                    );
                 } else {
                     itemNameInput.setText(null);
                     item.setName(null);
@@ -646,9 +640,9 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
             formGroup.addFormField(formField);
 
             typeListBox.addItem(environment.getMessages().selectType());
-            typeListBox.addItem("String");
-            typeListBox.addItem("Decimal");
-            typeListBox.addItem("Boolean");
+            for (AssetAttributeMeta.ValueType metaValueType : AssetAttributeMeta.ValueType.values()) {
+                typeListBox.addItem(metaValueType.name, metaValueType.name());
+            }
             typeListBox.addChangeHandler(event -> resetItemValueEditor(item, formGroup, formField, typeListBox));
 
             formField.add(typeListBox);
@@ -666,18 +660,11 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
 
             // Create and add new editor, default to empty STRING
             item.clearValue();
-            JsonType valueType;
-            switch (typeListBox.getSelectedValue()) {
-                case "Decimal":
-                    valueType = JsonType.NUMBER;
-                    break;
-                case "Boolean":
-                    valueType = JsonType.BOOLEAN;
-                    item.setValue(false); // Boolean editor has an "initial" state, there is always a value
-                    break;
-                default:
-                    valueType = JsonType.STRING;
-                    break;
+            JsonType valueType = typeListBox.getSelectedIndex() > 0
+                ? AssetAttributeMeta.ValueType.valueOf(typeListBox.getSelectedValue()).valueType
+                : JsonType.STRING;
+            if (valueType == JsonType.BOOLEAN) {
+                item.setValue(false); // Special case boolean editor, has an "initial" state, there is always a value
             }
             IsWidget editor = createEditor(item, valueType, true, formGroup);
             formField.add(editor);

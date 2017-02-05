@@ -19,7 +19,6 @@
  */
 package org.openremote.model;
 
-import elemental.js.util.StringUtil;
 import elemental.json.JsonType;
 
 public enum AttributeType {
