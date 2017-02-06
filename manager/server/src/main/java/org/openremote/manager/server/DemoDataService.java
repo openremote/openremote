@@ -59,12 +59,22 @@ public class DemoDataService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(DemoDataService.class.getName());
 
-    public static final String ADMIN_CLI_CLIENT_ID = "admin-cli";
+    public static final String IMPORT_DEMO_DATA = "IMPORT_DEMO_DATA";
+    public static final boolean IMPORT_DEMO_DATA_DEFAULT = false;
 
-    public static final String DEMO_IMPORT_DATA = "DEMO_IMPORT_DATA";
-    public static final boolean DEMO_IMPORT_DATA_DEFAULT = false;
-    public static final String DEMO_ADMIN_PASSWORD = "DEMO_ADMIN_PASSWORD";
-    public static final String DEMO_ADMIN_PASSWORD_DEFAULT = "CHANGE_ME_ADMIN_PASSWORD";
+    public static final String DEMO_CONTROLLER_HOST = "DEMO_CONTROLLER_HOST";
+    public static final String DEMO_CONTROLLER_HOST_DEFAULT = "192.168.99.100";
+    public static final String DEMO_CONTROLLER_PORT = "DEMO_CONTROLLER_PORT";
+    public static final int DEMO_CONTROLLER_PORT_DEFAULT = 8083;
+    public static final String DEMO_CONTROLLER_USERNAME = "DEMO_CONTROLLER_USERNAME";
+    public static final String DEMO_CONTROLLER_USERNAME_DEFAULT = "";
+    public static final String DEMO_CONTROLLER_PASSWORD = "DEMO_CONTROLLER_PASSWORD";
+    public static final String DEMO_CONTROLLER_PASSWORD_DEFAULT = "";
+    public static final String DEMO_CONTROLLER_SECURE = "DEMO_CONTROLLER_SECURE";
+    public static final boolean DEMO_CONTROLLER_SECURE_DEFAULT = false;
+
+    public static final String ADMIN_CLI_CLIENT_ID = "admin-cli";
+    public static final String ADMIN_PASSWORD = "CHANGE_ME_ADMIN_PASSWORD";
 
     public static String DEMO_AGENT_ID = null;
     public static String DEMO_THING_ID = null;
@@ -91,16 +101,15 @@ public class DemoDataService implements ContainerService {
 
     @Override
     public void start(Container container) {
-        if (!container.isDevMode() && !getBoolean(container.getConfig(), DEMO_IMPORT_DATA, DEMO_IMPORT_DATA_DEFAULT)) {
+        if (!container.isDevMode() && !getBoolean(container.getConfig(), IMPORT_DEMO_DATA, IMPORT_DEMO_DATA_DEFAULT)) {
             return;
         }
 
         LOG.info("--- IMPORTING DEMO DATA ---");
 
         // Use a non-proxy client to get the access token
-        String demoAdminPassword = container.getConfig().getOrDefault(DEMO_ADMIN_PASSWORD, DEMO_ADMIN_PASSWORD_DEFAULT);
         String accessToken = identityService.getKeycloak().getAccessToken(
-            MASTER_REALM, new AuthForm(ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, demoAdminPassword)
+            MASTER_REALM, new AuthForm(ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, ADMIN_PASSWORD)
         ).getToken();
 
         try {
@@ -338,7 +347,7 @@ public class DemoDataService implements ContainerService {
                         SimulatorProtocol.META_NAME_ELEMENT, Json.create("color")
                     ))
                 ),
-            new Attribute("light1PowerConsumption", DECIMAL, Json.create(12.333))
+            new Attribute("light1PowerConsumption", DECIMAL, Json.create(12.345))
                 .setMetadata(new Metadata()
                     .add(new MetadataItem(
                         AssetAttributeMeta.DESCRIPTION.getName(),
@@ -359,7 +368,7 @@ public class DemoDataService implements ContainerService {
                         SimulatorProtocol.META_NAME_ELEMENT, Json.create("decimal")
                     ))
                 )
-            );
+        );
         thing.setAttributes(thingAttributes.getJsonObject());
         thing = assetService.merge(thing);
         DEMO_THING_ID = thing.getId();
