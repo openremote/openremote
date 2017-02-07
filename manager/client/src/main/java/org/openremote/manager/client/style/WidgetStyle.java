@@ -149,8 +149,12 @@ public class WidgetStyle {
         return "or-FormValueLabel";
     }
 
-    public String FormDropDown() {
-        return "or-FormDropDown";
+    public String FormValueListBox() {
+        return "or-FormValueListBox";
+    }
+
+    public String FormListBox() {
+        return "or-FormListBox";
     }
 
     public String FormButton() {

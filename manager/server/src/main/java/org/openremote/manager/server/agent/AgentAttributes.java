@@ -63,7 +63,7 @@ public class AgentAttributes extends Attributes {
 
     public AgentAttributes setEnabled(boolean enabled) {
         if (hasAttribute("enabled")) {
-            get("enabled").setValue(Json.create(enabled));
+            get("enabled").setValue(enabled);
         } else {
             put(new Attribute("enabled", AttributeType.BOOLEAN, Json.create(enabled)));
         }

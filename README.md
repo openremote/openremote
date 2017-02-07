@@ -17,6 +17,8 @@ We work with Java, Groovy, JavaScript, Gradle, Docker, and a wide range of APIs 
 A demo preview can be started with Docker Compose (install [Docker Toolbox](https://www.docker.com/products/docker-toolbox)):
 
 ```
+(Optional: Build images from source with ./gradlew clean buildImage)
+
 docker-compose -p openremote \
     -f profile/dependencies/postgresql.yml \
     -f profile/dependencies/keycloak.yml \

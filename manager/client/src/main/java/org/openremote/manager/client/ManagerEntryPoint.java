@@ -21,12 +21,36 @@ package org.openremote.manager.client;
 
 import com.google.gwt.core.client.GWT;
 
+import java.util.logging.Logger;
+
 public class ManagerEntryPoint implements com.google.gwt.core.client.EntryPoint {
 
     protected final ManagerGinjector injector = GWT.create(ManagerGinjector.class);
 
+    private static final Logger LOG = Logger.getLogger(ManagerEntryPoint.class.getName());
+
     @Override
     public void onModuleLoad() {
         injector.getAppController().start();
+
+        /*
+        TODO Elemental experiments...https://github.com/gwtproject/gwt/issues/9484
+        JsonObject jsonObject = Json.createObject();
+        AbstractValueHolder abstractValueHolder = new AbstractValueHolder(jsonObject) {};
+        jsonObject.put("value", true);
+        LOG.info("### GOT: " + jsonObject.getBoolean("value"));
+        LOG.info("### GOT: " + jsonObject.get("value").asBoolean());
+        LOG.info("### GOT: " + abstractValueHolder.getValueAsBoolean());
+        */
+        /*
+       JsonArray array = (JsonArray) Json.parse("[false]");
+
+        if (array.get(0).asNumber() < 0)
+            throw new IllegalStateException("Should not be negative");
+
+        if (array.get(0) == null)
+            throw new IllegalStateException("This is wrong!");
+        */
+
     }
 }

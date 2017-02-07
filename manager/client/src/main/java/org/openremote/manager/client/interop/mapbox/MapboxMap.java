@@ -89,11 +89,11 @@ public class MapboxMap {
 
     public native JavaScriptObject getLayer(String layerId);
 
-    public native JsonValue getLayoutProperty(String layerId, String propertyName);
-    public native JsonValue getLayoutProperty(String layerId, String propertyName, String className);
+    public native JavaScriptObject getLayoutProperty(String layerId, String propertyName);
+    public native JavaScriptObject getLayoutProperty(String layerId, String propertyName, String className);
 
-    public native JsonValue getPaintProperty(String layerId, String propertyName);
-    public native JsonValue getPaintProperty(String layerId, String propertyName, String className);
+    public native JavaScriptObject getPaintProperty(String layerId, String propertyName);
+    public native JavaScriptObject getPaintProperty(String layerId, String propertyName, String className);
 
     public native double getPitch();
 
@@ -150,10 +150,10 @@ public class MapboxMap {
 
     public native MapboxMap setLayerZoomRange(String layerId, int minZoom, int maxZoom);
 
-    public native MapboxMap setLayoutProperty(String layerId, String propertyName, JsonValue propertyValue);
+    public native MapboxMap setLayoutProperty(String layerId, String propertyName, JavaScriptObject propertyValue);
 
-    public native MapboxMap setPaintProperty(String layerId, String propertyName, JsonValue propertyValue);
-    public native MapboxMap setPaintProperty(String layerId, String propertyName, JsonValue propertyValue, String classSpecifier);
+    public native MapboxMap setPaintProperty(String layerId, String propertyName, JavaScriptObject propertyValue);
+    public native MapboxMap setPaintProperty(String layerId, String propertyName, JavaScriptObject propertyValue, String classSpecifier);
 
     public native MapboxMap setPitch(int pitch);
     public native MapboxMap setPitch(int pitch, EventData eventData);

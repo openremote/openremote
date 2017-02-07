@@ -19,8 +19,7 @@
  */
 package org.openremote.model.asset;
 
-import elemental.json.Json;
-import elemental.json.JsonString;
+import elemental.json.JsonType;
 import elemental.json.JsonValue;
 import org.openremote.model.Attribute;
 import org.openremote.model.MetadataItem;
@@ -39,63 +38,61 @@ public enum AssetAttributeMeta {
     /**
      * A human-friendly string that can be displayed in UI instead of the raw attribute name.
      */
-    LABEL("urn:openremote:asset:meta:label", false),
+    LABEL("urn:openremote:asset:meta:label", true, JsonType.STRING),
 
     /**
      * Format string that can be used to render the attribute value, see {@link java.util.Formatter}.
      */
-    FORMAT("urn:openremote:asset:meta:format", true),
+    FORMAT("urn:openremote:asset:meta:format", true, JsonType.STRING),
 
     /**
      * A human-friendly string describing the purpose of an attribute, useful when rendering editors.
      */
-    DESCRIPTION("urn:openremote:asset:meta:description", false),
+    DESCRIPTION("urn:openremote:asset:meta:description", true, JsonType.STRING),
 
     /**
      * Points to semantic description of the attribute, typically a URI.
      */
-    ABOUT("urn:openremote:asset:meta:about"),
+    ABOUT("urn:openremote:asset:meta:about", true, JsonType.STRING),
 
     /**
      * Marks the attribute as read-only.
      */
-    READ_ONLY("urn:openremote:asset:meta:readOnly", true),
+    READ_ONLY("urn:openremote:asset:meta:readOnly", true, JsonType.BOOLEAN),
 
     /**
      * Default value that might be used when editing an attribute.
      */
-    DEFAULT("urn:openremote:asset:meta:default", false),
+    DEFAULT("urn:openremote:asset:meta:default", false, JsonType.STRING),
 
     /**
      * Minimum range constraint for numeric attribute values.
      */
-    RANGE_MIN("urn:openremote:asset:meta:rangeMin", true),
+    RANGE_MIN("urn:openremote:asset:meta:rangeMin", true, JsonType.NUMBER),
 
     /**
      * Maximum range constraint for numeric attribute values.
      */
-    RANGE_MAX("urn:openremote:asset:meta:rangeMax", true),
+    RANGE_MAX("urn:openremote:asset:meta:rangeMax", true, JsonType.NUMBER),
 
     /**
      * Step increment/decrement constraint for numeric attribute values.
      */
-    STEP("urn:openremote:asset:meta:step", true),
+    STEP("urn:openremote:asset:meta:step", true, JsonType.NUMBER),
 
     /**
      * Regex (Java syntax) constraint for string attribute values.
      */
-    PATTERN("urn:openremote:asset:meta:pattern", true);
+    PATTERN("urn:openremote:asset:meta:pattern", true, JsonType.STRING);
 
     final protected String name;
-    final protected boolean editable;
+    final protected boolean editable; // Can the user edit an asset and apply this meta item?
+    final protected JsonType valueType;
 
-    AssetAttributeMeta(String name, boolean editable) {
+    AssetAttributeMeta(String name, boolean editable, JsonType valueType) {
         this.name = name;
         this.editable = editable;
-    }
-
-    AssetAttributeMeta(String name) {
-        this(name, true);
+        this.valueType = valueType;
     }
 
     public String getName() {
@@ -106,8 +103,8 @@ public enum AssetAttributeMeta {
         return editable;
     }
 
-    public JsonString getJsonValue() {
-        return Json.create(getName());
+    public JsonType getValueType() {
+        return valueType;
     }
 
     public static AssetAttributeMeta[] editable() {
@@ -131,16 +128,33 @@ public enum AssetAttributeMeta {
         return new MetadataItem(name.getName(), value);
     }
 
-    public static MetadataItem getFirstMetadataItem(Attribute attribute, AssetAttributeMeta meta) {
+    public static MetadataItem getFirst(Attribute attribute, AssetAttributeMeta meta) {
         return attribute.hasMetaItem(meta.getName())
             ? attribute.getMetadata().first(meta.getName())
             : null;
     }
 
-    public static JsonValue getFirstMetadataItemValue(Attribute attribute, AssetAttributeMeta meta) {
-        MetadataItem item = attribute.hasMetaItem(meta.getName())
-            ? attribute.getMetadata().first(meta.getName())
-            : null;
-        return item != null ? item.getValue() : null;
+    // In theory, meta item values can be of any JSON type. In practice, these are the types we can edit.
+    public enum ValueType {
+        STRING("String", JsonType.STRING),
+        DECIMAL("Decimal", JsonType.NUMBER),
+        BOOLEAN("Boolean", JsonType.BOOLEAN);
+
+        ValueType(String name, JsonType valueType) {
+            this.name = name;
+            this.valueType = valueType;
+        }
+
+        public final String name;
+        public final JsonType valueType;
+
+        public static ValueType byValueType(JsonType valueType) {
+            for (ValueType vt : values()) {
+                if (vt.valueType == valueType)
+                    return vt;
+            }
+            return null;
+        }
     }
+
 }

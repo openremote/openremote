@@ -38,8 +38,9 @@ services:
 
       # If this is the first time you are starting this stack, and/or with non-durable
       # database (the default), you might want to work with some automatically imported
-      # demo data.
-      IMPORT_DEMO_DATA: 'true'
+      # demo data. The importer uses the Keycloak admin-cli user and the given password.
+      DEMO_IMPORT_DATA: 'true'
+      DEMO_ADMIN_PASSWORD: CHANGE_ME_ADMIN_PASSWORD
 
       # The service-internal interface and port to listen on. This should not be changed.
       WEBSERVER_LISTEN_HOST: 0.0.0.0

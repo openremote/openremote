@@ -368,7 +368,7 @@ public class DemoDataService implements ContainerService {
                         SimulatorProtocol.META_NAME_ELEMENT, Json.create("decimal")
                     ))
                 )
-            );
+        );
         thing.setAttributes(thingAttributes.getJsonObject());
         thing = assetService.merge(thing);
         DEMO_THING_ID = thing.getId();

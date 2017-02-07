@@ -19,14 +19,12 @@
  */
 package org.openremote.agent3.protocol.simulator;
 
-import elemental.json.Json;
-import elemental.json.JsonNumber;
-import elemental.json.JsonString;
 import elemental.json.JsonValue;
 import org.openremote.agent3.protocol.AbstractProtocol;
 import org.openremote.agent3.protocol.simulator.element.*;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.AttributeValueChange;
+import org.openremote.model.MetadataItem;
 import org.openremote.model.asset.ThingAttribute;
 
 import java.util.HashMap;
@@ -54,10 +52,9 @@ public class SimulatorProtocol extends AbstractProtocol {
 
     @Override
     protected void onAttributeAdded(ThingAttribute attribute) {
-        JsonString elementType = attribute.firstMetaItemOrThrow(JsonString.class, META_NAME_ELEMENT);
-        SimulatorElement element = createElement(elementType.asString(), attribute);
-        JsonValue initialState = attribute.getValue();
-        element.setState(initialState);
+        String elementType = attribute.firstMetaItemOrThrow(META_NAME_ELEMENT).getValueAsString();
+        SimulatorElement element = createElement(elementType, attribute);
+        element.setState(attribute.getValue_TODO_BUG_IN_JAVASCRIPT());
         LOG.fine("Putting element '" + element + "' for: " + attribute);
         elements.put(attribute.getAttributeRef(), element);
     }
@@ -127,9 +124,11 @@ public class SimulatorProtocol extends AbstractProtocol {
             case "decimal":
                 return new DecimalSimulatorElement();
             case "range":
-                JsonNumber min = attribute.firstMetaItem(JsonNumber.class, RANGE_MIN.getName(), Json.create(0));
-                JsonNumber max = attribute.firstMetaItem(JsonNumber.class, RANGE_MAX.getName(), Json.create(100));
-                return new IntegerSimulatorElement(min.asNumber(), max.asNumber());
+                MetadataItem minItem = attribute.firstMetaItem(RANGE_MIN.getName());
+                MetadataItem maxItem = attribute.firstMetaItem(RANGE_MAX.getName());
+                double min = minItem != null ? minItem.getValueAsInteger() : 0;
+                double max = maxItem != null ? maxItem.getValueAsInteger() : 100;
+                return new IntegerSimulatorElement(min, max);
             case "color":
                 return new ColorSimulatorElement();
             default:

@@ -68,24 +68,24 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
 
     interface AttributesEditorStyle extends CssResource, AttributesEditor.Style {
 
-        String attributeIntegerEditor();
+        String integerEditor();
 
-        String attributeDecimalEditor();
+        String decimalEditor();
 
-        String attributeStringEditor();
+        String stringEditor();
 
-        String attributeBooleanEditor();
+        String booleanEditor();
     }
 
     interface DeviceAttributesEditorStyle extends CssResource, DeviceAttributesEditor.Style {
 
-        String attributeIntegerEditor();
+        String integerEditor();
 
-        String attributeDecimalEditor();
+        String decimalEditor();
 
-        String attributeStringEditor();
+        String stringEditor();
 
-        String attributeBooleanEditor();
+        String booleanEditor();
 
         String readWriteInput();
 
@@ -157,7 +157,7 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     @UiField
     FormGroup typeGroup;
     @UiField(provided = true)
-    FormDropDown<AssetType> typeDropDown;
+    FormValueListBox<AssetType> typeListBox;
     @UiField
     FormInputText typeInput;
     @UiField
@@ -187,7 +187,7 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
         super(confirmationDialogProvider);
         this.assetBrowser = assetBrowser;
 
-        typeDropDown = new FormDropDown<>(
+        typeListBox = new FormValueListBox<>(
             new AbstractRenderer<AssetType>() {
                 @Override
                 public String render(AssetType assetType) {
@@ -198,7 +198,7 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
             }
         );
 
-        typeDropDown.addValueChangeHandler(event -> {
+        typeListBox.addValueChangeHandler(event -> {
             if (presenter != null) {
                 presenter.onAssetTypeSelected(event.getValue());
             }
@@ -229,9 +229,9 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
         selectParentInfoLabel.setVisible(false);
         locationLabel.setText("");
         centerMapButton.setEnabled(false);
-        typeDropDown.setValue(null);
-        typeDropDown.setAcceptableValues(new ArrayList<>());
-        typeDropDown.setEnabled(true);
+        typeListBox.setValue(null);
+        typeListBox.setAcceptableValues(new ArrayList<>());
+        typeListBox.setEnabled(true);
         typeInput.setVisible(false);
         customTypeInfoLabel.setVisible(false);
         hideFeaturesSelection();
@@ -386,7 +386,7 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
 
     @Override
     public void setTypeSelectionEnabled(boolean enabled) {
-        typeDropDown.setEnabled(enabled);
+        typeListBox.setEnabled(enabled);
     }
 
     @Override
@@ -397,12 +397,12 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
 
     @Override
     public void setAvailableTypes(AssetType[] assetTypes) {
-        typeDropDown.setAcceptableValues(Arrays.asList(assetTypes));
+        typeListBox.setAcceptableValues(Arrays.asList(assetTypes));
     }
 
     @Override
     public void selectType(AssetType assetType) {
-        typeDropDown.setValue(assetType);
+        typeListBox.setValue(assetType);
     }
 
     @Override

@@ -25,7 +25,11 @@ import java.util.NoSuchElementException;
 
 public class Attribute extends AbstractValueHolder<Attribute> {
 
-    final protected String name;
+    protected String name;
+
+    public Attribute() {
+        super(Json.createObject());
+    }
 
     public Attribute(String name) {
         this(name, Json.createObject());
@@ -45,6 +49,10 @@ public class Attribute extends AbstractValueHolder<Attribute> {
         this(name, Json.createObject());
         setType(type);
         setValue(value);
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getName() {
@@ -90,28 +98,21 @@ public class Attribute extends AbstractValueHolder<Attribute> {
         return hasMetadata() && getMetadata().contains(name);
     }
 
-    public JsonValue firstMetaItem(String name) {
-        return hasMetaItem(name) ? getMetadata().first(name).getValue() : null;
+    public MetadataItem firstMetaItem(String name) {
+        return hasMetaItem(name) ? getMetadata().first(name) : null;
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends JsonValue> T firstMetaItem(Class<T> valueType, String name) {
-        return (T) firstMetaItem(name);
-    }
-
-    public <T extends JsonValue> T firstMetaItem(Class<T> valueType, String name, T defaultValue) {
-        T result = firstMetaItem(valueType, name);
-        return result != null ? result : defaultValue;
-    }
-
-    public <T extends JsonValue> T firstMetaItemOrThrow(Class<T> valueType, String name) throws NoSuchElementException {
-        T result = firstMetaItem(valueType, name);
-        if (result != null)
-            return result;
-        throw new NoSuchElementException("Missing item: " + name);
+    public MetadataItem firstMetaItemOrThrow(String name) throws NoSuchElementException {
+        if (!hasMetaItem(name))
+            throw new NoSuchElementException("Missing item: " + name);
+        return firstMetaItem(name);
     }
 
     public Attribute copy() {
         return new Attribute(getName(), Json.parse(getJsonObject().toJson()));
+    }
+
+    public boolean isValid() {
+        return getName() != null && getName().length() > 0 && getType() != null;
     }
 }

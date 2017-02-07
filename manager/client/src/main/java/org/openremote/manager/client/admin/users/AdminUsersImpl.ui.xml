@@ -34,7 +34,7 @@
                 <w:field>
                     <w:FormField>
                         <g:ListBox ui:field="tenantListBox"
-                                   addStyleNames="{widgetStyle.FormControl} {widgetStyle.FormDropDown}"
+                                   addStyleNames="{widgetStyle.FormControl} {widgetStyle.FormValueListBox}"
                                    visibleItemCount="1"/>
                     </w:FormField>
                 </w:field>

@@ -5,11 +5,11 @@ To be removed when the prototype is removed.
 Development
 ---
 
-* Install JDK 1.7
+* Install JDK 1.8
 
-* Install Android SDK and API level 22
+* Install Android SDK and API level 25
 
-* Create file `local.properties` in the root of the project with content `sdk.dir=/path/to/android/sdk`
+* Create file `local.properties` in the root of the project with content `sdk.dir=/path/to/android/sdk` or set ANDROID_HOME system variable to the same path
 
 * Import project in Android Studio/IntelliJ
 
