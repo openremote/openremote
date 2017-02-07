@@ -18,7 +18,6 @@ class PIDTest extends Specification implements ContainerTrait {
         def deploymentXml = getClass().getResourceAsStream(
                 "/org/openremote/test/rules/pid/agent.xml"
         )
-        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
 
         and: "some rules"
         def rulesProvider = new RulesProvider() {
@@ -42,28 +41,33 @@ class PIDTest extends Specification implements ContainerTrait {
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), [agentService])
 
+        def sensor = { $sensor -> Double.parseDouble(agentService.getContext().queryValue($sensor)) }
+        def command = { $name -> agentService.getContext().getCommands().execute($name) }
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
+
+
         when: "we increase Sp"
         // 2 ways of increasing the set point.
         // Set the value of sensor directly:
         //def customStateEvent = new CustomSensorState(358537, "PID.sp.inc", "ON");
         //agentService.getContext().update(customStateEvent);
         // Send a command linked with the button:
-        agentService.getContext().getCommands().execute("PID.sp.inc.ON")
+        command("PID.sp.inc.ON")
 
         then: "set point should be 1.5"
         conditions.eventually {
-            assert agentService.getContext().queryValue("GV.PID.Sp") == "1.5"
-            assert agentService.getContext().queryValue("PID.Output") == "1.5000"
+            assert sensor("GV.PID.Sp") == 1.5
+            assert sensor("PID.Output") == 1.5
         }
 
-
         when: "we decrease Sp"
-        agentService.getContext().getCommands().execute("PID.sp.dec.ON")
+        command("PID.sp.dec.ON")
+        conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
 
         then: "the PID output should be 1.0"
         conditions.eventually {
-            assert agentService.getContext().queryValue("GV.PID.Sp") == "1.0" // set point
-            assert agentService.getContext().queryValue("PID.Output") == "1.0000" // PID output
+            assert sensor("GV.PID.Sp") == 1 // set point
+            assert sensor("PID.Output") == 1 // PID output
         }
 
         // TODO: how can I test if there is no overshot?

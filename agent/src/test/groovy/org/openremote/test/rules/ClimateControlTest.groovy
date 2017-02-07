@@ -21,7 +21,6 @@ class ClimateControlTest extends Specification implements ContainerTrait {
         def deploymentXml = getClass().getResourceAsStream(
                 "/org/openremote/test/rules/climatecontrol/agent.xml"
         )
-        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
 
         and: "some rules"
         def rulesProvider = new RulesProvider() {
@@ -36,7 +35,7 @@ class ClimateControlTest extends Specification implements ContainerTrait {
         }
 
         and: "the started server"
-        def testCommandBuilder = new TestCommandBuilder();
+        def testCommandBuilder = new CustomTimeCommandBuilder();
         def agentService = new AgentService(
                 deploymentXml,
                 testCommandBuilder,
@@ -45,20 +44,121 @@ class ClimateControlTest extends Specification implements ContainerTrait {
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), [agentService])
 
+        def sensor = { $sensor -> agentService.getContext().queryValue($sensor) }
+        def command = { $name, $arg -> agentService.getContext().getCommands().execute($name, $arg) }
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
+
         // TODO Write tests
 
         cleanup: "the server should be stopped"
         stopContainer(container)
     }
 
-    @Ignore
+    def "Estimate times initial values check"() {
+
+        given: "a deployment with commands and sensors"
+        def deploymentXml = getClass().getResourceAsStream(
+                "/org/openremote/test/rules/climatecontrol/agent.xml"
+        )
+
+        and: "some rules"
+        def rulesProvider = new RulesProvider() {
+            @Override
+            Stream<Resource> getResources(KieServices kieServices) {
+                Stream.of(
+                        kieServices.getResources().newClassPathResource(
+                                "org/openremote/test/rules/climatecontrol/ClimateControl.drl"
+                        )
+                )
+            }
+        }
+
+        and: "the started server"
+        def testCommandBuilder = new CustomTimeCommandBuilder();
+        testCommandBuilder.currentTime = "07:07:00"
+        def agentService = new AgentService(
+                deploymentXml,
+                testCommandBuilder,
+                rulesProvider
+        )
+        def serverPort = findEphemeralPort()
+        def container = startContainer(defaultConfig(serverPort), [agentService])
+
+        def sensor = { $sensor -> agentService.getContext().queryValue($sensor) }
+        def command = { $name, $arg -> agentService.getContext().getCommands().execute($name, $arg) }
+
+        // TODO: wait for answer from Drools forum how it should be used. It does not work now.
+        // KieSession ksession = agentService.getContext().getDeployment().getRuleEngine().getKnowledgeSession()
+        // PseudoClockScheduler clock = new PseudoClockScheduler(ksession)
+
+        when: "give some time for initialization rules"
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
+
+        then: "check all defaults"
+        conditions.eventually {
+            assert sensor("VR1.ET") == "09:00"
+            assert sensor("VR1.ET.inc") == "OFF"
+            assert sensor("VR1.ET.dec") == "OFF"
+            assert sensor("VETA.inc") == "OFF"
+            assert sensor("VETA.dec") == "OFF"
+            assert sensor("VETD.inc") == "OFF"
+            assert sensor("VETD.dec") == "OFF"
+            assert sensor("VR1.COMFORT") == "20.0°"
+            assert sensor("VR1.COMFORT.inc") == "OFF"
+            assert sensor("VR1.COMFORT.dec") == "OFF"
+            assert sensor("VR1.TEMPERATURE") == "16.0\u00B0" // ECO set by heating setpoint ECO rule
+            assert sensor("VR1.TEMPERATURE.inc") == "OFF"
+            assert sensor("VR1.TEMPERATURE.dec") == "OFF"
+            assert sensor("VNEXTACTION") == "Arrive"
+            assert sensor("VPERSONSENSETIME") == "-"
+            assert sensor("VLEAVES") == "3.0"
+            assert sensor("VSCORE") == "4"
+            assert Double.parseDouble(sensor("VHEATINGSETPOINT")) == 16
+            assert sensor("VWINDOW") == "Closed"
+            assert sensor("VADVICEDONE") == "OFF"
+            assert sensor("VSUMMER") == "No"
+            assert sensor("VADVICE") == "You're doing great!"
+            assert sensor("VACATION.inc") == "OFF"
+            assert sensor("VACATION.dec") == "OFF"
+            assert sensor("VACATION") == "0"
+            assert sensor("VTOTALSCORE") == "0"
+            assert sensor("VLEVEL") == "0"
+            assert sensor("VATA") == "-"
+            assert sensor("VATD") == "-"
+            assert sensor("VPRESENCE") == "No"
+            assert sensor("GVconfig") == "OpenRemote"
+            assert sensor("VArrivalBackground") == "on"
+            assert sensor("VDepartureBackground") == "on"
+            assert sensor("FS.Toutside") == "15°"
+            assert sensor("FS.Tinside") == "19.5°"
+            assert sensor("FS.PIR") == "off"
+            assert sensor("FS.Window") == "off"
+            assert sensor("VETA.Mon") == "09:00"
+            assert sensor("VETD.Mon") == "17:00"
+            assert sensor("VETA.Tue") == "09:00"
+            assert sensor("VETD.Tue") == "17:00"
+            assert sensor("VETA.Wed") == "09:00"
+            assert sensor("VETD.Wed") == "17:00"
+            assert sensor("VETA.Thu") == "09:00"
+            assert sensor("VETD.Thu") == "17:00"
+            assert sensor("VETA.Fri") == "09:00"
+            assert sensor("VETD.Fri") == "17:00"
+            assert sensor("VETA.Sat") == "09:00"
+            assert sensor("VETD.Sat") == "17:00"
+            assert sensor("VETA.Sun") == "09:00"
+            assert sensor("VETD.Sun") == "17:00"
+        }
+
+        cleanup: "the server should be stopped"
+        stopContainer(container)
+    }
+
     def "Person sense test"() {
 
         given: "a deployment with commands and sensors"
         def deploymentXml = getClass().getResourceAsStream(
                 "/org/openremote/test/rules/climatecontrol/agent.xml"
         )
- //       def conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
         def result = new BlockingVariable<String>()
 
         and: "some rules"
@@ -74,7 +174,9 @@ class ClimateControlTest extends Specification implements ContainerTrait {
         }
 
         and: "the started server"
-        def testCommandBuilder = new TestCommandBuilder();
+        def testCommandBuilder = new CustomTimeCommandBuilder();
+        def time = { $time -> testCommandBuilder.currentTime = $time }
+        time "8:25:00"
         def agentService = new AgentService(
                 deploymentXml,
                 testCommandBuilder,
@@ -83,125 +185,65 @@ class ClimateControlTest extends Specification implements ContainerTrait {
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), [agentService])
 
-        // TODO Write tests
+        def sensor = { $sensor -> agentService.getContext().queryValue($sensor) }
+        def command = { $name, $arg -> agentService.getContext().getCommands().execute($name, $arg) }
 
-        cleanup: "the server should be stopped"
-        stopContainer(container)
-    }
+        when: "Set time before going to office"
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
 
-    def "Estimate times initial values check"() {
-
-        given: "a deployment with commands and sensors"
-        def deploymentXml = getClass().getResourceAsStream(
-                "/org/openremote/test/rules/climatecontrol/agent.xml"
-        )
-        def conditions = new PollingConditions(timeout: 1, initialDelay: 0.01)
-
-        and: "some rules"
-        def rulesProvider = new RulesProvider() {
-            @Override
-            Stream<Resource> getResources(KieServices kieServices) {
-                Stream.of(
-                        kieServices.getResources().newClassPathResource(
-                                "org/openremote/test/rules/climatecontrol/ClimateControl.drl"
-                        )
-                )
-            }
+        then: "Check if there is no person"
+        conditions.eventually {
+            assert sensor("VNEXTACTION") == "Arrive"
+            assert sensor("FS.PIR") != "on"
+            assert sensor("VPERSONSENSE") == "0"
+            assert sensor("VPRESENCE") == "No"
         }
 
-        and: "the started server"
-//        def testCommandBuilder = new TestCommandBuilder();
-        def testCommandBuilder = new CustomTimeCommandBuilder();
-        def agentService = new AgentService(
-                deploymentXml,
-                testCommandBuilder,
-                rulesProvider
-        )
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), [agentService])
+        when: "now let's enter the office at 10 AM"
+        time "10:00:00"
+        command "FS.PIR", "on"
+        conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
 
-        when: "give some time for initialization rules"
-//        agentService.getContext().getCommands().execute("FS.Tinside.dec.ON")
-//        Thread.sleep(10)
-        testCommandBuilder.currentTime = "7:00:00"
-        Thread.sleep(1000)
-        testCommandBuilder.currentTime = "10:27:00"
-        Thread.sleep(1000)
-        testCommandBuilder.currentTime = "17:55:00"
-        Thread.sleep(1000)
-        testCommandBuilder.currentTime = "23:58:00"
-        Thread.sleep(1000)
-        testCommandBuilder.currentTime = "23:59:00"
-        Thread.sleep(1000)
-        testCommandBuilder.currentTime = "24:00:00"
-        Thread.sleep(1000)
-        testCommandBuilder.currentTime = "24:01:00"
-        Thread.sleep(1000)
-        testCommandBuilder.currentTime = "24:02:00"
-        Thread.sleep(1000)
-        testCommandBuilder.currentTime = "24:03:00"
-        Thread.sleep(1000)
-        testCommandBuilder.currentTime = "48:04:00"
-        Thread.sleep(1000)
-        testCommandBuilder.currentTime = "72:05:00"
-        Thread.sleep(1000)
-        testCommandBuilder.currentTime = "96:06:00"
-        Thread.sleep(1000)
-        testCommandBuilder.currentTime = "120:07:00"
-
-        then: "check all defaults"
+        then: "see if the arrival is registered"
         conditions.eventually {
-//            assert agentService.getContext().queryValue("VR1.ET") == "--:--"
-//            assert agentService.getContext().queryValue("VR1.ET.inc") == "OFF"
-//            assert agentService.getContext().queryValue("VR1.ET.dec") == "OFF"
-//            assert agentService.getContext().queryValue("VETA.inc") == "OFF"
-//            assert agentService.getContext().queryValue("VETA.dec") == "OFF"
-//            assert agentService.getContext().queryValue("VETD.inc") == "OFF"
-//            assert agentService.getContext().queryValue("VETD.dec") == "OFF"
-//            assert agentService.getContext().queryValue("VR1.COMFORT") == "20.0°"
-//            assert agentService.getContext().queryValue("VR1.COMFORT.inc") == "OFF"
-//            assert agentService.getContext().queryValue("VR1.COMFORT.dec") == "OFF"
-//            assert agentService.getContext().queryValue("VR1.TEMPERATURE") == "19.5\u00B0"
-//            assert agentService.getContext().queryValue("VR1.TEMPERATURE.inc") == "OFF"
-//            assert agentService.getContext().queryValue("VR1.TEMPERATURE.dec") == "OFF"
-//            assert agentService.getContext().queryValue("VNEXTACTION") == "-"
-//            assert agentService.getContext().queryValue("VPERSONSENSETIME") == "-"
-//            assert agentService.getContext().queryValue("VLEAVES") == "1.0"
-//            assert agentService.getContext().queryValue("VSCORE") == "0"
-//            assert agentService.getContext().queryValue("VHEATINGSETPOINT") == "16"
-//            assert agentService.getContext().queryValue("VWINDOW") == "Closed"
-//            assert agentService.getContext().queryValue("VADVICEDONE") == "OFF"
-//            assert agentService.getContext().queryValue("VSUMMER") == "No"
-//            assert agentService.getContext().queryValue("VADVICE") == "You're doing great!"
-//            assert agentService.getContext().queryValue("VACATION.inc") == "OFF"
-//            assert agentService.getContext().queryValue("VACATION.dec") == "OFF"
-//            assert agentService.getContext().queryValue("VACATION") == "0"
-//            assert agentService.getContext().queryValue("VTOTALSCORE") == "0"
-//            assert agentService.getContext().queryValue("VLEVEL") == "0"
-//            assert agentService.getContext().queryValue("VATA") == "-"
-//            assert agentService.getContext().queryValue("VATD") == "-"
-//            assert agentService.getContext().queryValue("VPRESENCE") == "No"
-//            assert agentService.getContext().queryValue("GVconfig") == "OpenRemote"
-////            assert agentService.getContext().queryValue("VArrivalBackground") == "on"
-////            assert agentService.getContext().queryValue("VDepartureBackground") == "off"
-//            assert agentService.getContext().queryValue("FS.Toutside") == "15°"
-//            assert agentService.getContext().queryValue("FS.Tinside") == "19.5°"
-//            assert agentService.getContext().queryValue("FS.PIR") == "off"
-//            assert agentService.getContext().queryValue("FS.Window") == "off"
-//            assert agentService.getContext().queryValue("VETA.Mon") == "09:00"
-//            assert agentService.getContext().queryValue("VETD.Mon") == "17:00"
-//            assert agentService.getContext().queryValue("VETA.Tue") == "09:00"
-//            assert agentService.getContext().queryValue("VETD.Tue") == "17:00"
-//            assert agentService.getContext().queryValue("VETA.Wed") == "09:00"
-//            assert agentService.getContext().queryValue("VETD.Wed") == "17:00"
-//            assert agentService.getContext().queryValue("VETA.Thu") == "09:00"
-//            assert agentService.getContext().queryValue("VETD.Thu") == "17:00"
-//            assert agentService.getContext().queryValue("VETA.Fri") == "09:00"
-//            assert agentService.getContext().queryValue("VETD.Fri") == "17:00"
-//            assert agentService.getContext().queryValue("VETA.Sat") == "09:00"
-//            assert agentService.getContext().queryValue("VETD.Sat") == "17:00"
-//            assert agentService.getContext().queryValue("VETA.Sun") == "09:00"
-//            assert agentService.getContext().queryValue("VETD.Sun") == "17:00"
+            assert sensor("VNEXTACTION") == "Departure"
+            assert sensor("VATA") == "10:00"
+            assert sensor("VPERSONSENSE") == "0"
+            assert sensor("VPRESENCE") == "Yes"
+            assert sensor("FS.PIR") == "off"
+        }
+
+        when: "go home at 4PM"
+        time "16:00:00"
+        command "FS.PIR", "on"
+        conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
+
+        then: "wait for PIR off"
+        conditions.eventually {
+            assert sensor("VPERSONSENSE") == "1"
+            assert sensor("FS.PIR") == "off"
+        }
+
+        when: "Go at midnight adjusting"
+        time "23:58:00"
+        conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
+
+        then: "check departure"
+        conditions.eventually {
+            assert sensor("VPRESENCE") == "No"
+            assert sensor("VATD") == "16:00"
+            assert sensor("VNEXTACTION") == "-"
+        }
+
+        when: "Check updated arrival and departure times"
+        time "23:59:00"
+        conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
+
+        then: "see if times schifted by half an hour"
+        conditions.eventually {
+            def dow = sensor("TimerEEE")
+            assert sensor("VETA.$dow") == "09:30"
+            assert sensor("VETD.$dow") == "16:30"
         }
 
         cleanup: "the server should be stopped"

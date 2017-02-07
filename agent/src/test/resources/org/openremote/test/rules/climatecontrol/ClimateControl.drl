@@ -70,21 +70,18 @@ then
   commands.execute($s, persistence.readData($s, "17:00"));
 end
 
-rule "Show timers"
+rule "--Show timers"
 salience 10
-timer(int:100)
+// timer(int:100)
 when
-        SensorState(sensorName=="Timerd", value!="N/A")
-        SensorState(sensorName=="TimerEEEE", value!="N/A")
-        SensorState(sensorName=="TimerHH", value!="N/A")
-        SensorState(sensorName=="TimerMMM", value!="N/A")
+        SensorState(sensorName=="TimerEEEE", $a:value!="N/A")
+        SensorState(sensorName=="Timerd", $b:value!="N/A")
+        SensorState(sensorName=="TimerHH", $d:value!="N/A")
+        SensorState(sensorName=="TimerMMM", $c:value!="N/A")
         SensorState(sensorName=="TimerEEE", value!="N/A")
 then
-  LOG.info("Drools SessionClock() is: "+
-         (new java.util.Date(drools.getWorkingMemory()
-                                   .getSessionClock()
-                                   .getCurrentTime()))
-         .toString());
+  LOG.info("Sensor clock is:          "+$a+" "+$b+" "+$c+" "+$d);
+//  LOG.info("Drools SessionClock() is: "+(new java.util.Date(drools.getWorkingMemory().getSessionClock().getCurrentTime())).toString());
 end
 
 rule "--PSB: store values"
@@ -547,7 +544,7 @@ when
   SensorState($s:sensorName=="FS.PIR", value=="on")
   SensorState(sensorName=="TimerHH", $h:value)
 then
-  LOG.fine("Move sense on "+$s);
+  LOG.info("Move sense on "+$s+" @"+$h);
   commands.execute("VPERSONSENSETIME", $h.toString());
 end
 

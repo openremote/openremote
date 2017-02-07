@@ -29,11 +29,13 @@ import org.kie.api.builder.model.KieBaseModel;
 import org.kie.api.builder.model.KieModuleModel;
 import org.kie.api.builder.model.KieSessionModel;
 import org.kie.api.conf.EqualityBehaviorOption;
+import org.kie.api.conf.EventProcessingOption;
 import org.kie.api.io.Resource;
 import org.kie.api.io.ResourceType;
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
 import org.kie.api.runtime.KieSessionConfiguration;
+import org.kie.api.runtime.conf.ClockTypeOption;
 import org.kie.api.runtime.conf.TimedRuleExectionOption;
 import org.kie.api.runtime.rule.FactHandle;
 import org.kie.internal.builder.DecisionTableConfiguration;
@@ -72,10 +74,12 @@ public class RuleEngine {
 
         KieBaseModel kieBaseModel = kieModuleModel.newKieBaseModel("OpenRemoteKBase")
             .setDefault(true)
-            .setEqualsBehavior(EqualityBehaviorOption.EQUALITY);
+            .setEqualsBehavior(EqualityBehaviorOption.EQUALITY)
+            .setEventProcessingMode(EventProcessingOption.STREAM);
         KieSessionModel kieSessionModel = kieBaseModel.newKieSessionModel("OpenRemoteKSession")
             .setDefault(true)
             .setType(KieSessionModel.KieSessionType.STATEFUL);
+        // .setClockType(ClockTypeOption.get("pseudo")); // TODO: set in on the fly for tests
 
         KieFileSystem kfs = kieServices.newKieFileSystem();
         kfs.writeKModuleXML(kieModuleModel.toXML());
@@ -209,6 +213,10 @@ public class RuleEngine {
                 LOG.log(Level.SEVERE, "Root Cause: \n", t.getCause());
             }
         }
+    }
+
+    public KieSession getKnowledgeSession() {
+        return knowledgeSession;
     }
 
     protected void setGlobal(String identifier, Object object) {
