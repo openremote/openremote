@@ -13,7 +13,6 @@
 		913873821E32262400CE92FE /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 913873801E32262400CE92FE /* Main.storyboard */; };
 		913873841E32262400CE92FE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 913873831E32262400CE92FE /* Assets.xcassets */; };
 		913873871E32262400CE92FE /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 913873851E32262400CE92FE /* LaunchScreen.storyboard */; };
-		FA5B1EFB1E40C438009E29F7 /* podfile in Resources */ = {isa = PBXBuildFile; fileRef = FA5B1EFA1E40C438009E29F7 /* podfile */; };
 		FA7551961E432EF5004A1C90 /* ORViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA7551951E432EF5004A1C90 /* ORViewController.swift */; };
 		FA9D0B1E1E434A16003BDB6A /* api in Resources */ = {isa = PBXBuildFile; fileRef = FA9D0B161E434A16003BDB6A /* api */; };
 		FA9D0B1F1E434A16003BDB6A /* bower_components in Resources */ = {isa = PBXBuildFile; fileRef = FA9D0B171E434A16003BDB6A /* bower_components */; };
@@ -36,7 +35,6 @@
 		913873881E32262400CE92FE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		979189EBB4126A1BC3087E0E /* Pods-or-shell.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-or-shell.debug.xcconfig"; path = "Pods/Target Support Files/Pods-or-shell/Pods-or-shell.debug.xcconfig"; sourceTree = "<group>"; };
 		CA5BD9579BAC5807FB562451 /* Pods-or-shell.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-or-shell.release.xcconfig"; path = "Pods/Target Support Files/Pods-or-shell/Pods-or-shell.release.xcconfig"; sourceTree = "<group>"; };
-		FA5B1EFA1E40C438009E29F7 /* podfile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = podfile; sourceTree = "<group>"; };
 		FA7551951E432EF5004A1C90 /* ORViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORViewController.swift; sourceTree = "<group>"; };
 		FA9D0B161E434A16003BDB6A /* api */ = {isa = PBXFileReference; lastKnownFileType = folder; path = api; sourceTree = "<group>"; };
 		FA9D0B171E434A16003BDB6A /* bower_components */ = {isa = PBXFileReference; lastKnownFileType = folder; path = bower_components; sourceTree = "<group>"; };
@@ -72,7 +70,6 @@
 		913873701E32262400CE92FE = {
 			isa = PBXGroup;
 			children = (
-				FA5B1EFA1E40C438009E29F7 /* podfile */,
 				9138737B1E32262400CE92FE /* or-shell */,
 				9138737A1E32262400CE92FE /* Products */,
 				144E366AC5ACA30FC384B59E /* Pods */,
@@ -194,7 +191,6 @@
 				FA9D0B251E434A16003BDB6A /* bower.json in Resources */,
 				913873871E32262400CE92FE /* LaunchScreen.storyboard in Resources */,
 				913873841E32262400CE92FE /* Assets.xcassets in Resources */,
-				FA5B1EFB1E40C438009E29F7 /* podfile in Resources */,
 				FA9D0B221E434A16003BDB6A /* manifest.json in Resources */,
 				913873821E32262400CE92FE /* Main.storyboard in Resources */,
 				FA9D0B231E434A16003BDB6A /* service-worker.js in Resources */,

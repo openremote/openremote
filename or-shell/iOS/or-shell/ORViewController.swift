@@ -39,17 +39,5 @@ class ORViewcontroller : UIViewController, WKUIDelegate, WKNavigationDelegate {
         myWebView.frame = view.frame
         myWebView.loadFileURL(myURL!, allowingReadAccessTo: myURL!)
     }
-    
-    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        print("error")
-    }
-    
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        print("finished")
-    }
-    
-    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
-        print("receiving")
-    }
 }
 
