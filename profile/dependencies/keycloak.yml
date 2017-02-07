@@ -18,7 +18,7 @@ services:
       # that imported demo data uses the admin account and also creates a 'test' user with
       # password 'test'. Importing will be broken if you change the password only here.
       # Demo data should not be imported in production.
-      KEYCLOAK_PASSWORD: CHANGE_ME_ADMIN_PASSWORD
+      KEYCLOAK_PASSWORD: secret
 
       # Configure how Keycloak connects to the database
       POSTGRES_DATABASE: openremote

@@ -40,7 +40,7 @@ services:
       # database (the default), you might want to work with some automatically imported
       # demo data. The importer uses the Keycloak admin-cli user and the given password.
       DEMO_IMPORT_DATA: 'true'
-      DEMO_ADMIN_PASSWORD: CHANGE_ME_ADMIN_PASSWORD
+      DEMO_ADMIN_PASSWORD: secret
 
       # The service-internal interface and port to listen on. This should not be changed.
       WEBSERVER_LISTEN_HOST: 0.0.0.0

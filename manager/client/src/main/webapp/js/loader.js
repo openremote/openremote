@@ -46,6 +46,7 @@ window.checkLogoutRedirect = function(pathname) {
     // the /auth path (this is how we detect a redirect after session timeout), we logout
     // the parent window and go to the start page of the realm
     if (pathname.endsWith('/auth')) {
+        console.log("Session timeout detected (iframe redirected to /auth), triggering Keycloak logout");
         var options = {redirectUri: "/" + keycloak.realm};
         keycloak.logout(options);
     }

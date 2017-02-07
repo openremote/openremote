@@ -26,7 +26,7 @@ docker-compose -p openremote \
     up
 ```
 
-Access the manager UI and API on http://192.168.99.100:8080/ with username `admin` and password `CHANGE_ME_ADMIN_PASSWORD`.
+Access the manager UI and API on http://192.168.99.100:8080/ with username `admin` and password `secret`.
 
 For more information and how to set up a development environment, see the [Developer Guide](https://github.com/openremote/openremote/wiki).
 
