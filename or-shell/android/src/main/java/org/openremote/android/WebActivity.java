@@ -54,6 +54,10 @@ public class WebActivity extends Activity {
                 view.addJavascriptInterface(new WebAppInterface(data.toString()), "mobileClient");
 
                 Map<String,String> addHeader = new HashMap<String, String>();
+                // TODO This only adds the authorization header to the initial request when webview is loaded
+                // TODO When we retrieve console resources from the server, all requests must be authorized
+                // TODO Use interceptors as outlined here and solution for API level 21:
+                // TODO https://stackoverflow.com/questions/7610790/add-custom-headers-to-webview-resource-requests-android
                 addHeader.put("Authorization","Bearer "+data.toString());
                 addHeader.put("Access-Control-Allow-Origin","*");
                 addHeader.put("Access-Control-Allow-Headers", "origin, content-type, accept, authorization");

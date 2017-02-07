@@ -24,7 +24,7 @@ import org.apache.camel.Component;
 import org.apache.camel.util.CamelContextHelper;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.connector.ConnectorComponent;
 
@@ -41,12 +41,10 @@ public class ConnectorService implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
-        MessageBrokerService messageBrokerService = container.getService(MessageBrokerService.class);
-        findConnectors(messageBrokerService.getContext());
-    }
+        findConnectors(
+            container.getService(MessageBrokerSetupService.class).getContext()
+        );
 
-    @Override
-    public void configure(Container container) throws Exception {
         container.getService(WebService.class).getApiSingletons().add(
             new ConnectorResourceImpl(this)
         );

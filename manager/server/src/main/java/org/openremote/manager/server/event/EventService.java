@@ -25,6 +25,7 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.web.socket.WebsocketConstants;
 import org.openremote.manager.shared.event.Event;
 
@@ -44,16 +45,14 @@ public class EventService implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
-    }
-
-    @Override
-    public void configure(Container container) throws Exception {
         messageBrokerService = container.getService(MessageBrokerService.class);
-        MessageBrokerContext context = messageBrokerService.getContext();
 
-        context.getTypeConverterRegistry().addTypeConverters(new EventTypeConverters());
+        MessageBrokerSetupService messageBrokerSetupService = container.getService(MessageBrokerSetupService.class);
+        messageBrokerSetupService.getContext().getTypeConverterRegistry().addTypeConverters(
+            new EventTypeConverters()
+        );
 
-        context.addRoutes(new RouteBuilder() {
+        messageBrokerSetupService.getContext().addRoutes(new RouteBuilder() {
             @Override
             public void configure() throws Exception {
 

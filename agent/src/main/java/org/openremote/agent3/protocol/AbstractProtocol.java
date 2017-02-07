@@ -22,10 +22,10 @@ package org.openremote.agent3.protocol;
 import org.apache.camel.Predicate;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
+import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.model.asset.ThingAttribute;
 import org.openremote.container.Container;
 import org.openremote.container.message.MessageBrokerContext;
-import org.openremote.container.message.MessageBrokerService;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.AttributeValueChange;
 
@@ -55,11 +55,7 @@ public abstract class AbstractProtocol implements Protocol {
     @Override
     public void init(Container container) throws Exception {
         LOG.info("Initializing protocol: " + getProtocolName());
-    }
-
-    @Override
-    public void configure(Container container) throws Exception {
-        this.messageBrokerContext = container.getService(MessageBrokerService.class).getContext();
+        this.messageBrokerContext = container.getService(MessageBrokerSetupService.class).getContext();
         this.producerTemplate = messageBrokerContext.createProducerTemplate();
     }
 

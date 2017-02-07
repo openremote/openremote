@@ -53,12 +53,7 @@ public class ManagerIdentityService extends IdentityService {
         this.container = container;
         setClientId(Constants.APP_CLIENT_ID);
         super.init(container);
-        setKeycloakReverseProxy(true);
-    }
-
-    @Override
-    public void configure(Container container) throws Exception {
-        super.configure(container);
+        enableAuthProxy(container.getService(WebService.class));
 
         container.getService(WebService.class).getApiSingletons().add(
             new TenantResourceImpl(this)

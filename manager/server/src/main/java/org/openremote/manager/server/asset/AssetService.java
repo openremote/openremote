@@ -22,6 +22,7 @@ package org.openremote.manager.server.asset;
 import elemental.json.JsonValue;
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
+import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.manager.server.agent.AgentAttributes;
 import org.openremote.manager.server.agent.ThingAttributes;
 import org.openremote.model.Function;
@@ -57,7 +58,6 @@ public class AssetService extends RouteBuilder implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(AssetService.class.getName());
 
-    protected MessageBrokerService messageBrokerService;
     protected EventService eventService;
     protected PersistenceService persistenceService;
     protected AssetListenerSubscriptions assetListenerSubscriptions;
@@ -74,7 +74,6 @@ public class AssetService extends RouteBuilder implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
-        messageBrokerService = container.getService(MessageBrokerService.class);
         eventService = container.getService(EventService.class);
         persistenceService = container.getService(PersistenceService.class);
 
@@ -85,11 +84,8 @@ public class AssetService extends RouteBuilder implements ContainerService {
             }
         };
 
-        messageBrokerService.getContext().addRoutes(this);
-    }
+        container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
 
-    @Override
-    public void configure(Container container) throws Exception {
         container.getService(WebService.class).getApiSingletons().add(
             new AssetResourceImpl(this)
         );

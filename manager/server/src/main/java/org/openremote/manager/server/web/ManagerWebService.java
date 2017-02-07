@@ -19,25 +19,79 @@
  */
 package org.openremote.manager.server.web;
 
+import io.undertow.server.HttpHandler;
+import io.undertow.servlet.api.DeploymentInfo;
 import org.openremote.container.Container;
+import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.shared.Constants;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.manager.shared.Constants.MASTER_REALM;
 
 public class ManagerWebService extends WebService {
 
+    private static final Logger LOG = Logger.getLogger(ManagerWebService.class.getName());
+
     public static final String WEBSERVER_DOCROOT = "WEBSERVER_DOCROOT";
     public static final String WEBSERVER_DOCROOT_DEFAULT = "manager/client/src/main/webapp";
+    public static final String WEBSERVER_CONSOLE_DOCROOT = "WEBSERVER_CONSOLE_DOCROOT";
+    public static final String WEBSERVER_CONSOLE_DOCROOT_DEFAULT = "manager/server/conf/console";
+
+    public static final String STATIC_PATH = "/static";
+    public static final String CONSOLE_PATH = "/console";
+    public static final Pattern PATTERN_STATIC = Pattern.compile(Pattern.quote(STATIC_PATH) + "(/.*)?");
+    public static final Pattern PATTERN_CONSOLE = Pattern.compile(Pattern.quote(CONSOLE_PATH) + "(/.*)?");
+
+    protected HttpHandler staticFileHandler;
 
     @Override
     public void init(Container container) throws Exception {
-        super.init(container);
-        setDefaultRealm(MASTER_REALM);
-        setStaticResourceDocRoot(Paths.get(
-            getString(container.getConfig(), WEBSERVER_DOCROOT, WEBSERVER_DOCROOT_DEFAULT))
+
+        // Serve the Manager client files unsecured
+        Path staticDocRoot = Paths.get(
+            getString(container.getConfig(), WEBSERVER_DOCROOT, WEBSERVER_DOCROOT_DEFAULT)
         );
+        DeploymentInfo staticDocRootDeployment = ManagerFileServlet.createDeploymentInfo(
+            container.isDevMode(), STATIC_PATH, staticDocRoot, new String[0] // Unsecured, no required roles!
+        );
+        staticFileHandler = addServletDeployment(
+            container.getService(IdentityService.class), staticDocRootDeployment, true
+        );
+        getPrefixRoutes().put(
+            STATIC_PATH, ManagerFileServlet.wrapHandler(staticFileHandler, PATTERN_STATIC)
+        );
+
+        // Serve the Console client files secured
+        // TODO Currently not secure, and we should only serve the files from a directory that matches the authenticated realm
+        // TODO One of the problems with this is that Console doesn't have a Manager token, therefore we can't authenticate in Manager!
+        Path consoleDocRoot = Paths.get(
+            getString(container.getConfig(), WEBSERVER_CONSOLE_DOCROOT, WEBSERVER_CONSOLE_DOCROOT_DEFAULT)
+        );
+        DeploymentInfo consoleDocRootDeployment = ManagerFileServlet.createDeploymentInfo(
+            container.isDevMode(), CONSOLE_PATH, consoleDocRoot, new String[0] // TODO secure this!
+        );
+        HttpHandler consoleHandler = addServletDeployment(
+            container.getService(IdentityService.class), consoleDocRootDeployment, true
+        );
+        getPrefixRoutes().put(
+            CONSOLE_PATH, ManagerFileServlet.wrapHandler(consoleHandler, PATTERN_CONSOLE)
+        );
+
+        super.init(container);
+    }
+
+    @Override
+    public String getDefaultRealm() {
+        return Constants.MASTER_REALM;
+    }
+
+    @Override
+    protected HttpHandler getRealmIndexHandler() {
+        return staticFileHandler;
     }
 }

@@ -6,6 +6,7 @@ task createDockerfile(type: Dockerfile) {
     destFile = project.file("$project.buildDir/install/Dockerfile")
     from "java:8"
     environmentVariable "WEBSERVER_DOCROOT", "webapp"
+    environmentVariable "WEBSERVER_CONSOLE_DOCROOT", "conf/console"
     environmentVariable "LOGGING_CONFIG_FILE", "conf/logging.properties"
     environmentVariable "MAP_TILES_PATH", "conf/mapdata.mbtiles"
     environmentVariable "MAP_SETTINGS_PATH", "conf/mapsettings.json"

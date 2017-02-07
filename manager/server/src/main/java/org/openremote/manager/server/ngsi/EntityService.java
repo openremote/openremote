@@ -98,10 +98,7 @@ public class EntityService implements ContainerService {
             .build();
 
         hostUri = container.getService(WebService.class).getHostUri();
-    }
 
-    @Override
-    public void configure(Container container) throws Exception {
         EntityResourceImpl entityResource = new EntityResourceImpl(this);
 
         container.getService(WebService.class).getApiSingletons().add(new EntryPointMessageBodyConverter());

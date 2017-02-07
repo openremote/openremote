@@ -23,6 +23,7 @@ import org.openremote.agent3.protocol.Protocol;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.manager.server.agent.AgentService;
 import org.openremote.manager.server.asset.AssetService;
@@ -44,9 +45,8 @@ public class Main {
             {
                 addAll(Arrays.asList(
                     new I18NService(),
-                    new ManagerWebService(),
+                    new MessageBrokerSetupService(),
                     new ManagerIdentityService(),
-                    new MessageBrokerService(),
                     new PersistenceService(),
                     new EventService(),
                     new AssetService(),
@@ -55,6 +55,8 @@ public class Main {
                 ServiceLoader.load(Protocol.class).forEach(this::add);
                 addAll(Arrays.asList(
                     new MapService(),
+                    new MessageBrokerService(),
+                    new ManagerWebService(),
                     new DemoDataService()
                 ));
             }

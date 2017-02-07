@@ -54,6 +54,7 @@ class ClimateControlTest extends Specification implements ContainerTrait {
         stopContainer(container)
     }
 
+    @Ignore
     def "Estimate times initial values check"() {
 
         given: "a deployment with commands and sensors"
@@ -153,6 +154,7 @@ class ClimateControlTest extends Specification implements ContainerTrait {
         stopContainer(container)
     }
 
+    @Ignore
     def "Person sense test"() {
 
         given: "a deployment with commands and sensors"

@@ -27,6 +27,7 @@ import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.server.handlers.proxy.SimpleProxyClientProvider;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
+import org.keycloak.adapters.KeycloakConfigResolver;
 import org.keycloak.adapters.KeycloakDeployment;
 import org.keycloak.admin.client.resource.RealmsResource;
 import org.keycloak.admin.client.resource.ServerInfoResource;
@@ -96,7 +97,8 @@ public class IdentityService implements ContainerService {
     protected UriBuilder keycloakServiceUri;
     protected Client httpClient;
     protected LoadingCache<ClientRealm.Key, ClientRealm> clientApplicationCache;
-    protected boolean keycloakReverseProxy;
+    protected KeycloakConfigResolver keycloakConfigResolver;
+    protected ProxyHandler authProxyHandler;
     protected String clientId;
     protected int sessionTimeoutSeconds;
 
@@ -149,7 +151,7 @@ public class IdentityService implements ContainerService {
                     getInteger(container.getConfig(), KEYCLOAK_CLIENT_POOL_SIZE, KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT)
                 );
 
-        this.httpClient = WebClient.registerDefaults(container, clientBuilder).build();
+        httpClient = WebClient.registerDefaults(container, clientBuilder).build();
 
         clientApplicationCache = createClientApplicationCache();
 
@@ -158,7 +160,7 @@ public class IdentityService implements ContainerService {
         } else {
             if (getClientId() == null)
                 throw new IllegalStateException("Client ID must be set to enable API security");
-            container.getService(WebService.class).setKeycloakConfigResolver(request -> {
+            keycloakConfigResolver = request -> {
                 // This will pass authentication ("NOT ATTEMPTED" state), but later fail any role authorization
                 KeycloakDeployment notAuthenticatedKeycloakDeployment = new KeycloakDeployment();
 
@@ -173,25 +175,18 @@ public class IdentityService implements ContainerService {
                     return notAuthenticatedKeycloakDeployment;
                 }
                 return clientRealm.keycloakDeployment;
-            });
+            };
         }
-    }
 
-    @Override
-    public void configure(Container container) throws Exception {
+        authProxyHandler = new ProxyHandler(
+            new SimpleProxyClientProvider(keycloakHostUri.build()),
+            getInteger(container.getConfig(), KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT),
+            ResponseCodeHandler.HANDLE_404
+        );
+
         container.getService(WebService.class).getApiSingletons().add(
             new IdentityResource(this)
         );
-
-        if (isKeycloakReverseProxy()) {
-            SimpleProxyClientProvider proxyClient = new SimpleProxyClientProvider(keycloakHostUri.build());
-            ProxyHandler proxyHandler = new ProxyHandler(
-                proxyClient,
-                getInteger(container.getConfig(), KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT),
-                ResponseCodeHandler.HANDLE_404
-            );
-            container.getService(WebService.class).getPrefixRoutes().put(AUTH_PATH, proxyHandler);
-        }
     }
 
     @Override
@@ -209,6 +204,17 @@ public class IdentityService implements ContainerService {
 
     public Client getHttpClient() {
         return httpClient;
+    }
+
+    public KeycloakConfigResolver getKeycloakConfigResolver() {
+        return keycloakConfigResolver;
+    }
+
+    public void enableAuthProxy(WebService webService) {
+        if (authProxyHandler == null)
+            throw new IllegalStateException("Initialize this service first");
+        LOG.info("Enabling auth reverse proxy (passing requests through to Keycloak) on web context: " + AUTH_PATH);
+        webService.getPrefixRoutes().put(AUTH_PATH, authProxyHandler);
     }
 
     public KeycloakResource getKeycloak() {
@@ -334,14 +340,6 @@ public class IdentityService implements ContainerService {
             .maximumSize(500)
             .expireAfterWrite(10, MINUTES)
             .build(loader);
-    }
-
-    public boolean isKeycloakReverseProxy() {
-        return keycloakReverseProxy;
-    }
-
-    public void setKeycloakReverseProxy(boolean keycloakReverseProxy) {
-        this.keycloakReverseProxy = keycloakReverseProxy;
     }
 
     public String getClientId() {

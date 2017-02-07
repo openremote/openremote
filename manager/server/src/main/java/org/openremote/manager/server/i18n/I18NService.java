@@ -14,10 +14,6 @@ public class I18NService implements ContainerService {
     public void init(Container container) throws Exception {
         // TODO configurable per user session
         Locale.setDefault(Locale.US);
-    }
-
-    @Override
-    public void configure(Container container) throws Exception {
         validationMessages = ResourceBundle.getBundle("ValidationMessages", Locale.getDefault());
     }
 

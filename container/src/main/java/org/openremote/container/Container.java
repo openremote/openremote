@@ -115,11 +115,6 @@ public class Container {
                         LOG.fine("Initializing service: " + service);
                         service.init(Container.this);
                     }
-                    for (int counter = getServices().length - 1; counter >= 0; counter--) {
-                        ContainerService service = getServices()[counter];
-                        LOG.fine("Configuring service: " + service);
-                        service.configure(Container.this);
-                    }
                     for (ContainerService service : getServices()) {
                         LOG.fine("Starting service: " + service);
                         service.start(Container.this);
@@ -207,6 +202,10 @@ public class Container {
             }
             return result;
         }
+    }
+
+    public <T extends ContainerService> boolean hasService(Class<T> type) {
+        return getServices(type).size() > 0;
     }
 
     /**

@@ -25,6 +25,7 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.server.asset.AssetService;
 import org.openremote.model.AttributeValueChange;
@@ -48,22 +49,14 @@ public class AgentService extends RouteBuilder implements ContainerService {
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
 
     protected Container container;
-    protected MessageBrokerService messageBrokerService;
-    protected MessageBrokerContext messageBrokerContext;
     protected AssetService assetService;
 
     @Override
     public void init(Container container) throws Exception {
         this.container = container;
-        messageBrokerService = container.getService(MessageBrokerService.class);
-        messageBrokerContext = messageBrokerService.getContext();
         assetService = container.getService(AssetService.class);
 
-        messageBrokerService.getContext().addRoutes(this);
-    }
-
-    @Override
-    public void configure(Container container) throws Exception {
+        container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
     }
 
     @Override

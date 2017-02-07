@@ -23,9 +23,11 @@ import io.undertow.connector.ByteBufferPool;
 import io.undertow.server.DefaultByteBufferPool;
 import io.undertow.server.HttpHandler;
 import io.undertow.servlet.api.*;
+import io.undertow.servlet.util.ImmediateInstanceHandle;
 import io.undertow.websockets.jsr.DefaultContainerConfigurator;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
-import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.message.MessageBrokerSetupService;
+import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.socket.*;
 import org.xnio.OptionMap;
 import org.xnio.Options;
@@ -43,11 +45,13 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
 
     private static final Logger LOG = Logger.getLogger(DefaultWebsocketComponent.class.getName());
 
+    final protected IdentityService identityService;
     final protected WebService webService;
     final protected String allowedOrigin;
     protected DeploymentInfo deploymentInfo;
 
-    public DefaultWebsocketComponent(WebService webService, String allowedOrigin) {
+    public DefaultWebsocketComponent(IdentityService identityService, WebService webService, String allowedOrigin) {
+        this.identityService = identityService;
         this.webService = webService;
         this.allowedOrigin = allowedOrigin;
     }
@@ -58,7 +62,7 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
         WebSocketDeploymentInfo webSocketDeploymentInfo = new WebSocketDeploymentInfo();
 
         getConsumers().entrySet().stream().forEach(consumerEntry -> {
-            String endpointPath = MessageBrokerService.WEBSOCKET_PATH + "/" + consumerEntry.getKey();
+            String endpointPath = MessageBrokerSetupService.WEBSOCKET_PATH + "/" + consumerEntry.getKey();
             LOG.info("Deploying websocket endpoint: " + endpointPath);
             webSocketDeploymentInfo.addEndpoint(
                 ServerEndpointConfig.Builder.create(WebsocketAdapter.class, endpointPath)
@@ -91,7 +95,7 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
 
         deploymentInfo = new DeploymentInfo()
             .setDeploymentName("WebSocket Deployment")
-            .setContextPath(MessageBrokerService.WEBSOCKET_PATH)
+            .setContextPath(MessageBrokerSetupService.WEBSOCKET_PATH)
             .addServletContextAttribute(WebSocketDeploymentInfo.ATTRIBUTE_NAME, webSocketDeploymentInfo)
             .setClassLoader(WebsocketComponent.class.getClassLoader());
 
@@ -103,11 +107,9 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
         constraint.addWebResourceCollection(resourceCollection);
         deploymentInfo.addSecurityConstraints(constraint);
 
-        HttpHandler handler = webService.addServletDeployment(deploymentInfo);
+        HttpHandler handler = webService.addServletDeployment(identityService, deploymentInfo, true);
 
-        webService.getPrefixRoutes().put(
-            MessageBrokerService.WEBSOCKET_PATH, handler
-        );
+        webService.getPrefixRoutes().put(MessageBrokerSetupService.WEBSOCKET_PATH, handler);
     }
 
     @Override
@@ -116,7 +118,7 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
             webService.removeServletDeployment(deploymentInfo);
             deploymentInfo = null;
         }
-        webService.getPrefixRoutes().remove(MessageBrokerService.WEBSOCKET_PATH);
+        webService.getPrefixRoutes().remove(MessageBrokerSetupService.WEBSOCKET_PATH);
     }
 
     /* TODO: Security - fix/use this! */
@@ -124,16 +126,11 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
         if (allowedOrigin == null)
             return;
         WebsocketCORSFilter websocketCORSFilter = new WebsocketCORSFilter();
-        FilterInfo filterInfo = new FilterInfo("WebSocket CORS Filter", WebsocketCORSFilter.class, () -> new InstanceHandle<Filter>() {
-            @Override
-            public Filter getInstance() {
-                return websocketCORSFilter;
-            }
-
-            @Override
-            public void release() {
-            }
-        }).addInitParam(WebsocketCORSFilter.ALLOWED_ORIGIN, allowedOrigin);
+        FilterInfo filterInfo = new FilterInfo(
+            "WebSocket CORS Filter",
+            WebsocketCORSFilter.class,
+            () -> new ImmediateInstanceHandle<Filter>(websocketCORSFilter)
+        ).addInitParam(WebsocketCORSFilter.ALLOWED_ORIGIN, allowedOrigin);
         deploymentInfo.addFilter(filterInfo);
         deploymentInfo.addFilterUrlMapping(filterInfo.getName(), "/*", DispatcherType.REQUEST);
     }

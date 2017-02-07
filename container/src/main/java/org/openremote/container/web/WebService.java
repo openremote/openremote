@@ -19,44 +19,36 @@
  */
 package org.openremote.container.web;
 
-import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.RedirectHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
-import io.undertow.server.handlers.resource.FileResourceManager;
-import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.LoginConfig;
 import io.undertow.servlet.api.ServletInfo;
-import io.undertow.util.HttpString;
-import io.undertow.util.MimeMappings;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.ResteasyDeployment;
-import org.keycloak.adapters.KeycloakConfigResolver;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.json.ElementalMessageBodyConverter;
 import org.openremote.container.json.JacksonConfig;
 import org.openremote.container.security.AuthOverloadHandler;
+import org.openremote.container.security.CORSFilter;
+import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.SimpleKeycloakServletExtension;
 import org.openremote.container.web.jsapi.JSAPIServlet;
 
 import javax.ws.rs.core.UriBuilder;
-import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static javax.ws.rs.core.HttpHeaders.CONTENT_ENCODING;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
@@ -72,9 +64,7 @@ public abstract class WebService implements ContainerService {
 
     public static final String API_PATH = "/api";
     public static final String JSAPI_PATH = "/jsapi";
-    public static final String STATIC_PATH = "/static";
     public static final String REQUEST_REALM_PARAM = "requestRealm";
-    protected final Pattern PATTERN_STATIC = Pattern.compile(Pattern.quote(STATIC_PATH) + "(/.*)?");
     protected final Pattern PATTERN_REALM_ROOT = Pattern.compile("/([a-zA-Z0-9\\-_]+)/?");
     protected final Pattern PATTERN_REALM_SUB = Pattern.compile("/([a-zA-Z0-9\\-_]+)/(.*)");
 
@@ -82,30 +72,29 @@ public abstract class WebService implements ContainerService {
     protected int port;
     protected Undertow undertow;
 
-    protected String defaultRealm;
     protected Map<String, HttpHandler> prefixRoutes = new LinkedHashMap<>();
-    protected Path staticResourceDocRoot;
     protected Collection<Class<?>> apiClasses = new HashSet<>();
     protected Collection<Object> apiSingletons = new HashSet<>();
-    protected KeycloakConfigResolver keycloakConfigResolver;
     protected URI containerHostUri;
 
+    protected static String getLocalIpAddress() throws Exception {
+        return Inet4Address.getLocalHost().getHostAddress();
+    };
 
     @Override
     public void init(Container container) throws Exception {
         host = getString(container.getConfig(), WEBSERVER_LISTEN_HOST, WEBSERVER_LISTEN_HOST_DEFAULT);
         port = getInteger(container.getConfig(), WEBSERVER_LISTEN_PORT, WEBSERVER_LISTEN_PORT_DEFAULT);
-        String containerHost = host.equalsIgnoreCase("localhost") || host.indexOf("127") == 0 || host.indexOf("0.0.0.0") == 0 ? getLocalIpAddress() : host;
+        String containerHost = host.equalsIgnoreCase("localhost") || host.indexOf("127") == 0 || host.indexOf("0.0.0.0") == 0
+            ? getLocalIpAddress()
+            : host;
 
         containerHostUri =
-                UriBuilder.fromPath("/")
-                        .scheme("http")
-                        .host(containerHost)
-                        .port(port).build();
-    }
+            UriBuilder.fromPath("/")
+                .scheme("http")
+                .host(containerHost)
+                .port(port).build();
 
-    @Override
-    public void configure(Container container) throws Exception {
         undertow = build(
             container,
             Undertow.builder()
@@ -132,17 +121,19 @@ public abstract class WebService implements ContainerService {
 
     protected Undertow.Builder build(Container container, Undertow.Builder builder) {
 
-        HttpHandler staticResourceHandler = getStaticResourceDocRoot() != null
-            ? createStaticResourceHandler(container, getStaticResourceDocRoot())
+        LOG.info("Building web routing with custom routes: " + getPrefixRoutes().keySet());
+
+        IdentityService identityService = container.hasService(IdentityService.class)
+            ? container.getService(IdentityService.class)
             : null;
 
         ResteasyDeployment resteasyDeployment = createResteasyDeployment(container);
-        HttpHandler apiHandler = createApiHandler(resteasyDeployment);
-        HttpHandler jsApiHandler = createJsApiHandler(resteasyDeployment);
+        HttpHandler apiHandler = createApiHandler(identityService, resteasyDeployment);
+        HttpHandler jsApiHandler = createJsApiHandler(identityService, resteasyDeployment);
 
         HttpHandler handler = exchange -> {
             String requestPath = exchange.getRequestPath();
-            LOG.fine("Handling request: " + exchange.getRequestMethod() + " " + exchange.getRequestURL());
+            LOG.fine("Handling request: " + exchange.getRequestMethod() + " " + exchange.getRequestPath());
 
             // Other services can register routes here with a prefix patch match
             boolean handled = false;
@@ -173,30 +164,13 @@ public abstract class WebService implements ContainerService {
                 return;
             }
 
-            if (staticResourceHandler != null) {
-                // Serve /<realm>/index.html
-                Matcher realmRootMatcher = PATTERN_REALM_ROOT.matcher(requestPath);
-                if (realmRootMatcher.matches()) {
-                    LOG.fine("Serving index document of realm: " + requestPath);
-                    exchange.setRelativePath("/index.html");
-                    staticResourceHandler.handleRequest(exchange);
-                    return;
-                }
-
-                // Serve static resources with path /static/*
-                Matcher staticMatcher = PATTERN_STATIC.matcher(requestPath);
-                if (staticMatcher.matches()) {
-                    LOG.fine("Serving static resource: " + requestPath);
-                    String remaining = staticMatcher.group(1);
-                    exchange.setRelativePath(remaining == null || remaining.length() == 0 ? "/" : remaining);
-                    // Special handling for compression of pbf static files (they are already compressed...)
-                    // TODO configurable
-                    if (exchange.getRequestPath().endsWith(".pbf")) {
-                        exchange.getResponseHeaders().put(new HttpString(CONTENT_ENCODING), "gzip");
-                    }
-                    staticResourceHandler.handleRequest(exchange);
-                    return;
-                }
+            // Serve /<realm>/index.html
+            Matcher realmRootMatcher = PATTERN_REALM_ROOT.matcher(requestPath);
+            if (getRealmIndexHandler() != null && realmRootMatcher.matches()) {
+                LOG.fine("Serving index document of realm: " + requestPath);
+                exchange.setRelativePath("/index.html");
+                getRealmIndexHandler().handleRequest(exchange);
+                return;
             }
 
             // Serve API with path /<realm>/*
@@ -234,28 +208,7 @@ public abstract class WebService implements ContainerService {
         return builder;
     }
 
-    protected HttpHandler createStaticResourceHandler(Container container, Path docRoot) {
-        try {
-            docRoot = docRoot.toAbsolutePath().toRealPath();
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
-        if (!Files.isDirectory(docRoot))
-            throw new RuntimeException("Missing document root directory: " + docRoot);
-        LOG.info("Static document root directory: " + docRoot);
-        ResourceManager staticResourcesManager = new FileResourceManager(docRoot.toFile(), 0, true, false);
-
-        MimeMappings.Builder mimeBuilder = MimeMappings.builder(true);
-        mimeBuilder.addMapping("pbf", "application/x-protobuf");
-        mimeBuilder.addMapping("wsdl", "application/xml");
-        mimeBuilder.addMapping("xsl", "text/xsl");
-        // TODO: Add more mime/magic stuff?
-
-        return Handlers.resource(staticResourcesManager)
-            .setMimeMappings(mimeBuilder.build());
-    }
-
-    protected HttpHandler createApiHandler(ResteasyDeployment resteasyDeployment) {
+    protected HttpHandler createApiHandler(IdentityService identityService, ResteasyDeployment resteasyDeployment) {
         if (resteasyDeployment == null)
             return null;
 
@@ -271,14 +224,14 @@ public abstract class WebService implements ContainerService {
             .addServlet(restServlet)
             .setClassLoader(Container.class.getClassLoader());
 
-        if (getKeycloakConfigResolver() != null) {
+        if (identityService != null && identityService.getKeycloakConfigResolver() != null) {
             resteasyDeployment.setSecurityEnabled(true);
         }
 
-        return addServletDeployment(deploymentInfo);
+        return addServletDeployment(identityService, deploymentInfo, true);
     }
 
-    protected HttpHandler createJsApiHandler(ResteasyDeployment resteasyDeployment) {
+    protected HttpHandler createJsApiHandler(IdentityService identityService, ResteasyDeployment resteasyDeployment) {
         if (resteasyDeployment == null)
             return null;
 
@@ -299,18 +252,33 @@ public abstract class WebService implements ContainerService {
                 put("", resteasyDeployment);
             }}
         );
-        return addServletDeployment(deploymentInfo);
+        return addServletDeployment(identityService, deploymentInfo, false);
     }
 
-    public HttpHandler addServletDeployment(DeploymentInfo deploymentInfo) {
+    /**
+     * Adds a deployment to the default servlet container and returns the started handler.
+     *
+     * @param identityService Must not be null if secure deployment is used, source of configuration for the Keycloak extension
+     * @param deploymentInfo The deployment to add to the default container
+     * @param secure If Keycloak extension should be enabled for this deployment
+     */
+    public HttpHandler addServletDeployment(IdentityService identityService, DeploymentInfo deploymentInfo, boolean secure) {
         try {
-
-            if (getKeycloakConfigResolver() != null) {
+            if (secure) {
+                if (identityService == null)
+                    throw new IllegalStateException(
+                        "No identity service found, make sure " + IdentityService.class.getName() + " is added before this service"
+                    );
+                LOG.info("Deploying secure web context: " + deploymentInfo.getContextPath());
                 deploymentInfo.addOuterHandlerChainWrapper(AuthOverloadHandler::new);
                 deploymentInfo.setSecurityDisabled(false);
                 LoginConfig loginConfig = new LoginConfig(SimpleKeycloakServletExtension.AUTH_MECHANISM, "OpenRemote");
                 deploymentInfo.setLoginConfig(loginConfig);
-                deploymentInfo.addServletExtension(new SimpleKeycloakServletExtension(getKeycloakConfigResolver()));
+                deploymentInfo.addServletExtension(new SimpleKeycloakServletExtension(
+                    identityService.getKeycloakConfigResolver()
+                ));
+            } else {
+                LOG.info("Deploying insecure web context: " + deploymentInfo.getContextPath());
             }
 
             DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
@@ -371,56 +339,24 @@ public abstract class WebService implements ContainerService {
     }
 
     /**
-     * Must be not-null to enable Keycloak extension.
-     */
-    public KeycloakConfigResolver getKeycloakConfigResolver() {
-        return keycloakConfigResolver;
-    }
-
-    public void setKeycloakConfigResolver(KeycloakConfigResolver keycloakConfigResolver) {
-        if (this.keycloakConfigResolver != null)
-            throw new IllegalStateException("Keycloak config resolver already set: " + this.keycloakConfigResolver);
-        this.keycloakConfigResolver = keycloakConfigResolver;
-    }
-
-    /**
-     * Default realm path the browser will be redirected to when a / root request is made.
-     */
-    public String getDefaultRealm() {
-        return defaultRealm;
-    }
-
-    public void setDefaultRealm(String defaultRealm) {
-        if (this.defaultRealm != null)
-            throw new IllegalStateException("Default realm already set: " + this.defaultRealm);
-        this.defaultRealm = defaultRealm;
-    }
-
-    /**
-     * Set to serve static resources from file system on the /static/* path.
-     */
-    public Path getStaticResourceDocRoot() {
-        return staticResourceDocRoot;
-    }
-
-    public void setStaticResourceDocRoot(Path staticResourceDocRoot) {
-        if (this.staticResourceDocRoot != null)
-            throw new IllegalStateException("Static resource path already set: " + this.staticResourceDocRoot);
-        this.staticResourceDocRoot = staticResourceDocRoot;
-    }
-
-
-    /**
      * Provides the LAN IPv4 address the container is bound to so it can be
      * used in the context provider callbacks; if CB is on the other side of some sort
      * of NAT then this won't work also assumes HTTP
+     *
      * @return
      */
     public URI getHostUri() {
         return containerHostUri;
     }
 
-    protected static String getLocalIpAddress() throws Exception {
-        return Inet4Address.getLocalHost().getHostAddress();
-    }
+    /**
+     * Default realm path the browser will be redirected to when a / root request is made.
+     */
+    abstract protected String getDefaultRealm();
+
+    /**
+     * @return Optional handler that can handle the request to /<realm>/index.html
+     */
+    abstract protected HttpHandler getRealmIndexHandler();
+
 }

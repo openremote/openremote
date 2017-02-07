@@ -19,23 +19,23 @@ import org.openremote.manager.client.service.EventService
 import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.service.SecurityService
 import org.openremote.manager.client.style.WidgetStyle
-import org.openremote.model.Consumer
-import org.openremote.model.Runnable
 import org.openremote.manager.shared.event.Event
 import org.openremote.manager.shared.event.ui.ShowInfoEvent
 import org.openremote.manager.shared.http.EntityReader
 import org.openremote.manager.shared.security.*
 import org.openremote.manager.shared.validation.ConstraintViolationReport
+import org.openremote.model.Consumer
+import org.openremote.model.Runnable
 import org.openremote.test.ClientObjectMapper
 import org.openremote.test.GwtClientTrait
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.BlockingVariables
 
-import static org.openremote.manager.shared.Constants.APP_CLIENT_ID
-import static org.openremote.manager.shared.Constants.MASTER_REALM
-import static org.openremote.manager.shared.Constants.MASTER_REALM_ADMIN_USER
-import static org.openremote.manager.server.DemoDataService.ADMIN_PASSWORD
+import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.manager.server.DemoDataService.DEMO_ADMIN_PASSWORD
+import static org.openremote.manager.server.DemoDataService.DEMO_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.shared.Constants.*
 
 class AdminUsersActivityTest extends Specification implements ManagerContainerTrait, GwtClientTrait {
 
@@ -47,7 +47,13 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
 
         and: "An authenticated user and client security service"
         def realm = MASTER_REALM;
-        def accessToken = authenticate(container, realm, APP_CLIENT_ID, MASTER_REALM_ADMIN_USER, ADMIN_PASSWORD).token
+        def accessToken = authenticate(
+                container,
+                realm,
+                APP_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), DEMO_ADMIN_PASSWORD, DEMO_ADMIN_PASSWORD_DEFAULT)
+        ).token
         def securityService = Stub(SecurityService) {
             getRealm() >> realm
             getToken() >> accessToken

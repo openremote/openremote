@@ -74,10 +74,7 @@ public class PersistenceService implements ContainerService {
         String databaseProduct = getString(container.getConfig(), DATABASE_PRODUCT, DATABASE_PRODUCT_DEFAULT);
         LOG.info("Preparing persistence service for database: " + databaseProduct);
         database = Database.Product.valueOf(databaseProduct);
-    }
 
-    @Override
-    public void configure(Container container) throws Exception {
         String connectionUrl = getString(container.getConfig(), DATABASE_CONNECTION_URL, DATABASE_CONNECTION_URL_DEFAULT);
         LOG.info("Using database connection URL: " + connectionUrl);
 

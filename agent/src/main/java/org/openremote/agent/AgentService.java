@@ -28,10 +28,6 @@ public class AgentService implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
-    }
-
-    @Override
-    public void configure(Container container) throws Exception {
         // TODO Support booting of multiple instances
         Deployment deployment = new Deployment(
             agentDOMParser.parse(deploymentXml, true).getDeploymentDefinition(),

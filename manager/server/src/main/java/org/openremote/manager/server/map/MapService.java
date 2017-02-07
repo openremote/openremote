@@ -25,6 +25,7 @@ import elemental.json.JsonObject;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.server.web.ManagerWebService;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,7 +39,6 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import static org.openremote.container.util.MapAccess.getString;
-import static org.openremote.container.web.WebService.STATIC_PATH;
 
 public class MapService implements ContainerService {
 
@@ -74,10 +74,7 @@ public class MapService implements ContainerService {
                 "MapWidget settings file not found: " + mapSettingsPath.toAbsolutePath()
             );
         }
-    }
 
-    @Override
-    public void configure(Container container) throws Exception {
         container.getService(WebService.class).getApiSingletons().add(
             new MapResourceImpl(this)
         );
@@ -156,7 +153,7 @@ public class MapService implements ContainerService {
 
         style.put("version", 8);
 
-        style.put("glyphs", STATIC_PATH + "/fonts/{fontstack}/{range}.pbf");
+        style.put("glyphs", ManagerWebService.STATIC_PATH + "/fonts/{fontstack}/{range}.pbf");
 
         JsonObject sources = Json.createObject();
         style.put("sources", sources);

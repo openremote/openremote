@@ -1,6 +1,4 @@
-package org.openremote.container.web;
-
-import io.undertow.servlet.api.FilterInfo;
+package org.openremote.container.security;
 
 import java.io.IOException;
 import java.util.logging.Logger;

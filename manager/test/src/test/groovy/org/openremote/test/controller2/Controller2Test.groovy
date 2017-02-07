@@ -5,18 +5,14 @@ import org.openremote.manager.client.event.bus.EventBus
 import org.openremote.manager.server.DemoDataService
 import org.openremote.manager.server.asset.AssetService
 import org.openremote.manager.server.event.EventService
-import org.openremote.manager.shared.agent.DeviceResourceRead
-import org.openremote.manager.shared.agent.DeviceResourceValueEvent
-import org.openremote.manager.shared.agent.DeviceResourceWrite
-import org.openremote.manager.shared.agent.RefreshInventoryEvent
-import org.openremote.manager.shared.agent.SubscribeDeviceResourceUpdates
-import org.openremote.manager.shared.agent.UnsubscribeDeviceResourceUpdates
-import org.openremote.model.asset.Asset
+import org.openremote.manager.shared.agent.*
 import org.openremote.manager.shared.asset.AssetModifiedEvent
-import org.openremote.model.asset.AssetType
 import org.openremote.manager.shared.asset.SubscribeAssetModified
+import org.openremote.manager.shared.device.DeviceAttributes
+import org.openremote.manager.shared.device.DeviceResource
 import org.openremote.model.AttributeType
-import org.openremote.manager.shared.device.*
+import org.openremote.model.asset.Asset
+import org.openremote.model.asset.AssetType
 import org.openremote.test.BlockingWebsocketEndpoint
 import org.openremote.test.ContainerTrait
 import org.openremote.test.EventBusWebsocketEndpoint
@@ -24,10 +20,10 @@ import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.BlockingVariables
 
-import static org.openremote.manager.shared.Constants.APP_CLIENT_ID
-import static org.openremote.manager.shared.Constants.MASTER_REALM
-import static org.openremote.manager.shared.Constants.MASTER_REALM_ADMIN_USER
-import static org.openremote.manager.server.DemoDataService.ADMIN_PASSWORD
+import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.manager.server.DemoDataService.DEMO_ADMIN_PASSWORD
+import static org.openremote.manager.server.DemoDataService.DEMO_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.shared.Constants.*
 
 @Ignore
 class Controller2Test extends Specification implements ContainerTrait {
@@ -39,7 +35,13 @@ class Controller2Test extends Specification implements ContainerTrait {
 
         and: "an authenticated user"
         def realm = MASTER_REALM;
-        def accessToken = authenticate(container, realm, APP_CLIENT_ID, MASTER_REALM_ADMIN_USER, ADMIN_PASSWORD).token
+        def accessToken = authenticate(
+                container,
+                realm,
+                APP_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), DEMO_ADMIN_PASSWORD, DEMO_ADMIN_PASSWORD_DEFAULT)
+        ).token
 
         and: "a client target"
         def clientTarget = getClientTarget(createClient(container).build(), serverUri(serverPort), realm)
@@ -112,7 +114,13 @@ class Controller2Test extends Specification implements ContainerTrait {
 
         and: "an authenticated user"
         def realm = MASTER_REALM;
-        def accessToken = authenticate(container, realm, APP_CLIENT_ID, MASTER_REALM_ADMIN_USER, ADMIN_PASSWORD).token
+        def accessToken = authenticate(
+                container,
+                realm,
+                APP_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), DEMO_ADMIN_PASSWORD, DEMO_ADMIN_PASSWORD_DEFAULT)
+        ).token
 
         and: "a client target"
         def clientTarget = getClientTarget(createClient(container).build(), serverUri(serverPort), realm)

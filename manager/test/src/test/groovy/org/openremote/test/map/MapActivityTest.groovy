@@ -20,8 +20,12 @@ import org.openremote.test.GwtClientTrait
 import spock.lang.Ignore
 import spock.lang.Specification
 
+import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.manager.server.DemoDataService.DEMO_ADMIN_PASSWORD
+import static org.openremote.manager.server.DemoDataService.DEMO_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.manager.shared.Constants.APP_CLIENT_ID
 import static org.openremote.manager.shared.Constants.MASTER_REALM
+import static org.openremote.manager.shared.Constants.MASTER_REALM_ADMIN_USER
 
 // TODO Fix this when we do Asset testing
 @Ignore
@@ -42,12 +46,18 @@ class MapActivityTest extends Specification implements ContainerTrait, GwtClient
 
         and: "An authenticated user"
         def realm = MASTER_REALM;
-        def accessTokenResponse = authenticate(container, realm, APP_CLIENT_ID, "test", "test")
+        def accessToken = authenticate(
+                container,
+                realm,
+                APP_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), DEMO_ADMIN_PASSWORD, DEMO_ADMIN_PASSWORD_DEFAULT)
+        ).token
         def securityService = Stub(SecurityService) {
-            getRealm() >> realm;
-            getToken() >> accessTokenResponse.getToken();
+            getRealm() >> realm
+            getToken() >> accessToken
             updateToken(_, _, _) >> { int minValiditySeconds, Consumer<Boolean> successFn, Runnable errorFn ->
-               successFn.accept(true);
+               successFn.accept(true)
             };
             getXsrfToken() >> "TODO: NOT ENABLED" // TODO
         }

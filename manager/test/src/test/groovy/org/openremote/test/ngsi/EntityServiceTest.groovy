@@ -41,8 +41,12 @@ import spock.util.concurrent.PollingConditions
 
 import javax.ws.rs.NotFoundException
 
+import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.manager.server.DemoDataService.DEMO_ADMIN_PASSWORD
+import static org.openremote.manager.server.DemoDataService.DEMO_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.manager.shared.Constants.APP_CLIENT_ID
 import static org.openremote.manager.shared.Constants.MASTER_REALM
+import static org.openremote.manager.shared.Constants.MASTER_REALM_ADMIN_USER
 
 @Ignore
 class EntityServiceTest extends Specification implements ContainerTrait {
@@ -226,7 +230,13 @@ class EntityServiceTest extends Specification implements ContainerTrait {
 
         and: "an authenticated user"
         def realm = MASTER_REALM;
-        def accessTokenResponse = authenticate(container, realm, APP_CLIENT_ID, "test", "test")
+        def accessToken = authenticate(
+                container,
+                realm,
+                APP_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), DEMO_ADMIN_PASSWORD, DEMO_ADMIN_PASSWORD_DEFAULT)
+        ).token
 
         and: "a test client target"
         def client = createClient(container)
@@ -235,7 +245,7 @@ class EntityServiceTest extends Specification implements ContainerTrait {
                 .register(EntityArrayMessageBodyConverter.class)
                 .build();
         def serverUri = serverUri(serverPort);
-        def clientTarget = getClientTarget(client, serverUri, realm, accessTokenResponse.getToken());
+        def clientTarget = getClientTarget(client, serverUri, realm, accessToken);
 
         and: "the entity resource"
         def entityResource = clientTarget.proxy(EntityResource.class);
@@ -339,7 +349,13 @@ class EntityServiceTest extends Specification implements ContainerTrait {
 
         and: "an authenticated user"
         def realm = MASTER_REALM;
-        def accessTokenResponse = authenticate(container, realm, APP_CLIENT_ID, "test", "test")
+        def accessToken = authenticate(
+                container,
+                realm,
+                APP_CLIENT_ID,
+                MASTER_REALM_ADMIN_USER,
+                getString(container.getConfig(), DEMO_ADMIN_PASSWORD, DEMO_ADMIN_PASSWORD_DEFAULT)
+        ).token
 
         and: "a test client target"
         def client = createClient(container)
@@ -348,7 +364,7 @@ class EntityServiceTest extends Specification implements ContainerTrait {
                 .register(EntityArrayMessageBodyConverter.class)
                 .build();
         def serverUri = serverUri(serverPort);
-        def clientTarget = getClientTarget(client, serverUri, realm, accessTokenResponse.getToken());
+        def clientTarget = getClientTarget(client, serverUri, realm, accessToken);
 
         and: "the entity resource"
         def entityResource = clientTarget.proxy(EntityResource.class);

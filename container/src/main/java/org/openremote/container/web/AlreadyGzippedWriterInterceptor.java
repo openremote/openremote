@@ -32,15 +32,14 @@ import java.util.Arrays;
 @Priority(Priorities.ENTITY_CODER+1)
 public class AlreadyGzippedWriterInterceptor implements WriterInterceptor {
 
-    // TODO configurable
-    public static final String[] alreadyZippedMediaTypes = new String[] {
+    public static final String[] ALREADY_ZIPPED_MEDIA_TYPES = new String[] {
         "application/vnd.mapbox-vector-tile"
     };
 
     @Override
     public void aroundWriteTo(WriterInterceptorContext context) throws IOException, WebApplicationException {
         if (context.getMediaType() != null)  {
-            if (Arrays.asList(alreadyZippedMediaTypes).contains(context.getMediaType().toString())) {
+            if (Arrays.asList(ALREADY_ZIPPED_MEDIA_TYPES).contains(context.getMediaType().toString())) {
                 context.getHeaders().putSingle("Content-Encoding", "gzip");
             }
         }

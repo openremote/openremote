@@ -26,7 +26,6 @@ package org.openremote.container;
  * </p>
  * <ol>
  * <li>{@link #init} in insertion order</li>
- * <li>{@link #configure} in <b>reverse</b> order</li>
  * <li>{@link #start} in insertion order</li>
  * </ol>
  * <p>
@@ -44,13 +43,7 @@ public interface ContainerService {
     void init(Container container) throws Exception;
 
     /**
-     * After initialization, services are configured in reverse order. You can depend on other
-     * initialized services in this method by calling {@link Container#getService}.
-     */
-    void configure(Container container) throws Exception;
-
-    /**
-     * After configuration, services are started in the order they have been added to container.
+     * After initialization, services are started in the order they have been added to container.
      */
     void start(Container container) throws Exception;
 
