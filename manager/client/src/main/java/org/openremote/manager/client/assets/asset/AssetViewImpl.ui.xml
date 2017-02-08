@@ -138,8 +138,7 @@
                                 </w:label>
                                 <w:field>
                                     <w:FormField>
-                                        <g:Label ui:field="createdOnLabel"
-                                                 addStyleNames="flex {widgetStyle.FormControl} {widgetStyle.FormValueLabel}"/>
+                                        <w:FormOutputText ui:field="createdOnOutput"/>
                                     </w:FormField>
                                 </w:field>
                                 <w:actions>
@@ -158,10 +157,7 @@
                                 </w:label>
                                 <w:field>
                                     <w:FormField>
-                                        <g:FlowPanel styleName="flex layout horizontal center">
-                                            <g:Label ui:field="realmLabel"
-                                                     addStyleNames="flex {widgetStyle.FormControl} {widgetStyle.FormValueLabel}"/>
-                                        </g:FlowPanel>
+                                        <w:FormOutputText ui:field="realmOutput"/>
                                     </w:FormField>
                                 </w:field>
                             </w:FormGroup>
@@ -203,8 +199,7 @@
                                 </w:label>
                                 <w:field>
                                     <w:FormField>
-                                        <g:Label ui:field="locationLabel"
-                                                 addStyleNames="flex {widgetStyle.FormControl} {widgetStyle.FormValueLabel}"/>
+                                        <w:FormOutputText ui:field="locationOutput"/>
                                     </w:FormField>
                                 </w:field>
                                 <w:actions>

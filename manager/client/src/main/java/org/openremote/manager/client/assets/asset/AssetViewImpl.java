@@ -119,14 +119,14 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     @UiField
     FormGroup createdOnGroup;
     @UiField
-    Label createdOnLabel;
+    FormOutputText createdOnOutput;
     @UiField
     FormButton showHistoryButton;
 
     @UiField
     FormGroup realmGroup;
     @UiField
-    Label realmLabel;
+    FormOutputText realmOutput;
 
     @UiField
     TextBox parentLabel;
@@ -144,7 +144,7 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     @UiField
     FormGroup locationGroup;
     @UiField
-    Label locationLabel;
+    FormOutputText locationOutput;
     @UiField
     FormButton centerMapButton;
     @UiField
@@ -218,8 +218,8 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
         sidebarContainer.clear();
         nameInput.setReadOnly(false);
         nameInput.setValue(null);
-        realmLabel.setText("");
-        createdOnLabel.setText("");
+        realmOutput.setText("");
+        createdOnOutput.setText("");
         parentLabel.setText("");
         selectParentButton.setVisible(true);
         selectParentButton.setEnabled(true);
@@ -227,7 +227,7 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
         resetParentSelectionButton.setVisible(false);
         setRootParentSelectionButton.setVisible(false);
         selectParentInfoLabel.setVisible(false);
-        locationLabel.setText("");
+        locationOutput.setText("");
         centerMapButton.setEnabled(false);
         typeListBox.setValue(null);
         typeListBox.setAcceptableValues(new ArrayList<>());
@@ -267,12 +267,12 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
 
     @Override
     public void setRealm(String realm) {
-        realmLabel.setText(realm);
+        realmOutput.setText(realm);
     }
 
     @Override
     public void setCreatedOn(Date createdOn) {
-        createdOnLabel.setText(
+        createdOnOutput.setText(
             createdOn != null ? DateTimeFormat.getFormat("dd. MMM yyyy HH:mm:ss zzz").format(createdOn) : ""
         );
     }
@@ -298,10 +298,10 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
             // TODO: This assumes 0 is Lng and 1 is Lat, which is true for PostGIS backend
             // TODO: Because Lat/Lng is the 'right way', we flip it here for display
             // TODO: Rounding to 5 decimals gives us precision of about 1 meter, should be enough
-            locationLabel.setText(round(coordinates[1], 5) + " " + round(coordinates[0], 5) + " Lat|Lng");
+            locationOutput.setText(round(coordinates[1], 5) + " " + round(coordinates[0], 5) + " Lat|Lng");
             centerMapButton.setEnabled(true);
         } else {
-            locationLabel.setText(managerMessages.selectLocation());
+            locationOutput.setText(managerMessages.selectLocation());
             centerMapButton.setEnabled(false);
         }
     }

@@ -40,17 +40,20 @@
             <w:FormInputText ui:field="searchInput"
                              addStyleNames="flex {style.navItemFirst} {style.searchInput} {widgetStyle.SecondaryNavItem}"
                              autofocus="true"
-                             placeholder="{managerMessages.search}..."/>
+                             placeholder="{managerMessages.search}..."
+                             tabIndex="0"/>
 
             <w:PushButton ui:field="filterButton"
                           addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                           text="{managerMessages.filter}"
-                          icon="filter"/>
+                          icon="filter"
+                          tabIndex="99999"/>
 
             <w:PushButton ui:field="sortButton"
                           addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                           text="{managerMessages.sort}"
-                          icon="sort"/>
+                          icon="sort"
+                          tabIndex="99999"/>
 
         </g:HTMLPanel>
 

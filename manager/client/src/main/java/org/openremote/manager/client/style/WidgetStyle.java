@@ -145,8 +145,8 @@ public class WidgetStyle {
         return "or-FormInputText";
     }
 
-    public String FormValueLabel() {
-        return "or-FormValueLabel";
+    public String FormOutputText() {
+        return "or-FormOutputText";
     }
 
     public String FormValueListBox() {

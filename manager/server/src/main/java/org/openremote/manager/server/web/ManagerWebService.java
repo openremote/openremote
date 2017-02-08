@@ -37,49 +37,49 @@ public class ManagerWebService extends WebService {
 
     private static final Logger LOG = Logger.getLogger(ManagerWebService.class.getName());
 
-    public static final String WEBSERVER_DOCROOT = "WEBSERVER_DOCROOT";
-    public static final String WEBSERVER_DOCROOT_DEFAULT = "manager/client/src/main/webapp";
-    public static final String WEBSERVER_CONSOLE_DOCROOT = "WEBSERVER_CONSOLE_DOCROOT";
-    public static final String WEBSERVER_CONSOLE_DOCROOT_DEFAULT = "manager/server/conf/console";
+    public static final String MANAGER_DOCROOT = "MANAGER_DOCROOT";
+    public static final String MANAGER_DOCROOT_DEFAULT = "manager/client/src/main/webapp";
+    public static final String CONSOLE_DOCROOT = "CONSOLE_DOCROOT";
+    public static final String CONSOLE_DOCROOT_DEFAULT = "manager/server/conf/console";
 
-    public static final String STATIC_PATH = "/static";
+    public static final String MANAGER_PATH = "/static";
     public static final String CONSOLE_PATH = "/console";
-    public static final Pattern PATTERN_STATIC = Pattern.compile(Pattern.quote(STATIC_PATH) + "(/.*)?");
-    public static final Pattern PATTERN_CONSOLE = Pattern.compile(Pattern.quote(CONSOLE_PATH) + "(/.*)?");
+    public static final Pattern MANAGER_PATTERN = Pattern.compile(Pattern.quote(MANAGER_PATH) + "(/.*)?");
+    public static final Pattern CONSOLE_PATTERN = Pattern.compile(Pattern.quote(CONSOLE_PATH) + "(/.*)?");
 
-    protected HttpHandler staticFileHandler;
+    protected HttpHandler managerFileHandler;
 
     @Override
     public void init(Container container) throws Exception {
 
         // Serve the Manager client files unsecured
-        Path staticDocRoot = Paths.get(
-            getString(container.getConfig(), WEBSERVER_DOCROOT, WEBSERVER_DOCROOT_DEFAULT)
+        Path managerDocRoot = Paths.get(
+            getString(container.getConfig(), MANAGER_DOCROOT, MANAGER_DOCROOT_DEFAULT)
         );
-        DeploymentInfo staticDocRootDeployment = ManagerFileServlet.createDeploymentInfo(
-            container.isDevMode(), STATIC_PATH, staticDocRoot, new String[0] // Unsecured, no required roles!
+        DeploymentInfo managerDeployment = ManagerFileServlet.createDeploymentInfo(
+            container.isDevMode(), MANAGER_PATH, managerDocRoot, new String[0] // Unsecured, no required roles!
         );
-        staticFileHandler = addServletDeployment(
-            container.getService(IdentityService.class), staticDocRootDeployment, true
+        managerFileHandler = addServletDeployment(
+            container.getService(IdentityService.class), managerDeployment, true
         );
         getPrefixRoutes().put(
-            STATIC_PATH, ManagerFileServlet.wrapHandler(staticFileHandler, PATTERN_STATIC)
+            MANAGER_PATH, ManagerFileServlet.wrapHandler(managerFileHandler, MANAGER_PATTERN)
         );
 
         // Serve the Console client files secured
         // TODO Currently not secure, and we should only serve the files from a directory that matches the authenticated realm
         // TODO One of the problems with this is that Console doesn't have a Manager token, therefore we can't authenticate in Manager!
         Path consoleDocRoot = Paths.get(
-            getString(container.getConfig(), WEBSERVER_CONSOLE_DOCROOT, WEBSERVER_CONSOLE_DOCROOT_DEFAULT)
+            getString(container.getConfig(), CONSOLE_DOCROOT, CONSOLE_DOCROOT_DEFAULT)
         );
-        DeploymentInfo consoleDocRootDeployment = ManagerFileServlet.createDeploymentInfo(
+        DeploymentInfo consoleDeployment = ManagerFileServlet.createDeploymentInfo(
             container.isDevMode(), CONSOLE_PATH, consoleDocRoot, new String[0] // TODO secure this!
         );
         HttpHandler consoleHandler = addServletDeployment(
-            container.getService(IdentityService.class), consoleDocRootDeployment, true
+            container.getService(IdentityService.class), consoleDeployment, true
         );
         getPrefixRoutes().put(
-            CONSOLE_PATH, ManagerFileServlet.wrapHandler(consoleHandler, PATTERN_CONSOLE)
+            CONSOLE_PATH, ManagerFileServlet.wrapHandler(consoleHandler, CONSOLE_PATTERN)
         );
 
         super.init(container);
@@ -92,6 +92,6 @@ public class ManagerWebService extends WebService {
 
     @Override
     protected HttpHandler getRealmIndexHandler() {
-        return staticFileHandler;
+        return managerFileHandler;
     }
 }

@@ -27,23 +27,16 @@ public class FormButton extends PushButton {
     }
 
     public void setPrimary(boolean primary) {
-        clearStyles();
+        removeStyleName("or-FormButtonPrimary");
         if (primary) {
             addStyleName("or-FormButtonPrimary");
         }
     }
 
     public void setDanger(boolean danger) {
-        clearStyles();
+        removeStyleName("or-FormButtonDanger");
         if (danger) {
             addStyleName("or-FormButtonDanger");
         }
     }
-
-    protected void clearStyles() {
-        removeStyleName("or-FormButton");
-        removeStyleName("or-FormButtonPrimary");
-        removeStyleName("or-FormButtonDanger");
-    }
-
 }

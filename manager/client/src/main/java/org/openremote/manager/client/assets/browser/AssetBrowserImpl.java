@@ -118,6 +118,7 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
                     offsetTop += el.getOffsetTop();
                 } while ((el = el.getOffsetParent()) != null);
                 Element treeContainerElement = assetTreeContainer.getElement();
+                treeContainerElement.setAttribute("tabindex", "1");
                 int middleOffset = offsetTop - treeContainerElement.getClientHeight()/2 - treeContainerElement.getOffsetTop();
                 treeContainerElement.setScrollTop(middleOffset);
             }

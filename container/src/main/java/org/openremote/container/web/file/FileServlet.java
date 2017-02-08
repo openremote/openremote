@@ -82,7 +82,9 @@ public class FileServlet extends AbstractFileServlet {
         }
         while (relativePath.startsWith("/"))
             relativePath = relativePath.substring(1);
-        return new File(base, relativePath);
+        File file = new File(base, relativePath);
+        LOG.fine("Serving file: " + file.getAbsolutePath());
+        return file;
     }
 
     @Override
@@ -91,23 +93,18 @@ public class FileServlet extends AbstractFileServlet {
         String contentType = getContentType(request, file);
         if (mimeTypesExpireSeconds.containsKey(contentType))
             expireTime = mimeTypesExpireSeconds.get(contentType);
-        expireTime = devMode ? 0 : expireTime; // Don't cache at all in dev mode
+        // Don't cache at all in dev mode
+        expireTime = devMode ? 0 : expireTime;
         // If the String "nocache" is in the file name, don't cache (e.g. GWT JS file)
         if (file.getName().contains("nocache"))
             expireTime = 0;
-        LOG.fine("Expiring in " + expireTime + " seconds: " + file);
         return expireTime;
     }
 
     @Override
     protected String getContentType(HttpServletRequest request, File file) {
-        String extension = "";
-        int i = file.getName().lastIndexOf('.');
-        if (i > 0) {
-            extension = file.getName().substring(i + 1);
-        }
         return coalesce(coalesce(request.getServletContext().getMimeType(file.getName()),
-            mimeTypes.get(extension)), "application/octet-stream");
+            mimeTypes.get(getExtension(file.getName()))), "application/octet-stream");
     }
 
     @Override
@@ -124,4 +121,10 @@ public class FileServlet extends AbstractFileServlet {
         }
         return result;
     }
+
+    protected String getExtension(String fileName) {
+        int i = fileName.lastIndexOf('.');
+        return i > 0 ? fileName.substring(i + 1) : "";
+    }
+
 }

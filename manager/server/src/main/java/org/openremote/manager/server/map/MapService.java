@@ -153,7 +153,7 @@ public class MapService implements ContainerService {
 
         style.put("version", 8);
 
-        style.put("glyphs", ManagerWebService.STATIC_PATH + "/fonts/{fontstack}/{range}.pbf");
+        style.put("glyphs", ManagerWebService.MANAGER_PATH + "/fonts/{fontstack}/{range}.pbf");
 
         JsonObject sources = Json.createObject();
         style.put("sources", sources);
