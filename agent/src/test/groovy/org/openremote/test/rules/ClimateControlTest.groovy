@@ -54,8 +54,7 @@ class ClimateControlTest extends Specification implements ContainerTrait {
         stopContainer(container)
     }
 
-    @Ignore
-    def "Estimate times initial values check"() {
+    def "Initial values check"() {
 
         given: "a deployment with commands and sensors"
         def deploymentXml = getClass().getResourceAsStream(
@@ -97,7 +96,7 @@ class ClimateControlTest extends Specification implements ContainerTrait {
 
         then: "check all defaults"
         conditions.eventually {
-            assert sensor("VR1.ET") == "09:00"
+            // assert sensor("VR1.ET") == "09:00" // used in the old office project only
             assert sensor("VR1.ET.inc") == "OFF"
             assert sensor("VR1.ET.dec") == "OFF"
             assert sensor("VETA.inc") == "OFF"
@@ -153,8 +152,7 @@ class ClimateControlTest extends Specification implements ContainerTrait {
         cleanup: "the server should be stopped"
         stopContainer(container)
     }
-
-    @Ignore
+    
     def "Person sense test"() {
 
         given: "a deployment with commands and sensors"
@@ -199,10 +197,20 @@ class ClimateControlTest extends Specification implements ContainerTrait {
             assert sensor("FS.PIR") != "on"
             assert sensor("VPERSONSENSE") == "0"
             assert sensor("VPRESENCE") == "No"
+            assert sensor("VHEATING") == "ECO"
+            assert Double.parseDouble(sensor("VHEATINGSETPOINT")) == 16
         }
 
         when: "now let's enter the office at 10 AM"
         time "10:00:00"
+        conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
+
+        then: "check if heating is in standby"
+        conditions.eventually {
+            assert sensor("VHEATING") == "Stand-by"
+            assert Double.parseDouble(sensor("VHEATINGSETPOINT")) == 19
+        }
+        when: "so go in"
         command "FS.PIR", "on"
         conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
 
@@ -213,6 +221,8 @@ class ClimateControlTest extends Specification implements ContainerTrait {
             assert sensor("VPERSONSENSE") == "0"
             assert sensor("VPRESENCE") == "Yes"
             assert sensor("FS.PIR") == "off"
+            assert sensor("VHEATING") == "Comfort"
+            assert Double.parseDouble(sensor("VHEATINGSETPOINT")) == 20
         }
 
         when: "go home at 4PM"
@@ -235,6 +245,8 @@ class ClimateControlTest extends Specification implements ContainerTrait {
             assert sensor("VPRESENCE") == "No"
             assert sensor("VATD") == "16:00"
             assert sensor("VNEXTACTION") == "-"
+            assert sensor("VHEATING") == "ECO"
+            assert Double.parseDouble(sensor("VHEATINGSETPOINT")) == 16
         }
 
         when: "Check updated arrival and departure times"

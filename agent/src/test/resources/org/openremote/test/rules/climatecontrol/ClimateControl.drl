@@ -426,7 +426,7 @@ when
   SensorState(sensorName=="TimerHH",$h:value)
   SensorState(sensorName=="VNEXTACTION", value=="Arrive")
   SensorState(sensorName matches ("VETD."+$e), $vd:value)
-  SensorState(sensorName=="VETA", value != "-", value != "--:--")
+  SensorState(sensorName=="VETA", value != "-", value != "--:--", value != "status")
   SensorState(sensorName=="VETA", eval(util.parseTimestamp(value) < util.parseTimestamp($h)))
   SensorState(sensorName=="VACATION", eval(Integer.parseInt(value.toString())==0))
 then
