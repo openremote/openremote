@@ -37,7 +37,13 @@ public enum AttributeType {
     TIMESTAMP("Timestamp", JsonType.STRING), // Unix timestamp
     DATE("Date", JsonType.STRING), // ISO 8601, e.g. "2012-04-23T18:25:43.511Z"
     COLOR("Color", JsonType.OBJECT), // RGB integers
-    TEMPERATURE("Temperature", JsonType.NUMBER);
+    TEMPERATURE("Temperature", JsonType.NUMBER),
+    CO2("CO2", JsonType.NUMBER),
+    HUMIDITY("Humidity", JsonType.NUMBER),
+    POWER("Power", JsonType.NUMBER),
+    CHARGE("Charge", JsonType.NUMBER),
+    ENERGY("Energy", JsonType.NUMBER),
+    WATER("Water", JsonType.NUMBER);
 
     private String value;
     private JsonType jsonType;

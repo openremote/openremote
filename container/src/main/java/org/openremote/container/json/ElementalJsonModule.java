@@ -42,7 +42,7 @@ public class ElementalJsonModule extends SimpleModule {
 
         @Override
         public T deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException, JsonProcessingException {
-            return (T) Json.parse(jsonParser.getCodec().readTree(jsonParser).toString());
+            return (T) Json.instance().parse(jsonParser.getCodec().readTree(jsonParser).toString());
         }
     }
 
