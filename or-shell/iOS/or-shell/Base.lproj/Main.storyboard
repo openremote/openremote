@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="11762" systemVersion="15G1212" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="BYZ-38-t0r">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="11762" systemVersion="15G1212" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="bdm-sN-YfF">
     <device id="retina4_7" orientation="portrait">
         <adaptation id="fullscreen"/>
     </device>
@@ -22,34 +22,35 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="aJW-f2-ydR">
-                                <rect key="frame" x="168" y="33" width="38" height="30"/>
+                                <rect key="frame" x="168" y="77" width="38" height="30"/>
                                 <state key="normal" title="Login"/>
                                 <connections>
                                     <action selector="showLoginPage:" destination="BYZ-38-t0r" eventType="touchUpInside" id="6ry-ga-qBX"/>
                                 </connections>
                             </button>
                             <webView contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="aA3-b4-vWk">
-                                <rect key="frame" x="0.0" y="138" width="375" height="529"/>
+                                <rect key="frame" x="0.0" y="182" width="375" height="485"/>
                                 <color key="backgroundColor" red="0.36078431370000003" green="0.38823529410000002" blue="0.4039215686" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                             </webView>
                         </subviews>
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
-                            <constraint firstItem="aA3-b4-vWk" firstAttribute="top" secondItem="aJW-f2-ydR" secondAttribute="bottom" constant="75" id="4Rn-fM-us5"/>
-                            <constraint firstAttribute="trailing" secondItem="aA3-b4-vWk" secondAttribute="trailing" id="MYe-5t-Scc"/>
-                            <constraint firstItem="aA3-b4-vWk" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leading" id="NNc-c1-bTX"/>
-                            <constraint firstItem="aJW-f2-ydR" firstAttribute="top" secondItem="y3c-jy-aDJ" secondAttribute="bottom" constant="13" id="Qaf-U3-a2y"/>
-                            <constraint firstItem="aA3-b4-vWk" firstAttribute="bottom" secondItem="wfy-db-euE" secondAttribute="top" id="fYg-wI-gHY"/>
-                            <constraint firstItem="aJW-f2-ydR" firstAttribute="centerX" secondItem="aA3-b4-vWk" secondAttribute="centerX" id="zEa-pj-opw"/>
+                            <constraint firstItem="aJW-f2-ydR" firstAttribute="top" secondItem="y3c-jy-aDJ" secondAttribute="bottom" constant="13" id="KhO-M2-RTI"/>
+                            <constraint firstItem="aA3-b4-vWk" firstAttribute="top" secondItem="aJW-f2-ydR" secondAttribute="bottom" constant="75" id="YIT-S5-CbK"/>
+                            <constraint firstItem="aJW-f2-ydR" firstAttribute="centerX" secondItem="aA3-b4-vWk" secondAttribute="centerX" id="cGT-x2-WJC"/>
+                            <constraint firstAttribute="trailing" secondItem="aA3-b4-vWk" secondAttribute="trailing" id="jQF-rv-iLW"/>
+                            <constraint firstItem="aA3-b4-vWk" firstAttribute="bottom" secondItem="wfy-db-euE" secondAttribute="top" id="pNG-GC-Kt1"/>
+                            <constraint firstItem="aA3-b4-vWk" firstAttribute="leading" secondItem="8bC-Xf-vdC" secondAttribute="leading" id="s4x-QS-N4k"/>
                         </constraints>
                     </view>
+                    <navigationItem key="navigationItem" id="MHe-jT-z4i"/>
                     <connections>
                         <outlet property="loginViewController" destination="aA3-b4-vWk" id="ir5-Dt-uzu"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="136.80000000000001" y="125.4872563718141"/>
+            <point key="canvasLocation" x="1076" y="125.4872563718141"/>
         </scene>
         <!--Viewcontroller-->
         <scene sceneID="MLT-6o-7zy">
@@ -67,7 +68,25 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="4ub-RT-0I6" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="901.60000000000002" y="108.39580209895054"/>
+            <point key="canvasLocation" x="1840.8" y="108.39580209895054"/>
+        </scene>
+        <!--Navigation Controller-->
+        <scene sceneID="2nJ-dY-aAU">
+            <objects>
+                <navigationController automaticallyAdjustsScrollViewInsets="NO" id="bdm-sN-YfF" sceneMemberID="viewController">
+                    <toolbarItems/>
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" id="gh1-2b-AO3">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="44"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                    </navigationBar>
+                    <nil name="viewControllers"/>
+                    <connections>
+                        <segue destination="BYZ-38-t0r" kind="relationship" relationship="rootViewController" id="ywy-Kk-w6E"/>
+                    </connections>
+                </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="4bK-rM-xm5" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="136.80000000000001" y="125.4872563718141"/>
         </scene>
     </scenes>
 </document>

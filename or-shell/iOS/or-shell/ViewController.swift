@@ -25,25 +25,30 @@ class ViewController: UIViewController {
     
     @IBAction func showLoginPage(_ sender: Any) {
         let http = Http()
-        let bundleString = Bundle.main.bundleIdentifier ?? "keycloak"
-        let keycloakConfig = Config.init(base: "http://192.168.99.100:8080/auth", authzEndpoint: "realms/master/protocol/openid-connect/auth", redirectURL: "\(bundleString)://oauth2Callback", accessTokenEndpoint: "realms/master/protocol/openid-connect/token", clientId: "or-manager", refreshTokenEndpoint: "realms/master/protocol/openid-connect/token", revokeTokenEndpoint: "realms/master/protocol/openid-connect/logout", isOpenIDConnect: true, userInfoEndpoint: "realms/master/protocol/openid-connect/userinfo", scopes: ["openid", "email", "profile"], clientSecret: nil, accountId: nil, isWebView: true)
-        /*let keycloakConfig = KeycloakConfig(
-         clientId: "or-manager",
-         host: "http://192.168.99.100:8080/",
-         realm: "master",
-         isOpenIDConnect: true)*/
-        //keycloakConfig.accountId = "admin"
+        let keycloakConfig = KeycloakConfig(
+            clientId: "or-manager",
+            host: "http://192.168.99.100:8080",
+            realm: "master",
+            isOpenIDConnect: true)
+        keycloakConfig.isWebView = true
         let oauth2Module = AccountManager.addAccountWith(config: keycloakConfig, moduleClass: OAuth2Module.self)
         http.authzModule = oauth2Module
-        oauth2Module.login {(accessToken: AnyObject?, claims: OpenIdClaim?, error: NSError?) in
-            if let userInfo = claims {
-                if let name = userInfo.name {
-                    print("name ",name)
-                }
+        oauth2Module.requestAccess { (response, error) in
+            var token : String
+            if response != nil {
+                token = response! as! String
+                print(token)
+            
+            let orVC = ORViewcontroller()
+            
+            self.navigationController?.pushViewController(orVC, animated: true)
+            } else if error != nil {
+                let alertVC = UIAlertController(title: "Error", message: error.debugDescription, preferredStyle: UIAlertControllerStyle.alert)
+                self.present(alertVC, animated: true, completion: nil)
             }
         }
-
     }
+
 }
 
 
