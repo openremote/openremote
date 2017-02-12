@@ -17,6 +17,7 @@ public class AgentService implements ContainerService {
     final protected InputStream deploymentXml;
     final protected CommandBuilder commandBuilder;
     final protected RulesProvider rulesProvider;
+    final protected String droolsClock;
 
     protected AgentContext agentContext;
 
@@ -24,6 +25,14 @@ public class AgentService implements ContainerService {
         this.deploymentXml = deploymentXml;
         this.commandBuilder = commandBuilder;
         this.rulesProvider = rulesProvider;
+        this.droolsClock = "realtime";
+    }
+
+    public AgentService(InputStream deploymentXml, CommandBuilder commandBuilder, RulesProvider rulesProvider, String droolsClock) {
+        this.deploymentXml = deploymentXml;
+        this.commandBuilder = commandBuilder;
+        this.rulesProvider = rulesProvider;
+        this.droolsClock = droolsClock;
     }
 
     @Override
@@ -35,7 +44,7 @@ public class AgentService implements ContainerService {
             new InMemorySensorStateHandler(),
             rulesProvider
         );
-        agentContext = new AgentContext("OpenRemoteAgent123", deployment);
+        agentContext = new AgentContext("OpenRemoteAgent123", deployment, droolsClock);
     }
 
     @Override

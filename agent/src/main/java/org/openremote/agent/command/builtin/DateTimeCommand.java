@@ -37,6 +37,7 @@ public class DateTimeCommand implements PushCommand, Runnable {
     private String command;
     private SimpleDateFormat dateFormatter;
     private SunriseSunsetCalculator calculator;
+    private Calendar now;
 
     /**
      * The polling interval which is used for the sensor update thread
@@ -96,19 +97,21 @@ public class DateTimeCommand implements PushCommand, Runnable {
         }
     }
 
+    public long getTime() { return now.getTimeInMillis(); }
+
     public String calculateData() {
         return calculateData("");
     }
 
     public String calculateData(String customTime) {
-        // customTime should be in format "hhhh:mm:ss" or "" for current time.
-        // hours filed can be more than one day. For example "25:00:00" is 1:00:00 the next day.
-        Calendar now = Calendar.getInstance(this.timezone);
+        // customTime should be in format "hhhh[:mm[:ss]]" or "" for current time.
+        // hours filed can be more than one day. For example "25" is 1 the following day.
+        now = Calendar.getInstance(this.timezone);
         if(customTime != null && !customTime.isEmpty()) {
             String[] timeParts = customTime.split(":");
             now.set(Calendar.HOUR_OF_DAY, Integer.parseInt(timeParts[0]));
-            now.set(Calendar.MINUTE, Integer.parseInt(timeParts[1]));
-            now.set(Calendar.SECOND, Integer.parseInt(timeParts[2]));
+            now.set(Calendar.MINUTE, timeParts.length>1 ? Integer.parseInt(timeParts[1]) : 0);
+            now.set(Calendar.SECOND, timeParts.length>2 ? Integer.parseInt(timeParts[2]) : 0);
         }
         if (command.equalsIgnoreCase("date")) {
             return dateFormatter.format(now.getTime());

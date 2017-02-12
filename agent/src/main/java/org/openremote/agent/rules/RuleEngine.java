@@ -20,6 +20,7 @@
  */
 package org.openremote.agent.rules;
 
+import org.drools.core.ClockType;
 import org.kie.api.KieBase;
 import org.kie.api.KieServices;
 import org.kie.api.builder.KieBuilder;
@@ -27,7 +28,6 @@ import org.kie.api.builder.KieFileSystem;
 import org.kie.api.builder.Message;
 import org.kie.api.builder.model.KieBaseModel;
 import org.kie.api.builder.model.KieModuleModel;
-import org.kie.api.builder.model.KieSessionModel;
 import org.kie.api.conf.EqualityBehaviorOption;
 import org.kie.api.conf.EventProcessingOption;
 import org.kie.api.io.Resource;
@@ -76,11 +76,6 @@ public class RuleEngine {
             .setDefault(true)
             .setEqualsBehavior(EqualityBehaviorOption.EQUALITY)
             .setEventProcessingMode(EventProcessingOption.STREAM);
-        KieSessionModel kieSessionModel = kieBaseModel.newKieSessionModel("OpenRemoteKSession")
-            .setDefault(true)
-            .setType(KieSessionModel.KieSessionType.STATEFUL);
-        // .setClockType(ClockTypeOption.get("pseudo")); // TODO: set in on the fly for tests
-
         KieFileSystem kfs = kieServices.newKieFileSystem();
         kfs.writeKModuleXML(kieModuleModel.toXML());
 
@@ -96,6 +91,10 @@ public class RuleEngine {
         // Use this option to ensure timer rules are fired even in passive mode (triggered by fireAllRules.
         // This ensures compatibility with the behaviour of previously used Drools 5.1
         kieSessionConfiguration.setOption(TimedRuleExectionOption.YES);
+        if(agentContext.getDroolsClock().equals("pseudo")) {
+            kieSessionConfiguration.setOption(ClockTypeOption.get("pseudo"));
+        }
+
         knowledgeSession = kb.newKieSession(kieSessionConfiguration, null);
 
         switchFacade = new SwitchFacade();

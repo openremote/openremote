@@ -81,7 +81,7 @@ when
         SensorState(sensorName=="TimerEEE", value!="N/A")
 then
   LOG.info("Sensor clock is:          "+$a+" "+$b+" "+$c+" "+$d);
-//  LOG.info("Drools SessionClock() is: "+(new java.util.Date(drools.getWorkingMemory().getSessionClock().getCurrentTime())).toString());
+  LOG.info("Drools SessionClock() is: "+(new java.util.Date(drools.getWorkingMemory().getSessionClock().getCurrentTime())).toString());
 end
 
 rule "--PSB: store values"
@@ -612,7 +612,7 @@ then
   commands.execute("VPRESENCE","No");
 end
 
-rule "PSB: Absence  after 15 min v02"
+rule "PSB: Absence after 15 min v02"
 timer(int: 15m)
 when
   SensorState(sensorName == "VPERSONSENSE", value == "0")
@@ -736,7 +736,7 @@ then
   String s = $v.toString();
   Double t = java.lang.Math.max(16.0, Double.parseDouble(s.substring(0,s.length()-1))-1); // 1 degree below comfort
   commands.execute("VHEATINGSETPOINT", String.format("%.1f",t));
-  commands.execute("VR1.TEMPERATURE", s);
+  commands.execute("VR1.TEMPERATURE", s); // But the user is not aware as on display there is comfort
 end
 
 rule "-PSB: heating setpoint Comfort"

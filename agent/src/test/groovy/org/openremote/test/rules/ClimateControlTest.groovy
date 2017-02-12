@@ -2,6 +2,7 @@ package org.openremote.test.rules
 
 import org.kie.api.KieServices
 import org.kie.api.io.Resource
+import org.kie.api.runtime.KieSession
 import org.openremote.agent.AgentService
 import org.openremote.agent.rules.RulesProvider
 import org.openremote.test.ContainerTrait
@@ -14,7 +15,6 @@ import java.util.stream.Stream
 
 class ClimateControlTest extends Specification implements ContainerTrait {
 
-    @Ignore
     def "Climate control basic test template"() {
 
         given: "a deployment with commands and sensors"
@@ -36,10 +36,12 @@ class ClimateControlTest extends Specification implements ContainerTrait {
 
         and: "the started server"
         def testCommandBuilder = new CustomTimeCommandBuilder();
+        def time = { $time -> testCommandBuilder.currentTime = $time }
         def agentService = new AgentService(
                 deploymentXml,
                 testCommandBuilder,
-                rulesProvider
+                rulesProvider,
+                "pseudo"
         )
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), [agentService])
@@ -47,6 +49,9 @@ class ClimateControlTest extends Specification implements ContainerTrait {
         def sensor = { $sensor -> agentService.getContext().queryValue($sensor) }
         def command = { $name, $arg -> agentService.getContext().getCommands().execute($name, $arg) }
         def conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
+
+        KieSession ksession = agentService.getContext().getDeployment().getRuleEngine().getKnowledgeSession()
+        testCommandBuilder.setClock(ksession.getSessionClock())
 
         // TODO Write tests
 
@@ -75,21 +80,18 @@ class ClimateControlTest extends Specification implements ContainerTrait {
 
         and: "the started server"
         def testCommandBuilder = new CustomTimeCommandBuilder();
-        testCommandBuilder.currentTime = "07:07:00"
         def agentService = new AgentService(
                 deploymentXml,
                 testCommandBuilder,
-                rulesProvider
+                rulesProvider,
+                "pseudo"
         )
+        testCommandBuilder.currentTime = "7"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), [agentService])
 
         def sensor = { $sensor -> agentService.getContext().queryValue($sensor) }
         def command = { $name, $arg -> agentService.getContext().getCommands().execute($name, $arg) }
-
-        // TODO: wait for answer from Drools forum how it should be used. It does not work now.
-        // KieSession ksession = agentService.getContext().getDeployment().getRuleEngine().getKnowledgeSession()
-        // PseudoClockScheduler clock = new PseudoClockScheduler(ksession)
 
         when: "give some time for initialization rules"
         def conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
@@ -152,7 +154,7 @@ class ClimateControlTest extends Specification implements ContainerTrait {
         cleanup: "the server should be stopped"
         stopContainer(container)
     }
-    
+
     def "Person sense test"() {
 
         given: "a deployment with commands and sensors"
@@ -176,17 +178,22 @@ class ClimateControlTest extends Specification implements ContainerTrait {
         and: "the started server"
         def testCommandBuilder = new CustomTimeCommandBuilder();
         def time = { $time -> testCommandBuilder.currentTime = $time }
-        time "8:25:00"
+        time "8:25"
         def agentService = new AgentService(
                 deploymentXml,
                 testCommandBuilder,
-                rulesProvider
+                rulesProvider,
+                "pseudo"
         )
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), [agentService])
 
         def sensor = { $sensor -> agentService.getContext().queryValue($sensor) }
         def command = { $name, $arg -> agentService.getContext().getCommands().execute($name, $arg) }
+
+        KieSession ksession = agentService.getContext().getDeployment().getRuleEngine().getKnowledgeSession()
+        testCommandBuilder.setClock(ksession.getSessionClock())
+        time "8:26"
 
         when: "Set time before going to office"
         def conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
@@ -207,22 +214,40 @@ class ClimateControlTest extends Specification implements ContainerTrait {
 
         then: "check if heating is in standby"
         conditions.eventually {
+            assert sensor("VPRESENCE") == "No"
             assert sensor("VHEATING") == "Stand-by"
             assert Double.parseDouble(sensor("VHEATINGSETPOINT")) == 19
+            assert sensor("VR1.TEMPERATURE") == "20.0°"
         }
+
         when: "so go in"
         command "FS.PIR", "on"
         conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
 
         then: "see if the arrival is registered"
         conditions.eventually {
+            testCommandBuilder.incDroolsClock()
             assert sensor("VNEXTACTION") == "Departure"
             assert sensor("VATA") == "10:00"
             assert sensor("VPERSONSENSE") == "0"
             assert sensor("VPRESENCE") == "Yes"
-            assert sensor("FS.PIR") == "off"
             assert sensor("VHEATING") == "Comfort"
+            assert sensor("VR1.TEMPERATURE") == "20.0°"
+            assert sensor("FS.PIR") == "off"
             assert Double.parseDouble(sensor("VHEATINGSETPOINT")) == 20
+        }
+
+        when: "Advance time 15m"
+        time "10:15"
+        conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
+
+        then: "Check if no presence"
+        conditions.eventually {
+            testCommandBuilder.incDroolsClock()
+            assert sensor("VPRESENCE") == "No"
+            assert sensor("VHEATING") == "Stand-by"
+            assert sensor("VR1.TEMPERATURE") == "20.0°"
+            assert Double.parseDouble(sensor("VHEATINGSETPOINT")) == 19
         }
 
         when: "go home at 4PM"
@@ -230,10 +255,10 @@ class ClimateControlTest extends Specification implements ContainerTrait {
         command "FS.PIR", "on"
         conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
 
-        then: "wait for PIR off"
+        then: "wait for presence"
         conditions.eventually {
-            assert sensor("VPERSONSENSE") == "1"
-            assert sensor("FS.PIR") == "off"
+            testCommandBuilder.incDroolsClock()
+            assert sensor("VPERSONSENSETIME") == "16:00:00"
         }
 
         when: "Go at midnight adjusting"
@@ -242,11 +267,13 @@ class ClimateControlTest extends Specification implements ContainerTrait {
 
         then: "check departure"
         conditions.eventually {
+            testCommandBuilder.incDroolsClock()
             assert sensor("VPRESENCE") == "No"
             assert sensor("VATD") == "16:00"
             assert sensor("VNEXTACTION") == "-"
             assert sensor("VHEATING") == "ECO"
             assert Double.parseDouble(sensor("VHEATINGSETPOINT")) == 16
+            assert sensor("VR1.TEMPERATURE") == "16.0°"
         }
 
         when: "Check updated arrival and departure times"

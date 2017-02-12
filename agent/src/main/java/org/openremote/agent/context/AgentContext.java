@@ -18,12 +18,20 @@ public class AgentContext {
 
     final protected String agentID;
     final protected Deployment deployment;
+    final protected String droolsClock;
 
     private volatile Boolean shutdownInProgress = false;
 
     public AgentContext(String agentID, Deployment deployment) {
         this.agentID = agentID;
         this.deployment = deployment;
+        this.droolsClock = "realtime";
+    }
+
+    public AgentContext(String agentID, Deployment deployment, String droolsClock) {
+        this.agentID = agentID;
+        this.deployment = deployment;
+        this.droolsClock = droolsClock;
     }
 
     public String getAgentID() {
@@ -37,6 +45,8 @@ public class AgentContext {
     public Commands getCommands() {
         return getDeployment().getCommands();
     }
+
+    public String getDroolsClock() { return droolsClock; }
 
     public synchronized void start() {
         if (shutdownInProgress)
