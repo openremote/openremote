@@ -21,3 +21,5 @@ out/
 manager/.factorypath
 or-shell/iOS/DerivedData
 or-shell/iOS/Pods
+frontend/bower_components
+or-shell/android/src/main/assets/bower_components
