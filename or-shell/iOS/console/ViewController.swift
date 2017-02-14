@@ -38,17 +38,17 @@ class ViewController: UIViewController {
             if response != nil {
                 token = response! as! String
                 print(token)
-            
-            let orVC = ORViewcontroller()
-            
-            self.navigationController?.pushViewController(orVC, animated: true)
+                
+                let orVC = ORViewcontroller()
+                
+                self.navigationController?.pushViewController(orVC, animated: true)
             } else if error != nil {
                 let alertVC = UIAlertController(title: "Error", message: error.debugDescription, preferredStyle: UIAlertControllerStyle.alert)
                 self.present(alertVC, animated: true, completion: nil)
             }
         }
     }
-
 }
+
 
 

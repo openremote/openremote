@@ -1,9 +1,9 @@
 //
 //  AppDelegate.swift
-//  or-shell
+//  console
 //
-//  Created by Eric Bariaux on 20/01/17.
-//  Copyright © 2017 OpenRemote. All rights reserved.
+//  Created by William Balcaen on 14/02/17.
+//  Copyright © 2017 TInSys. All rights reserved.
 //
 
 import UIKit
@@ -47,5 +47,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         NotificationCenter.default.post(notification)
         return true
     }
+
 }
 
