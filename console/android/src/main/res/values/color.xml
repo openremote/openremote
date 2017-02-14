@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools"
+           tools:ignore="UnusedResources">
+ 
+    <item name="black" type="color">#ff000000</item>
+    <item name="white" type="color">#ffffffff</item>
+
+    <item name="dark_grey" type="color">#ff455a64</item>
+    <item name="medium_grey" type="color">#ff919194</item>
+    <item name="light_grey" type="color">#ffcccccc</item>
+    <item name="bright_grey" type="color">#fff5f5f5</item>
+
+    <item name="dark_green" type="color">#ff006224</item>
+    <item name="medium_green" type="color">#ff49a942</item>
+    <item name="light_green" type="color">#ffc1d72f</item>
+
+    <item name="red" type="color">#ffe64a19</item>
+    <item name="yellow" type="color">#fffbc02d</item>
+    <item name="blue" type="color">#ff1976d2</item>
+    <item name="purple" type="color">#ff660092</item>
+
+</resources>

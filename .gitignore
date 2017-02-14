@@ -23,3 +23,5 @@ or-shell/iOS/DerivedData
 or-shell/iOS/Pods
 frontend/bower_components
 or-shell/android/src/main/assets/bower_components
+console/iOS/DerivedData
+console/iOS/Pods
