@@ -6,9 +6,13 @@
       }
       .small {
         --iron-icon-height: auto;
-        --iron-icon-width: 15px;
+        --iron-icon-width: 14px;
+        margin:0 7px;
       }
-
+      .small_height{
+        --iron-icon-height: auto;
+        --iron-icon-width: 28px;
+      }
       .container {
         position: relative;
         display: flex;
@@ -19,10 +23,14 @@
         padding: 10px;
         flex: 1;
       }
+      .container{
+        margin:15px 0;
+      }
+      .temp-icon{
+      }
       .container-column {
         box-sizing: border-box;
-        padding: 0 5px;
-        height:60px;
+        padding: 0 0 0 5px;
       }
       .container-column:first-child{
         padding-right:20px;
@@ -36,34 +44,34 @@
     </style>
      <div class="container">
       <div class="container-column">
-        <iron-icon class="small" src="../../images/panel/temperature_gauge_100.png"></iron-icon>
+        <iron-icon class="temp-icon" src="../../images/panel/temperature.png"></iron-icon>
       </div>
       <div class="container-column">Living Room</div>
       <div class="container-column">
-         <input-temperature size="small"></input-temperature>
+         <input-temperature data="{{temperatures}}" size="small"></input-temperature>
       </div>
     </div>
     <div class="container">
       <div class="container-column">
-        <iron-icon class="small" src="../../images/panel/temperature_gauge_100.png"></iron-icon>
+        <iron-icon class="temp-icon" src="../../images/panel/temperature.png"></iron-icon>
       </div>
       <div class="container-column">Bedroom</div>
       <div class="container-column">
-         <input-temperature size="small"></input-temperature>
+         <input-temperature data="{{temperatures}}" size="small"></input-temperature>
       </div>
     </div>
     <div class="container">
       <div class="container-column">
-        <iron-icon class="small" src="../../images/panel/temperature_gauge_100.png"></iron-icon>
+        <iron-icon class="temp-icon" src="../../images/panel/temperature.png"></iron-icon>
       </div>
       <div class="container-column">Bathroom</div>
       <div class="container-column">
-         <input-temperature size="small"></input-temperature>
+         <input-temperature data="{{temperatures}}" size="small"></input-temperature>
       </div>
     </div>
     <div class="container">
       <div class="container-column">
-        <iron-icon class="small" src="../../images/panel/alarm_off.png"></iron-icon>
+        <iron-icon class="small_height" src="../../images/panel/alarm_off.png"></iron-icon>
       </div>
       <div class="container-column">Alarm</div>
       <div class="container-column">
@@ -72,5 +80,13 @@
     </div>
   </template>
 
-   <script>Polymer({is:"template-scenes-input"});</script>
+   <script>Polymer({
+    is:"template-scenes-input",
+    properties: {
+      temperatures: Array
+    },
+    attached: function() {
+      this.temperatures = ["17.0","17.5","18.0","18.5","19.0","19.5","20.0","20.5","21.0","21.5","22.0","22.5","23.0","23.5","24.0","24.5","25.0"];
+    }
+ });</script>
 </dom-module></body></html>

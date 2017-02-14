@@ -6,6 +6,7 @@
 <link rel="import" href="../bower_components/app-route/app-location.html">
 <link rel="import" href="../bower_components/app-route/app-route.html">
 
+<link rel="import" href="../bower_components/iron-swiper/iron-swiper.html">
 <link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
 <link rel="import" href="../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../bower_components/iron-media-query/iron-media-query.html">
@@ -24,8 +25,11 @@
 <link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
 <link rel="import" href="../bower_components/paper-styles/color.html">
 
+<link rel="import" href="../bower_components/paper-date-picker/paper-date-picker.html">
+
 <link rel="import" href="openremote-login.html">
 <link rel="import" href="openremote-intro.html">
+<link rel="import" href="openremote-wizard.html">
 <link rel="import" href="components/input-temperature.html">
 <link rel="import" href="components/input-dropdown.html">
 <link rel="import" href="components/input-switch-blok.html">
@@ -39,203 +43,7 @@
     <iron-ajax auto url="../../../api/settings/current/get_current_settings.json" on-response="handleResponse" handle-as="json"></iron-ajax>
 
     <style>
-    a{
-      color:#FFFFFF;
-      text-decoration: none;
-      font-weight: 100;
-      font-family: 'Roboto', sans-serif;
-      font-size:16px;
-    }
-      app-drawer-layout{
-        position: relative;
-        z-index: 9999;
-
-      }
-      app-toolbar {
-        background-color: #374c4f;
-        color:#FFFFFF;
-      }
-      .header-layout{
-        z-index:999;
-      }
-      .main-header {
-        box-shadow: 0px 5px 6px -3px rgba(0, 0, 0, 0.4);
-      }
-      .page-overlay{
-        position: absolute;
-        width:100%;
-        height:100%;
-        top:0;
-        z-index: 999999;
-      }
-      .page-overlay-inner{
-        background-color: #f2f2f2;
-        top:0;
-        width:100%;
-        height:100%;
-        position: absolute;
-        overflow-y:scroll;
-      }
-
-      paper-tabs {
-        --paper-tabs-selection-bar-color: #c0d62e;
-        color:black;
-        background-color: rgba(255,255,255,1);
-        height:54px;
-      }
-      input[type="time"]{
-        background-color: transparent;
-        border:0;    
-        font-family: 'Roboto', sans-serif;
-        font-size:16px;
-        line-height:30px;
-      }
-
-      paper-tab {
-        --paper-tab-ink: #c0d62e;
-      }
-      [hidden] {
-        display: none !important;
-      }
-      paper-toggle-button.green { 
-          margin-left: auto;
-          float: right;   
-          opacity:1;
-        --paper-toggle-button-checked-bar-color: #374c4f;
-        --paper-toggle-button-checked-button-color:  #c0d62e;
-        --paper-toggle-button-checked-ink-color: #374c4f;
-      }
-       paper-toggle-button.center.green { 
-        float:none;
-        margin:auto;
-       }
-      .panel{
-        background-color:rgba(255,255,255,0.87);
-        margin:10px;
-        border-radius: 5px;
-      }
-      .panel.transparent{
-        background-color: transparent;
-      }
-      .inner-panel{
-        padding:15px;
-      }
-      .small {
-        --iron-icon-height: auto;
-        --iron-icon-width: 15px;
-      }
-      .normal {
-        --iron-icon-height: 30px;
-        --iron-icon-width: 30px;
-      }
-      .normal > ::content img {
-        width:auto!important;
-      }
-      .big {
-        --iron-icon-height: auto;
-        --iron-icon-width: 72px;
-        margin:auto;
-        display: block;
-      }
-      .background-image{
-        background-repeat: no-repeat;
-        background-position: center;
-        background-size:120px auto;
-      }
-      .panel paper-toggle-button{
-        margin:5px 0 0 0;
-      }
-      .panel .row span{
-        margin-left: 20px;
-      }
-      .center{
-        text-align: center;
-        margin: auto;
-        display: block;
-      }
-      .right{
-        float:right;
-      }
-      .row{
-        width:100%;
-        margin:10px 0;
-        clear:both;
-      }
-      .container {
-        @apply(--layout-horizontal);
-      }
-      .container {
-        margin:25px 0;
-        position: relative;
-        display: flex;
-        flex-flow: row wrap;
-      }
-      .container.no-margin {
-        margin:0;
-      }
-      .item {
-        box-sizing: border-box;
-        padding: 10px;
-        flex: 1;
-      }
-      .container-column {
-        box-sizing: border-box;
-        padding: 0 5px;
-        line-height:30px;
-      }
-
-      .container-column:first-child{
-        padding-right:20px;
-      }
-
-      .container-column:nth-child(2){
-        width:30%;
-      }
-      .container-column.col_2:nth-child(2){
-        width:50%;
-      }
-      .container-column-3{
-        width:33.3%;
-      }
-      .container-column span{
-        line-height:30px;
-      }
-      .container-column:last-child{
-        margin-left: auto;
-      }
-      .celsius:after{
-        content: "\00b0"
-      }
-      #settings-btn{
-        color:#FFFFFF;
-      }
-      .tab-link{
-        text-decoration: none;
-        color:#000000;    
-        display: flex;
-        font-weight: normal;
-        -ms-flex-direction: row;
-        -webkit-flex-direction: row;
-        flex-direction: row;
-        -ms-flex-align: center;
-        -webkit-align-items: center;
-        align-items: center;
-        -ms-flex-pack: center;
-        -webkit-justify-content: center;
-        justify-content: center;
-        -ms-flex: 1 1 auto;
-        -webkit-flex: 1 1 auto;
-        flex: 1 1 auto;
-
-      }
-      .full_width{
-        margin-top:20px;
-        width:100%;
-      }
-      .bg-darkgreen{
-        background-color: #374c4f;
-      }
-    }
+   
     </style>
       <app-location use-hash-as-path route="{{route}}"></app-location>
       <app-route
@@ -247,8 +55,8 @@
 
       <app-header-layout class="header-layout">
          <app-header id="header" effects="waterfall" fixed="">
-          <app-toolbar>
-            <div main-title="">Smart 61</div>
+          <app-toolbar class="app-toolbar-custom">
+            <div main-title=""><img height="20px" style="margin-top:5px;" src="/images/blok61_logo.png"/></div>
             <a id="settings-btn" href="#/Settings">
               <paper-icon-button icon="settings"></paper-icon-button>
             </a>
@@ -256,7 +64,7 @@
 
           <paper-tabs selected="[[routeData.view]]" attr-for-selected="name" autoselect autoselect-delay="1000">
             <template is="dom-repeat" items="{{data.menu}}">
-              <paper-tab name="{{item}}"><a class="tab-link" href="#/{{item}}">{{item}}</a></paper-tab>
+              <paper-tab name="{{item}}" link><a class="tab-link" href="#/{{item}}">{{item}}</a></paper-tab>
             </template>
           </paper-tabs>
 
@@ -265,8 +73,8 @@
       <iron-pages id="pages"  selected="[[routeData.view]]" attr-for-selected="name" fallback-selection="Login">
           <div name="Login" class="page-overlay" route="{{subroute}}">
             <div class="page-overlay-inner">
-              <app-toolbar>
-                <div main-title="">Smart 61</div>
+              <app-toolbar class="app-toolbar-custom">
+                <div main-title=""><img height="20px" style="margin-top:5px;" src="/images/blok61_logo.png"/></div>
               </app-toolbar>
                <div class="panel">
                 <div class="inner-panel">
@@ -275,14 +83,22 @@
                </div>
             </div>
           </div>
-          <div name="Intro" class="page-overlay" route="{{subroute}}">
+           <div name="Intro" class="page-overlay" route="{{subroute}}">
             <div class="page-overlay-inner">
-              <app-toolbar>
+              <app-toolbar  class="app-toolbar-custom" style="z-index:99;position:relative;">
+                <div main-title="">Introduction</div>
+              </app-toolbar>
+                  <openremote-intro  class="height-100"></openremote-intro>
+            </div>
+          </div>
+          <div name="Wizard" class="page-overlay" route="{{subroute}}">
+            <div class="page-overlay-inner">
+              <app-toolbar  class="app-toolbar-custom">
                 <paper-icon-button class="back-btn" icon="arrow-back" drawer-toggle=""></paper-icon-button>
-                <div main-title="">Smart 61</div>
+                <div main-title="">Scene Wizard</div>
               </app-toolbar>
                <div class="panel transparent">
-                  <openremote-intro></openremote-intro>
+                  <openremote-wizard></openremote-wizard>
                </div>
             </div>
           </div>
@@ -293,7 +109,7 @@
                     <div class="container-column">
                       <iron-icon class="normal" src="../images/panel/star.png"></iron-icon>
                     </div>
-                    <div class="container-column col_2">Full Smart 61</div>
+                    <div class="container-column col_2">Full Smart</div>
                     <div class="container-column">
                         <paper-toggle-button data-target="smart.fullsmart" checked="[[checkStatus(data.current_scene.smart.fullsmart)]]" class="green"></paper-toggle-button>
                     </div>
@@ -302,7 +118,6 @@
             </div>
              <div class="panel">
               <div class="inner-panel">
-                <label class="center">Scenes</label>
                   <input-switch-blok active="{{data.current_scene.label}}"></input-switch-blok>
               </div>
             </div>
@@ -314,7 +129,7 @@
                     <div class="container-column">
                       <iron-icon class="normal" src="../images/panel/light_on.png"></iron-icon>
                     </div>
-                    <div class="container-column col_2">Smart 61 - Lighting</div>
+                    <div class="container-column col_2">Smart Lighting</div>
                     <div class="container-column">
                       <paper-toggle-button data-target="smart.light" checked="[[checkStatus(data.current_scene.smart.light)]]" class="green"></paper-toggle-button>
                     </div>
@@ -323,7 +138,7 @@
             </div>
              <div class="panel">
               <div class="inner-panel">
-                <label class="center" id="lightning">Lights</label>
+                <img style="width:100%;" src="../images/lighting.png"/>
               </div>
             </div>
           </div>
@@ -334,7 +149,7 @@
                     <div class="container-column">
                       <iron-icon class="normal" src="../images/panel/home_on.png"></iron-icon>
                     </div>
-                    <div class="container-column col_2">Smart - Smart Start</div>
+                    <div class="container-column col_2">Smart Start</div>
                     <div class="container-column">
                       <paper-toggle-button data-target="smart.start" checked="[[checkStatus(data.current_scene.smart.start)]]" class="green"></paper-toggle-button>
                     </div>
@@ -343,9 +158,8 @@
             </div>
             <div class="panel">
               <div class="inner-panel">
-                <span class="center">Smart Start Devices</span>
                  <template is="dom-repeat" index="i" items="{{data.current_scene.start_devices}}">
-                      <div class="container">
+                      <div class="container no-margin-bottom">
                         <div class="container-column">
                           <iron-icon class="normal" src="../images/panel/home_on.png"></iron-icon>
                         </div>
@@ -353,13 +167,11 @@
                         <div class="container-column">
                           <span>{{item.label}}</span>
                         </div>
-                        <div class="container-column">
-                          <template is="dom-if" if="[[checkStatus(item.status)]]">
-                            <input type="time" value="{{item.time}}">
-                          </template>
+                         <div class="container-column"  style="margin-right: 10px; margin-left: auto;width:33px;height:33px; background-color:grey; font-size:11px;">
+                          <span class="t-white" style="font-weight:100;line-height:normal;text-align:center;display: block;">Nu aan</span>
                         </div>
-                        <div class="container-column">
-                            <paper-toggle-button data-target="start_devices.1.status" checked="[[checkStatus(item.status)]]" class="green"></paper-toggle-button>
+                        <div class="container-column" style="margin-left:0px;">
+                            <input type="time" value="{{item.time}}">
                         </div>
                       </div>
                   </template>
@@ -368,18 +180,28 @@
 
             <div class="panel">
               <div class="inner-panel">
-                <span class="center">Energy Monitor</span>
                  <div class="row background-image" style="background-image: url(../images/panel/energy_no_battery.png);">
                    <div class="container">
                     <div class="row">
-                      <div class="container-column-3 right">{{data.current_scene.energy.solar}}kW<div>Solar & Battery</div></div>
+
+                      <div class="container-column t-grey" style="margin-left:38px;position: absolute; margin-top: 52px;">
+                        <div class="t-black">+12%</div>Green
+                      </div>
+
+                      <div class="container-column right t-grey">
+                        <div class="row">
+                         <div class="t-black"><span class="t-grey">Solar & Battery </span><span style="float:right;margin-right:0px;">{{data.current_scene.energy.solar}}kW</span></div> 
+                        </div>
+                        <div class="row" style="width:87%;height:5px; background-color:#c0d62e;">
+                        </div>
+                        <div class="row" style="width:17%;height:5px; background-color:grey;">
+                        </div>
+                        <div class="row">
+                         <div class="t-black"><span class="t-grey">Main Power</span><span style="float:right;margin-right:0px;">{{data.current_scene.energy.usage}}kW</span></div> 
+                        </div>
                     </div>
-                     <div class="row">
-                      <div class="container-column-3 center">{{data.current_scene.energy.usage}}kW<div>Usage</div></div>
                     </div>
-                    <div class="row">
-                      <div class="container-column-3">{{data.current_scene.energy.main_power}}kW<div>Mains power</div></div>
-                    </div>
+
                   </div>
                 </div>
               </div>
@@ -393,7 +215,7 @@
                     <div class="container-column">
                       <iron-icon class="normal" src="../images/panel/alarm_large_off.png"></iron-icon>
                     </div>
-                    <div class="container-column col_2">Smart 61 - Safety</div>
+                    <div class="container-column col_2">Smart Safety</div>
                     <div class="container-column">
                       <paper-toggle-button data-target="smart.safety" checked="[[checkStatus(data.current_scene.smart.safety)]]" class="green"></paper-toggle-button>
                     </div>
@@ -402,10 +224,42 @@
             </div>
             <div class="panel">
               <div class="inner-panel">
-                <span class="center">Alarm</span>
-                 <div class="row">
-                  <iron-icon class="big" src="../images/panel/alarm_large_off.png"></iron-icon>
-                  <paper-toggle-button data-target="alarm" checked="[[checkStatus(data.current_scene.alarm)]]" class="green center"></paper-toggle-button>
+                <div class="container">
+                    <div class="container-column">
+                      <iron-icon class="large" src="../images/panel/alarm_large_off.png"></iron-icon>
+                    </div>
+                    <div class="container-column col_2" style="margin-top: 10px;" >Alarm <div class="t-grey">Activity</div></div>
+                    <div class="container-column">
+                      <paper-toggle-button data-target="alarm" style="margin-top: 28px;" checked="[[checkStatus(data.current_scene.alarm)]]" class="green center"></paper-toggle-button>
+                    </div>
+                </div>
+                <div class="container">
+                    <div class="container-column">
+                      <iron-icon class="normal" src="../images/panel/alarm_small_eye.png"></iron-icon>
+                    </div>
+                    <div class="container-column col_2">Living Room</div>
+                    <div class="container-column t-grey">Activity</div>
+                </div>
+                <div class="container">
+                    <div class="container-column">
+                      <iron-icon class="normal" src="../images/panel/alarm_small_eye.png"></iron-icon>
+                    </div>
+                    <div class="container-column col_2">Hallway</div>
+                    <div class="container-column t-grey">No Activity</div>
+                </div>
+                <div class="container">
+                    <div class="container-column">
+                      <iron-icon class="normal" src="../images/panel/alarm_small_eye.png"></iron-icon>
+                    </div>
+                    <div class="container-column col_2">Bedroom</div>
+                    <div class="container-column t-grey">No Activity</div>
+                </div>
+                <div class="container">
+                    <div class="container-column">
+                      <iron-icon class="normal" src="../images/panel/alarm_small_eye.png"></iron-icon>
+                    </div>
+                    <div class="container-column col_2">Bathroom</div>
+                    <div class="container-column t-grey">No Activity</div>
                 </div>
               </div>
             </div>
@@ -416,9 +270,9 @@
               <div class="inner-panel">
                 <div class="container no-margin">
                     <div class="container-column">
-                      <iron-icon class="normal" src="../images/panel/temperature_gauge_100.png"></iron-icon>
+                      <iron-icon class="normal temp-icon" src="../images/panel/temperature.png"></iron-icon>
                     </div>
-                    <div class="container-column col_2">Smart 61 - Climate</div>
+                    <div class="container-column col_2">Smart Climate</div>
                     <div class="container-column">
                       <paper-toggle-button data-target="smart.climate" checked="[[checkStatus(data.current_scene.smart.climate)]]" class="green"></paper-toggle-button>
                     </div>
@@ -427,117 +281,138 @@
             </div>
              <div class="panel">
               <div class="inner-panel">
-                <span class="center">Heating</span>
                 <div class="container">
-                  <div class="item"><span style="float:left">Living Room</span><span style="font-size:62px" class="celsius">{{data.current_scene.temperature_actual.living_room}}</span></div>
-                  <div class="item">
+                  <div class="container-column">
+                    <span style="display:block;">Living Room</span>
+                    <span style="margin-top:20px;font-size:62px;display:block;" class="t-grey celsius">{{data.current_scene.temperature_actual.living_room}}</span>
+                  </div>
+                  <div class="container-column margin-left-auto">
                      <input-temperature size="large" data="{{temperatures}}" active="{{data.current_scene.temperature_program.living_room}}"></input-temperature>
                   </div>
                 </div>
-              </div>
-            </div>
-            <div class="panel">
-              <div class="inner-panel">
-                <span class="center">Heating scenes</span>
-                  <div class="container">
+                <div class="container">
                     <div class="container-column">
-                      <iron-icon class="small" src="../images/panel/temperature_gauge_100.png"></iron-icon>
+                      <iron-icon class="small temp-icon" src="../images/panel/temperature.png"></iron-icon>
                     </div>
                     <div class="container-column">Bedroom</div>
-                    <div class="container-column celsius">{{data.current_scene.temperature_actual.bedroom}}</div>
+                    <div class="container-column celsius margin-left-auto t-grey">{{data.current_scene.temperature_actual.bedroom}}</div>
                     <div class="container-column">
                        <input-temperature size="small" data="{{temperatures}}" active="{{data.current_scene.temperature_program.bedroom}}"></input-temperature>
                     </div>
                   </div>
                   <div class="container">
                     <div class="container-column">
-                      <iron-icon class="small" src="../images/panel/temperature_gauge_100.png"></iron-icon>
+                      <iron-icon class="small temp-icon" src="../images/panel/temperature.png"></iron-icon>
                     </div>
                     <div class="container-column">Bathroom</div>
-                    <div class="container-column celsius">{{data.current_scene.temperature_actual.bathroom}}</div>
+                    <div class="container-column celsius margin-left-auto t-grey">{{data.current_scene.temperature_actual.bathroom}}</div>
                     <div class="container-column">
                        <input-temperature size="small" data="{{temperatures}}" active="{{data.current_scene.temperature_program.bathroom}}"></input-temperature>
                     </div>
                   </div>
               </div>
-            </div>
+              </div>
+            
             <div class="panel">
               <div class="inner-panel">
-                <span class="center">Ventilation</span>
-                
                   <div class="container">
                     <div class="container-column">
                       <iron-icon class="normal" src="../images/panel/ventilation.png"></iron-icon>
                     </div>
-                    <div class="container-column col_2">Air flow speed</div>
+                    <div class="container-column col_2">Ventilation</div>
                     <div class="container-column">
                        <input-dropdown data="{{ventilation_options}}" active="{{data.current_scene.ventilation}}"></input-dropdown>
                     </div>
-                </div>
+                  </div>
               </div>
             </div>
           </div>
 
           <div name="Settings" class="page-overlay" route="{{subroute}}">
             <div class="page-overlay-inner"> 
-              <app-toolbar>
+              <app-toolbar  class="app-toolbar-custom">
                 <paper-icon-button class="back-btn" icon="arrow-back" drawer-toggle=""></paper-icon-button>
-                <div main-title="">Smart 61</div>
+                <div main-title="">Settings</div>
                 <a href="#/Login" on-click="logOut" class="right">Log out</a>
               </app-toolbar>
               <div class="panel">
-                <div class="inner-panel" on-click="toggleVacation">
-                  <span class="center">Vacation Settings</span>
+                <div class="inner-panel-10">
+                  <span class="center" on-click="toggleVacation">Vacation</span>
                   <iron-collapse id="collapseVacation">
-                    <p>Vacation</p>
+                   <div class="container">
+                    <div class="container-column col_2">On vacation until</div>
+                    <div class="container-column col_2">
+                      <input id="vacation_date" type="date" class="bg-darkgreen"/>
+                    </div>
+                     
+                    </div>
                   </iron-collapse>
                 </div>
               </div>
               <div class="panel">                
-                <div class="inner-panel" on-click="toggleWeek">
-                  <span class="center">Predicted Week Schedule:</span>
+                <div class="inner-panel-10">
+                  <span class="center"  on-click="toggleWeek">Presence schedule</span>
                   <iron-collapse id="collapseWeek">
-                    <table-schedule data="{{data.predicted_schedule.data}}"  header="{{data.predicted_schedule.header}}"></table-schedule>
-                    <a class=""><paper-button  class="bg-darkgreen" onclick="actions.open()">EDIT</paper-button></a>
+                   <div class="container"><span>Self Learning</span><paper-toggle-button data-target="" style="margin-left:auto;" class="green"></paper-toggle-button></div>
+                      
+                    <table-schedule-edit data="{{data.predicted_schedule.data}}"  header="{{data.predicted_schedule.header}}"></table-schedule-edit>
+                    <div class="row">
+                      <div style="width: 178px; display: flex; margin-left: auto;" >
+                        <paper-button class="paper-button-default" onclick="">CANCEL</paper-button>
+                        <paper-button class="bg-darkgreen t-white paper-button-default" onclick="">SAVE</paper-button>
+                      </div>
+                    </div>
                   </iron-collapse>
                 </div>
               </div>
               <div class="panel">
-                <div class="inner-panel" on-click="toggleScenes">
-                  <span class="center">Scene settings</span>
+                <div class="inner-panel-10">
+                  <span class="center"  on-click="toggleScenes">Scenes</span>
                   <iron-collapse id="collapseScenes">
-                  <div class="row">
-                      <a href="#/Intro"><paper-button class="full_width bg-darkgreen">Scene Wizard</paper-button></a>
-                    </div>
                     <div class="row">
-                      <table-toggles data="{{data.alarms.data}}"  header="{{data.alarms.header}}"></table-toggles>                  
+                      <table-schedule data="{{data.alarms.data}}"  header="{{data.alarms.header}}"></table-toggles>                  
                     </div>
                     <div class="row">
                       <table-schedule data="{{data.scenes.data}}"  header="{{data.scenes.header}}"></table-schedule>  
                     </div>
+                    <div class="row">
+                      <a href="#/Wizard"><paper-button style="margin:0;" class="full_width bg-darkgreen paper-button-default">Scene Wizard</paper-button></a>
+                    </div>
                   </div>
                 </iron-collapse>
               </div>
+              <div class="panel" style="background-color:transparent;">
+                <div class="inner-panel">
+                  <p class="center" style="color:rgba(0,0,0,0.57);font-weight:100;font-size:13px;">Blok 61 - Appartement 235</p>
+              </div>
             </div>
-            <paper-dialog id="scrolling">
-              
-              <table-schedule data="{{data.predicted_schedule.data}}"  header="{{data.predicted_schedule.header}}"></table-schedule>
-              <div class="buttons">
-                <paper-button dialog-dismiss>Cancel</paper-button>
-                <paper-button dialog-confirm autofocus>OK</paper-button>
-              </div>
-            </paper-dialog>
-
-            <paper-dialog id="actions" withBackdrop>
-              <table-schedule-edit data="{{data.predicted_schedule.data}}"  header="{{data.predicted_schedule.header}}"></table-schedule-edit>
-              <div class="buttons">
-                <paper-button dialog-dismiss>Cancel</paper-button>
-                <paper-button dialog-confirm autofocus>Save</paper-button>
-              </div>
-            </paper-dialog>
+            </div>
           </div>
       </iron-pages>
-    
+      <paper-dialog id="dialog_date" class="paper-date-picker-dialog" with-backdrop
+          on-iron-overlay-closed="dismissDialog">
+          <paper-date-picker id="picker" date="[[date]]"></paper-date-picker>
+          <div class="buttons">
+            <paper-button class="paper-button-default t-black" dialog-dismiss>Cancel</paper-button>
+            <paper-button class="paper-button-default bg-darkgreen t-white" dialog-confirm>SAVE</paper-button>
+          </div>
+        </paper-dialog>
+        <paper-dialog id="scrolling">
+          
+          <table-schedule data="{{data.predicted_schedule.data}}"  header="{{data.predicted_schedule.header}}"></table-schedule>
+          <div class="buttons">
+            <paper-button dialog-dismiss>Cancel</paper-button>
+            <paper-button dialog-confirm autofocus>OK</paper-button>
+          </div>
+        </paper-dialog>
+
+        <paper-dialog id="actions" withBackdrop>
+          <table-schedule-edit data="{{data.predicted_schedule.data}}" header="{{data.predicted_schedule.header}}"></table-schedule-edit>
+          <div class="buttons">
+            <paper-button class="paper-button-default" dialog-dismiss>Cancel</paper-button>
+            <paper-button class="paper-button-default bg-darkgreen" dialog-confirm autofocus>SAVE</paper-button>
+          </div>
+        </paper-dialog>
   </template>
 
   <script>
@@ -565,6 +440,17 @@
           behaviors: [
             Polymer.IronOverlayBehavior,
           ],
+        },
+        dismissDialog: function(e,r){
+          if(r.confirmed){
+            var picker = document.getElementById("picker");
+            console.log();
+            var d = picker.date;
+
+            var date_string = d.getFullYear().toString()+ '-'+ ("0" + (d.getMonth() + 1)).slice(-2)+'-'+ ("0" + d.getDate()).slice(-2);
+            var dateInput = document.getElementById("vacation_date");
+            dateInput.value = date_string;
+          }
         },
         toggleVacation: function() {
            this.$.collapseVacation.toggle();

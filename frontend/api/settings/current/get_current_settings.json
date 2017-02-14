@@ -1,6 +1,7 @@
 {
   "user_id": "1",
-  "menu" : ["Home","Light","Start","Safety","Climate"],
+  "appartment_name": "253",
+  "menu" : ["Home","Start","Safety","Climate"],
   "current_scene": {
     "label": "Evening",
     "smart": {
@@ -11,14 +12,14 @@
       "climate": "false"
     },
     "start_devices": [
-      {"label":"Dishwasher", "time": "15:30", "status": "false"},
-      {"label":"Washer ", "time": "12:30", "status": "true"},
-      {"label":"Dryer ", "time": "12:30", "status": "true"}
+      {"label":"Dishwasher", "time": "15:30"},
+      {"label":"Washer ", "time": "12:30"},
+      {"label":"Dryer ", "time": "12:30"}
     ],
     "energy" : {"usage": "0.9", "main_power": "0", "solar": "0.9"},
     "alarm": "true",
     "temperature_actual": {
-      "living_room": "18.0",
+      "living_room": "18",
       "bedroom" : "20.5",
       "bathroom": "18.1"
     },
@@ -30,7 +31,7 @@
     "ventilation": "Low"
   },
   "scenes":{
-    "header":["Climate","Home","Away","Evening","Night"],
+    "header":["Climate","Home","Away","Eve","Night"],
     "data":[
       ["Living","21", "19", "22", "18"],
       ["Bed","21", "19", "22", "18"],
@@ -38,13 +39,13 @@
     ]
   },
   "alarms":{
-    "header":["Alarm","Home","Away","Evening","Night"],
+    "header":["Alarm","Home","Away","Eve","Night"],
     "data":[
-      ["Arm","true", "false", "false", "false"]
+      [" ","on", "off", "on", "off"]
     ]
   },
   "predicted_schedule":{
-    "header":["","Home","Away","Evening","Night"],
+    "header":["","Home","Away","Eve","Night"],
     "data":[
       ["Mon","09:00", "10:00", "17:00", "23:00"],
       ["Tue","09:00", "10:00", "17:00", "23:00"],
