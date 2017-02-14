@@ -25,3 +25,4 @@ frontend/bower_components
 or-shell/android/src/main/assets/bower_components
 console/iOS/DerivedData
 console/iOS/Pods
+manager/server/conf/console/master/bower_components
