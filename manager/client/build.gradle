@@ -3,17 +3,20 @@ evaluationDependsOn(resolveProject(":manager:shared").path)
 apply plugin: "java"
 apply plugin: "distribution"
 
+configurations {
+    gwtDev
+}
+
 dependencies {
 
     compile resolveProject(":manager:shared")
 
     compile "com.google.gwt:gwt-user:$gwtVersion"
-    compile "com.google.gwt:gwt-dev:$gwtVersion"
-    compile("com.google.gwt.inject:gin:$ginVersion") {
-        exclude module: "cglib"
-    }
-    compile "cglib:cglib:$cglibVersion"
+    compile("com.google.gwt.inject:gin:$ginVersion")
     compile "com.github.nmorel.gwtjackson:gwt-jackson:$gwtJacksonVersion"
+
+    // This is not on regular classpath, only used when compiling GWT/running codeserver
+    gwtDev "com.google.gwt:gwt-dev:$gwtVersion"
 }
 
 def gwtOutputDir = "${project.buildDir}/gwt/out"
@@ -24,7 +27,7 @@ def gwtLauncherDir = "${project.projectDir}/src/main/webapp/gwt"
 
 task compileGwt(dependsOn: classes, type: JavaExec) {
 
-    inputs.source sourceSets.main.java.srcDirs
+    inputs.file(sourceSets.main.java.srcDirs).skipWhenEmpty()
     inputs.dir sourceSets.main.output.resourcesDir
     outputs.dir gwtOutputDir
 
@@ -34,7 +37,8 @@ task compileGwt(dependsOn: classes, type: JavaExec) {
 
     main = "com.google.gwt.dev.Compiler"
     classpath {
-        [sourceSets.main.java.srcDirs,
+        [configurations.gwtDev,
+         sourceSets.main.java.srcDirs,
          sourceSets.main.output.resourcesDir,
          sourceSets.main.output.classesDir,
          sourceSets.main.compileClasspath]
@@ -93,7 +97,8 @@ task gwtSuperDev(dependsOn: classes, type: JavaExec) {
 
     main = "com.google.gwt.dev.codeserver.CodeServer"
     classpath {
-        [sourceSets.main.java.srcDirs,
+        [configurations.gwtDev,
+         sourceSets.main.java.srcDirs,
          sourceSets.main.output.resourcesDir,
          sourceSets.main.output.classesDir,
          sourceSets.main.compileClasspath]
