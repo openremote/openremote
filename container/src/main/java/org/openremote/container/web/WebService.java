@@ -28,6 +28,7 @@ import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.LoginConfig;
 import io.undertow.servlet.api.ServletInfo;
+import io.undertow.util.HttpString;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.ResteasyDeployment;
@@ -62,9 +63,12 @@ public abstract class WebService implements ContainerService {
     public static final String WEBSERVER_LISTEN_PORT = "WEBSERVER_LISTEN_PORT";
     public static final int WEBSERVER_LISTEN_PORT_DEFAULT = 8080;
 
+    // Authentication requests requires a realm, either we receive this in a header or we extract it (e.g.
+    // from request path segment) and set it as a header before processing the request
+    public static final String REQUEST_HEADER_REALM = "Auth-Realm";
+
     public static final String API_PATH = "/api";
     public static final String JSAPI_PATH = "/jsapi";
-    public static final String REQUEST_REALM_PARAM = "requestRealm";
     protected final Pattern PATTERN_REALM_ROOT = Pattern.compile("/([a-zA-Z0-9\\-_]+)/?");
     protected final Pattern PATTERN_REALM_SUB = Pattern.compile("/([a-zA-Z0-9\\-_]+)/(.*)");
 
@@ -179,21 +183,16 @@ public abstract class WebService implements ContainerService {
                 LOG.fine("Serving API call: " + requestPath);
                 String realm = realmSubMatcher.group(1);
 
-                // Move the realm from path segment to query parameter
+                // Move the realm from path segment to header
+                exchange.getRequestHeaders().put(HttpString.tryFromString(REQUEST_HEADER_REALM), realm);
+
+                // Rewrite path, remove realm segment
                 URI apiUrl = fromUri(exchange.getRequestURL())
                     .replacePath(API_PATH).path(realmSubMatcher.group(2))
-                    .replaceQuery(exchange.getQueryString()).queryParam(REQUEST_REALM_PARAM, realm)
                     .build();
-
                 exchange.setRequestURI(apiUrl.toString(), true);
                 exchange.setRequestPath(apiUrl.getPath());
                 exchange.setRelativePath(apiUrl.getPath());
-
-                // This is probably the only actual source of query details for Resteasy
-                exchange.setQueryString(apiUrl.getRawQuery());
-
-                // Just to make it look nice
-                exchange.addQueryParam(REQUEST_REALM_PARAM, realm);
 
                 apiHandler.handleRequest(exchange);
                 return;

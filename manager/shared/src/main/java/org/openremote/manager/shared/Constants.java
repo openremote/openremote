@@ -21,8 +21,7 @@ package org.openremote.manager.shared;
 
 public interface Constants {
 
-    String APP_NAME = "OpenRemote Manager";
-    String APP_CLIENT_ID = "or-manager";
+    String KEYCLOAK_CLIENT_ID = "openremote";
     String MASTER_REALM = "master";
     String MASTER_REALM_ADMIN_USER = "admin";
     int ACCESS_TOKEN_LIFESPAN_SECONDS = 300; // 5 minutes

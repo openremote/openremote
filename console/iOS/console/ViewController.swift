@@ -26,7 +26,7 @@ class ViewController: UIViewController {
     @IBAction func showLoginPage(_ sender: Any) {
         let http = Http()
         let keycloakConfig = KeycloakConfig(
-            clientId: "or-manager",
+            clientId: "openremote",
             host: "http://192.168.99.100:8080",
             realm: "master",
             isOpenIDConnect: true)

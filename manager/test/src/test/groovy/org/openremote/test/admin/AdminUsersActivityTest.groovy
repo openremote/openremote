@@ -50,7 +50,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         def accessToken = authenticate(
                 container,
                 realm,
-                APP_CLIENT_ID,
+                KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), DEMO_ADMIN_PASSWORD, DEMO_ADMIN_PASSWORD_DEFAULT)
         ).token

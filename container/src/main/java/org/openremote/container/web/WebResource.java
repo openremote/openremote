@@ -22,14 +22,10 @@ package org.openremote.container.web;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.representations.IDToken;
-import org.openremote.container.Constants;
 import org.openremote.container.Container;
 
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.SecurityContext;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 
@@ -40,6 +36,9 @@ public class WebResource {
 
     @Context
     protected UriInfo uriInfo;
+
+    @Context
+    protected HttpHeaders httpHeaders;
 
     @Context
     protected SecurityContext securityContext;
@@ -63,14 +62,14 @@ public class WebResource {
     }
 
     /**
-     * Will try to access the realm from query parameters. This works even if the
-     * current caller is not authenticated, as the query parameter will be set on
-     * all API requests by the {@link WebService)}.
+     * Will try to access the realm from request header. This works even if the
+     * current caller is not authenticated, as the header will be set on
+     * all API requests by the {@link WebService)}, extracted from a request path segment.
      */
     public String getRealm() {
-        String realm = uriInfo.getQueryParameters().getFirst(WebService.REQUEST_REALM_PARAM);
+        String realm = httpHeaders.getHeaderString(WebService.REQUEST_HEADER_REALM);
         if (realm == null || realm.length() == 0) {
-            throw new WebApplicationException("Missing realm parameter", BAD_REQUEST);
+            throw new WebApplicationException("Missing header '" + WebService.REQUEST_HEADER_REALM + "':", BAD_REQUEST);
         }
         return realm;
     }

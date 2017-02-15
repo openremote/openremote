@@ -17,7 +17,7 @@
             var keycloakConfig = {
                 url: '/auth',
                 realm: window.location.pathname.split('/')[1],
-                clientId: "or-manager"
+                clientId: "openremote"
             };
             window.keycloak = Keycloak(keycloakConfig);
             window.keycloak.init({onLoad: 'login-required'})

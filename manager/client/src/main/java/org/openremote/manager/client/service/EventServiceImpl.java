@@ -175,7 +175,7 @@ public class EventServiceImpl implements EventService {
                 LOG.fine("Connecting to event websocket: " + serviceUrl);
 
                 String authenticatedServiceUrl = serviceUrl
-                    + "?requestRealm=" + securityService.getRealm()
+                    + "?Auth-Realm=" + securityService.getRealm()
                     + "&Authorization=Bearer " + securityService.getToken();
 
                 webSocket = Browser.getWindow().newWebSocket(authenticatedServiceUrl);

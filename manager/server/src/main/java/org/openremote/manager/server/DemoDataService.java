@@ -26,6 +26,7 @@ import org.apache.log4j.Logger;
 import org.keycloak.admin.client.resource.*;
 import org.keycloak.representations.idm.*;
 import org.openremote.manager.server.agent.AgentAttributes;
+import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.model.asset.ThingAttribute;
 import org.openremote.manager.server.agent.ThingAttributes;
 import org.openremote.model.asset.ProtocolConfiguration;
@@ -59,6 +60,9 @@ public class DemoDataService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(DemoDataService.class.getName());
 
+    // We use this client ID to access Keycloak because by default it allows obtaining
+    // an access token from authentication directly, which gives us full access to import/delete
+    // demo data as needed.
     public static final String ADMIN_CLI_CLIENT_ID = "admin-cli";
 
     public static final String DEMO_IMPORT_DATA = "DEMO_IMPORT_DATA";
@@ -133,6 +137,7 @@ public class DemoDataService implements ContainerService {
 
         masterRealm.setDisplayName("Master");
 
+        // Set theme, timeouts, etc.
         identityService.configureRealm(masterRealm);
 
         realmResource.update(masterRealm);
@@ -140,7 +145,7 @@ public class DemoDataService implements ContainerService {
         // Find out if there is a client already present for this application, if so, delete it
         fromCallable(clientsResource::findAll)
             .flatMap(Observable::from)
-            .filter(clientRepresentation -> clientRepresentation.getClientId().equals(APP_CLIENT_ID))
+            .filter(clientRepresentation -> clientRepresentation.getClientId().equals(KEYCLOAK_CLIENT_ID))
             .map(ClientRepresentation::getId)
             .subscribe(clientObjectId -> {
                 clientsResource.get(clientObjectId).remove();
@@ -148,7 +153,8 @@ public class DemoDataService implements ContainerService {
 
         identityService.createClientApplication(accessToken, masterRealm.getRealm());
 
-        String clientObjectId = fromCallable(() -> clientsResource.findByClientId(APP_CLIENT_ID))
+        // Get the application client ID (roles are assigned at the client app level)
+        String clientObjectId = fromCallable(() -> clientsResource.findByClientId(KEYCLOAK_CLIENT_ID))
             .flatMap(Observable::from)
             .map(ClientRepresentation::getId)
             .toBlocking().singleOrDefault(null);
@@ -156,9 +162,10 @@ public class DemoDataService implements ContainerService {
         ClientResource clientResource = clientsResource.get(clientObjectId);
         RolesResource rolesResource = clientResource.roles();
 
-        // Give admin all roles (we can only check realm _or_ application roles in @RolesAllowed)!
-        RoleRepresentation readRole = rolesResource.get("read").toRepresentation();
-        RoleRepresentation writeRole = rolesResource.get("write").toRepresentation();
+        // Give admin all roles on application client level (we can only check
+        // realm _or_ application client roles in @RolesAllowed)!
+        RoleRepresentation readRole = rolesResource.get(ClientRole.READ.getValue()).toRepresentation();
+        RoleRepresentation writeRole = rolesResource.get(ClientRole.WRITE.getValue()).toRepresentation();
 
         fromCallable(() -> usersResource.search(MASTER_REALM_ADMIN_USER, null, null, null, null, null))
             .flatMap(Observable::from)

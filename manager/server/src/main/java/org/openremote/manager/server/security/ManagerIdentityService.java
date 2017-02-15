@@ -31,10 +31,10 @@ import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.KeycloakResource;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.Constants;
+import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
@@ -51,7 +51,7 @@ public class ManagerIdentityService extends IdentityService {
     @Override
     public void init(Container container) throws Exception {
         this.container = container;
-        setClientId(Constants.APP_CLIENT_ID);
+        setClientId(Constants.KEYCLOAK_CLIENT_ID);
         super.init(container);
         enableAuthProxy(container.getService(WebService.class));
 
@@ -120,7 +120,7 @@ public class ManagerIdentityService extends IdentityService {
     public void createClientApplication(String bearerAuth, String realm) {
         ClientsResource clientsResource = getRealms(bearerAuth).realm(realm).clients();
         ClientRepresentation client = createClientApplication(
-            realm, APP_CLIENT_ID, APP_NAME, container.isDevMode()
+            realm, KEYCLOAK_CLIENT_ID, "OpenRemote", container.isDevMode()
         );
         clientsResource.create(client);
         client = clientsResource.findByClientId(client.getClientId()).get(0);
@@ -141,19 +141,19 @@ public class ManagerIdentityService extends IdentityService {
     }
 
     public void addDefaultRoles(RolesResource rolesResource) {
-        rolesResource.create(new RoleRepresentation("read", "Read all data", false));
-        rolesResource.create(new RoleRepresentation("write", "Write all data", false));
 
-        rolesResource.create(new RoleRepresentation("read:map", "View map", false));
-        rolesResource.create(new RoleRepresentation("read:assets", "Read context broker assets", false));
-        rolesResource.get("read").addComposites(Arrays.asList(
-            rolesResource.get("read:map").toRepresentation(),
-            rolesResource.get("read:assets").toRepresentation()
-        ));
+        for (ClientRole clientRole : ClientRole.values()) {
+            rolesResource.create(clientRole.getRepresentation());
+        }
 
-        rolesResource.create(new RoleRepresentation("write:assets", "Write context broker assets", false));
-        rolesResource.get("write").addComposites(Arrays.asList(
-            rolesResource.get("write:assets").toRepresentation()
-        ));
+        for (ClientRole clientRole : ClientRole.values()) {
+            if (clientRole.getComposites() == null)
+                continue;
+            List<RoleRepresentation> composites = new ArrayList<>();
+            for (ClientRole composite : clientRole.getComposites()) {
+                composites.add(rolesResource.get(composite.getValue()).toRepresentation());
+            }
+            rolesResource.get(clientRole.getValue()).addComposites(composites);
+        }
     }
 }

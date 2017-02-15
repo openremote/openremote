@@ -91,7 +91,7 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
 
     @Override
     public void start() {
-        Window.setTitle(Constants.APP_NAME);
+        Window.setTitle("OpenRemote Manager");
         RootPanel.get().add(appView);
         appView.setPresenter(this);
         placeHistoryHandler.handleCurrentHistory();

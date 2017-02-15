@@ -23,7 +23,7 @@ import spock.lang.Specification
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.server.DemoDataService.DEMO_ADMIN_PASSWORD
 import static org.openremote.manager.server.DemoDataService.DEMO_ADMIN_PASSWORD_DEFAULT
-import static org.openremote.manager.shared.Constants.APP_CLIENT_ID
+import static org.openremote.manager.shared.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.manager.shared.Constants.MASTER_REALM
 import static org.openremote.manager.shared.Constants.MASTER_REALM_ADMIN_USER
 
@@ -49,7 +49,7 @@ class MapActivityTest extends Specification implements ContainerTrait, GwtClient
         def accessToken = authenticate(
                 container,
                 realm,
-                APP_CLIENT_ID,
+                KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), DEMO_ADMIN_PASSWORD, DEMO_ADMIN_PASSWORD_DEFAULT)
         ).token

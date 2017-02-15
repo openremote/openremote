@@ -24,9 +24,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
+
+import static org.openremote.container.web.WebService.REQUEST_HEADER_REALM;
 
 public class FileServlet extends AbstractFileServlet {
 
@@ -50,9 +53,13 @@ public class FileServlet extends AbstractFileServlet {
         this.alreadyZippedExtensions = alreadyZippedExtensions;
     }
 
+    public boolean isSecured() {
+        return requiredRoles != null && requiredRoles.length > 0;
+    }
+
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        if (requiredRoles != null && requiredRoles.length > 0) {
+        if (isSecured()) {
             if (request.authenticate(response)) {
                 boolean userHasAllRoles = true;
                 for (String requiredRole : requiredRoles) {
@@ -63,7 +70,7 @@ public class FileServlet extends AbstractFileServlet {
                     LOG.fine("User has all roles to access: " + request.getPathInfo());
                     super.service(request, response);
                 } else {
-                    LOG.fine("User doesn't have the roles to access: " + request.getPathInfo());
+                    LOG.fine("User doesn't have the required roles '" + Arrays.toString(requiredRoles) + "' to access: " + request.getPathInfo());
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
                 }
             } else {
@@ -82,7 +89,24 @@ public class FileServlet extends AbstractFileServlet {
         }
         while (relativePath.startsWith("/"))
             relativePath = relativePath.substring(1);
-        File file = new File(base, relativePath);
+
+        File actualBase = base;
+
+        // If secured, serve files from a sub-directory that represents the authenticated realm
+        if (isSecured()) {
+            String realm = request.getHeader(REQUEST_HEADER_REALM);
+            if (realm == null || realm.length() ==0) {
+                LOG.fine("Ignoring request, secured service needs request header: " + REQUEST_HEADER_REALM);
+                return null;
+            }
+            actualBase = new File(base, realm);
+            if (!actualBase.isDirectory()) {
+                LOG.fine("Ignoring request, missing realm content directory: " + actualBase.getAbsolutePath());
+                return null;
+            }
+        }
+
+        File file = new File(actualBase, relativePath);
         LOG.fine("Serving file: " + file.getAbsolutePath());
         return file;
     }

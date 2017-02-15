@@ -183,7 +183,7 @@ public class UserResourceImpl extends WebResource implements UserResource {
                 managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).roles();
             ClientsResource clientsResource =
                 managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).clients();
-            String clientId = clientsResource.findByClientId(APP_CLIENT_ID).get(0).getId();
+            String clientId = clientsResource.findByClientId(KEYCLOAK_CLIENT_ID).get(0).getId();
             RolesResource rolesResource = clientsResource.get(clientId).roles();
 
             List<RoleRepresentation> allRoles = rolesResource.list();
@@ -222,7 +222,7 @@ public class UserResourceImpl extends WebResource implements UserResource {
                 managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).roles();
             ClientsResource clientsResource =
                 managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).clients();
-            String clientId = clientsResource.findByClientId(APP_CLIENT_ID).get(0).getId();
+            String clientId = clientsResource.findByClientId(KEYCLOAK_CLIENT_ID).get(0).getId();
 
             List<RoleRepresentation> rolesToAdd = new ArrayList<>();
             List<RoleRepresentation> rolesToRemove = new ArrayList<>();

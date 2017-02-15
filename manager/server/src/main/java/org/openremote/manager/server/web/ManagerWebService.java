@@ -25,6 +25,7 @@ import org.openremote.container.Container;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.Constants;
+import org.openremote.manager.shared.security.ClientRole;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -60,20 +61,18 @@ public class ManagerWebService extends WebService {
             container.isDevMode(), MANAGER_PATH, managerDocRoot, new String[0] // Unsecured, no required roles!
         );
         managerFileHandler = addServletDeployment(
-            container.getService(IdentityService.class), managerDeployment, true
+            container.getService(IdentityService.class), managerDeployment, false
         );
         getPrefixRoutes().put(
             MANAGER_PATH, ManagerFileServlet.wrapHandler(managerFileHandler, MANAGER_PATTERN)
         );
 
         // Serve the Console client files secured
-        // TODO Currently not secure, and we should only serve the files from a directory that matches the authenticated realm
-        // TODO One of the problems with this is that Console doesn't have a Manager token, therefore we can't authenticate in Manager!
         Path consoleDocRoot = Paths.get(
             getString(container.getConfig(), CONSOLE_DOCROOT, CONSOLE_DOCROOT_DEFAULT)
         );
         DeploymentInfo consoleDeployment = ManagerFileServlet.createDeploymentInfo(
-            container.isDevMode(), CONSOLE_PATH, consoleDocRoot, new String[0] // TODO secure this!
+            container.isDevMode(), CONSOLE_PATH, consoleDocRoot, ClientRole.valueOf(ClientRole.READ_CONSOLE)
         );
         HttpHandler consoleHandler = addServletDeployment(
             container.getService(IdentityService.class), consoleDeployment, true
