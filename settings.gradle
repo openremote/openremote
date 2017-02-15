@@ -1,8 +1,12 @@
 rootProject.name = "openremote"
-
+boolean enableAndroidDevelopment = false
 // Include sub-projects dynamically, every directory with a build.gradle
 String rootDir = new File('.').canonicalPath
-fileTree(dir: '.', include: '**/build.gradle').filter { it.parent != rootDir }.each {
-    String projectName = it.parent.replace(rootDir, "").replace("\\", ":").replace("/", ":")
-    include projectName
-}
+fileTree(dir: '.', include: '**/build.gradle')
+        .filter { it.parent != rootDir }
+        .filter { !it.parent.endsWith("android") || enableAndroidDevelopment }
+        .each {
+            String projectName = it.parent.replace(rootDir, "").replace("\\", ":").replace("/", ":")
+            println projectName
+            include projectName
+        }
