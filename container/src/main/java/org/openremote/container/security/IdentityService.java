@@ -382,7 +382,7 @@ public class IdentityService implements ContainerService {
         String callbackUrl = UriBuilder.fromUri("/").path(realm).path("*").build().toString();
         List<String> redirectUrls = new ArrayList<>();
         redirectUrls.add(callbackUrl);
-        redirectUrls.add("org.openremote.console://oauth2Callback");
+        redirectUrls.add("org.openremote.console://oauth2Callback"); // Callback URL used by AeroGear for authentication from console
         client.setRedirectUris(redirectUrls);
 
         String baseUrl = UriBuilder.fromUri("/").path(realm).build().toString();
