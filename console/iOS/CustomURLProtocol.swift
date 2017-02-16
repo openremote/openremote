@@ -19,7 +19,7 @@ class CustomURLProtocol: URLProtocol, URLSessionDataDelegate, URLSessionTaskDele
     // MARK: NSURLProtocol
     
     override class func canInit(with request: URLRequest) -> Bool {
-        guard let host = request.url?.host, host == "192.168.99.100" else {
+        guard let host = request.url?.host, host == Server.hostURL else {
             return false
         }
         if (URLProtocol.property(forKey: CustomURLProtocol.CustomHeaderSet, in: request as URLRequest) != nil) {

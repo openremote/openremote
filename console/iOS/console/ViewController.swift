@@ -26,9 +26,9 @@ class ViewController: UIViewController {
     @IBAction func showLoginPage(_ sender: Any) {
         let http = Http()
         let keycloakConfig = KeycloakConfig(
-            clientId: "openremote",
-            host: "http://192.168.99.100:8080",
-            realm: "master",
+            clientId: Client.clientId,
+            host: String(format:"http://%@:%@",Server.hostURL,Server.port),
+            realm: Server.realm,
             isOpenIDConnect: true)
         keycloakConfig.isWebView = true
         let oauth2Module = AccountManager.addAccountWith(config: keycloakConfig, moduleClass: OAuth2Module.self)

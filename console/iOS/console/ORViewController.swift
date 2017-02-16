@@ -28,7 +28,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, UIWebViewDelegate
         view.addSubview(myWebView)
         myWebView.delegate = self
         
-        let url = URL(string: "http://192.168.99.100:8080/console/index.html")
+        let url = URL(string:String(format:"http://%@:%@/%@",Server.hostURL,Server.port,Server.initialPath))
         let request = URLRequest(url: url!)
         
         myWebView.loadRequest(request)
