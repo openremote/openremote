@@ -43,12 +43,6 @@ public class PersistenceEventInterceptor extends EmptyInterceptor {
     protected MessageBrokerService messageBrokerService;
     protected Set<PersistenceEvent> persistenceEvents = new HashSet<>();
 
-    public MessageBrokerService getMessageBrokerService() {
-        if (messageBrokerService == null)
-            throw new IllegalStateException("MessageBrokerService must be set on interceptor before use");
-        return messageBrokerService;
-    }
-
     public void setMessageBrokerService(MessageBrokerService messageBrokerService) {
         this.messageBrokerService = messageBrokerService;
     }

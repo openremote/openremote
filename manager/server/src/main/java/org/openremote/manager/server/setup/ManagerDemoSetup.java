@@ -1,0 +1,194 @@
+/*
+ * Copyright 2016, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.openremote.manager.server.setup;
+
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import elemental.json.Json;
+import org.openremote.agent3.protocol.simulator.SimulatorProtocol;
+import org.openremote.container.Container;
+import org.openremote.manager.server.agent.AgentAttributes;
+import org.openremote.manager.server.agent.ThingAttributes;
+import org.openremote.manager.server.asset.ServerAsset;
+import org.openremote.model.*;
+import org.openremote.model.asset.*;
+
+import static org.openremote.manager.shared.Constants.MASTER_REALM;
+import static org.openremote.model.AttributeType.*;
+import static org.openremote.model.asset.AssetAttributeMeta.*;
+import static org.openremote.model.asset.AssetType.BUILDING;
+
+public class ManagerDemoSetup extends AbstractManagerSetup {
+
+    protected String demoAgentId = null;
+    protected static String demoThingId = null;
+
+    public ManagerDemoSetup(Container container) {
+        super(container);
+    }
+
+    public String getDemoAgentId() {
+        return demoAgentId;
+    }
+
+    public String getDemoThingId() {
+        return demoThingId;
+    }
+
+    @Override
+    public void execute() throws Exception {
+
+        GeometryFactory geometryFactory = new GeometryFactory();
+
+        ServerAsset smartOffice = new ServerAsset();
+        smartOffice.setRealm(MASTER_REALM);
+        smartOffice.setName("Smart Office");
+        smartOffice.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+        smartOffice.setType(BUILDING);
+        Attributes smartOfficeAttributes = new Attributes();
+        smartOfficeAttributes.put(
+            new Attribute("geoStreet", STRING, Json.create("Torenallee 20"))
+                .setMetadata(new Metadata()
+                    .add(createMetadataItem(LABEL, Json.create("Street")))
+                    .add(createMetadataItem(ABOUT, Json.create("http://project-haystack.org/tag/geoStreet")))
+                ),
+            new Attribute("geoPostalCode", AttributeType.INTEGER, Json.create(5617))
+                .setMetadata(new Metadata()
+                    .add(createMetadataItem(LABEL, Json.create("Postal Code")))
+                    .add(createMetadataItem(ABOUT, Json.create("http://project-haystack.org/tag/geoPostalCode")))
+                ),
+            new Attribute("geoCity", STRING, Json.create("Eindhoven"))
+                .setMetadata(new Metadata()
+                    .add(createMetadataItem(LABEL, Json.create("City")))
+                    .add(createMetadataItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCity")))
+                ),
+            new Attribute("geoCountry", STRING, Json.create("Netherlands"))
+                .setMetadata(new Metadata()
+                    .add(createMetadataItem(LABEL, Json.create("Country")))
+                    .add(createMetadataItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCountry")))
+                )
+        );
+        smartOffice.setAttributes(smartOfficeAttributes.getJsonObject());
+        smartOffice = assetService.merge(smartOffice);
+
+        ServerAsset groundfloor = new ServerAsset(smartOffice);
+        groundfloor.setName("Ground Floor");
+        groundfloor.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+        groundfloor.setType(AssetType.FLOOR);
+        groundfloor = assetService.merge(groundfloor);
+
+        ServerAsset lobby = new ServerAsset(groundfloor);
+        lobby.setName("Lobby");
+        lobby.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+        lobby.setType(AssetType.ROOM);
+        lobby = assetService.merge(lobby);
+
+        ServerAsset agent = new ServerAsset(lobby);
+        agent.setName("Demo Agent");
+        agent.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+        agent.setType(AssetType.AGENT);
+        AgentAttributes agentAttributes = new AgentAttributes();
+        agentAttributes.setEnabled(false);
+        ProtocolConfiguration protocolConfigSimulator123 = new ProtocolConfiguration("simulator123", SimulatorProtocol.PROTOCOL_NAME);
+        agentAttributes.put(protocolConfigSimulator123);
+        agent.setAttributes(agentAttributes.getJsonObject());
+        agent = assetService.merge(agent);
+        demoAgentId = agent.getId();
+
+        ServerAsset thing = new ServerAsset(agent);
+        thing.setName("Demo Thing");
+        thing.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+        thing.setType(AssetType.THING);
+        ThingAttributes thingAttributes = new ThingAttributes(thing);
+        thingAttributes.put(
+            new Attribute("light1Toggle", BOOLEAN, Json.create(true))
+                .setMetadata(new Metadata()
+                    .add(new MetadataItem(
+                        AssetAttributeMeta.DESCRIPTION.getName(),
+                        Json.create("The switch for the light in the living room"))
+                    )
+                    .add(new MetadataItem(
+                        ThingAttribute.META_NAME_LINK, new AttributeRef(agent.getId(), "simulator123").asJsonValue()
+                    ))
+                    .add(new MetadataItem(
+                        SimulatorProtocol.META_NAME_ELEMENT, Json.create("switch")
+                    ))
+                ),
+            new Attribute("light1Dimmer", INTEGER, Json.create(55))
+                .setMetadata(new Metadata()
+                    .add(new MetadataItem(
+                        AssetAttributeMeta.DESCRIPTION.getName(),
+                        Json.create("The dimmer for the light in the living room"))
+                    )
+                    .add(new MetadataItem(
+                        AssetAttributeMeta.RANGE_MIN.getName(),
+                        Json.create(0))
+                    )
+                    .add(new MetadataItem(
+                        AssetAttributeMeta.RANGE_MAX.getName(),
+                        Json.create(100))
+                    )
+                    .add(new MetadataItem(
+                        ThingAttribute.META_NAME_LINK, new AttributeRef(agent.getId(), "simulator123").asJsonValue()
+                    ))
+                    .add(new MetadataItem(
+                        SimulatorProtocol.META_NAME_ELEMENT, Json.create("range")
+                    ))
+                ),
+            new Attribute("light1Color", COLOR, new Color(88, 123, 88).asJsonValue())
+                .setMetadata(new Metadata()
+                    .add(new MetadataItem(
+                        AssetAttributeMeta.DESCRIPTION.getName(),
+                        Json.create("The color of the living room light"))
+                    )
+                    .add(new MetadataItem(
+                        ThingAttribute.META_NAME_LINK, new AttributeRef(agent.getId(), "simulator123").asJsonValue()
+                    ))
+                    .add(new MetadataItem(
+                        SimulatorProtocol.META_NAME_ELEMENT, Json.create("color")
+                    ))
+                ),
+            new Attribute("light1PowerConsumption", DECIMAL, Json.create(12.345))
+                .setMetadata(new Metadata()
+                    .add(new MetadataItem(
+                        AssetAttributeMeta.DESCRIPTION.getName(),
+                        Json.create("The total power consumption of the living room light"))
+                    )
+                    .add(new MetadataItem(
+                        AssetAttributeMeta.READ_ONLY.getName(),
+                        Json.create(true))
+                    )
+                    .add(new MetadataItem(
+                        AssetAttributeMeta.FORMAT.getName(),
+                        Json.create("%3d kWh"))
+                    )
+                    .add(new MetadataItem(
+                        ThingAttribute.META_NAME_LINK, new AttributeRef(agent.getId(), "simulator123").asJsonValue()
+                    ))
+                    .add(new MetadataItem(
+                        SimulatorProtocol.META_NAME_ELEMENT, Json.create("decimal")
+                    ))
+                )
+        );
+        thing.setAttributes(thingAttributes.getJsonObject());
+        thing = assetService.merge(thing);
+        demoThingId = thing.getId();
+    }
+}

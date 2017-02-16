@@ -6,6 +6,7 @@ import elemental.json.JsonType
 import org.openremote.agent3.protocol.simulator.SimulatorProtocol
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.manager.server.asset.AssetService
+import org.openremote.manager.server.setup.SetupService
 import org.openremote.model.AttributeRef
 import org.openremote.model.AttributeValueChange
 import org.openremote.model.Attributes
@@ -15,7 +16,6 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static org.openremote.agent3.protocol.Protocol.ACTUATOR_TOPIC
-import static org.openremote.manager.server.DemoDataService.DEMO_THING_ID
 
 class AgentDeploymentTest extends Specification implements ManagerContainerTrait {
 
@@ -27,15 +27,16 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         when: "the demo agent and thing have been deployed"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def demoThingId = container.getService(SetupService.class).getManagerDemoSetup().getDemoThingId()
         def simulatorProtocol = container.getService(SimulatorProtocol.class)
-        def assetService = container.getService(AssetService.class);
+        def assetService = container.getService(AssetService.class)
 
         then: "the simulator elements should have the initial state"
         conditions.eventually {
-            assert simulatorProtocol.getState(DEMO_THING_ID, "light1Toggle").asBoolean()
-            assert simulatorProtocol.getState(DEMO_THING_ID, "light1Dimmer").asNumber() == 55
-            assert new Color(simulatorProtocol.getState(DEMO_THING_ID, "light1Color") as JsonObject) == new Color(88, 123, 88)
-            assert simulatorProtocol.getState(DEMO_THING_ID, "light1PowerConsumption").asNumber() == 12.345d
+            assert simulatorProtocol.getState(demoThingId, "light1Toggle").asBoolean()
+            assert simulatorProtocol.getState(demoThingId, "light1Dimmer").asNumber() == 55
+            assert new Color(simulatorProtocol.getState(demoThingId, "light1Color") as JsonObject) == new Color(88, 123, 88)
+            assert simulatorProtocol.getState(demoThingId, "light1PowerConsumption").asNumber() == 12.345d
         }
 
         when: "a thing attribute value change occurs"
@@ -67,7 +68,7 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
                 4c. Should "forceUpdate" be the default behavior?
         */
         def light1DimmerChange = new AttributeValueChange(
-                new AttributeRef(DEMO_THING_ID, "light1Dimmer"), Json.create(66)
+                new AttributeRef(demoThingId, "light1Dimmer"), Json.create(66)
         )
         container.getService(MessageBrokerService.class).getProducerTemplate().sendBody(
                 ACTUATOR_TOPIC, light1DimmerChange
@@ -75,26 +76,26 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
 
         then: "the simulator state should be updated"
         conditions.eventually {
-            assert simulatorProtocol.getState(DEMO_THING_ID, "light1Dimmer").asNumber() == 66
+            assert simulatorProtocol.getState(demoThingId, "light1Dimmer").asNumber() == 66
         }
 
         when: "a simulated sensor changes its value"
         conditions = new PollingConditions(timeout: 3, initialDelay: 2)
         simulatorProtocol.putState(
-                new AttributeRef(DEMO_THING_ID, "light1Dimmer"),
+                new AttributeRef(demoThingId, "light1Dimmer"),
                 Json.create(77),
                 true
         )
 
         then: "the thing attribute value should be updated"
         conditions.eventually {
-            def thing = assetService.get(DEMO_THING_ID)
+            def thing = assetService.get(demoThingId)
             def attributes = new Attributes(thing.getAttributes())
             attributes.get("light1Dimmer").getValue_TODO_BUG_IN_JAVASCRIPT().getType() == JsonType.NUMBER
             attributes.get("light1Dimmer").getValueAsInteger() == 77
         }
 
         cleanup: "the server should be stopped"
-        stopContainer(container);
+        stopContainer(container)
     }
 }

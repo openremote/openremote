@@ -21,8 +21,8 @@ import spock.lang.Ignore
 import spock.lang.Specification
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.server.DemoDataService.DEMO_ADMIN_PASSWORD
-import static org.openremote.manager.server.DemoDataService.DEMO_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.server.setup.SetupService.DEMO_ADMIN_PASSWORD
+import static org.openremote.manager.server.setup.SetupService.DEMO_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.manager.shared.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.manager.shared.Constants.MASTER_REALM
 import static org.openremote.manager.shared.Constants.MASTER_REALM_ADMIN_USER

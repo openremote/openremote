@@ -31,6 +31,7 @@ import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.i18n.I18NService;
 import org.openremote.manager.server.map.MapService;
 import org.openremote.manager.server.security.ManagerIdentityService;
+import org.openremote.manager.server.setup.SetupService;
 import org.openremote.manager.server.web.ManagerWebService;
 
 import java.util.ArrayList;
@@ -56,8 +57,8 @@ public class Main {
                 addAll(Arrays.asList(
                     new MapService(),
                     new MessageBrokerService(),
-                    new ManagerWebService(),
-                    new DemoDataService()
+                    new SetupService(),
+                    new ManagerWebService()
                 ));
             }
         };

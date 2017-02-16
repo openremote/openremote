@@ -58,8 +58,6 @@ public class PersistenceService implements ContainerService {
     public static final int DATABASE_MAX_POOL_SIZE_DEFAULT = 20;
     public static final String DATABASE_CONNECTION_TIMEOUT_SECONDS = "DATABASE_CONNECTION_TIMEOUT_SECONDS";
     public static final int DATABASE_CONNECTION_TIMEOUT_SECONDS_DEFAULT = 300;
-    public static final String DATABASE_CREATE_SCHEMA = "DATABASE_CREATE_SCHEMA";
-    public static final boolean DATABASE_CREATE_SCHEMA_DEFAULT = false;
 
     protected MessageBrokerService messageBrokerService;
     protected Database database;
@@ -69,43 +67,43 @@ public class PersistenceService implements ContainerService {
 
     @Override
     public void init(Container container) throws Exception {
-        this.messageBrokerService = container.getService(MessageBrokerService.class);
+        this.messageBrokerService = container.hasService(MessageBrokerService.class)
+            ? container.getService(MessageBrokerService.class)
+            : null;
 
         String databaseProduct = getString(container.getConfig(), DATABASE_PRODUCT, DATABASE_PRODUCT_DEFAULT);
         LOG.info("Preparing persistence service for database: " + databaseProduct);
         database = Database.Product.valueOf(databaseProduct);
 
-        String connectionUrl = getString(container.getConfig(), DATABASE_CONNECTION_URL, DATABASE_CONNECTION_URL_DEFAULT);
-        LOG.info("Using database connection URL: " + connectionUrl);
+        persistenceUnitProperties = database.createProperties();
 
+        openDatabase(container, database);
+
+        if (messageBrokerService != null) {
+            persistenceUnitProperties.put(
+                org.hibernate.cfg.AvailableSettings.SESSION_SCOPED_INTERCEPTOR,
+                PersistenceEventInterceptor.class.getName()
+            );
+        }
+
+        persistenceUnitName = getString(container.getConfig(), PERSISTENCE_UNIT_NAME, PERSISTENCE_UNIT_NAME_DEFAULT);
+    }
+
+    protected void openDatabase(Container container, Database database) {
+        String connectionUrl = getString(container.getConfig(), DATABASE_CONNECTION_URL, DATABASE_CONNECTION_URL_DEFAULT);
         String databaseUsername = getString(container.getConfig(), DATABASE_USERNAME, DATABASE_USERNAME_DEFAULT);
         String databasePassword = getString(container.getConfig(), DATABASE_PASSWORD, DATABASE_PASSWORD_DEFAULT);
         int databaseMinPoolSize = getInteger(container.getConfig(), DATABASE_MIN_POOL_SIZE, DATABASE_MIN_POOL_SIZE_DEFAULT);
         int databaseMaxPoolSize = getInteger(container.getConfig(), DATABASE_MAX_POOL_SIZE, DATABASE_MAX_POOL_SIZE_DEFAULT);
         int connectionTimeoutSeconds = getInteger(container.getConfig(), DATABASE_CONNECTION_TIMEOUT_SECONDS, DATABASE_CONNECTION_TIMEOUT_SECONDS_DEFAULT);
-
-        persistenceUnitProperties =
-            database.open(connectionUrl, databaseUsername, databasePassword, connectionTimeoutSeconds, databaseMinPoolSize, databaseMaxPoolSize);
-
-        persistenceUnitProperties.put(
-            org.hibernate.cfg.AvailableSettings.SESSION_SCOPED_INTERCEPTOR,
-            PersistenceEventInterceptor.class.getName()
-        );
-
-        persistenceUnitName = getString(container.getConfig(), PERSISTENCE_UNIT_NAME, PERSISTENCE_UNIT_NAME_DEFAULT);
+        LOG.info("Opening database connection: " + connectionUrl);
+        database.open(persistenceUnitProperties, connectionUrl, databaseUsername, databasePassword, connectionTimeoutSeconds, databaseMinPoolSize, databaseMaxPoolSize);
     }
 
     @Override
     public void start(Container container) throws Exception {
         this.entityManagerFactory =
             Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties);
-
-        if (container.isDevMode()
-            || getBoolean(container.getConfig(), DATABASE_CREATE_SCHEMA, DATABASE_CREATE_SCHEMA_DEFAULT)) {
-            LOG.info("Dropping and re-creating database schema");
-            dropSchema();
-            createSchema();
-        }
     }
 
     @Override
@@ -122,12 +120,14 @@ public class PersistenceService implements ContainerService {
     public EntityManager createEntityManager() {
         EntityManager entityManager = getEntityManagerFactory().createEntityManager();
 
-        // The persistence event interceptor is scoped to an EntityManager, so each new EM needs
-        // access to the dependencies of the interceptor
-        Session session = entityManager.unwrap(Session.class);
-        PersistenceEventInterceptor persistenceEventInterceptor =
-            (PersistenceEventInterceptor) ((SharedSessionContractImplementor) session).getInterceptor();
-        persistenceEventInterceptor.setMessageBrokerService(messageBrokerService);
+        if (messageBrokerService != null) {
+            // The persistence event interceptor is scoped to an EntityManager, so each new EM needs
+            // access to the dependencies of the interceptor
+            Session session = entityManager.unwrap(Session.class);
+            PersistenceEventInterceptor persistenceEventInterceptor =
+                (PersistenceEventInterceptor) ((SharedSessionContractImplementor) session).getInterceptor();
+            persistenceEventInterceptor.setMessageBrokerService(messageBrokerService);
+        }
 
         return entityManager;
     }

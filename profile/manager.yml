@@ -29,18 +29,18 @@ services:
       # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
       TZ: "Europe/Zurich"
 
-      # If dev mode is enabled, caching and other performance-optimizations will be disabled.
+      # If developer mode is enabled, all setup tasks will be executed on application startup.
+      # This will clean all data in Keycloak and the Manager database, and then import demo/test
+      # data. Some caching and other runtime performance-optimizations will also be disabled.
       DEV_MODE: 'false'
 
-      # If this is the first time you are starting this stack, and/or with non-durable
-      # database (the default), you need to have the database schema created.
-      DATABASE_CREATE_SCHEMA: 'true'
-
-      # If this is the first time you are starting this stack, and/or with non-durable
-      # database (the default), you might want to work with some automatically imported
-      # demo data. The importer uses the Keycloak admin-cli user and the given password.
-      DEMO_IMPORT_DATA: 'true'
-      DEMO_ADMIN_PASSWORD: secret
+      # If you are not running in developer mode, and this is the first time you are starting
+      # the application, you can configure which setup tasks you want to execute. Careful,
+      # these tasks will clean and populate Keycloak and the Manager database with demo data!
+      SETUP_CLEAN_INIT_KEYCLOAK: 'true'
+      SETUP_KEYCLOAK_ADMIN_PASSWORD: secret
+      SETUP_CLEAN_INIT_MANAGER: 'true'
+      SETUP_IMPORT_DEMO_DATA: 'true'
 
       # The service-internal interface and port to listen on. This should not be changed.
       WEBSERVER_LISTEN_HOST: 0.0.0.0
@@ -66,7 +66,7 @@ services:
       DATABASE_MAX_POOL_SIZE: 20
       DATABASE_CONNECTION_TIMEOUT_SECONDS: 300
 
-      # The service-internal host name and port of the identity provider, configured automatically.
+      # The service-internal host name and port of the identity provider.
       KEYCLOAK_HOST: keycloak
       KEYCLOAK_PORT: 8080
 

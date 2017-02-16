@@ -2,7 +2,7 @@ package org.openremote.test.controller2
 
 import org.openremote.manager.client.event.ServerSendEvent
 import org.openremote.manager.client.event.bus.EventBus
-import org.openremote.manager.server.DemoDataService
+import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.asset.AssetService
 import org.openremote.manager.server.event.EventService
 import org.openremote.manager.shared.agent.*
@@ -21,8 +21,8 @@ import spock.lang.Specification
 import spock.util.concurrent.BlockingVariables
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.server.DemoDataService.DEMO_ADMIN_PASSWORD
-import static org.openremote.manager.server.DemoDataService.DEMO_ADMIN_PASSWORD_DEFAULT
+import static SetupService.DEMO_ADMIN_PASSWORD
+import static SetupService.DEMO_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.manager.shared.Constants.*
 
 @Ignore
@@ -52,7 +52,7 @@ class Controller2Test extends Specification implements ContainerTrait {
 
         then: "the device assets should be the children of the agent asset"
         def assetService = container.getService(AssetService.class)
-        def agentAsset = assetService.get(container.getService(DemoDataService.class).DEMO_AGENT_ID)
+        def agentAsset = assetService.get(container.getService(SetupService.class).DEMO_AGENT_ID)
         agentAsset != null
         def deviceAssetInfos = assetService.getChildren(agentAsset.getId())
         deviceAssetInfos.size() == 1
@@ -153,7 +153,7 @@ class Controller2Test extends Specification implements ContainerTrait {
 
         when: "subscribing to device resource updates through an agent"
         def assetService = container.getService(AssetService.class)
-        def agentAsset = assetService.get(container.getService(DemoDataService.class).DEMO_AGENT_ID)
+        def agentAsset = assetService.get(container.getService(SetupService.class).DEMO_AGENT_ID)
         eventBus.dispatch(new ServerSendEvent(new SubscribeDeviceResourceUpdates(
                 agentAsset.getId(), "testdevice"
         )))

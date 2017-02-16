@@ -102,6 +102,9 @@ public class IdentityService implements ContainerService {
     protected String clientId;
     protected int sessionTimeoutSeconds;
 
+    // This will pass authentication ("NOT ATTEMPTED" state), but later fail any role authorization
+    final protected KeycloakDeployment notAuthenticatedKeycloakDeployment = new KeycloakDeployment();
+
     @Override
     public void init(Container container) throws Exception {
         boolean identityNetworkSecure = getBoolean(container.getConfig(), IDENTITY_NETWORK_SECURE, IDENTITY_NETWORK_SECURE_DEFAULT);
@@ -161,9 +164,6 @@ public class IdentityService implements ContainerService {
             if (getClientId() == null)
                 throw new IllegalStateException("Client ID must be set to enable API security");
             keycloakConfigResolver = request -> {
-                // This will pass authentication ("NOT ATTEMPTED" state), but later fail any role authorization
-                KeycloakDeployment notAuthenticatedKeycloakDeployment = new KeycloakDeployment();
-
                 // The realm we authenticate against must be available as a request header
                 String realm = request.getHeader(WebService.REQUEST_HEADER_REALM);
                 if (realm == null || realm.length() == 0) {
@@ -379,12 +379,18 @@ public class IdentityService implements ContainerService {
             client.setDirectAccessGrantsEnabled(true);
         }
 
-        String callbackUrl = UriBuilder.fromUri("/").path(realm).path("*").build().toString();
         List<String> redirectUrls = new ArrayList<>();
-        redirectUrls.add(callbackUrl);
-        redirectUrls.add("org.openremote.console://oauth2Callback"); // Callback URL used by AeroGear for authentication from console
+
+        // Callback URL used by Manager web client authentication, any relative path to "ourselves" is fine
+        String managerCallbackUrl = UriBuilder.fromUri("/").path(realm).path("*").build().toString();
+        redirectUrls.add(managerCallbackUrl);
+
+        // Callback URL used by AeroGear for authentication from Console
+        redirectUrls.add("org.openremote.console://oauth2Callback");
+
         client.setRedirectUris(redirectUrls);
 
+        // Redirect URL for logout etc, go to /<realm>/
         String baseUrl = UriBuilder.fromUri("/").path(realm).build().toString();
         client.setBaseUrl(baseUrl);
 

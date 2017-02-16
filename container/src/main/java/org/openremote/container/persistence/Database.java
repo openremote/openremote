@@ -30,9 +30,14 @@ import java.util.Map;
 public interface Database {
 
     /**
-     * @return Persistence unit properties used to call <code>Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties)</code>
+     * @return Persistence unit properties you want to use for this database (e.g. Hibernate dialect already set), will be passed into {@link #open}.
      */
-    Map<String, Object> open(String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize);
+    Map<String, Object> createProperties();
+
+    /**
+     * Modify persistence properties (e.g. set datasource) used to call <code>Persistence.createEntityManagerFactory(persistenceUnitName, persistenceUnitProperties)</code>
+     */
+    void open(Map<String, Object> properties, String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize);
 
     void close();
 
@@ -43,8 +48,14 @@ public interface Database {
             protected HikariDataSource hikariDataSource;
 
             @Override
-            public Map<String, Object> open(String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize) {
+            public Map<String, Object> createProperties() {
+                Map<String, Object> properties = new HashMap<>();
+                properties.put(AvailableSettings.DIALECT, PostgisDialect.class.getName());
+                return properties;
+            }
 
+            @Override
+            public void open(Map<String, Object> properties, String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize) {
                 hikariConfig = new HikariConfig();
                 hikariConfig.setDataSourceClassName("org.postgresql.ds.PGSimpleDataSource");
                 hikariConfig.addDataSourceProperty("url", connectionUrl);
@@ -56,11 +67,7 @@ public interface Database {
 
                 hikariDataSource = new HikariDataSource(hikariConfig);
 
-                Map<String, Object> properties = new HashMap<>();
-                properties.put(AvailableSettings.DIALECT, PostgisDialect.class.getName());
                 properties.put(AvailableSettings.DATASOURCE, hikariDataSource);
-
-                return properties;
             }
 
             @Override

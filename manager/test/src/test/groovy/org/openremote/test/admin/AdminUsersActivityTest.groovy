@@ -33,8 +33,7 @@ import spock.lang.Specification
 import spock.util.concurrent.BlockingVariables
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.server.DemoDataService.DEMO_ADMIN_PASSWORD
-import static org.openremote.manager.server.DemoDataService.DEMO_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.manager.server.setup.AbstractKeycloakSetup.*
 import static org.openremote.manager.shared.Constants.*
 
 class AdminUsersActivityTest extends Specification implements ManagerContainerTrait, GwtClientTrait {
@@ -52,7 +51,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
                 realm,
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
-                getString(container.getConfig(), DEMO_ADMIN_PASSWORD, DEMO_ADMIN_PASSWORD_DEFAULT)
+                getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
         ).token
         def securityService = Stub(SecurityService) {
             getRealm() >> realm

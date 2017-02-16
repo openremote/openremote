@@ -63,8 +63,9 @@ public abstract class WebService implements ContainerService {
     public static final String WEBSERVER_LISTEN_PORT = "WEBSERVER_LISTEN_PORT";
     public static final int WEBSERVER_LISTEN_PORT_DEFAULT = 8080;
 
-    // Authentication requests requires a realm, either we receive this in a header or we extract it (e.g.
-    // from request path segment) and set it as a header before processing the request
+    // Authenticating requests requires a realm, either we receive this in a header or
+    // we extract it (e.g. from request path segment) and set it as a header before
+    // processing the request
     public static final String REQUEST_HEADER_REALM = "Auth-Realm";
 
     public static final String API_PATH = "/api";
