@@ -382,6 +382,7 @@ public class IdentityService implements ContainerService {
         String callbackUrl = UriBuilder.fromUri("/").path(realm).path("*").build().toString();
         List<String> redirectUrls = new ArrayList<>();
         redirectUrls.add(callbackUrl);
+        redirectUrls.add("org.openremote.console://oauth2Callback");
         client.setRedirectUris(redirectUrls);
 
         String baseUrl = UriBuilder.fromUri("/").path(realm).build().toString();
