@@ -33,17 +33,30 @@ class ViewController: UIViewController {
         keycloakConfig.isWebView = true
         let oauth2Module = AccountManager.addAccountWith(config: keycloakConfig, moduleClass: OAuth2Module.self)
         http.authzModule = oauth2Module
+        http.authzModule = oauth2Module
+        requestAccess(oauth2Module: oauth2Module)
+        
+    }
+    
+    func requestAccess(oauth2Module : OAuth2Module) {
         oauth2Module.requestAccess { (response, error) in
             var token : String
             if response != nil {
                 token = response! as! String
-                print(token)
                 
                 let orVC = ORViewcontroller()
+                orVC.accessToken = token
                 
                 self.navigationController?.pushViewController(orVC, animated: true)
             } else if error != nil {
-                let alertVC = UIAlertController(title: "Error", message: error.debugDescription, preferredStyle: UIAlertControllerStyle.alert)
+                let alertVC = UIAlertController(title: "Error", message: error.debugDescription, preferredStyle: UIAlertControllerStyle.actionSheet)
+                let defaultAction = UIAlertAction(title: "Retry", style: .default, handler: { (alertAction) in
+                    oauth2Module.requestAuthorizationCode(completionHandler: { (_, error) in
+                        self.requestAccess(oauth2Module: oauth2Module)
+                    })
+                })
+                alertVC.addAction(defaultAction)
+                
                 self.present(alertVC, animated: true, completion: nil)
             }
         }

@@ -10,26 +10,28 @@ import Foundation
 import UIKit
 import WebKit
 
-class ORViewcontroller : UIViewController, WKUIDelegate, WKNavigationDelegate {
+class ORViewcontroller : UIViewController, URLSessionDelegate, UIWebViewDelegate {
 
+    var accessToken : String = ""
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(done))
+        
+        CustomURLProtocol.accessToken = accessToken
+        
         let webConfiguration = WKWebViewConfiguration()
         webConfiguration.preferences.javaScriptEnabled = true;
         webConfiguration.ignoresViewportScaleLimits = true;
         webConfiguration.preferences.javaScriptCanOpenWindowsAutomatically = true;
-        let myWebView = WKWebView(frame: .zero, configuration: webConfiguration)
 
-        myWebView.frame = view.frame
+        let myWebView = UIWebView(frame: view.frame)
         view.addSubview(myWebView)
+        myWebView.delegate = self
         
-        myWebView.load(URLRequest(url: URL(string: "http://192.168.99.100:8080/console/master/index.html")!))
+        let url = URL(string: "http://192.168.99.100:8080/console/index.html")
+        let request = URLRequest(url: url!)
+        
+        myWebView.loadRequest(request)
     }
 
-    func done() {
-        self.dismiss(animated: true, completion: nil)
-    }
-}
-
+  }
