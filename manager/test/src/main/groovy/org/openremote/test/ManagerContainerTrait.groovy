@@ -23,13 +23,13 @@ trait ManagerContainerTrait extends ContainerTrait {
                 new MessageBrokerSetupService(),
                 new ManagerIdentityService(),
                 new PersistenceService(),
+                new SetupService(),
                 new EventService(),
                 new AssetService(),
                 new AgentService(),
                 *Lists.newArrayList(ServiceLoader.load(Protocol.class)),
                 new MapService(),
                 new MessageBrokerService(),
-                new SetupService(),
                 new ManagerWebService(),
                 *additionalServices
 

@@ -49,6 +49,7 @@ public class Main {
                     new MessageBrokerSetupService(),
                     new ManagerIdentityService(),
                     new PersistenceService(),
+                    new SetupService(),
                     new EventService(),
                     new AssetService(),
                     new AgentService()
@@ -57,7 +58,6 @@ public class Main {
                 addAll(Arrays.asList(
                     new MapService(),
                     new MessageBrokerService(),
-                    new SetupService(),
                     new ManagerWebService()
                 ));
             }
