@@ -1,29 +1,7 @@
 evaluationDependsOnChildren()
 
-import com.bmuschko.gradle.docker.tasks.image.*
-
-task createDockerfile(type: Dockerfile) {
-    destFile = project.file("$project.buildDir/install/Dockerfile")
-    from "java:8"
-    environmentVariable "MANAGER_DOCROOT", "webapp"
-    environmentVariable "CONSOLE_DOCROOT", "conf/console"
-    environmentVariable "LOGGING_CONFIG_FILE", "conf/logging.properties"
-    environmentVariable "MAP_TILES_PATH", "conf/mapdata.mbtiles"
-    environmentVariable "MAP_SETTINGS_PATH", "conf/mapsettings.json"
-    addFile resolveProject(':manager:server').distributions.main.baseName, "/opt/app"
-    addFile resolveProject(':manager:client').distributions.main.baseName, "/opt/app"
-    exposePort 8080
-    workingDir "/opt/app"
-    entryPoint "/opt/app/bin/${resolveProject(":manager:server").name}"
-}
-
-task buildImage(type: DockerBuildImage) {
-    dependsOn resolveTask(":manager:server:installDist"), resolveTask(":manager:client:installDist"), createDockerfile
-    inputDir = createDockerfile.destFile.parentFile
-    tag = dockerImageName
-}
-
-task pushImage(type: DockerPushImage) {
-    dependsOn buildImage
-    imageName = dockerImageName
+task prepareImage(type: Copy) {
+    dependsOn resolveTask(":manager:server:installDist"), resolveTask(":manager:client:installDist")
+    from "Dockerfile"
+    into "${project.buildDir}/install"
 }

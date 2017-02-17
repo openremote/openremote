@@ -1,18 +1,4 @@
-buildscript {
-    repositories {
-        jcenter()
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
-    dependencies {
-        classpath "com.bmuschko:gradle-docker-plugin:$dockerGradlePluginVersion"
-    }
-}
-
 allprojects {
-
-    apply from: "${findProject(":openremote") != null ? project(":openremote").projectDir : rootDir}/functions.gradle"
 
     repositories {
         mavenLocal()
@@ -26,49 +12,13 @@ allprojects {
         }
     }
 
+    apply from: "${findProject(":openremote") != null ? project(":openremote").projectDir : rootDir}/functions.gradle"
+    apply plugin: 'eclipse'
+
     version = projectVersion
 
     tasks.withType(JavaCompile) {
         sourceCompatibility = "1.8"
         // Don't even try to disable deprecation/unsafe warnings of javac, it will not work...
     }
-
-    apply plugin: "com.bmuschko.docker-remote-api"
-
-    docker {
-        url = dockerHostUrl()
-        certPath = dockerCertPath()
-        registryCredentials {
-            username = project.properties.dockerHubUsername
-            password = project.properties.dockerHubPassword
-        }
-    }
-
-
-    ext.dockerImageName = "$dockerRepository/$project.name:$imageVersion".toLowerCase(Locale.ROOT)
-
-    apply plugin: 'eclipse'
-}
-
-URI dockerHostEnv() {
-    String uri = System.getenv('DOCKER_HOST')
-    uri ? new URI(uri) : null
-}
-
-String dockerHostUrl() {
-    if (dockerHostEnv()) {
-        URI uri = dockerHostEnv()
-        if (uri.scheme == 'unix') {
-            uri
-        } else if (uri.scheme == 'tcp') {
-            (new URI(uri.scheme != 'tcp' ?: 'https' , uri.userInfo, uri.host, uri.port, uri.path, uri.query, uri.fragment)).toString()
-        }
-    } else {
-        org.gradle.internal.os.OperatingSystem.current().isLinux() ? 'unix:///var/run/docker.sock' : 'http://localhost:2375'
-    }
-}
-
-File dockerCertPath() {
-    String certPathEnv = System.getenv('DOCKER_CERT_PATH')
-    certPathEnv ? file(certPathEnv) : null;
 }

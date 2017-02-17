@@ -17,8 +17,6 @@ We work with Java, Groovy, JavaScript, Gradle, Docker, and a wide range of APIs 
 A demo preview can be started with Docker Compose (install [Docker Toolbox](https://www.docker.com/products/docker-toolbox)):
 
 ```
-(Optional: Build images from source with ./gradlew clean buildImage)
-
 docker-compose -p openremote \
     -f profile/dependencies/postgresql.yml \
     -f profile/dependencies/keycloak.yml \
@@ -26,7 +24,24 @@ docker-compose -p openremote \
     up
 ```
 
-Access the manager UI and API on http://192.168.99.100:8080/ with username `admin` and password `secret`.
+Access the manager UI and API on http://192.168.99.100:8080/ with username `admin` and password `secret`. Configuration options of the images are documented in the compose profiles.
+
+You can build the Docker images from source with:
+
+```
+./gradlew prepareImage
+docker build -t openremote/postgresql:latest postgresql
+docker build -t openremote/keycloak:latest keycloak
+docker build -t openremote/manager:latest manager/build/install
+```
+
+Push images to [Docker Hub](https://hub.docker.com/u/openremote):
+
+```
+docker push openremote/postgresql:latest
+docker push openremote/keycloak:latest
+docker push openremote/manager:latest
+```
 
 For more information and how to set up a development environment, see the [Developer Guide](https://github.com/openremote/openremote/wiki).
 

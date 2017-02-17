@@ -17,3 +17,7 @@ services:
       POSTGRES_DB: openremote
       OPENREMOTE_USERNAME: openremote
       OPENREMOTE_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
+
+    # Durable data requires a volume mapping on your Docker host
+    # volumes:
+    #  - /path/to/data/on/my/host/postgresql:/var/lib/postgresql/data
