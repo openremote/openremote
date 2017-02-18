@@ -14,31 +14,18 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/OpenRemoteTheme">
-        <service android:name=".announce.ControllerAnnounceService" />
+
         <service android:name="org.jboss.aerogear.android.authorization.oauth2.OAuth2AuthzService" />
 
-        <activity
-            android:name=".ShellActivity"
+        <activity android:name=".MainActivity"
             android:configChanges="orientation|screenSize"
             android:label="@string/app_name">
-
-        </activity>
-        <activity
-            android:name=".ConsoleViewActivity"
-            android:label="@string/app_name"
-            android:parentActivityName=".ShellActivity"
-            android:theme="@style/ConsoleView"></activity>
-        <activity android:name=".WebActivity"
-            android:configChanges="orientation|screenSize"
-            android:label="@string/app_name">
-
-
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
     </application>
 
 </manifest>

@@ -41,8 +41,8 @@ public class KeycloakHelper {
     private static final String ACCESS_TOKEN_ENDPOINT = "/realms/master/protocol/openid-connect/token";
     private static final String REFRESH_TOKEN_ENDPOINT = "/realms/master/protocol/openid-connect/token";
     private static final String AUTHZ_ACCOOUNT_ID = "keycloak-token";
-    private static final String AUTHZ_CLIENT_ID = "or-android-client";
-    private static final String AUTHZ_REDIRECT_URL = "http://oauth2callback";
+    private static final String AUTHZ_CLIENT_ID = "openremote";
+    private static final String AUTHZ_REDIRECT_URL = "org.openremote.console://oauth2Callback";
     private static final String MODULE_NAME = "KeyCloakAuthz";
 
     static {

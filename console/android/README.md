@@ -1,21 +1,10 @@
-# OpenRemote Milestone 1 Designer Prototype - Android Console
+# OpenRemote v3 - Android Console
 
-To be removed when the prototype is removed.
+Due to limitations of the Android development environment, this application is a separate, standalone project.
 
-Development
----
+## Building and running the application
 
-* Install JDK 1.8
-
-* Install Android SDK and API level 25
-
-* Create file `local.properties` in the root of the project with content `sdk.dir=/path/to/android/sdk` or set ANDROID_HOME system variable to the same path
-
-* Import project in Android Studio/IntelliJ
-
-Installing the application (debug build)
----
-
-    ./gradlew clean check build
-
-* Install with `adb install -r build/outputs/apk/or-android-debug.apk`
+```
+./gradlew clean installDebug \
+    && adb shell am start -n org.openremote.android.v3/org.openremote.android.MainActivity
+```

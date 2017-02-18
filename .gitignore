@@ -1,6 +1,7 @@
 *~
 .DS_*
 .local/
+local.properties
 
 build/
 .gradle

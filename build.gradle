@@ -13,7 +13,7 @@ allprojects {
     }
 
     apply from: "${findProject(":openremote") != null ? project(":openremote").projectDir : rootDir}/functions.gradle"
-    apply plugin: 'eclipse'
+    apply plugin: "eclipse"
 
     version = projectVersion
 
