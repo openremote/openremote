@@ -78,7 +78,7 @@ task compileGwt(dependsOn: classes, type: JavaExec) {
      */
 
     args = [
-            "org.openremote.manager.Manager", // Your GWT module
+            "org.openremote.manager.Manager", // The production GWT module
             "-war", gwtOutputDir,
             "-logLevel", "INFO",
             "-localWorkers", "2",
@@ -126,7 +126,7 @@ task gwtSuperDev(dependsOn: classes, type: JavaExec) {
       -X[no]closureFormattedOutput   EXPERIMENTAL: Enables Javascript output suitable for post-compilation by Closure Compiler (defaults to OFF)
      */
     args = [
-            "org.openremote.manager.Manager", // Your GWT module
+            "org.openremote.manager.ManagerDev", // Note: Different module for dev mode!
             "-workDir", gwtWorkDir,
             "-launcherDir", gwtLauncherDir,
             "-src", resolveProject(":model").sourceSets.main.java.srcDirs[0], // Help code server detect source changes

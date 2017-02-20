@@ -70,7 +70,7 @@ services:
       KEYCLOAK_HOST: keycloak
       KEYCLOAK_PORT: 8080
 
-    # Configure logging of the container, see manager/server/conf/logging.properties
+    # Configure logging of the container, see config/logging.properties
     logging:
         options:
             max-size: "10m"

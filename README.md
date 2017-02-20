@@ -29,7 +29,7 @@ Access the manager UI and API on http://192.168.99.100:8080/ with username `admi
 You can build the Docker images from source with:
 
 ```
-./gradlew prepareImage
+./gradlew clean prepareImage
 docker build -t openremote/postgresql:latest postgresql
 docker build -t openremote/keycloak:latest keycloak
 docker build -t openremote/manager:latest manager/build/install
@@ -57,4 +57,3 @@ Join us on the [community group](https://groups.google.com/forum/#!forum/openrem
 
 * [Console](https://github.com/openremote/openremote/tree/master/console) - Render and deploy custom end-user interfaces as applications for Web, iOS and Android.
 
-TBC...

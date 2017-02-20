@@ -15,8 +15,9 @@ dependencies {
 distributions {
     main {
         contents {
-            from("conf") {
-                into "conf"
+            // Copy the root (!) project's deployment/configuration files into the Docker image
+            from("${rootDir}/deployment/manager") {
+                into "deployment"
             }
         }
     }

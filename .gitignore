@@ -20,10 +20,6 @@ out/
 
 # TODO when is this used?
 manager/.factorypath
-or-shell/iOS/DerivedData
-or-shell/iOS/Pods
-frontend/bower_components
-or-shell/android/src/main/assets/bower_components
 console/iOS/DerivedData
 console/iOS/Pods
-manager/server/conf/console/master/bower_components
+deployment/manager/resources_console/master/bower_components
