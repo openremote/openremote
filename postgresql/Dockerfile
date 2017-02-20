@@ -15,15 +15,11 @@
 FROM postgres:9.6.1
 
 ENV POSTGIS_MAJOR 2.3
-# TODO This is frequently broken by someone upstream who doesn't know what they are doing
-# TODO To get the latest 'correct' version, look here: https://github.com/appropriate/docker-postgis/blob/master/9.6-2.3/Dockerfile
-ENV POSTGIS_VERSION 2.3.1+dfsg-1.pgdg80+1
 
 RUN apt-get update \
       && apt-get install -y --no-install-recommends \
-           postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR=$POSTGIS_VERSION \
-           postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR-scripts=$POSTGIS_VERSION \
-           postgis=$POSTGIS_VERSION \
+           postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR \
+           postgresql-$PG_MAJOR-postgis-$POSTGIS_MAJOR-scripts \
       && rm -rf /var/lib/apt/lists/*
 
 ENV POSTGRES_USER postgres
