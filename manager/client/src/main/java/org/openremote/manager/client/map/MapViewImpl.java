@@ -126,13 +126,13 @@ public class MapViewImpl extends Composite implements MapView {
     @Override
     public void initialiseMap(JsonObject mapOptions) {
         mapLoadingLabel.setVisible(false);
-        Scheduler.get().scheduleDeferred(() -> {
-            mapWidget.initialise(mapOptions);
-            mapWidget.addNavigationControl();
-            mapWidget.setVisible(true);
-            mapWidget.resize();
-            showInfoPanels();
-        });
+        mapWidget.initialise(mapOptions);
+        mapWidget.addNavigationControl();
+        mapWidget.setVisible(true);
+        mapWidget.resize();
+        showInfoPanels();
+        // Wait until the map is visible/sized so panels can be positioned properly
+        Scheduler.get().scheduleDeferred(this::showInfoPanels);
     }
 
     @Override

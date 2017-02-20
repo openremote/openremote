@@ -112,6 +112,7 @@ public abstract class WebService implements ContainerService {
         if (undertow != null) {
             LOG.info("Starting webserver on http://" + host + ":" + port);
             undertow.start();
+            LOG.info("Webserver ready on http://" + host + ":" + port);
         }
     }
 
