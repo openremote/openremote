@@ -43,7 +43,7 @@ class ViewController: UIViewController {
             var token : String
             if response != nil {
                 token = response! as! String
-                
+                URLProtocol.registerClass(CustomURLProtocol.self)
                 let orVC = ORViewcontroller()
                 orVC.accessToken = token
                 

@@ -10,7 +10,7 @@ import Foundation
 import UIKit
 import WebKit
 
-class ORViewcontroller : UIViewController, URLSessionDelegate, UIWebViewDelegate {
+class ORViewcontroller : UIViewController, URLSessionDelegate {
 
     var accessToken : String = ""
     
@@ -18,19 +18,13 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, UIWebViewDelegate
         super.viewDidLoad()
         
         CustomURLProtocol.accessToken = accessToken
-        
-        let webConfiguration = WKWebViewConfiguration()
-        webConfiguration.preferences.javaScriptEnabled = true;
-        webConfiguration.ignoresViewportScaleLimits = true;
-        webConfiguration.preferences.javaScriptCanOpenWindowsAutomatically = true;
 
         let myWebView = UIWebView(frame: view.frame)
         view.addSubview(myWebView)
-        myWebView.delegate = self
         
         let url = URL(string:String(format:"http://%@:%@/%@",Server.hostURL,Server.port,Server.initialPath))
         let request = URLRequest(url: url!)
-        
+        myWebView.scalesPageToFit = true
         myWebView.loadRequest(request)
     }
 
