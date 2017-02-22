@@ -2,6 +2,8 @@
 #
 # This configuration works with https://www.docker.com/products/overview#/docker_toolbox
 #
+# Install Docker Toolbox and execute "docker-compose -p openremote -f profile/demo.yml up"
+#
 version: '2'
 services:
 
@@ -74,3 +76,44 @@ services:
     logging:
         options:
             max-size: "10m"
+
+  # Keycloak identity provider
+  keycloak:
+    image: openremote/keycloak:latest
+    links:
+      - postgresql
+    environment:
+      TZ: "Europe/Zurich"
+
+      KEYCLOAK_LOGLEVEL: INFO
+
+      KEYCLOAK_USER: admin
+      # Change the admin root password if you make this application publicly accessible! Note
+      # that imported demo data uses the admin account and also creates a 'test' user with
+      # password 'test'. Importing will be broken if you change the password only here.
+      # Demo data should not be imported in production.
+      KEYCLOAK_PASSWORD: secret
+
+      # Configure how Keycloak connects to the database
+      POSTGRES_DATABASE: openremote
+      POSTGRES_USER: openremote
+      POSTGRES_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
+
+  # PostgreSQL DBMS
+  postgresql:
+    image: openremote/postgresql:latest
+    environment:
+      TZ: "Europe/Zurich"
+      # This is the DBMS superuser and password. You should change this, especially if you
+      # expose the DBMS port and make it accessible externally!
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: CHANGE_ME_DB_SUPERUSER_PASSWORD
+
+      # The database and service connection user, passwords should be changed in production!
+      POSTGRES_DB: openremote
+      OPENREMOTE_USERNAME: openremote
+      OPENREMOTE_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
+
+    # Durable data requires a volume mapping on your Docker host
+    # volumes:
+    #  - /path/to/data/on/my/host/postgresql:/var/lib/postgresql/data

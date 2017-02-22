@@ -6,10 +6,10 @@ services:
 
   keycloak_dev:
     build:
-      context: ../../keycloak
+      context: ../keycloak
       dockerfile: Dockerfile-dev
     volumes:
-      - ../../keycloak/theme:/opt/jboss/keycloak/themes/openremote
+      - ../keycloak/theme:/opt/jboss/keycloak/themes/openremote
     environment:
       TZ: "Europe/Zurich"
       KEYCLOAK_USER: admin

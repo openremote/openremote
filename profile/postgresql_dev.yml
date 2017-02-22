@@ -6,7 +6,7 @@ services:
 
   postgresql_dev:
     build:
-      context: ../../postgresql
+      context: ../postgresql
     environment:
       TZ: "Europe/Zurich"
       # This is the database superuser

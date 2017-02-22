@@ -67,7 +67,7 @@ public class ManagerWebService extends WebService {
             MANAGER_PATH, ManagerFileServlet.wrapHandler(managerFileHandler, MANAGER_PATTERN)
         );
 
-        // Serve the Console client files secured
+        // Serve the Console client files secured (note that CONSOLE_DOCROOT/index.html is the unsecured index page!)
         Path consoleDocRoot = Paths.get(
             getString(container.getConfig(), CONSOLE_DOCROOT, CONSOLE_DOCROOT_DEFAULT)
         );

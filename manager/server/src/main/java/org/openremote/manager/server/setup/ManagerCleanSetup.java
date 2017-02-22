@@ -35,5 +35,6 @@ public class ManagerCleanSetup extends AbstractManagerSetup {
     public void execute() throws Exception {
         LOG.info("Dropping database schema and all data");
         persistenceService.dropSchema();
+        LOG.info("### NOTE: The message 'PSQLException: ERROR: relation ... does not exist' is normal and can be ignored!");
     }
 }
