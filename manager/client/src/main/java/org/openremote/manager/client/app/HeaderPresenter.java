@@ -35,7 +35,7 @@ import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.rules.RulesPlace;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.user.UserControls;
-import org.openremote.manager.shared.Constants;
+import org.openremote.model.Constants;
 
 import java.util.logging.Logger;
 
@@ -132,6 +132,6 @@ public class HeaderPresenter implements HeaderView.Presenter {
 
     @Override
     public boolean isUserInRole(String role) {
-        return securityService.hasResourceRoleOrIsAdmin(role, Constants.KEYCLOAK_CLIENT_ID);
+        return securityService.hasResourceRoleOrIsSuperUser(role, Constants.KEYCLOAK_CLIENT_ID);
     }
 }

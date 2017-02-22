@@ -26,11 +26,11 @@ import elemental.html.WebSocket;
 import org.openremote.manager.client.event.*;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.util.Timeout;
-import org.openremote.manager.shared.Constants;
 import org.openremote.manager.shared.event.Event;
 import org.openremote.manager.shared.event.Message;
 import org.openremote.manager.shared.event.session.*;
 import org.openremote.manager.shared.event.ui.ShowFailureEvent;
+import org.openremote.model.Constants;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -175,7 +175,7 @@ public class EventServiceImpl implements EventService {
                 LOG.fine("Connecting to event websocket: " + serviceUrl);
 
                 String authenticatedServiceUrl = serviceUrl
-                    + "?Auth-Realm=" + securityService.getRealm()
+                    + "?Auth-Realm=" + securityService.getAuthenticatedRealm()
                     + "&Authorization=Bearer " + securityService.getToken();
 
                 webSocket = Browser.getWindow().newWebSocket(authenticatedServiceUrl);

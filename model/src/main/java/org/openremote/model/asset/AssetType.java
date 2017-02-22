@@ -79,6 +79,8 @@ public enum AssetType {
 
     FLOOR("urn:openremote:asset:floor", true, null),
 
+    RESIDENCE("urn:openremote:asset:residence", true, null),
+
     ROOM("urn:openremote:asset:room", true, null),
 
     AGENT("urn:openremote:asset:agent", true, null),

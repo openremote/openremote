@@ -48,7 +48,7 @@ public class UserAccountActivity extends AppActivity<UserAccountPlace> implement
     @Override
     public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
         view.setPresenter(this);
-        view.setRealm(environment.getSecurityService().getRealm());
+        view.setRealm(environment.getSecurityService().getAuthenticatedRealm());
         container.setWidget(view.asWidget());
     }
 }

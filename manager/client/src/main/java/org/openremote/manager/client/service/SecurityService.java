@@ -39,11 +39,16 @@ public interface SecurityService {
 
     void register(LoginOptions options);
 
+    /**
+     * @return <code>true</code> if the user is authenticated in the "master" realm and has the realm role "admin".
+     */
+    boolean isSuperUser();
+
     boolean hasRealmRole(String role);
 
     boolean hasResourceRole(String role, String resource);
 
-    boolean hasResourceRoleOrIsAdmin(String role, String resource);
+    boolean hasResourceRoleOrIsSuperUser(String role, String resource);
 
     boolean isTokenExpired();
 
@@ -61,7 +66,7 @@ public interface SecurityService {
 
     void updateToken(int minValiditySeconds, Consumer<Boolean> successFn, Runnable errorFn);
 
-    String getRealm();
+    String getAuthenticatedRealm();
 
     String getToken();
 

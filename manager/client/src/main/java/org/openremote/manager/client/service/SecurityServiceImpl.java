@@ -25,7 +25,7 @@ import elemental.html.Location;
 import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.interop.keycloak.*;
-import org.openremote.manager.shared.Constants;
+import org.openremote.model.Constants;
 import org.openremote.model.Consumer;
 import org.openremote.model.Runnable;
 
@@ -76,7 +76,7 @@ public class SecurityServiceImpl implements SecurityService {
         LogoutOptions opts = new LogoutOptions();
         // TODO Experiments with relative URLs only worked for master realm logout, not any other realm...
         Location location = Browser.getWindow().getLocation();
-        opts.redirectUri = location.getProtocol() + "//" + location.getHost() + "/" + getRealm();
+        opts.redirectUri = location.getProtocol() + "//" + location.getHost() + "/" + getAuthenticatedRealm();
         keycloak.logout(opts);
     }
 
@@ -96,6 +96,11 @@ public class SecurityServiceImpl implements SecurityService {
     }
 
     @Override
+    public boolean isSuperUser() {
+        return getAuthenticatedRealm().equals(Constants.MASTER_REALM) && hasRealmRole(Constants.REALM_ADMIN_ROLE);
+    }
+
+    @Override
     public boolean hasRealmRole(String role) {
         return keycloak.hasRealmRole(role);
     }
@@ -106,8 +111,8 @@ public class SecurityServiceImpl implements SecurityService {
     }
 
     @Override
-    public boolean hasResourceRoleOrIsAdmin(String role, String resource) {
-        return keycloak.hasResourceRole(role, resource) || keycloak.hasRealmRole("admin");
+    public boolean hasResourceRoleOrIsSuperUser(String role, String resource) {
+        return hasResourceRole(role, resource) || isSuperUser();
     }
 
     @Override
@@ -155,7 +160,7 @@ public class SecurityServiceImpl implements SecurityService {
     }
 
     @Override
-    public String getRealm() {
+    public String getAuthenticatedRealm() {
         return keycloak.realm;
     }
 

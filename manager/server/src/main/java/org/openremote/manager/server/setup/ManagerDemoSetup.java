@@ -30,30 +30,32 @@ import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.model.*;
 import org.openremote.model.asset.*;
 
-import static org.openremote.manager.shared.Constants.MASTER_REALM;
+import static org.openremote.model.Constants.*;
 import static org.openremote.model.AttributeType.*;
 import static org.openremote.model.asset.AssetAttributeMeta.*;
+import static org.openremote.model.asset.AssetType.RESIDENCE;
 import static org.openremote.model.asset.AssetType.BUILDING;
 
 public class ManagerDemoSetup extends AbstractManagerSetup {
 
-    protected String demoAgentId = null;
-    protected static String demoThingId = null;
+    public String smartOfficeId;
+    public String groundFloorId;
+    public String lobbyId;
+    public String agentId;
+    public String thingId;
+    public String smartHomeId;
+    public String apartment1Id;
+    public String apartment2Id;
+    public String apartment3Id;
 
     public ManagerDemoSetup(Container container) {
         super(container);
     }
 
-    public String getDemoAgentId() {
-        return demoAgentId;
-    }
-
-    public String getDemoThingId() {
-        return demoThingId;
-    }
-
     @Override
     public void execute() throws Exception {
+
+        // ################################ Demo assets for 'master' realm ###################################
 
         GeometryFactory geometryFactory = new GeometryFactory();
 
@@ -87,18 +89,21 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         );
         smartOffice.setAttributes(smartOfficeAttributes.getJsonObject());
         smartOffice = assetService.merge(smartOffice);
+        smartOfficeId = smartOffice.getId();
 
-        ServerAsset groundfloor = new ServerAsset(smartOffice);
-        groundfloor.setName("Ground Floor");
-        groundfloor.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
-        groundfloor.setType(AssetType.FLOOR);
-        groundfloor = assetService.merge(groundfloor);
+        ServerAsset groundFloor = new ServerAsset(smartOffice);
+        groundFloor.setName("Ground Floor");
+        groundFloor.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+        groundFloor.setType(AssetType.FLOOR);
+        groundFloor = assetService.merge(groundFloor);
+        groundFloorId = groundFloor.getId();
 
-        ServerAsset lobby = new ServerAsset(groundfloor);
+        ServerAsset lobby = new ServerAsset(groundFloor);
         lobby.setName("Lobby");
         lobby.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         lobby.setType(AssetType.ROOM);
         lobby = assetService.merge(lobby);
+        lobbyId = lobby.getId();
 
         ServerAsset agent = new ServerAsset(lobby);
         agent.setName("Demo Agent");
@@ -110,7 +115,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         agentAttributes.put(protocolConfigSimulator123);
         agent.setAttributes(agentAttributes.getJsonObject());
         agent = assetService.merge(agent);
-        demoAgentId = agent.getId();
+        agentId = agent.getId();
 
         ServerAsset thing = new ServerAsset(agent);
         thing.setName("Demo Thing");
@@ -189,6 +194,38 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         );
         thing.setAttributes(thingAttributes.getJsonObject());
         thing = assetService.merge(thing);
-        demoThingId = thing.getId();
+        thingId = thing.getId();
+
+        // ################################ Demo assets for 'customerA' realm ###################################
+
+        ServerAsset smartHome = new ServerAsset();
+        smartHome.setRealm("customerA");
+        smartHome.setName("Smart Home");
+        smartHome.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
+        smartHome.setType(BUILDING);
+        smartHome = assetService.merge(smartHome);
+        smartHomeId = smartHome.getId();
+
+        ServerAsset apartment1 = new ServerAsset(smartHome);
+        apartment1.setName("Apartment 1");
+        apartment1.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
+        apartment1.setType(RESIDENCE);
+        apartment1 = assetService.merge(apartment1);
+        apartment1Id = apartment1.getId();
+
+        ServerAsset apartment2 = new ServerAsset(smartHome);
+        apartment2.setName("Apartment 2");
+        apartment2.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
+        apartment2.setType(RESIDENCE);
+        apartment2 = assetService.merge(apartment2);
+        apartment2Id = apartment2.getId();
+
+        ServerAsset apartment3 = new ServerAsset(smartHome);
+        apartment3.setName("Apartment 3");
+        apartment3.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
+        apartment3.setType(RESIDENCE);
+        apartment3 = assetService.merge(apartment3);
+        apartment3Id = apartment3.getId();
+
     }
 }

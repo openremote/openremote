@@ -105,7 +105,7 @@ public class AssetActivity
     protected void startCreateAsset() {
         super.startCreateAsset();
         isCreateAsset = true;
-        realm = environment.getSecurityService().getRealm();
+        realm = environment.getSecurityService().getAuthenticatedRealm();
         view.setFormBusy(true);
         asset = new Asset();
         asset.setName("My New Asset");

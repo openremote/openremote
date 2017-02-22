@@ -21,6 +21,11 @@ package org.openremote.model;
 
 public interface Constants {
 
+    String KEYCLOAK_CLIENT_ID = "openremote";
+    String MASTER_REALM = "master";
+    String MASTER_REALM_ADMIN_USER = "admin";
+    String REALM_ADMIN_ROLE = "admin";
+    int ACCESS_TOKEN_LIFESPAN_SECONDS = 300; // 5 minutes
     String PERSISTENCE_SEQUENCE_ID_GENERATOR = "SEQUENCE_ID_GENERATOR";
     String PERSISTENCE_UNIQUE_ID_GENERATOR = "UNIQUE_ID_GENERATOR";
     String PERSISTENCE_JSON_OBJECT_TYPE = "json_object";

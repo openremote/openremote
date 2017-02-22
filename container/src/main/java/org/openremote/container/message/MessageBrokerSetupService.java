@@ -55,8 +55,8 @@ public class MessageBrokerSetupService implements ContainerService {
         // Don't use JMS, we do our own correlation
         context.setUseBreadcrumb(false);
 
-        // TODO: Wait 5 seconds before forcing a route to stop?
-        context.getShutdownStrategy().setTimeout(5);
+        // TODO: Wait 1 second before forcing a route to stop?
+        context.getShutdownStrategy().setTimeout(1);
 
         context.setStreamCaching(true);
         StreamCachingStrategy streamCachingStrategy = new DefaultStreamCachingStrategy();

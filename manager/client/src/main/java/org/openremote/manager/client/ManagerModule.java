@@ -106,7 +106,7 @@ public class ManagerModule extends AbstractGinModule {
     @Singleton
     public RequestService getRequestService(SecurityService securityService,
                                             ConstraintViolationReportMapper constraintViolationReportMapper) {
-        RequestServiceImpl.Configuration.setDefaults(securityService.getRealm());
+        RequestServiceImpl.Configuration.setDefaults(securityService.getAuthenticatedRealm());
         return new RequestServiceImpl(securityService, constraintViolationReportMapper);
     }
 

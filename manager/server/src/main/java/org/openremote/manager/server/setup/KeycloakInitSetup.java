@@ -31,7 +31,7 @@ import rx.Observable;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
-import static org.openremote.manager.shared.Constants.MASTER_REALM_ADMIN_USER;
+import static org.openremote.model.Constants.*;
 import static rx.Observable.fromCallable;
 
 public class KeycloakInitSetup extends AbstractKeycloakSetup {
@@ -59,7 +59,7 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
 
         // Get the client application ID so we can assign roles to users at the client
         // level (we can only check realm _or_ client application roles in @RolesAllowed!)
-        String clientObjectId = getClientObjectId();
+        String clientObjectId = getClientObjectId(masterClientsResource);
 
         ClientResource clientResource = masterClientsResource.get(clientObjectId);
         RolesResource rolesResource = clientResource.roles();

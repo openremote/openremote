@@ -19,10 +19,10 @@
  */
 package org.openremote.manager.server.setup;
 
-import org.keycloak.admin.client.resource.ClientResource;
+import org.keycloak.admin.client.resource.ClientsResource;
 import org.keycloak.admin.client.resource.RolesResource;
+import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.openremote.container.Container;
 import org.openremote.manager.shared.security.ClientRole;
@@ -31,44 +31,48 @@ import org.openremote.manager.shared.security.Tenant;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
+/**
+ * We have three demo users:
+ * <ul>
+ *     <li><code>admin</code> - The superuser in the "master" realm with all access</li>
+ *     <li><code>testuser1</code> - (Password: testuser1) A user in the "master" realm with read/write access to assets</li>
+ *     <li><code>testuser2</code> - (Password: testuser2) A user in the "customerA" realm with only read access to assets</li>
+ * </ul>
+ */
 public class KeycloakDemoSetup extends AbstractKeycloakSetup {
 
     private static final Logger LOG = Logger.getLogger(KeycloakDemoSetup.class.getName());
 
+    final protected UsersResource customerAUsersResource;
+
     public KeycloakDemoSetup(Container container) {
         super(container);
+        customerAUsersResource = identityService.getRealms(accessToken, false).realm("customerA").users();
     }
 
     @Override
     public void execute() throws Exception {
-        String clientObjectId = getClientObjectId();
-        ClientResource clientResource = masterClientsResource.get(clientObjectId);
-        RolesResource rolesResource = clientResource.roles();
+        String masterClientObjectId = getClientObjectId(masterClientsResource);
+        RolesResource masterRolesResource = masterClientsResource.get(masterClientObjectId).roles();
 
-        // Create a new 'test' user in master realm
-        UserRepresentation testUser = new UserRepresentation();
-        testUser.setUsername("test");
-        testUser.setFirstName("Testuserfirst");
-        testUser.setLastName("Testuserlast");
-        testUser.setEnabled(true);
-        masterUsersResource.create(testUser);
-        testUser = masterUsersResource.search("test", null, null, null, null, null).get(0);
-
-        CredentialRepresentation testUserCredential = new CredentialRepresentation();
-        testUserCredential.setType("password");
-        testUserCredential.setValue("test");
-        testUserCredential.setTemporary(false);
-        masterUsersResource.get(testUser.getId()).resetPassword(testUserCredential);
-
-        // Assign roles to the 'test' user
-        RoleRepresentation readRole = rolesResource.get(ClientRole.READ.getValue()).toRepresentation();
-        RoleRepresentation writeRole = rolesResource.get(ClientRole.WRITE.getValue()).toRepresentation();
-        masterUsersResource.get(testUser.getId()).roles().clientLevel(clientObjectId).add(Arrays.asList(
-            readRole,
-            writeRole
+        // Create the 'test1' user in master realm
+        UserRepresentation testuser1 = new UserRepresentation();
+        testuser1.setUsername("testuser1");
+        testuser1.setFirstName("Testuserfirst");
+        testuser1.setLastName("Testuserlast");
+        testuser1.setEnabled(true);
+        masterUsersResource.create(testuser1);
+        testuser1 = masterUsersResource.search("testuser1", null, null, null, null, null).get(0);
+        CredentialRepresentation testuser1Credentials = new CredentialRepresentation();
+        testuser1Credentials.setType("password");
+        testuser1Credentials.setValue("testuser1");
+        testuser1Credentials.setTemporary(false);
+        masterUsersResource.get(testuser1.getId()).resetPassword(testuser1Credentials);
+        masterUsersResource.get(testuser1.getId()).roles().clientLevel(masterClientObjectId).add(Arrays.asList(
+            masterRolesResource.get(ClientRole.READ_ASSETS.getValue()).toRepresentation(),
+            masterRolesResource.get(ClientRole.WRITE_ASSETS.getValue()).toRepresentation()
         ));
-
-        LOG.info("Added master realm user '" + testUser.getUsername() + "' with password '" + testUserCredential.getValue() + "'");
+        LOG.info("Added demo user '" + testuser1.getUsername() + "' with password '" + testuser1Credentials.getValue() + "'");
 
         // Create additional test realms/tenants
         Tenant customerA = new Tenant();
@@ -76,6 +80,28 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         customerA.setDisplayName("Customer A");
         customerA.setEnabled(true);
         identityService.createTenant(accessToken, customerA);
+
+        ClientsResource customerAClientsResource = identityService.getRealms(accessToken, false).realm("customerA").clients();
+        String customerAClientObjectId = getClientObjectId(customerAClientsResource);
+        RolesResource customerARolesResource = customerAClientsResource.get(customerAClientObjectId).roles();
+
+        // Create the 'test2' user in master realm
+        UserRepresentation testuser2 = new UserRepresentation();
+        testuser2.setUsername("testuser2");
+        testuser2.setFirstName("Testuserfirst");
+        testuser2.setLastName("Testuserlast");
+        testuser2.setEnabled(true);
+        customerAUsersResource.create(testuser2);
+        testuser2 = customerAUsersResource.search("test", null, null, null, null, null).get(0);
+        CredentialRepresentation testuser2Credentials = new CredentialRepresentation();
+        testuser2Credentials.setType("password");
+        testuser2Credentials.setValue("testuser2");
+        testuser2Credentials.setTemporary(false);
+        customerAUsersResource.get(testuser2.getId()).resetPassword(testuser2Credentials);
+        customerAUsersResource.get(testuser2.getId()).roles().clientLevel(customerAClientObjectId).add(Arrays.asList(
+            customerARolesResource.get(ClientRole.READ_ASSETS.getValue()).toRepresentation()
+        ));
+        LOG.info("Added demo user '" + testuser1.getUsername() + "' with password '" + testuser2Credentials.getValue() + "'");
 
         Tenant customerB = new Tenant();
         customerB.setRealm("customerB");

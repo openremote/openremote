@@ -10,19 +10,23 @@ import java.util.List;
  */
 public enum ClientRole {
 
+    READ_ADMIN("read:admin", "Read system settings, tenants, and users"),
     READ_CONSOLE("read:console", "Download console frontend resources"),
     READ_MAP("read:map", "View map"),
-    READ_ASSETS("read:assets", "Read asset entity data"),
+    READ_ASSETS("read:assets", "Read asset data"),
 
-    WRITE_ASSETS("write:assets", "Write asset entity data"),
+    WRITE_ADMIN("write:admin", "Write system settings, tenants, and users"),
+    WRITE_ASSETS("write:assets", "Write asset data"),
 
     READ("read", "Read all data", new ClientRole[]{
+        READ_ADMIN,
         READ_CONSOLE,
         READ_MAP,
         READ_ASSETS
     }),
 
     WRITE("write", "Write all data", new ClientRole[]{
+        WRITE_ADMIN,
         WRITE_ASSETS
     });
 

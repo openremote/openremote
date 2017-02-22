@@ -24,7 +24,7 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.service.SecurityService;
-import org.openremote.manager.shared.Constants;
+import org.openremote.model.Constants;
 
 import java.util.Collection;
 
@@ -45,7 +45,7 @@ public abstract class AppActivity<T extends Place>  {
 
     public AppActivity<T> init(SecurityService securityService, T place) throws RoleRequiredException {
         for (String requiredRole : getRequiredRoles()) {
-            if (!securityService.hasResourceRoleOrIsAdmin(requiredRole, Constants.KEYCLOAK_CLIENT_ID)) {
+            if (!securityService.hasResourceRoleOrIsSuperUser(requiredRole, Constants.KEYCLOAK_CLIENT_ID)) {
                 throw new RoleRequiredException(requiredRole);
             }
         }

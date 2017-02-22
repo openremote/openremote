@@ -38,7 +38,7 @@ import spock.util.concurrent.BlockingVariables
 
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.*
-import static org.openremote.manager.shared.Constants.*
+import static org.openremote.model.Constants.*;
 
 class AdminTenantsActivityTest extends Specification implements ManagerContainerTrait, GwtClientTrait {
 
@@ -63,7 +63,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
             updateToken(_, _, _) >> { int minValiditySeconds, Consumer<Boolean> successFn, Runnable errorFn ->
                 successFn.accept(true) // The token is always valid (this assumes the test doesn't run very long)
             };
-            hasResourceRoleOrIsAdmin(_, _) >> { String role, String resource ->
+            hasResourceRoleOrIsSuperUser(_, _) >> { String role, String resource ->
                 return true; // TODO: Should use the parsed token
             }
         }
@@ -413,7 +413,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         and: "The view should have received the tenants"
         result.tenants.length == 3
 
-        and: "The server should be stopped"
+        cleanup: "The server should be stopped"
         stopContainer(container);
     }
 }

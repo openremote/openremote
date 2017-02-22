@@ -23,9 +23,7 @@ import spock.lang.Specification
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.server.setup.SetupService.DEMO_ADMIN_PASSWORD
 import static org.openremote.manager.server.setup.SetupService.DEMO_ADMIN_PASSWORD_DEFAULT
-import static org.openremote.manager.shared.Constants.KEYCLOAK_CLIENT_ID
-import static org.openremote.manager.shared.Constants.MASTER_REALM
-import static org.openremote.manager.shared.Constants.MASTER_REALM_ADMIN_USER
+import static org.openremote.model.Constants.*;
 
 // TODO Fix this when we do Asset testing
 @Ignore
@@ -102,7 +100,7 @@ class MapActivityTest extends Specification implements ContainerTrait, GwtClient
         mapSettings.getNumber("maxZoom") == 18;
         mapSettings.getObject("style") != null;
 
-        and: "the server should be stopped"
+        cleanup: "the server should be stopped"
         stopContainer(container);
     }
 }

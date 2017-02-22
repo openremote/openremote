@@ -42,10 +42,7 @@ import spock.util.concurrent.PollingConditions
 import javax.ws.rs.NotFoundException
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.*
-import static org.openremote.manager.shared.Constants.KEYCLOAK_CLIENT_ID
-import static org.openremote.manager.shared.Constants.MASTER_REALM
-import static org.openremote.manager.shared.Constants.MASTER_REALM_ADMIN_USER
+import static org.openremote.model.Constants.*;
 
 @Ignore
 class EntityServiceTest extends Specification implements ContainerTrait {

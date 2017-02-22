@@ -46,7 +46,7 @@ import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.openremote.container.json.JsonUtil.convert;
-import static org.openremote.manager.shared.Constants.*;
+import static org.openremote.model.Constants.*;
 import static org.openremote.manager.shared.validation.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
 
 public class UserResourceImpl extends WebResource implements UserResource {

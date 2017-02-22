@@ -27,11 +27,14 @@ import org.openremote.container.Container;
 import rx.Observable;
 
 import java.util.List;
+import java.util.logging.Logger;
 
-import static org.openremote.manager.shared.Constants.*;
+import static org.openremote.model.Constants.*;
 import static rx.Observable.fromCallable;
 
 public class KeycloakCleanSetup extends AbstractKeycloakSetup {
+
+    private static final Logger LOG = Logger.getLogger(KeycloakCleanSetup.class.getName());
 
     public KeycloakCleanSetup(Container container) {
         super(container);
@@ -41,6 +44,7 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
     public void execute() {
 
         // Delete all realms that are not the master realm
+        LOG.info("Deleting all non-master realms");
         RealmsResource realmsResource = identityService.getRealms(accessToken, false);
         List<RealmRepresentation> realms = realmsResource.findAll();
         for (RealmRepresentation realmRepresentation : realms) {
@@ -55,6 +59,7 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
             .filter(clientRepresentation -> clientRepresentation.getClientId().equals(KEYCLOAK_CLIENT_ID))
             .map(ClientRepresentation::getId)
             .subscribe(clientObjectId -> {
+                LOG.info("Deleting client: " + clientObjectId);
                 masterClientsResource.get(clientObjectId).remove();
             });
 
@@ -63,7 +68,10 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
             .flatMap(Observable::from)
             .filter(userRepresentation -> !userRepresentation.getUsername().equals(MASTER_REALM_ADMIN_USER))
             .map(userRepresentation -> masterUsersResource.get(userRepresentation.getId()))
-            .subscribe(UserResource::remove);
+            .subscribe(userResource -> {
+                LOG.info("Deleting user: " + userResource);
+                userResource.remove();
+            });
 
 
     }

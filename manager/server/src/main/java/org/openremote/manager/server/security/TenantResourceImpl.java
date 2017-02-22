@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static org.openremote.manager.shared.Constants.MASTER_REALM;
+import static org.openremote.model.Constants.*;
 import static org.openremote.manager.shared.validation.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
 
 public class TenantResourceImpl extends WebResource implements TenantResource {
@@ -70,6 +70,7 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
 
     @Override
     public void update(RequestParams requestParams, String realm, Tenant tenant) {
+        // TODO If the realm name changes, what happens to all the assets?
         ConstraintViolationReport violationReport;
         if ((violationReport = isIllegalMasterRealmMutation(realm, tenant)) != null) {
             throw new WebApplicationException(
@@ -101,6 +102,7 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
 
     @Override
     public void delete(RequestParams requestParams, String realm) {
+        // TODO Delete all assets in that realm?
         ConstraintViolationReport violationReport;
         if ((violationReport = isIllegalMasterRealmDeletion(realm)) != null) {
             throw new WebApplicationException(

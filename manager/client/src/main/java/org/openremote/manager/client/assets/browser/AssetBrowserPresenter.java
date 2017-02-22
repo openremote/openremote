@@ -28,10 +28,10 @@ import org.openremote.manager.client.event.RepeatingServerSendEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventListener;
 import org.openremote.manager.client.event.bus.EventRegistration;
-import org.openremote.manager.shared.Constants;
 import org.openremote.manager.shared.asset.*;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
+import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetInfo;
 import org.openremote.model.asset.AssetType;
@@ -85,7 +85,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                 // If we are in the master realm, we never refresh the root of
                 // the asset tree, these are "immutable" tenants
                 // TODO: Notifications when tenants are modified?
-                String currentRealm = environment.getSecurityService().getRealm();
+                String currentRealm = environment.getSecurityService().getAuthenticatedRealm();
                 if (currentRealm.equals(Constants.MASTER_REALM)) {
                     forceRootRefresh = false;
                 }
@@ -129,7 +129,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         }
 
         // If the parent is the invisible root of the tree and we are in the master realm, show all realms
-        String currentRealm = environment.getSecurityService().getRealm();
+        String currentRealm = environment.getSecurityService().getAuthenticatedRealm();
         if (parent.getId() == null && currentRealm.equals(Constants.MASTER_REALM)) {
             loadTenants(parent, display);
         } else {
@@ -192,6 +192,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
             requestParams -> {
                 // This must be async, so tree selection/searching works
                 requestParams.setAsync(false);
+                // TODO Can't get all tenants unless i'm the superuser
                 tenantResource.getAll(requestParams);
             },
             200,
@@ -217,7 +218,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     }
 
     protected void loadChildren(AssetInfo parent, HasData<AssetInfo> display) {
-        String realm = parent.getId() != null ? parent.getRealm() : environment.getSecurityService().getRealm();
+        String realm = parent.getId() != null ? parent.getRealm() : environment.getSecurityService().getAuthenticatedRealm();
 
         // TODO Pagination?
         // final Range range = display.getVisibleRange();
@@ -270,7 +271,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         // If we are in the master realm, we try to find the tenant and prefix the
         // path array with the tenant asset ID, since that is the root level of
         // the asset tree
-        String currentRealm = environment.getSecurityService().getRealm();
+        String currentRealm = environment.getSecurityService().getAuthenticatedRealm();
         if (currentRealm.equals(Constants.MASTER_REALM)) {
             for (AssetInfo tenantAssetInfo : tenantAssetInfos) {
                 if (tenantAssetInfo.getRealm().equals(asset.getRealm())) {

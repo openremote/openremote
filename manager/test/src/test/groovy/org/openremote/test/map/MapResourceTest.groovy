@@ -7,9 +7,7 @@ import spock.lang.Specification
 
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.*
-import static org.openremote.manager.shared.Constants.KEYCLOAK_CLIENT_ID
-import static org.openremote.manager.shared.Constants.MASTER_REALM
-import static org.openremote.manager.shared.Constants.MASTER_REALM_ADMIN_USER
+import static org.openremote.model.Constants.*;
 
 class MapResourceTest extends Specification implements ManagerContainerTrait {
 
@@ -49,7 +47,7 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
         json.maxZoom == 18;
         json.style != null;
 
-        and: "the server should be stopped"
+        cleanup: "the server should be stopped"
         stopContainer(container);
     }
 }

@@ -30,9 +30,9 @@ import org.openremote.container.Container;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.KeycloakResource;
 import org.openremote.container.web.WebService;
-import org.openremote.manager.shared.Constants;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
+import org.openremote.model.Constants;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,7 +40,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import static org.openremote.container.json.JsonUtil.convert;
-import static org.openremote.manager.shared.Constants.*;
+import static org.openremote.model.Constants.*;
 
 public class ManagerIdentityService extends IdentityService {
 

@@ -88,6 +88,7 @@ public class ServerAsset extends Asset implements IdentifiableEntity {
 
     public ServerAsset(Asset parent) {
         super(parent);
+        setRealm(parent.getRealm());
     }
 
     public ServerAsset getParent() {

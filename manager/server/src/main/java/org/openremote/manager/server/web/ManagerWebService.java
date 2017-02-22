@@ -24,8 +24,8 @@ import io.undertow.servlet.api.DeploymentInfo;
 import org.openremote.container.Container;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
-import org.openremote.manager.shared.Constants;
 import org.openremote.manager.shared.security.ClientRole;
+import org.openremote.model.Constants;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;

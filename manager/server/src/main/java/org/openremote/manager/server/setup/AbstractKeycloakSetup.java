@@ -28,9 +28,7 @@ import org.openremote.container.security.AuthForm;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import rx.Observable;
 
-import static org.openremote.manager.shared.Constants.KEYCLOAK_CLIENT_ID;
-import static org.openremote.manager.shared.Constants.MASTER_REALM;
-import static org.openremote.manager.shared.Constants.MASTER_REALM_ADMIN_USER;
+import static org.openremote.model.Constants.*;
 import static rx.Observable.fromCallable;
 
 public abstract class AbstractKeycloakSetup implements Setup {
@@ -63,8 +61,8 @@ public abstract class AbstractKeycloakSetup implements Setup {
         masterUsersResource = identityService.getRealms(accessToken, false).realm(MASTER_REALM).users();
     }
 
-    protected String getClientObjectId() {
-        return fromCallable(() -> masterClientsResource.findByClientId(KEYCLOAK_CLIENT_ID))
+    protected String getClientObjectId(ClientsResource clientsResource) {
+        return fromCallable(() -> clientsResource.findByClientId(KEYCLOAK_CLIENT_ID))
             .flatMap(Observable::from)
             .map(ClientRepresentation::getId)
             .toBlocking().singleOrDefault(null);

@@ -45,7 +45,7 @@ import java.util.stream.Stream;
 
 import static org.openremote.container.web.WebClient.getTarget;
 import static org.openremote.manager.server.ngsi.ContextBrokerV2ResourceImpl.CONTEXT_PROVIDER_V2_ENDPOINT_PATH;
-import static org.openremote.manager.shared.Constants.MASTER_REALM;
+import static org.openremote.model.Constants.MASTER_REALM;
 
 /**
  * This implementation only needs to support queryContext for resolving context provider requests

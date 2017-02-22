@@ -27,16 +27,16 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         when: "the demo agent and thing have been deployed"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
-        def demoThingId = container.getService(SetupService.class).getManagerDemoSetup().getDemoThingId()
+        def managerDemoSetup = container.getService(SetupService.class).managerDemoSetup
         def simulatorProtocol = container.getService(SimulatorProtocol.class)
         def assetService = container.getService(AssetService.class)
 
         then: "the simulator elements should have the initial state"
         conditions.eventually {
-            assert simulatorProtocol.getState(demoThingId, "light1Toggle").asBoolean()
-            assert simulatorProtocol.getState(demoThingId, "light1Dimmer").asNumber() == 55
-            assert new Color(simulatorProtocol.getState(demoThingId, "light1Color") as JsonObject) == new Color(88, 123, 88)
-            assert simulatorProtocol.getState(demoThingId, "light1PowerConsumption").asNumber() == 12.345d
+            assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Toggle").asBoolean()
+            assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Dimmer").asNumber() == 55
+            assert new Color(simulatorProtocol.getState(managerDemoSetup.thingId, "light1Color") as JsonObject) == new Color(88, 123, 88)
+            assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1PowerConsumption").asNumber() == 12.345d
         }
 
         when: "a thing attribute value change occurs"
@@ -68,7 +68,7 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
                 4c. Should "forceUpdate" be the default behavior?
         */
         def light1DimmerChange = new AttributeValueChange(
-                new AttributeRef(demoThingId, "light1Dimmer"), Json.create(66)
+                new AttributeRef(managerDemoSetup.thingId, "light1Dimmer"), Json.create(66)
         )
         container.getService(MessageBrokerService.class).getProducerTemplate().sendBody(
                 ACTUATOR_TOPIC, light1DimmerChange
@@ -76,20 +76,20 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
 
         then: "the simulator state should be updated"
         conditions.eventually {
-            assert simulatorProtocol.getState(demoThingId, "light1Dimmer").asNumber() == 66
+            assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Dimmer").asNumber() == 66
         }
 
         when: "a simulated sensor changes its value"
         conditions = new PollingConditions(timeout: 3, initialDelay: 2)
         simulatorProtocol.putState(
-                new AttributeRef(demoThingId, "light1Dimmer"),
+                new AttributeRef(managerDemoSetup.thingId, "light1Dimmer"),
                 Json.create(77),
                 true
         )
 
         then: "the thing attribute value should be updated"
         conditions.eventually {
-            def thing = assetService.get(demoThingId)
+            def thing = assetService.get(managerDemoSetup.thingId)
             def attributes = new Attributes(thing.getAttributes())
             attributes.get("light1Dimmer").getValue_TODO_BUG_IN_JAVASCRIPT().getType() == JsonType.NUMBER
             attributes.get("light1Dimmer").getValueAsInteger() == 77

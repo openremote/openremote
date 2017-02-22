@@ -44,7 +44,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import static org.openremote.manager.shared.Constants.MASTER_REALM;
+import static org.openremote.model.Constants.MASTER_REALM;
+
 
 public class EntityResourceImpl extends WebResource implements EntityResource, SubscriptionProvider {
 

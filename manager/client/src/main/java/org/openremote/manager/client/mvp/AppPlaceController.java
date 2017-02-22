@@ -28,7 +28,7 @@ import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.WillGoToPlaceEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.service.SecurityService;
-import org.openremote.manager.shared.Constants;
+import org.openremote.model.Constants;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;

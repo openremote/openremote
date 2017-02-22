@@ -25,6 +25,7 @@ import org.hibernate.Session;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.manager.server.agent.AgentAttributes;
 import org.openremote.manager.server.agent.ThingAttributes;
+import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.model.Function;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
@@ -87,7 +88,7 @@ public class AssetService extends RouteBuilder implements ContainerService {
         container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
 
         container.getService(WebService.class).getApiSingletons().add(
-            new AssetResourceImpl(this)
+            new AssetResourceImpl(container.getService(ManagerIdentityService.class), this)
         );
     }
 
@@ -197,7 +198,25 @@ public class AssetService extends RouteBuilder implements ContainerService {
                         "a.id, a.version, a.name, a.realm, a.type, a.parent.id, a.location" +
                         ") from Asset a where a.parent.id = :parentId order by a.createdOn asc",
                     AssetInfo.class
-                ).setParameter("parentId", parentId).getResultList();
+                ).setParameter("parentId", parentId)
+                    .getResultList();
+            return result.toArray(new AssetInfo[result.size()]);
+        });
+    }
+
+    public AssetInfo[] getChildrenInRealm(String parentId, String realm) {
+        return persistenceService.doReturningTransaction(em -> {
+            List<AssetInfo> result =
+                em.createQuery(
+                    "select new org.openremote.manager.server.asset.ServerAssetInfo(" +
+                        "a.id, a.version, a.name, a.realm, a.type, a.parent.id, a.location" +
+                        ") from Asset a, Asset p where p.id = :parentId and a.parent.id = :parentId " +
+                        "and p.realm = :realm and a.realm = :realm " +
+                        "order by a.createdOn asc",
+                    AssetInfo.class
+                ).setParameter("parentId", parentId)
+                    .setParameter("realm", realm)
+                    .getResultList();
             return result.toArray(new AssetInfo[result.size()]);
         });
     }
