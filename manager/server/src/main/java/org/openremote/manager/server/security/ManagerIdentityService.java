@@ -46,13 +46,18 @@ public class ManagerIdentityService extends IdentityService {
 
     private static final Logger LOG = Logger.getLogger(ManagerIdentityService.class.getName());
 
-    protected Container container;
+    protected boolean devMode;
+
+    public ManagerIdentityService() {
+        super(Constants.KEYCLOAK_CLIENT_ID);
+    }
 
     @Override
     public void init(Container container) throws Exception {
-        this.container = container;
-        setClientId(Constants.KEYCLOAK_CLIENT_ID);
         super.init(container);
+
+        this.devMode = container.isDevMode();
+
         enableAuthProxy(container.getService(WebService.class));
 
         container.getService(WebService.class).getApiSingletons().add(
@@ -91,14 +96,14 @@ public class ManagerIdentityService extends IdentityService {
 
         List<Tenant> tenants = new ArrayList<>();
         for (RealmRepresentation realm : realms) {
-            tenants.add(convert(container.JSON, Tenant.class, realm));
+            tenants.add(convert(Container.JSON, Tenant.class, realm));
         }
         return tenants.toArray(new Tenant[tenants.size()]);
     }
 
     public Tenant getTenant(String bearerAuth, String realm) {
         return convert(
-            container.JSON,
+            Container.JSON,
             Tenant.class,
             getRealms(bearerAuth).realm(realm).toRepresentation()
         );
@@ -110,7 +115,7 @@ public class ManagerIdentityService extends IdentityService {
 
     public void createTenant(String bearerAuth, Tenant tenant) throws Exception {
         LOG.fine("Create tenant: " + tenant);
-        RealmRepresentation realmRepresentation = convert(container.JSON, RealmRepresentation.class, tenant);
+        RealmRepresentation realmRepresentation = convert(Container.JSON, RealmRepresentation.class, tenant);
         configureRealm(realmRepresentation);
         getRealms(bearerAuth).create(realmRepresentation);
         // TODO This is not atomic, write compensation actions
@@ -120,7 +125,7 @@ public class ManagerIdentityService extends IdentityService {
     public void createClientApplication(String bearerAuth, String realm) {
         ClientsResource clientsResource = getRealms(bearerAuth).realm(realm).clients();
         ClientRepresentation client = createClientApplication(
-            realm, KEYCLOAK_CLIENT_ID, "OpenRemote", container.isDevMode()
+            realm, KEYCLOAK_CLIENT_ID, "OpenRemote", devMode
         );
         clientsResource.create(client);
         client = clientsResource.findByClientId(client.getClientId()).get(0);
@@ -131,7 +136,7 @@ public class ManagerIdentityService extends IdentityService {
     public void updateTenant(String bearerAuth, String realm, Tenant tenant) throws Exception {
         LOG.fine("Update tenant: " + tenant);
         getRealms(bearerAuth).realm(realm).update(
-            convert(container.JSON, RealmRepresentation.class, tenant)
+            convert(Container.JSON, RealmRepresentation.class, tenant)
         );
     }
 

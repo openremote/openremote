@@ -67,9 +67,6 @@ public class IdentityService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(IdentityService.class.getName());
 
-    public static final String DISABLE_API_SECURITY = "DISABLE_API_SECURITY";
-    public static final boolean DISABLE_API_SECURITY_DEFAULT = false;
-
     public static final String IDENTITY_NETWORK_SECURE = "IDENTITY_NETWORK_SECURE";
     public static final boolean IDENTITY_NETWORK_SECURE_DEFAULT = false;
     public static final String IDENTITY_NETWORK_HOST = "IDENTITY_NETWORK_HOST";
@@ -92,18 +89,37 @@ public class IdentityService implements ContainerService {
 
     public static final String AUTH_PATH = "/auth";
 
+    // Each realm in Keycloak has a client application with this identifier
+    final protected String clientId;
+
+    // The token issuer URL, the externally visible address of this service
     protected URI externalAuthServerUri;
+
+    // The internal host where Keycloak can be found
     protected UriBuilder keycloakHostUri;
     protected UriBuilder keycloakServiceUri;
+
+    // The client we use to access Keycloak
     protected Client httpClient;
+
+    // Cache realms so we don't have to access Keycloak for every token validation
     protected LoadingCache<ClientRealm.Key, ClientRealm> clientApplicationCache;
+
+    // The configuration for the Keycloak servlet extension, looks up the client application per realm
     protected KeycloakConfigResolver keycloakConfigResolver;
+
+    // Optional reverse proxy that listens to AUTH_PATH and forwards requests to Keycloak
     protected ProxyHandler authProxyHandler;
-    protected String clientId;
+
+    // Configuration options for new realms
     protected int sessionTimeoutSeconds;
 
     // This will pass authentication ("NOT ATTEMPTED" state), but later fail any role authorization
     final protected KeycloakDeployment notAuthenticatedKeycloakDeployment = new KeycloakDeployment();
+
+    public IdentityService(String clientId) {
+        this.clientId = clientId;
+    }
 
     @Override
     public void init(Container container) throws Exception {
@@ -158,26 +174,20 @@ public class IdentityService implements ContainerService {
 
         clientApplicationCache = createClientApplicationCache();
 
-        if (getBoolean(container.getConfig(), DISABLE_API_SECURITY, DISABLE_API_SECURITY_DEFAULT)) {
-            LOG.warning("###################### API SECURITY DISABLED! ######################");
-        } else {
-            if (getClientId() == null)
-                throw new IllegalStateException("Client ID must be set to enable API security");
-            keycloakConfigResolver = request -> {
-                // The realm we authenticate against must be available as a request header
-                String realm = request.getHeader(WebService.REQUEST_HEADER_REALM);
-                if (realm == null || realm.length() == 0) {
-                    LOG.fine("No realm in request, no authentication will be attempted: " + request.getURI());
-                    return notAuthenticatedKeycloakDeployment;
-                }
-                ClientRealm clientRealm = getClientRealm(realm, getClientId());
-                if (clientRealm == null) {
-                    LOG.fine("No client application configured for realm, no authentication will be attempted: " + request.getURI());
-                    return notAuthenticatedKeycloakDeployment;
-                }
-                return clientRealm.keycloakDeployment;
-            };
-        }
+        keycloakConfigResolver = request -> {
+            // The realm we authenticate against must be available as a request header
+            String realm = request.getHeader(WebService.REQUEST_HEADER_REALM);
+            if (realm == null || realm.length() == 0) {
+                LOG.fine("No realm in request, no authentication will be attempted: " + request.getURI());
+                return notAuthenticatedKeycloakDeployment;
+            }
+            ClientRealm clientRealm = getClientRealm(realm, getClientId());
+            if (clientRealm == null) {
+                LOG.fine("No client application configured for realm, no authentication will be attempted: " + request.getURI());
+                return notAuthenticatedKeycloakDeployment;
+            }
+            return clientRealm.keycloakDeployment;
+        };
 
         authProxyHandler = new ProxyHandler(
             new SimpleProxyClientProvider(keycloakHostUri.build()),
@@ -188,6 +198,10 @@ public class IdentityService implements ContainerService {
         container.getService(WebService.class).getApiSingletons().add(
             new IdentityResource(this)
         );
+    }
+
+    public String getClientId() {
+        return clientId;
     }
 
     @Override
@@ -343,14 +357,6 @@ public class IdentityService implements ContainerService {
             .build(loader);
     }
 
-    public String getClientId() {
-        return clientId;
-    }
-
-    public void setClientId(String clientId) {
-        this.clientId = clientId;
-    }
-
     public void configureRealm(RealmRepresentation realmRepresentation, int accessTokenLifespanSeconds) {
         realmRepresentation.setDisplayNameHtml(
             "<div class=\"kc-logo-text\"><span>OpenRemote: "
@@ -366,14 +372,14 @@ public class IdentityService implements ContainerService {
         realmRepresentation.setSslRequired(SslRequired.NONE.toString());
     }
 
-    public ClientRepresentation createClientApplication(String realm, String clientId, String appName, boolean isDevMode) {
+    public ClientRepresentation createClientApplication(String realm, String clientId, String appName, boolean enableDirectAccess) {
         ClientRepresentation client = new ClientRepresentation();
 
         client.setClientId(clientId);
         client.setName(appName);
         client.setPublicClient(true);
 
-        if (isDevMode) {
+        if (enableDirectAccess) {
             // We need direct access for integration tests
             LOG.warning("### Allowing direct access grants for client app '" + appName + "', this must NOT be used in production! ###");
             client.setDirectAccessGrantsEnabled(true);

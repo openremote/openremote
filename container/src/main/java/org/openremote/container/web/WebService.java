@@ -32,6 +32,7 @@ import io.undertow.util.HttpString;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.ResteasyDeployment;
+import org.keycloak.adapters.KeycloakConfigResolver;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.json.ElementalMessageBodyConverter;
@@ -270,14 +271,19 @@ public abstract class WebService implements ContainerService {
                     throw new IllegalStateException(
                         "No identity service found, make sure " + IdentityService.class.getName() + " is added before this service"
                     );
+
+                KeycloakConfigResolver keycloakConfigResolver = identityService.getKeycloakConfigResolver();
+                if (keycloakConfigResolver == null)
+                    throw new IllegalStateException(
+                        "No Keycloak config resolver found, make sure " + IdentityService.class.getName() + " is initialized"
+                    );
+
                 LOG.info("Deploying secure web context: " + deploymentInfo.getContextPath());
                 deploymentInfo.addOuterHandlerChainWrapper(AuthOverloadHandler::new);
                 deploymentInfo.setSecurityDisabled(false);
                 LoginConfig loginConfig = new LoginConfig(SimpleKeycloakServletExtension.AUTH_MECHANISM, "OpenRemote");
                 deploymentInfo.setLoginConfig(loginConfig);
-                deploymentInfo.addServletExtension(new SimpleKeycloakServletExtension(
-                    identityService.getKeycloakConfigResolver()
-                ));
+                deploymentInfo.addServletExtension(new SimpleKeycloakServletExtension(keycloakConfigResolver));
             } else {
                 LOG.info("Deploying insecure web context: " + deploymentInfo.getContextPath());
             }
