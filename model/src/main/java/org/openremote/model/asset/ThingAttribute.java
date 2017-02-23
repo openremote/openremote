@@ -62,6 +62,10 @@ public class ThingAttribute extends Attribute {
         return new AttributeRef(thingId, getName());
     }
 
+    public String getThingId() {
+        return thingId;
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
