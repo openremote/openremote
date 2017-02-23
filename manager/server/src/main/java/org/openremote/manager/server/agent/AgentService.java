@@ -23,8 +23,6 @@ import org.apache.camel.builder.RouteBuilder;
 import org.openremote.agent3.protocol.Protocol;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.container.message.MessageBrokerContext;
-import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.server.asset.AssetService;
@@ -44,6 +42,12 @@ import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceE
 import static org.openremote.model.asset.AssetType.AGENT;
 import static org.openremote.model.asset.AssetType.THING;
 
+/**
+ * Finds all {@link AssetType#AGENT} and {@link AssetType#THING} assets and starts the protocols for them.
+ * <p>
+ * It then listens to attribute value change messages on {@link Protocol#SENSOR_TOPIC} and stores such
+ * updates in the asset database.
+ */
 public class AgentService extends RouteBuilder implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
@@ -99,6 +103,11 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 // attribute value changed!
                 boolean success = assetService.updateThingAttributeValue(attributeValueChange);
                 // TODO If success then... notify asset listener clients? If not, then handle error?
+                if (success) {
+                    LOG.fine("Asset database update successful: " + attributeValueChange);
+                } else {
+                    throw new RuntimeException("Asset database update failed for: " + attributeValueChange);
+                }
 
             });
     }
@@ -153,7 +162,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
                                   Map<String, List<ThingAttribute>> attributes) {
         for (String protocolName : attributes.keySet()) {
             for (Protocol protocol : protocols) {
-                if (protocol.getProtocolName() == null || protocol.getProtocolName().length() ==0)
+                if (protocol.getProtocolName() == null || protocol.getProtocolName().length() == 0)
                     throw new IllegalStateException("Protocol can't have empty name: " + protocol.getClass());
                 if (protocol.getProtocolName().equals(protocolName)) {
                     try {
@@ -180,5 +189,9 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 }
             }
         }
+    }
+
+    public String toString() {
+        return getClass().getName() + "@" + Integer.toHexString(hashCode());
     }
 }

@@ -36,7 +36,9 @@ import java.util.Collection;
  * {@link #SENSOR_TOPIC}.
  * <p>
  * The linked attributes of a protocol provide the model for the protocol to perform these operations. How
- * attributes and value changes map to actual device and service calls is up to the implementation.
+ * attributes and value changes map to actual device and service calls is up to the implementation. The method
+ * {@link #linkAttributes(Collection)} is first called during startup of the protocol, after
+ * {@link #init} and before {@link #start}.
  * <p>
  * The linked protocol handles south-bound read and write of the attribute value: If the user writes
  * a new value into the Thing attribute, the protocol translates this value change into a

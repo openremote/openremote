@@ -35,13 +35,14 @@ public class MessageBrokerService implements ContainerService {
     public void init(Container container) throws Exception {
         MessageBrokerSetupService messageBrokerSetupService = container.getService(MessageBrokerSetupService.class);
         producerTemplate = messageBrokerSetupService.getContext().createProducerTemplate();
-
-        LOG.info("Starting Camel message broker");
-        messageBrokerSetupService.getContext().start();
     }
 
     @Override
     public void start(Container container) throws Exception {
+        MessageBrokerSetupService messageBrokerSetupService = container.getService(MessageBrokerSetupService.class);
+
+        LOG.info("Starting Camel message broker");
+        messageBrokerSetupService.getContext().start();
     }
 
     @Override

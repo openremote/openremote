@@ -30,7 +30,7 @@ public abstract class AbstractValueHolder<T extends AbstractValueHolder> {
     }
 
     public boolean hasValue() {
-        return jsonObject.hasKey("value");
+        return jsonObject.hasKey("value") && jsonObject.get("value").getType() != JsonType.NULL;
     }
 
     public String getValueAsString() {
@@ -90,7 +90,7 @@ public abstract class AbstractValueHolder<T extends AbstractValueHolder> {
     // You can NOT perform null-checks on whatever is returned here!
     // TODO https://github.com/gwtproject/gwt/issues/9484
     public JsonValue getValue_TODO_BUG_IN_JAVASCRIPT() {
-        return hasValue() ? jsonObject.get("value") : null;
+        return hasValue() ? jsonObject.get("value") : Json.createNull();
     }
 
     public T setValue(JsonValue value) {

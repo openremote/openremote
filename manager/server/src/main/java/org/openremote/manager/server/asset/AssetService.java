@@ -287,7 +287,7 @@ public class AssetService extends RouteBuilder implements ContainerService {
             LOG.fine("Ignoring attribute update '" + attributeValueChange + "', wrong value type '" + attributeValueChange.getValue().getType() + "': " + thing);
             return false;
         }
-        LOG.fine("Applying attribute update '" + attributeValueChange + "' on: " + thing);
+        LOG.fine("Applying '" + attributeValueChange + "' on: " + thing);
         thingAttribute.setValue(attributeValueChange.getValue());
 
         return updateAttributeValue(thing.getId(), thingAttribute.getName(), thingAttribute.getValue_TODO_BUG_IN_JAVASCRIPT());
@@ -336,9 +336,8 @@ public class AssetService extends RouteBuilder implements ContainerService {
             entityManager.unwrap(Session.class).doReturningWork(connection -> {
                 String update =
                     "UPDATE ASSET" +
-                        " SET ATTRIBUTES = jsonb_set(ATTRIBUTES, ?, ?, FALSE)" +
+                        " SET ATTRIBUTES = jsonb_set(ATTRIBUTES, ?, ?, TRUE)" +
                         " WHERE ID = ? AND ATTRIBUTES -> ? IS NOT NULL";
-                int result;
                 try (PreparedStatement statement = connection.prepareStatement(update)) {
 
                     Array attributePath = connection.createArrayOf(
@@ -356,10 +355,15 @@ public class AssetService extends RouteBuilder implements ContainerService {
 
                     statement.setString(4, attributeName);
 
-                    result = statement.executeUpdate();
-                    return result == 1;
+                    int updatedRows = statement.executeUpdate();
+                    LOG.fine("Stored asset '" + assetId + "' attribute '" + attributeName + "' value, affected rows: " + updatedRows);
+                    return updatedRows == 1;
                 }
             })
         );
+    }
+
+    public String toString() {
+        return getClass().getName() + "@" + Integer.toHexString(hashCode());
     }
 }

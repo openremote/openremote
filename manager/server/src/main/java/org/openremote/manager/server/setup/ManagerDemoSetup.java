@@ -136,7 +136,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         SimulatorProtocol.META_NAME_ELEMENT, Json.create("switch")
                     ))
                 ),
-            new Attribute("light1Dimmer", INTEGER, Json.create(55))
+            new Attribute("light1Dimmer", INTEGER) // No initial value!
                 .setMetadata(new Metadata()
                     .add(new MetadataItem(
                         AssetAttributeMeta.DESCRIPTION.getName(),

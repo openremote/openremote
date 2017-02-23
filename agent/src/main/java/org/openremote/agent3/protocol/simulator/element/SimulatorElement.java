@@ -19,13 +19,15 @@
  */
 package org.openremote.agent3.protocol.simulator.element;
 
+import elemental.json.Json;
+import elemental.json.JsonType;
 import elemental.json.JsonValue;
 import org.openremote.model.AttributeType;
 
 public abstract class SimulatorElement<T> {
 
     final protected AttributeType expectedType;
-    protected JsonValue state;
+    protected JsonValue state = Json.createNull();
 
     public SimulatorElement(AttributeType expectedType) {
         this.expectedType = expectedType;
@@ -36,6 +38,10 @@ public abstract class SimulatorElement<T> {
     }
 
     public void setState(JsonValue state) {
+        if (state == null) {
+            this.state = Json.createNull();
+            return;
+        }
         if (isValid(state)) {
             this.state = state;
         } else {
@@ -44,7 +50,7 @@ public abstract class SimulatorElement<T> {
     }
 
     protected boolean isValid(JsonValue value) {
-        return value == null || value.getType() == expectedType.getJsonType();
+        return value == null || value.getType() == JsonType.NULL || value.getType() == expectedType.getJsonType();
     }
 
     @Override

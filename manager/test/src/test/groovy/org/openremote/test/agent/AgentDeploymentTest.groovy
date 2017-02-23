@@ -34,12 +34,12 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         then: "the simulator elements should have the initial state"
         conditions.eventually {
             assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Toggle").asBoolean()
-            assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Dimmer").asNumber() == 55
+            assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Dimmer").getType() == JsonType.NULL // No initial value!
             assert new Color(simulatorProtocol.getState(managerDemoSetup.thingId, "light1Color") as JsonObject) == new Color(88, 123, 88)
             assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1PowerConsumption").asNumber() == 12.345d
         }
 
-        when: "a thing attribute value change occurs"
+        when: "a client wants to change a thing attributes' value, triggering an actuator"
         conditions = new PollingConditions(timeout: 3, initialDelay: 2)
         /* TODO What's the call path for thing attribute value updates and therefore the asset client API?
 
@@ -91,8 +91,8 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         conditions.eventually {
             def thing = assetService.get(managerDemoSetup.thingId)
             def attributes = new Attributes(thing.getAttributes())
-            attributes.get("light1Dimmer").getValue_TODO_BUG_IN_JAVASCRIPT().getType() == JsonType.NUMBER
-            attributes.get("light1Dimmer").getValueAsInteger() == 77
+            assert attributes.get("light1Dimmer").getValue_TODO_BUG_IN_JAVASCRIPT().getType() == JsonType.NUMBER
+            assert attributes.get("light1Dimmer").getValueAsInteger() == 77
         }
 
         cleanup: "the server should be stopped"
