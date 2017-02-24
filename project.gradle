@@ -1,0 +1,57 @@
+// Common configuration applied to all projects
+
+// Default repositories for dependency resolution
+repositories {
+    mavenCentral()
+    jcenter()
+    maven {
+        url "https://oss.sonatype.org/content/repositories/snapshots/"
+    }
+    maven {
+        url "http://m2repo.openremote.com/content/groups/public/"
+    }
+}
+
+// Eclipse needs help
+apply plugin: "eclipse"
+
+// Configure versions in gradle.properties (putting a gradle.properties file
+// in a subproject only overrides root properties of same name for the actual
+// subproject, not for its children!)
+version = hasProperty("openremoteVersion") ? openremoteVersion : projectVersion
+
+// Configure Java build
+plugins.withType(JavaPlugin).whenPluginAdded {
+
+    // Use Java 8
+    tasks.withType(JavaCompile) {
+        sourceCompatibility = "1.8"
+        // TODO Tyring to disable compiler warnings, none of this crap works
+        // options.compilerArgs += ["-XDignore.symbol.file", "-Xdoclint:none", "-Xlint:none", "-nowarn"]
+        // options.fork = true
+        // options.forkOptions.executable = 'javac'
+    }
+
+    // JAR/ZIP base name is the fully qualified subproject name
+    archivesBaseName = "${rootProject.name}${path.replaceAll(":", "-")}"
+}
+
+// Helper functions for project/task resolution when the main 
+// repo is checked out as a git submodule and therefore a subproject
+def resolvePath(String path) {
+    findProject(":openremote") != null ? ":openremote" + path : path
+}
+
+def resolveProject(String path) {
+    project(resolvePath(path))
+}
+
+def resolveTask(String path) {
+    tasks.getByPath(resolvePath(path))
+}
+
+ext {
+    resolvePath = this.&resolvePath
+    resolveProject = this.&resolveProject
+    resolveTask = this.&resolveTask
+}

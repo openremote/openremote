@@ -1,24 +1,3 @@
 allprojects {
-
-    repositories {
-        mavenLocal()
-        mavenCentral()
-        jcenter()
-        maven {
-            url "https://oss.sonatype.org/content/repositories/snapshots/"
-        }
-        maven {
-            url "http://m2repo.openremote.com/content/groups/public/"
-        }
-    }
-
-    apply from: "${findProject(":openremote") != null ? project(":openremote").projectDir : rootDir}/functions.gradle"
-    apply plugin: "eclipse"
-
-    version = projectVersion
-
-    tasks.withType(JavaCompile) {
-        sourceCompatibility = "1.8"
-        // Don't even try to disable deprecation/unsafe warnings of javac, it will not work...
-    }
+    apply from: "${findProject(":openremote") != null ? project(":openremote").projectDir : rootDir}/project.gradle"
 }
