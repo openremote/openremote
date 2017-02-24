@@ -138,12 +138,18 @@ public abstract class AbstractFileServlet extends HttpServlet {
 	}
 
 	private void doRequest(HttpServletRequest request, HttpServletResponse response, boolean head) throws IOException {
-		response.reset();
-		Resource resource;
+        response.reset();
+        Resource resource;
 
-		try {
-			resource = new Resource(getFile(request));
-		}
+        try {
+            resource = new Resource(getFile(request));
+
+        } catch (RedirectException ex) {
+            logger.log(FINE, "Redirecting client to: " + ex.location);
+            response.setHeader("Location", ex.location);
+            response.sendError(HttpServletResponse.SC_FOUND);
+            return;
+        }
 		catch (IllegalArgumentException e) {
 			logger.log(FINE, "Got an IllegalArgumentException from user code; interpreting it as 400 Bad Request.", e);
 			response.sendError(HttpServletResponse.SC_BAD_REQUEST);
@@ -201,7 +207,7 @@ public abstract class AbstractFileServlet extends HttpServlet {
 	 * @throws IllegalArgumentException When the request is mangled in such way that it's not recognizable as a valid
 	 * file request. The servlet will then return a HTTP 400 error.
 	 */
-	protected abstract File getFile(HttpServletRequest request) throws IllegalArgumentException;
+	protected abstract File getFile(HttpServletRequest request) throws IllegalArgumentException, RedirectException;
 
 	/**
 	 * Handles the case when the file is not found.
@@ -464,6 +470,14 @@ public abstract class AbstractFileServlet extends HttpServlet {
 		}
 
 	}
+
+    protected class RedirectException extends Exception {
+        public final String location;
+
+        public RedirectException(String location) {
+            this.location = location;
+        }
+    }
 
 	/* ############################################################################ */
 

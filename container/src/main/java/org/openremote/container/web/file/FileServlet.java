@@ -62,17 +62,6 @@ public class FileServlet extends AbstractFileServlet {
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         if (isSecured()) {
-
-            // Special case: Handle request to unsecured index.html. When a request is made
-            // to /index.html without an authentication realm header, assume the client wants
-            // an unsecured loader page (e.g. to handle authentication).
-            String realm = request.getHeader(REQUEST_HEADER_REALM);
-            if ((request.getPathInfo().equals("/") || request.getPathInfo().equals("/index.html"))
-                && (realm == null || realm.length() == 0) && unsecuredIndex.exists()) {
-                super.service(request, response);
-                return;
-            }
-
             if (request.authenticate(response)) {
                 boolean userHasAllRoles = true;
                 for (String requiredRole : requiredRoles) {
@@ -95,10 +84,10 @@ public class FileServlet extends AbstractFileServlet {
     }
 
     @Override
-    protected File getFile(HttpServletRequest request) {
+    protected File getFile(HttpServletRequest request) throws RedirectException {
         String relativePath = request.getPathInfo();
         if (relativePath == null || relativePath.isEmpty()) {
-            relativePath = "/index.html";
+            relativePath = "";
         }
         while (relativePath.startsWith("/"))
             relativePath = relativePath.substring(1);
@@ -110,14 +99,7 @@ public class FileServlet extends AbstractFileServlet {
 
             String realm = request.getHeader(REQUEST_HEADER_REALM);
 
-            // Special case: Handle request to unsecured index.html, see above
-            if ((relativePath.equals("") || relativePath.equals("index.html"))
-                && (realm == null || realm.length() == 0) && unsecuredIndex.exists()) {
-                LOG.fine("No realm in request, serving unsecured index: " + unsecuredIndex.getAbsolutePath());
-                return unsecuredIndex;
-            }
-
-            // If it's not a request for index.html and we are missing the auth realm header, ignore...
+            // If we are missing the auth realm header, ignore...
             if (realm == null || realm.length() ==0) {
                 LOG.fine("Ignoring request, secured service needs request header: " + REQUEST_HEADER_REALM);
                 return null;
@@ -132,6 +114,15 @@ public class FileServlet extends AbstractFileServlet {
         }
 
         File file = new File(actualBase, relativePath);
+
+        // Handle index.html and redirect /directory to /directory/
+        if (file.isDirectory()) {
+            if (!request.getPathInfo().endsWith("/")) {
+                throw new RedirectException(request.getRequestURI() + "/");
+            }
+            file = new File(actualBase, relativePath + "/index.html");
+        }
+
         LOG.fine("Serving file: " + file.getAbsolutePath());
         return file;
     }

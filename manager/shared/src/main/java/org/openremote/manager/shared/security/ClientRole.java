@@ -11,7 +11,6 @@ import java.util.List;
 public enum ClientRole {
 
     READ_ADMIN("read:admin", "Read system settings, tenants, and users"),
-    READ_CONSOLE("read:console", "Download console frontend resources"),
     READ_MAP("read:map", "View map"),
     READ_ASSETS("read:assets", "Read asset data"),
 
@@ -20,7 +19,6 @@ public enum ClientRole {
 
     READ("read", "Read all data", new ClientRole[]{
         READ_ADMIN,
-        READ_CONSOLE,
         READ_MAP,
         READ_ASSETS
     }),

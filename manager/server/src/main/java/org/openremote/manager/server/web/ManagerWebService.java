@@ -24,7 +24,6 @@ import io.undertow.servlet.api.DeploymentInfo;
 import org.openremote.container.Container;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
-import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.model.Constants;
 
 import java.nio.file.Path;
@@ -67,15 +66,15 @@ public class ManagerWebService extends WebService {
             MANAGER_PATH, ManagerFileServlet.wrapHandler(managerFileHandler, MANAGER_PATTERN)
         );
 
-        // Serve the Console client files secured (note that CONSOLE_DOCROOT/index.html is the unsecured index page!)
+        // Serve the Console client files unsecured
         Path consoleDocRoot = Paths.get(
             getString(container.getConfig(), CONSOLE_DOCROOT, CONSOLE_DOCROOT_DEFAULT)
         );
         DeploymentInfo consoleDeployment = ManagerFileServlet.createDeploymentInfo(
-            container.isDevMode(), CONSOLE_PATH, consoleDocRoot, ClientRole.valueOf(ClientRole.READ_CONSOLE)
+            container.isDevMode(), CONSOLE_PATH, consoleDocRoot, new String[0] // Unsecured, no required roles!
         );
         HttpHandler consoleHandler = addServletDeployment(
-            container.getService(IdentityService.class), consoleDeployment, true
+            container.getService(IdentityService.class), consoleDeployment, false
         );
         getPrefixRoutes().put(
             CONSOLE_PATH, ManagerFileServlet.wrapHandler(consoleHandler, CONSOLE_PATTERN)
