@@ -5,3 +5,7 @@ task prepareImage(type: Copy) {
     from "Dockerfile"
     into "${project.buildDir}/install"
 }
+
+task clean() {
+    delete project.buildDir
+}

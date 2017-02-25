@@ -6,6 +6,7 @@ import elemental.json.JsonType
 import org.openremote.agent3.protocol.simulator.SimulatorProtocol
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.manager.server.asset.AssetService
+import org.openremote.manager.server.setup.ManagerDemoSetup
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.model.AttributeRef
 import org.openremote.model.AttributeValueChange
@@ -27,7 +28,7 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         when: "the demo agent and thing have been deployed"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).managerDemoSetup
+        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def simulatorProtocol = container.getService(SimulatorProtocol.class)
         def assetService = container.getService(AssetService.class)
 

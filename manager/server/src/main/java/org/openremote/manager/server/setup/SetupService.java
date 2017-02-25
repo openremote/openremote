@@ -19,46 +19,33 @@
  */
 package org.openremote.manager.server.setup;
 
-import org.apache.log4j.Logger;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.openremote.container.util.MapAccess.getBoolean;
+import java.util.ServiceLoader;
+import java.util.logging.Logger;
 
 /**
  * Executes setup tasks when the application starts, configuring the state of
  * subsystems (database, Keycloak).
  * <p>
- * When developer mode is enabled, all setup tasks will be executed regardless of
- * other configuration options. With developer mode disabled, tasks can be selectively
- * enabled (they are disabled by default), see:
- * <ul>
- * <li>{@link #SETUP_CLEAN_INIT_KEYCLOAK}</li>
- * <li>{@link #SETUP_CLEAN_INIT_MANAGER}</li>
- * <li>{@link #SETUP_IMPORT_DEMO_DATA}</li>
- * </ul>
+ * First, this service will load an implementation of {@link SetupTasks} from the
+ * classpath using {@link ServiceLoader}. If multiple providers are found, an error
+ * is raised. If a provider is found, only its tasks will be enabled.
+ * <p>
+ * If no {@link SetupTasks} provider is found on the classpath, the builtin
+ * tasks will be enabled, see {@link BuiltinSetupTasks}.
  */
 public class SetupService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(SetupService.class.getName());
 
-    public static final String SETUP_CLEAN_INIT_KEYCLOAK = "SETUP_CLEAN_INIT_KEYCLOAK";
-    public static final boolean SETUP_CLEAN_INIT_KEYCLOAK_DEFAULT = false;
-
-    public static final String SETUP_CLEAN_INIT_MANAGER = "SETUP_CLEAN_INIT_MANAGER";
-    public static final boolean SETUP_CLEAN_INIT_MANAGER_DEFAULT = false;
-
-    public static final String SETUP_IMPORT_DEMO_DATA = "SETUP_IMPORT_DEMO_DATA";
-    public static final boolean SETUP_IMPORT_DEMO_DATA_DEFAULT = false;
-
     final protected List<Setup> setupList = new ArrayList<>();
 
     // Make demo/test data accessible from Groovy/Java code
-    protected KeycloakDemoSetup keycloakDemoSetup;
-    protected ManagerDemoSetup managerDemoSetup;
+    protected SetupTasks setupTasks;
 
     @Override
     public void init(Container container) throws Exception {
@@ -67,38 +54,27 @@ public class SetupService implements ContainerService {
 
     @Override
     public void start(Container container) {
-        if (container.isDevMode()) {
 
-            setupList.add(new KeycloakCleanSetup(container));
-            setupList.add(new KeycloakInitSetup(container));
-            keycloakDemoSetup = new KeycloakDemoSetup(container);
-            setupList.add(keycloakDemoSetup);
-
-            setupList.add(new ManagerCleanSetup(container));
-            setupList.add(new ManagerInitSetup(container));
-            managerDemoSetup = new ManagerDemoSetup(container);
-            setupList.add(managerDemoSetup);
-
-        } else {
-
-            if (getBoolean(container.getConfig(), SETUP_CLEAN_INIT_KEYCLOAK, SETUP_CLEAN_INIT_KEYCLOAK_DEFAULT)) {
-                setupList.add(new KeycloakCleanSetup(container));
-                setupList.add(new KeycloakInitSetup(container));
+        ServiceLoader.load(SetupTasks.class).forEach(
+            discoveredSetupTasks -> {
+                if (setupTasks != null) {
+                    throw new IllegalStateException(
+                        "Only one instance of SetupTasks can be configured, already found '"
+                            + setupTasks.getClass().getName() + ", remove from classpath: "
+                            + discoveredSetupTasks.getClass().getName()
+                    );
+                }
+                LOG.info("Enabling setup tasks: " + discoveredSetupTasks.getClass().getName());
+                setupTasks = discoveredSetupTasks;
             }
-            if (getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_DATA, SETUP_IMPORT_DEMO_DATA_DEFAULT)) {
-                keycloakDemoSetup = new KeycloakDemoSetup(container);
-                setupList.add(keycloakDemoSetup);
-            }
+        );
 
-            if (getBoolean(container.getConfig(), SETUP_CLEAN_INIT_MANAGER, SETUP_CLEAN_INIT_MANAGER_DEFAULT)) {
-                setupList.add(new ManagerCleanSetup(container));
-                setupList.add(new ManagerInitSetup(container));
-            }
-            if (getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_DATA, SETUP_IMPORT_DEMO_DATA_DEFAULT)) {
-                managerDemoSetup = new ManagerDemoSetup(container);
-                setupList.add(managerDemoSetup);
-            }
+        if (setupTasks == null) {
+            LOG.info("No custom setup tasks found on classpath, enabling built-in tasks");
+            setupTasks = new BuiltinSetupTasks();
         }
+
+        setupList.addAll(setupTasks.createTasks(container));
 
         try {
             if (setupList.size() > 0) {
@@ -117,15 +93,7 @@ public class SetupService implements ContainerService {
     public void stop(Container container) {
     }
 
-    public KeycloakDemoSetup getKeycloakDemoSetup() {
-        if (keycloakDemoSetup == null)
-            throw new IllegalStateException("Demo data not imported");
-        return keycloakDemoSetup;
-    }
-
-    public ManagerDemoSetup getManagerDemoSetup() {
-        if (managerDemoSetup == null)
-            throw new IllegalStateException("Demo data not imported");
-        return managerDemoSetup;
+    public <S extends Setup> S getTaskOfType(Class<S> setupType) {
+        return setupTasks.getTaskOfType(setupType);
     }
 }

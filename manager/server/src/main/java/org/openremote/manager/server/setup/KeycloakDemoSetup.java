@@ -43,11 +43,8 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
 
     private static final Logger LOG = Logger.getLogger(KeycloakDemoSetup.class.getName());
 
-    final protected UsersResource customerAUsersResource;
-
     public KeycloakDemoSetup(Container container) {
         super(container);
-        customerAUsersResource = identityService.getRealms(accessToken, false).realm("customerA").users();
     }
 
     @Override
@@ -85,12 +82,12 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         String customerAClientObjectId = getClientObjectId(customerAClientsResource);
         RolesResource customerARolesResource = customerAClientsResource.get(customerAClientObjectId).roles();
 
-        // Create the 'test2' user in master realm
         UserRepresentation testuser2 = new UserRepresentation();
         testuser2.setUsername("testuser2");
         testuser2.setFirstName("Testuserfirst");
         testuser2.setLastName("Testuserlast");
         testuser2.setEnabled(true);
+        UsersResource customerAUsersResource = identityService.getRealms(accessToken, false).realm("customerA").users();
         customerAUsersResource.create(testuser2);
         testuser2 = customerAUsersResource.search("test", null, null, null, null, null).get(0);
         CredentialRepresentation testuser2Credentials = new CredentialRepresentation();

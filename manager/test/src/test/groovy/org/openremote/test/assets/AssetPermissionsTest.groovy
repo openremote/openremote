@@ -1,5 +1,6 @@
 package org.openremote.test.assets
 
+import org.openremote.manager.server.setup.ManagerDemoSetup
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.shared.asset.AssetResource
 import org.openremote.model.asset.Asset
@@ -21,7 +22,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         given: "the server container is started"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).managerDemoSetup
+        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "an authenticated admin user"
         def realm = MASTER_REALM
@@ -156,7 +157,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         given: "the server container is started"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).managerDemoSetup
+        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "an authenticated test user"
         def realm = MASTER_REALM
@@ -286,7 +287,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         given: "the server container is started"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).managerDemoSetup
+        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "an authenticated test user"
         def realm = "customerA"

@@ -57,8 +57,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         // ################################ Demo assets for 'master' realm ###################################
 
-        GeometryFactory geometryFactory = new GeometryFactory();
-
         ServerAsset smartOffice = new ServerAsset();
         smartOffice.setRealm(MASTER_REALM);
         smartOffice.setName("Smart Office");

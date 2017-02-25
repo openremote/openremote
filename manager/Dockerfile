@@ -13,4 +13,4 @@ EXPOSE 8080
 
 WORKDIR /opt/app
 
-ENTRYPOINT ["/opt/app/bin/server"]
+ENTRYPOINT ["java", "-cp", "/opt/app/lib/*", "org.openremote.manager.server.Main"]

@@ -47,7 +47,7 @@ docker-compose -p ordev \
     -f profile/postgresql_dev.yml \
     -f profile/keycloak_dev.yml \
     -f profile/manager_dev.yml \
-    up
+    up --build
 ```
 
 For more information and how to set up a development environment, see the [Developer Guide](https://github.com/openremote/openremote/wiki).

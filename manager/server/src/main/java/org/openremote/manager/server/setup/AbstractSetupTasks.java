@@ -19,15 +19,28 @@
  */
 package org.openremote.manager.server.setup;
 
-/**
- * A task that runs when the application starts. Typically this means a procedure that
- * <ul>
- *     <li>initializes some (database) state when the application starts for the first time</li>
- *     <li>cleans up some state when the application is restarted (e.g. during development)</li>
- *     <li>imports some state for demo/testing purposes</li>
- * </ul>
- */
-public interface Setup {
+import java.util.ArrayList;
+import java.util.List;
 
-    void execute() throws Exception;
+public abstract class AbstractSetupTasks implements SetupTasks {
+
+    final protected List<Setup> tasks = new ArrayList<>();
+
+    protected void addTask(Setup task) {
+        tasks.add(task);
+    }
+
+    public List<Setup> getTasks() {
+        return tasks;
+    }
+
+    @Override
+    public <S extends Setup> S getTaskOfType(Class<S> setupType) {
+        for (Setup task : tasks) {
+            if (setupType.isAssignableFrom(task.getClass()))
+                //noinspection unchecked
+                return (S) task;
+        }
+        throw new IllegalStateException("No setup task found of type: " + setupType);
+    }
 }

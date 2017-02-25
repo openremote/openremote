@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.server.setup;
 
+import com.vividsolutions.jts.geom.GeometryFactory;
 import org.openremote.container.Container;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.manager.server.asset.AssetService;
@@ -27,6 +28,7 @@ public abstract class AbstractManagerSetup implements Setup {
 
     final protected PersistenceService persistenceService;
     final protected AssetService assetService;
+    final protected GeometryFactory geometryFactory = new GeometryFactory();
 
     public AbstractManagerSetup(Container container) {
         this.persistenceService = container.getService(PersistenceService.class);
