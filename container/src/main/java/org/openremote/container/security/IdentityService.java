@@ -29,12 +29,13 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.keycloak.adapters.KeycloakConfigResolver;
 import org.keycloak.adapters.KeycloakDeployment;
+import org.keycloak.adapters.KeycloakDeploymentBuilder;
 import org.keycloak.admin.client.resource.RealmsResource;
 import org.keycloak.admin.client.resource.ServerInfoResource;
 import org.keycloak.common.enums.SslRequired;
-import org.keycloak.common.util.PemUtils;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.keycloak.representations.idm.ClientRepresentation;
+import org.keycloak.representations.idm.PublishedRealmRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
@@ -52,7 +53,6 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -102,8 +102,8 @@ public class IdentityService implements ContainerService {
     // The client we use to access Keycloak
     protected Client httpClient;
 
-    // Cache realms so we don't have to access Keycloak for every token validation
-    protected LoadingCache<ClientRealm.Key, ClientRealm> clientApplicationCache;
+    // Cache Keycloak deployment per realm/client so we don't have to access Keycloak for every token validation
+    protected LoadingCache<KeycloakRealmClient, KeycloakDeployment> keycloakDeploymentCache;
 
     // The configuration for the Keycloak servlet extension, looks up the client application per realm
     protected KeycloakConfigResolver keycloakConfigResolver;
@@ -172,7 +172,7 @@ public class IdentityService implements ContainerService {
 
         httpClient = WebClient.registerDefaults(container, clientBuilder).build();
 
-        clientApplicationCache = createClientApplicationCache();
+        keycloakDeploymentCache = createKeycloakDeploymentCache();
 
         keycloakConfigResolver = request -> {
             // The realm we authenticate against must be available as a request header
@@ -181,22 +181,18 @@ public class IdentityService implements ContainerService {
                 LOG.fine("No realm in request, no authentication will be attempted: " + request.getURI());
                 return notAuthenticatedKeycloakDeployment;
             }
-            ClientRealm clientRealm = getClientRealm(realm, getClientId());
-            if (clientRealm == null) {
-                LOG.fine("No client application configured for realm, no authentication will be attempted: " + request.getURI());
+            KeycloakDeployment keycloakDeployment = getKeycloakDeployment(realm, getClientId());
+            if (keycloakDeployment == null) {
+                LOG.fine("No Keycloak deployment available for realm, no authentication will be attempted: " + request.getURI());
                 return notAuthenticatedKeycloakDeployment;
             }
-            return clientRealm.keycloakDeployment;
+            return keycloakDeployment;
         };
 
         authProxyHandler = new ProxyHandler(
             new SimpleProxyClientProvider(keycloakHostUri.build()),
             getInteger(container.getConfig(), KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT),
             ResponseCodeHandler.HANDLE_404
-        );
-
-        container.getService(WebService.class).getApiSingletons().add(
-            new IdentityResource(this)
         );
     }
 
@@ -289,9 +285,9 @@ public class IdentityService implements ContainerService {
         ).toBlocking().singleOrDefault(false);
     }
 
-    public ClientRealm getClientRealm(String realm, String clientId) {
+    public KeycloakDeployment getKeycloakDeployment(String realm, String clientId) {
         try {
-            return clientApplicationCache.get(new ClientRealm.Key(realm, clientId));
+            return keycloakDeploymentCache.get(new KeycloakRealmClient(realm, clientId));
         } catch (Exception ex) {
             if (ex.getCause() != null && ex.getCause() instanceof NotFoundException) {
                 LOG.fine("Client '" + clientId + "' for realm '" + realm + "' not found on identity provider");
@@ -307,46 +303,27 @@ public class IdentityService implements ContainerService {
         }
     }
 
-    protected LoadingCache<ClientRealm.Key, ClientRealm> createClientApplicationCache() {
-        CacheLoader<ClientRealm.Key, ClientRealm> loader =
-            new CacheLoader<ClientRealm.Key, ClientRealm>() {
-                public ClientRealm load(ClientRealm.Key key) {
-                    LOG.fine("Loading client '" + key.clientId + "' for realm '" + key.realm + "'");
+    protected LoadingCache<KeycloakRealmClient, KeycloakDeployment> createKeycloakDeploymentCache() {
+        CacheLoader<KeycloakRealmClient, KeycloakDeployment> loader =
+            new CacheLoader<KeycloakRealmClient, KeycloakDeployment>() {
+                public KeycloakDeployment load(KeycloakRealmClient keycloakRealmClient) {
+                    LOG.fine("Loading adapter config for client '" + keycloakRealmClient.clientId + "' in realm '" + keycloakRealmClient.realm + "'");
 
-                    // The client install contains the details we need to verify access tokens
-                    ClientInstall clientInstall = getKeycloak().getClientInstall(key.realm, key.clientId);
+                    AdapterConfig adapterConfig = getKeycloak().getAdapterConfig(
+                        keycloakRealmClient.realm, keycloakRealmClient.clientId
+                    );
 
-                    // Make the public key usable for token verification
-                    try {
-                        clientInstall.setPublicKey(PemUtils.decodePublicKey(clientInstall.getPublicKeyPEM()));
-                    } catch (Exception ex) {
-                        throw new RuntimeException("Error decoding public key PEM for realm: " + clientInstall.getRealm(), ex);
-                    }
+                    // Get the public key for token verification
+                    PublishedRealmRepresentation realmRepresentation = getKeycloak().getPublishedRealm(keycloakRealmClient.realm);
+                    adapterConfig.setRealmKey(realmRepresentation.getPublicKeyPem());
 
                     // Must rewrite the auth-server URL to our external host and port, which
                     // we reverse-proxy back to Keycloak. This is the issuer baked into a token.
-                    clientInstall.setAuthServerUrl(externalAuthServerUri.toString());
+                    adapterConfig.setAuthServerUrl(externalAuthServerUri.toString());
 
-                    // Some more bloated infrastructure needed, this is for the Keycloak container adapter which
-                    // does the automatic token verification. As you can see, it's duplicating ClientInstall.
-                    // TODO: Some of the options should be configurable, e.g. CORS and NotBefore
-                    KeycloakDeployment keycloakDeployment = new KeycloakDeployment();
+                    // TODO: Some other options should be configurable, e.g. CORS and NotBefore
 
-                    keycloakDeployment.setRealm(clientInstall.getRealm());
-                    keycloakDeployment.setRealmKey(clientInstall.getPublicKey());
-                    keycloakDeployment.setResourceName(clientInstall.getClientId());
-                    keycloakDeployment.setUseResourceRoleMappings(true);
-                    keycloakDeployment.setSslRequired(SslRequired.valueOf(clientInstall.getSslRequired().toUpperCase(Locale.ROOT)));
-                    keycloakDeployment.setBearerOnly(true);
-
-                    AdapterConfig adapterConfig = new AdapterConfig();
-                    adapterConfig.setResource(keycloakDeployment.getResourceName());
-                    adapterConfig.setAuthServerUrl(clientInstall.getAuthServerUrl());
-                    keycloakDeployment.setAuthServerBaseUrl(adapterConfig);
-
-                    return new ClientRealm(
-                        clientInstall, keycloakDeployment
-                    );
+                    return KeycloakDeploymentBuilder.build(adapterConfig);
                 }
             };
 

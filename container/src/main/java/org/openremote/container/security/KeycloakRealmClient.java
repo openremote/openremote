@@ -19,29 +19,33 @@
  */
 package org.openremote.container.security;
 
-import org.openremote.container.web.WebResource;
+public class KeycloakRealmClient {
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+    public final String realm;
+    public final String clientId;
 
-@Path("identity")
-public class IdentityResource extends WebResource {
-
-    final protected IdentityService identityService;
-
-    public IdentityResource(IdentityService identityService) {
-        this.identityService = identityService;
+    public KeycloakRealmClient(String realm, String clientId) {
+        this.realm = realm;
+        this.clientId = clientId;
     }
 
-    @GET
-    @Path("install/{clientId}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public ClientInstall getClientInstall(@PathParam("clientId") String clientId) {
-        ClientRealm clientRealm =
-            identityService.getClientRealm(getRealm(), clientId);
-        if (clientRealm == null)
-            throw new WebApplicationException(Response.Status.NOT_FOUND);
-        return clientRealm.clientInstall;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        KeycloakRealmClient that = (KeycloakRealmClient) o;
+
+        if (!realm.equals(that.realm)) return false;
+        return clientId.equals(that.clientId);
+
     }
+
+    @Override
+    public int hashCode() {
+        int result = realm.hashCode();
+        result = 31 * result + clientId.hashCode();
+        return result;
+    }
+
 }

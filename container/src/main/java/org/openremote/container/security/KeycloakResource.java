@@ -20,6 +20,8 @@
 package org.openremote.container.security;
 
 import org.keycloak.representations.AccessTokenResponse;
+import org.keycloak.representations.adapters.config.AdapterConfig;
+import org.keycloak.representations.idm.PublishedRealmRepresentation;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
@@ -42,8 +44,13 @@ public interface KeycloakResource {
     AccessTokenResponse getAccessToken(@PathParam("realm") String realm, @BeanParam AuthForm authForm);
 
     @GET
+    @Path("realms/{realm}")
+    @Produces(APPLICATION_JSON)
+    PublishedRealmRepresentation getPublishedRealm(@PathParam("realm") String realm);
+
+    @GET
     @Path("realms/{realm}/clients-registrations/install/{clientId}")
     @Produces(APPLICATION_JSON)
-    ClientInstall getClientInstall(@PathParam("realm") String realm, @PathParam("clientId") String clientId);
+    AdapterConfig getAdapterConfig(@PathParam("realm") String realm, @PathParam("clientId") String clientId);
 
 }

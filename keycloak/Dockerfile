@@ -1,4 +1,4 @@
-FROM jboss/keycloak:2.1.0.Final
+FROM jboss/keycloak:2.5.4.Final
 
 ADD changeDatabase.xsl /opt/jboss/keycloak/
 RUN java -jar /usr/share/java/saxon.jar -s:/opt/jboss/keycloak/standalone/configuration/standalone.xml -xsl:/opt/jboss/keycloak/changeDatabase.xsl -o:/opt/jboss/keycloak/standalone/configuration/standalone.xml; java -jar /usr/share/java/saxon.jar -s:/opt/jboss/keycloak/standalone/configuration/standalone-ha.xml -xsl:/opt/jboss/keycloak/changeDatabase.xsl -o:/opt/jboss/keycloak/standalone/configuration/standalone-ha.xml; rm /opt/jboss/keycloak/changeDatabase.xsl
@@ -10,6 +10,8 @@ ADD setProxyForwarding.xsl /opt/jboss/keycloak/
 RUN java -jar /usr/share/java/saxon.jar -s:/opt/jboss/keycloak/standalone/configuration/standalone.xml -xsl:/opt/jboss/keycloak/setProxyForwarding.xsl -o:/opt/jboss/keycloak/standalone/configuration/standalone.xml
 
 ADD theme /opt/jboss/keycloak/themes/openremote
+
+RUN rm /opt/jboss/keycloak/*.xsl
 
 USER root
 ADD wait-for-it.sh /opt/wait-for-it.sh
