@@ -14,7 +14,6 @@
 		FA1D73E91E53374E00F6240A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FA1D73E81E53374E00F6240A /* Assets.xcassets */; };
 		FA1D73EC1E53374E00F6240A /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FA1D73EA1E53374E00F6240A /* LaunchScreen.storyboard */; };
 		FA1D73F61E53392F00F6240A /* ORViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1D73F51E53392F00F6240A /* ORViewController.swift */; };
-		FA2D482F1E55F8F300C95665 /* CustomURLProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA2D482E1E55F8F300C95665 /* CustomURLProtocol.swift */; };
 		FA2D48311E560B7500C95665 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA2D48301E560B7500C95665 /* Constants.swift */; };
 /* End PBXBuildFile section */
 
@@ -30,7 +29,6 @@
 		FA1D73EB1E53374E00F6240A /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		FA1D73ED1E53374E00F6240A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		FA1D73F51E53392F00F6240A /* ORViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORViewController.swift; sourceTree = "<group>"; };
-		FA2D482E1E55F8F300C95665 /* CustomURLProtocol.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = CustomURLProtocol.swift; path = ../CustomURLProtocol.swift; sourceTree = "<group>"; };
 		FA2D48301E560B7500C95665 /* Constants.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -100,7 +98,6 @@
 		FA2D48291E55D9F600C95665 /* utils */ = {
 			isa = PBXGroup;
 			children = (
-				FA2D482E1E55F8F300C95665 /* CustomURLProtocol.swift */,
 			);
 			name = utils;
 			sourceTree = "<group>";
@@ -231,7 +228,6 @@
 			files = (
 				FA2D48311E560B7500C95665 /* Constants.swift in Sources */,
 				FA1D73E41E53374E00F6240A /* ViewController.swift in Sources */,
-				FA2D482F1E55F8F300C95665 /* CustomURLProtocol.swift in Sources */,
 				FA1D73F61E53392F00F6240A /* ORViewController.swift in Sources */,
 				FA1D73E21E53374E00F6240A /* AppDelegate.swift in Sources */,
 			);

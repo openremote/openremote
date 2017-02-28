@@ -7,11 +7,10 @@
 //
 
 import UIKit
-import AeroGearOAuth2
-import AeroGearHttp
+import AppAuth
 
 class ViewController: UIViewController {
-    
+    var authState : OIDAuthState?
     @IBOutlet weak var loginViewController: UIWebView!
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -24,43 +23,49 @@ class ViewController: UIViewController {
     }
     
     @IBAction func showLoginPage(_ sender: Any) {
-        let http = Http()
-        let keycloakConfig = KeycloakConfig(
-            clientId: Client.clientId,
-            host: String(format:"http://%@:%@",Server.hostURL,Server.port),
-            realm: Server.realm,
-            isOpenIDConnect: true)
-        keycloakConfig.isWebView = true
-        let oauth2Module = AccountManager.addAccountWith(config: keycloakConfig, moduleClass: OAuth2Module.self)
-        http.authzModule = oauth2Module
-        http.authzModule = oauth2Module
-        requestAccess(oauth2Module: oauth2Module)
+        let authorizationEndoint = URL(string: String(format:"http://%@:%@/auth/realms/%@/protocol/openid-connect/auth",Server.hostURL,Server.port,Server.realm))
+        let tokenEndpoint = URL(string: String(format:"http://%@:%@/auth/realms/%@/protocol/openid-connect/token",Server.hostURL,Server.port,Server.realm))
+        let configuration = OIDServiceConfiguration(authorizationEndpoint: authorizationEndoint!, tokenEndpoint: tokenEndpoint!)
+        let authRequest = OIDAuthorizationRequest(configuration: configuration, clientId: Client.clientId, scopes: ["offline_access"], redirectURL: URL(string:String(format:"%@://oauth2Callback",Bundle.main.bundleIdentifier!))!, responseType: OIDResponseTypeCode, additionalParameters: nil)
+        let appDelegate :AppDelegate = UIApplication.shared.delegate as! AppDelegate
         
+        appDelegate.currentAuthorizationFlow = OIDAuthState.authState(byPresenting: authRequest, presenting: self, callback: { (state, error) in
+            if (error != nil) {
+                self.showError(error: error!)
+            } else {
+                self.authState = state
+                self.authState?.performAction(freshTokens: { (accessToken, idToken, error) in
+                    if (error != nil) {
+                        self.showError(error: error!)
+                    } else {
+                        guard let urlRequest = URL(string: Server.apiTestResource) else { return }
+                        let request = NSMutableURLRequest(url: urlRequest)
+                        request.addValue(String(format:"Bearer %@", accessToken!), forHTTPHeaderField: "Authorization")
+                        let sessionConfiguration = URLSessionConfiguration.default
+                        let session = URLSession(configuration: sessionConfiguration)
+                        let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
+                            DispatchQueue.main.async {
+                                if (error != nil) {
+                                    self.showError(error: error!)
+                                } else {
+                                    let orVC = ORViewcontroller()
+                                    orVC.data = data
+                                    self.navigationController?.pushViewController(orVC, animated: true)
+                                }
+                            }
+                        })
+                        reqDataTask.resume()
+                    }
+                })
+            }
+        })
     }
     
-    func requestAccess(oauth2Module : OAuth2Module) {
-        oauth2Module.requestAccess { (response, error) in
-            var token : String
-            if response != nil {
-                token = response! as! String
-                URLProtocol.registerClass(CustomURLProtocol.self)
-                let orVC = ORViewcontroller()
-                orVC.accessToken = token
-                
-                self.navigationController?.pushViewController(orVC, animated: true)
-            } else if error != nil {
-                let alertVC = UIAlertController(title: "Error", message: error.debugDescription, preferredStyle: UIAlertControllerStyle.actionSheet)
-                let defaultAction = UIAlertAction(title: "Retry", style: .default, handler: { (alertAction) in
-                    oauth2Module.requestAuthorizationCode(completionHandler: { (_, error) in
-                        self.requestAccess(oauth2Module: oauth2Module)
-                    })
-                })
-                alertVC.addAction(defaultAction)
-                
-                self.present(alertVC, animated: true, completion: nil)
-            }
-        }
+    func showError(error : Error) {
+        let alertVC = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertControllerStyle.actionSheet)
+        self.present(alertVC, animated: true, completion: nil)
     }
+    
 }
 
 
