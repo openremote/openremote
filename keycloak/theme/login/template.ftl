@@ -15,7 +15,7 @@
 
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
 
-    <script src="/static//js/loader.js"></script>
+    <script src="/static/js/loader.js"></script>
 
     <title>OpenRemote Manager</title>
 
