@@ -7,13 +7,13 @@
 //
 
 import UIKit
-import AeroGearOAuth2
+import AppAuth
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
-
+    var currentAuthorizationFlow : OIDAuthorizationFlowSession?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // allows to catch all request and add custom headers (works only with UIWebView not WKWebView).
@@ -43,9 +43,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ application: UIApplication, open url: URL, sourceApplication: String?, annotation: Any) -> Bool {
-        let notification = Notification(name: Notification.Name(rawValue: AGAppLaunchedWithURLNotification), object:nil, userInfo:[UIApplicationLaunchOptionsKey.url:url])
-        NotificationCenter.default.post(notification)
-        return true
+        if (self.currentAuthorizationFlow?.resumeAuthorizationFlow(with: url))! {
+            self.currentAuthorizationFlow = nil
+            return true
+        }
+        return false
     }
 
 }

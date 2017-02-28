@@ -1,4 +1,4 @@
 target 'console' do
 use_frameworks!
-pod 'AeroGearOAuth2'
+pod 'AppAuth'
 end

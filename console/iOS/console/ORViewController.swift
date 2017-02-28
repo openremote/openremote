@@ -12,20 +12,16 @@ import WebKit
 
 class ORViewcontroller : UIViewController, URLSessionDelegate {
 
-    var accessToken : String = ""
+    var data : Data?
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        CustomURLProtocol.accessToken = accessToken
 
         let myWebView = UIWebView(frame: view.frame)
         view.addSubview(myWebView)
         
-        let url = URL(string:String(format:"http://%@:%@/%@",Server.hostURL,Server.port,Server.initialPath))
-        let request = URLRequest(url: url!)
         myWebView.scalesPageToFit = true
-        myWebView.loadRequest(request)
+        myWebView.load(self.data!, mimeType: "text/html", textEncodingName: "UTF-8", baseURL: URL(string: "http://192.168.99.100:8080/")!)
     }
 
   }
