@@ -24,15 +24,37 @@ import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.http.SuccessStatusCode;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetInfo;
+import org.openremote.model.asset.HomeAssets;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
+/**
+ * Asset access rules:
+ * <ul>
+ *     <li>The superuser (the admin in the master realm) can access all assets.</li>
+ *     <li>A regular user can have roles that allow read, write, or no access to assets with her authenticated realm.</li>
+ *     <li>A regular user can have restricted access to a subset of "home" assets within her authenticated realm (see {@link HomeAssets})</li>
+ * </ul>
+ *
+ */
 @Path("asset")
 @JsType(isNative = true)
 public interface AssetResource {
+
+    /**
+     * Retrieve the (restricted) home assets of an authenticated user. If the request is made by the superuser,
+     * or if the regular user making the request is not restricted to home assets, the root assets of the
+     * authenticated realm will be returned.
+     */
+    @GET
+    @Path("home")
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    @RolesAllowed({"read:assets"})
+    AssetInfo[] getHomeAssets(@BeanParam RequestParams requestParams);
 
     /**
      * Retrieve the assets without parent (root assets) of the given realm, or if the realm is empty,

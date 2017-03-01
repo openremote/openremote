@@ -128,9 +128,8 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
             showLoadingMessage(display);
         }
 
-        // If the parent is the invisible root of the tree and we are in the master realm, show all realms
-        String currentRealm = environment.getSecurityService().getAuthenticatedRealm();
-        if (parent.getId() == null && currentRealm.equals(Constants.MASTER_REALM)) {
+        // If the parent is the invisible root of the tree and this is the superuser, load all tenants
+        if (parent.getId() == null && environment.getSecurityService().isSuperUser()) {
             loadTenants(parent, display);
         } else {
             loadChildren(parent, display);
@@ -231,8 +230,8 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                     LOG.fine("Loading the root assets of tenant: " + realm);
                     assetResource.getRoot(requestParams, realm);
                 } else if (parent.getId() == null) {
-                    LOG.fine("Loading the root assets of authenticated tenant");
-                    assetResource.getRoot(requestParams, null);
+                    LOG.fine("Loading the home assets of authenticated tenant");
+                    assetResource.getHomeAssets(requestParams);
                 } else {
                     assetResource.getChildren(requestParams, parent.getId());
                 }

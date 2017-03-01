@@ -48,6 +48,22 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
     }
 
     @Override
+    public AssetInfo[] getHomeAssets(@BeanParam RequestParams requestParams) {
+        try {
+            String realm = getAuthenticatedRealm();
+            String[] homeAssetIds = getHomeAssetIds();
+            if (homeAssetIds.length == 0) {
+                return assetService.getRoot(realm, null);
+            } else {
+                return assetService.findById(realm, getHomeAssetIds());
+            }
+        } catch (IllegalStateException ex) {
+            LOG.log(Level.FINE, "Bad request, aborting: " + uriInfo.getAbsolutePath(), ex);
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        }
+    }
+
+    @Override
     public AssetInfo[] getRoot(@BeanParam RequestParams requestParams, String realm) {
         try {
             if (realm == null || realm.length() == 0) {
@@ -56,19 +72,21 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
                 LOG.fine("Forbidden access for user '" + getUsername() + "', can't retrieve root assets of realm: " + realm);
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
-            return assetService.getRoot(realm);
+            return assetService.getRoot(realm, getHomeAssetIds());
         } catch (IllegalStateException ex) {
             LOG.log(Level.FINE, "Bad request, aborting: " + uriInfo.getAbsolutePath(), ex);
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
     }
 
+    // TODO: All the following operations are untested for "home" asset restrictions!
+
     @Override
     public AssetInfo[] getChildren(@BeanParam RequestParams requestParams, String parentId) {
         try {
             return isSuperUser()
-                ? assetService.getChildren(parentId)
-                : assetService.getChildrenInRealm(parentId, getAuthenticatedRealm());
+                ? assetService.getChildren(parentId, getHomeAssetIds())
+                : assetService.getChildrenInRealm(parentId, getAuthenticatedRealm(), getHomeAssetIds());
         } catch (IllegalStateException ex) {
             LOG.log(Level.FINE, "Bad request, aborting: " + uriInfo.getAbsolutePath(), ex);
             throw new WebApplicationException(Response.Status.BAD_REQUEST);

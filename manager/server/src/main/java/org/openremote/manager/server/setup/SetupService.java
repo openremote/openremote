@@ -21,6 +21,7 @@ package org.openremote.manager.server.setup;
 
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.manager.server.setup.builtin.BuiltinSetupTasks;
 
 import java.util.ArrayList;
 import java.util.List;

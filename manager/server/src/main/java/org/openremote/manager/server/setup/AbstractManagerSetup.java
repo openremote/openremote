@@ -29,10 +29,12 @@ public abstract class AbstractManagerSetup implements Setup {
     final protected PersistenceService persistenceService;
     final protected AssetService assetService;
     final protected GeometryFactory geometryFactory = new GeometryFactory();
+    final protected SetupService setupService;
 
     public AbstractManagerSetup(Container container) {
         this.persistenceService = container.getService(PersistenceService.class);
         this.assetService = container.getService(AssetService.class);
+        this.setupService = container.getService(SetupService.class);
     }
 
 }

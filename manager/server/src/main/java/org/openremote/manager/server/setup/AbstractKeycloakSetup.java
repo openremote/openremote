@@ -42,13 +42,15 @@ public abstract class AbstractKeycloakSetup implements Setup {
     public static final String SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT = "secret";
 
     final protected ManagerIdentityService identityService;
+    final protected SetupService setupService;
     final protected String accessToken;
     final protected RealmResource masterRealmResource;
     final protected ClientsResource masterClientsResource;
     final protected UsersResource masterUsersResource;
 
     public AbstractKeycloakSetup(Container container) {
-        identityService = container.getService(ManagerIdentityService.class);
+        this.identityService = container.getService(ManagerIdentityService.class);
+        this.setupService = container.getService(SetupService.class);
 
         // Use a non-proxy client to get the access token
         String demoAdminPassword = container.getConfig().getOrDefault(SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT);

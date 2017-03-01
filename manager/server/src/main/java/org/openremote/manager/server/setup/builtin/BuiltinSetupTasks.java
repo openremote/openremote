@@ -17,9 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.setup;
+package org.openremote.manager.server.setup.builtin;
 
 import org.openremote.container.Container;
+import org.openremote.manager.server.setup.AbstractSetupTasks;
+import org.openremote.manager.server.setup.Setup;
 
 import java.util.List;
 
@@ -53,15 +55,23 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
 
         if (container.isDevMode()) {
 
-            addTask(new KeycloakCleanSetup(container));
-            addTask(new KeycloakInitSetup(container));
-            addTask(new KeycloakDemoSetup(container));
-
             addTask(new ManagerCleanSetup(container));
             addTask(new ManagerInitSetup(container));
             addTask(new ManagerDemoSetup(container));
 
+            addTask(new KeycloakCleanSetup(container));
+            addTask(new KeycloakInitSetup(container));
+            addTask(new KeycloakDemoSetup(container));
+
         } else {
+
+            if (getBoolean(container.getConfig(), SETUP_CLEAN_INIT_MANAGER, SETUP_CLEAN_INIT_MANAGER_DEFAULT)) {
+                addTask(new ManagerCleanSetup(container));
+                addTask(new ManagerInitSetup(container));
+            }
+            if (getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_DATA, SETUP_IMPORT_DEMO_DATA_DEFAULT)) {
+                addTask(new ManagerDemoSetup(container));
+            }
 
             if (getBoolean(container.getConfig(), SETUP_CLEAN_INIT_KEYCLOAK, SETUP_CLEAN_INIT_KEYCLOAK_DEFAULT)) {
                 addTask(new KeycloakCleanSetup(container));
@@ -71,13 +81,6 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
                 addTask(new KeycloakDemoSetup(container));
             }
 
-            if (getBoolean(container.getConfig(), SETUP_CLEAN_INIT_MANAGER, SETUP_CLEAN_INIT_MANAGER_DEFAULT)) {
-                addTask(new ManagerCleanSetup(container));
-                addTask(new ManagerInitSetup(container));
-            }
-            if (getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_DATA, SETUP_IMPORT_DEMO_DATA_DEFAULT)) {
-                addTask(new ManagerDemoSetup(container));
-            }
         }
 
         return getTasks();

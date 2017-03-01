@@ -17,9 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.setup;
+package org.openremote.manager.server.setup.builtin;
 
 import org.openremote.container.Container;
+import org.openremote.manager.server.setup.AbstractManagerSetup;
 
 import java.util.logging.Logger;
 

@@ -1,6 +1,6 @@
 package org.openremote.test.assets
 
-import org.openremote.manager.server.setup.ManagerDemoSetup
+import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.shared.asset.AssetResource
 import org.openremote.model.asset.Asset
@@ -41,8 +41,15 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         /* ############################################## READ ####################################### */
 
+        when: "the home assets of the authenticated user are retrieved"
+        def assetInfos = assetResource.getHomeAssets(null);
+
+        then: "result should match"
+        assetInfos.length == 1
+        assetInfos[0].id == managerDemoSetup.smartOfficeId
+
         when: "the root assets of the authenticated realm are retrieved"
-        def assetInfos = assetResource.getRoot(null, MASTER_REALM);
+        assetInfos = assetResource.getRoot(null, MASTER_REALM);
 
         then: "result should match"
         assetInfos.length == 1
@@ -141,8 +148,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 404
 
         when: "an asset is deleted in a foreign realm"
-        assetResource.delete(null, managerDemoSetup.apartment1Id)
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1Id)
+        assetResource.delete(null, managerDemoSetup.apartment1LivingroomId)
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
 
         then: "the asset should not be found"
         ex = thrown()
@@ -176,8 +183,15 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         /* ############################################## READ ####################################### */
 
+        when: "the home assets of the authenticated user are retrieved"
+        def assetInfos = assetResource.getHomeAssets(null);
+
+        then: "result should match"
+        assetInfos.length == 1
+        assetInfos[0].id == managerDemoSetup.smartOfficeId
+
         when: "the root assets of the authenticated realm are retrieved"
-        def assetInfos = assetResource.getRoot(null, MASTER_REALM);
+        assetInfos = assetResource.getRoot(null, MASTER_REALM);
 
         then: "result should match"
         assetInfos.length == 1
@@ -272,8 +286,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 404
 
         when: "an asset is deleted in a foreign realm"
-        assetResource.delete(null, managerDemoSetup.apartment1Id)
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1Id)
+        assetResource.delete(null, managerDemoSetup.apartment1LivingroomId)
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
 
         then: "access should be forbidden"
         ex = thrown()
@@ -306,8 +320,16 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         /* ############################################## READ ####################################### */
 
+        when: "the home assets of the authenticated user are retrieved"
+        def assetInfos = assetResource.getHomeAssets(null);
+
+        then: "result should match"
+        assetInfos.length == 1
+        assetInfos[0].id == managerDemoSetup.smartHomeId
+        assetInfos[0].realm == "customerA"
+
         when: "the root assets of a foreign realm are retrieved"
-        def assetInfos = assetResource.getRoot(null, MASTER_REALM);
+        assetInfos = assetResource.getRoot(null, MASTER_REALM);
 
         then: "access should be forbidden"
         WebApplicationException ex = thrown()
@@ -377,7 +399,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset is deleted in the authenticated realm"
-        assetResource.delete(null, managerDemoSetup.apartment1Id)
+        assetResource.delete(null, managerDemoSetup.apartment1LivingroomId)
 
         then: "access should be forbidden"
         ex = thrown()
@@ -390,6 +412,124 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex = thrown()
         ex.response.status == 403
 
+        cleanup: "the server should be stopped"
+        stopContainer(container);
+    }
+
+    def "Access assets as testuser3"() {
+        given: "the server container is started"
+        def serverPort = findEphemeralPort()
+        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+
+        and: "an authenticated test user"
+        def realm = "customerA"
+        def accessToken = authenticate(
+                container,
+                realm,
+                KEYCLOAK_CLIENT_ID,
+                "testuser3",
+                "testuser3"
+        ).token
+
+        and: "the asset resource"
+        def client = createClient(container).build()
+        def serverUri = serverUri(serverPort)
+        def assetResource = getClientTarget(client, serverUri, realm, accessToken).proxy(AssetResource.class)
+
+        /* ############################################## READ ####################################### */
+
+        when: "the home assets of the authenticated user are retrieved"
+        def assetInfos = assetResource.getHomeAssets(null);
+
+        then: "result should match"
+        assetInfos.length == 2
+        assetInfos[0].id == managerDemoSetup.apartment1Id
+        assetInfos[1].id == managerDemoSetup.apartment2Id
+        assetInfos[0].realm == "customerA"
+
+        when: "the root assets of a foreign realm are retrieved"
+        assetInfos = assetResource.getRoot(null, MASTER_REALM);
+
+        then: "access should be forbidden"
+        WebApplicationException ex = thrown()
+        ex.response.status == 403
+
+        when: "the root assets of the authenticated realm are retrieved"
+        assetInfos = assetResource.getRoot(null, null);
+
+        then: "result should match"
+        assetInfos.length == 0
+
+        when: "the root assets of the given realm are retrieved"
+        assetInfos = assetResource.getRoot(null, "customerB");
+
+        then: "access should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+
+        when: "the child assets of an asset in a foreign realm are retrieved"
+        assetInfos = assetResource.getChildren(null, managerDemoSetup.thingId)
+
+        then: "result should be empty"
+        assetInfos.length == 0
+
+        when: "an asset is retrieved by ID in the authenticated realm"
+        def demoSmartHome = assetResource.get(null, managerDemoSetup.smartHomeId);
+
+        then: "result should match"
+        demoSmartHome.id == managerDemoSetup.smartHomeId
+/* TODO
+        when: "an asset is retrieved by ID in a foreign realm"
+        def demoThing = assetResource.get(null, managerDemoSetup.thingId);
+
+        then: "access should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+*/
+        /* ############################################## WRITE ####################################### */
+/*
+        when: "an asset is created in a foreign realm"
+        def testAsset = new Asset(MASTER_REALM, "Test Room", AssetType.ROOM)
+        testAsset.setId(IdentifierUtil.generateGlobalUniqueId())
+        assetResource.create(null, testAsset)
+
+        then: "access should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+
+        when: "an asset is made a root asset in the authenticated realm"
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
+        testAsset.setParentId(null)
+        assetResource.update(null, testAsset.id, testAsset)
+
+        then: "access should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+
+        when: "an asset is created in the authenticated realm"
+        testAsset = new Asset("customerA", "Test Room", AssetType.ROOM)
+        testAsset.setId(IdentifierUtil.generateGlobalUniqueId())
+        assetResource.create(null, testAsset)
+
+        then: "access should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+
+        when: "an asset is deleted in the authenticated realm"
+        assetResource.delete(null, managerDemoSetup.apartment1LivingroomId)
+
+        then: "access should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+
+        when: "an asset is deleted in a foreign realm"
+        assetResource.delete(null, managerDemoSetup.thingId)
+
+        then: "access should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+*/
         cleanup: "the server should be stopped"
         stopContainer(container);
     }

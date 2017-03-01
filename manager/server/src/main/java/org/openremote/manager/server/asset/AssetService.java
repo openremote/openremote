@@ -46,6 +46,7 @@ import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -136,7 +137,7 @@ public class AssetService extends RouteBuilder implements ContainerService {
         return agentLinkResolver;
     }
 
-    public AssetInfo[] getRoot(String realm) {
+    public AssetInfo[] getRoot(String realm, String[] restrictedAssetIds) {
         if (realm == null || realm.length() == 0)
             throw new IllegalArgumentException("Realm must be provided to query assets");
         return persistenceService.doReturningTransaction(em -> {
@@ -146,6 +147,23 @@ public class AssetService extends RouteBuilder implements ContainerService {
                     ") from Asset a where a.parent is null and a.realm = :realm order by a.createdOn asc",
                 AssetInfo.class
             ).setParameter("realm", realm).getResultList();
+            filterRestrictedAssetInfos(result, restrictedAssetIds);
+            return result.toArray(new AssetInfo[result.size()]);
+        });
+    }
+
+    public AssetInfo[] findById(String realm, String[] assetIds) {
+        if (realm == null || realm.length() == 0)
+            throw new IllegalArgumentException("Realm must be provided to query assets");
+        return persistenceService.doReturningTransaction(em -> {
+            List<AssetInfo> result = em.createQuery(
+                "select new org.openremote.manager.server.asset.ServerAssetInfo(" +
+                    "a.id, a.version, a.name, a.realm, a.type, a.parent.id, a.location" +
+                    ") from Asset a where a.id in :assetIds and a.realm = :realm order by a.createdOn asc",
+                AssetInfo.class
+            ).setParameter("realm", realm)
+                .setParameter("assetIds", Arrays.asList(assetIds))
+                .getResultList();
             return result.toArray(new AssetInfo[result.size()]);
         });
     }
@@ -190,7 +208,7 @@ public class AssetService extends RouteBuilder implements ContainerService {
         });
     }
 
-    public AssetInfo[] getChildren(String parentId) {
+    public AssetInfo[] getChildren(String parentId, String[] restrictedAssetIds) {
         return persistenceService.doReturningTransaction(em -> {
             List<AssetInfo> result =
                 em.createQuery(
@@ -200,11 +218,12 @@ public class AssetService extends RouteBuilder implements ContainerService {
                     AssetInfo.class
                 ).setParameter("parentId", parentId)
                     .getResultList();
+            filterRestrictedAssetInfos(result, restrictedAssetIds);
             return result.toArray(new AssetInfo[result.size()]);
         });
     }
 
-    public AssetInfo[] getChildrenInRealm(String parentId, String realm) {
+    public AssetInfo[] getChildrenInRealm(String parentId, String realm, String[] restrictedAssetIds) {
         return persistenceService.doReturningTransaction(em -> {
             List<AssetInfo> result =
                 em.createQuery(
@@ -217,6 +236,7 @@ public class AssetService extends RouteBuilder implements ContainerService {
                 ).setParameter("parentId", parentId)
                     .setParameter("realm", realm)
                     .getResultList();
+            filterRestrictedAssetInfos(result, restrictedAssetIds);
             return result.toArray(new AssetInfo[result.size()]);
         });
     }
@@ -361,6 +381,35 @@ public class AssetService extends RouteBuilder implements ContainerService {
                 }
             })
         );
+    }
+
+    protected void filterRestrictedAssetInfos(List<AssetInfo> assetInfos, String[] restrictedAssetIds) {
+        if (restrictedAssetIds == null || restrictedAssetIds.length == 0)
+            return;
+        persistenceService.doTransaction(entityManager -> {
+            Iterator<AssetInfo> it = assetInfos.iterator();
+            while (it.hasNext()) {
+                AssetInfo assetInfo = it.next();
+                ServerAsset serverAsset = loadAsset(entityManager, assetInfo.getId());
+                if (!isValidAssetPath(serverAsset, restrictedAssetIds))
+                    it.remove();
+            }
+        });
+    }
+
+    /**
+     * @return <code>true</code> if any of the assets in the path of the asset have an ID that matches the restricted IDs.
+     */
+    protected boolean isValidAssetPath(Asset asset, String[] restrictedAssetIds) {
+        if (asset == null)
+            return false;
+        for (String pathElement : asset.getPath()) {
+            for (String restrictedAssetId : restrictedAssetIds) {
+                if (restrictedAssetId.equals(pathElement))
+                    return true;
+            }
+        }
+        return false;
     }
 
     public String toString() {

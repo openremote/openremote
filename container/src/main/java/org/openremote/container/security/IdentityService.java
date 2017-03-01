@@ -63,7 +63,7 @@ import static javax.ws.rs.core.Response.Status.Family.SUCCESSFUL;
 import static org.openremote.container.util.MapAccess.*;
 import static org.openremote.container.web.WebClient.getTarget;
 
-public class IdentityService implements ContainerService {
+public abstract class IdentityService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(IdentityService.class.getName());
 
@@ -362,16 +362,9 @@ public class IdentityService implements ContainerService {
             client.setDirectAccessGrantsEnabled(true);
         }
 
-        List<String> redirectUrls = new ArrayList<>();
-
-        // Callback URL used by Manager web client authentication, any relative path to "ourselves" is fine
-        String managerCallbackUrl = UriBuilder.fromUri("/").path(realm).path("*").build().toString();
-        redirectUrls.add(managerCallbackUrl);
-
-        // Callback URL used by AeroGear for authentication from Console
-        redirectUrls.add("org.openremote.console://oauth2Callback");
-
-        client.setRedirectUris(redirectUrls);
+        List<String> redirectUris = new ArrayList<>();
+        addClientRedirectUris(realm, redirectUris);
+        client.setRedirectUris(redirectUris);
 
         // Redirect URL for logout etc, go to /<realm>/
         String baseUrl = UriBuilder.fromUri("/").path(realm).build().toString();
@@ -379,4 +372,9 @@ public class IdentityService implements ContainerService {
 
         return client;
     }
+
+    /**
+     * There must be _some_ valid redirect URIs for the application or authentication will not be possible.
+     */
+    abstract protected void addClientRedirectUris(String realm, List<String> redirectUrls);
 }

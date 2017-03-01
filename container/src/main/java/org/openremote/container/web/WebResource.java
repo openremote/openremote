@@ -24,6 +24,7 @@ import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.representations.AccessToken;
 import org.openremote.container.Container;
 import org.openremote.model.Constants;
+import org.openremote.model.asset.HomeAssets;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.*;
@@ -116,5 +117,13 @@ public class WebResource {
      */
     public boolean isRealmAccessibleByUser(String realm) {
         return realm != null && realm.length() > 0 && (realm.equals(getAuthenticatedRealm()) || isSuperUser());
+    }
+
+    /**
+     * @return The identifiers of "home" assets linked to the authenticated user or an empty array if the user
+     * has no linked assets.
+     */
+    public String[] getHomeAssetIds() {
+        return HomeAssets.getAssetIds(getAccessToken().getOtherClaims());
     }
 }

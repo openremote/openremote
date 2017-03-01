@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.setup;
+package org.openremote.manager.server.setup.builtin;
 
 import org.keycloak.admin.client.resource.ClientResource;
 import org.keycloak.admin.client.resource.RolesResource;
@@ -25,6 +25,7 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.openremote.container.Container;
+import org.openremote.manager.server.setup.AbstractKeycloakSetup;
 import org.openremote.manager.shared.security.ClientRole;
 import rx.Observable;
 

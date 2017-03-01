@@ -19,11 +19,9 @@
  */
 package org.openremote.manager.server.security;
 
-import org.keycloak.admin.client.resource.ClientResource;
-import org.keycloak.admin.client.resource.ClientsResource;
-import org.keycloak.admin.client.resource.RealmsResource;
-import org.keycloak.admin.client.resource.RolesResource;
+import org.keycloak.admin.client.resource.*;
 import org.keycloak.representations.idm.ClientRepresentation;
+import org.keycloak.representations.idm.ProtocolMapperRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.openremote.container.Container;
@@ -33,10 +31,10 @@ import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.Constants;
+import org.openremote.model.asset.HomeAssets;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import javax.ws.rs.core.UriBuilder;
+import java.util.*;
 import java.util.logging.Logger;
 
 import static org.openremote.container.json.JsonUtil.convert;
@@ -66,6 +64,21 @@ public class ManagerIdentityService extends IdentityService {
         container.getService(WebService.class).getApiSingletons().add(
             new UserResourceImpl(this)
         );
+    }
+
+    @Override
+    protected void addClientRedirectUris(String realm, List<String> redirectUrls) {
+        // Callback URL used by Manager web client authentication, any relative path to "ourselves" is fine
+        String managerCallbackUrl = UriBuilder.fromUri("/").path(realm).path("*").build().toString();
+        redirectUrls.add(managerCallbackUrl);
+
+        // Callback URL used by Console web client authentication, any relative path to "ourselves" is fine
+        String consoleCallbackUrl = UriBuilder.fromUri("/console/").path(realm).path("*").build().toString();
+        redirectUrls.add(consoleCallbackUrl);
+
+        // Callback URL used by AeroGear for authentication from Console
+        // TODO: Do we still need this?
+        redirectUrls.add("org.openremote.console://oauth2Callback");
     }
 
     /**
@@ -131,6 +144,7 @@ public class ManagerIdentityService extends IdentityService {
         client = clientsResource.findByClientId(client.getClientId()).get(0);
         ClientResource clientResource = clientsResource.get(client.getId());
         addDefaultRoles(clientResource.roles());
+        addDefaultMappers(clientResource.getProtocolMappers());
     }
 
     public void updateTenant(String bearerAuth, String realm, Tenant tenant) throws Exception {
@@ -161,4 +175,17 @@ public class ManagerIdentityService extends IdentityService {
             rolesResource.get(clientRole.getValue()).addComposites(composites);
         }
     }
+
+    public void addDefaultMappers(ProtocolMappersResource protocolMappers) {
+
+        // Link between user and asset ("ownership")
+        ProtocolMapperRepresentation userAssetMapper = new ProtocolMapperRepresentation();
+        userAssetMapper.setProtocol("openid-connect");
+        userAssetMapper.setProtocolMapper("oidc-usermodel-attribute-mapper");
+        userAssetMapper.setName(HomeAssets.HOME_ASSETS_ATTRIBUTE);
+        userAssetMapper.setConsentRequired(false);
+        userAssetMapper.setConfig(HomeAssets.HOME_ASSET_MAPPER_CONFIG);
+        protocolMappers.createMapper(userAssetMapper);
+    }
+
 }

@@ -6,7 +6,7 @@ import elemental.json.JsonType
 import org.openremote.agent3.protocol.simulator.SimulatorProtocol
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.manager.server.asset.AssetService
-import org.openremote.manager.server.setup.ManagerDemoSetup
+import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.model.AttributeRef
 import org.openremote.model.AttributeValueChange

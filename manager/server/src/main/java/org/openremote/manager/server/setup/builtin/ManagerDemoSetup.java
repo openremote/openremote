@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.setup;
+package org.openremote.manager.server.setup.builtin;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -27,6 +27,7 @@ import org.openremote.container.Container;
 import org.openremote.manager.server.agent.AgentAttributes;
 import org.openremote.manager.server.agent.ThingAttributes;
 import org.openremote.manager.server.asset.ServerAsset;
+import org.openremote.manager.server.setup.AbstractManagerSetup;
 import org.openremote.model.*;
 import org.openremote.model.asset.*;
 
@@ -35,6 +36,7 @@ import static org.openremote.model.AttributeType.*;
 import static org.openremote.model.asset.AssetAttributeMeta.*;
 import static org.openremote.model.asset.AssetType.RESIDENCE;
 import static org.openremote.model.asset.AssetType.BUILDING;
+import static org.openremote.model.asset.AssetType.ROOM;
 
 public class ManagerDemoSetup extends AbstractManagerSetup {
 
@@ -45,8 +47,11 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String thingId;
     public String smartHomeId;
     public String apartment1Id;
+    public String apartment1LivingroomId;
     public String apartment2Id;
     public String apartment3Id;
+    public String apartment2LivingroomId;
+    public String apartment3LivingroomId;
 
     public ManagerDemoSetup(Container container) {
         super(container);
@@ -211,12 +216,26 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1 = assetService.merge(apartment1);
         apartment1Id = apartment1.getId();
 
+        ServerAsset apartment1Livingroom = new ServerAsset(apartment1);
+        apartment1Livingroom.setName("Livingroom");
+        apartment1Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
+        apartment1Livingroom.setType(ROOM);
+        apartment1Livingroom = assetService.merge(apartment1Livingroom);
+        apartment1LivingroomId = apartment1Livingroom.getId();
+
         ServerAsset apartment2 = new ServerAsset(smartHome);
         apartment2.setName("Apartment 2");
         apartment2.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
         apartment2.setType(RESIDENCE);
         apartment2 = assetService.merge(apartment2);
         apartment2Id = apartment2.getId();
+
+        ServerAsset apartment2Livingroom = new ServerAsset(apartment2);
+        apartment2Livingroom.setName("Livingroom");
+        apartment2Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
+        apartment2Livingroom.setType(ROOM);
+        apartment2Livingroom = assetService.merge(apartment2Livingroom);
+        apartment2LivingroomId = apartment2Livingroom.getId();
 
         ServerAsset apartment3 = new ServerAsset(smartHome);
         apartment3.setName("Apartment 3");
@@ -225,5 +244,11 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment3 = assetService.merge(apartment3);
         apartment3Id = apartment3.getId();
 
+        ServerAsset apartment3Livingroom = new ServerAsset(apartment3);
+        apartment3Livingroom.setName("Livingroom");
+        apartment3Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
+        apartment3Livingroom.setType(ROOM);
+        apartment3Livingroom = assetService.merge(apartment3Livingroom);
+        apartment3LivingroomId = apartment3Livingroom.getId();
     }
 }

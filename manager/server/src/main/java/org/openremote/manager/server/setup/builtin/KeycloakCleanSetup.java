@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.setup;
+package org.openremote.manager.server.setup.builtin;
 
 import org.keycloak.admin.client.resource.RealmsResource;
-import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.container.Container;
+import org.openremote.manager.server.setup.AbstractKeycloakSetup;
 import rx.Observable;
 
 import java.util.List;
