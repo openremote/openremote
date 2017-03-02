@@ -45,12 +45,12 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 public interface AssetResource {
 
     /**
-     * Retrieve the (restricted) home assets of an authenticated user. If the request is made by the superuser,
-     * or if the regular user making the request is not restricted to home assets, the root assets of the
-     * authenticated realm will be returned.
+     * Retrieve the (restricted) home assets of the currently authenticated user. If the request is made
+     * by the superuser, or if the regular user making the request is not restricted to home assets, the
+     * root assets of the authenticated realm will be returned.
      */
     @GET
-    @Path("home")
+    @Path("home/current")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
