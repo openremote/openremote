@@ -49,7 +49,11 @@ public class ElementalJsonModule extends SimpleModule {
     private static class ElementalJsonSerializer extends JsonSerializer<JsonValue> {
         @Override
         public void serialize(JsonValue value, JsonGenerator gen, SerializerProvider serializers) throws IOException, JsonProcessingException {
-            gen.writeRawValue(value.toJson());
+            if (value instanceof JsonNull) {
+                gen.writeNull();
+            } else {
+                gen.writeRawValue(value.toJson());
+            }
         }
     }
 
@@ -63,5 +67,6 @@ public class ElementalJsonModule extends SimpleModule {
         this.addDeserializer(JsonNumber.class, deserializer);
         this.addDeserializer(JsonArray.class, deserializer);
         this.addDeserializer(JsonValue.class, deserializer);
+        this.addDeserializer(JsonNull.class, deserializer);
     }
 }
