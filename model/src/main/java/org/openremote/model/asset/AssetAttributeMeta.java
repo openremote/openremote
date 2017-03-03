@@ -83,7 +83,13 @@ public enum AssetAttributeMeta {
     /**
      * Regex (Java syntax) constraint for string attribute values.
      */
-    PATTERN("urn:openremote:asset:meta:pattern", true, JsonType.STRING);
+    PATTERN("urn:openremote:asset:meta:pattern", true, JsonType.STRING),
+
+    /**
+     * Indicates the units (data type) of the attribute value should be a valid
+     * {@link org.openremote.model.AttributeUnits} value
+     */
+    UNITS("urn:openremote:asset:meta:units", true, JsonType.STRING);
 
     final protected String name;
     final protected boolean editable; // Can the user edit an asset and apply this meta item?

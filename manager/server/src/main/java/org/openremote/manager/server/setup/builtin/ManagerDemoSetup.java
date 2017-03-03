@@ -160,8 +160,12 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         SimulatorProtocol.META_NAME_ELEMENT, Json.create("range")
                     ))
                 ),
-            new Attribute("light1Color", COLOR, new Color(88, 123, 88).asJsonValue())
+            new Attribute("light1Color", STRING, new Color(88, 123, 88).asJsonValue())
                 .setMetadata(new Metadata()
+                    .add(new MetadataItem(
+                            AssetAttributeMeta.UNITS.getName(),
+                            Json.create(AttributeUnits.COLOR_RGB.toString())
+                    ))
                     .add(new MetadataItem(
                         AssetAttributeMeta.DESCRIPTION.getName(),
                         Json.create("The color of the living room light"))
