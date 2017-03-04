@@ -46,16 +46,16 @@ public class IdentifierUtil {
 
     /**
      * Generates a unique identifier that is the same every time this method is invoked on the same machine with
-     * the same argument. This is a short (27 characters) URL-safe string.
+     * the same argument. This is a 43 characters URL-safe string.
      * <p>
      * This method combines the first non-loopback network interface's MAC address with given salt, then produces a
-     * SHA-1 hash. In other words, every time you call this method with the same salt on the same
+     * SHA-256 hash. In other words, every time you call this method with the same salt on the same
      * machine, you get the same identifier. If you use the same salt on a different machine, a different identifier
      * will be generated.
      * </p>
      *
      * @param salt An arbitrary string, longer values improve uniqueness.
-     * @return A global unique identifier, stable for the current system and salt, with 48 bit + [salt bytes] uniqueness.
+     * @return A global unique identifier, stable for the current system and salt
      */
     public static String generateSystemUniqueId(String salt) {
         return getEncodedHash(
@@ -65,13 +65,13 @@ public class IdentifierUtil {
     }
 
     /**
-     * Generates a URL-safe, 27 character unpadded Base64 encoded SHA-1 hash of the given bytes.
+     * Generates a URL-safe, 43 character unpadded Base64 encoded SHA-256 hash of the given bytes.
      */
     public static String getEncodedHash(byte[]... bytes) {
         if (bytes == null)
             throw new IllegalArgumentException("Can't encode/hash null bytes");
         try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
             digest.reset();
             for (byte[] byteArray : bytes) {
                 digest.update(byteArray);
