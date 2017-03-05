@@ -20,6 +20,7 @@
 package org.openremote.model;
 
 import elemental.json.*;
+import org.openremote.model.asset.AssetAttributeMeta;
 
 import java.util.NoSuchElementException;
 
@@ -94,8 +95,16 @@ public class Attribute extends AbstractValueHolder<Attribute> {
         return this;
     }
 
+    public boolean hasMetaItem(AssetAttributeMeta assetAttributeMeta) {
+        return hasMetaItem(assetAttributeMeta.getName());
+    }
+
     public boolean hasMetaItem(String name) {
         return hasMetadata() && getMetadata().contains(name);
+    }
+
+    public MetadataItem firstMetaItem(AssetAttributeMeta assetAttributeMeta) {
+        return firstMetaItem(assetAttributeMeta.getName());
     }
 
     public MetadataItem firstMetaItem(String name) {

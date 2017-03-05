@@ -124,8 +124,8 @@ public class SimulatorProtocol extends AbstractProtocol {
             case "decimal":
                 return new DecimalSimulatorElement();
             case "range":
-                MetadataItem minItem = attribute.firstMetaItem(RANGE_MIN.getName());
-                MetadataItem maxItem = attribute.firstMetaItem(RANGE_MAX.getName());
+                MetadataItem minItem = attribute.firstMetaItem(RANGE_MIN);
+                MetadataItem maxItem = attribute.firstMetaItem(RANGE_MAX);
                 double min = minItem != null ? minItem.getValueAsInteger() : 0;
                 double max = maxItem != null ? maxItem.getValueAsInteger() : 100;
                 return new IntegerSimulatorElement(min, max);

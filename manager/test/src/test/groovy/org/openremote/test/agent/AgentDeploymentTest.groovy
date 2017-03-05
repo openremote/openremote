@@ -11,7 +11,7 @@ import org.openremote.manager.server.setup.SetupService
 import org.openremote.model.AttributeRef
 import org.openremote.model.AttributeValueChange
 import org.openremote.model.Attributes
-import org.openremote.model.asset.Color
+import org.openremote.model.asset.ColorRGB
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -36,7 +36,7 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         conditions.eventually {
             assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Toggle").asBoolean()
             assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Dimmer").getType() == JsonType.NULL // No initial value!
-            assert new Color(simulatorProtocol.getState(managerDemoSetup.thingId, "light1Color") as JsonObject) == new Color(88, 123, 88)
+            assert new ColorRGB(simulatorProtocol.getState(managerDemoSetup.thingId, "light1Color") as JsonObject) == new ColorRGB(88, 123, 88)
             assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1PowerConsumption").asNumber() == 12.345d
         }
 
@@ -90,7 +90,7 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
 
         then: "the thing attribute value should be updated"
         conditions.eventually {
-            def thing = assetService.get(managerDemoSetup.thingId)
+            def thing = assetService.find(managerDemoSetup.thingId)
             def attributes = new Attributes(thing.getAttributes())
             assert attributes.get("light1Dimmer").getValue_TODO_BUG_IN_JAVASCRIPT().getType() == JsonType.NUMBER
             assert attributes.get("light1Dimmer").getValueAsInteger() == 77

@@ -1,7 +1,11 @@
 package org.openremote.agent.deploy;
 
+import org.openremote.model.Constants;
+
 import java.util.Locale;
 import java.util.Map;
+
+import static org.openremote.model.Constants.NAMESPACE;
 
 /**
  * Command deployment model
@@ -10,8 +14,8 @@ public class CommandDefinition {
 
     public final static String NAME_PROPERTY = "name";
     public final static String NAME_PROPERTY_DEFAULT_VALUE = "<No Name>";
-    public final static String DEVICE_NAME_PROPERTY = "urn:openremote:device-command:device-name";
-    public final static String DEVICE_ID_PROPERTY = "urn:openremote:device-command:device-id";
+    public final static String DEVICE_NAME_PROPERTY = NAMESPACE + ":device-command:device-name";
+    public final static String DEVICE_ID_PROPERTY = NAMESPACE + ":device-command:device-id";
 
     final protected String protocolType;
     final protected int commandID;

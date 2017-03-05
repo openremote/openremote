@@ -26,8 +26,6 @@ import org.openremote.model.AttributeRef;
 
 public class ThingAttribute extends Attribute {
 
-    public static final String META_NAME_LINK = "urn:openremote:agent:link";
-
     final protected ProtocolConfiguration protocolConfiguration;
     final protected String thingId;
 
@@ -36,8 +34,8 @@ public class ThingAttribute extends Attribute {
     }
 
     static public AttributeRef getAgentLink(Attribute attribute) {
-        JsonArray array = attribute.hasMetaItem(META_NAME_LINK)
-            ? attribute.firstMetaItem(META_NAME_LINK).getValueAsArray()
+        JsonArray array = attribute.hasMetaItem(AssetAttributeMeta.AGENT_LINK)
+            ? attribute.firstMetaItem(AssetAttributeMeta.AGENT_LINK).getValueAsArray()
             : null;
         if (array == null || array.length() != 2)
             return null;

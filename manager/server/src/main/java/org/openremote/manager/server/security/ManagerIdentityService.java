@@ -31,7 +31,7 @@ import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.Constants;
-import org.openremote.model.asset.HomeAssets;
+import org.openremote.model.asset.ProtectedUserAssets;
 
 import javax.ws.rs.core.UriBuilder;
 import java.util.*;
@@ -182,9 +182,9 @@ public class ManagerIdentityService extends IdentityService {
         ProtocolMapperRepresentation userAssetMapper = new ProtocolMapperRepresentation();
         userAssetMapper.setProtocol("openid-connect");
         userAssetMapper.setProtocolMapper("oidc-usermodel-attribute-mapper");
-        userAssetMapper.setName(HomeAssets.HOME_ASSETS_ATTRIBUTE);
+        userAssetMapper.setName(ProtectedUserAssets.ASSETS_ATTRIBUTE);
         userAssetMapper.setConsentRequired(false);
-        userAssetMapper.setConfig(HomeAssets.HOME_ASSET_MAPPER_CONFIG);
+        userAssetMapper.setConfig(ProtectedUserAssets.RESTRICTED_MAPPER);
         protocolMappers.createMapper(userAssetMapper);
     }
 

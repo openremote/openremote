@@ -37,10 +37,7 @@ import org.openremote.model.asset.AssetInfo;
 import org.openremote.model.asset.AssetType;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
@@ -202,6 +199,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                         tenant.getId(),
                         0,
                         tenant.getDisplayName(),
+                        new Date(),
                         tenant.getRealm(),
                         AssetType.TENANT.getValue(),
                         null,
@@ -231,7 +229,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                     assetResource.getRoot(requestParams, realm);
                 } else if (parent.getId() == null) {
                     LOG.fine("Loading the home assets of authenticated tenant");
-                    assetResource.getHomeAssets(requestParams);
+                    assetResource.getCurrentUserAssets(requestParams);
                 } else {
                     assetResource.getChildren(requestParams, parent.getId());
                 }

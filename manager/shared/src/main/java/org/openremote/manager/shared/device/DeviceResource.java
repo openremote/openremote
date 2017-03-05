@@ -23,6 +23,7 @@ import elemental.json.Json;
 import elemental.json.JsonObject;
 import org.openremote.model.Attribute;
 import org.openremote.model.AttributeType;
+import org.openremote.model.Constants;
 
 /**
  * An attribute of an asset that represents a device resource.
@@ -40,9 +41,9 @@ import org.openremote.model.AttributeType;
 public class DeviceResource extends Attribute {
 
     public static final String DEVICE_RESOURCE = "deviceResource";
-    public static final String DEVICE_RESOURCE_TYPE = "urn:openremote:device:resource:type";
+    public static final String DEVICE_RESOURCE_TYPE = Constants.NAMESPACE + ":device:resource:type";
     public static final String ACCESS = "access";
-    public static final String ACCESS_TYPE = "urn:openremote:device:resource:access";
+    public static final String ACCESS_TYPE = Constants.NAMESPACE + ":device:resource:access";
     public static final String PASSIVE = "passive";
     public static final String CONSTANT = "constant";
 

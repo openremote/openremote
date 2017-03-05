@@ -19,6 +19,9 @@
  */
 package org.openremote.model.asset;
 
+import java.util.Arrays;
+import java.util.Date;
+
 /**
  * A DTO for performance-critical operations with assets, such as tree loading/rendering.
  */
@@ -29,6 +32,8 @@ public class AssetInfo {
     protected long version;
 
     protected String name;
+
+    protected Date createdOn;
 
     protected String realm;
 
@@ -46,13 +51,14 @@ public class AssetInfo {
     }
 
     public AssetInfo(Asset asset) {
-        this(asset.getId(), asset.getVersion(), asset.getName(), asset.getRealm(), asset.getType(), asset.getParentId(), asset.getCoordinates());
+        this(asset.getId(), asset.getVersion(), asset.getName(), asset.getCreatedOn(), asset.getRealm(), asset.getType(), asset.getParentId(), asset.getCoordinates());
     }
 
-    public AssetInfo(String id, long version, String name, String realm, String type, String parentId, double[] coordinates) {
+    public AssetInfo(String id, long version, String name, Date createdOn, String realm, String type, String parentId, double[] coordinates) {
         this.id = id;
         this.version = version;
         this.name = name;
+        this.createdOn = createdOn;
         this.realm = realm;
         this.type = type;
         this.parentId = parentId;
@@ -96,6 +102,14 @@ public class AssetInfo {
         this.name = name;
     }
 
+    public Date getCreatedOn() {
+        return createdOn;
+    }
+
+    public void setCreatedOn(Date createdOn) {
+        this.createdOn = createdOn;
+    }
+
     public String getType() {
         return type;
     }
@@ -120,15 +134,24 @@ public class AssetInfo {
         this.parentId = parentId;
     }
 
+    public double[] getCoordinates() {
+        return coordinates;
+    }
+
+    public void setCoordinates(double[] coordinates) {
+        this.coordinates = coordinates;
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "id='" + id + '\'' +
             ", name='" + name + '\'' +
+            ", createOn='" + createdOn + '\'' +
             ", realm='" + realm + '\'' +
             ", type='" + type + '\'' +
             ", parentId='" + parentId + '\'' +
-            ", coordinates='" + coordinates+ '\'' +
+            ", coordinates='" + Arrays.toString(coordinates) + '\'' +
             '}';
     }
 }

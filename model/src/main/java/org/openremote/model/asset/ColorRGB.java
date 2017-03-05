@@ -22,19 +22,19 @@ package org.openremote.model.asset;
 import elemental.json.Json;
 import elemental.json.JsonObject;
 
-public class Color {
+public class ColorRGB {
 
     final protected int red;
     final protected int green;
     final protected int blue;
 
-    public Color(int red, int green, int blue) {
+    public ColorRGB(int red, int green, int blue) {
         this.red = red;
         this.green = green;
         this.blue = blue;
     }
 
-    public Color(JsonObject jsonObject) {
+    public ColorRGB(JsonObject jsonObject) {
         this(
             (int)jsonObject.get("red").asNumber(),
             (int)jsonObject.get("green").asNumber(),
@@ -62,16 +62,16 @@ public class Color {
         return object;
     }
 
-    public Color red(int red) {
-        return new Color(red, getGreen(), getBlue());
+    public ColorRGB red(int red) {
+        return new ColorRGB(red, getGreen(), getBlue());
     }
 
-    public Color green(int green) {
-        return new Color(getRed(), green, getBlue());
+    public ColorRGB green(int green) {
+        return new ColorRGB(getRed(), green, getBlue());
     }
 
-    public Color blue(int blue) {
-        return new Color(getRed(), getGreen(), blue);
+    public ColorRGB blue(int blue) {
+        return new ColorRGB(getRed(), getGreen(), blue);
     }
 
     @Override
@@ -79,11 +79,11 @@ public class Color {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Color color = (Color) o;
+        ColorRGB colorRGB = (ColorRGB) o;
 
-        if (red != color.red) return false;
-        if (green != color.green) return false;
-        return blue == color.blue;
+        if (red != colorRGB.red) return false;
+        if (green != colorRGB.green) return false;
+        return blue == colorRGB.blue;
     }
 
     @Override

@@ -28,6 +28,7 @@ import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.agent.Agent;
+import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
@@ -112,7 +113,7 @@ public class FlowsActivity
             agentAsset -> {
                 Attributes attributes = new Attributes(agentAsset.getAttributes());
                 Agent agent = new Agent(attributes);
-                if ("urn:openremote:connector:controller2".equals(agent.getConnectorType())) {
+                if ((Constants.NAMESPACE + ":connector:controller2").equals(agent.getConnectorType())) {
                     StringBuilder sb = new StringBuilder();
                     sb.append("http://");
                     sb.append(attributes.get("host").getValueAsString());

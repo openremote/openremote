@@ -55,30 +55,32 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
 
         if (container.isDevMode()) {
 
-            addTask(new ManagerCleanSetup(container));
-            addTask(new ManagerInitSetup(container));
-            addTask(new ManagerDemoSetup(container));
-
             addTask(new KeycloakCleanSetup(container));
             addTask(new KeycloakInitSetup(container));
+
+            addTask(new ManagerCleanSetup(container));
+            addTask(new ManagerInitSetup(container));
+
             addTask(new KeycloakDemoSetup(container));
+            addTask(new ManagerDemoSetup(container));
+            addTask(new FinalizeKeycloakDemoSetup(container));
 
         } else {
-
-            if (getBoolean(container.getConfig(), SETUP_CLEAN_INIT_MANAGER, SETUP_CLEAN_INIT_MANAGER_DEFAULT)) {
-                addTask(new ManagerCleanSetup(container));
-                addTask(new ManagerInitSetup(container));
-            }
-            if (getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_DATA, SETUP_IMPORT_DEMO_DATA_DEFAULT)) {
-                addTask(new ManagerDemoSetup(container));
-            }
 
             if (getBoolean(container.getConfig(), SETUP_CLEAN_INIT_KEYCLOAK, SETUP_CLEAN_INIT_KEYCLOAK_DEFAULT)) {
                 addTask(new KeycloakCleanSetup(container));
                 addTask(new KeycloakInitSetup(container));
             }
+
+            if (getBoolean(container.getConfig(), SETUP_CLEAN_INIT_MANAGER, SETUP_CLEAN_INIT_MANAGER_DEFAULT)) {
+                addTask(new ManagerCleanSetup(container));
+                addTask(new ManagerInitSetup(container));
+            }
+
             if (getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_DATA, SETUP_IMPORT_DEMO_DATA_DEFAULT)) {
                 addTask(new KeycloakDemoSetup(container));
+                addTask(new ManagerDemoSetup(container));
+                addTask(new FinalizeKeycloakDemoSetup(container));
             }
 
         }

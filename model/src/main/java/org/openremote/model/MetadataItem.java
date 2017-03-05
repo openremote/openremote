@@ -22,6 +22,7 @@ package org.openremote.model;
 import elemental.json.Json;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
+import org.openremote.model.asset.AssetAttributeMeta;
 
 public class MetadataItem extends AbstractValueHolder<MetadataItem> {
 
@@ -33,8 +34,16 @@ public class MetadataItem extends AbstractValueHolder<MetadataItem> {
         super(jsonObject);
     }
 
+    public MetadataItem(AssetAttributeMeta assetAttributeMeta) {
+        this(assetAttributeMeta, null);
+    }
+
     public MetadataItem(String name) {
         this(name, null);
+    }
+
+    public MetadataItem(AssetAttributeMeta assetAttributeMeta, JsonValue value) {
+        this(assetAttributeMeta.getName(), value);
     }
 
     public MetadataItem(String name, JsonValue value) {

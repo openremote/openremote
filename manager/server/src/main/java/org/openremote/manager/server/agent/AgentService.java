@@ -65,7 +65,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
-        Asset[] agents = assetService.findByTypeInAllRealms(AGENT.getValue());
+        Asset[] agents = assetService.findByType(AGENT.getValue());
         LOG.fine("Deploy all agents in all realms: " + agents.length);
         for (Asset agent : agents) {
             deployAgent(agent, PersistenceEvent.Cause.UPDATE);

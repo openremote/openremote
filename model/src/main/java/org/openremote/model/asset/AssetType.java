@@ -21,14 +21,12 @@ package org.openremote.model.asset;
 
 import elemental.json.Json;
 import elemental.json.JsonObject;
-import org.openremote.model.Attribute;
-import org.openremote.model.AttributeType;
-import org.openremote.model.Attributes;
-import org.openremote.model.Metadata;
+import org.openremote.model.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.openremote.model.Constants.ASSET_NAMESPACE;
 import static org.openremote.model.asset.AssetAttributeMeta.*;
 import static org.openremote.model.AttributeType.INTEGER;
 import static org.openremote.model.AttributeType.STRING;
@@ -43,12 +41,12 @@ public enum AssetType {
 
     CUSTOM(null, true, null),
 
-    TENANT("urn:openremote:asset:tenant", false, null),
+    TENANT(ASSET_NAMESPACE + ":tenant", false, null),
 
     // TODO Arbitrary group of assets? Semantics?
-    GROUP("urn:openremote:asset:group", true, null),
+    GROUP(ASSET_NAMESPACE + ":group", true, null),
 
-    BUILDING("urn:openremote:asset:building", true, new Attributes().put(
+    BUILDING(ASSET_NAMESPACE + ":building", true, new Attributes().put(
         new Attribute("area", INTEGER)
             .setMetadata(new Metadata()
                 .add(createMetadataItem(LABEL, Json.create("Surface area")))
@@ -77,19 +75,19 @@ public enum AssetType {
             )
     ).getJsonObject()),
 
-    FLOOR("urn:openremote:asset:floor", true, null),
+    FLOOR(ASSET_NAMESPACE + ":floor", true, null),
 
-    RESIDENCE("urn:openremote:asset:residence", true, null),
+    RESIDENCE(ASSET_NAMESPACE + ":residence", true, null),
 
-    ROOM("urn:openremote:asset:room", true, null),
+    ROOM(ASSET_NAMESPACE + ":room", true, null),
 
-    AGENT("urn:openremote:asset:agent", true, null),
+    AGENT(ASSET_NAMESPACE + ":agent", true, null),
 
     /**
      *  When a Thing asset is modified (created, updated, deleted), its attributes are examined
      *  and linked to and unlinked from the configured Protocol.
      */
-    THING("urn:openremote:asset:thing", true, null);
+    THING(ASSET_NAMESPACE + ":thing", true, null);
 
     final protected String value;
     final protected boolean editable;

@@ -205,6 +205,7 @@ public class Asset {
             "id='" + id + '\'' +
             ", realm='" + realm + '\'' +
             ", name='" + name + '\'' +
+            ", createOn='" + createdOn + '\'' +
             ", type ='" + type + '\'' +
             ", parent ='" + parentId + '\'' +
             ", path ='" + Arrays.toString(path) + '\'' +

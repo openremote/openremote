@@ -24,7 +24,7 @@ import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.representations.AccessToken;
 import org.openremote.container.Container;
 import org.openremote.model.Constants;
-import org.openremote.model.asset.HomeAssets;
+import org.openremote.model.asset.ProtectedUserAssets;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.*;
@@ -120,10 +120,9 @@ public class WebResource {
     }
 
     /**
-     * @return The identifiers of "home" assets linked to the authenticated user or an empty array if the user
-     * has no linked assets.
+     * @return <code>true</code> if the authenticated user is a restricted user (access token claim check).
      */
-    public String[] getHomeAssetIds() {
-        return HomeAssets.getAssetIds(getAccessToken().getOtherClaims());
+    public boolean isRestrictedUser() {
+        return ProtectedUserAssets.isRestrictedUser(getAccessToken().getOtherClaims());
     }
 }

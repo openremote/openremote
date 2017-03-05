@@ -45,7 +45,7 @@ public abstract class SimulatorElement<T> {
         if (isValid(state)) {
             this.state = state;
         } else {
-            throw new IllegalArgumentException("Invalid state, expected '" + expectedType + "': " + state);
+            throw new IllegalArgumentException("Invalid state, expected JSON type '" + expectedType + "': " + state.getType());
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -21,22 +21,24 @@ package org.openremote.manager.server.asset;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
-import org.openremote.model.asset.AssetInfo;
+import elemental.json.JsonObject;
+import org.openremote.model.asset.ProtectedAssetInfo;
 
 import java.util.Date;
 
 /**
  * Provides a constructor we can use in database query result marshaling.
  */
-public class ServerAssetInfo extends AssetInfo {
+public class ProtectedServerAssetInfo extends ProtectedAssetInfo {
 
-    public ServerAssetInfo(String id, long version, String name, Date createdOn, String realm, String type, String parentId, Geometry location) {
+    public ProtectedServerAssetInfo(String id, long version, String name, Date createdOn, String realm, String type, String parentId, Geometry location, JsonObject attributes) {
         super(
             id, version, name, createdOn, realm, type, parentId,
             location != null ? new double[]{
                 location.getCoordinate().getOrdinate(Coordinate.X),
                 location.getCoordinate().getOrdinate(Coordinate.Y)
-            } : null
+            } : null,
+            attributes
         );
     }
 }

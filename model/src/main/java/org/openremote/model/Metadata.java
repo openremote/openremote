@@ -22,6 +22,7 @@ package org.openremote.model;
 import elemental.json.Json;
 import elemental.json.JsonArray;
 import elemental.json.JsonObject;
+import org.openremote.model.asset.AssetAttributeMeta;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,6 +66,10 @@ public class Metadata {
             : null;
     }
 
+    public MetadataItem first(AssetAttributeMeta assetAttributeMeta) {
+        return first(assetAttributeMeta.getName());
+    }
+
     public MetadataItem first(String name) {
         List<MetadataItem> list = asList();
         for (MetadataItem item : list) {
@@ -72,6 +77,10 @@ public class Metadata {
                 return item;
         }
         return null;
+    }
+
+    public boolean contains(AssetAttributeMeta assetAttributeMeta) {
+        return contains(assetAttributeMeta.getName());
     }
 
     public boolean contains(String name) {

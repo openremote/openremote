@@ -19,21 +19,23 @@
  */
 package org.openremote.manager.server.asset;
 
+import elemental.json.JsonValue;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetInfo;
+import org.openremote.model.asset.ProtectedAssetInfo;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
+import java.nio.file.attribute.UserPrincipal;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static javax.ws.rs.core.Response.Status.*;
 
 public class AssetResourceImpl extends WebResource implements AssetResource {
 
@@ -48,19 +50,21 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
     }
 
     @Override
-    public AssetInfo[] getHomeAssets(@BeanParam RequestParams requestParams) {
+    public ProtectedAssetInfo[] getCurrentUserAssets(@BeanParam RequestParams requestParams) {
         try {
-            String realm = getAuthenticatedRealm();
-            String[] homeAssetIds = getHomeAssetIds();
-            if (homeAssetIds.length == 0) {
-                return assetService.getRoot(realm, null);
-            } else {
-                return assetService.findById(realm, getHomeAssetIds());
+            if (isSuperUser() || !isRestrictedUser()) {
+                return new ProtectedAssetInfo[0];
             }
+            return assetService.findProtectedOfUser(getAuthenticatedRealm(), getUsername());
         } catch (IllegalStateException ex) {
             LOG.log(Level.FINE, "Bad request, aborting: " + uriInfo.getAbsolutePath(), ex);
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
+    }
+
+    @Override
+    public void updateCurrentUserAsset(@BeanParam RequestParams requestParams, String assetId, ProtectedAssetInfo assetInfo) {
+        throw new UnsupportedOperationException("Not Implemented"); // TODO
     }
 
     @Override
@@ -68,25 +72,26 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
         try {
             if (realm == null || realm.length() == 0) {
                 realm = getAuthenticatedRealm();
-            } else if (!isRealmAccessibleByUser(realm)) {
-                LOG.fine("Forbidden access for user '" + getUsername() + "', can't retrieve root assets of realm: " + realm);
-                throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
-            return assetService.getRoot(realm, getHomeAssetIds());
+            if (!isRealmAccessibleByUser(realm) || isRestrictedUser()) {
+                return new AssetInfo[0];
+            }
+            return assetService.findRoot(realm);
         } catch (IllegalStateException ex) {
             LOG.log(Level.FINE, "Bad request, aborting: " + uriInfo.getAbsolutePath(), ex);
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
     }
 
-    // TODO: All the following operations are untested for "home" asset restrictions!
-
     @Override
     public AssetInfo[] getChildren(@BeanParam RequestParams requestParams, String parentId) {
         try {
+            if (isRestrictedUser()) {
+                return new AssetInfo[0];
+            }
             return isSuperUser()
-                ? assetService.getChildren(parentId, getHomeAssetIds())
-                : assetService.getChildrenInRealm(parentId, getAuthenticatedRealm(), getHomeAssetIds());
+                ? assetService.findChildren(parentId)
+                : assetService.findChildrenInRealm(parentId, getAuthenticatedRealm());
         } catch (IllegalStateException ex) {
             LOG.log(Level.FINE, "Bad request, aborting: " + uriInfo.getAbsolutePath(), ex);
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
@@ -96,7 +101,10 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
     @Override
     public Asset get(@BeanParam RequestParams requestParams, String assetId) {
         try {
-            Asset asset = assetService.get(assetId);
+            if (isRestrictedUser()) {
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
+            Asset asset = assetService.find(assetId);
             if (asset == null)
                 throw new WebApplicationException(NOT_FOUND);
             if (!isRealmAccessibleByUser(asset.getRealm())) {
@@ -116,7 +124,10 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
     @Override
     public void update(@BeanParam RequestParams requestParams, String assetId, Asset asset) {
         try {
-            ServerAsset serverAsset = assetService.get(assetId);
+            if (isRestrictedUser()) {
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
+            ServerAsset serverAsset = assetService.find(assetId);
             if (serverAsset == null)
                 throw new WebApplicationException(NOT_FOUND);
 
@@ -153,13 +164,16 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
     }
 
     @Override
+    public void updateAttribute(@BeanParam RequestParams requestParams, String assetId, String attributeName, JsonValue value) {
+        throw new UnsupportedOperationException("Not Implemented"); // TODO
+    }
+
+    @Override
     public void create(@BeanParam RequestParams requestParams, Asset asset) {
         try {
-
-            // TODO we should check if the realm actually exists, but we can't do
-            // that without giving the manager permanent admin access on Keycloak
-            // checkRealmExists(updatedAsset.getRealm());
-
+            if (isRestrictedUser()) {
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
             if (!isRealmAccessibleByUser(asset.getRealm())) {
                 LOG.fine("Forbidden access for user '" + getUsername() + "', can't create asset in realm: " + asset.getRealm());
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
@@ -188,7 +202,10 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
     @Override
     public void delete(@BeanParam RequestParams requestParams, String assetId) {
         try {
-            ServerAsset serverAsset = assetService.get(assetId);
+            if (isRestrictedUser()) {
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
+            ServerAsset serverAsset = assetService.find(assetId);
             if (serverAsset == null)
                 return;
             if (!isRealmAccessibleByUser(serverAsset.getRealm())) {
@@ -198,7 +215,9 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
                 );
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
-            assetService.delete(assetId);
+            if (!assetService.delete(assetId)) {
+                throw new WebApplicationException(BAD_REQUEST);
+            }
         } catch (IllegalStateException ex) {
             LOG.log(Level.FINE, "Bad request, aborting: " + uriInfo.getAbsolutePath(), ex);
             throw new WebApplicationException(Response.Status.BAD_REQUEST);

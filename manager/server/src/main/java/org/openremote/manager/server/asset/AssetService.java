@@ -22,31 +22,31 @@ package org.openremote.manager.server.asset;
 import elemental.json.JsonValue;
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
-import org.openremote.container.message.MessageBrokerSetupService;
-import org.openremote.manager.server.agent.AgentAttributes;
-import org.openremote.manager.server.agent.ThingAttributes;
-import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.model.Function;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.server.agent.AgentAttributes;
+import org.openremote.manager.server.agent.ThingAttributes;
 import org.openremote.manager.server.event.EventService;
+import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.asset.SubscribeAssetModified;
 import org.openremote.manager.shared.asset.UnsubscribeAssetModified;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.AttributeValueChange;
+import org.openremote.model.Function;
 import org.openremote.model.asset.*;
 import org.postgresql.util.PGobject;
 
 import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
+import javax.persistence.Query;
 import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -66,7 +66,7 @@ public class AssetService extends RouteBuilder implements ContainerService {
     final protected Function<AttributeRef, ProtocolConfiguration> agentLinkResolver = agentLink -> {
         // Resolve the agent and the protocol configuration
         // TODO This is very inefficient and requires Hibernate second-level caching
-        Asset agent = get(agentLink.getEntityId());
+        Asset agent = find(agentLink.getEntityId());
         if (agent != null && agent.getWellKnownType().equals(AGENT)) {
             AgentAttributes agentAttributes = new AgentAttributes(agent);
             return agentAttributes.getProtocolConfiguration(agentLink.getAttributeName());
@@ -79,10 +79,11 @@ public class AssetService extends RouteBuilder implements ContainerService {
         eventService = container.getService(EventService.class);
         persistenceService = container.getService(PersistenceService.class);
 
+        // TODO None of this is secure or considers the realm of an asset or the logged-in user's realm
         assetListenerSubscriptions = new AssetListenerSubscriptions(eventService) {
             @Override
             protected Asset getAsset(String assetId) {
-                return AssetService.this.get(assetId);
+                return AssetService.this.find(assetId);
             }
         };
 
@@ -137,38 +138,157 @@ public class AssetService extends RouteBuilder implements ContainerService {
         return agentLinkResolver;
     }
 
-    public AssetInfo[] getRoot(String realm, String[] restrictedAssetIds) {
+    /**
+     * Find assets without a parent in a realm.
+     *
+     * @param realm The realm to search.
+     * @return The root assets of the realm ordered ascending by creation date, or an empty array if there is no data.
+     */
+    public AssetInfo[] findRoot(String realm) {
         if (realm == null || realm.length() == 0)
             throw new IllegalArgumentException("Realm must be provided to query assets");
         return persistenceService.doReturningTransaction(em -> {
             List<AssetInfo> result = em.createQuery(
                 "select new org.openremote.manager.server.asset.ServerAssetInfo(" +
-                    "a.id, a.version, a.name, a.realm, a.type, a.parent.id, a.location" +
+                    "a.id, a.version, a.name, a.createdOn, a.realm, a.type, a.parent.id, a.location" +
                     ") from Asset a where a.parent is null and a.realm = :realm order by a.createdOn asc",
                 AssetInfo.class
             ).setParameter("realm", realm).getResultList();
-            filterRestrictedAssetInfos(result, restrictedAssetIds);
             return result.toArray(new AssetInfo[result.size()]);
         });
     }
 
-    public AssetInfo[] findById(String realm, String[] assetIds) {
+    /**
+     * Retrieve the children of an asset.
+     *
+     * @param parentId The ID of the parent asset.
+     * @return The child assets ordered ascending by creation date, or an empty array if there is no data.
+     */
+    public AssetInfo[] findChildren(String parentId) {
+        return persistenceService.doReturningTransaction(em -> {
+            Asset parent = loadAsset(em, parentId);
+            if (parent == null)
+                return new AssetInfo[0];
+            List<AssetInfo> result =
+                em.createQuery(
+                    "select new org.openremote.manager.server.asset.ServerAssetInfo(" +
+                        "a.id, a.version, a.name, a.createdOn, a.realm, a.type, a.parent.id, a.location" +
+                        ") from Asset a where a.parent.id = :parentId order by a.createdOn asc",
+                    AssetInfo.class
+                ).setParameter("parentId", parentId).getResultList();
+            return result.toArray(new AssetInfo[result.size()]);
+        });
+    }
+
+    /**
+     * Retrieve the children of an asset in a particular realm.
+     *
+     * @param parentId The ID of the parent asset.
+     * @param realm    The realm in which both parent asset and its children must be.
+     * @return The child assets ordered ascending by creation date, or an empty array if there is no data.
+     */
+    public AssetInfo[] findChildrenInRealm(String parentId, String realm) {
+        return persistenceService.doReturningTransaction(em -> {
+            Asset parent = loadAsset(em, parentId);
+            if (parent == null)
+                return new AssetInfo[0];
+            List<AssetInfo> result =
+                em.createQuery(
+                    "select new org.openremote.manager.server.asset.ServerAssetInfo(" +
+                        "a.id, a.version, a.name, a.createdOn, a.realm, a.type, a.parent.id, a.location" +
+                        ") from Asset a, Asset p where p.id = :parentId and a.parent.id = :parentId " +
+                        "and p.realm = :realm and a.realm = :realm " +
+                        "order by a.createdOn asc",
+                    AssetInfo.class
+                ).setParameter("parentId", parentId)
+                    .setParameter("realm", realm)
+                    .getResultList();
+            return result.toArray(new AssetInfo[result.size()]);
+        });
+    }
+
+    /**
+     * Find an asset by primary key.
+     *
+     * @param assetId The primary key identifier value of the asset.
+     * @return The asset or <code>null</code> if the asset doesn't exist.
+     */
+    public ServerAsset find(String assetId) {
+        return persistenceService.doReturningTransaction(em -> loadAsset(em, assetId));
+    }
+
+    /**
+     * Find protected assets by primary keys.
+     *
+     * @param realm    The realm in which the assets must be.
+     * @param assetIds The primary key identifier values of the assets to find.
+     * @return The found assets or an empty array
+     */
+    public ProtectedAssetInfo[] findProtectedById(String realm, String[] assetIds) {
         if (realm == null || realm.length() == 0)
             throw new IllegalArgumentException("Realm must be provided to query assets");
         return persistenceService.doReturningTransaction(em -> {
-            List<AssetInfo> result = em.createQuery(
-                "select new org.openremote.manager.server.asset.ServerAssetInfo(" +
-                    "a.id, a.version, a.name, a.realm, a.type, a.parent.id, a.location" +
+            // TODO The SQL IN clause is not limited on Postgres, we should have some sanity check here on the number of IDs!
+            List<ProtectedAssetInfo> result = em.createQuery(
+                "select new org.openremote.manager.server.asset.ProtectedServerAssetInfo(" +
+                    "a.id, a.version, a.name, a.createdOn, a.realm, a.type, a.parent.id, a.location, a.attributes" +
                     ") from Asset a where a.id in :assetIds and a.realm = :realm order by a.createdOn asc",
-                AssetInfo.class
+                ProtectedAssetInfo.class
             ).setParameter("realm", realm)
                 .setParameter("assetIds", Arrays.asList(assetIds))
                 .getResultList();
-            return result.toArray(new AssetInfo[result.size()]);
+            return result.toArray(new ProtectedAssetInfo[result.size()]);
         });
     }
 
-    public ServerAsset[] findByType(String realm, AssetType assetType) {
+    /**
+     * Find protected assets linked to a user.
+     *
+     * @param realm    The realm in which the assets must be.
+     * @param username The username of the user.
+     * @return The found assets or an empty array
+     */
+    public ProtectedAssetInfo[] findProtectedOfUser(String realm, String username) {
+        return persistenceService.doReturningTransaction(em -> {
+            Query userAttributesQuery = em.createNativeQuery(
+                "SELECT ua.NAME, ua.VALUE " +
+                    "FROM USER_ATTRIBUTE ua JOIN USER_ENTITY u ON u.ID = ua.USER_ID " +
+                    "WHERE u.USERNAME = :username"
+            );
+            @SuppressWarnings("unchecked")
+            String[] assetIds = ProtectedUserAssets.getAssetIdsFromUserAttributes(
+                userAttributesQuery.setParameter("username", username).getResultList()
+            );
+            return findProtectedById(realm, assetIds);
+        });
+    }
+
+    /**
+     * Find assets by type in all realms.
+     *
+     * @param assetType The type of the assets to find.
+     * @return The found assets or an empty array
+     */
+    public ServerAsset[] findByType(String assetType) {
+        return persistenceService.doReturningTransaction(em -> {
+            List<ServerAsset> result =
+                em.createQuery(
+                    "select a from Asset a where a.type = :assetType order by a.createdOn asc",
+                    ServerAsset.class)
+                    .setParameter("assetType", assetType)
+                    .getResultList();
+            return result.toArray(new ServerAsset[result.size()]);
+        });
+    }
+
+    /**
+     * Find assets by type in a given realm.
+     *
+     * @param realm     The realm in which the assets must be.
+     * @param assetType The type of the assets to find.
+     * @return The found assets or an empty array
+     */
+    public ServerAsset[] findByType(String realm, String assetType) {
         if (realm == null || realm.length() == 0)
             throw new IllegalArgumentException("Realm must be provided to query assets");
         return persistenceService.doReturningTransaction(em -> {
@@ -177,12 +297,19 @@ public class AssetService extends RouteBuilder implements ContainerService {
                     "select a from Asset a where a.realm = :realm and a.type = :assetType order by a.createdOn asc",
                     ServerAsset.class)
                     .setParameter("realm", realm)
-                    .setParameter("assetType", assetType.getValue())
+                    .setParameter("assetType", assetType)
                     .getResultList();
             return result.toArray(new ServerAsset[result.size()]);
         });
     }
 
+    /**
+     * Find children of the given asset by type.
+     *
+     * @param parentId  The ID of the parent asset.
+     * @param assetType The well-known type of the assets to find.
+     * @return The found assets or an empty array
+     */
     public ServerAsset[] findChildrenByType(String parentId, AssetType assetType) {
         return persistenceService.doReturningTransaction(em -> {
             List<ServerAsset> result =
@@ -196,96 +323,51 @@ public class AssetService extends RouteBuilder implements ContainerService {
         });
     }
 
-    public ServerAsset[] findByTypeInAllRealms(String assetType) {
-        return persistenceService.doReturningTransaction(em -> {
-            List<ServerAsset> result =
-                em.createQuery(
-                    "select a from Asset a where a.type = :assetType order by a.createdOn asc",
-                    ServerAsset.class)
-                    .setParameter("assetType", assetType)
-                    .getResultList();
-            return result.toArray(new ServerAsset[result.size()]);
-        });
-    }
-
-    public AssetInfo[] getChildren(String parentId, String[] restrictedAssetIds) {
-        return persistenceService.doReturningTransaction(em -> {
-            List<AssetInfo> result =
-                em.createQuery(
-                    "select new org.openremote.manager.server.asset.ServerAssetInfo(" +
-                        "a.id, a.version, a.name, a.realm, a.type, a.parent.id, a.location" +
-                        ") from Asset a where a.parent.id = :parentId order by a.createdOn asc",
-                    AssetInfo.class
-                ).setParameter("parentId", parentId)
-                    .getResultList();
-            filterRestrictedAssetInfos(result, restrictedAssetIds);
-            return result.toArray(new AssetInfo[result.size()]);
-        });
-    }
-
-    public AssetInfo[] getChildrenInRealm(String parentId, String realm, String[] restrictedAssetIds) {
-        return persistenceService.doReturningTransaction(em -> {
-            List<AssetInfo> result =
-                em.createQuery(
-                    "select new org.openremote.manager.server.asset.ServerAssetInfo(" +
-                        "a.id, a.version, a.name, a.realm, a.type, a.parent.id, a.location" +
-                        ") from Asset a, Asset p where p.id = :parentId and a.parent.id = :parentId " +
-                        "and p.realm = :realm and a.realm = :realm " +
-                        "order by a.createdOn asc",
-                    AssetInfo.class
-                ).setParameter("parentId", parentId)
-                    .setParameter("realm", realm)
-                    .getResultList();
-            filterRestrictedAssetInfos(result, restrictedAssetIds);
-            return result.toArray(new AssetInfo[result.size()]);
-        });
-    }
-
-    public ServerAsset get(String assetId) {
-        return persistenceService.doReturningTransaction(em -> loadAsset(em, assetId));
-    }
-
+    /**
+     * @return The current stored asset state.
+     * @throws IllegalArgumentException if the realm or parent is invalid.
+     */
     public ServerAsset merge(ServerAsset asset) {
         return persistenceService.doReturningTransaction(em -> {
-            validateParent(em, asset);
+            // Validate realm
+            if (!isRealmActive(asset.getRealm())) {
+                throw new IllegalStateException("Realm not found: " + asset.getRealm());
+            }
+            // Validate parent
+            if (asset.getParentId() != null) {
+                // If this is a not a root asset...
+                ServerAsset parent = loadAsset(em, asset.getParentId());
+                // .. the parent must exist
+                if (parent == null)
+                    throw new IllegalStateException("Parent not found: " + asset.getParentId());
+                // ... the parent can not be a child of the asset
+                if (Arrays.asList(parent.getPath()).contains(asset.getId()))
+                    throw new IllegalStateException("Invalid parent");
+            }
             return em.merge(asset);
         });
     }
 
-    public void delete(String assetId) {
-        persistenceService.doTransaction(em -> {
+    /**
+     * @return <code>true</code> if the asset was deleted, false if the asset still has children and can't be deleted.
+     */
+    public boolean delete(String assetId) {
+        return persistenceService.doReturningTransaction(em -> {
             Asset asset = em.find(ServerAsset.class, assetId);
             if (asset != null) {
+                if (findChildren(asset.getId()).length > 0)
+                    return false;
                 em.remove(asset);
             }
+            return true;
         });
     }
-
-    /* TODO: What is the asset lifecycle and how do we handle tree integrity?
-    public void deleteChildren(String parentId) {
-        persistenceService.doTransaction(em -> {
-            List<AssetInfo> result =
-                em.createQuery(
-                    "select new org.openremote.manager.server.asset.ServerAssetInfo(" +
-                        "a.id, a.version, a.name, a.realm, a.type, a.parent.id, a.location" +
-                        ") from Asset a where a.parent.id = :parentId order by a.createdOn asc",
-                    AssetInfo.class
-                ).setParameter("parentId", parentId).getResultList();
-            for (AssetInfo assetInfo : result) {
-                Asset asset = em.find(ServerAsset.class, assetInfo.getId());
-                if (asset != null) {
-                    em.remove(asset);
-                }
-            }
-        });
-    }
-    */
 
     public boolean updateThingAttributeValue(AttributeValueChange attributeValueChange) {
         // TODO: More fine-grained return to distinguish failures ("wrong value type" is not the same as "not found")
 
         AttributeRef attributeRef = attributeValueChange.getAttributeRef();
-        ServerAsset thing = get(attributeRef.getEntityId());
+        ServerAsset thing = find(attributeRef.getEntityId());
         if (thing == null) {
             LOG.fine("Ignoring attribute update for unknown asset: " + attributeValueChange);
             return false;
@@ -341,14 +423,15 @@ public class AssetService extends RouteBuilder implements ContainerService {
         return asset;
     }
 
-    protected void validateParent(EntityManager em, Asset asset) {
-        if (asset.getParentId() == null)
-            return;
-        ServerAsset parent = loadAsset(em, asset.getParentId());
-        if (parent == null)
-            throw new IllegalStateException("Parent asset not found: " + asset.getParentId());
-        if (Arrays.asList(parent.getPath()).contains(asset.getId()))
-            throw new IllegalStateException("Parent asset can not be a child of the asset: " + asset.getParentId());
+    protected boolean isRealmActive(String realm) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            // TODO Should also check NOT_BEFORE?
+            @SuppressWarnings("unchecked")
+            List<Object[]> result = entityManager.createNativeQuery(
+                "SELECT ID FROM REALM WHERE ENABLED = TRUE AND NAME = :realm"
+            ).setParameter("realm", realm).getResultList();
+            return result.size() > 0;
+        });
     }
 
     protected boolean updateAttributeValue(String assetId, String attributeName, JsonValue value) {
@@ -381,35 +464,6 @@ public class AssetService extends RouteBuilder implements ContainerService {
                 }
             })
         );
-    }
-
-    protected void filterRestrictedAssetInfos(List<AssetInfo> assetInfos, String[] restrictedAssetIds) {
-        if (restrictedAssetIds == null || restrictedAssetIds.length == 0)
-            return;
-        persistenceService.doTransaction(entityManager -> {
-            Iterator<AssetInfo> it = assetInfos.iterator();
-            while (it.hasNext()) {
-                AssetInfo assetInfo = it.next();
-                ServerAsset serverAsset = loadAsset(entityManager, assetInfo.getId());
-                if (!isValidAssetPath(serverAsset, restrictedAssetIds))
-                    it.remove();
-            }
-        });
-    }
-
-    /**
-     * @return <code>true</code> if any of the assets in the path of the asset have an ID that matches the restricted IDs.
-     */
-    protected boolean isValidAssetPath(Asset asset, String[] restrictedAssetIds) {
-        if (asset == null)
-            return false;
-        for (String pathElement : asset.getPath()) {
-            for (String restrictedAssetId : restrictedAssetIds) {
-                if (restrictedAssetId.equals(pathElement))
-                    return true;
-            }
-        }
-        return false;
     }
 
     public String toString() {

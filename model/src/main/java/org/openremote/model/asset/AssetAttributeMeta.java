@@ -22,10 +22,15 @@ package org.openremote.model.asset;
 import elemental.json.JsonType;
 import elemental.json.JsonValue;
 import org.openremote.model.Attribute;
+import org.openremote.model.Constants;
 import org.openremote.model.MetadataItem;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
+import static org.openremote.model.Constants.NAMESPACE;
 
 /**
  * Asset attribute meta item name is an arbitrary string. It should be URI. This enum contains
@@ -36,68 +41,78 @@ import java.util.List;
 public enum AssetAttributeMeta {
 
     /**
+     * Links the attribute to an agent, connecting it to a sensor and/or actuator.
+     */
+    AGENT_LINK(ASSET_META_NAMESPACE + ":agentLink", new Access(false, false, true), JsonType.ARRAY),
+
+    /**
      * A human-friendly string that can be displayed in UI instead of the raw attribute name.
      */
-    LABEL("urn:openremote:asset:meta:label", true, JsonType.STRING),
+    LABEL(ASSET_META_NAMESPACE + ":label", new Access(true, true, true), JsonType.STRING),
 
     /**
      * Format string that can be used to render the attribute value, see {@link java.util.Formatter}.
      */
-    FORMAT("urn:openremote:asset:meta:format", true, JsonType.STRING),
+    FORMAT(ASSET_META_NAMESPACE + ":format", new Access(true, false, true), JsonType.STRING),
 
     /**
      * A human-friendly string describing the purpose of an attribute, useful when rendering editors.
      */
-    DESCRIPTION("urn:openremote:asset:meta:description", true, JsonType.STRING),
+    DESCRIPTION(ASSET_META_NAMESPACE + ":description", new Access(true, false, true), JsonType.STRING),
 
     /**
      * Points to semantic description of the attribute, typically a URI.
      */
-    ABOUT("urn:openremote:asset:meta:about", true, JsonType.STRING),
+    ABOUT(ASSET_META_NAMESPACE + ":about", new Access(true, false, true), JsonType.STRING),
 
     /**
      * Marks the attribute as read-only.
      */
-    READ_ONLY("urn:openremote:asset:meta:readOnly", true, JsonType.BOOLEAN),
+    READ_ONLY(ASSET_META_NAMESPACE + ":readOnly", new Access(true, false, true), JsonType.BOOLEAN),
+
+    /**
+     * Marks the attribute as protected and accessible to restricted users, see {@link ProtectedUserAssets}.
+     */
+    PROTECTED(ASSET_META_NAMESPACE + ":protected", new Access(false, false, true), JsonType.BOOLEAN),
 
     /**
      * Default value that might be used when editing an attribute.
      */
-    DEFAULT("urn:openremote:asset:meta:default", false, JsonType.STRING),
+    DEFAULT(ASSET_META_NAMESPACE + ":default", new Access(false, false, false), JsonType.STRING),
 
     /**
      * Minimum range constraint for numeric attribute values.
      */
-    RANGE_MIN("urn:openremote:asset:meta:rangeMin", true, JsonType.NUMBER),
+    RANGE_MIN(ASSET_META_NAMESPACE + ":rangeMin", new Access(true, false, true), JsonType.NUMBER),
 
     /**
      * Maximum range constraint for numeric attribute values.
      */
-    RANGE_MAX("urn:openremote:asset:meta:rangeMax", true, JsonType.NUMBER),
+    RANGE_MAX(ASSET_META_NAMESPACE + ":rangeMax", new Access(true, false, true), JsonType.NUMBER),
 
     /**
      * Step increment/decrement constraint for numeric attribute values.
      */
-    STEP("urn:openremote:asset:meta:step", true, JsonType.NUMBER),
+    STEP(ASSET_META_NAMESPACE + ":step", new Access(true, false, true), JsonType.NUMBER),
 
     /**
      * Regex (Java syntax) constraint for string attribute values.
      */
-    PATTERN("urn:openremote:asset:meta:pattern", true, JsonType.STRING),
+    PATTERN(ASSET_META_NAMESPACE + ":pattern", new Access(true, false, true), JsonType.STRING),
 
     /**
-     * Indicates the units (data type) of the attribute value should be a valid
-     * {@link org.openremote.model.AttributeUnits} value
+     * Indicates the units (data sub-type) of the attribute value (should be a valid
+     * {@link org.openremote.model.AttributeUnits} string representation)
      */
-    UNITS("urn:openremote:asset:meta:units", true, JsonType.STRING);
+    UNITS(ASSET_META_NAMESPACE + ":units", new Access(true, false, true), JsonType.STRING);
 
     final protected String name;
-    final protected boolean editable; // Can the user edit an asset and apply this meta item?
+    final protected Access access;
     final protected JsonType valueType;
 
-    AssetAttributeMeta(String name, boolean editable, JsonType valueType) {
+    AssetAttributeMeta(String name, Access access, JsonType valueType) {
         this.name = name;
-        this.editable = editable;
+        this.access = access;
         this.valueType = valueType;
     }
 
@@ -105,8 +120,8 @@ public enum AssetAttributeMeta {
         return name;
     }
 
-    public boolean isEditable() {
-        return editable;
+    public Access getAccess() {
+        return access;
     }
 
     public JsonType getValueType() {
@@ -116,7 +131,7 @@ public enum AssetAttributeMeta {
     public static AssetAttributeMeta[] editable() {
         List<AssetAttributeMeta> list = new ArrayList<>();
         for (AssetAttributeMeta meta : values()) {
-            if (meta.isEditable())
+            if (meta.getAccess().editable)
                 list.add(meta);
         }
         return list.toArray(new AssetAttributeMeta[list.size()]);
@@ -125,7 +140,15 @@ public enum AssetAttributeMeta {
     public static Boolean isEditable(String name) {
         for (AssetAttributeMeta assetAttributeMeta : editable()) {
             if (assetAttributeMeta.getName().equals(name))
-                return assetAttributeMeta.isEditable();
+                return assetAttributeMeta.getAccess().editable;
+        }
+        return null;
+    }
+
+    public static AssetAttributeMeta byName(String name) {
+        for (AssetAttributeMeta assetAttributeMeta : values()) {
+            if (assetAttributeMeta.getName().equals(name))
+                return assetAttributeMeta;
         }
         return null;
     }
@@ -160,6 +183,30 @@ public enum AssetAttributeMeta {
                     return vt;
             }
             return null;
+        }
+    }
+
+    public static class Access {
+
+        /**
+         * When restricted clients read protected asset attributes, should this meta item be included?
+         */
+        final public boolean protectedRead;
+
+        /**
+         * When restricted clients write protected asset attributes, should this meta item be included?
+         */
+        final public boolean protectedWrite;
+
+        /**
+         * Can a user add this meta item when editing an asset?
+         */
+        final public boolean editable;
+
+        public Access(boolean protectedRead, boolean protectedWrite, boolean editable) {
+            this.protectedRead = protectedRead;
+            this.protectedWrite = protectedWrite;
+            this.editable = editable;
         }
     }
 

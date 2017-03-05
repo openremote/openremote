@@ -30,6 +30,9 @@ public interface Constants {
     String PERSISTENCE_UNIQUE_ID_GENERATOR = "UNIQUE_ID_GENERATOR";
     String PERSISTENCE_JSON_OBJECT_TYPE = "json_object";
     String PERSISTENCE_JSON_ARRAY_TYPE = "json_array";
-    String PROTOCOL_NAMESPACE = "urn:openremote:protocol";
+    String NAMESPACE = "urn:openremote";
+    String PROTOCOL_NAMESPACE = NAMESPACE + ":protocol";
+    String ASSET_NAMESPACE = NAMESPACE + ":asset";
+    String ASSET_META_NAMESPACE = ASSET_NAMESPACE + ":meta";
 
 }

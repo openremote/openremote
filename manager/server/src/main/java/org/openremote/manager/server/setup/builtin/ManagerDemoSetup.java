@@ -20,7 +20,6 @@
 package org.openremote.manager.server.setup.builtin;
 
 import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
 import elemental.json.Json;
 import org.openremote.agent3.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.Container;
@@ -48,6 +47,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String smartHomeId;
     public String apartment1Id;
     public String apartment1LivingroomId;
+    public String apartment1LivingroomThermostatId;
     public String apartment2Id;
     public String apartment3Id;
     public String apartment2LivingroomId;
@@ -129,11 +129,12 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             new Attribute("light1Toggle", BOOLEAN, Json.create(true))
                 .setMetadata(new Metadata()
                     .add(new MetadataItem(
-                        AssetAttributeMeta.DESCRIPTION.getName(),
+                        AssetAttributeMeta.DESCRIPTION,
                         Json.create("The switch for the light in the living room"))
                     )
                     .add(new MetadataItem(
-                        ThingAttribute.META_NAME_LINK, new AttributeRef(agent.getId(), "simulator123").asJsonValue()
+                        AssetAttributeMeta.AGENT_LINK,
+                        new AttributeRef(agent.getId(), "simulator123").asJsonValue()
                     ))
                     .add(new MetadataItem(
                         SimulatorProtocol.META_NAME_ELEMENT, Json.create("switch")
@@ -142,36 +143,38 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             new Attribute("light1Dimmer", INTEGER) // No initial value!
                 .setMetadata(new Metadata()
                     .add(new MetadataItem(
-                        AssetAttributeMeta.DESCRIPTION.getName(),
+                        AssetAttributeMeta.DESCRIPTION,
                         Json.create("The dimmer for the light in the living room"))
                     )
                     .add(new MetadataItem(
-                        AssetAttributeMeta.RANGE_MIN.getName(),
+                        AssetAttributeMeta.RANGE_MIN,
                         Json.create(0))
                     )
                     .add(new MetadataItem(
-                        AssetAttributeMeta.RANGE_MAX.getName(),
+                        AssetAttributeMeta.RANGE_MAX,
                         Json.create(100))
                     )
                     .add(new MetadataItem(
-                        ThingAttribute.META_NAME_LINK, new AttributeRef(agent.getId(), "simulator123").asJsonValue()
+                        AssetAttributeMeta.AGENT_LINK,
+                        new AttributeRef(agent.getId(), "simulator123").asJsonValue()
                     ))
                     .add(new MetadataItem(
                         SimulatorProtocol.META_NAME_ELEMENT, Json.create("range")
                     ))
                 ),
-            new Attribute("light1Color", STRING, new Color(88, 123, 88).asJsonValue())
+            new Attribute("light1Color", OBJECT, new ColorRGB(88, 123, 88).asJsonValue())
                 .setMetadata(new Metadata()
                     .add(new MetadataItem(
-                            AssetAttributeMeta.UNITS.getName(),
+                            AssetAttributeMeta.UNITS,
                             Json.create(AttributeUnits.COLOR_RGB.toString())
                     ))
                     .add(new MetadataItem(
-                        AssetAttributeMeta.DESCRIPTION.getName(),
+                        AssetAttributeMeta.DESCRIPTION,
                         Json.create("The color of the living room light"))
                     )
                     .add(new MetadataItem(
-                        ThingAttribute.META_NAME_LINK, new AttributeRef(agent.getId(), "simulator123").asJsonValue()
+                        AssetAttributeMeta.AGENT_LINK,
+                        new AttributeRef(agent.getId(), "simulator123").asJsonValue()
                     ))
                     .add(new MetadataItem(
                         SimulatorProtocol.META_NAME_ELEMENT, Json.create("color")
@@ -180,19 +183,20 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             new Attribute("light1PowerConsumption", DECIMAL, Json.create(12.345))
                 .setMetadata(new Metadata()
                     .add(new MetadataItem(
-                        AssetAttributeMeta.DESCRIPTION.getName(),
+                        AssetAttributeMeta.DESCRIPTION,
                         Json.create("The total power consumption of the living room light"))
                     )
                     .add(new MetadataItem(
-                        AssetAttributeMeta.READ_ONLY.getName(),
+                        AssetAttributeMeta.READ_ONLY,
                         Json.create(true))
                     )
                     .add(new MetadataItem(
-                        AssetAttributeMeta.FORMAT.getName(),
+                        AssetAttributeMeta.FORMAT,
                         Json.create("%3d kWh"))
                     )
                     .add(new MetadataItem(
-                        ThingAttribute.META_NAME_LINK, new AttributeRef(agent.getId(), "simulator123").asJsonValue()
+                        AssetAttributeMeta.AGENT_LINK,
+                        new AttributeRef(agent.getId(), "simulator123").asJsonValue()
                     ))
                     .add(new MetadataItem(
                         SimulatorProtocol.META_NAME_ELEMENT, Json.create("decimal")
@@ -226,6 +230,41 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1Livingroom.setType(ROOM);
         apartment1Livingroom = assetService.merge(apartment1Livingroom);
         apartment1LivingroomId = apartment1Livingroom.getId();
+
+        ServerAsset apartment1LivingroomThermostat = new ServerAsset(apartment1Livingroom);
+        apartment1LivingroomThermostat.setName("Livingroom Thermostat");
+        apartment1LivingroomThermostat.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
+        apartment1LivingroomThermostat.setType(AssetType.THING);
+        ThingAttributes apartment1LivingroomThermostatAttributes = new ThingAttributes(apartment1LivingroomThermostat);
+        apartment1LivingroomThermostatAttributes.put(
+            new Attribute("currentTemperature", DECIMAL, Json.create("19.2"))
+                .setMetadata(new Metadata()
+                    .add(new MetadataItem(
+                        AssetAttributeMeta.LABEL,
+                        Json.create("Current Temp"))
+                    )
+                    .add(new MetadataItem(
+                        AssetAttributeMeta.PROTECTED,
+                        Json.create(true))
+                    )
+                    .add(new MetadataItem(
+                        AssetAttributeMeta.READ_ONLY,
+                        Json.create(true))
+                    )
+                    .add(new MetadataItem(
+                        Constants.NAMESPACE + ":foo:bar", Json.create("FOO")
+                    ))
+                    .add(new MetadataItem(
+                        "urn:thirdparty:bar", Json.create("BAR")
+                    ))
+                )
+        );
+        apartment1LivingroomThermostatAttributes.put(
+            new Attribute("somethingPrivate", INTEGER, Json.create("123"))
+        );
+        apartment1LivingroomThermostat.setAttributes(apartment1LivingroomThermostatAttributes.getJsonObject());
+        apartment1LivingroomThermostat = assetService.merge(apartment1LivingroomThermostat);
+        apartment1LivingroomThermostatId = apartment1LivingroomThermostat.getId();
 
         ServerAsset apartment2 = new ServerAsset(smartHome);
         apartment2.setName("Apartment 2");
