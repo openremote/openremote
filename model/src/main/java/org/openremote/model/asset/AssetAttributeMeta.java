@@ -104,7 +104,12 @@ public enum AssetAttributeMeta {
      * Indicates the units (data sub-type) of the attribute value (should be a valid
      * {@link org.openremote.model.AttributeUnits} string representation)
      */
-    UNITS(ASSET_META_NAMESPACE + ":units", new Access(true, false, true), JsonType.STRING);
+    UNITS(ASSET_META_NAMESPACE + ":units", new Access(true, false, true), JsonType.STRING),
+
+    /**
+     * Should attribute values be stored in time series database
+     */
+    STORE_DATA_POINTS(ASSET_META_NAMESPACE + ":storeDataPoints", new Access(true, false, true), JsonType.BOOLEAN);
 
     final protected String name;
     final protected Access access;

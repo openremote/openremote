@@ -26,6 +26,7 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.server.asset.AssetService;
+import org.openremote.manager.server.asset.datapoint.DatapointService;
 import org.openremote.model.AttributeValueChange;
 import org.openremote.model.asset.*;
 
@@ -54,11 +55,13 @@ public class AgentService extends RouteBuilder implements ContainerService {
 
     protected Container container;
     protected AssetService assetService;
+    protected DatapointService datapointService;
 
     @Override
     public void init(Container container) throws Exception {
         this.container = container;
         assetService = container.getService(AssetService.class);
+        datapointService = container.getService(DatapointService.class);
 
         container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
     }
@@ -105,6 +108,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 // TODO If success then... notify asset listener clients? If not, then handle error?
                 if (success) {
                     LOG.fine("Asset database update successful: " + attributeValueChange);
+                    datapointService.addDatapoint(attributeValueChange);
                 } else {
                     throw new RuntimeException("Asset database update failed for: " + attributeValueChange);
                 }

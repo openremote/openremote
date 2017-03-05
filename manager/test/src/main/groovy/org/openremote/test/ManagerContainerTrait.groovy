@@ -9,6 +9,7 @@ import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.agent.AgentService
 import org.openremote.manager.server.asset.AssetService
+import org.openremote.manager.server.asset.datapoint.DatapointService
 import org.openremote.manager.server.event.EventService
 import org.openremote.manager.server.i18n.I18NService
 import org.openremote.manager.server.map.MapService
@@ -26,6 +27,7 @@ trait ManagerContainerTrait extends ContainerTrait {
                 new SetupService(),
                 new EventService(),
                 new AssetService(),
+                new DatapointService(),
                 new AgentService(),
                 *Lists.newArrayList(ServiceLoader.load(Protocol.class)),
                 new MapService(),

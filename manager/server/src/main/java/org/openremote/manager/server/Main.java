@@ -27,6 +27,7 @@ import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.manager.server.agent.AgentService;
 import org.openremote.manager.server.asset.AssetService;
+import org.openremote.manager.server.asset.datapoint.DatapointService;
 import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.i18n.I18NService;
 import org.openremote.manager.server.map.MapService;
@@ -52,6 +53,7 @@ public class Main {
                     new SetupService(),
                     new EventService(),
                     new AssetService(),
+                    new DatapointService(),
                     new AgentService()
                 ));
                 ServiceLoader.load(Protocol.class).forEach(this::add);

@@ -10,6 +10,7 @@
         <class>org.openremote.container.persistence</class>
 
         <class>org.openremote.manager.server.asset.ServerAsset</class>
+        <class>org.openremote.manager.server.asset.datapoint.Datapoint</class>
 
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
         <properties>

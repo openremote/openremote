@@ -201,6 +201,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     .add(new MetadataItem(
                         SimulatorProtocol.META_NAME_ELEMENT, Json.create("decimal")
                     ))
+                    .add(new MetadataItem(
+                    	AssetAttributeMeta.STORE_DATA_POINTS.getName(), Json.create(true)
+                    ))
                 )
         );
         thing.setAttributes(thingAttributes.getJsonObject());
