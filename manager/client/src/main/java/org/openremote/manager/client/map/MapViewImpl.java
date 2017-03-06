@@ -177,8 +177,10 @@ public class MapViewImpl extends Composite implements MapView {
     }
 
     protected void showInfoPanels() {
+/* TODO There is a timing issue with the position when the map widget is initialized for the first time
         infoPanel1.showTopLeftOf(mapWidget, 10, 10);
         infoPanel2.showBottomRightOf(mapWidget, 10, 30);
+*/
     }
 
     protected void hideInfoPanels() {

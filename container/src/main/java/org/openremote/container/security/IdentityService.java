@@ -336,9 +336,7 @@ public abstract class IdentityService implements ContainerService {
 
     public void configureRealm(RealmRepresentation realmRepresentation, int accessTokenLifespanSeconds) {
         realmRepresentation.setDisplayNameHtml(
-            "<div class=\"kc-logo-text\"><span>OpenRemote: "
-                + (realmRepresentation.getDisplayName().replaceAll("[^A-Za-z0-9]", ""))
-                + " </span></div>"
+            "<span>"+ (realmRepresentation.getDisplayName().replaceAll("[^A-Za-z0-9]", ""))+ " </span>"
         );
         realmRepresentation.setAccessTokenLifespan(accessTokenLifespanSeconds);
         realmRepresentation.setLoginTheme("openremote");

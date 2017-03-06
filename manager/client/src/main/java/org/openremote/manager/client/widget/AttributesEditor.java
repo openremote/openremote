@@ -612,7 +612,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
 
             wellknownListBox.addChangeHandler(event -> {
                 if (wellknownListBox.getSelectedIndex() > 0) {
-                    AssetAttributeMeta assetAttributeMeta = AssetAttributeMeta.values()[wellknownListBox.getSelectedIndex() - 1];
+                    AssetAttributeMeta assetAttributeMeta = AssetAttributeMeta.editable()[wellknownListBox.getSelectedIndex() - 1];
                     itemNameInput.setText(assetAttributeMeta.getName());
                     item.setName(assetAttributeMeta.getName());
                     typeListBox.setSelectedIndex(

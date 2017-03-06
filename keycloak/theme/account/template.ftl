@@ -17,7 +17,7 @@
 
     <script src="/static//js/loader.js"></script>
 
-    <title>OpenRemote Manager</title>
+    <title>OpenRemote Account</title>
 
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
 

@@ -17,7 +17,7 @@
 
     <script src="/static/js/loader.js"></script>
 
-    <title>OpenRemote Manager</title>
+    <title>OpenRemote Login</title>
 
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
 
@@ -43,6 +43,7 @@
     <div class="flex layout vertical center-center">
 
         <div class="layout horizontal center-center" style="margin: 1em;">
+            <a href="https://www.openremote.com/">
             <svg style="pointer-events: none; display: block; width: 4em; height:4em; margin-right: 0.4em;"
                  viewBox="0 0 24 24"
                  preserveAspectRatio="xMidYMid meet">
@@ -53,9 +54,10 @@
                 <path fill="#1D5632"
                       d="M11.936,16.622c-0.082,0-0.164-0.001-0.245-0.004c-1.29-0.065-2.478-0.628-3.346-1.585 c-0.868-0.958-1.31-2.195-1.246-3.487l2.104,0.105c-0.036,0.728,0.214,1.427,0.704,1.967c0.488,0.54,1.16,0.858,1.888,0.894 c0.725,0.033,1.426-0.213,1.966-0.703c0.541-0.489,0.858-1.159,0.895-1.887c0.075-1.503-1.088-2.787-2.591-2.862l0.105-2.104 c2.664,0.132,4.724,2.406,4.592,5.07c-0.064,1.291-0.628,2.478-1.585,3.345C14.28,16.183,13.137,16.622,11.936,16.622L11.936,16.622 z"/>
             </svg>
+            </a>
             <div class="layout vertical">
-                <div class="or-Headline1" style="margin: 0;"><#nested "header"></div>
-                <div class="or-HeadlineSub" style="margin-left: 0.2em;">Manager Login</div>
+                <div class="or-Headline1" style="margin: 0; white-space: nowrap;"><#nested "header"></div>
+                <div class="or-HeadlineSub" style="margin-left: 0.2em;">OpenRemote Login</div>
             </div>
         </div>
 
