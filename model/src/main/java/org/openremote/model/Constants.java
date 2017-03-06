@@ -28,6 +28,7 @@ public interface Constants {
     int ACCESS_TOKEN_LIFESPAN_SECONDS = 300; // 5 minutes
     String PERSISTENCE_SEQUENCE_ID_GENERATOR = "SEQUENCE_ID_GENERATOR";
     String PERSISTENCE_UNIQUE_ID_GENERATOR = "UNIQUE_ID_GENERATOR";
+    String PERSISTENCE_JSON_VALUE_TYPE = "json_value";
     String PERSISTENCE_JSON_OBJECT_TYPE = "json_object";
     String PERSISTENCE_JSON_ARRAY_TYPE = "json_array";
     String NAMESPACE = "urn:openremote";

@@ -1,18 +1,15 @@
 package org.openremote.manager.server.asset.datapoint;
 
-import java.util.logging.Logger;
-
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
-import org.openremote.manager.server.asset.ServerAsset;
-import org.openremote.model.AttributeRef;
 import org.openremote.model.AttributeValueChange;
+import org.openremote.model.datapoint.AssetDatapoint;
 
-import elemental.json.JsonValue;
+import java.util.logging.Logger;
 
 /**
- * Store and retrieve datapoints 
+ * Store and retrieve datapoints.
  */
 public class DatapointService implements ContainerService {
 
@@ -27,21 +24,15 @@ public class DatapointService implements ContainerService {
 
     @Override
     public void start(Container container) throws Exception {
-        // TODO Auto-generated method stub
-        
     }
 
     @Override
     public void stop(Container container) throws Exception {
-        // TODO Auto-generated method stub
-        
     }
 
-    public void addDatapoint(AttributeValueChange attributeValueChange) {
-        AttributeRef attributeRef = attributeValueChange.getAttributeRef();
-        String attributeName = attributeRef.getAttributeName();
-        String assetId = attributeRef.getEntityId();
-        JsonValue value = attributeValueChange.getValue();
+    public void storeAssetDatapoint(AttributeValueChange attributeValueChange) {
+        AssetDatapoint assetDatapoint = new AssetDatapoint(attributeValueChange);
+        // TODO
         
     }
 

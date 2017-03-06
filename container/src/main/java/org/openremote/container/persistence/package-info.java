@@ -20,6 +20,10 @@
 
 @org.hibernate.annotations.TypeDefs({
     @org.hibernate.annotations.TypeDef(
+        name = Constants.PERSISTENCE_JSON_VALUE_TYPE,
+        typeClass = ElementalJsonValueType.class
+    ),
+    @org.hibernate.annotations.TypeDef(
         name = Constants.PERSISTENCE_JSON_OBJECT_TYPE,
         typeClass = ElementalJsonObjectType.class
     ),
@@ -31,6 +35,7 @@
 
 package org.openremote.container.persistence;
 
-import org.openremote.container.Constants;
+import org.openremote.model.Constants;
 import org.openremote.container.json.ElementalJsonArrayType;
 import org.openremote.container.json.ElementalJsonObjectType;
+import org.openremote.container.json.ElementalJsonValueType;

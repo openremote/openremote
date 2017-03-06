@@ -108,7 +108,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 // TODO If success then... notify asset listener clients? If not, then handle error?
                 if (success) {
                     LOG.fine("Asset database update successful: " + attributeValueChange);
-                    datapointService.addDatapoint(attributeValueChange);
+                    datapointService.storeAssetDatapoint(attributeValueChange);
                 } else {
                     throw new RuntimeException("Asset database update failed for: " + attributeValueChange);
                 }
