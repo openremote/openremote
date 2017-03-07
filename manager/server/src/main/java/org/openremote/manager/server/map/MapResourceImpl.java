@@ -25,11 +25,9 @@ import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.map.MapResource;
 
 import javax.ws.rs.WebApplicationException;
-import java.util.logging.Logger;
+import javax.ws.rs.core.Response;
 
 public class MapResourceImpl extends WebResource implements MapResource {
-
-    private static final Logger LOG = Logger.getLogger(MapResourceImpl.class.getName());
 
     protected final MapService mapService;
 
@@ -46,15 +44,11 @@ public class MapResourceImpl extends WebResource implements MapResource {
 
     @Override
     public byte[] getTile(int zoom, int column, int row) {
-        try {
-            byte[] tile = mapService.getMapTile(zoom, column, row);
-            if (tile != null) {
-                return tile;
-            } else {
-                return null;
-            }
-        } catch (Exception ex) {
-            throw new WebApplicationException(ex);
+        byte[] tile = mapService.getMapTile(zoom, column, row);
+        if (tile != null) {
+            return tile;
+        } else {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
     }
 }

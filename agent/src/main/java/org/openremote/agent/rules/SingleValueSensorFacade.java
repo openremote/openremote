@@ -14,8 +14,9 @@ public abstract class SingleValueSensorFacade<T, U extends SensorState> extends 
         }
 
         try {
-            //noinspection unchecked
-            return createAdapter((U) sensorState);
+            @SuppressWarnings("unchecked")
+            T result = createAdapter((U) sensorState);
+            return result;
         } catch (ClassCastException ex) {
             throw new Exception("Sensor type mismatch: " + sensorState, ex);
         }

@@ -31,11 +31,10 @@ import org.openremote.model.asset.ProtectedAssetInfo;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
-import java.nio.file.attribute.UserPrincipal;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static javax.ws.rs.core.Response.Status.*;
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
 public class AssetResourceImpl extends WebResource implements AssetResource {
 
@@ -57,8 +56,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
             }
             return assetService.findProtectedOfUser(getAuthenticatedRealm(), getUsername());
         } catch (IllegalStateException ex) {
-            LOG.log(Level.FINE, "Bad request, aborting: " + uriInfo.getAbsolutePath(), ex);
-            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }
     }
 
@@ -78,8 +76,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
             }
             return assetService.findRoot(realm);
         } catch (IllegalStateException ex) {
-            LOG.log(Level.FINE, "Bad request, aborting: " + uriInfo.getAbsolutePath(), ex);
-            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }
     }
 
@@ -93,8 +90,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
                 ? assetService.findChildren(parentId)
                 : assetService.findChildrenInRealm(parentId, getAuthenticatedRealm());
         } catch (IllegalStateException ex) {
-            LOG.log(Level.FINE, "Bad request, aborting: " + uriInfo.getAbsolutePath(), ex);
-            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }
     }
 
@@ -116,8 +112,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
             }
             return asset;
         } catch (IllegalStateException ex) {
-            LOG.log(Level.FINE, "Bad request, aborting: " + uriInfo.getAbsolutePath(), ex);
-            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }
     }
 
@@ -158,8 +153,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
             updatedAsset = assetService.merge(updatedAsset);
 
         } catch (IllegalStateException ex) {
-            LOG.log(Level.FINE, "Bad request, aborting: " + uriInfo.getAbsolutePath(), ex);
-            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }
     }
 
@@ -194,8 +188,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
             serverAsset = assetService.merge(serverAsset);
 
         } catch (IllegalStateException ex) {
-            LOG.log(Level.FINE, "Bad request, aborting: " + uriInfo.getAbsolutePath(), ex);
-            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }
     }
 
@@ -219,8 +212,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
                 throw new WebApplicationException(BAD_REQUEST);
             }
         } catch (IllegalStateException ex) {
-            LOG.log(Level.FINE, "Bad request, aborting: " + uriInfo.getAbsolutePath(), ex);
-            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }
     }
 

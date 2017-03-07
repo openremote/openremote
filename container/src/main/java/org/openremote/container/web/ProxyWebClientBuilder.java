@@ -20,11 +20,9 @@
 package org.openremote.container.web;
 
 import org.apache.http.HttpHost;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.HttpRequestInterceptor;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.protocol.HTTP;
-import org.jboss.resteasy.client.jaxrs.ClientHttpEngine;
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import org.jboss.resteasy.client.jaxrs.engines.ApacheHttpClient4Engine;
 
 /**
  * This client will always set the configured Host header on all outgoing requests.
@@ -32,7 +30,7 @@ import org.jboss.resteasy.client.jaxrs.engines.ApacheHttpClient4Engine;
  * request interceptor is the only reliable method for setting the Host header
  * in Apache HttpClient.
  */
-public class ProxyWebClientBuilder extends ResteasyClientBuilder {
+public class ProxyWebClientBuilder extends ExtensibleResteasyClientBuilder {
 
     final protected String proxyHost;
     final protected Integer proxyPort;
@@ -42,14 +40,12 @@ public class ProxyWebClientBuilder extends ResteasyClientBuilder {
         this.proxyPort = proxyPort;
     }
 
-    @SuppressWarnings("deprecation")
     @Override
-    protected ClientHttpEngine initDefaultEngine() {
-        ApacheHttpClient4Engine engine = (ApacheHttpClient4Engine) super.initDefaultEngine();
-        DefaultHttpClient httpClient = (DefaultHttpClient) engine.getHttpClient();
-        httpClient.addRequestInterceptor((request, context) ->
+    public HttpClientBuilder configure(HttpClientBuilder httpClientBuilder) {
+        httpClientBuilder = super.configure(httpClientBuilder);
+        httpClientBuilder.addInterceptorLast((HttpRequestInterceptor) (request, context) ->
             request.setHeader(HTTP.TARGET_HOST, new HttpHost(proxyHost, proxyPort).toHostString())
         );
-        return engine;
+        return httpClientBuilder;
     }
 }

@@ -26,7 +26,7 @@ dependencies {
     compile "org.jboss.resteasy:resteasy-multipart-provider:$resteasyVersion"
     compile "org.jboss.resteasy:resteasy-cache-core:$resteasyVersion"
     compile "org.jboss.resteasy:resteasy-validator-provider-11:$resteasyVersion"
-    compile "org.jboss.resteasy:async-http-servlet-3.0:$resteasyVersion"
+    compile "org.jboss.resteasy:async-http-servlet-3.0:$resteasyVersionAsyncHttpServlet"
 
     compile "org.keycloak:keycloak-client-registration-api:$keycloakVersion"
     compile "org.keycloak:keycloak-undertow-adapter:$keycloakVersion"

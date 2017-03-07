@@ -93,6 +93,7 @@ public abstract class AbstractValueHolder<T extends AbstractValueHolder> {
         return hasValue() ? jsonObject.get("value") : Json.createNull();
     }
 
+    @SuppressWarnings("unchecked")
     public T setValue(JsonValue value) {
         jsonObject.put("value", value);
         return (T) this;

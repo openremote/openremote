@@ -111,7 +111,7 @@ public class MapService implements ContainerService {
         return settingsCopy;
     }
 
-    public byte[] getMapTile(int zoom, int column, int row) throws Exception {
+    public byte[] getMapTile(int zoom, int column, int row) {
         // Flip y, oh why
         row = new Double(Math.pow(2, zoom) - 1 - row).intValue();
 
@@ -134,6 +134,8 @@ public class MapService implements ContainerService {
             } else {
                 return null;
             }
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
         } finally {
             closeQuietly(query, result);
         }
