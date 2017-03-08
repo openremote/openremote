@@ -392,7 +392,7 @@ end
 rule "PSB: decrease vacation counter at midnight"
 when
   $timer: SensorState(sensorName=="TimerHH", value!="N/A", eval(value.toString().substring(0,5).equals("00:00"))) // more reliable than timer(cron: )
-  SensorState(sensorName=="VACATION", $v: value, eval(Integer.parseInt(value.toString())>0), this before $timer)
+  SensorState(sensorName=="VACATION", $v: value, eval(Integer.parseInt(value.toString())>0), this before [2m] $timer)
 then
   commands.execute("VACATION", Integer.parseInt($v.toString())-1);
 end
@@ -524,8 +524,8 @@ rule "PSB: adjust estimated times at midnight"
 when
   SensorState(sensorName=="TimerEEE", $e: value)
   $timer: SensorState(sensorName=="TimerHH", value!="N/A", eval(value.toString().substring(0,5).equals("23:58"))) // more reliable than timer(cron: )
-  SensorState(sensorName matches ("VETD."+$e), $ved:value, this before $timer) // Loop cut
-  SensorState(sensorName matches ("VETA."+$e), $vea:value, this before $timer)
+  SensorState(sensorName matches ("VETD."+$e), $ved:value, this before [1m] $timer) // Loop cut
+  SensorState(sensorName matches ("VETA."+$e), $vea:value, this before [1m] $timer)
   SensorState(sensorName=="VATD", $vd:value, value!="-")
   SensorState(sensorName=="VATA", $va:value, value!="-")
   SensorState(sensorName=="VACATION", eval(Integer.parseInt(value.toString())==0))
@@ -546,6 +546,14 @@ when
 then
   LOG.info("Move sense on "+$s+" @"+$h);
   commands.execute("VPERSONSENSETIME", $h.toString());
+end
+
+rule "--pir echo"
+when
+  SensorState(sensorName=="FS.PIR", $v:value)
+  SensorState(sensorName=="TimerHH", $h:value)
+then
+  LOG.info("PIR state "+$v.toString()+" @"+$h);
 end
 
 rule "-PSB: person sense"
@@ -1047,7 +1055,7 @@ rule "--PSB: increase total score every 15m"
 when
   $timer: SensorState(sensorName=="TimerHH", value!="N/A", eval(Integer.parseInt(value.toString().substring(3,5)) % 15 == 0)) // more reliable than timer(cron: )
   SensorState(sensorName=="VSCORE", $s: value)
-  SensorState(sensorName=="VTOTALSCORE", $ts: value, this before $timer)
+  SensorState(sensorName=="VTOTALSCORE", $ts: value, this before [1m] $timer)
 then
   commands.execute("VTOTALSCORE", Integer.parseInt($ts.toString())+Integer.parseInt($s.toString()));
 end
@@ -1055,7 +1063,7 @@ end
 rule "PSB: reward"
 when
   $ts: SensorState(sensorName=="VTOTALSCORE", $s: value, eval(Integer.parseInt(value.toString()) >= 1000))
-  SensorState(sensorName=="VLEVEL", $l: value, this before $ts)
+  SensorState(sensorName=="VLEVEL", $l: value, this before [1m] $ts)
 then
   Integer i = Integer.parseInt($s.toString());
   commands.execute("VTOTALSCORE", i-1000); // Reset score

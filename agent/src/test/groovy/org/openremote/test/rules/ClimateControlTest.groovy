@@ -7,35 +7,13 @@ import org.openremote.agent.AgentService
 import org.openremote.agent.rules.RulesProvider
 import org.openremote.test.ContainerTrait
 import spock.lang.Specification
+import spock.lang.Unroll
 import spock.util.concurrent.BlockingVariable
 import spock.util.concurrent.PollingConditions
 import spock.lang.Ignore
 
 import java.util.stream.Stream
 
-@Ignore
-/*
-TODO Failing sometimes, still something time sensitive in here:
-
-Condition not satisfied after 10.00 seconds and 96 attempts
-	at spock.util.concurrent.PollingConditions.within(PollingConditions.java:164)
-	at spock.util.concurrent.PollingConditions.eventually(PollingConditions.java:134)
-	at org.openremote.test.rules.ClimateControlTest.Person sense test(ClimateControlTest.groovy:259)
-Caused by: Condition not satisfied:
-
-sensor("VPERSONSENSETIME") == "16:00:00"
-|                          |
-10:15:00                   false
-                           3 differences (62% similarity)
-                           1(0):(15):00
-                           1(6):(00):00
-
-	at org.openremote.test.rules.ClimateControlTest.Person sense test_closure14(ClimateControlTest.groovy:261)
-	at org.openremote.test.rules.ClimateControlTest.Person sense test_closure14(ClimateControlTest.groovy)
-	at groovy.lang.Closure.call(Closure.java:423)
-	at spock.util.concurrent.PollingConditions.within(PollingConditions.java:158)
-	... 2 more
- */
 class ClimateControlTest extends Specification implements ContainerTrait {
 
     def "Climate control basic test template"() {
@@ -178,6 +156,7 @@ class ClimateControlTest extends Specification implements ContainerTrait {
         stopContainer(container)
     }
 
+    @Unroll("test repeated #i time")
     def "Person sense test"() {
 
         given: "a deployment with commands and sensors"
@@ -220,6 +199,9 @@ class ClimateControlTest extends Specification implements ContainerTrait {
 
         when: "Set time before going to office"
         def conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
+        def dow = sensor("TimerEEE")
+        command "VETA.$dow", "09:00"
+        command "VETD.$dow", "17:00"
 
         then: "Check if there is no person"
         conditions.eventually {
@@ -229,6 +211,8 @@ class ClimateControlTest extends Specification implements ContainerTrait {
             assert sensor("VPRESENCE") == "No"
             assert sensor("VHEATING") == "ECO"
             assert Double.parseDouble(sensor("VHEATINGSETPOINT")) == 16
+            assert sensor("VETA.$dow") == "09:00"
+            assert sensor("VETD.$dow") == "17:00"
         }
 
         when: "now let's enter the office at 10 AM"
@@ -252,12 +236,21 @@ class ClimateControlTest extends Specification implements ContainerTrait {
             testCommandBuilder.incDroolsClock()
             assert sensor("VNEXTACTION") == "Departure"
             assert sensor("VATA") == "10:00"
-            assert sensor("VPERSONSENSE") == "0"
             assert sensor("VPRESENCE") == "Yes"
             assert sensor("VHEATING") == "Comfort"
             assert sensor("VR1.TEMPERATURE") == "20.0°"
-            assert sensor("FS.PIR") == "off"
             assert Double.parseDouble(sensor("VHEATINGSETPOINT")) == 20
+        }
+
+        when: "wait 5 sec"
+        time "10:00:05"
+        conditions = new PollingConditions(timeout: 10, initialDelay: 0.25)
+
+        then: "assure that PIR is idle"
+        conditions.eventually {
+            testCommandBuilder.incDroolsClock()
+            assert sensor("VPERSONSENSE") == "0"
+            assert sensor("FS.PIR") == "off"
         }
 
         when: "Advance time 15m"
@@ -305,13 +298,15 @@ class ClimateControlTest extends Specification implements ContainerTrait {
 
         then: "see if times schifted by half an hour"
         conditions.eventually {
-            def dow = sensor("TimerEEE")
             assert sensor("VETA.$dow") == "09:30"
             assert sensor("VETD.$dow") == "16:30"
         }
 
         cleanup: "the server should be stopped"
         stopContainer(container)
+
+        where:
+        i << (1..1)
     }
 
 }
