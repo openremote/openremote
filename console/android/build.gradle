@@ -3,7 +3,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath "com.android.tools.build:gradle:$androidGradleVersion"
+        classpath 'com.android.tools.build:gradle:2.3.0'
     }
 }
 
@@ -27,13 +27,17 @@ apply plugin: "com.android.application"
 version = projectVersion
 
 dependencies {
-    compile "org.jboss.aerogear:aerogear-android-authz:$aerogearVersion"
-
+    compile 'com.squareup.okhttp3:okhttp:3.6.0'
     compile "com.android.support:support-compat:$androidSupportVersion"
     compile "com.android.support:appcompat-v7:$androidSupportVersion"
+    compile 'com.android.support.constraint:constraint-layout:1.0.1'
+    compile 'com.google.firebase:firebase-messaging:10.2.0'
 }
 
 android {
+
+
+
     compileSdkVersion Integer.valueOf(androidCompileVersion)
     buildToolsVersion androidBuildToolsVersion
 
@@ -43,6 +47,7 @@ android {
         targetSdkVersion Integer.valueOf(androidTargetVersion)
         versionCode Integer.valueOf(projectVersionCode)
         versionName project.version
+
     }
 
     packagingOptions {
