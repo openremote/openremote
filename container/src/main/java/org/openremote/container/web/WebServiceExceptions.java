@@ -21,8 +21,11 @@ package org.openremote.container.web;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.servlet.api.ExceptionHandler;
 import io.undertow.util.HttpString;
 
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.*;
@@ -95,12 +98,12 @@ public class WebServiceExceptions {
         }
     }
 
-    public static class UndertowExceptionHandler implements HttpHandler {
+    public static class RootUndertowExceptionHandler implements HttpHandler {
 
         final protected boolean devMode;
         final protected HttpHandler nextHandler;
 
-        public UndertowExceptionHandler(boolean devMode, HttpHandler nextHandler) {
+        public RootUndertowExceptionHandler(boolean devMode, HttpHandler nextHandler) {
             this.devMode = devMode;
             this.nextHandler = nextHandler;
         }
@@ -112,8 +115,32 @@ public class WebServiceExceptions {
                     throw new IllegalStateException("This Undertow handler must wrap another handler");
                 nextHandler.handleRequest(exchange);
             } catch (Throwable t) {
-                handleUndertowException(devMode, exchange, t);
+                handleUndertowException(devMode, "Undertow Root Dispatch", false, exchange, t);
             }
+        }
+    }
+
+    public static class ServletUndertowExceptionHandler implements ExceptionHandler {
+        final protected boolean devMode;
+
+        public ServletUndertowExceptionHandler(boolean devMode) {
+            this.devMode = devMode;
+        }
+
+        @Override
+        public boolean handleThrowable(HttpServerExchange exchange,
+                                       ServletRequest request,
+                                       ServletResponse response,
+                                       Throwable throwable) {
+
+            // We handle the exception (return true), so we must send correct status to browser
+            if (!exchange.isResponseStarted()) {
+                // The only exceptions we receive here should be unexpected server errors
+                exchange.setStatusCode(500);
+            }
+
+            handleUndertowException(devMode, "Undertow Servlet Dispatch", response.isCommitted(), exchange, throwable);
+            return true;
         }
     }
 
@@ -125,13 +152,14 @@ public class WebServiceExceptions {
         if (throwable instanceof WebApplicationException) {
             Response response = ((WebApplicationException) throwable).getResponse();
             switch (response.getStatusInfo().getFamily()) {
-                case INFORMATIONAL:
-                case SUCCESSFUL:
-                case REDIRECTION:
-                case OTHER:
-                    return response;
-                default:
+                case CLIENT_ERROR:
+                case SERVER_ERROR:
                     statusCode = response.getStatus();
+                    break;
+                default:
+                    // If it's not a client or server error, it's not really an "exception" to
+                    // be handled but a status that should be returned to the client
+                    return response;
             }
         }
         try {
@@ -146,11 +174,11 @@ public class WebServiceExceptions {
         }
     }
 
-    public static boolean handleUndertowException(boolean devMode, HttpServerExchange exchange, Throwable throwable) {
+    public static void handleUndertowException(boolean devMode, String origin, boolean logOnly, HttpServerExchange exchange, Throwable throwable) {
 
-        logException(throwable, "Undertow Dispatch", exchange.getRequestMethod() + " " + exchange.getRequestURI());
+        logException(throwable, origin, exchange.toString());
 
-        if (exchange.isResponseChannelAvailable()) {
+        if (!logOnly && exchange.isResponseChannelAvailable()) {
             exchange.getResponseHeaders().put(
                 HttpString.tryFromString(HttpHeaders.CONTENT_TYPE), "text/plain"
             );
@@ -164,7 +192,6 @@ public class WebServiceExceptions {
                 LOG.log(Level.SEVERE, "Couldn't render server error response", ex2);
             }
         }
-        return true;
     }
 
     public static String renderDevModeError(int statusCode, Throwable t) {
@@ -188,6 +215,10 @@ public class WebServiceExceptions {
     }
 
     public static void logException(Throwable throwable, String origin, String info) {
+        // Ignore dropped connection errors
+        if ("java.io.IOException: Broken pipe".equals(getRootCause(throwable).toString()))
+            return;
+
         if (LOG.isLoggable(Level.FINE)) {
             LOG.log(Level.FINE, "Web service exception in '" + origin + "' for '" + info + "'", throwable);
         } else {

@@ -208,7 +208,7 @@ public abstract class WebService implements ContainerService {
             throw new WebApplicationException(NOT_FOUND);
         };
 
-        handler = new WebServiceExceptions.UndertowExceptionHandler(devMode, handler);
+        handler = new WebServiceExceptions.RootUndertowExceptionHandler(devMode, handler);
 
         builder.setHandler(handler);
 
@@ -292,6 +292,9 @@ public abstract class WebService implements ContainerService {
             } else {
                 LOG.info("Deploying insecure web context: " + deploymentInfo.getContextPath());
             }
+
+            // This will catch anything not handled by Resteasy/Servlets, such as IOExceptions "at the wrong time"
+            deploymentInfo.setExceptionHandler(new WebServiceExceptions.ServletUndertowExceptionHandler(devMode));
 
             DeploymentManager manager = Servlets.defaultContainer().addDeployment(deploymentInfo);
             manager.deploy();
