@@ -22,7 +22,6 @@ package org.openremote.container.web;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.RedirectHandler;
-import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
@@ -43,6 +42,7 @@ import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.SimpleKeycloakServletExtension;
 import org.openremote.container.web.jsapi.JSAPIServlet;
 
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.UriBuilder;
 import java.net.Inet4Address;
 import java.net.URI;
@@ -51,6 +51,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 import static org.openremote.container.util.MapAccess.getInteger;
 import static org.openremote.container.util.MapAccess.getString;
@@ -74,6 +75,7 @@ public abstract class WebService implements ContainerService {
     protected final Pattern PATTERN_REALM_ROOT = Pattern.compile("/([a-zA-Z0-9\\-_]+)/?");
     protected final Pattern PATTERN_REALM_SUB = Pattern.compile("/([a-zA-Z0-9\\-_]+)/(.*)");
 
+    protected boolean devMode;
     protected String host;
     protected int port;
     protected Undertow undertow;
@@ -85,10 +87,11 @@ public abstract class WebService implements ContainerService {
 
     protected static String getLocalIpAddress() throws Exception {
         return Inet4Address.getLocalHost().getHostAddress();
-    };
+    }
 
     @Override
     public void init(Container container) throws Exception {
+        devMode = container.isDevMode();
         host = getString(container.getConfig(), WEBSERVER_LISTEN_HOST, WEBSERVER_LISTEN_HOST_DEFAULT);
         port = getInteger(container.getConfig(), WEBSERVER_LISTEN_PORT, WEBSERVER_LISTEN_PORT_DEFAULT);
         String containerHost = host.equalsIgnoreCase("localhost") || host.indexOf("127") == 0 || host.indexOf("0.0.0.0") == 0
@@ -201,11 +204,11 @@ public abstract class WebService implements ContainerService {
                 return;
             }
 
-            LOG.fine("No resource found: " + requestPath);
-            ResponseCodeHandler.HANDLE_404.handleRequest(exchange);
+            exchange.setStatusCode(NOT_FOUND.getStatusCode());
+            throw new WebApplicationException(NOT_FOUND);
         };
 
-        handler = new WebServiceExceptions(container.isDevMode(), handler);
+        handler = new WebServiceExceptions.UndertowExceptionHandler(devMode, handler);
 
         builder.setHandler(handler);
 
@@ -263,8 +266,8 @@ public abstract class WebService implements ContainerService {
      * Adds a deployment to the default servlet container and returns the started handler.
      *
      * @param identityService Must not be null if secure deployment is used, source of configuration for the Keycloak extension
-     * @param deploymentInfo The deployment to add to the default container
-     * @param secure If Keycloak extension should be enabled for this deployment
+     * @param deploymentInfo  The deployment to add to the default container
+     * @param secure          If Keycloak extension should be enabled for this deployment
      */
     public HttpHandler addServletDeployment(IdentityService identityService, DeploymentInfo deploymentInfo, boolean secure) {
         try {
@@ -317,7 +320,8 @@ public abstract class WebService implements ContainerService {
         resteasyDeployment.setApplication(webApplication);
 
         // Custom providers (these only apply to server applications, not client calls)
-        resteasyDeployment.getProviders().add(new WebServiceExceptions(container.isDevMode()));
+        resteasyDeployment.getProviders().add(new WebServiceExceptions.DefaultResteasyExceptionMapper(devMode));
+        resteasyDeployment.getProviders().add(new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode));
         resteasyDeployment.getProviders().add(new JacksonConfig());
         resteasyDeployment.getProviders().add(new CORSFilter());
         resteasyDeployment.getActualProviderClasses().add(ElementalMessageBodyConverter.class);

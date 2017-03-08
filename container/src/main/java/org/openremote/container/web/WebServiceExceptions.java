@@ -21,12 +21,11 @@ package org.openremote.container.web;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.HttpString;
 
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Request;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 import java.io.PrintWriter;
@@ -37,47 +36,94 @@ import java.util.logging.Logger;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
 
 /**
- * Unified exception handling for all web services (JAX-RS, Undertow, WebSockets)
+ * Unified exception handling for all web services (Resteasy, Undertow, Servlets, WebSockets).
+ * <p>
+ * This is naturally quite messy, our goal is to disable all the other default exception
+ * handling and do it here in a "simple" way.
  * <p/>
  * In production we want to be INFOrmed of exceptions but only log a stacktrace if FINE
- * debug logging is enabled. We never want to send a stacktrace to a client in production.
- *
- * TODO: The 401 (wrong roles or invalid access token) and 403 (no access token) errors are still the default
- * Servlet handling and bypass both JAX-RS and Undertow handling
+ * debug logging is enabled. We never want to send a stacktrace or some crappy HTML to a
+ * client in production.
+ * <p>
+ * TODO: Websocket session errors
  */
-@Provider
-public class WebServiceExceptions implements ExceptionMapper<Exception>, HttpHandler {
+public class WebServiceExceptions {
 
     private static final Logger LOG = Logger.getLogger(WebServiceExceptions.class.getName());
 
-    final protected boolean devMode;
+    @Provider
+    public static class DefaultResteasyExceptionMapper implements ExceptionMapper<Exception> {
+        @Context
+        protected Request request;
 
-    @Context
-    protected Request request;
+        @Context
+        protected UriInfo uriInfo;
 
-    @Context
-    protected UriInfo uriInfo;
+        final protected boolean devMode;
 
-    protected HttpHandler nextHandler;
+        public DefaultResteasyExceptionMapper(boolean devMode) {
+            this.devMode = devMode;
+        }
 
-    public WebServiceExceptions(boolean devMode) {
-        this.devMode = devMode;
+        @Override
+        public Response toResponse(Exception exception) {
+            return handleResteasyException(devMode, "RESTEasy Dispatch", request, uriInfo, exception);
+        }
     }
 
-    public WebServiceExceptions(boolean devMode, HttpHandler nextHandler) {
-        this.devMode = devMode;
-        this.nextHandler = nextHandler;
+    // bburke hardcoded a response entity in "new ForbiddenException", which means we can't handle it anymore,
+    // according to JAX-RS rules. however, he then checks if there is an exact matching handler, so it's
+    // still possible...
+    @Provider
+    public static class ForbiddenResteasyExceptionMapper implements ExceptionMapper<ForbiddenException> {
+
+        @Context
+        protected Request request;
+
+        @Context
+        protected UriInfo uriInfo;
+
+        final protected boolean devMode;
+
+        public ForbiddenResteasyExceptionMapper(boolean devMode) {
+            this.devMode = devMode;
+        }
+
+        @Override
+        public Response toResponse(ForbiddenException exception) {
+            return handleResteasyException(devMode, "RESTEasy Role Security", request, uriInfo, exception);
+        }
     }
 
-    // JAX-RS
-    @Override
-    public Response toResponse(Exception exception) {
+    public static class UndertowExceptionHandler implements HttpHandler {
 
-        logException(exception, request.getMethod() + " " + uriInfo.getRequestUri());
+        final protected boolean devMode;
+        final protected HttpHandler nextHandler;
+
+        public UndertowExceptionHandler(boolean devMode, HttpHandler nextHandler) {
+            this.devMode = devMode;
+            this.nextHandler = nextHandler;
+        }
+
+        @Override
+        public void handleRequest(HttpServerExchange exchange) throws Exception {
+            try {
+                if (nextHandler == null)
+                    throw new IllegalStateException("This Undertow handler must wrap another handler");
+                nextHandler.handleRequest(exchange);
+            } catch (Throwable t) {
+                handleUndertowException(devMode, exchange, t);
+            }
+        }
+    }
+
+    public static Response handleResteasyException(boolean devMode, String origin, Request request, UriInfo uriInfo, Throwable throwable) {
+
+        logException(throwable, origin, request.getMethod() + " " + uriInfo.getRequestUri());
 
         int statusCode = 500;
-        if (exception instanceof WebApplicationException) {
-            Response response = ((WebApplicationException) exception).getResponse();
+        if (throwable instanceof WebApplicationException) {
+            Response response = ((WebApplicationException) throwable).getResponse();
             switch (response.getStatusInfo().getFamily()) {
                 case INFORMATIONAL:
                 case SUCCESSFUL:
@@ -88,66 +134,64 @@ public class WebServiceExceptions implements ExceptionMapper<Exception>, HttpHan
                     statusCode = response.getStatus();
             }
         }
-
         try {
             if (devMode) {
-                return Response.status(statusCode).entity(renderDevModeError(statusCode, exception)).type(TEXT_PLAIN_TYPE).build();
+                return Response.status(statusCode).entity(renderDevModeError(statusCode, throwable)).type(TEXT_PLAIN_TYPE).build();
             } else {
-                return Response.status(statusCode).entity(renderProductionError(statusCode, exception)).type(TEXT_PLAIN_TYPE).build();
+                return Response.status(statusCode).entity(renderProductionError(statusCode, throwable)).type(TEXT_PLAIN_TYPE).build();
             }
         } catch (Exception ex) {
-            LOG.log(Level.SEVERE, "Couldn't render server error trace response (in developer mode)", ex);
+            LOG.log(Level.SEVERE, "Couldn't render server error trace response", ex);
             return Response.serverError().build();
         }
     }
 
-    // Undertow
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
-        try {
-            if (nextHandler == null)
-                throw new IllegalStateException("This Undertow handler must wrap another handler");
-            nextHandler.handleRequest(exchange);
-        } catch (Throwable t) {
+    public static boolean handleUndertowException(boolean devMode, HttpServerExchange exchange, Throwable throwable) {
 
-            logException(t, exchange.getRequestMethod() + " " + exchange.getRequestPath());
+        logException(throwable, "Undertow Dispatch", exchange.getRequestMethod() + " " + exchange.getRequestURI());
 
-            if (exchange.isResponseChannelAvailable()) {
-                try {
-                    if (devMode) {
-                        exchange.getResponseSender().send(renderDevModeError(500, t));
-                    } else {
-                        exchange.getResponseSender().send(renderProductionError(500, t));
-                    }
-                } catch (Exception ex2) {
-                    LOG.log(Level.SEVERE, "Couldn't render server error response (in developer mode)", ex2);
+        if (exchange.isResponseChannelAvailable()) {
+            exchange.getResponseHeaders().put(
+                HttpString.tryFromString(HttpHeaders.CONTENT_TYPE), "text/plain"
+            );
+            try {
+                if (devMode) {
+                    exchange.getResponseSender().send(renderDevModeError(exchange.getStatusCode(), throwable));
+                } else {
+                    exchange.getResponseSender().send(renderProductionError(exchange.getStatusCode(), throwable));
                 }
+            } catch (Exception ex2) {
+                LOG.log(Level.SEVERE, "Couldn't render server error response", ex2);
             }
         }
+        return true;
     }
 
-    // WebSockets
-    /* TODO Not sure how to do this without coupling everything
-    public void handleError(@Observes SessionError sessionError) {
-        logException(sessionError.getThrowable(), "WebSocket Session " + sessionError.getSession().getId());
-    }
-    */
-
-    public String renderDevModeError(int statusCode, Throwable t) {
+    public static String renderDevModeError(int statusCode, Throwable t) {
         StringWriter sw = new StringWriter();
         t.printStackTrace(new PrintWriter(sw));
-        return "Request failed with HTTP error status: " + statusCode + "\n\n" + sw.toString();
+        Response.Status status = Response.Status.fromStatusCode(statusCode);
+        return "Request failed with HTTP error status: "
+            + statusCode
+            + (status != null ? " " + status.getReasonPhrase() : "")
+            + "\n\n"
+            + sw.toString();
     }
 
-    public String renderProductionError(int statusCode, Throwable t) {
-        return "Request failed with HTTP error status: " + statusCode + "\n\nPlease contact the help desk.";
+    public static String renderProductionError(int statusCode, Throwable t) {
+        Response.Status status = Response.Status.fromStatusCode(statusCode);
+        return "Request failed with HTTP error status: "
+            + statusCode
+            + (status != null ? " " + status.getReasonPhrase() : "")
+            + "\n\n"
+            + "Please contact the help desk.";
     }
 
-    public void logException(Throwable throwable, String info) {
+    public static void logException(Throwable throwable, String origin, String info) {
         if (LOG.isLoggable(Level.FINE)) {
-            LOG.log(Level.FINE, "Web service exception ('" + info + "')", throwable);
+            LOG.log(Level.FINE, "Web service exception in '" + origin + "' for '" + info + "'", throwable);
         } else {
-            LOG.log(Level.INFO, "Web service exception ('" + info + "'), root cause: " + getRootCause(throwable));
+            LOG.log(Level.INFO, "Web service exception in '" + origin + "' for '" + info + "', root cause: " + getRootCause(throwable));
         }
     }
 
@@ -161,7 +205,7 @@ public class WebServiceExceptions implements ExceptionMapper<Exception>, HttpHan
         return last;
     }
 
-    protected static Throwable getCause(Throwable throwable) {
+    public static Throwable getCause(Throwable throwable) {
         // Prevent endless loop when t == t.getCause()
         if (throwable != null && throwable.getCause() != null && throwable != throwable.getCause())
             return throwable.getCause();
