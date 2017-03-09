@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.asset;
+package org.openremote.model.units;
 
 import elemental.json.Json;
-import elemental.json.JsonObject;
+import elemental.json.JsonArray;
 
 public class ColorRGB {
 
@@ -34,11 +34,11 @@ public class ColorRGB {
         this.blue = blue;
     }
 
-    public ColorRGB(JsonObject jsonObject) {
+    public ColorRGB(JsonArray jsonArray) {
         this(
-            (int)jsonObject.get("red").asNumber(),
-            (int)jsonObject.get("green").asNumber(),
-            (int)jsonObject.get("blue").asNumber()
+            (int)jsonArray.get(0).asNumber(),
+            (int)jsonArray.get(1).asNumber(),
+            (int)jsonArray.get(2).asNumber()
         );
     }
 
@@ -54,12 +54,12 @@ public class ColorRGB {
         return blue;
     }
 
-    public JsonObject asJsonValue() {
-        JsonObject object = Json.createObject();
-        object.put("red", Json.create(getRed()));
-        object.put("green", Json.create(getGreen()));
-        object.put("blue", Json.create(getBlue()));
-        return object;
+    public JsonArray asJsonValue() {
+        JsonArray array = Json.createArray();
+        array.set(0, Json.create(getRed()));
+        array.set(1, Json.create(getGreen()));
+        array.set(2, Json.create(getBlue()));
+        return array;
     }
 
     public ColorRGB red(int red) {

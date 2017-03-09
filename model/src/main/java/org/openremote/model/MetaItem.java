@@ -22,31 +22,36 @@ package org.openremote.model;
 import elemental.json.Json;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
-import org.openremote.model.asset.AssetAttributeMeta;
+import org.openremote.model.asset.AssetMeta;
 
-public class MetadataItem extends AbstractValueHolder<MetadataItem> {
+/**
+ * A named arbitrary {@link JsonValue}.
+ * <p>
+ * Name should be a URI, thus avoiding collisions and representing "ownership" of the meta item.
+ */
+public class MetaItem extends AbstractValueHolder<MetaItem> {
 
-    public MetadataItem() {
+    public MetaItem() {
         this(Json.createObject());
     }
 
-    public MetadataItem(JsonObject jsonObject) {
+    public MetaItem(JsonObject jsonObject) {
         super(jsonObject);
     }
 
-    public MetadataItem(AssetAttributeMeta assetAttributeMeta) {
-        this(assetAttributeMeta, null);
+    public MetaItem(AssetMeta assetMeta) {
+        this(assetMeta, null);
     }
 
-    public MetadataItem(String name) {
+    public MetaItem(String name) {
         this(name, null);
     }
 
-    public MetadataItem(AssetAttributeMeta assetAttributeMeta, JsonValue value) {
-        this(assetAttributeMeta.getName(), value);
+    public MetaItem(AssetMeta assetMeta, JsonValue value) {
+        this(assetMeta.getName(), value);
     }
 
-    public MetadataItem(String name, JsonValue value) {
+    public MetaItem(String name, JsonValue value) {
         super(Json.createObject());
         setName(name);
         setValue(value);
@@ -60,13 +65,13 @@ public class MetadataItem extends AbstractValueHolder<MetadataItem> {
         return jsonObject.hasKey("name") ? jsonObject.get("name").asString() : null;
     }
 
-    public MetadataItem setName(String name) {
+    public MetaItem setName(String name) {
         jsonObject.put("name", name);
         return this;
     }
 
-    public MetadataItem copy() {
-        return new MetadataItem(Json.parse(getJsonObject().toJson()));
+    public MetaItem copy() {
+        return new MetaItem(Json.parse(getJsonObject().toJson()));
     }
 
     public boolean isValid() {

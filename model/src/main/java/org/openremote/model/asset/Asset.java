@@ -29,19 +29,144 @@ import java.util.Date;
 import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 
+// @formatter:off
 /**
  * The main model class of this software.
  * <p>
  * An asset is an identifiable item in a composite relationship with other assets. This tree
  * of assets can be managed through a <code>null</code> {@link #parentId} property for root
- * items, and a valid parent identifier for sub-items.
+ * assets, and a valid parent identifier for sub-assets.
  * <p>
- * Each asset has dynamically typed optional attributes with an underlying
- * {@link elemental.json.Json} object model. Use the {@link org.openremote.model.Attributes}
+ * An asset is stored in and therefore access-controlled through a {@link #realm}.
+ * <p>
+ * The {@link #createdOn} value is Unix time.
+ * <p>
+ * The {@link #type} of the asset is an arbitrary string, it should be a URI, thus avoiding
+ * collisions and representing "ownership" of asset type. Well-known asset types handled by
+ * the core platform are defined in {@link AssetType}, third-party extensions can defined
+ * their own asset types.
+ * <p>
+ * An asset may have dynamically-typed {@link #attributes} with an underlying
+ * {@link elemental.json.JsonObject} model. Use the {@link org.openremote.model.Attributes}
  * class to work with this API.
  * <p>
- * The location of an asset is stored as a pair of LNG/LAT coordinates.
+ * The {@link #path} is a list of parent asset identifiers, starting with the root of the
+ * asset tree.
+ * <p>
+ * The {@link #coordinates} are a pair of LNG/LAT values with the location of the asset.
+ * <p>
+ * Example JSON representation of an asset tree:
+ * <pre>{@code
+ * {
+  "id": "0oI7Gf_kTh6WyRJFUTr8Lg",
+  "version": 0,
+  "realm": "customerA",
+  "createdOn": 1489042784142,
+  "name": "Smart Home",
+  "type": "urn:openremote:asset:building",
+  "path": [
+    "0oI7Gf_kTh6WyRJFUTr8Lg"
+  ],
+  "coordinates": [
+    5.469751699216005,
+    51.44760787406028
+  ]
+}
+ * }</pre>
+ * <pre>{@code
+{
+  "id": "B0x8ZOqZQHGjq_l0RxAJBA",
+  "version": 0,
+  "realm": "customerA",
+  "createdOn": 1489042784148,
+  "name": "Apartment 1",
+  "type": "urn:openremote:asset:residence",
+  "parentId": "0oI7Gf_kTh6WyRJFUTr8Lg",
+  "path": [
+    "0oI7Gf_kTh6WyRJFUTr8Lg",
+    "B0x8ZOqZQHGjq_l0RxAJBA"
+  ],
+  "coordinates": [
+    5.469751699216005,
+    51.44760787406028
+  ]
+}
+ * }</pre>
+ * <pre>{@code
+{
+  "id": "bzlRiJmSSMCl8HIUt9-lMg",
+  "version": 0,
+  "realm": "customerA",
+  "createdOn": 1489042784157,
+  "name": "Livingroom",
+  "type": "urn:openremote:asset:room",
+  "parentId": "B0x8ZOqZQHGjq_l0RxAJBA",
+  "path": [
+    "0oI7Gf_kTh6WyRJFUTr8Lg",
+    "B0x8ZOqZQHGjq_l0RxAJBA",
+    "bzlRiJmSSMCl8HIUt9-lMg"
+  ],
+  "coordinates": [
+    5.469751699216005,
+    51.44760787406028
+  ]
+}
+ * }</pre>
+ * <pre>{@code
+{
+  "id": "W7GV_lFeQVyHLlgHgE3dEQ",
+  "version": 0,
+  "realm": "customerA",
+  "createdOn": 1489042784164,
+  "name": "Livingroom Thermostat",
+  "type": "urn:openremote:asset:thing",
+  "parentId": "bzlRiJmSSMCl8HIUt9-lMg",
+  "path": [
+    "0oI7Gf_kTh6WyRJFUTr8Lg",
+    "B0x8ZOqZQHGjq_l0RxAJBA",
+    "bzlRiJmSSMCl8HIUt9-lMg",
+    "W7GV_lFeQVyHLlgHgE3dEQ"
+  ],
+  "coordinates": [
+    5.460315214821094,
+    51.44541688237109
+  ],
+  "attributes": {
+    "currentTemperature": {
+      "meta": [
+        {
+          "name": "urn:openremote:asset:meta:label",
+          "value": "Current Temp"
+        },
+        {
+          "name": "urn:openremote:asset:meta:protected",
+          "value": true
+        },
+        {
+          "name": "urn:openremote:asset:meta:readOnly",
+          "value": true
+        },
+        {
+          "name": "urn:openremote:foo:bar",
+          "value": "FOO"
+        },
+        {
+          "name": "urn:thirdparty:bar",
+          "value": "BAR"
+        }
+      ],
+      "type": "Decimal",
+      "value": 19.2
+    },
+    "somethingPrivate": {
+      "type": "String",
+      "value": "Foobar"
+    }
+  }
+}
+ * }</pre>
  */
+// @formatter:on
 @MappedSuperclass
 @Table(name = "ASSET")
 public class Asset {

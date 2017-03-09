@@ -33,7 +33,7 @@ public class ExtensibleResteasyClientBuilder extends ResteasyClientBuilder {
 
     @Override
     public ResteasyClient build() {
-        httpEngine(initDefaultEngine43());
+        httpEngine(initDefaultEngine43(this));
         return super.build();
     }
 
@@ -51,14 +51,15 @@ public class ExtensibleResteasyClientBuilder extends ResteasyClientBuilder {
 
     // The rest is copy/paste pretty much
 
-    public ApacheHttpClient43Engine initDefaultEngine43() {
+    static public ApacheHttpClient43Engine initDefaultEngine43(ExtensibleResteasyClientBuilder that) {
+
         HttpClient httpClient = null;
 
         HostnameVerifier verifier = null;
-        if (verifier != null) {
-            verifier = new ExtensibleResteasyClientBuilder.VerifierWrapper(verifier);
+        if (that.verifier != null) {
+            verifier = new ExtensibleResteasyClientBuilder.VerifierWrapper(that.verifier);
         } else {
-            switch (policy) {
+            switch (that.policy) {
                 case ANY:
                     verifier = new NoopHostnameVerifier();
                     break;
@@ -72,8 +73,8 @@ public class ExtensibleResteasyClientBuilder extends ResteasyClientBuilder {
         }
         try {
             SSLConnectionSocketFactory sslsf = null;
-            SSLContext theContext = sslContext;
-            if (disableTrustManager) {
+            SSLContext theContext = that.sslContext;
+            if (that.disableTrustManager) {
                 theContext = SSLContext.getInstance("SSL");
                 theContext.init(null, new TrustManager[]{new PassthroughTrustManager()},
                     new SecureRandom());
@@ -83,21 +84,21 @@ public class ExtensibleResteasyClientBuilder extends ResteasyClientBuilder {
                 sslsf = new SSLConnectionSocketFactory(theContext, verifier) {
                     @Override
                     protected void prepareSocket(SSLSocket socket) throws IOException {
-                        prepareSocketForSni(socket);
+                        that.prepareSocketForSni(socket);
                     }
                 };
-            } else if (clientKeyStore != null || truststore != null) {
+            } else if (that.clientKeyStore != null || that.truststore != null) {
                 SSLContext ctx = SSLContexts.custom()
                     .useProtocol(SSLConnectionSocketFactory.TLS)
                     .setSecureRandom(null)
-                    .loadKeyMaterial(clientKeyStore,
-                        clientPrivateKeyPassword != null ? clientPrivateKeyPassword.toCharArray() : null)
-                    .loadTrustMaterial(truststore, TrustSelfSignedStrategy.INSTANCE)
+                    .loadKeyMaterial(that.clientKeyStore,
+                        that.clientPrivateKeyPassword != null ? that.clientPrivateKeyPassword.toCharArray() : null)
+                    .loadTrustMaterial(that.truststore, TrustSelfSignedStrategy.INSTANCE)
                     .build();
                 sslsf = new SSLConnectionSocketFactory(ctx, verifier) {
                     @Override
                     protected void prepareSocket(SSLSocket socket) throws IOException {
-                        prepareSocketForSni(socket);
+                        that.prepareSocketForSni(socket);
                     }
                 };
             } else {
@@ -112,14 +113,14 @@ public class ExtensibleResteasyClientBuilder extends ResteasyClientBuilder {
                 .build();
 
             HttpClientConnectionManager cm = null;
-            if (connectionPoolSize > 0) {
+            if (that.connectionPoolSize > 0) {
                 PoolingHttpClientConnectionManager tcm = new PoolingHttpClientConnectionManager(
-                    registry, null, null, null, connectionTTL, connectionTTLUnit);
-                tcm.setMaxTotal(connectionPoolSize);
-                if (maxPooledPerRoute == 0) {
-                    maxPooledPerRoute = connectionPoolSize;
+                    registry, null, null, null, that.connectionTTL, that.connectionTTLUnit);
+                tcm.setMaxTotal(that.connectionPoolSize);
+                if (that.maxPooledPerRoute == 0) {
+                    that.maxPooledPerRoute = that.connectionPoolSize;
                 }
-                tcm.setDefaultMaxPerRoute(maxPooledPerRoute);
+                tcm.setDefaultMaxPerRoute(that.maxPooledPerRoute);
                 cm = tcm;
 
             } else {
@@ -127,26 +128,28 @@ public class ExtensibleResteasyClientBuilder extends ResteasyClientBuilder {
             }
 
             RequestConfig.Builder rcBuilder = RequestConfig.custom();
-            if (socketTimeout > -1) {
-                rcBuilder.setSocketTimeout((int) socketTimeoutUnits.toMillis(socketTimeout));
+            if (that.socketTimeout > -1) {
+                rcBuilder.setSocketTimeout((int) that.socketTimeoutUnits.toMillis(that.socketTimeout));
             }
-            if (establishConnectionTimeout > -1) {
-                rcBuilder.setConnectTimeout((int) establishConnectionTimeoutUnits.toMillis(establishConnectionTimeout));
+            if (that.establishConnectionTimeout > -1) {
+                rcBuilder.setConnectTimeout((int) that.establishConnectionTimeoutUnits.toMillis(that.establishConnectionTimeout));
             }
-            if (connectionCheckoutTimeoutMs > -1) {
-                rcBuilder.setConnectionRequestTimeout(connectionCheckoutTimeoutMs);
+            if (that.connectionCheckoutTimeoutMs > -1) {
+                rcBuilder.setConnectionRequestTimeout(that.connectionCheckoutTimeoutMs);
             }
 
-            httpClient = configure(HttpClientBuilder.create()
-                .setConnectionManager(cm)
-                .setDefaultRequestConfig(rcBuilder.build())
-                .setProxy(defaultProxy)
-                .disableContentCompression()
+            // The magic configure()
+            httpClient = that.configure(
+                HttpClientBuilder.create()
+                    .setConnectionManager(cm)
+                    .setDefaultRequestConfig(rcBuilder.build())
+                    .setProxy(that.defaultProxy)
+                    .disableContentCompression()
             ).build();
 
             ApacheHttpClient43Engine engine =
                 (ApacheHttpClient43Engine) ApacheHttpClient4EngineFactory.create(httpClient, true);
-            engine.setResponseBufferSize(responseBufferSize);
+            engine.setResponseBufferSize(that.responseBufferSize);
             engine.setHostnameVerifier(verifier);
             // this may be null.  We can't really support this with Apache Client.
             engine.setSslContext(theContext);

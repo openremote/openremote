@@ -23,8 +23,8 @@ import elemental.json.JsonValue;
 import org.openremote.agent3.protocol.AbstractProtocol;
 import org.openremote.agent3.protocol.simulator.element.*;
 import org.openremote.model.AttributeRef;
-import org.openremote.model.AttributeValueChange;
-import org.openremote.model.MetadataItem;
+import org.openremote.model.AttributeState;
+import org.openremote.model.MetaItem;
 import org.openremote.model.asset.ThingAttribute;
 
 import java.util.HashMap;
@@ -33,8 +33,8 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
-import static org.openremote.model.asset.AssetAttributeMeta.RANGE_MAX;
-import static org.openremote.model.asset.AssetAttributeMeta.RANGE_MIN;
+import static org.openremote.model.asset.AssetMeta.RANGE_MAX;
+import static org.openremote.model.asset.AssetMeta.RANGE_MIN;
 
 public class SimulatorProtocol extends AbstractProtocol {
 
@@ -70,8 +70,8 @@ public class SimulatorProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void sendToActuator(AttributeValueChange attributeValueChange) {
-        putState(attributeValueChange.getAttributeRef(), attributeValueChange.getValue(), false);
+    protected void sendToActuator(AttributeState attributeState) {
+        putState(attributeState.getAttributeRef(), attributeState.getValue(), false);
     }
 
     public void putState(String entityId, String attributeName, JsonValue value) {
@@ -83,7 +83,7 @@ public class SimulatorProtocol extends AbstractProtocol {
     }
 
     /**
-     * @param isSensorUpdate <code>true</code> if an {@link AttributeValueChange} message should be produced
+     * @param isSensorUpdate <code>true</code> if an {@link AttributeState} message should be produced
      */
     public void putState(AttributeRef attributeRef, JsonValue value, boolean isSensorUpdate) {
         synchronized (elements) {
@@ -97,7 +97,7 @@ public class SimulatorProtocol extends AbstractProtocol {
 
             if (isSensorUpdate) {
                 LOG.fine("Propagating state change as sensor update: " + element);
-                onSensorUpdate(new AttributeValueChange(attributeRef, value));
+                onSensorUpdate(new AttributeState(attributeRef, value));
             }
         }
     }
@@ -124,8 +124,8 @@ public class SimulatorProtocol extends AbstractProtocol {
             case "decimal":
                 return new DecimalSimulatorElement();
             case "range":
-                MetadataItem minItem = attribute.firstMetaItem(RANGE_MIN);
-                MetadataItem maxItem = attribute.firstMetaItem(RANGE_MAX);
+                MetaItem minItem = attribute.firstMetaItem(RANGE_MIN);
+                MetaItem maxItem = attribute.firstMetaItem(RANGE_MAX);
                 double min = minItem != null ? minItem.getValueAsInteger() : 0;
                 double max = maxItem != null ? maxItem.getValueAsInteger() : 100;
                 return new IntegerSimulatorElement(min, max);

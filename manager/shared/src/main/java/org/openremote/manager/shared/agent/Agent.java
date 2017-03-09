@@ -78,7 +78,7 @@ public class Agent {
 
     public Agent setEnabled(boolean enabled) {
         if (attributes.hasAttribute("enabled")) {
-            attributes.get("enabled").setValue(enabled);
+            attributes.get("enabled").setValueAsBoolean(enabled);
         } else {
             attributes.put(new Attribute("enabled", AttributeType.BOOLEAN, Json.create(enabled)));
         }
@@ -100,7 +100,7 @@ public class Agent {
     }
 
     public Agent setConnectorType(String connectorType) {
-        getOrCreateConnectorTypeAttribute().setValue(connectorType);
+        getOrCreateConnectorTypeAttribute().setValueAsString(connectorType);
         return this;
     }
 
@@ -125,11 +125,11 @@ public class Agent {
             Attribute attribute = attributes.get(setting.getName());
             // If the connector setting still has the same type as the agent's attribute, only update metadata
             if (attribute != null && attribute.getType().equals(setting.getType())) {
-                attribute.setMetadata(setting.getMetadata().copy());
+                attribute.setMeta(setting.getMeta().copy());
             } else {
                 // The agent does not have the connector setting or it's now a different type, replace/create attribute
                 attribute = new Attribute(setting.getName(), setting.getType());
-                attribute.setMetadata(setting.getMetadata().copy());
+                attribute.setMeta(setting.getMeta().copy());
                 attributes.put(attribute);
             }
         }

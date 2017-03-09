@@ -22,23 +22,23 @@ package org.openremote.model;
 import java.util.LinkedList;
 
 /**
- * Apply a sequence of <code>[AttributeValueChange, Seconds]</code> items, each lasting for the given duration.
+ * A sequence of <code>[{@link AttributeState}, Seconds]</code> items, each lasting for the given duration.
  * <p>
- * Optionally, repeat the schedule when the last item has expired.
+ * Optionally, repeat the states when the last item has expired.
  */
-public class AttributeSchedule extends LinkedList<AttributeSchedule.Item> {
+public class AttributeStates extends LinkedList<AttributeStates.Item> {
 
     public class Item {
-        final AttributeValueChange attributeValueChange;
+        final AttributeState attributeState;
         final int delayNextSeconds;
 
-        public Item(AttributeValueChange attributeValueChange, int delayNextSeconds) {
-            this.attributeValueChange = attributeValueChange;
+        public Item(AttributeState attributeState, int delayNextSeconds) {
+            this.attributeState = attributeState;
             this.delayNextSeconds = delayNextSeconds;
         }
 
-        public AttributeValueChange getAttributeValueChange() {
-            return attributeValueChange;
+        public AttributeState getAttributeState() {
+            return attributeState;
         }
 
         public int getDelayNextSeconds() {
@@ -48,18 +48,11 @@ public class AttributeSchedule extends LinkedList<AttributeSchedule.Item> {
 
     final protected boolean repeat;
 
-    public AttributeSchedule(boolean repeat) {
+    public AttributeStates(boolean repeat) {
         this.repeat = repeat;
     }
 
     public boolean isRepeat() {
         return repeat;
-    }
-
-    /**
-     * TODO
-     */
-    public void apply(Function<AttributeRef, Attribute> attributeResolver) {
-        throw new UnsupportedOperationException("TODO Implement this");
     }
 }

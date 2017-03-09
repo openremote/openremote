@@ -35,13 +35,12 @@ import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.asset.SubscribeAssetModified;
 import org.openremote.manager.shared.asset.UnsubscribeAssetModified;
 import org.openremote.model.AttributeRef;
-import org.openremote.model.AttributeValueChange;
+import org.openremote.model.AttributeState;
 import org.openremote.model.Function;
 import org.openremote.model.asset.*;
 import org.postgresql.util.PGobject;
 
 import javax.persistence.EntityManager;
-import javax.persistence.NoResultException;
 import javax.persistence.Query;
 import java.sql.Array;
 import java.sql.PreparedStatement;
@@ -363,17 +362,17 @@ public class AssetService extends RouteBuilder implements ContainerService {
         });
     }
 
-    public boolean updateThingAttributeValue(AttributeValueChange attributeValueChange) {
+    public boolean updateThingAttributeValue(AttributeState attributeState) {
         // TODO: More fine-grained return to distinguish failures ("wrong value type" is not the same as "not found")
 
-        AttributeRef attributeRef = attributeValueChange.getAttributeRef();
+        AttributeRef attributeRef = attributeState.getAttributeRef();
         ServerAsset thing = find(attributeRef.getEntityId());
         if (thing == null) {
-            LOG.fine("Ignoring attribute update for unknown asset: " + attributeValueChange);
+            LOG.fine("Ignoring attribute update for unknown asset: " + attributeState);
             return false;
         }
         if (thing.getWellKnownType() != THING) {
-            LOG.fine("Ignoring attribute update '" + attributeValueChange + "' for non-thing asset: " + thing);
+            LOG.fine("Ignoring attribute update '" + attributeState + "' for non-thing asset: " + thing);
             return false;
         }
         ThingAttributes thingAttributes = new ThingAttributes(thing);
@@ -381,16 +380,16 @@ public class AssetService extends RouteBuilder implements ContainerService {
             agentLinkResolver, attributeRef.getAttributeName()
         );
         if (thingAttribute == null) {
-            LOG.fine("Ignoring attribute update '" + attributeValueChange + "' for unknown/unlinked attribute: " + thing);
+            LOG.fine("Ignoring attribute update '" + attributeState + "' for unknown/unlinked attribute: " + thing);
             return false;
         }
 
-        if (thingAttribute.getType().getJsonType() != attributeValueChange.getValue().getType()) {
-            LOG.fine("Ignoring attribute update '" + attributeValueChange + "', wrong value type '" + attributeValueChange.getValue().getType() + "': " + thing);
+        if (thingAttribute.getType().getJsonType() != attributeState.getValue().getType()) {
+            LOG.fine("Ignoring attribute update '" + attributeState + "', wrong value type '" + attributeState.getValue().getType() + "': " + thing);
             return false;
         }
-        LOG.fine("Applying '" + attributeValueChange + "' on: " + thing);
-        thingAttribute.setValue(attributeValueChange.getValue());
+        LOG.fine("Applying '" + attributeState + "' on: " + thing);
+        thingAttribute.setValue(attributeState.getValue());
 
         return updateAttributeValue(thing.getId(), thingAttribute.getName(), thingAttribute.getValue_TODO_BUG_IN_JAVASCRIPT());
     }

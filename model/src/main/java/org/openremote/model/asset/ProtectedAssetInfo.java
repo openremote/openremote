@@ -22,19 +22,19 @@ package org.openremote.model.asset;
 import elemental.json.JsonObject;
 import org.openremote.model.Attribute;
 import org.openremote.model.Attributes;
-import org.openremote.model.Metadata;
-import org.openremote.model.MetadataItem;
+import org.openremote.model.Meta;
+import org.openremote.model.MetaItem;
 
 import java.util.Date;
 
 import static org.openremote.model.Constants.NAMESPACE;
-import static org.openremote.model.asset.AssetAttributeMeta.PROTECTED;
+import static org.openremote.model.asset.AssetMeta.PROTECTED;
 
 /**
  * Contains protected asset properties such as realm, name, creation timestamp, type,
  * parent identifier, and location of an {@link Asset}, as well as all protected
- * attributes, and their protected metadata (see {@link AssetAttributeMeta#PROTECTED},
- * {@link AssetAttributeMeta.Access}).
+ * attributes, and their protected metadata (see {@link AssetMeta#PROTECTED},
+ * {@link AssetMeta.Access}).
  * <p>
  * Note that third-party metadata items (not in the
  * {@link org.openremote.model.Constants#NAMESPACE}) are never included on
@@ -48,29 +48,32 @@ public class ProtectedAssetInfo extends AssetInfo {
         for (Attribute attribute : attributes.get()) {
 
             // An attribute must have the PROTECTED flag to be included
-            MetadataItem protectedItem = attribute.firstMetaItem(PROTECTED);
-            if (protectedItem != null && protectedItem.getValueAsBoolean()) {
-                Attribute protectedAttribute = new Attribute(attribute.getName(), attribute.getJsonObject());
+            MetaItem protectedItem = attribute.firstMetaItem(PROTECTED);
+            if (protectedItem == null || !protectedItem.getValueAsBoolean())
+                continue;
 
-                // Any meta item of the attribute, if it's in our namespace, must be protected READ to be included
-                if (protectedAttribute.hasMetadata()) {
-                    Metadata protectedMetadata = new Metadata();
-                    for (MetadataItem metadataItem : protectedAttribute.getMetadata().all()) {
-                        if (metadataItem.getName().startsWith(NAMESPACE)) {
-                            AssetAttributeMeta wellKnownMeta = AssetAttributeMeta.byName(metadataItem.getName());
-                            if (wellKnownMeta != null && wellKnownMeta.getAccess().protectedRead) {
-                                protectedMetadata.add(
-                                    new MetadataItem(metadataItem.getName(), metadataItem.getValue_TODO_BUG_IN_JAVASCRIPT())
-                                );
-                            }
-                        }
-                    }
-                    if (protectedMetadata.getJsonArray().length() > 0)
-                        protectedAttribute.setMetadata(protectedMetadata);
+            Attribute protectedAttribute = new Attribute(attribute.getName(), attribute.getJsonObject());
+            filteredAttributes.put(protectedAttribute);
+
+            if (!protectedAttribute.hasMeta())
+                continue;
+
+            // Any meta item of the attribute, if it's in our namespace, must be protected READ to be included
+            Meta protectedMeta = new Meta();
+            for (MetaItem metaItem : protectedAttribute.getMeta().all()) {
+                if (!metaItem.getName().startsWith(NAMESPACE))
+                    continue;
+
+                AssetMeta wellKnownMeta = AssetMeta.byName(metaItem.getName());
+                if (wellKnownMeta != null && wellKnownMeta.getAccess().protectedRead) {
+                    protectedMeta.add(
+                        new MetaItem(metaItem.getName(), metaItem.getValue_TODO_BUG_IN_JAVASCRIPT())
+                    );
                 }
-
-                filteredAttributes.put(protectedAttribute);
             }
+            if (protectedMeta.size() > 0)
+                protectedAttribute.setMeta(protectedMeta);
+
         }
         return filteredAttributes.getJsonObject();
     }

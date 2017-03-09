@@ -21,7 +21,10 @@ package org.openremote.manager.client.widget;
 
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.event.dom.client.DomEvent;
-import com.google.gwt.user.client.ui.*;
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.InsertPanel;
+import com.google.gwt.user.client.ui.IsWidget;
+import com.google.gwt.user.client.ui.Label;
 import elemental.json.Json;
 import elemental.json.JsonType;
 import elemental.json.JsonValue;
@@ -33,9 +36,10 @@ import org.openremote.manager.shared.event.ui.ShowFailureEvent;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 import org.openremote.model.*;
 import org.openremote.model.Runnable;
-import org.openremote.model.asset.AssetAttributeMeta;
+import org.openremote.model.asset.AssetMeta;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.logging.Logger;
 
 import static org.openremote.manager.shared.util.Util.sortMap;
@@ -194,7 +198,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         formGroup.addFormField(formField);
         formField.add(createEditor(attribute, formGroup));
 
-        MetadataItem description = AssetAttributeMeta.getFirst(attribute, AssetAttributeMeta.DESCRIPTION);
+        MetaItem description = AssetMeta.getFirst(attribute, AssetMeta.DESCRIPTION);
         if (description != null) {
             formGroup.addInfolabel(new Label(description.getValueAsString()));
         }
@@ -219,7 +223,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
 
     protected FormLabel createAttributeLabel(Attribute attribute) {
         String label = attribute.getName();
-        MetadataItem labelItem = AssetAttributeMeta.getFirst(attribute, AssetAttributeMeta.LABEL);
+        MetaItem labelItem = AssetMeta.getFirst(attribute, AssetMeta.LABEL);
         if (labelItem != null) {
             label = labelItem.getValueAsString();
         }
@@ -236,7 +240,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
     protected IsWidget createEditor(Attribute attribute, FormGroup formGroup) {
         IsWidget editor;
         S style = container.getStyle();
-        MetadataItem defaultValueItem = AssetAttributeMeta.getFirst(attribute, AssetAttributeMeta.DEFAULT);
+        MetaItem defaultValueItem = AssetMeta.getFirst(attribute, AssetMeta.DEFAULT);
         Consumer<String> errorConsumer = msg -> {
             formGroup.setError(true);
             showValidationError(msg);
@@ -247,7 +251,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
             String defaultValue = defaultValueItem != null ? defaultValueItem.getValueAsString() : null;
             Consumer<String> updateConsumer = isDefaultReadOnly(attribute) ? null : value -> {
                 formGroup.setError(false);
-                attribute.setValue(value);
+                attribute.setValueAsString(value);
             };
             editor = createStringEditor(style, currentValue, defaultValue, updateConsumer);
         } else if (attribute.getType().equals(AttributeType.INTEGER)) {
@@ -255,7 +259,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
             Integer defaultValue = defaultValueItem != null ? defaultValueItem.getValueAsInteger() : null;
             Consumer<Integer> updateConsumer = isDefaultReadOnly(attribute) ? null : value -> {
                 formGroup.setError(false);
-                attribute.setValue(value);
+                attribute.setValueAsInteger(value);
             };
             editor = createIntegerEditor(style, currentValue, defaultValue, updateConsumer, errorConsumer);
         } else if (attribute.getType().equals(AttributeType.DECIMAL)) {
@@ -263,7 +267,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
             Double defaultValue = defaultValueItem != null ? defaultValueItem.getValueAsDecimal() : null;
             Consumer<Double> updateConsumer = isDefaultReadOnly(attribute) ? null : value -> {
                 formGroup.setError(false);
-                attribute.setValue(value);
+                attribute.setValueAsDecimal(value);
             };
             editor = createDecimalEditor(style, currentValue, defaultValue, updateConsumer, errorConsumer);
         } else if (attribute.getType().equals(AttributeType.BOOLEAN)) {
@@ -271,7 +275,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
             Boolean defaultValue = defaultValueItem != null ? defaultValueItem.getValueAsBoolean() : null;
             Consumer<Boolean> updateConsumer = isDefaultReadOnly(attribute) ? null : value -> {
                 formGroup.setError(false);
-                attribute.setValue(value);
+                attribute.setValueAsBoolean(value);
             };
             editor = createBooleanEditor(style, currentValue, defaultValue, updateConsumer);
         } else {
@@ -284,7 +288,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         return editor;
     }
 
-    protected IsWidget createEditor(MetadataItem item, JsonType valueType, boolean forceEditable, FormGroup formGroup) {
+    protected IsWidget createEditor(MetaItem item, JsonType valueType, boolean forceEditable, FormGroup formGroup) {
         IsWidget editor;
 
         S style = container.getStyle();
@@ -292,8 +296,8 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
             formGroup.setError(true);
             showValidationError(msg);
         };
-        // For some metadata items we know if we can edit them or not... custom items are always editable
-        Boolean isEditable = AssetAttributeMeta.isEditable(item.getName());
+        // For some meta items we know if we can edit them or not... custom items are always editable
+        Boolean isEditable = AssetMeta.isEditable(item.getName());
 
         // TODO: We should support more JSON types, and have special editors for well-known meta items
         // Default to STRING editor if value is empty/no type available
@@ -301,21 +305,21 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
             String currentValue = item.getValueAsString();
             Consumer<String> updateConsumer = isEditable == null || isEditable || forceEditable ? value -> {
                 formGroup.setError(false);
-                item.setValue(value);
+                item.setValueAsString(value);
             } : null;
             editor = createStringEditor(style, currentValue, null, updateConsumer);
         } else if (valueType.equals(JsonType.NUMBER)) {
             Double currentValue = item.getValueAsDecimal();
             Consumer<Double> updateConsumer = isEditable == null || isEditable || forceEditable ? value -> {
                 formGroup.setError(false);
-                item.setValue(value);
+                item.setValueAsDecimal(value);
             } : null;
             editor = createDecimalEditor(style, currentValue, null, updateConsumer, errorConsumer);
         } else if (valueType.equals(JsonType.BOOLEAN)) {
             Boolean currentValue = item.getValueAsBoolean();
             Consumer<Boolean> updateConsumer = isEditable == null || isEditable || forceEditable ? value -> {
                 formGroup.setError(false);
-                item.setValue(value);
+                item.setValueAsBoolean(value);
             } : null;
             editor = createBooleanEditor(style, currentValue, null, updateConsumer);
         } else {
@@ -343,7 +347,11 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         if (updateConsumer != null) {
             input.addValueChangeHandler(
                 event -> {
-                    updateConsumer.accept(event.getValue());
+                    updateConsumer.accept(
+                        event.getValue() != null && event.getValue().length() > 0
+                            ? event.getValue()
+                            : null
+                    );
                 }
             );
         } else {
@@ -368,7 +376,11 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         if (updateConsumer != null) {
             input.addValueChangeHandler(event -> {
                 try {
-                    updateConsumer.accept(Integer.valueOf(event.getValue()));
+                    updateConsumer.accept(
+                        event.getValue() != null && event.getValue().length() > 0
+                            ? Integer.valueOf(event.getValue())
+                            : null
+                    );
                 } catch (NumberFormatException ex) {
                     errorConsumer.accept(environment.getMessages().enterOnlyNumbers());
                 }
@@ -395,7 +407,11 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         if (updateConsumer != null) {
             input.addValueChangeHandler(event -> {
                 try {
-                    updateConsumer.accept(Double.valueOf(event.getValue()));
+                    updateConsumer.accept(
+                        event.getValue() != null && event.getValue().length() > 0
+                            ? Double.valueOf(event.getValue())
+                            : null
+                    );
                 } catch (NumberFormatException ex) {
                     errorConsumer.accept(environment.getMessages().enterOnlyDecimals());
                 }
@@ -492,15 +508,15 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         protected void buildItemList() {
             itemListPanel.clear();
 
-            if (!attribute.hasMetadata() || attribute.getMetadata().all().length == 0) {
+            if (!attribute.hasMeta() || attribute.getMeta().all().length == 0) {
                 itemListSectionLabel.setVisible(false);
                 return;
             }
             itemListSectionLabel.setVisible(true);
 
-            MetadataItem[] items = attribute.getMetadata().all();
+            MetaItem[] items = attribute.getMeta().all();
             for (int i = 0; i < items.length; i++) {
-                MetadataItem item = items[i];
+                MetaItem item = items[i];
                 FormGroup formGroup = new FormGroup();
 
                 FormLabel label = new FormLabel(item.getName());
@@ -535,7 +551,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
                 deleteButton.setIcon("remove");
                 int index = i;
                 deleteButton.addClickHandler(clickEvent -> {
-                    attribute.getMetadata().remove(index);
+                    attribute.getMeta().remove(index);
                     buildItemList();
                 });
                 formGroupActions.add(deleteButton);
@@ -549,7 +565,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         protected void buildItemEditor() {
             itemEditorPanel.clear();
 
-            MetadataItem item = new MetadataItem();
+            MetaItem item = new MetaItem();
 
             FormListBox valueTypeListBox = new FormListBox();
             FormGroup itemNameEditorGroup = createItemNameEditor(item, valueTypeListBox);
@@ -567,11 +583,11 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
                     itemNameEditorGroup.setError(false);
                     itemValueEditorGroup.setError(false);
                     // TODO This is necessary because JSON elemental behavior is weird
-                    MetadataItem storedItem = new MetadataItem(Json.parse(item.getJsonObject().toJson()));
-                    if (!attribute.hasMetadata()) {
-                        attribute.setMetadata(new Metadata());
+                    MetaItem storedItem = new MetaItem(Json.parse(item.getJsonObject().toJson()));
+                    if (!attribute.hasMeta()) {
+                        attribute.setMeta(new Meta());
                     }
-                    attribute.getMetadata().add(storedItem);
+                    attribute.getMeta().add(storedItem);
                     buildItemList();
                     buildItemEditor();
                 } else {
@@ -584,7 +600,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
             itemValueEditorGroup.addFormGroupActions(formGroupActions);
         }
 
-        protected FormGroup createItemNameEditor(MetadataItem item, FormListBox typeListBox) {
+        protected FormGroup createItemNameEditor(MetaItem item, FormListBox typeListBox) {
             FormGroup formGroup = new FormGroup();
 
             FormLabel label = new FormLabel(environment.getMessages().itemName());
@@ -596,7 +612,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
 
             FormListBox wellknownListBox = new FormListBox();
             wellknownListBox.addItem(environment.getMessages().selectStandard());
-            for (AssetAttributeMeta wellknown : AssetAttributeMeta.editable()) {
+            for (AssetMeta wellknown : AssetMeta.editable()) {
                 wellknownListBox.addItem(wellknown.name());
             }
             formField.add(wellknownListBox);
@@ -612,11 +628,11 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
 
             wellknownListBox.addChangeHandler(event -> {
                 if (wellknownListBox.getSelectedIndex() > 0) {
-                    AssetAttributeMeta assetAttributeMeta = AssetAttributeMeta.editable()[wellknownListBox.getSelectedIndex() - 1];
-                    itemNameInput.setText(assetAttributeMeta.getName());
-                    item.setName(assetAttributeMeta.getName());
+                    AssetMeta assetMeta = AssetMeta.editable()[wellknownListBox.getSelectedIndex() - 1];
+                    itemNameInput.setText(assetMeta.getName());
+                    item.setName(assetMeta.getName());
                     typeListBox.setSelectedIndex(
-                        AssetAttributeMeta.ValueType.byValueType(assetAttributeMeta.getValueType()).ordinal() + 1
+                        AssetMeta.ValueType.byValueType(assetMeta.getValueType()).ordinal() + 1
                     );
                 } else {
                     itemNameInput.setText(null);
@@ -629,7 +645,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
             return formGroup;
         }
 
-        protected FormGroup createItemValueEditor(MetadataItem item, FormListBox typeListBox) {
+        protected FormGroup createItemValueEditor(MetaItem item, FormListBox typeListBox) {
             FormGroup formGroup = new FormGroup();
 
             FormLabel label = new FormLabel(environment.getMessages().value());
@@ -640,7 +656,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
             formGroup.addFormField(formField);
 
             typeListBox.addItem(environment.getMessages().selectType());
-            for (AssetAttributeMeta.ValueType metaValueType : AssetAttributeMeta.ValueType.values()) {
+            for (AssetMeta.ValueType metaValueType : AssetMeta.ValueType.values()) {
                 typeListBox.addItem(metaValueType.name, metaValueType.name());
             }
             typeListBox.addChangeHandler(event -> resetItemValueEditor(item, formGroup, formField, typeListBox));
@@ -653,7 +669,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
             return formGroup;
         }
 
-        protected void resetItemValueEditor(MetadataItem item, FormGroup formGroup, FormField formField, FormListBox typeListBox) {
+        protected void resetItemValueEditor(MetaItem item, FormGroup formGroup, FormField formField, FormListBox typeListBox) {
             // Remove the last used editor (last widget in form field)
             if (formField.getWidgetCount() > 1)
                 formField.remove(formField.getWidget(formField.getWidgetCount() - 1));
@@ -661,10 +677,10 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
             // Create and add new editor, default to empty STRING
             item.clearValue();
             JsonType valueType = typeListBox.getSelectedIndex() > 0
-                ? AssetAttributeMeta.ValueType.valueOf(typeListBox.getSelectedValue()).valueType
+                ? AssetMeta.ValueType.valueOf(typeListBox.getSelectedValue()).valueType
                 : JsonType.STRING;
             if (valueType == JsonType.BOOLEAN) {
-                item.setValue(false); // Special case boolean editor, has an "initial" state, there is always a value
+                item.setValueAsBoolean(false); // Special case boolean editor, has an "initial" state, there is always a value
             }
             IsWidget editor = createEditor(item, valueType, true, formGroup);
             formField.add(editor);

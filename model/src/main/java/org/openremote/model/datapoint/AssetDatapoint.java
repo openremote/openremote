@@ -2,7 +2,7 @@ package org.openremote.model.datapoint;
 
 import elemental.json.JsonValue;
 import org.openremote.model.AttributeRef;
-import org.openremote.model.AttributeValueChange;
+import org.openremote.model.AttributeState;
 
 import javax.persistence.Entity;
 import javax.persistence.Table;
@@ -14,8 +14,8 @@ public class AssetDatapoint extends Datapoint {
     public AssetDatapoint() {
     }
 
-    public AssetDatapoint(AttributeValueChange attributeValueChange) {
-        super(attributeValueChange);
+    public AssetDatapoint(AttributeState attributeState) {
+        super(attributeState);
     }
 
     public AssetDatapoint(AttributeRef attributeRef, JsonValue value) {

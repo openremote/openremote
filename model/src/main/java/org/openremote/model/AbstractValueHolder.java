@@ -21,6 +21,11 @@ package org.openremote.model;
 
 import elemental.json.*;
 
+/**
+ * Base class for all model classes which have to internally store data in a
+ * {@link JsonObject} that has a <code>value</code> field that accepts any
+ * {@link JsonValue}.
+ */
 public abstract class AbstractValueHolder<T extends AbstractValueHolder> {
 
     final protected JsonObject jsonObject;
@@ -38,7 +43,7 @@ public abstract class AbstractValueHolder<T extends AbstractValueHolder> {
     }
 
     public Integer getValueAsInteger() {
-        return hasValue()? Integer.valueOf(getValue_TODO_BUG_IN_JAVASCRIPT().asString()) : null;
+        return hasValue() ? Integer.valueOf(getValue_TODO_BUG_IN_JAVASCRIPT().asString()) : null;
     }
 
     public Double getValueAsDecimal() {
@@ -71,32 +76,65 @@ public abstract class AbstractValueHolder<T extends AbstractValueHolder> {
         jsonObject.remove("value");
     }
 
-    public T setValue(String value) {
-        return setValue(Json.create(value));
+    public T setValueAsString(String value) {
+        return setValue(value == null ? Json.createNull() : Json.create(value));
     }
 
-    public T setValue(int value) {
-        return setValue(Json.create(value));
+    public T setValueAsInteger(Integer value) {
+        return setValue(value == null ? Json.createNull() : Json.create(value));
     }
 
-    public T setValue(double value) {
-        return setValue(Json.create(value));
+    public T setValueAsDecimal(Double value) {
+        return setValue(value == null ? Json.createNull() : Json.create(value));
     }
 
-    public T setValue(boolean value) {
-        return setValue(Json.create(value));
+    public T setValueAsBoolean(Boolean value) {
+        return setValue(value == null ? Json.createNull() : Json.create(value));
     }
 
-    // You can NOT perform null-checks on whatever is returned here!
-    // TODO https://github.com/gwtproject/gwt/issues/9484
+    public T setValueAsObject(JsonObject value) {
+        return setValue(value == null ? Json.createNull() : value);
+    }
+
+    public T setValueAsArray(JsonArray value) {
+        return setValue(value == null ? Json.createNull() : value);
+    }
+
+    /**
+     * You can NOT perform null-checks on whatever is returned here!
+     * <p>
+     * TODO https://github.com/gwtproject/gwt/issues/9484
+     */
     public JsonValue getValue_TODO_BUG_IN_JAVASCRIPT() {
         return hasValue() ? jsonObject.get("value") : Json.createNull();
     }
 
     @SuppressWarnings("unchecked")
     public T setValue(JsonValue value) {
+
+        if (value == null) {
+            value = Json.createNull();
+        } else if (value.getType() != JsonType.NULL){
+            // TODO Avoid unboxing problems by parsing again https://github.com/gwtproject/gwt/issues/9484
+            value = Json.instance().parse(value.toJson());
+        }
+
+        if (!isValidValue(value)) {
+            String typeString = value != null ? value.getType().name() : "null";
+            String valueString = value != null ? value.toJson() : "null";
+            throw new IllegalArgumentException("Invalid value of type " + typeString + ": " + valueString);
+        }
+
         jsonObject.put("value", value);
+
         return (T) this;
+    }
+
+    /**
+     * Override to implement constraints.
+     */
+    protected boolean isValidValue(JsonValue value) {
+        return true;
     }
 
     @Override

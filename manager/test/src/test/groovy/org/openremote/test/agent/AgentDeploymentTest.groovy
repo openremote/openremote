@@ -9,9 +9,9 @@ import org.openremote.manager.server.asset.AssetService
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.model.AttributeRef
-import org.openremote.model.AttributeValueChange
+import org.openremote.model.AttributeState
 import org.openremote.model.Attributes
-import org.openremote.model.asset.ColorRGB
+import org.openremote.model.units.ColorRGB
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -46,20 +46,20 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
 
             Proposal:
 
-                1. Receive AttributeValueChange on client API
+                1. Receive AttributeState on client API
 
                 2. Handle security and verify the message is for a linked agent/thing/attribute in the asset database
 
-                3. Send the AttributeValueChange to the Protocol through ACTUATOR_TOPIC and trigger device/service call
+                3. Send the AttributeState to the Protocol through ACTUATOR_TOPIC and trigger device/service call
 
                 4a. We assume that most protocol implementations are not using fire-and-forget but request/reply
-                    communication. Thus, an AttributeValueChange has no further consequences besides triggering an
+                    communication. Thus, an AttributeState has no further consequences besides triggering an
                     actuator. We expect that a sensor "response" will let us know "soon" if the call was successful.
                     Only a sensor value change will result in an update of the asset database state. The window of
                     inconsistency we can accept depends on how "soon" a protocol typically responds.
 
                 4b. Alternatively, if the updated attribute is configured with the "forceUpdate" meta item, we write
-                    the new attribute value directly into the asset database after triggering the actuator. This flag
+                    the new attribute state directly into the asset database after triggering the actuator. This flag
                     is useful if the protocol does not reflect actuator changes "immediately". For example, if we
                     send a value to a light dimmer actuator, does the light dimmer also have a sensor that responds
                     quickly with the new value? If the device/service does not reply to value changes, we can force
@@ -68,7 +68,7 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
 
                 4c. Should "forceUpdate" be the default behavior?
         */
-        def light1DimmerChange = new AttributeValueChange(
+        def light1DimmerChange = new AttributeState(
                 new AttributeRef(managerDemoSetup.thingId, "light1Dimmer"), Json.create(66)
         )
         container.getService(MessageBrokerService.class).getProducerTemplate().sendBody(

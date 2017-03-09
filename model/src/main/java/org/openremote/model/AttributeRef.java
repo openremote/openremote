@@ -22,6 +22,10 @@ package org.openremote.model;
 import elemental.json.Json;
 import elemental.json.JsonArray;
 
+/**
+ * A reference to an entity (using only its identifier value) and an {@link Attribute}
+ * (using the attribute name) of that entity.
+ */
 public class AttributeRef {
 
     final protected String entityId;

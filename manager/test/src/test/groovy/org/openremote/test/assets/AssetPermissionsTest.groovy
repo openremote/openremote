@@ -4,12 +4,11 @@ import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.shared.asset.AssetResource
 import org.openremote.model.Attributes
-import org.openremote.model.Metadata
+import org.openremote.model.Meta
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.ProtectedAssetInfo
 import org.openremote.model.AttributeType
-import org.openremote.model.AttributeUnits
-import org.openremote.model.asset.AssetAttributeMeta
+import org.openremote.model.asset.AssetMeta
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import org.openremote.model.asset.AssetType
@@ -465,10 +464,10 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         protectedAttributes.get("currentTemperature")
         protectedAttributes.get("currentTemperature").getType() == AttributeType.DECIMAL
         protectedAttributes.get("currentTemperature").getValueAsDecimal() == 19.2d
-        Metadata protectedMetadata = protectedAttributes.get("currentTemperature").getMetadata()
-        protectedMetadata.all().length == 2
-        protectedMetadata.first(AssetAttributeMeta.LABEL).getValueAsString() == "Current Temp"
-        protectedMetadata.first(AssetAttributeMeta.READ_ONLY).getValueAsBoolean()
+        Meta protectedMeta = protectedAttributes.get("currentTemperature").getMeta()
+        protectedMeta.all().length == 2
+        protectedMeta.first(AssetMeta.LABEL).getValueAsString() == "Current Temp"
+        protectedMeta.first(AssetMeta.READ_ONLY).getValueAsBoolean()
 
         ProtectedAssetInfo apartment2 = assetInfos[3]
         apartment2.id == managerDemoSetup.apartment2Id

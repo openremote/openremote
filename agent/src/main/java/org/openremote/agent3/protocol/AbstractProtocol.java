@@ -27,7 +27,7 @@ import org.openremote.model.asset.ThingAttribute;
 import org.openremote.container.Container;
 import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.model.AttributeRef;
-import org.openremote.model.AttributeValueChange;
+import org.openremote.model.AttributeState;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -39,12 +39,12 @@ public abstract class AbstractProtocol implements Protocol {
 
     private static final Logger LOG = Logger.getLogger(AbstractProtocol.class.getName());
 
-    static Predicate isAttributeValueChangeIn(Collection<AttributeRef> attributeRefs) {
+    static Predicate isAttributeStateIn(Collection<AttributeRef> attributeRefs) {
         return exchange -> {
-            if (!(exchange.getIn().getBody() instanceof AttributeValueChange))
+            if (!(exchange.getIn().getBody() instanceof AttributeState))
                 return false;
-            AttributeValueChange valueChange = exchange.getIn().getBody(AttributeValueChange.class);
-            return attributeRefs.contains(valueChange.getAttributeRef());
+            AttributeState attributeState = exchange.getIn().getBody(AttributeState.class);
+            return attributeRefs.contains(attributeState.getAttributeRef());
         };
     }
 
@@ -71,8 +71,8 @@ public abstract class AbstractProtocol implements Protocol {
                         .process(exchange -> {
                             synchronized (linkedAttributes) {
                                 // TODO This could be optimized, we must avoid inspecting all messages (maybe tag with protocol name in header?)
-                                if (isAttributeValueChangeIn(linkedAttributes.keySet()).matches(exchange)) {
-                                    sendToActuator(exchange.getIn().getBody(AttributeValueChange.class));
+                                if (isAttributeStateIn(linkedAttributes.keySet()).matches(exchange)) {
+                                    sendToActuator(exchange.getIn().getBody(AttributeState.class));
                                 }
                             }
                         });
@@ -128,11 +128,11 @@ public abstract class AbstractProtocol implements Protocol {
         }
     }
 
-    protected void onSensorUpdate(AttributeValueChange attributeValueChange) {
-        producerTemplate.sendBody(SENSOR_TOPIC, attributeValueChange);
+    protected void onSensorUpdate(AttributeState attributeState) {
+        producerTemplate.sendBody(SENSOR_TOPIC, attributeState);
     }
 
-    abstract protected void sendToActuator(AttributeValueChange attributeValueChange);
+    abstract protected void sendToActuator(AttributeState attributeState);
 
     abstract protected void onAttributeAdded(ThingAttribute attribute);
 

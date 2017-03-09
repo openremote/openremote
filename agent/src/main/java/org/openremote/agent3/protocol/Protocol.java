@@ -20,6 +20,7 @@
 package org.openremote.agent3.protocol;
 
 import org.openremote.container.ContainerService;
+import org.openremote.model.AttributeState;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.ThingAttribute;
 
@@ -31,8 +32,8 @@ import java.util.Collection;
  * OpenRemote protocols are in {@link Constants#PROTOCOL_NAMESPACE}, third-party protocols
  * should use their own URN namespace identifier.
  * <p>
- * The protocol implementation can receive {@link org.openremote.model.AttributeValueChange} messages on the
- * {@link #ACTUATOR_TOPIC}. It can produce {@link org.openremote.model.AttributeValueChange} messages on the
+ * The protocol implementation can receive {@link AttributeState} messages on the
+ * {@link #ACTUATOR_TOPIC}. It can produce {@link AttributeState} messages on the
  * {@link #SENSOR_TOPIC}.
  * <p>
  * The linked attributes of a protocol provide the model for the protocol to perform these operations. How

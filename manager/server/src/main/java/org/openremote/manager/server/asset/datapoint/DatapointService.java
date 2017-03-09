@@ -3,7 +3,7 @@ package org.openremote.manager.server.asset.datapoint;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
-import org.openremote.model.AttributeValueChange;
+import org.openremote.model.AttributeState;
 import org.openremote.model.datapoint.AssetDatapoint;
 
 import java.util.logging.Logger;
@@ -30,8 +30,8 @@ public class DatapointService implements ContainerService {
     public void stop(Container container) throws Exception {
     }
 
-    public void storeAssetDatapoint(AttributeValueChange attributeValueChange) {
-        AssetDatapoint assetDatapoint = new AssetDatapoint(attributeValueChange);
+    public void storeAssetDatapoint(AttributeState attributeState) {
+        AssetDatapoint assetDatapoint = new AssetDatapoint(attributeState);
         // TODO
         
     }

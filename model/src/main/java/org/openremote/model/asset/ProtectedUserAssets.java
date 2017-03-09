@@ -28,7 +28,7 @@ import static org.openremote.model.Constants.NAMESPACE;
  * <p>
  * If a user has linked assets, it's a <em>restricted</em> user. Such a user can only
  * access its assigned assets and their protected data, and it has a limited
- * set of client operations available, see {@link AssetAttributeMeta.Access}:
+ * set of client operations available, see {@link AssetMeta.Access}:
  * <ul>
  * <li>
  * When a restricted user client loads asset data, only protected asset details are included.

@@ -27,7 +27,7 @@ import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.server.asset.AssetService;
 import org.openremote.manager.server.asset.datapoint.DatapointService;
-import org.openremote.model.AttributeValueChange;
+import org.openremote.model.AttributeState;
 import org.openremote.model.asset.*;
 
 import java.util.Collection;
@@ -97,20 +97,20 @@ public class AgentService extends RouteBuilder implements ContainerService {
 
         // Update thing asset when attribute change value messages are published on the sensor topic
         from(SENSOR_TOPIC)
-            .filter(body().isInstanceOf(AttributeValueChange.class))
+            .filter(body().isInstanceOf(AttributeState.class))
             .process(exchange -> {
-                AttributeValueChange attributeValueChange =
-                    exchange.getIn().getBody(AttributeValueChange.class);
+                AttributeState attributeState =
+                    exchange.getIn().getBody(AttributeState.class);
                 // Note that this is a _direct_ update of the attribute value in the database, it will
                 // not trigger a persistence event - we don't want to redeploy a thing just because an
                 // attribute value changed!
-                boolean success = assetService.updateThingAttributeValue(attributeValueChange);
+                boolean success = assetService.updateThingAttributeValue(attributeState);
                 // TODO If success then... notify asset listener clients? If not, then handle error?
                 if (success) {
-                    LOG.fine("Asset database update successful: " + attributeValueChange);
-                    datapointService.storeAssetDatapoint(attributeValueChange);
+                    LOG.fine("Asset database update successful: " + attributeState);
+                    datapointService.storeAssetDatapoint(attributeState);
                 } else {
-                    throw new RuntimeException("Asset database update failed for: " + attributeValueChange);
+                    throw new RuntimeException("Asset database update failed for: " + attributeState);
                 }
 
             });

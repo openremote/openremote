@@ -20,10 +20,15 @@
 package org.openremote.model;
 
 import elemental.json.*;
-import org.openremote.model.asset.AssetAttributeMeta;
+import org.openremote.model.asset.AssetMeta;
 
 import java.util.NoSuchElementException;
 
+/**
+ * Convenience overlay API for {@link JsonObject}.
+ * <p>
+ * Modifies the given or an empty object.
+ */
 public class Attribute extends AbstractValueHolder<Attribute> {
 
     protected String name;
@@ -52,6 +57,13 @@ public class Attribute extends AbstractValueHolder<Attribute> {
         setValue(value);
     }
 
+    @Override
+    protected boolean isValidValue(JsonValue value) {
+        return getType() != null
+            ? getType().isValid(value)
+            : super.isValidValue(value);
+    }
+
     public void setName(String name) {
         this.name = name;
     }
@@ -78,40 +90,40 @@ public class Attribute extends AbstractValueHolder<Attribute> {
         return this;
     }
 
-    public boolean hasMetadata() {
-        return jsonObject.hasKey("metadata");
+    public boolean hasMeta() {
+        return jsonObject.hasKey("meta");
     }
 
-    public Metadata getMetadata() {
-        return hasMetadata() ? new Metadata(jsonObject.getArray("metadata")) : null;
+    public Meta getMeta() {
+        return hasMeta() ? new Meta(jsonObject.getArray("meta")) : null;
     }
 
-    public Attribute setMetadata(Metadata metadata) {
-        if (metadata != null) {
-            jsonObject.put("metadata", metadata.getJsonArray());
-        } else if (jsonObject.hasKey("metadata")) {
-            jsonObject.remove("metadata");
+    public Attribute setMeta(Meta meta) {
+        if (meta != null) {
+            jsonObject.put("meta", meta.getJsonArray());
+        } else if (jsonObject.hasKey("meta")) {
+            jsonObject.remove("meta");
         }
         return this;
     }
 
-    public boolean hasMetaItem(AssetAttributeMeta assetAttributeMeta) {
-        return hasMetaItem(assetAttributeMeta.getName());
+    public boolean hasMetaItem(AssetMeta assetMeta) {
+        return hasMetaItem(assetMeta.getName());
     }
 
     public boolean hasMetaItem(String name) {
-        return hasMetadata() && getMetadata().contains(name);
+        return hasMeta() && getMeta().contains(name);
     }
 
-    public MetadataItem firstMetaItem(AssetAttributeMeta assetAttributeMeta) {
-        return firstMetaItem(assetAttributeMeta.getName());
+    public MetaItem firstMetaItem(AssetMeta assetMeta) {
+        return firstMetaItem(assetMeta.getName());
     }
 
-    public MetadataItem firstMetaItem(String name) {
-        return hasMetaItem(name) ? getMetadata().first(name) : null;
+    public MetaItem firstMetaItem(String name) {
+        return hasMetaItem(name) ? getMeta().first(name) : null;
     }
 
-    public MetadataItem firstMetaItemOrThrow(String name) throws NoSuchElementException {
+    public MetaItem firstMetaItemOrThrow(String name) throws NoSuchElementException {
         if (!hasMetaItem(name))
             throw new NoSuchElementException("Missing item: " + name);
         return firstMetaItem(name);

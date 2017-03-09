@@ -17,19 +17,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.ngsi;
+package org.openremote.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import elemental.json.JsonValue;
 
-public class Error {
-    @JsonProperty(value = "errorCode")
-    protected StatusCode statusCode;
+/**
+ * The desired or current or past state of an {@link AttributeRef}.
+ */
+public class AttributeState {
 
-    public Error(@JsonProperty("errorCode") StatusCode statusCode) {
-        this.statusCode = statusCode;
+    final protected AttributeRef attributeRef;
+    final protected JsonValue value;
+
+    public AttributeState(AttributeRef attributeRef, JsonValue value) {
+        this.attributeRef = attributeRef;
+        this.value = value;
     }
 
-    public StatusCode getStatusCode() {
-        return statusCode;
+    public AttributeRef getAttributeRef() {
+        return attributeRef;
+    }
+
+    public JsonValue getValue() {
+        return value;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "attributeRef=" + attributeRef +
+            ", value=" + (value != null ? value.asString() : "null") +
+            '}';
     }
 }

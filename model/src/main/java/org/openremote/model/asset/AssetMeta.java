@@ -22,23 +22,21 @@ package org.openremote.model.asset;
 import elemental.json.JsonType;
 import elemental.json.JsonValue;
 import org.openremote.model.Attribute;
-import org.openremote.model.Constants;
-import org.openremote.model.MetadataItem;
+import org.openremote.model.MetaItem;
+import org.openremote.model.units.AttributeUnits;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
-import static org.openremote.model.Constants.NAMESPACE;
 
 /**
  * Asset attribute meta item name is an arbitrary string. It should be URI. This enum contains
- * the well-known URIs for functionality we want to depend on in our platform.
+ * the well-known URIs for functionality we can depend on in our platform.
  * <p>
  * TODO https://people.eecs.berkeley.edu/~arka/papers/buildsys2015_metadatasurvey.pdf
  */
-public enum AssetAttributeMeta {
+public enum AssetMeta {
 
     /**
      * Links the attribute to an agent, connecting it to a sensor and/or actuator.
@@ -102,7 +100,7 @@ public enum AssetAttributeMeta {
 
     /**
      * Indicates the units (data sub-type) of the attribute value (should be a valid
-     * {@link org.openremote.model.AttributeUnits} string representation)
+     * {@link AttributeUnits} string representation).
      */
     UNITS(ASSET_META_NAMESPACE + ":units", new Access(true, false, true), JsonType.STRING),
 
@@ -115,7 +113,7 @@ public enum AssetAttributeMeta {
     final protected Access access;
     final protected JsonType valueType;
 
-    AssetAttributeMeta(String name, Access access, JsonType valueType) {
+    AssetMeta(String name, Access access, JsonType valueType) {
         this.name = name;
         this.access = access;
         this.valueType = valueType;
@@ -133,38 +131,38 @@ public enum AssetAttributeMeta {
         return valueType;
     }
 
-    public static AssetAttributeMeta[] editable() {
-        List<AssetAttributeMeta> list = new ArrayList<>();
-        for (AssetAttributeMeta meta : values()) {
+    public static AssetMeta[] editable() {
+        List<AssetMeta> list = new ArrayList<>();
+        for (AssetMeta meta : values()) {
             if (meta.getAccess().editable)
                 list.add(meta);
         }
-        return list.toArray(new AssetAttributeMeta[list.size()]);
+        return list.toArray(new AssetMeta[list.size()]);
     }
 
     public static Boolean isEditable(String name) {
-        for (AssetAttributeMeta assetAttributeMeta : editable()) {
-            if (assetAttributeMeta.getName().equals(name))
-                return assetAttributeMeta.getAccess().editable;
+        for (AssetMeta assetMeta : editable()) {
+            if (assetMeta.getName().equals(name))
+                return assetMeta.getAccess().editable;
         }
         return null;
     }
 
-    public static AssetAttributeMeta byName(String name) {
-        for (AssetAttributeMeta assetAttributeMeta : values()) {
-            if (assetAttributeMeta.getName().equals(name))
-                return assetAttributeMeta;
+    public static AssetMeta byName(String name) {
+        for (AssetMeta assetMeta : values()) {
+            if (assetMeta.getName().equals(name))
+                return assetMeta;
         }
         return null;
     }
 
-    public static MetadataItem createMetadataItem(AssetAttributeMeta name, JsonValue value) {
-        return new MetadataItem(name.getName(), value);
+    public static MetaItem createMetaItem(AssetMeta name, JsonValue value) {
+        return new MetaItem(name.getName(), value);
     }
 
-    public static MetadataItem getFirst(Attribute attribute, AssetAttributeMeta meta) {
+    public static MetaItem getFirst(Attribute attribute, AssetMeta meta) {
         return attribute.hasMetaItem(meta.getName())
-            ? attribute.getMetadata().first(meta.getName())
+            ? attribute.getMeta().first(meta.getName())
             : null;
     }
 
