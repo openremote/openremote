@@ -21,19 +21,22 @@ package org.openremote.manager.server.attribute;
 
 import elemental.json.JsonValue;
 import org.openremote.model.Attribute;
+import org.openremote.model.AttributeRef;
 
 public class AttributeStateChange {
     protected Object attributeParent;
     protected Attribute attribute;
+    protected AttributeRef attributeRef;
     protected JsonValue oldValue;
     protected JsonValue newValue;
     protected boolean rewind;
     protected boolean handled;
     protected boolean error;
 
-    public AttributeStateChange(Object attributeParent, Attribute attribute, JsonValue oldValue, JsonValue newValue) {
+    public AttributeStateChange(Object attributeParent, Attribute attribute, AttributeRef attributeRef, JsonValue oldValue, JsonValue newValue) {
         this.attributeParent = attributeParent;
         this.attribute = attribute;
+        this.attributeRef = attributeRef;
         this.oldValue = oldValue;
         this.newValue = newValue;
     }
@@ -47,6 +50,10 @@ public class AttributeStateChange {
 
     public Object getAttributeParent() {
         return attributeParent;
+    }
+
+    public AttributeRef getAttributeRef() {
+        return attributeRef;
     }
 
     public JsonValue getOldValue() {
@@ -93,5 +100,42 @@ public class AttributeStateChange {
      */
     public void setHandled(boolean handled) {
         this.handled = handled;
+    }
+
+    /**
+     * Two attribute state changes are considered equal if their attribute ref, old value
+     * and new value are equal
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        }
+
+        if (o.getClass() != this.getClass()) {
+            return false;
+        }
+
+        AttributeStateChange that = (AttributeStateChange) o;
+
+        return that.getAttributeRef().equals(this.getAttributeRef()) &&
+                that.getOldValue().equals(this.getOldValue()) &&
+                that.getNewValue().equals(this.getNewValue());
+    }
+
+    @Override
+    public int hashCode() {
+        return attributeRef.hashCode() + (oldValue != null ? oldValue.hashCode() : 0) + (newValue != null ? newValue.hashCode() : 0);
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+                "attribute=" + attribute +
+                ", oldValue=" + (oldValue != null ? oldValue.asString() : "null") +
+                ", newValue=" + (newValue != null ? newValue.asString() : "null") +
+                ", handled=" + handled +
+                ", error=" + error +
+                '}';
     }
 }

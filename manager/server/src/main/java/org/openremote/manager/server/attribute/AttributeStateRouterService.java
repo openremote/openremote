@@ -105,10 +105,12 @@ public class AttributeStateRouterService extends RouteBuilder implements Contain
                     AttributeStateChange stateChange = new AttributeStateChange(
                             thing,
                             thingAttribute,
+                            attributeState.getAttributeRef(),
                             thingAttribute.getValue_TODO_BUG_IN_JAVASCRIPT(),
                             attributeState.getValue());
 
                     for (int i=0; i<consumers.size(); i++) {
+                        boolean error = false;
                         AttributeStateConsumerResult result = consumers.get(i).consumeAttributeStateChange(stateChange);
                         if(result == null) {
                             // Assume ok if no result returned
@@ -116,6 +118,9 @@ public class AttributeStateRouterService extends RouteBuilder implements Contain
                         }
                         switch (result) {
                             case OK:
+                                // Check error flag (just in case consumer swallowed any exceptions)
+                                error = stateChange.isError();
+
                                 // Check handled status of change
                                 if (stateChange.isHandled()) {
                                     // Don't pass this change to any more consumers
@@ -126,7 +131,11 @@ public class AttributeStateRouterService extends RouteBuilder implements Contain
                             default:
                                 // TODO: maybe rewind the state change and run through processed consumers in reverse order?
                                 LOG.info("Attribute state change consumer returned ERROR result so abandoning further processing of state change");
-                                throw new RuntimeException("Attribute state change consumer return ERROR result");
+                                error = true;
+                        }
+
+                        if (error) {
+                            throw new RuntimeException("Attribute state change consumer return ERROR result");
                         }
                     }
                 });
