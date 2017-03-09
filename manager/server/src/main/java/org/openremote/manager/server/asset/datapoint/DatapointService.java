@@ -3,7 +3,10 @@ package org.openremote.manager.server.asset.datapoint;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
-import org.openremote.model.AttributeState;
+import org.openremote.manager.server.asset.ServerAsset;
+import org.openremote.manager.server.attribute.AttributeStateChange;
+import org.openremote.manager.server.attribute.AttributeStateConsumerResult;
+import org.openremote.manager.server.attribute.AttributeStateChangeConsumer;
 import org.openremote.model.datapoint.AssetDatapoint;
 
 import java.util.logging.Logger;
@@ -11,7 +14,7 @@ import java.util.logging.Logger;
 /**
  * Store and retrieve datapoints.
  */
-public class DatapointService implements ContainerService {
+public class DatapointService implements ContainerService, AttributeStateChangeConsumer {
 
     private static final Logger LOG = Logger.getLogger(DatapointService.class.getName());
 
@@ -30,10 +33,11 @@ public class DatapointService implements ContainerService {
     public void stop(Container container) throws Exception {
     }
 
-    public void storeAssetDatapoint(AttributeState attributeState) {
-        AssetDatapoint assetDatapoint = new AssetDatapoint(attributeState);
+    @Override
+    public AttributeStateConsumerResult consumeAttributeStateChange(AttributeStateChange attributeStateChange) {
+        ServerAsset asset = (ServerAsset)attributeStateChange.getAttributeParent();
+        AssetDatapoint assetDatapoint = new AssetDatapoint(asset.getId(), attributeStateChange.getAttribute().getName(), attributeStateChange.getNewValue());
         // TODO
-        
+        return AttributeStateConsumerResult.OK;
     }
-
 }

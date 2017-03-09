@@ -6,6 +6,8 @@ import org.openremote.container.ContainerService
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.message.MessageBrokerSetupService
 import org.openremote.container.persistence.PersistenceService
+import org.openremote.manager.server.attribute.AttributeStateRouterService
+import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.agent.AgentService
 import org.openremote.manager.server.asset.AssetService
@@ -29,6 +31,8 @@ trait ManagerContainerTrait extends ContainerTrait {
                 new AssetService(),
                 new DatapointService(),
                 new AgentService(),
+                new RulesService(),
+                new AttributeStateRouterService(),
                 *Lists.newArrayList(ServiceLoader.load(Protocol.class)),
                 new MapService(),
                 new MessageBrokerService(),

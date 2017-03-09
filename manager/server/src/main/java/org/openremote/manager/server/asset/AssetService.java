@@ -29,13 +29,14 @@ import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.agent.AgentAttributes;
-import org.openremote.manager.server.agent.ThingAttributes;
+import org.openremote.manager.server.attribute.AttributeStateChange;
+import org.openremote.manager.server.attribute.AttributeStateConsumerResult;
+import org.openremote.manager.server.attribute.AttributeStateChangeConsumer;
 import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.asset.SubscribeAssetModified;
 import org.openremote.manager.shared.asset.UnsubscribeAssetModified;
 import org.openremote.model.AttributeRef;
-import org.openremote.model.AttributeState;
 import org.openremote.model.Function;
 import org.openremote.model.asset.*;
 import org.postgresql.util.PGobject;
@@ -55,7 +56,7 @@ import static org.openremote.manager.server.event.EventPredicates.isEventType;
 import static org.openremote.model.asset.AssetType.AGENT;
 import static org.openremote.model.asset.AssetType.THING;
 
-public class AssetService extends RouteBuilder implements ContainerService {
+public class AssetService extends RouteBuilder implements ContainerService, AttributeStateChangeConsumer {
 
     private static final Logger LOG = Logger.getLogger(AssetService.class.getName());
 
@@ -362,36 +363,24 @@ public class AssetService extends RouteBuilder implements ContainerService {
         });
     }
 
-    public boolean updateThingAttributeValue(AttributeState attributeState) {
+    @Override
+    public AttributeStateConsumerResult consumeAttributeStateChange(AttributeStateChange attributeStateChange) {
         // TODO: More fine-grained return to distinguish failures ("wrong value type" is not the same as "not found")
 
-        AttributeRef attributeRef = attributeState.getAttributeRef();
-        ServerAsset thing = find(attributeRef.getEntityId());
-        if (thing == null) {
-            LOG.fine("Ignoring attribute update for unknown asset: " + attributeState);
-            return false;
-        }
+        ServerAsset thing = (ServerAsset)attributeStateChange.getAttributeParent();
+
+        // TODO: Not sure why asset service is handling things as they're children of agent so should be handled by agent service
         if (thing.getWellKnownType() != THING) {
-            LOG.fine("Ignoring attribute update '" + attributeState + "' for non-thing asset: " + thing);
-            return false;
-        }
-        ThingAttributes thingAttributes = new ThingAttributes(thing);
-        ThingAttribute thingAttribute = thingAttributes.getLinkedAttribute(
-            agentLinkResolver, attributeRef.getAttributeName()
-        );
-        if (thingAttribute == null) {
-            LOG.fine("Ignoring attribute update '" + attributeState + "' for unknown/unlinked attribute: " + thing);
-            return false;
+            LOG.fine("Ignoring attribute update '" + attributeStateChange + "' for non-thing asset: " + thing);
+            return AttributeStateConsumerResult.UNEXPECTED_ASSET_TYPE;
         }
 
-        if (thingAttribute.getType().getJsonType() != attributeState.getValue().getType()) {
-            LOG.fine("Ignoring attribute update '" + attributeState + "', wrong value type '" + attributeState.getValue().getType() + "': " + thing);
-            return false;
-        }
-        LOG.fine("Applying '" + attributeState + "' on: " + thing);
-        thingAttribute.setValue(attributeState.getValue());
+        ThingAttribute thingAttribute = (ThingAttribute)attributeStateChange.getAttribute();
+        LOG.fine("Applying '" + attributeStateChange + "' on: " + thing);
+        thingAttribute.setValue(attributeStateChange.getNewValue());
 
-        return updateAttributeValue(thing.getId(), thingAttribute.getName(), thingAttribute.getValue_TODO_BUG_IN_JAVASCRIPT());
+        boolean success = updateAttributeValue(thing.getId(), thingAttribute.getName(), thingAttribute.getValue_TODO_BUG_IN_JAVASCRIPT());
+        return success ? AttributeStateConsumerResult.OK : AttributeStateConsumerResult.UNKOWN_ERROR;
     }
 
     protected ServerAsset loadAsset(EntityManager em, String assetId) {
