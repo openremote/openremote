@@ -13,15 +13,10 @@ dependencies {
 
     compile "com.google.gwt:gwt-user:$gwtVersion"
     compile("com.google.gwt.inject:gin:$ginVersion")
-
-    // TODO https://github.com/nmorel/gwt-jackson/issues/106
-    compile files(['lib/gwt-jackson-0.14.2-SNAPSHOT.jar'])
-    //compile "com.github.nmorel.gwtjackson:gwt-jackson:$gwtJacksonVersion"
+    compile "com.github.nmorel.gwtjackson:gwt-jackson:$gwtJacksonVersion"
 
     // This is not on regular classpath, only used when compiling GWT/running codeserver
     gwtDev "com.google.gwt:gwt-dev:$gwtVersion"
-    // TODO https://github.com/nmorel/gwt-jackson/issues/106
-    gwtDev files(['lib/javapoet-1.0.0.jar', 'lib/jackson-annotations-2.8.6-sources.jar'])
 
 }
 
