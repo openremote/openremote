@@ -22,7 +22,9 @@ package org.openremote.manager.client.interop.jackson;
 import com.github.nmorel.gwtjackson.client.JsonDeserializationContext;
 import com.github.nmorel.gwtjackson.client.JsonDeserializer;
 import com.github.nmorel.gwtjackson.client.JsonDeserializerParameters;
-import com.github.nmorel.gwtjackson.client.stream.JsonReader;
+import com.google.gwt.core.client.JsArrayInteger;
+import elemental.json.Json;
+import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 
 /**
@@ -31,9 +33,37 @@ import elemental.json.JsonValue;
 public class ElementalJsonDeserializer extends JsonDeserializer<JsonValue> {
 
     @Override
-    protected JsonValue doDeserialize(JsonReader reader, JsonDeserializationContext ctx, JsonDeserializerParameters params) {
+    protected JsonValue doDeserialize(com.github.nmorel.gwtjackson.client.stream.JsonReader reader, JsonDeserializationContext ctx, JsonDeserializerParameters params) {
+        //  TODO: Reinstate reader.nextJavaScriptObject once GWT Jackson bug is resolved https://github.com/nmorel/gwt-jackson/issues/106
         if (reader.hasNext()) {
-            return (JsonValue) reader.nextJavaScriptObject(true);
+            String jsonStr = reader.getInput();
+
+            // Determine where in the string the token is (pos is private unfortunately)
+            int lineNumber = reader.getLineNumber();
+            int columnNumber = reader.getColumnNumber();
+            int startPos = 0;
+            while (lineNumber > 1) {
+                startPos = jsonStr.indexOf('\n', startPos+1);
+                lineNumber--;
+            }
+            startPos += columnNumber-1;
+
+            // Use the reader to find the end of the current token
+            reader.skipValue();
+            lineNumber = reader.getLineNumber();
+            columnNumber = reader.getColumnNumber();
+            int endPos = 0;
+            while (lineNumber > 1) {
+                endPos = jsonStr.indexOf('\n', endPos+1);
+                lineNumber--;
+            }
+            endPos += columnNumber;
+
+            jsonStr = jsonStr.substring(startPos, endPos);
+
+            return Json.instance().parse(jsonStr);
+
+//            return reader.nextJavaScriptObject(ctx.isUseSafeEval()).cast();
         }
         return null;
     }
