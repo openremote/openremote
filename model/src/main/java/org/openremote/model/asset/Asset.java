@@ -195,7 +195,7 @@ public class Asset implements IdentifiableEntity {
     protected String name;
 
     @NotNull
-    @Column(name = "ASSET_TYPE", nullable = false)
+    @Column(name = "ASSET_TYPE", nullable = false, updatable = false)
     protected String type;
 
     @Column(name = "PARENT_ID")

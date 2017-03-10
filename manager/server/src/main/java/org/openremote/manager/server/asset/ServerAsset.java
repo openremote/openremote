@@ -39,17 +39,22 @@ public class ServerAsset extends Asset {
      * Easy conversion between types, we copy all properties (not a deep copy!)
      */
     public static ServerAsset map(Asset asset, ServerAsset serverAsset) {
-        return map(asset, serverAsset, null, null, null);
+        return map(asset, serverAsset, null, null, null, null);
     }
 
     public static ServerAsset map(Asset asset, ServerAsset serverAsset,
                                   String overrideRealm,
                                   String overrideParentId,
-                                  double[] overrideLocation) {
+                                  String overrideType,
+                                  Double[] overrideLocation) {
         serverAsset.setVersion(asset.getVersion());
         serverAsset.setRealm(overrideRealm != null ? overrideRealm : asset.getRealm());
         serverAsset.setName(asset.getName());
-        serverAsset.setType(asset.getType());
+        if (overrideType != null) {
+            serverAsset.setType(overrideType);
+        } else {
+            serverAsset.setType(asset.getType());
+        }
 
         serverAsset.setParentId(overrideParentId != null ? overrideParentId : asset.getParentId());
 

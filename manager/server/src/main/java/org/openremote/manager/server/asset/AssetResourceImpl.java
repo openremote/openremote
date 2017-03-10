@@ -135,11 +135,8 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
-            ServerAsset updatedAsset = ServerAsset.map(asset, serverAsset);
-
-            // TODO we should check if the realm actually exists, but we can't do
-            // that without giving the manager permanent admin access on Keycloak
-            // checkRealmExists(updatedAsset.getRealm());
+            // Map into server-side asset, do not allow to change the type
+            ServerAsset updatedAsset = ServerAsset.map(asset, serverAsset, null, null, serverAsset.getType(), null);
 
             // Check new realm
             if (!isRealmAccessibleByUser(updatedAsset.getRealm())) {
