@@ -5,7 +5,7 @@ import elemental.json.JsonObject
 import elemental.json.JsonType
 import org.openremote.agent3.protocol.simulator.SimulatorProtocol
 import org.openremote.container.message.MessageBrokerService
-import org.openremote.manager.server.asset.AssetService
+import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.model.AttributeRef
@@ -30,7 +30,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         def container = startContainer(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def simulatorProtocol = container.getService(SimulatorProtocol.class)
-        def assetService = container.getService(AssetService.class)
+        def assetService = container.getService(AssetStorageService.class)
 
         then: "the simulator elements should have the initial state"
         conditions.eventually {
@@ -82,17 +82,13 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         when: "a simulated sensor changes its value"
         conditions = new PollingConditions(timeout: 3, initialDelay: 2)
-        simulatorProtocol.putState(
-                new AttributeRef(managerDemoSetup.thingId, "light1Dimmer"),
-                Json.create(77),
-                true
-        )
+        simulatorProtocol.putState(managerDemoSetup.thingId, "light1Dimmer", Json.create(77),)
 
         then: "the thing attribute value should be updated"
         conditions.eventually {
             def thing = assetService.find(managerDemoSetup.thingId)
             def attributes = new Attributes(thing.getAttributes())
-            assert attributes.get("light1Dimmer").getValue_TODO_BUG_IN_JAVASCRIPT().getType() == JsonType.NUMBER
+            assert attributes.get("light1Dimmer").getValue().getType() == JsonType.NUMBER
             assert attributes.get("light1Dimmer").getValueAsInteger() == 77
         }
 

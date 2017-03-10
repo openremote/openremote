@@ -67,7 +67,7 @@ public class ProtectedAssetInfo extends AssetInfo {
                 AssetMeta wellKnownMeta = AssetMeta.byName(metaItem.getName());
                 if (wellKnownMeta != null && wellKnownMeta.getAccess().protectedRead) {
                     protectedMeta.add(
-                        new MetaItem(metaItem.getName(), metaItem.getValue_TODO_BUG_IN_JAVASCRIPT())
+                        new MetaItem(metaItem.getName(), metaItem.getValue())
                     );
                 }
             }

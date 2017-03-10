@@ -39,15 +39,15 @@ public abstract class AbstractValueHolder<T extends AbstractValueHolder> {
     }
 
     public String getValueAsString() {
-        return hasValue() ? getValue_TODO_BUG_IN_JAVASCRIPT().asString() : null;
+        return hasValue() ? getValue().asString() : null;
     }
 
     public Integer getValueAsInteger() {
-        return hasValue() ? Integer.valueOf(getValue_TODO_BUG_IN_JAVASCRIPT().asString()) : null;
+        return hasValue() ? Integer.valueOf(getValue().asString()) : null;
     }
 
     public Double getValueAsDecimal() {
-        return hasValue() ? getValue_TODO_BUG_IN_JAVASCRIPT().asNumber() : null;
+        return hasValue() ? getValue().asNumber() : null;
     }
 
     public Boolean getValueAsBoolean() {
@@ -105,12 +105,15 @@ public abstract class AbstractValueHolder<T extends AbstractValueHolder> {
      * <p>
      * TODO https://github.com/gwtproject/gwt/issues/9484
      */
-    public JsonValue getValue_TODO_BUG_IN_JAVASCRIPT() {
+    public JsonValue getValue() {
         return hasValue() ? jsonObject.get("value") : Json.createNull();
     }
 
+    /**
+     * @throws IllegalArgumentException if the given value is invalid and failed constraint checking.
+     */
     @SuppressWarnings("unchecked")
-    public T setValue(JsonValue value) {
+    public T setValue(JsonValue value) throws IllegalArgumentException {
 
         if (value == null) {
             value = Json.createNull();

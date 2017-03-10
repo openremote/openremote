@@ -29,14 +29,13 @@ import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.agent.AgentAttributes;
-import org.openremote.manager.server.attribute.AttributeStateChange;
-import org.openremote.manager.server.attribute.AttributeStateConsumerResult;
-import org.openremote.manager.server.attribute.AttributeStateChangeConsumer;
 import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.asset.SubscribeAssetModified;
 import org.openremote.manager.shared.asset.UnsubscribeAssetModified;
 import org.openremote.model.AttributeRef;
+import org.openremote.model.AttributeState;
+import org.openremote.model.Consumer;
 import org.openremote.model.Function;
 import org.openremote.model.asset.*;
 import org.postgresql.util.PGobject;
@@ -54,11 +53,12 @@ import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
 import static org.openremote.manager.server.event.EventPredicates.isEventType;
 import static org.openremote.model.asset.AssetType.AGENT;
-import static org.openremote.model.asset.AssetType.THING;
 
-public class AssetService extends RouteBuilder implements ContainerService, AttributeStateChangeConsumer {
+public class AssetStorageService
+    extends RouteBuilder
+    implements ContainerService, Consumer<AssetStateChange<ServerAsset>> {
 
-    private static final Logger LOG = Logger.getLogger(AssetService.class.getName());
+    private static final Logger LOG = Logger.getLogger(AssetStorageService.class.getName());
 
     protected EventService eventService;
     protected PersistenceService persistenceService;
@@ -83,7 +83,7 @@ public class AssetService extends RouteBuilder implements ContainerService, Attr
         assetListenerSubscriptions = new AssetListenerSubscriptions(eventService) {
             @Override
             protected Asset getAsset(String assetId) {
-                return AssetService.this.find(assetId);
+                return AssetStorageService.this.find(assetId);
             }
         };
 
@@ -364,23 +364,10 @@ public class AssetService extends RouteBuilder implements ContainerService, Attr
     }
 
     @Override
-    public AttributeStateConsumerResult consumeAttributeStateChange(AttributeStateChange attributeStateChange) {
-        // TODO: More fine-grained return to distinguish failures ("wrong value type" is not the same as "not found")
-
-        ServerAsset thing = (ServerAsset)attributeStateChange.getAttributeParent();
-
-        // TODO: Not sure why asset service is handling things as they're children of agent so should be handled by agent service
-        if (thing.getWellKnownType() != THING) {
-            LOG.fine("Ignoring attribute update '" + attributeStateChange + "' for non-thing asset: " + thing);
-            return AttributeStateConsumerResult.UNEXPECTED_ASSET_TYPE;
-        }
-
-        ThingAttribute thingAttribute = (ThingAttribute)attributeStateChange.getAttribute();
-        LOG.fine("Applying '" + attributeStateChange + "' on: " + thing);
-        thingAttribute.setValue(attributeStateChange.getNewValue());
-
-        boolean success = updateAttributeValue(thing.getId(), thingAttribute.getName(), thingAttribute.getValue_TODO_BUG_IN_JAVASCRIPT());
-        return success ? AttributeStateConsumerResult.OK : AttributeStateConsumerResult.UNKOWN_ERROR;
+    public void accept(AssetStateChange<ServerAsset> stateChange) {
+        if (!storeAttributeState(stateChange.getNewState())) {
+            throw new RuntimeException("Database update failed, no rows updated");
+        };
     }
 
     protected ServerAsset loadAsset(EntityManager em, String assetId) {
@@ -422,9 +409,14 @@ public class AssetService extends RouteBuilder implements ContainerService, Attr
         });
     }
 
-    protected boolean updateAttributeValue(String assetId, String attributeName, JsonValue value) {
+    protected boolean storeAttributeState(AttributeState attributeState) {
         return persistenceService.doReturningTransaction(entityManager ->
             entityManager.unwrap(Session.class).doReturningWork(connection -> {
+
+                String assetId = attributeState.getAttributeRef().getEntityId();
+                String attributeName = attributeState.getAttributeRef().getAttributeName();
+                JsonValue value = attributeState.getValue();
+
                 String update =
                     "UPDATE ASSET" +
                         " SET ATTRIBUTES = jsonb_set(ATTRIBUTES, ?, ?, TRUE)" +
@@ -455,6 +447,7 @@ public class AssetService extends RouteBuilder implements ContainerService, Attr
     }
 
     public String toString() {
-        return getClass().getName() + "@" + Integer.toHexString(hashCode());
+        return getClass().getSimpleName() + "{" +
+            '}';
     }
 }

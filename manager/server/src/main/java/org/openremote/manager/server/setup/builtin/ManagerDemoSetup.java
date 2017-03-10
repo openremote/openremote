@@ -93,21 +93,21 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 )
         );
         smartOffice.setAttributes(smartOfficeAttributes.getJsonObject());
-        smartOffice = assetService.merge(smartOffice);
+        smartOffice = assetStorageService.merge(smartOffice);
         smartOfficeId = smartOffice.getId();
 
         ServerAsset groundFloor = new ServerAsset(smartOffice);
         groundFloor.setName("Ground Floor");
         groundFloor.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         groundFloor.setType(AssetType.FLOOR);
-        groundFloor = assetService.merge(groundFloor);
+        groundFloor = assetStorageService.merge(groundFloor);
         groundFloorId = groundFloor.getId();
 
         ServerAsset lobby = new ServerAsset(groundFloor);
         lobby.setName("Lobby");
         lobby.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         lobby.setType(AssetType.ROOM);
-        lobby = assetService.merge(lobby);
+        lobby = assetStorageService.merge(lobby);
         lobbyId = lobby.getId();
 
         ServerAsset agent = new ServerAsset(lobby);
@@ -119,7 +119,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         ProtocolConfiguration protocolConfigSimulator123 = new ProtocolConfiguration("simulator123", SimulatorProtocol.PROTOCOL_NAME);
         agentAttributes.put(protocolConfigSimulator123);
         agent.setAttributes(agentAttributes.getJsonObject());
-        agent = assetService.merge(agent);
+        agent = assetStorageService.merge(agent);
         agentId = agent.getId();
 
         ServerAsset thing = new ServerAsset(agent);
@@ -209,7 +209,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 )
         );
         thing.setAttributes(thingAttributes.getJsonObject());
-        thing = assetService.merge(thing);
+        thing = assetStorageService.merge(thing);
         thingId = thing.getId();
 
         // ################################ Demo assets for 'customerA' realm ###################################
@@ -219,21 +219,21 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         smartHome.setName("Smart Home");
         smartHome.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
         smartHome.setType(BUILDING);
-        smartHome = assetService.merge(smartHome);
+        smartHome = assetStorageService.merge(smartHome);
         smartHomeId = smartHome.getId();
 
         ServerAsset apartment1 = new ServerAsset(smartHome);
         apartment1.setName("Apartment 1");
         apartment1.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
         apartment1.setType(RESIDENCE);
-        apartment1 = assetService.merge(apartment1);
+        apartment1 = assetStorageService.merge(apartment1);
         apartment1Id = apartment1.getId();
 
         ServerAsset apartment1Livingroom = new ServerAsset(apartment1);
         apartment1Livingroom.setName("Livingroom");
         apartment1Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
         apartment1Livingroom.setType(ROOM);
-        apartment1Livingroom = assetService.merge(apartment1Livingroom);
+        apartment1Livingroom = assetStorageService.merge(apartment1Livingroom);
         apartment1LivingroomId = apartment1Livingroom.getId();
 
         ServerAsset apartment1LivingroomThermostat = new ServerAsset(apartment1Livingroom);
@@ -271,35 +271,35 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             new Attribute("somethingEmpty", DECIMAL, Json.createNull())
         );
         apartment1LivingroomThermostat.setAttributes(apartment1LivingroomThermostatAttributes.getJsonObject());
-        apartment1LivingroomThermostat = assetService.merge(apartment1LivingroomThermostat);
+        apartment1LivingroomThermostat = assetStorageService.merge(apartment1LivingroomThermostat);
         apartment1LivingroomThermostatId = apartment1LivingroomThermostat.getId();
 
         ServerAsset apartment2 = new ServerAsset(smartHome);
         apartment2.setName("Apartment 2");
         apartment2.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
         apartment2.setType(RESIDENCE);
-        apartment2 = assetService.merge(apartment2);
+        apartment2 = assetStorageService.merge(apartment2);
         apartment2Id = apartment2.getId();
 
         ServerAsset apartment2Livingroom = new ServerAsset(apartment2);
         apartment2Livingroom.setName("Livingroom");
         apartment2Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
         apartment2Livingroom.setType(ROOM);
-        apartment2Livingroom = assetService.merge(apartment2Livingroom);
+        apartment2Livingroom = assetStorageService.merge(apartment2Livingroom);
         apartment2LivingroomId = apartment2Livingroom.getId();
 
         ServerAsset apartment3 = new ServerAsset(smartHome);
         apartment3.setName("Apartment 3");
         apartment3.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
         apartment3.setType(RESIDENCE);
-        apartment3 = assetService.merge(apartment3);
+        apartment3 = assetStorageService.merge(apartment3);
         apartment3Id = apartment3.getId();
 
         ServerAsset apartment3Livingroom = new ServerAsset(apartment3);
         apartment3Livingroom.setName("Livingroom");
         apartment3Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
         apartment3Livingroom.setType(ROOM);
-        apartment3Livingroom = assetService.merge(apartment3Livingroom);
+        apartment3Livingroom = assetStorageService.merge(apartment3Livingroom);
         apartment3LivingroomId = apartment3Livingroom.getId();
     }
 }

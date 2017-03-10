@@ -92,4 +92,11 @@ public class ManagerWebService extends WebService {
     protected HttpHandler getRealmIndexHandler() {
         return managerFileHandler;
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            '}';
+    }
+
 }

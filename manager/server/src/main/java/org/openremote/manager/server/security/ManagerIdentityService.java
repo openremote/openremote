@@ -188,4 +188,9 @@ public class ManagerIdentityService extends IdentityService {
         protocolMappers.createMapper(userAssetMapper);
     }
 
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            '}';
+    }
 }

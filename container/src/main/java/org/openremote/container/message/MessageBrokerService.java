@@ -52,4 +52,10 @@ public class MessageBrokerService implements ContainerService {
     public ProducerTemplate getProducerTemplate() {
         return producerTemplate;
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            '}';
+    }
 }

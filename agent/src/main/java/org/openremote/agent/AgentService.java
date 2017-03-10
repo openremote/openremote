@@ -64,4 +64,10 @@ public class AgentService implements ContainerService {
     public AgentContext getContext() {
         return agentContext;
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            '}';
+    }
 }

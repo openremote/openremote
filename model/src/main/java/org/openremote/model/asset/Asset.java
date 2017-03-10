@@ -20,6 +20,7 @@
 package org.openremote.model.asset;
 
 import elemental.json.JsonObject;
+import org.openremote.model.IdentifiableEntity;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -56,8 +57,8 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
  * The {@link #coordinates} are a pair of LNG/LAT values with the location of the asset.
  * <p>
  * Example JSON representation of an asset tree:
- * <pre>{@code
- * {
+ * <blockquote><pre>{@code
+{
   "id": "0oI7Gf_kTh6WyRJFUTr8Lg",
   "version": 0,
   "realm": "customerA",
@@ -72,8 +73,8 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
     51.44760787406028
   ]
 }
- * }</pre>
- * <pre>{@code
+ * }</pre></blockquote>
+ * <blockquote><pre>{@code
 {
   "id": "B0x8ZOqZQHGjq_l0RxAJBA",
   "version": 0,
@@ -91,8 +92,8 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
     51.44760787406028
   ]
 }
- * }</pre>
- * <pre>{@code
+ * }</pre></blockquote>
+ * <blockquote><pre>{@code
 {
   "id": "bzlRiJmSSMCl8HIUt9-lMg",
   "version": 0,
@@ -111,8 +112,8 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
     51.44760787406028
   ]
 }
- * }</pre>
- * <pre>{@code
+ * }</pre></blockquote>
+ * <blockquote><pre>{@code
 {
   "id": "W7GV_lFeQVyHLlgHgE3dEQ",
   "version": 0,
@@ -164,12 +165,12 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
     }
   }
 }
- * }</pre>
+ * }</pre></blockquote>
  */
 // @formatter:on
 @MappedSuperclass
 @Table(name = "ASSET")
-public class Asset {
+public class Asset implements IdentifiableEntity {
 
     @Id
     @Column(name = "ID", length = 27)

@@ -41,11 +41,11 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
     private static final Logger LOG = Logger.getLogger(AssetResourceImpl.class.getName());
 
     protected final ManagerIdentityService identityService;
-    protected final AssetService assetService;
+    protected final AssetStorageService assetStorageService;
 
-    public AssetResourceImpl(ManagerIdentityService identityService, AssetService assetService) {
+    public AssetResourceImpl(ManagerIdentityService identityService, AssetStorageService assetStorageService) {
         this.identityService = identityService;
-        this.assetService = assetService;
+        this.assetStorageService = assetStorageService;
     }
 
     @Override
@@ -54,7 +54,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
             if (isSuperUser() || !isRestrictedUser()) {
                 return new ProtectedAssetInfo[0];
             }
-            return assetService.findProtectedOfUser(getAuthenticatedRealm(), getUsername());
+            return assetStorageService.findProtectedOfUser(getAuthenticatedRealm(), getUsername());
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }
@@ -74,7 +74,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
             if (!isRealmAccessibleByUser(realm) || isRestrictedUser()) {
                 return new AssetInfo[0];
             }
-            return assetService.findRoot(realm);
+            return assetStorageService.findRoot(realm);
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }
@@ -87,8 +87,8 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
                 return new AssetInfo[0];
             }
             return isSuperUser()
-                ? assetService.findChildren(parentId)
-                : assetService.findChildrenInRealm(parentId, getAuthenticatedRealm());
+                ? assetStorageService.findChildren(parentId)
+                : assetStorageService.findChildrenInRealm(parentId, getAuthenticatedRealm());
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }
@@ -100,7 +100,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
             if (isRestrictedUser()) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
-            Asset asset = assetService.find(assetId);
+            Asset asset = assetStorageService.find(assetId);
             if (asset == null)
                 throw new WebApplicationException(NOT_FOUND);
             if (!isRealmAccessibleByUser(asset.getRealm())) {
@@ -122,7 +122,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
             if (isRestrictedUser()) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
-            ServerAsset serverAsset = assetService.find(assetId);
+            ServerAsset serverAsset = assetStorageService.find(assetId);
             if (serverAsset == null)
                 throw new WebApplicationException(NOT_FOUND);
 
@@ -150,7 +150,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
-            updatedAsset = assetService.merge(updatedAsset);
+            updatedAsset = assetStorageService.merge(updatedAsset);
 
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
@@ -185,7 +185,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
                 serverAsset.setId(asset.getId());
             }
 
-            serverAsset = assetService.merge(serverAsset);
+            serverAsset = assetStorageService.merge(serverAsset);
 
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
@@ -198,7 +198,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
             if (isRestrictedUser()) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
-            ServerAsset serverAsset = assetService.find(assetId);
+            ServerAsset serverAsset = assetStorageService.find(assetId);
             if (serverAsset == null)
                 return;
             if (!isRealmAccessibleByUser(serverAsset.getRealm())) {
@@ -208,7 +208,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
                 );
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
-            if (!assetService.delete(assetId)) {
+            if (!assetStorageService.delete(assetId)) {
                 throw new WebApplicationException(BAD_REQUEST);
             }
         } catch (IllegalStateException ex) {

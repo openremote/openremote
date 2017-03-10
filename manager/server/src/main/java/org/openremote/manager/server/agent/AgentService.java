@@ -25,9 +25,8 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
-import org.openremote.manager.server.asset.AssetService;
-import org.openremote.manager.server.asset.datapoint.DatapointService;
-import org.openremote.model.AttributeState;
+import org.openremote.manager.server.asset.AssetStorageService;
+import org.openremote.manager.server.datapoint.AssetDatapointService;
 import org.openremote.model.asset.*;
 
 import java.util.Collection;
@@ -36,7 +35,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.agent3.protocol.Protocol.SENSOR_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForAssetType;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
@@ -45,30 +43,27 @@ import static org.openremote.model.asset.AssetType.THING;
 
 /**
  * Finds all {@link AssetType#AGENT} and {@link AssetType#THING} assets and starts the protocols for them.
- * <p>
- * It then listens to attribute value change messages on {@link Protocol#SENSOR_TOPIC} and stores such
- * updates in the asset database.
  */
 public class AgentService extends RouteBuilder implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
 
     protected Container container;
-    protected AssetService assetService;
-    protected DatapointService datapointService;
+    protected AssetStorageService assetStorageService;
+    protected AssetDatapointService assetDatapointService;
 
     @Override
     public void init(Container container) throws Exception {
         this.container = container;
-        assetService = container.getService(AssetService.class);
-        datapointService = container.getService(DatapointService.class);
+        assetStorageService = container.getService(AssetStorageService.class);
+        assetDatapointService = container.getService(AssetDatapointService.class);
 
         container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
     }
 
     @Override
     public void start(Container container) throws Exception {
-        Asset[] agents = assetService.findByType(AGENT.getValue());
+        Asset[] agents = assetStorageService.findByType(AGENT.getValue());
         LOG.fine("Deploy all agents in all realms: " + agents.length);
         for (Asset agent : agents) {
             deployAgent(agent, PersistenceEvent.Cause.UPDATE);
@@ -101,7 +96,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
         switch (cause) {
             case UPDATE:
                 // TODO: Find everything with this agent ID in the asset tree not just children
-                Asset[] things = assetService.findChildrenByType(agent.getId(), THING);
+                Asset[] things = assetStorageService.findChildrenByType(agent.getId(), THING);
                 for (Asset thing : things) {
                     deployThing(thing, PersistenceEvent.Cause.UPDATE);
                 }
@@ -119,7 +114,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
         // Attributes grouped by protocol name
         Map<String, List<ThingAttribute>> linkedAttributes = thingAttributes.getLinkedAttributes(
             // Linked attributes have a reference to an agent, and a protocol configuration attribute of that agent
-            assetService.getAgentLinkResolver()
+            assetStorageService.getAgentLinkResolver()
         );
 
         LOG.fine("Thing has attribute links to " + linkedAttributes.size() + " protocol(s): " + thing);
@@ -176,6 +171,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
     }
 
     public String toString() {
-        return getClass().getName() + "@" + Integer.toHexString(hashCode());
+        return getClass().getSimpleName() + "{" +
+            '}';
     }
 }

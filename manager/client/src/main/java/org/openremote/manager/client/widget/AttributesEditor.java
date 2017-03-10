@@ -526,7 +526,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
                 FormField formField = new FormField();
 
                 // Determine editor based on JSON raw value type
-                JsonValue value = item.getValue_TODO_BUG_IN_JAVASCRIPT();
+                JsonValue value = item.getValue();
                 JsonType valueType;
                 // TODO https://github.com/gwtproject/gwt/issues/9484
                 String jsType = JsUtil.typeOf(value);

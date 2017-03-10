@@ -94,4 +94,11 @@ public class EventService implements ContainerService {
     public void sendEvent(Event event) {
         sendEvent(null, event);
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            '}';
+    }
+
 }

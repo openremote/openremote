@@ -205,4 +205,10 @@ public class MapService implements ContainerService {
         }
     }
 
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "mapSettingsPath=" + mapSettingsPath +
+            '}';
+    }
 }

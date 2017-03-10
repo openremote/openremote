@@ -132,6 +132,12 @@ public abstract class AbstractProtocol implements Protocol {
         producerTemplate.sendBody(SENSOR_TOPIC, attributeState);
     }
 
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            '}';
+    }
+
     abstract protected void sendToActuator(AttributeState attributeState);
 
     abstract protected void onAttributeAdded(ThingAttribute attribute);

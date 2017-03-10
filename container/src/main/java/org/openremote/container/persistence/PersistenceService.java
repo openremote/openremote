@@ -184,4 +184,12 @@ public class PersistenceService implements ContainerService {
         );
         Persistence.generateSchema(persistenceUnitName, createSchemaProperties);
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "database=" + database +
+            ", persistenceUnitName='" + persistenceUnitName + '\'' +
+            '}';
+    }
 }

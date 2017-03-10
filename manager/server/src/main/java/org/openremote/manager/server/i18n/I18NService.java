@@ -30,4 +30,10 @@ public class I18NService implements ContainerService {
     public ResourceBundle getValidationMessages() {
         return validationMessages;
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            '}';
+    }
 }

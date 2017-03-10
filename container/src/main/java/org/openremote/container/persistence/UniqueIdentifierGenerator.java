@@ -23,6 +23,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.IdentifierGenerator;
 import org.openremote.container.util.IdentifierUtil;
+import org.openremote.model.IdentifiableEntity;
 
 import java.io.Serializable;
 

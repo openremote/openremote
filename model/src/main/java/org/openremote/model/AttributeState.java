@@ -19,6 +19,7 @@
  */
 package org.openremote.model;
 
+import elemental.json.Json;
 import elemental.json.JsonValue;
 
 /**
@@ -31,7 +32,7 @@ public class AttributeState {
 
     public AttributeState(AttributeRef attributeRef, JsonValue value) {
         this.attributeRef = attributeRef;
-        this.value = value;
+        this.value = value == null ? Json.createNull() : value;
     }
 
     public AttributeRef getAttributeRef() {
@@ -40,6 +41,23 @@ public class AttributeState {
 
     public JsonValue getValue() {
         return value;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AttributeState that = (AttributeState) o;
+
+        return getAttributeRef().equals(that.getAttributeRef()) && getValue().equals(that.getValue());
+    }
+
+    @Override
+    public int hashCode() {
+        int result = getAttributeRef().hashCode();
+        result = 31 * result + getValue().hashCode();
+        return result;
     }
 
     @Override

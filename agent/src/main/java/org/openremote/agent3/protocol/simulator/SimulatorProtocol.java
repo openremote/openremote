@@ -54,8 +54,8 @@ public class SimulatorProtocol extends AbstractProtocol {
     protected void onAttributeAdded(ThingAttribute attribute) {
         String elementType = attribute.firstMetaItemOrThrow(META_NAME_ELEMENT).getValueAsString();
         SimulatorElement element = createElement(elementType, attribute);
-        element.setState(attribute.getValue_TODO_BUG_IN_JAVASCRIPT());
-        LOG.fine("Putting element '" + element + "' for: " + attribute);
+        element.setState(attribute.getValue());
+        LOG.info("Putting element '" + element + "' for: " + attribute);
         elements.put(attribute.getAttributeRef(), element);
     }
 
@@ -71,33 +71,34 @@ public class SimulatorProtocol extends AbstractProtocol {
 
     @Override
     protected void sendToActuator(AttributeState attributeState) {
-        putState(attributeState.getAttributeRef(), attributeState.getValue(), false);
+        putState(attributeState, false);
     }
 
     public void putState(String entityId, String attributeName, JsonValue value) {
-        putState(new AttributeRef(entityId, attributeName), value, true);
+        putState(new AttributeState(new AttributeRef(entityId, attributeName), value), true);
     }
 
     public void putState(AttributeRef attributeRef, JsonValue value) {
-        putState(attributeRef, value, true);
+        putState(new AttributeState(attributeRef, value), true);
     }
 
     /**
      * @param isSensorUpdate <code>true</code> if an {@link AttributeState} message should be produced
      */
-    public void putState(AttributeRef attributeRef, JsonValue value, boolean isSensorUpdate) {
+    public void putState(AttributeState attributeState, boolean isSensorUpdate) {
         synchronized (elements) {
-            LOG.fine("Put state '" + attributeRef + "': " + (value != null ? value.asString() : "null"));
+            LOG.info("Put simulator state (isSensorUpdate: " + isSensorUpdate + "): " + attributeState);
 
+            AttributeRef attributeRef = attributeState.getAttributeRef();
             SimulatorElement element = elements.get(attributeRef);
             if (element == null)
                 throw new IllegalArgumentException("No simulated element for: " + attributeRef);
 
-            element.setState(value);
+            element.setState(attributeState.getValue());
 
             if (isSensorUpdate) {
-                LOG.fine("Propagating state change as sensor update: " + element);
-                onSensorUpdate(new AttributeState(attributeRef, value));
+                LOG.info("Propagating state change as sensor update: " + element);
+                onSensorUpdate(attributeState);
             }
         }
     }

@@ -97,4 +97,10 @@ public class ConnectorService implements ContainerService {
             }
         }
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            '}';
+    }
 }

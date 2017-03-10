@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
-import org.openremote.container.persistence.IdentifiableEntity;
 import org.openremote.model.asset.Asset;
 
 import javax.persistence.*;
@@ -34,7 +33,7 @@ import javax.persistence.*;
  */
 @Entity(name = "Asset")
 // TODO Write on-insert/update SQL trigger that validates the asset realm, it must match the parent's realm
-public class ServerAsset extends Asset implements IdentifiableEntity {
+public class ServerAsset extends Asset {
 
     /**
      * Easy conversion between types, we copy all properties (not a deep copy!)

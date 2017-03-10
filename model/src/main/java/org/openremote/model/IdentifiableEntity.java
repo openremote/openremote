@@ -17,13 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.container.persistence;
+package org.openremote.model;
 
 /**
- * Marker interface for automatic identifier generation
- *
- * Only set an identifier value when an instance is persisted if there was no identifier already set.
- *
+ * If used on a persistent {@link javax.persistence.Entity}, an identifier value will only be set
+ * when an instance is persisted if there was no identifier already set.
  */
 public interface IdentifiableEntity {
 
