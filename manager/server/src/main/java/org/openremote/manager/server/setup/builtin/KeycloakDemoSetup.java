@@ -37,9 +37,9 @@ import java.util.logging.Logger;
  * We have the following demo users:
  * <ul>
  * <li><code>admin</code> - The superuser in the "master" realm with all access</li>
- * <li><code>testuser1</code> - (Password: testuser1) A user in the "master" realm with read/write access to assets</li>
+ * <li><code>testuser1</code> - (Password: testuser1) A user in the "master" realm with read/write access to assets and rules</li>
  * <li><code>testuser2</code> - (Password: testuser2) A user in the "customerA" realm with only read access to assets</li>
- * <li><code>testuser3</code> - (Password: testuser3) A user in the "customerA" realm with read/write access to a restricted set of "home" assets</li>
+ * <li><code>testuser3</code> - (Password: testuser3) A user in the "customerA" realm with read/write access to a restricted set of assets and their rules</li>
  * </ul>
  */
 public class KeycloakDemoSetup extends AbstractKeycloakSetup {
@@ -87,7 +87,9 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         masterUsersResource.get(testuser1.getId()).roles().clientLevel(masterClientObjectId).add(Arrays.asList(
             masterRolesResource.get(ClientRole.READ_MAP.getValue()).toRepresentation(),
             masterRolesResource.get(ClientRole.READ_ASSETS.getValue()).toRepresentation(),
-            masterRolesResource.get(ClientRole.WRITE_ASSETS.getValue()).toRepresentation()
+            masterRolesResource.get(ClientRole.READ_RULES.getValue()).toRepresentation(),
+            masterRolesResource.get(ClientRole.WRITE_ASSETS.getValue()).toRepresentation(),
+            masterRolesResource.get(ClientRole.WRITE_RULES.getValue()).toRepresentation()
         ));
         LOG.info("Added demo user '" + testuser1.getUsername() + "' with password '" + testuser1Credentials.getValue() + "'");
 
@@ -137,7 +139,9 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         customerAUsersResource.get(testuser3.getId()).roles().clientLevel(customerAClientObjectId).add(Arrays.asList(
             customerARolesResource.get(ClientRole.READ_MAP.getValue()).toRepresentation(),
             customerARolesResource.get(ClientRole.READ_ASSETS.getValue()).toRepresentation(),
-            customerARolesResource.get(ClientRole.WRITE_ASSETS.getValue()).toRepresentation()
+            customerARolesResource.get(ClientRole.WRITE_RULES.getValue()).toRepresentation(),
+            customerARolesResource.get(ClientRole.WRITE_ASSETS.getValue()).toRepresentation(),
+            customerARolesResource.get(ClientRole.READ_RULES.getValue()).toRepresentation()
         ));
         LOG.info("Added demo user '" + testuser3.getUsername() + "' with password '" + testuser3Credentials.getValue() + "'");
     }

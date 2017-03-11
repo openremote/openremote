@@ -23,21 +23,19 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
-import org.openremote.manager.client.assets.agent.ConnectorArrayMapper;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
 import org.openremote.manager.client.widget.AttributesEditor;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetResource;
-import org.openremote.model.asset.AssetType;
-import org.openremote.manager.shared.connector.ConnectorResource;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.model.Attributes;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetInfo;
+import org.openremote.model.asset.AssetType;
 
 import javax.inject.Inject;
 import java.util.Arrays;
@@ -55,9 +53,6 @@ public class AssetActivity
     final protected MapResource mapResource;
     final protected JsonObjectMapper jsonObjectMapper;
 
-    final protected ConnectorArrayMapper connectorArrayMapper;
-    final protected ConnectorResource connectorResource;
-
     protected boolean isCreateAsset;
     protected double[] selectedCoordinates;
     protected String realm;
@@ -72,14 +67,10 @@ public class AssetActivity
                          AssetResource assetResource,
                          AssetMapper assetMapper,
                          MapResource mapResource,
-                         JsonObjectMapper jsonObjectMapper,
-                         ConnectorArrayMapper connectorArrayMapper,
-                         ConnectorResource connectorResource) {
+                         JsonObjectMapper jsonObjectMapper) {
         super(environment, view, assetBrowserPresenter, assetResource, assetMapper);
         this.mapResource = mapResource;
         this.jsonObjectMapper = jsonObjectMapper;
-        this.connectorArrayMapper = connectorArrayMapper;
-        this.connectorResource = connectorResource;
     }
 
     @Override

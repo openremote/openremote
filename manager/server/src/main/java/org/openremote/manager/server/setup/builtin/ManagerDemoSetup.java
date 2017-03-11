@@ -21,16 +21,24 @@ package org.openremote.manager.server.setup.builtin;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import elemental.json.Json;
+import org.apache.commons.io.IOUtils;
 import org.openremote.agent3.protocol.simulator.SimulatorProtocol;
 import org.openremote.container.Container;
 import org.openremote.manager.server.agent.AgentAttributes;
 import org.openremote.manager.server.agent.ThingAttributes;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.setup.AbstractManagerSetup;
+import org.openremote.manager.shared.rules.AssetRulesDefinition;
+import org.openremote.manager.shared.rules.GlobalRulesDefinition;
+import org.openremote.manager.shared.rules.RulesDefinition;
+import org.openremote.manager.shared.rules.TenantRulesDefinition;
 import org.openremote.model.*;
 import org.openremote.model.asset.*;
 import org.openremote.model.units.AttributeUnits;
 import org.openremote.model.units.ColorRGB;
+
+import java.io.InputStream;
+import java.nio.charset.Charset;
 
 import static org.openremote.model.Constants.*;
 import static org.openremote.model.AttributeType.*;
@@ -167,8 +175,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             new Attribute("light1Color", INTEGER_ARRAY, new ColorRGB(88, 123, 88).asJsonValue())
                 .setMeta(new Meta()
                     .add(new MetaItem(
-                            AssetMeta.UNITS,
-                            Json.create(AttributeUnits.COLOR_RGB.toString())
+                        AssetMeta.UNITS,
+                        Json.create(AttributeUnits.COLOR_RGB.toString())
                     ))
                     .add(new MetaItem(
                         AssetMeta.DESCRIPTION,
@@ -204,7 +212,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         SimulatorProtocol.META_NAME_ELEMENT, Json.create("decimal")
                     ))
                     .add(new MetaItem(
-                    	AssetMeta.STORE_DATA_POINTS.getName(), Json.create(true)
+                        AssetMeta.STORE_DATA_POINTS.getName(), Json.create(true)
                     ))
                 )
         );
@@ -301,5 +309,46 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment3Livingroom.setType(ROOM);
         apartment3Livingroom = assetStorageService.merge(apartment3Livingroom);
         apartment3LivingroomId = apartment3Livingroom.getId();
+
+        // ################################ Rules demo data ###################################
+
+        try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeGlobalDemoRules.drl")) {
+            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            RulesDefinition rulesDefinition = new GlobalRulesDefinition("Some global demo rules", rules);
+            rulesStorageService.merge(rulesDefinition);
+        }
+
+        try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeTenantDemoRules.drl")) {
+            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            RulesDefinition rulesDefinition = new TenantRulesDefinition("Some master tenant demo rules", Constants.MASTER_REALM, rules);
+            rulesStorageService.merge(rulesDefinition);
+        }
+
+        try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeTenantDemoRules.drl")) {
+            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            RulesDefinition rulesDefinition = new TenantRulesDefinition("Some customerA tenant demo rules", "customerA", rules);
+            rulesDefinition.setEnabled(false);
+            rulesStorageService.merge(rulesDefinition);
+        }
+
+        try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeAssetDemoRules.drl")) {
+            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            RulesDefinition rulesDefinition = new AssetRulesDefinition("Some apartment 1 demo rules", apartment1Id , rules);
+            rulesStorageService.merge(rulesDefinition);
+        }
+
+        try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeAssetDemoRules.drl")) {
+            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            RulesDefinition rulesDefinition = new AssetRulesDefinition("Some apartment 2 demo rules", apartment2Id , rules);
+            rulesDefinition.setEnabled(false);
+            rulesStorageService.merge(rulesDefinition);
+        }
+
+        try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeAssetDemoRules.drl")) {
+            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            RulesDefinition rulesDefinition = new AssetRulesDefinition("Some apartment 3 demo rules", apartment3Id , rules);
+            rulesStorageService.merge(rulesDefinition);
+        }
+
     }
 }

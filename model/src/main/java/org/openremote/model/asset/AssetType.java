@@ -24,6 +24,8 @@ import elemental.json.JsonObject;
 import org.openremote.model.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import static org.openremote.model.Constants.ASSET_NAMESPACE;
@@ -114,6 +116,14 @@ public enum AssetType {
             if (assetType.isEditable())
                 list.add(assetType);
         }
+
+        list.sort(Comparator.comparing(Enum::name));
+        if (list.contains(CUSTOM)) {
+            // CUSTOM should be first
+            list.remove(CUSTOM);
+            list.add(0, CUSTOM);
+        }
+
         return list.toArray(new AssetType[list.size()]);
     }
 

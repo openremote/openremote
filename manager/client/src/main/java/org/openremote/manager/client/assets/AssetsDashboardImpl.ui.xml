@@ -31,12 +31,6 @@
 
                     <w:Hyperlink
                             addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                            icon="edit"
-                            targetHistoryToken="assets:"
-                            text="{managerMessages.editDashboard}"/>
-
-                    <w:Hyperlink
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                             icon="plus-square"
                             targetHistoryToken="asset:"
                             text="{managerMessages.createAsset}"/>

@@ -33,6 +33,7 @@ import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.i18n.I18NService;
 import org.openremote.manager.server.map.MapService;
 import org.openremote.manager.server.rules.AssetRulesService;
+import org.openremote.manager.server.rules.RulesStorageService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.setup.SetupService;
 import org.openremote.manager.server.web.ManagerWebService;
@@ -49,11 +50,12 @@ public class Main {
             {
                 addAll(Arrays.asList(
                     new I18NService(),
+                    new PersistenceService(),
                     new MessageBrokerSetupService(),
                     new ManagerIdentityService(),
-                    new PersistenceService(),
                     new SetupService(),
                     new EventService(),
+                    new RulesStorageService(),
                     new AssetRulesService(),
                     new AssetStorageService(),
                     new AssetDatapointService(),

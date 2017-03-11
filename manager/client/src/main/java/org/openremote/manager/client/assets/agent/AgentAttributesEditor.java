@@ -23,29 +23,22 @@ import com.google.gwt.text.shared.AbstractRenderer;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.event.ServerSendEvent;
 import org.openremote.manager.client.widget.*;
-import org.openremote.model.Consumer;
 import org.openremote.manager.shared.agent.Agent;
 import org.openremote.manager.shared.agent.RefreshInventoryEvent;
-import org.openremote.model.asset.Asset;
 import org.openremote.manager.shared.connector.Connector;
-import org.openremote.manager.shared.connector.ConnectorResource;
 import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 import org.openremote.model.Attribute;
 import org.openremote.model.Attributes;
+import org.openremote.model.asset.Asset;
 
-import java.util.Arrays;
 import java.util.List;
 
-import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 import static org.openremote.manager.shared.connector.Connector.ASSET_ATTRIBUTE_CONNECTOR;
 
 public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Style> {
 
     final protected Agent agent;
     final protected Asset agentAsset;
-
-    final protected ConnectorResource connectorResource;
-    final protected ConnectorArrayMapper connectorArrayMapper;
 
     final protected FormGroup connectorListBoxGroup = new FormGroup();
     final protected FormValueListBox<Connector> connectorListBox;
@@ -63,15 +56,10 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
                                  Container<AttributesEditor.Style> container,
                                  Attributes attributes,
                                  boolean isCreateAsset,
-                                 Asset agentAsset,
-                                 ConnectorResource connectorResource,
-                                 ConnectorArrayMapper connectorArrayMapper) {
+                                 Asset agentAsset) {
         super(environment, container, attributes);
         this.agentAsset = agentAsset;
         this.agent = new Agent(attributes, isCreateAsset);
-
-        this.connectorResource = connectorResource;
-        this.connectorArrayMapper = connectorArrayMapper;
 
         connectorListBox = createConnectorListBox();
         FormLabel connectorListBoxLabel = new FormLabel();
@@ -96,6 +84,7 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
         actionsField.add(refreshInventoryButton);
 
         container.getFormView().setFormBusy(true);
+/*
         loadConnectors(connectors -> {
             availableConnectors = Arrays.asList(connectors);
 
@@ -120,6 +109,7 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
             container.getFormView().setFormBusy(false);
             //clearBuild();
         });
+*/
     }
 
     @Override
@@ -196,16 +186,6 @@ public class AgentAttributesEditor extends AttributesEditor<AttributesEditor.Sty
             refreshInventoryButton.setEnabled(false);
         }
         // clearBuild();
-    }
-
-    protected void loadConnectors(Consumer<Connector[]> onSuccess) {
-        environment.getRequestService().execute(
-            connectorArrayMapper,
-            connectorResource::getConnectors,
-            200,
-            onSuccess::accept,
-            ex -> handleRequestException(ex, environment)
-        );
     }
 
     protected Connector getConnector() {

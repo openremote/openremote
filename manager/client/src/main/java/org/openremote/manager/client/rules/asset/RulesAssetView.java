@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,15 +17,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.rules;
+package org.openremote.manager.client.rules.asset;
 
-import com.google.gwt.user.client.ui.IsWidget;
+import org.openremote.manager.client.assets.browser.AssetBrowsingView;
+import org.openremote.manager.client.widget.FormView;
 
-public interface RulesView extends IsWidget {
+public interface RulesAssetView extends AssetBrowsingView<RulesAssetView.Presenter>, FormView {
 
-    interface Presenter {
-        String getFrameSource();
+    interface Presenter extends AssetBrowsingView.Presenter {
+        void update();
+
+        void create();
+
+        void delete();
     }
 
-    void setPresenter(Presenter presenter);
+    void setName(String name);
+
+    String getName();
+
+    void enableCreate(boolean enable);
+
+    void enableUpdate(boolean enable);
+
+    void enableDelete(boolean enable);
+
 }

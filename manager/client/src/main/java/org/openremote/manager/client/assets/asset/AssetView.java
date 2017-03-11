@@ -31,8 +31,7 @@ import java.util.Date;
 
 public interface AssetView extends AssetBrowsingView<AssetView.Presenter>, FormView {
 
-    interface
-    Presenter extends AssetBrowsingView.Presenter {
+    interface Presenter extends AssetBrowsingView.Presenter {
 
         void beginParentSelection();
 

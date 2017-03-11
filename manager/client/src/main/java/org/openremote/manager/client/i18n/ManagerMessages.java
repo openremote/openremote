@@ -287,4 +287,7 @@ public interface ManagerMessages extends Messages {
 
     String enterNameAndSelectType();
 
+    String fullscreen();
+
+    String editGlobalRules();
 }

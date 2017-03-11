@@ -25,6 +25,7 @@ import org.keycloak.representations.idm.ProtocolMapperRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.openremote.container.Container;
+import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.KeycloakResource;
 import org.openremote.container.web.WebService;
@@ -45,6 +46,7 @@ public class ManagerIdentityService extends IdentityService {
     private static final Logger LOG = Logger.getLogger(ManagerIdentityService.class.getName());
 
     protected boolean devMode;
+    protected PersistenceService persistenceService;
 
     public ManagerIdentityService() {
         super(Constants.KEYCLOAK_CLIENT_ID);
@@ -55,6 +57,7 @@ public class ManagerIdentityService extends IdentityService {
         super.init(container);
 
         this.devMode = container.isDevMode();
+        this.persistenceService = container.getService(PersistenceService.class);
 
         enableAuthProxy(container.getService(WebService.class));
 
@@ -122,6 +125,18 @@ public class ManagerIdentityService extends IdentityService {
         );
     }
 
+    public boolean isTenantActive(String realm) {
+        // We use a direct database query, faster than calling Keycloak through HTTP
+        return persistenceService.doReturningTransaction(entityManager -> {
+            // TODO Should also check NOT_BEFORE?
+            @SuppressWarnings("unchecked")
+            List<Object[]> result = entityManager.createNativeQuery(
+                "SELECT ID FROM REALM WHERE ENABLED = TRUE AND NAME = :realm"
+            ).setParameter("realm", realm).getResultList();
+            return result.size() > 0;
+        });
+    }
+
     public void configureRealm(RealmRepresentation realmRepresentation) {
         configureRealm(realmRepresentation, ACCESS_TOKEN_LIFESPAN_SECONDS);
     }
@@ -177,7 +192,6 @@ public class ManagerIdentityService extends IdentityService {
     }
 
     public void addDefaultMappers(ProtocolMappersResource protocolMappers) {
-
         // Link between user and asset ("ownership")
         ProtocolMapperRepresentation userAssetMapper = new ProtocolMapperRepresentation();
         userAssetMapper.setProtocol("openid-connect");

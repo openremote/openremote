@@ -59,6 +59,7 @@ public class AssetStorageService
 
     protected EventService eventService;
     protected PersistenceService persistenceService;
+    protected ManagerIdentityService managerIdentityService;
     protected AssetListenerSubscriptions assetListenerSubscriptions;
     final protected Function<AttributeRef, ProtocolConfiguration> agentLinkResolver = agentLink -> {
         // Resolve the agent and the protocol configuration
@@ -75,6 +76,7 @@ public class AssetStorageService
     public void init(Container container) throws Exception {
         eventService = container.getService(EventService.class);
         persistenceService = container.getService(PersistenceService.class);
+        managerIdentityService = container.getService(ManagerIdentityService.class);
 
         // TODO None of this is secure or considers the realm of an asset or the logged-in user's realm
         assetListenerSubscriptions = new AssetListenerSubscriptions(eventService) {
@@ -87,7 +89,7 @@ public class AssetStorageService
         container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
 
         container.getService(WebService.class).getApiSingletons().add(
-            new AssetResourceImpl(container.getService(ManagerIdentityService.class), this)
+            new AssetResourceImpl(this)
         );
     }
 
@@ -327,7 +329,7 @@ public class AssetStorageService
     public ServerAsset merge(ServerAsset asset) {
         return persistenceService.doReturningTransaction(em -> {
             // Validate realm
-            if (!isRealmActive(asset.getRealm())) {
+            if (!managerIdentityService.isTenantActive(asset.getRealm())) {
                 throw new IllegalStateException("Realm not found: " + asset.getRealm());
             }
             // Validate parent
@@ -393,17 +395,6 @@ public class AssetStorageService
             }
         }));
         return asset;
-    }
-
-    protected boolean isRealmActive(String realm) {
-        return persistenceService.doReturningTransaction(entityManager -> {
-            // TODO Should also check NOT_BEFORE?
-            @SuppressWarnings("unchecked")
-            List<Object[]> result = entityManager.createNativeQuery(
-                "SELECT ID FROM REALM WHERE ENABLED = TRUE AND NAME = :realm"
-            ).setParameter("realm", realm).getResultList();
-            return result.size() > 0;
-        });
     }
 
     protected boolean storeAttribute(String assetId, Attribute attribute) {

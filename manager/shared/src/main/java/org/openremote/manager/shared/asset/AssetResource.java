@@ -138,6 +138,7 @@ public interface AssetResource {
      * authenticated realm, or if the user is restricted and the asset to update is not in the set of linked
      * assets of the restricted user. A 400 status is returned if the update was not successful, e.g. because
      * the given value does not match the attribute's type.
+     * // TODO Consider attribute state class instead, and test this
      */
     @PUT
     @Path("{assetId}/attribute/{attributeName}")

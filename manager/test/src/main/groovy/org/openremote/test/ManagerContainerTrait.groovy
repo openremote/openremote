@@ -8,6 +8,7 @@ import org.openremote.container.message.MessageBrokerSetupService
 import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.rules.AssetRulesService
+import org.openremote.manager.server.rules.RulesStorageService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.agent.AgentService
 import org.openremote.manager.server.asset.AssetStorageService
@@ -23,11 +24,12 @@ trait ManagerContainerTrait extends ContainerTrait {
     static Iterable<ContainerService> defaultServices(Iterable<ContainerService> additionalServices) {
         [
                 new I18NService(),
+                new PersistenceService(),
                 new MessageBrokerSetupService(),
                 new ManagerIdentityService(),
-                new PersistenceService(),
                 new SetupService(),
                 new EventService(),
+                new RulesStorageService(),
                 new AssetRulesService(),
                 new AssetStorageService(),
                 new AssetDatapointService(),

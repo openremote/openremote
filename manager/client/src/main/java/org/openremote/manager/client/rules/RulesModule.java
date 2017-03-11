@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -21,13 +21,25 @@ package org.openremote.manager.client.rules;
 
 import com.google.gwt.inject.client.AbstractGinModule;
 import com.google.inject.Singleton;
+import org.openremote.manager.client.rules.asset.RulesAssetActivity;
+import org.openremote.manager.client.rules.asset.RulesAssetView;
+import org.openremote.manager.client.rules.asset.RulesAssetViewImpl;
+import org.openremote.manager.client.rules.tenant.RulesTenantActivity;
+import org.openremote.manager.client.rules.tenant.RulesTenantView;
+import org.openremote.manager.client.rules.tenant.RulesTenantViewImpl;
 
 public class RulesModule extends AbstractGinModule {
 
     @Override
     protected void configure() {
-        bind(RulesView.class).to(RulesViewImpl.class).in(Singleton.class);
-        bind(RulesActivity.class);
+        bind(RulesGlobalView.class).to(RulesGlobalViewImpl.class).in(Singleton.class);
+        bind(RulesGlobalActivity.class);
+
+        bind(RulesTenantView.class).to(RulesTenantViewImpl.class).in(Singleton.class);
+        bind(RulesTenantActivity.class);
+
+        bind(RulesAssetView.class).to(RulesAssetViewImpl.class).in(Singleton.class);
+        bind(RulesAssetActivity.class);
     }
 
 }

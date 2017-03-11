@@ -21,7 +21,6 @@ package org.openremote.manager.server.asset;
 
 import elemental.json.JsonValue;
 import org.openremote.container.web.WebResource;
-import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.model.asset.Asset;
@@ -40,11 +39,9 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
 
     private static final Logger LOG = Logger.getLogger(AssetResourceImpl.class.getName());
 
-    protected final ManagerIdentityService identityService;
     protected final AssetStorageService assetStorageService;
 
-    public AssetResourceImpl(ManagerIdentityService identityService, AssetStorageService assetStorageService) {
-        this.identityService = identityService;
+    public AssetResourceImpl(AssetStorageService assetStorageService) {
         this.assetStorageService = assetStorageService;
     }
 

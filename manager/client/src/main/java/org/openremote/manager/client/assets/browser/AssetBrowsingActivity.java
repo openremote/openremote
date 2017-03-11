@@ -83,7 +83,6 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
         return this;
     }
 
-
     @Override
     public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
         //noinspection unchecked

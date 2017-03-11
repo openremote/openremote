@@ -1,0 +1,12 @@
+package org.openremote.test.rules;
+
+import org.openremote.agent.sensor.*;
+
+global org.openremote.agent.rules.SwitchFacade switches;
+
+rule "Modify Switch State"
+when
+  $switch : SwitchSensorState(sensorID == 123)
+then
+  switches.name($switch.getSensorName()).off();
+end

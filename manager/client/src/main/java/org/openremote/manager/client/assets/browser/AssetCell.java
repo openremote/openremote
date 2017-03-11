@@ -83,14 +83,14 @@ class AssetCell extends AbstractSafeHtmlCell<AssetInfo> {
                 return "group";
             case BUILDING:
                 return "building";
+            case RESIDENCE:
+                return "cubes";
             case FLOOR:
                 return "server";
-/* TODO
             case AGENT:
-                return "cubes";
-            case DEVICE:
+                return "gears";
+            case THING:
                 return "gear";
-*/
             default:
                 return "cube";
         }

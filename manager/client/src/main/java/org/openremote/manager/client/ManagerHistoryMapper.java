@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -30,7 +30,9 @@ import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.flows.FlowsPlace;
 import org.openremote.manager.client.map.MapPlace;
-import org.openremote.manager.client.rules.RulesPlace;
+import org.openremote.manager.client.rules.RulesGlobalPlace;
+import org.openremote.manager.client.rules.asset.RulesAssetPlace;
+import org.openremote.manager.client.rules.tenant.RulesTenantPlace;
 import org.openremote.manager.client.user.UserAccountPlace;
 
 @WithTokenizers(
@@ -38,7 +40,9 @@ import org.openremote.manager.client.user.UserAccountPlace;
         MapPlace.Tokenizer.class,
         AssetsDashboardPlace.Tokenizer.class,
         AssetPlace.Tokenizer.class,
-        RulesPlace.Tokenizer.class,
+        RulesGlobalPlace.Tokenizer.class,
+        RulesTenantPlace.Tokenizer.class,
+        RulesAssetPlace.Tokenizer.class,
         FlowsPlace.Tokenizer.class,
         AdminOverviewPlace.Tokenizer.class,
         AdminTenantsPlace.Tokenizer.class,

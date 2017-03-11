@@ -29,7 +29,6 @@ import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserImpl;
 import org.openremote.manager.client.assets.browser.AssetBrowserPresenter;
 import org.openremote.manager.shared.asset.AssetResource;
-import org.openremote.manager.shared.connector.ConnectorResource;
 
 public class AssetsModule extends AbstractGinModule {
 
@@ -54,16 +53,4 @@ public class AssetsModule extends AbstractGinModule {
     public static native AssetResource getNativeAssetResource() /*-{
         return $wnd.AssetResource;
     }-*/;
-
-
-    @Provides
-    @Singleton
-    public ConnectorResource getConnectorResource() {
-        return getNativeConnectorResource();
-    }
-
-    public static native ConnectorResource getNativeConnectorResource() /*-{
-        return $wnd.ConnectorResource;
-    }-*/;
-
 }

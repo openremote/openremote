@@ -32,19 +32,23 @@ public enum ClientRole {
     READ_ADMIN("read:admin", "Read system settings, tenants, and users"),
     READ_MAP("read:map", "View map"),
     READ_ASSETS("read:assets", "Read asset data"),
+    READ_RULES("read:rules", "Read rule definitions"),
 
     WRITE_ADMIN("write:admin", "Write system settings, tenants, and users"),
     WRITE_ASSETS("write:assets", "Write asset data"),
+    WRITE_RULES("write:rules", "Write rule definitions"),
 
     READ("read", "Read all data", new ClientRole[]{
         READ_ADMIN,
         READ_MAP,
-        READ_ASSETS
+        READ_ASSETS,
+        READ_RULES
     }),
 
     WRITE("write", "Write all data", new ClientRole[]{
         WRITE_ADMIN,
-        WRITE_ASSETS
+        WRITE_ASSETS,
+        WRITE_RULES
     });
 
     final protected String value;

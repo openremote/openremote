@@ -155,6 +155,8 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
                 {},
                 {},
                 {},
+                {},
+                {},
                 {
                     adminTenantsActivity = new AdminTenantsActivity(
                             environment, adminView, adminNavigationPresenter, adminTenantsView, tenantResource, tenantArrayMapper

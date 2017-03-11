@@ -26,6 +26,7 @@ import org.openremote.model.MetaItem;
 import org.openremote.model.units.AttributeUnits;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
@@ -109,7 +110,7 @@ public enum AssetMeta {
      */
     STORE_DATA_POINTS(ASSET_META_NAMESPACE + ":storeDataPoints", new Access(true, false, true), JsonType.BOOLEAN),
 
-    VALUE_TIMESTAMP(ASSET_META_NAMESPACE + ":valueTimestamp", new Access(true, false, true), JsonType.NUMBER);
+    VALUE_TIMESTAMP(ASSET_META_NAMESPACE + ":valueTimestamp", new Access(true, false, false), JsonType.NUMBER);
 
     final protected String name;
     final protected Access access;
@@ -139,6 +140,9 @@ public enum AssetMeta {
             if (meta.getAccess().editable)
                 list.add(meta);
         }
+
+        list.sort(Comparator.comparing(Enum::name));
+
         return list.toArray(new AssetMeta[list.size()]);
     }
 

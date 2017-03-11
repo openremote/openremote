@@ -28,5 +28,5 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface SuccessStatusCode {
-    int value() default 200;
+    int value();
 }
