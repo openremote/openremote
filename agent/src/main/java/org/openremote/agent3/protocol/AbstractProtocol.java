@@ -129,6 +129,7 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     protected void onSensorUpdate(AttributeState attributeState) {
+        // TODO: Agent should be able to create AttributeUpdateEvent with desired timestamp
         producerTemplate.sendBody(SENSOR_TOPIC, attributeState);
     }
 

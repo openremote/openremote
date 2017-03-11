@@ -35,7 +35,7 @@ public class AssetDatapointService
 
     @Override
     public void accept(AssetStateChange<ServerAsset> stateChange) {
-        AssetDatapoint assetDatapoint = new AssetDatapoint(stateChange.getNewState());
+        AssetDatapoint assetDatapoint = new AssetDatapoint(stateChange.getNewState(), stateChange.getTimestamp());
         // TODO Persist datapoint
     }
 

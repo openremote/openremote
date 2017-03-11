@@ -19,6 +19,10 @@
  */
 package org.openremote.model;
 
+import org.openremote.model.asset.AssetMeta;
+
+// TODO: I'm not sure we need two attribute state objects in here as they should always refer to same entity and attribute
+// TODO: This should be an event and inherit a timestamp from Event class and should also use AttributeUpdateEvent (module dependency issue prevents this)
 public class AttributeStateChange {
 
     /**
@@ -33,18 +37,38 @@ public class AttributeStateChange {
         /**
          * Consumer has finally handled the change, cancel further processing.
          */
-        HANDLED
+        HANDLED,
+
+        /**
+         * Consumer encountered an error trying to process the change
+         */
+        ERROR
     }
 
     final protected Attribute attribute;
     final protected AttributeState originalState;
     final protected AttributeState newState;
     protected Status processingStatus = Status.CONTINUE;
+    protected long timestamp;
 
     public AttributeStateChange(Attribute attribute, AttributeState originalState) {
+        this(attribute, originalState, System.currentTimeMillis());
+    }
+
+    public AttributeStateChange(Attribute attribute, AttributeState originalState, long timestamp) {
+        this.timestamp = timestamp;
         this.attribute = attribute;
         this.newState = new AttributeState(originalState.getAttributeRef(), attribute.getValue());
         this.originalState = originalState;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    // TODO: Once we have attribute update event just use its' timestamp
+    public long getValueTimestamp() {
+        return (long)attribute.firstMetaItemOrThrow(AssetMeta.VALUE_TIMESTAMP.getName()).getValueAsDecimal().doubleValue();
     }
 
     public Attribute getAttribute() {
@@ -53,6 +77,14 @@ public class AttributeStateChange {
 
     public AttributeState getNewState() {
         return newState;
+    }
+
+    public String getAssetId() {
+        return originalState.attributeRef.getEntityId();
+    }
+
+    public String getAttributeName() {
+        return attribute.getName();
     }
 
     public AttributeState getOriginalState() {

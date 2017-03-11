@@ -24,6 +24,7 @@ import org.openremote.manager.shared.agent.*;
 import org.openremote.manager.shared.asset.AssetModifiedEvent;
 import org.openremote.manager.shared.asset.SubscribeAssetModified;
 import org.openremote.manager.shared.asset.UnsubscribeAssetModified;
+import org.openremote.manager.shared.event.asset.AttributeStateUpdateEvent;
 import org.openremote.manager.shared.util.Util;
 
 @JsonSubTypes({
@@ -32,6 +33,7 @@ import org.openremote.manager.shared.util.Util;
     @JsonSubTypes.Type(value = SubscribeAssetModified.class, name = "SUBSCRIBE_ASSET_CHANGES"),
     @JsonSubTypes.Type(value = UnsubscribeAssetModified.class, name = "UNSUBSCRIBE_ASSET_CHANGES"),
     @JsonSubTypes.Type(value = AssetModifiedEvent.class, name = "ASSET_MODIFIED"),
+    @JsonSubTypes.Type(value = AttributeStateUpdateEvent.class, name = "ATTRIBUTE_STATE_UPDATE"),
     @JsonSubTypes.Type(value = RefreshInventoryEvent.class, name = "REFRESH_INVENTORY"),
     @JsonSubTypes.Type(value = SubscribeDeviceResourceUpdates.class, name = "SUBSCRIBE_DEVICE_RESOURCE_UPDATES"),
     @JsonSubTypes.Type(value = UnsubscribeDeviceResourceUpdates.class, name = "UNSUBSCRIBE_DEVICE_RESOURCE_UPDATES"),
@@ -70,8 +72,19 @@ import org.openremote.manager.shared.util.Util;
     include = JsonTypeInfo.As.PROPERTY,
     property = "event"
 )
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 // TODO The GWT jackson integration sometimes tries to pick up ALL subclasses when serialization generators are produced, use @JsonIgnoreType on them
 public abstract class Event {
+    @JsonProperty
+    protected long timestamp;
+
+    protected Event(long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    protected Event() {
+        timestamp = System.currentTimeMillis();
+    }
 
     // This is compatible with the Polymer event naming, so events can be used in JS/Polymer components
     public static String getType(String simpleClassName) {
@@ -89,6 +102,10 @@ public abstract class Event {
         return getType(getClass());
     }
 
+    @JsonIgnore
+    public long getTimestamp() {
+        return timestamp;
+    }
 
     @Override
     public String toString() {

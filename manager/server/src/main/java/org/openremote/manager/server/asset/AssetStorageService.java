@@ -33,10 +33,7 @@ import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.asset.SubscribeAssetModified;
 import org.openremote.manager.shared.asset.UnsubscribeAssetModified;
-import org.openremote.model.AttributeRef;
-import org.openremote.model.AttributeState;
-import org.openremote.model.Consumer;
-import org.openremote.model.Function;
+import org.openremote.model.*;
 import org.openremote.model.asset.*;
 import org.postgresql.util.PGobject;
 
@@ -365,7 +362,7 @@ public class AssetStorageService
 
     @Override
     public void accept(AssetStateChange<ServerAsset> stateChange) {
-        if (!storeAttributeState(stateChange.getNewState())) {
+        if (!storeAttribute(stateChange.getAssetId(), stateChange.getAttribute())) {
             throw new RuntimeException("Database update failed, no rows updated");
         };
     }
@@ -409,13 +406,13 @@ public class AssetStorageService
         });
     }
 
-    protected boolean storeAttributeState(AttributeState attributeState) {
+    protected boolean storeAttribute(String assetId, Attribute attribute) {
         return persistenceService.doReturningTransaction(entityManager ->
             entityManager.unwrap(Session.class).doReturningWork(connection -> {
 
-                String assetId = attributeState.getAttributeRef().getEntityId();
-                String attributeName = attributeState.getAttributeRef().getAttributeName();
-                JsonValue value = attributeState.getValue();
+                // TODO: Need to push entire attribute update not just value
+                String attributeName = attribute.getName();
+                JsonValue value = attribute.getValue();
 
                 String update =
                     "UPDATE ASSET" +

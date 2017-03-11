@@ -42,6 +42,7 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.model.AttributeRef;
+import org.openremote.model.AttributeStateChange;
 import org.openremote.model.Consumer;
 import org.openremote.model.asset.AssetStateChange;
 
@@ -61,6 +62,7 @@ public class AssetRulesService implements ContainerService,
     final protected Map<AttributeRef, FactHandle> attributeFacts = new HashMap<>();
     final protected RuleUtil ruleUtil = new RuleUtil();
     protected long currentFactCount;
+    protected boolean deployFailed;
 
     @Override
     public void init(Container container) throws Exception {
@@ -88,7 +90,7 @@ public class AssetRulesService implements ContainerService,
         kb = null;
     }
 
-    // TODO: Support runtime re-deployment
+    // TODO: Support runtime re-deployment per asset potentially
     public void deploy(RulesProvider rulesProvider) {
         if (rulesProvider == null) {
             return;
@@ -110,7 +112,8 @@ public class AssetRulesService implements ContainerService,
                 if (!addResource(resource, kieServices, kfs)) {
                     // Fail hard and fast
                     LOG.severe("Failed to deploy rules resource '" + resource.getSourcePath() + "' so rules engine won't run");
-                    throw new RuntimeException();
+                    deployFailed = true;
+                    return;
                 }
             }
         );
@@ -150,7 +153,12 @@ public class AssetRulesService implements ContainerService,
     @Override
     public void accept(AssetStateChange<ServerAsset> stateChange) {
         if (kb == null) {
-            LOG.fine("No knowledge base configured, skipping processing of: " + stateChange);
+            if (deployFailed) {
+                stateChange.setProcessingStatus(AttributeStateChange.Status.ERROR);
+            } else {
+                LOG.fine("No knowledge base configured, skipping processing of: " + stateChange);
+                stateChange.setProcessingStatus(AttributeStateChange.Status.CONTINUE);
+            }
             return;
         }
 
