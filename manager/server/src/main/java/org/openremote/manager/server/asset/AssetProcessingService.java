@@ -36,6 +36,7 @@ import org.openremote.model.asset.ThingAttribute;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.agent3.protocol.Protocol.SENSOR_TOPIC;
@@ -152,7 +153,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         try {
             attribute.setValue(attributeState.getValue());
         } catch (IllegalArgumentException ex) {
-            LOG.fine("Ignoring update of " + attributeState + ", not of expected value type '" + attribute.getType() + "' in: " + asset);
+            LOG.log(Level.FINE, "Ignoring update of " + attributeState + ", attribute constraint violations in: " + asset, ex);
             return;
         }
 
@@ -187,17 +188,17 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
         for (Consumer<AssetStateChange<ServerAsset>> consumer : attributeStateChangeConsumers) {
             try {
-                LOG.fine("Consumer '" + consumer + "' should process: " + stateChange);
+                LOG.fine("Consumer " + consumer + " should process: " + stateChange);
                 consumer.accept(stateChange);
-                LOG.fine("Consumer '" + consumer + "' completed processing: " + stateChange);
+                LOG.fine("Consumer " + consumer + " completed processing: " + stateChange);
             } catch (Throwable t) {
                 // All exceptions during processing should end up here
                 // TODO Better error handling, not sure we need rewind?
-                throw new RuntimeException("Consumer '" + consumer + "' processing error: " + stateChange, t);
+                throw new RuntimeException("Consumer " + consumer + " processing error: " + stateChange, t);
             }
 
             if (stateChange.getProcessingStatus() == AttributeStateChange.Status.HANDLED) {
-                LOG.fine("Consumer '" + consumer + "' finally handled: " + stateChange);
+                LOG.fine("Consumer " + consumer + " finally handled: " + stateChange);
                 break;
             }
         }
