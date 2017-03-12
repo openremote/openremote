@@ -22,7 +22,7 @@ package org.openremote.manager.client.event;
 import com.github.nmorel.gwtjackson.client.ObjectMapper;
 import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
 import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
-import org.openremote.manager.shared.event.Event;
+import org.openremote.model.Event;
 
 @JsonMixIns({@JsonMixIns.JsonMixIn(target = Event.class, mixIn = DefaultJsonMixin.class)})
 public interface EventMapper extends ObjectMapper<Event> {

@@ -37,8 +37,8 @@ import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.assets.AssetsDashboardActivity;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.event.bus.EventBus;
-import org.openremote.manager.client.flows.FlowsActivity;
-import org.openremote.manager.client.flows.FlowsPlace;
+import org.openremote.manager.client.apps.AppsActivity;
+import org.openremote.manager.client.apps.AppsPlace;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.map.MapActivity;
 import org.openremote.manager.client.map.MapPlace;
@@ -54,7 +54,7 @@ import org.openremote.manager.client.rules.tenant.RulesTenantPlace;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.user.UserAccountActivity;
 import org.openremote.manager.client.user.UserAccountPlace;
-import org.openremote.manager.shared.event.ui.ShowFailureEvent;
+import org.openremote.manager.client.event.ShowFailureEvent;
 
 import java.util.logging.Logger;
 
@@ -71,7 +71,7 @@ public class ManagerActivityMapper implements AppActivityMapper {
     protected final Provider<RulesGlobalActivity> rulesGlobalActivityProvider;
     protected final Provider<RulesTenantActivity> rulesTenantActivityProvider;
     protected final Provider<RulesAssetActivity> rulesAssetActivityProvider;
-    protected final Provider<FlowsActivity> flowsActivityProvider;
+    protected final Provider<AppsActivity> appsActivityProvider;
     protected final Provider<AdminOverviewActivity> adminOverviewActivityProvider;
     protected final Provider<AdminTenantsActivity> adminTenantsActivityProvider;
     protected final Provider<AdminTenantActivity> adminTenantActivityProvider;
@@ -89,7 +89,7 @@ public class ManagerActivityMapper implements AppActivityMapper {
                                  Provider<RulesGlobalActivity> rulesGlobalActivityProvider,
                                  Provider<RulesTenantActivity> rulesTenantActivityProvider,
                                  Provider<RulesAssetActivity> rulesAssetActivityProvider,
-                                 Provider<FlowsActivity> flowsActivityProvider,
+                                 Provider<AppsActivity> appsActivityProvider,
                                  Provider<AdminOverviewActivity> adminOverviewActivityProvider,
                                  Provider<AdminTenantsActivity> adminTenantsActivityProvider,
                                  Provider<AdminTenantActivity> adminTenantActivityProvider,
@@ -105,7 +105,7 @@ public class ManagerActivityMapper implements AppActivityMapper {
         this.rulesGlobalActivityProvider = rulesGlobalActivityProvider;
         this.rulesTenantActivityProvider = rulesTenantActivityProvider;
         this.rulesAssetActivityProvider = rulesAssetActivityProvider;
-        this.flowsActivityProvider = flowsActivityProvider;
+        this.appsActivityProvider = appsActivityProvider;
         this.adminOverviewActivityProvider = adminOverviewActivityProvider;
         this.adminTenantsActivityProvider = adminTenantsActivityProvider;
         this.adminTenantActivityProvider = adminTenantActivityProvider;
@@ -134,8 +134,8 @@ public class ManagerActivityMapper implements AppActivityMapper {
             if (place instanceof RulesAssetPlace) {
                 return rulesAssetActivityProvider.get().init(securityService, (RulesAssetPlace) place);
             }
-            if (place instanceof FlowsPlace) {
-                return flowsActivityProvider.get().init(securityService, (FlowsPlace) place);
+            if (place instanceof AppsPlace) {
+                return appsActivityProvider.get().init(securityService, (AppsPlace) place);
             }
             if (place instanceof AdminOverviewPlace) {
                 return adminOverviewActivityProvider.get().init(securityService, (AdminOverviewPlace) place);

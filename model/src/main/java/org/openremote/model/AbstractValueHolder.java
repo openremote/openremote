@@ -27,6 +27,8 @@ import elemental.json.*;
  * {@link JsonValue}.
  */
 public abstract class AbstractValueHolder<T extends AbstractValueHolder> {
+    
+    protected static final String VALUE_FIELD_NAME = "value";
 
     final protected JsonObject jsonObject;
 
@@ -35,7 +37,7 @@ public abstract class AbstractValueHolder<T extends AbstractValueHolder> {
     }
 
     public boolean hasValue() {
-        return jsonObject.hasKey("value") && jsonObject.get("value").getType() != JsonType.NULL;
+        return jsonObject.hasKey(VALUE_FIELD_NAME) && jsonObject.get(VALUE_FIELD_NAME).getType() != JsonType.NULL;
     }
 
     public String getValueAsString() {
@@ -53,15 +55,15 @@ public abstract class AbstractValueHolder<T extends AbstractValueHolder> {
     public Boolean getValueAsBoolean() {
         // TODO This is also broken somehow...
         // return hasValue() ? getValue_TODO_BUG_IN_JAVASCRIPT().asBoolean() : null;
-        return hasValue() ? jsonObject.getBoolean("value") : null;
+        return hasValue() ? jsonObject.getBoolean(VALUE_FIELD_NAME) : null;
     }
 
     public JsonObject getValueAsObject() {
-        return hasValue() ? jsonObject.getObject("value") : null;
+        return hasValue() ? jsonObject.getObject(VALUE_FIELD_NAME) : null;
     }
 
     public JsonArray getValueAsArray() {
-        return hasValue() ? jsonObject.getArray("value") : null;
+        return hasValue() ? jsonObject.getArray(VALUE_FIELD_NAME) : null;
     }
 
     public boolean isValueTrue() {
@@ -73,7 +75,7 @@ public abstract class AbstractValueHolder<T extends AbstractValueHolder> {
     }
 
     public void clearValue() {
-        jsonObject.remove("value");
+        jsonObject.remove(VALUE_FIELD_NAME);
     }
 
     public T setValueAsString(String value) {
@@ -106,7 +108,7 @@ public abstract class AbstractValueHolder<T extends AbstractValueHolder> {
      * TODO https://github.com/gwtproject/gwt/issues/9484
      */
     public JsonValue getValue() {
-        return hasValue() ? jsonObject.get("value") : Json.createNull();
+        return hasValue() ? jsonObject.get(VALUE_FIELD_NAME) : Json.createNull();
     }
 
     /**
@@ -128,7 +130,7 @@ public abstract class AbstractValueHolder<T extends AbstractValueHolder> {
             throw new IllegalArgumentException("Invalid value of type " + typeString + ": " + valueString);
         }
 
-        jsonObject.put("value", value);
+        jsonObject.put(VALUE_FIELD_NAME, value);
 
         return (T) this;
     }

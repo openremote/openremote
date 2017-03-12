@@ -19,10 +19,10 @@
  */
 package org.openremote.model.datapoint;
 
-import elemental.json.Json;
 import elemental.json.JsonValue;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.AttributeState;
+import org.openremote.model.AttributeEvent;
 
 import javax.persistence.Column;
 import javax.persistence.Id;
@@ -61,6 +61,10 @@ public abstract class Datapoint implements Serializable {
 
     public Datapoint(AttributeState attributeState) {
         this(attributeState.getAttributeRef(), attributeState.getValue());
+    }
+
+    public Datapoint(AttributeEvent stateEvent) {
+        this(stateEvent.getAttributeState(), stateEvent.getTimestamp());
     }
 
     public Datapoint(AttributeState attributeState, long timestamp) {

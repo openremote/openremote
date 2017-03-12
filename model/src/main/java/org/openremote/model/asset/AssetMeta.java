@@ -108,9 +108,7 @@ public enum AssetMeta {
     /**
      * Should attribute values be stored in time series database
      */
-    STORE_DATA_POINTS(ASSET_META_NAMESPACE + ":storeDataPoints", new Access(true, false, true), JsonType.BOOLEAN),
-
-    VALUE_TIMESTAMP(ASSET_META_NAMESPACE + ":valueTimestamp", new Access(true, false, false), JsonType.NUMBER);
+    STORE_DATA_POINTS(ASSET_META_NAMESPACE + ":storeDataPoints", new Access(true, false, true), JsonType.BOOLEAN);
 
     final protected String name;
     final protected Access access;

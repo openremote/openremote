@@ -35,7 +35,7 @@ public interface ManagerMessages extends Messages {
 
     String rules();
 
-    String flows();
+    String apps();
 
     String admin();
 

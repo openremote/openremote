@@ -32,13 +32,12 @@ import com.google.inject.Provider;
 import elemental.json.JsonObject;
 import org.openremote.manager.client.app.dialog.ConfirmationDialog;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
-import org.openremote.manager.client.assets.device.DeviceAttributesEditor;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.widget.*;
 import org.openremote.manager.client.widget.PushButton;
+import org.openremote.manager.shared.map.GeoJSON;
 import org.openremote.model.Runnable;
 import org.openremote.model.asset.AssetType;
-import org.openremote.manager.shared.map.GeoJSON;
 
 import javax.inject.Inject;
 import java.math.BigDecimal;
@@ -77,31 +76,11 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
         String booleanEditor();
     }
 
-    interface DeviceAttributesEditorStyle extends CssResource, DeviceAttributesEditor.Style {
-
-        String integerEditor();
-
-        String decimalEditor();
-
-        String stringEditor();
-
-        String booleanEditor();
-
-        String readWriteInput();
-
-        String readButton();
-
-        String writeButton();
-    }
-
     @UiField
     Style style;
 
     @UiField
     AttributesEditorStyle attributesEditorStyle;
-
-    @UiField
-    DeviceAttributesEditorStyle deviceAttributesEditorStyle;
 
     @UiField
     FlexSplitPanel splitPanel;
@@ -432,41 +411,6 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
             @Override
             public AttributesEditor.Style getStyle() {
                 return attributesEditorStyle;
-            }
-
-            @Override
-            public InsertPanel getPanel() {
-                return attributesEditorContainer;
-            }
-
-            @Override
-            public void showConfirmation(String title, String text, Runnable onConfirm) {
-                AssetViewImpl.this.showConfirmation(title, text, onConfirm);
-            }
-
-            @Override
-            public void showConfirmation(String title, String text, Runnable onConfirm, Runnable onCancel) {
-                AssetViewImpl.this.showConfirmation(title, text, onConfirm, onCancel);
-            }
-
-            @Override
-            public ManagerMessages getMessages(){
-                return managerMessages;
-            }
-        };
-    }
-
-    @Override
-    public AttributesEditor.Container<DeviceAttributesEditor.Style> getDeviceAttributesEditorContainer() {
-        return new AttributesEditor.Container<DeviceAttributesEditor.Style>() {
-            @Override
-            public FormView getFormView() {
-                return AssetViewImpl.this;
-            }
-
-            @Override
-            public DeviceAttributesEditor.Style getStyle() {
-                return deviceAttributesEditorStyle;
             }
 
             @Override

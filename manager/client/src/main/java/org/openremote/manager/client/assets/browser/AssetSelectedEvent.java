@@ -1,8 +1,10 @@
 package org.openremote.manager.client.assets.browser;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreType;
 import org.openremote.model.asset.AssetInfo;
-import org.openremote.manager.shared.event.Event;
+import org.openremote.model.Event;
 
+@JsonIgnoreType
 public class AssetSelectedEvent extends Event {
 
     final protected AssetInfo assetInfo;

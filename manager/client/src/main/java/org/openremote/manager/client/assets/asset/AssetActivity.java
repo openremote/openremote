@@ -30,7 +30,7 @@ import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
 import org.openremote.manager.client.widget.AttributesEditor;
 import org.openremote.manager.shared.asset.AssetResource;
-import org.openremote.manager.shared.event.ui.ShowInfoEvent;
+import org.openremote.manager.client.event.ShowInfoEvent;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.model.Attributes;
 import org.openremote.model.asset.Asset;
@@ -355,17 +355,7 @@ public class AssetActivity
 
     protected void writeAttributesEditorToView() {
         switch(asset.getWellKnownType()) {
-            /* TODO
-            case DEVICE:
-                if (parentAsset != null) {
-                    attributesEditor = new DeviceAttributesEditor(
-                        environment,
-                        view.getDeviceAttributesEditorContainer(),
-                        new Attributes(asset.getAttributes()),
-                        parentAsset.getId()
-                    );
-                }
-                break;
+            /* TODO Implement asset type-specific editors
             case AGENT:
                 attributesEditor = new AgentAttributesEditor(
                     environment,

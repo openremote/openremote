@@ -19,17 +19,22 @@
  */
 package org.openremote.model;
 
-import elemental.json.*;
+import elemental.json.Json;
+import elemental.json.JsonObject;
+import elemental.json.JsonValue;
 import org.openremote.model.asset.AssetMeta;
 
 import java.util.NoSuchElementException;
+
+import static org.openremote.model.asset.AssetMeta.PROTECTED;
+import static org.openremote.model.asset.AssetMeta.READ_ONLY;
 
 /**
  * Convenience overlay API for {@link JsonObject}.
  * <p>
  * Modifies the given or an empty object.
  */
-public class Attribute extends AbstractValueHolder<Attribute> {
+public class Attribute extends AbstractValueTimestampHolder<Attribute> {
 
     protected String name;
 
@@ -107,16 +112,8 @@ public class Attribute extends AbstractValueHolder<Attribute> {
         return this;
     }
 
-    public boolean hasMetaItem(AssetMeta assetMeta) {
-        return hasMetaItem(assetMeta.getName());
-    }
-
     public boolean hasMetaItem(String name) {
         return hasMeta() && getMeta().contains(name);
-    }
-
-    public MetaItem firstMetaItem(AssetMeta assetMeta) {
-        return firstMetaItem(assetMeta.getName());
     }
 
     public MetaItem firstMetaItem(String name) {
@@ -136,4 +133,54 @@ public class Attribute extends AbstractValueHolder<Attribute> {
     public boolean isValid() {
         return getName() != null && getName().length() > 0 && getType() != null;
     }
+
+    public AttributeRef getAttributeRef(String entityId) {
+        return new AttributeRef(entityId, getName());
+    }
+
+    /**
+     * @return The current value and its  timestamp represented as an attribute event.
+     */
+    public AttributeEvent getStateEvent(String assetId) {
+        return new AttributeEvent(
+            getAttributeRef(assetId),
+            getValue(),
+            getValueTimestamp()
+        );
+    }
+
+    /**
+     * Set the attributes' value and updates the value timestamp to event time.
+     *
+     * @throws IllegalArgumentException If a constraint is violated.
+     */
+    public Attribute applyStateEvent(AttributeEvent attributeEvent) throws IllegalArgumentException {
+        if (!attributeEvent.getAttributeState().getAttributeRef().getAttributeName().equals(getName())) {
+            throw new IllegalArgumentException("Attribute name mismatch, expected: " + getName());
+        }
+        return setValue(attributeEvent.getAttributeState().getValue(), attributeEvent.getTimestamp());
+    }
+
+    /* ############################################################################### */
+
+    // The following methods are only applicable to attributes of assets, but they are very convenient here...
+
+    public boolean hasMetaItem(AssetMeta assetMeta) {
+        return hasMetaItem(assetMeta.getName());
+    }
+
+    public MetaItem firstMetaItem(AssetMeta assetMeta) {
+        return firstMetaItem(assetMeta.getName());
+    }
+
+    public boolean isProtected() {
+        return hasMetaItem(PROTECTED) && firstMetaItem(PROTECTED).isValueTrue();
+    }
+
+    public boolean isReadOnly() {
+        return hasMetaItem(READ_ONLY) && firstMetaItem(READ_ONLY).isValueTrue();
+    }
+
+    /* ############################################################################### */
+
 }

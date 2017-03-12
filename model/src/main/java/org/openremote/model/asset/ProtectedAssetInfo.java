@@ -47,10 +47,10 @@ public class ProtectedAssetInfo extends AssetInfo {
         Attributes attributes = new Attributes(unfilteredAttributes);
         for (Attribute attribute : attributes.get()) {
 
-            // An attribute must have the PROTECTED flag to be included
-            MetaItem protectedItem = attribute.firstMetaItem(PROTECTED);
-            if (protectedItem == null || !protectedItem.getValueAsBoolean())
+            // An attribute must be protected to be included
+            if (!attribute.isProtected()) {
                 continue;
+            }
 
             Attribute protectedAttribute = new Attribute(attribute.getName(), attribute.getJsonObject());
             filteredAttributes.put(protectedAttribute);

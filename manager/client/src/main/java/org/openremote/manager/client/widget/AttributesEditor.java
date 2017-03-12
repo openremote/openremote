@@ -30,10 +30,11 @@ import elemental.json.JsonType;
 import elemental.json.JsonValue;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.i18n.ManagerMessages;
+import org.openremote.manager.client.util.CollectionsUtil;
 import org.openremote.manager.client.util.JsUtil;
 import org.openremote.manager.client.util.TextUtil;
-import org.openremote.manager.shared.event.ui.ShowFailureEvent;
-import org.openremote.manager.shared.event.ui.ShowInfoEvent;
+import org.openremote.manager.client.event.ShowFailureEvent;
+import org.openremote.manager.client.event.ShowInfoEvent;
 import org.openremote.model.*;
 import org.openremote.model.Runnable;
 import org.openremote.model.asset.AssetMeta;
@@ -42,7 +43,6 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.logging.Logger;
 
-import static org.openremote.manager.shared.util.Util.sortMap;
 
 public class AttributesEditor<S extends AttributesEditor.Style> {
 
@@ -106,7 +106,7 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         }
 
         // Sort form groups by label text ascending
-        sortMap(attributeGroups, Comparator.comparing(a -> a.getFormLabel().getText()));
+        CollectionsUtil.sortMap(attributeGroups, Comparator.comparing(a -> a.getFormLabel().getText()));
 
         for (FormGroup attributeGroup : attributeGroups.values()) {
             container.getPanel().add(attributeGroup);

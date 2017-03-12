@@ -20,20 +20,16 @@
 package org.openremote.manager.server.asset;
 
 import elemental.json.JsonValue;
-import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.container.message.MessageBrokerSetupService;
-import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.agent.AgentAttributes;
-import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.manager.shared.asset.SubscribeAssetModified;
-import org.openremote.manager.shared.asset.UnsubscribeAssetModified;
-import org.openremote.model.*;
+import org.openremote.model.AttributeRef;
+import org.openremote.model.Consumer;
+import org.openremote.model.Function;
 import org.openremote.model.asset.*;
 import org.postgresql.util.PGobject;
 
@@ -46,21 +42,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
-import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
-import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
-import static org.openremote.manager.server.event.EventPredicates.isEventType;
 import static org.openremote.model.asset.AssetType.AGENT;
 
-public class AssetStorageService
-    extends RouteBuilder
-    implements ContainerService, Consumer<AssetStateChange<ServerAsset>> {
+public class AssetStorageService implements ContainerService, Consumer<AssetUpdate> {
 
     private static final Logger LOG = Logger.getLogger(AssetStorageService.class.getName());
 
-    protected EventService eventService;
     protected PersistenceService persistenceService;
     protected ManagerIdentityService managerIdentityService;
-    protected AssetListenerSubscriptions assetListenerSubscriptions;
+
     final protected Function<AttributeRef, ProtocolConfiguration> agentLinkResolver = agentLink -> {
         // Resolve the agent and the protocol configuration
         // TODO This is very inefficient and requires Hibernate second-level caching
@@ -74,19 +64,8 @@ public class AssetStorageService
 
     @Override
     public void init(Container container) throws Exception {
-        eventService = container.getService(EventService.class);
         persistenceService = container.getService(PersistenceService.class);
         managerIdentityService = container.getService(ManagerIdentityService.class);
-
-        // TODO None of this is secure or considers the realm of an asset or the logged-in user's realm
-        assetListenerSubscriptions = new AssetListenerSubscriptions(eventService) {
-            @Override
-            protected Asset getAsset(String assetId) {
-                return AssetStorageService.this.find(assetId);
-            }
-        };
-
-        container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
 
         container.getService(WebService.class).getApiSingletons().add(
             new AssetResourceImpl(this)
@@ -100,37 +79,6 @@ public class AssetStorageService
     @Override
     public void stop(Container container) throws Exception {
 
-    }
-
-    @Override
-    public void configure() throws Exception {
-        // TODO None of this is secure or considers the realm of an asset or the logged-in user's realm
-        from(EventService.INCOMING_EVENT_QUEUE)
-            .filter(isEventType(SubscribeAssetModified.class))
-            .process(exchange -> {
-                String sessionKey = EventService.getSessionKey(exchange);
-                assetListenerSubscriptions.addSubscription(
-                    sessionKey,
-                    exchange.getIn().getBody(SubscribeAssetModified.class)
-                );
-            });
-
-        from(EventService.INCOMING_EVENT_QUEUE)
-            .filter(isEventType(UnsubscribeAssetModified.class))
-            .process(exchange -> {
-                String sessionKey = EventService.getSessionKey(exchange);
-                assetListenerSubscriptions.removeSubscription(
-                    sessionKey,
-                    exchange.getIn().getBody(UnsubscribeAssetModified.class)
-                );
-            });
-
-        from(PERSISTENCE_TOPIC)
-            .filter(isPersistenceEventForEntityType(Asset.class))
-            .process(exchange -> {
-                PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
-                assetListenerSubscriptions.dispatch(persistenceEvent);
-            });
     }
 
     public Function<AttributeRef, ProtocolConfiguration> getAgentLinkResolver() {
@@ -363,8 +311,16 @@ public class AssetStorageService
     }
 
     @Override
-    public void accept(AssetStateChange<ServerAsset> stateChange) {
-        if (!storeAttribute(stateChange.getAssetId(), stateChange.getAttribute())) {
+    public void accept(AssetUpdate assetUpdate) {
+        String assetId = assetUpdate.getAsset().getId();
+        String attributeName = assetUpdate.getAttribute().getName();
+        JsonValue value = assetUpdate.getAttribute().getValue();
+        // Some sanity checking, of course the timestamp should never be -1 if we store updated attribute state
+        long timestamp = assetUpdate.getAttribute().getValueTimestamp();
+        String valueTimestamp = Long.toString(
+            timestamp >= 0 ? timestamp : System.currentTimeMillis()
+        );
+        if (!storeAttributeValue(assetId, attributeName, value, valueTimestamp)) {
             throw new RuntimeException("Database update failed, no rows updated");
         };
     }
@@ -397,34 +353,41 @@ public class AssetStorageService
         return asset;
     }
 
-    protected boolean storeAttribute(String assetId, Attribute attribute) {
+    protected boolean storeAttributeValue(String assetId, String attributeName, JsonValue value, String timestamp) {
         return persistenceService.doReturningTransaction(entityManager ->
             entityManager.unwrap(Session.class).doReturningWork(connection -> {
 
-                // TODO: Need to push entire attribute update not just value
-                String attributeName = attribute.getName();
-                JsonValue value = attribute.getValue();
-
                 String update =
                     "UPDATE ASSET" +
-                        " SET ATTRIBUTES = jsonb_set(ATTRIBUTES, ?, ?, TRUE)" +
+                        " SET ATTRIBUTES = jsonb_set(jsonb_set(ATTRIBUTES, ?, ?, TRUE), ?, ?, TRUE)" +
                         " WHERE ID = ? AND ATTRIBUTES -> ? IS NOT NULL";
                 try (PreparedStatement statement = connection.prepareStatement(update)) {
 
-                    Array attributePath = connection.createArrayOf(
+                    // Bind the value
+                    Array attributeValuePath = connection.createArrayOf(
                         "text",
                         new String[]{attributeName, "value"}
                     );
-                    statement.setArray(1, attributePath);
-
+                    statement.setArray(1, attributeValuePath);
                     PGobject pgJsonValue = new PGobject();
                     pgJsonValue.setType("jsonb");
                     pgJsonValue.setValue(value.toJson());
                     statement.setObject(2, pgJsonValue);
 
-                    statement.setString(3, assetId);
+                    // Bind the value timestamp
+                    Array attributeValueTimestampPath = connection.createArrayOf(
+                        "text",
+                        new String[]{attributeName, "valueTimestamp"}
+                    );
+                    statement.setArray(3, attributeValueTimestampPath);
+                    PGobject pgJsonValueTimestamp = new PGobject();
+                    pgJsonValueTimestamp.setType("jsonb");
+                    pgJsonValueTimestamp.setValue(timestamp);
+                    statement.setObject(4, pgJsonValueTimestamp);
 
-                    statement.setString(4, attributeName);
+                    // Bind asset ID and attribute name
+                    statement.setString(5, assetId);
+                    statement.setString(6, attributeName);
 
                     int updatedRows = statement.executeUpdate();
                     LOG.fine("Stored asset '" + assetId + "' attribute '" + attributeName + "' value, affected rows: " + updatedRows);

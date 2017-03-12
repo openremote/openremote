@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.server.asset;
 
-import elemental.json.Json;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.agent3.protocol.Protocol;
 import org.openremote.container.Container;
@@ -28,10 +27,10 @@ import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.manager.server.agent.ThingAttributes;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
 import org.openremote.manager.server.rules.AssetRulesService;
-import org.openremote.manager.shared.event.asset.AttributeStateUpdateEvent;
-import org.openremote.model.*;
-import org.openremote.model.asset.AssetMeta;
-import org.openremote.model.asset.AssetStateChange;
+import org.openremote.model.Attribute;
+import org.openremote.model.AttributeEvent;
+import org.openremote.model.AttributeState;
+import org.openremote.model.Consumer;
 import org.openremote.model.asset.ThingAttribute;
 
 import java.util.ArrayList;
@@ -48,10 +47,8 @@ import static org.openremote.model.asset.AssetType.THING;
  * <li>
  * Listens to {@link AttributeState} messages on {@link Protocol#SENSOR_TOPIC} and processes them
  * with consumers: {@link AssetRulesService}, {@link AssetStorageService}, {@link AssetDatapointService}
- * TODO Make consumers Camel endpoints?
  * </li>
  * </ul>
- * TODO Move AssetListenerSubscriptions from AssetStorageService, when we figured out client messaging pub/sub
  */
 public class AssetProcessingService extends RouteBuilder implements ContainerService {
 
@@ -60,8 +57,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     protected AssetRulesService assetRulesService;
     protected AssetStorageService assetStorageService;
     protected AssetDatapointService assetDatapointService;
-    final protected List<Consumer<AssetStateChange<ServerAsset>>> attributeStateChangeConsumers = new ArrayList<>();
 
+    final protected List<Consumer<AssetUpdate>> processors = new ArrayList<>();
 
     @Override
     public void init(Container container) throws Exception {
@@ -69,9 +66,9 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         assetStorageService = container.getService(AssetStorageService.class);
         assetDatapointService = container.getService(AssetDatapointService.class);
 
-        attributeStateChangeConsumers.add(assetRulesService);
-        attributeStateChangeConsumers.add(assetStorageService);
-        attributeStateChangeConsumers.add(assetDatapointService);
+        processors.add(assetRulesService);
+        processors.add(assetStorageService);
+        processors.add(assetDatapointService);
 
         container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
     }
@@ -91,115 +88,104 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
         // Sensor updates are processed first by rules, then stored in the asset and datapoint databases
         from(SENSOR_TOPIC)
-            .filter(body().isInstanceOf(AttributeState.class))
+            .filter(body().isInstanceOf(AttributeEvent.class))
             .process(exchange -> {
-                AttributeState attributeState =
-                    exchange.getIn().getBody(AttributeState.class);
+                AttributeEvent attributeEvent = exchange.getIn().getBody(AttributeEvent.class);
 
-                // TODO: Agent should be able to create AttributeStateUpdateEvent with desired timestamp
-                AttributeStateUpdateEvent attributeStateUpdateEvent = new AttributeStateUpdateEvent(attributeState);
-
-                // From sensor topic means this is a thing asset so we can get the thing
-                ServerAsset thing = assetStorageService.find(attributeState.getAttributeRef().getEntityId());
-
-                // If it's not a thing, that's wrong
+                // From sensor topic means this must update a thing asset
+                ServerAsset thing = assetStorageService.find(attributeEvent.getEntityId());
                 if (thing.getWellKnownType() != THING) {
-                    LOG.fine("Ignoring update of " + attributeState + ", not a thing: " + thing);
+                    LOG.fine("Ignoring " + attributeEvent + ", not a thing: " + thing);
                     return;
                 }
 
-                // Get the attribute and check it is actually linked to an agent
-                // TODO: Do we really need to perform this verification it's the protocol that brought us here anyway?
+                // Get the attribute and check it is actually linked to an agent (although the
+                // event comes from a Protocol, we can not assume that the attribute is still linked,
+                // consider a protocol that receives a batch of messages because a gateway was offline
+                // for a day)
                 ThingAttributes thingAttributes = new ThingAttributes(thing);
                 ThingAttribute thingAttribute = thingAttributes.getLinkedAttribute(
-                    assetStorageService.getAgentLinkResolver(), attributeState.getAttributeRef().getAttributeName()
+                    assetStorageService.getAgentLinkResolver(), attributeEvent.getAttributeName()
                 );
-                if (thingAttribute == null) {
-                    LOG.fine("Ignoring update of " + attributeState + ", linked attribute not found in: " + thing);
-                    return;
-                }
 
-                processAttributeStateUpdate(attributeStateUpdateEvent, true);
+                processAssetUpdate(thing, thingAttribute, attributeEvent, true);
             });
     }
 
-    // TODO: This should be used by client, rules and protocols as the single point of asset attribute state update
-    // TODO: How to handle read only attribute updates (if from the protocol then it should be allowed)
-    void processAttributeStateUpdate(AttributeStateUpdateEvent attributeStateUpdateEvent, boolean ignoreReadOnlyFlag) {
-        AttributeState attributeState = attributeStateUpdateEvent.getAttributeState();
-        ServerAsset asset = assetStorageService.find(attributeState.getAttributeRef().getEntityId());
-        Attributes attributes = new Attributes(asset.getAttributes());
-        String attributeName = attributeState.getAttributeRef().getAttributeName();
-        Attribute attribute = attributes.get(attributeName);
+    public void processAssetUpdate(ServerAsset asset,
+                                   Attribute attribute,
+                                   AttributeEvent attributeEvent) {
+        processAssetUpdate(asset, attribute, attributeEvent, false);
+    }
 
-        // Check the asset has this attribute
+    protected void processAssetUpdate(ServerAsset asset,
+                                      Attribute attribute,
+                                      AttributeEvent attributeEvent,
+                                      boolean ignoreReadOnly) {
+
+        // Check the asset has this attribute (might also not be present if a Thing's attribute is unlinked)
         if (attribute == null) {
-            LOG.fine("Ignoring update of " + attributeState + " as asset doesn't have an attribute by this name");
+            LOG.fine("Ignoring " + attributeEvent + ", attribute not available: " + asset);
             return;
         }
 
         // Check attribute isn't readonly
-        if (!ignoreReadOnlyFlag && attribute.firstMetaItem(AssetMeta.READ_ONLY) != null) {
-            LOG.fine("Ignoring update of " + attributeState + " as asset attribute is readonly");
-            return;
-        }
-
-        // Hold on to original attributeState so we can use it during processing
-        AttributeState originalState = new AttributeState(
-                new AttributeRef(asset.getId(), attribute.getName()), attribute.getValue()
-        );
-
-        // Set new value on attribute, thus validating the value type against the attribute type
-        try {
-            attribute.setValue(attributeState.getValue());
-        } catch (IllegalArgumentException ex) {
-            LOG.log(Level.FINE, "Ignoring update of " + attributeState + ", attribute constraint violations in: " + asset, ex);
+        if (!ignoreReadOnly && attribute.isReadOnly()) {
+            LOG.fine("Ignoring " + attributeEvent + ", attribute is read-only in: " + asset);
             return;
         }
 
         // Ensure timestamp of event is not in the future as that would essentially block access to
         // the attribute until after that time (maybe that is desirable behaviour)
         // Allow a leniency of 1s
-        if (attributeStateUpdateEvent.getTimestamp() - System.currentTimeMillis() > 1000) {
+        if (attributeEvent.getTimestamp() - System.currentTimeMillis() > 1000) {
             // TODO: Decide how to handle update events in the future - ignore or change timestamp
-            LOG.fine("Ignoring update of " + attributeState + ", update event timestamp is in the future");
+            LOG.fine("Ignoring " + attributeEvent + ", event-time is in the future in:" + asset);
             return;
         }
 
-        // Check the last update timestamp meta on the attribute and store update timestamp
-        Meta meta = attribute.getMeta();
-        MetaItem lastUpdateMeta = meta.first(AssetMeta.VALUE_TIMESTAMP);
-        if (lastUpdateMeta != null) {
-            // Can't use int as timestamp will overflow
-            Double lastUpdate = lastUpdateMeta.getValueAsDecimal();
-            if (lastUpdate != null) {
-                // Check last update is before this update
-                if (attributeStateUpdateEvent.getTimestamp() - lastUpdate < 1000) {
-                    LOG.fine("Ignoring update of " + attributeState + ", update event timestamp is before the attributes last update timestamp");
-                    return;
-                }
-            }
-            lastUpdateMeta.setValue(Json.create(attributeStateUpdateEvent.getTimestamp()));
+        // Hold on to existing attribute state so we can use it during processing
+        AttributeEvent lastStateEvent = attribute.getStateEvent(asset.getId());
+
+        // Check the last update timestamp of the attribute, ignoring any event that is older than last udpate
+        // TODO: This means we drop out-of-sequence events, we might need better at-least-once handling
+        if (lastStateEvent.getTimestamp() >= 0 && attributeEvent.getTimestamp() - lastStateEvent.getTimestamp() < 1000) {
+            LOG.fine("Ignoring " + attributeEvent + ", event-time is older than attribute's last value in: " + asset);
+            return;
         }
-        attribute.setMeta(meta);
+
+        // Set new value and event timestamp on attribute, thus validating any attribute constraints
+        try {
+            attribute.applyStateEvent(attributeEvent);
+        } catch (IllegalArgumentException ex) {
+            LOG.log(Level.FINE, "Ignoring " + attributeEvent + ", attribute constraint violation in: " + asset, ex);
+            return;
+        }
+
+        processAssetUpdate(
+            new AssetUpdate(asset, attribute, attributeEvent, lastStateEvent)
+        );
+    }
+
+    protected void processAssetUpdate(AssetUpdate assetUpdate) {
 
         // Create and process the attributeState change
-        AssetStateChange<ServerAsset> stateChange = new AssetStateChange<>(asset, attribute, originalState);
-
-        for (Consumer<AssetStateChange<ServerAsset>> consumer : attributeStateChangeConsumers) {
+        for (Consumer<AssetUpdate> processor : processors) {
             try {
-                LOG.fine("Consumer " + consumer + " should process: " + stateChange);
-                consumer.accept(stateChange);
-                LOG.fine("Consumer " + consumer + " completed processing: " + stateChange);
+                LOG.fine("Processor " + processor + " accepts: " + assetUpdate);
+                processor.accept(assetUpdate);
             } catch (Throwable t) {
-                // All exceptions during processing should end up here
-                // TODO Better error handling, not sure we need rewind?
-                throw new RuntimeException("Consumer " + consumer + " processing error: " + stateChange, t);
+                assetUpdate.setStatus(AssetUpdate.Status.ERROR);
+                assetUpdate.setError(t);
             }
 
-            if (stateChange.getProcessingStatus() == AttributeStateChange.Status.HANDLED) {
-                LOG.fine("Consumer " + consumer + " finally handled: " + stateChange);
-                break;
+            switch (assetUpdate.getStatus()) {
+                case HANDLED:
+                    LOG.fine("Processor " + processor + " finally handled: " + assetUpdate);
+                    break;
+                case ERROR:
+                    // TODO Better error handling, not sure we need rewind?
+                    throw new RuntimeException("Processor " + processor + " error: " + assetUpdate, assetUpdate.getError());
             }
         }
     }

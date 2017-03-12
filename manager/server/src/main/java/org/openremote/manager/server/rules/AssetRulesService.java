@@ -40,11 +40,10 @@ import org.kie.internal.builder.DecisionTableInputType;
 import org.kie.internal.builder.KnowledgeBuilderFactory;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.manager.server.asset.ServerAsset;
+import org.openremote.manager.server.asset.AssetUpdate;
+import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeRef;
-import org.openremote.model.AttributeStateChange;
 import org.openremote.model.Consumer;
-import org.openremote.model.asset.AssetStateChange;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -52,8 +51,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class AssetRulesService implements ContainerService,
-    Consumer<AssetStateChange<ServerAsset>> {
+public class AssetRulesService implements ContainerService, Consumer<AssetUpdate> {
 
     private static final Logger LOG = Logger.getLogger(AssetRulesService.class.getName());
 
@@ -151,48 +149,49 @@ public class AssetRulesService implements ContainerService,
     }
 
     @Override
-    public void accept(AssetStateChange<ServerAsset> stateChange) {
+    public void accept(AssetUpdate assetUpdate) {
         if (kb == null) {
             if (deployFailed) {
-                stateChange.setProcessingStatus(AttributeStateChange.Status.ERROR);
+                throw new IllegalStateException("Knowledge base deployment failed, can't process updates");
             } else {
-                LOG.fine("No knowledge base configured, skipping processing of: " + stateChange);
-                stateChange.setProcessingStatus(AttributeStateChange.Status.CONTINUE);
+                LOG.fine("No knowledge base configured");
+                return;
             }
-            return;
         }
 
         long newFactCount;
 
+        // TODO: Put the AssetUpdate into a facade so rules can set its status
+
+        AttributeEvent attributeEvent = assetUpdate.getNewState();
+
         // If this fact is not in working memory (considering its equals() method)...
-        if (!knowledgeSession.getObjects().contains(stateChange)) {
+        if (!knowledgeSession.getObjects().contains(attributeEvent)) {
 
             // ... update or new insert?
             boolean isUpdate = true;
 
-            AttributeRef attributeRef = stateChange.getOriginalState().getAttributeRef();
-
             // If there already is a fact in working memory for this attribute
-            if (attributeFacts.keySet().contains(attributeRef)) {
+            if (attributeFacts.keySet().contains(attributeEvent.getAttributeRef())) {
                 try {
                     // ... retract it from working memory ...
-                    knowledgeSession.delete(attributeFacts.get(attributeRef));
+                    knowledgeSession.delete(attributeFacts.get(attributeEvent.getAttributeRef()));
                 } finally {
                     // ... and make sure we don't keep a reference to a fact
-                    attributeFacts.remove(attributeRef);
+                    attributeFacts.remove(attributeEvent.getAttributeRef());
                 }
             } else {
                 isUpdate = false;
             }
 
             // Put the fact into working memory and remember the handle
-            FactHandle handle = knowledgeSession.insert(stateChange);
-            attributeFacts.put(attributeRef, handle);
+            FactHandle handle = knowledgeSession.insert(attributeEvent);
+            attributeFacts.put(attributeEvent.getAttributeRef(), handle);
 
             if (isUpdate) {
-                LOG.finest("Inserted: " + stateChange);
+                LOG.finest("Inserted: " + attributeEvent);
             } else {
-                LOG.finest("Updated: " + stateChange);
+                LOG.finest("Updated: " + attributeEvent);
             }
 
             // TODO: Prevent run away fact creation (not sure how we can do this reliably as facts can be generated in rule RHS)
@@ -203,7 +202,7 @@ public class AssetRulesService implements ContainerService,
             newFactCount = knowledgeSession.getFactCount();
             LOG.finest("New fact count: " + newFactCount);
             if (newFactCount != currentFactCount) {
-                LOG.finest("Fact count changed from " + currentFactCount + " to " + newFactCount + " on: " + stateChange);
+                LOG.finest("Fact count changed from " + currentFactCount + " to " + newFactCount + " on: " + attributeEvent);
             }
             currentFactCount = newFactCount;
         }

@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.client.event.bus;
 
-import org.openremote.manager.shared.event.Event;
+import org.openremote.model.Event;
 
 public class EventRegistration<E extends Event> {
 
@@ -54,7 +54,7 @@ public class EventRegistration<E extends Event> {
     }
 
     public String getEventType() {
-        return Event.getType(getEventClass());
+        return Event.getEventType(getEventClass());
     }
 
     public EventListener<E> getListener() {
@@ -62,6 +62,6 @@ public class EventRegistration<E extends Event> {
     }
 
     public boolean isMatching(Event event) {
-        return getEventClass()  == null || getEventType().equals(event.getType());
+        return getEventClass()  == null || getEventType().equals(event.getEventType());
     }
 }

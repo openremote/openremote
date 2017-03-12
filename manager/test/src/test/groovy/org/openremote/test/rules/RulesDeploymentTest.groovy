@@ -8,8 +8,7 @@ import org.openremote.container.message.MessageBrokerService
 import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
-import org.openremote.model.AttributeRef
-import org.openremote.model.AttributeState
+import org.openremote.model.AttributeEvent
 import org.openremote.model.Attributes
 import org.openremote.model.units.ColorRGB
 import org.openremote.test.ManagerContainerTrait
@@ -68,8 +67,8 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
                 4c. Should "forceUpdate" be the default behavior?
         */
-        def light1DimmerChange = new AttributeState(
-                new AttributeRef(managerDemoSetup.thingId, "light1Dimmer"), Json.create(66)
+        def light1DimmerChange = new AttributeEvent(
+                managerDemoSetup.thingId, "light1Dimmer", Json.create(66)
         )
         container.getService(MessageBrokerService.class).getProducerTemplate().sendBody(
                 ACTUATOR_TOPIC, light1DimmerChange

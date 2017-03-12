@@ -24,6 +24,7 @@ import org.openremote.agent3.protocol.AbstractProtocol;
 import org.openremote.agent3.protocol.simulator.element.*;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.AttributeState;
+import org.openremote.model.AttributeEvent;
 import org.openremote.model.MetaItem;
 import org.openremote.model.asset.ThingAttribute;
 
@@ -70,8 +71,8 @@ public class SimulatorProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void sendToActuator(AttributeState attributeState) {
-        putState(attributeState, false);
+    protected void sendToActuator(AttributeEvent event) {
+        putState(event.getAttributeState(), false);
     }
 
     public void putState(String entityId, String attributeName, JsonValue value) {
@@ -98,7 +99,7 @@ public class SimulatorProtocol extends AbstractProtocol {
 
             if (isSensorUpdate) {
                 LOG.info("Propagating state change as sensor update: " + element);
-                onSensorUpdate(attributeState);
+                onSensorUpdate(new AttributeEvent(attributeState));
             }
         }
     }

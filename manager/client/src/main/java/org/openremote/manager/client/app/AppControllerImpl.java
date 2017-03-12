@@ -28,8 +28,8 @@ import com.google.inject.Provider;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.toast.Toast;
 import org.openremote.manager.client.toast.Toasts;
-import org.openremote.manager.shared.event.ui.ShowFailureEvent;
-import org.openremote.manager.shared.event.ui.ShowInfoEvent;
+import org.openremote.manager.client.event.ShowFailureEvent;
+import org.openremote.manager.client.event.ShowInfoEvent;
 
 import javax.inject.Inject;
 
