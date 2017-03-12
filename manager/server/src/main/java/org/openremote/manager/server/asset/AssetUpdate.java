@@ -55,11 +55,30 @@ public class AssetUpdate {
     protected Status status = Status.CONTINUE;
     protected Throwable error;
 
-    public AssetUpdate(ServerAsset asset, Attribute attribute, AttributeEvent newState, AttributeEvent oldState) {
+    /**
+     * @throws IllegalArgumentException If the asset, attribute, newState, and oldState don't reference the same asset ID and attribute name.
+     */
+    public AssetUpdate(ServerAsset asset, Attribute attribute, AttributeEvent newState, AttributeEvent oldState) throws IllegalArgumentException {
         this.asset = asset;
         this.attribute = attribute;
         this.newState = newState;
         this.oldState = oldState;
+
+        // Resolve attribute references after some sanity checks
+        if (!newState.getAttributeRef().getEntityId().equals(asset.getId())) {
+            throw new IllegalArgumentException("New state entity ID must match: " + asset);
+        }
+        if (!newState.getAttributeRef().getAttributeName().equals(attribute.getName())) {
+            throw new IllegalArgumentException("New state attribute name must match: " + attribute);
+        }
+        if (!oldState.getAttributeRef().getEntityId().equals(asset.getId())) {
+            throw new IllegalArgumentException("Old state entity ID must match: " + asset);
+        }
+        if (!oldState.getAttributeRef().getAttributeName().equals(attribute.getName())) {
+            throw new IllegalArgumentException("Old state attribute name must match: " + attribute);
+        }
+        newState.getAttributeRef().setEntityName(asset.getName());
+        oldState.getAttributeRef().setEntityName(asset.getName());
     }
 
     public ServerAsset getAsset() {

@@ -64,6 +64,10 @@ public class AttributeEvent extends Event {
         return getAttributeRef().getEntityId();
     }
 
+    public String getEntityName() {
+        return getAttributeRef().getEntityName();
+    }
+
     public String getAttributeName() {
         return getAttributeRef().getAttributeName();
     }
