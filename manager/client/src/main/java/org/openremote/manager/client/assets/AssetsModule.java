@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -46,11 +46,7 @@ public class AssetsModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    public AssetResource getAssetResource() {
-        return getNativeAssetResource();
-    }
-
-    public static native AssetResource getNativeAssetResource() /*-{
+    public native AssetResource getAssetResource() /*-{
         return $wnd.AssetResource;
     }-*/;
 }

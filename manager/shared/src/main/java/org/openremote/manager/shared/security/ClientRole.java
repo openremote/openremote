@@ -33,6 +33,7 @@ public enum ClientRole {
     READ_MAP("read:map", "View map"),
     READ_ASSETS("read:assets", "Read asset data"),
     READ_RULES("read:rules", "Read rule definitions"),
+    READ_CONSOLES("read:consoles", "Read installed console applications"),
 
     WRITE_ADMIN("write:admin", "Write system settings, tenants, and users"),
     WRITE_ASSETS("write:assets", "Write asset data"),
@@ -43,7 +44,8 @@ public enum ClientRole {
         READ_ADMIN,
         READ_MAP,
         READ_ASSETS,
-        READ_RULES
+        READ_RULES,
+        READ_CONSOLES
     }),
 
     WRITE("write", "Write all data", new ClientRole[]{

@@ -23,6 +23,7 @@ public interface Constants {
 
     String KEYCLOAK_CLIENT_ID = "openremote";
     String MASTER_REALM = "master";
+    String MASTER_REALM_DISPLAY_NAME = "Master";
     String MASTER_REALM_ADMIN_USER = "admin";
     String REALM_ADMIN_ROLE = "admin";
     int ACCESS_TOKEN_LIFESPAN_SECONDS = 300; // 5 minutes

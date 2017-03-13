@@ -31,7 +31,7 @@ import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.util.Timeout;
 import org.openremote.manager.client.widget.Hyperlink;
-import org.openremote.model.asset.AssetInfo;
+import org.openremote.manager.shared.apps.ConsoleApp;
 
 import javax.inject.Inject;
 import java.util.logging.Logger;
@@ -45,7 +45,11 @@ public class AppsViewImpl extends Composite implements AppsView {
 
     interface Style extends CssResource {
 
-        String navItem();
+        String appsListItem();
+
+        String appsControls();
+
+        String appsListPanel();
     }
 
     @UiField
@@ -84,7 +88,7 @@ public class AppsViewImpl extends Composite implements AppsView {
     }
 
     @Override
-    public void setApps(String[] apps) {
+    public void setApps(ConsoleApp[] apps) {
         appsListPanel.clear();
 
         if (apps == null || apps.length == 0) {
@@ -94,14 +98,14 @@ public class AppsViewImpl extends Composite implements AppsView {
             return;
         }
 
-        for (String app : apps) {
-            Hyperlink agentLabel = new Hyperlink();
-            agentLabel.setIcon("cubes");
-            agentLabel.addStyleName(style.navItem());
-            agentLabel.addStyleName(widgetStyle.SecondaryNavItem());
-            agentLabel.setText(app);
-            agentLabel.addClickHandler(event -> presenter.onAppSelected(app));
-            appsListPanel.add(agentLabel);
+        for (ConsoleApp app : apps) {
+            Hyperlink item = new Hyperlink();
+            item.setIcon("connectdevelop");
+            item.addStyleName(style.appsListItem());
+            item.addStyleName(widgetStyle.SecondaryNavItem());
+            item.setText(app.getName());
+            item.setSimpleClickHandler(() -> presenter.onAppSelected(app));
+            appsListPanel.add(item);
         }
     }
 

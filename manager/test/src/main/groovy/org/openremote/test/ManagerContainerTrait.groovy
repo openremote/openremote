@@ -6,6 +6,7 @@ import org.openremote.container.ContainerService
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.message.MessageBrokerSetupService
 import org.openremote.container.persistence.PersistenceService
+import org.openremote.manager.server.apps.ConsoleAppService
 import org.openremote.manager.server.notification.NotificationService
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.rules.AssetRulesService
@@ -40,6 +41,7 @@ trait ManagerContainerTrait extends ContainerTrait {
                 new MapService(),
                 new NotificationService(),
                 new MessageBrokerService(),
+                new ConsoleAppService(),
                 new ManagerWebService(),
                 *additionalServices
 

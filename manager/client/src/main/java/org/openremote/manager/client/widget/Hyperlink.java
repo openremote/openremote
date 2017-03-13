@@ -19,14 +19,22 @@
  */
 package org.openremote.manager.client.widget;
 
+import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.user.client.DOM;
+import com.google.gwt.user.client.Event;
+import com.google.gwt.user.client.History;
 import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.impl.HyperlinkImpl;
+import org.openremote.model.Runnable;
 
 public class Hyperlink extends com.google.gwt.user.client.ui.Hyperlink {
 
+    protected static HyperlinkImpl impl = GWT.create(HyperlinkImpl.class);
+
     protected String icon;
     protected Label iconLabel = new Label();
+    protected Runnable simpleClickHandler;
 
     public Hyperlink() {
         super();
@@ -46,6 +54,24 @@ public class Hyperlink extends com.google.gwt.user.client.ui.Hyperlink {
         iconLabel.getElement().removeClassName("or-HyperlinkIcon");
         if (icon != null) {
             iconLabel.getElement().addClassName("or-HyperlinkIcon fa fa-" + icon);
+        }
+    }
+
+    public Runnable getSimpleClickHandler() {
+        return simpleClickHandler;
+    }
+
+    public void setSimpleClickHandler(Runnable simpleClickHandler) {
+        this.simpleClickHandler = simpleClickHandler;
+    }
+
+    @Override
+    public void onBrowserEvent(Event event) {
+        if (simpleClickHandler != null && DOM.eventGetType(event) == Event.ONCLICK && impl.handleAsClick(event)) {
+            simpleClickHandler.run();
+            event.preventDefault();
+        } else {
+            super.onBrowserEvent(event);
         }
     }
 }

@@ -20,16 +20,17 @@
 package org.openremote.manager.client.apps;
 
 import com.google.gwt.user.client.ui.IsWidget;
+import org.openremote.manager.shared.apps.ConsoleApp;
 
 public interface AppsView extends IsWidget {
 
     interface Presenter {
-        void onAppSelected(String app);
+        void onAppSelected(ConsoleApp app);
     }
 
     void setPresenter(Presenter presenter);
 
-    void setApps(String[] apps);
+    void setApps(ConsoleApp[] apps);
 
     void openAppUrl(String appUrl);
 

@@ -6,14 +6,30 @@
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
 
+    <ui:style>
+        .adminControls {
+
+        }
+    </ui:style>
+
     <g:HTMLPanel styleName="flex layout horizontal">
 
         <an:AdminNavigation ui:field="adminNavigation"/>
 
-        <div class="flex {widgetStyle.MainContent}">
-            <g:SimplePanel ui:field="adminContentContainer"/>
-        </div>
+        <g:HTMLPanel styleName="flex layout vertical">
 
+<!-- TODO Add controls
+
+            <g:HTMLPanel
+                    styleName="layout horizontal center end-justified {style.adminControls} {widgetStyle.SecondaryNavHorizontal}">
+            </g:HTMLPanel>
+-->
+
+            <div class="flex {widgetStyle.MainContent}">
+                <g:SimplePanel ui:field="adminContentContainer"/>
+            </div>
+
+        </g:HTMLPanel>
     </g:HTMLPanel>
 
 </ui:UiBinder>

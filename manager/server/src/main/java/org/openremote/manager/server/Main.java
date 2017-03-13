@@ -26,6 +26,7 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.manager.server.agent.AgentService;
+import org.openremote.manager.server.apps.ConsoleAppService;
 import org.openremote.manager.server.asset.AssetProcessingService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
@@ -68,6 +69,7 @@ public class Main {
                     new MapService(),
                     new NotificationService(),
                     new MessageBrokerService(),
+                    new ConsoleAppService(),
                     new ManagerWebService()
                 ));
             }

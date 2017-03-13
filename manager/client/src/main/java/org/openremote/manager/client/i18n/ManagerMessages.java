@@ -290,4 +290,6 @@ public interface ManagerMessages extends Messages {
     String fullscreen();
 
     String editGlobalRules();
+
+    String selectConsoleApp();
 }

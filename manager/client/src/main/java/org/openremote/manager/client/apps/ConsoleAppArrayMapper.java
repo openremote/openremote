@@ -19,22 +19,14 @@
  */
 package org.openremote.manager.client.apps;
 
-import com.google.gwt.inject.client.AbstractGinModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import org.openremote.manager.shared.apps.ConsoleAppResource;
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
+import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
+import org.openremote.manager.shared.apps.ConsoleApp;
+import org.openremote.manager.shared.http.EntityReader;
 
-public class AppsModule extends AbstractGinModule {
-
-    @Override
-    protected void configure() {
-        bind(AppsView.class).to(AppsViewImpl.class).in(Singleton.class);
-        bind(AppsActivity.class);
-    }
-
-    @Provides
-    @Singleton
-    public native ConsoleAppResource getConsoleAppResource() /*-{
-        return $wnd.ConsoleAppResource;
-    }-*/;
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = ConsoleApp.class, mixIn = DefaultJsonMixin.class)})
+public interface ConsoleAppArrayMapper
+    extends ObjectMapper<ConsoleApp[]>,
+    EntityReader<ConsoleApp[]> {
 }

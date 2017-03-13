@@ -102,7 +102,7 @@ public class ManagerIdentityService extends IdentityService {
         List<RealmRepresentation> realms = getRealms(bearerAuth).findAll();
 
         // Make sure the master tenant is always on top
-        Collections.sort(realms, (o1, o2) -> {
+        realms.sort((o1, o2) -> {
             if (o1.getRealm().equals(MASTER_REALM))
                 return -1;
             if (o2.getRealm().equals(MASTER_REALM))
@@ -134,6 +134,18 @@ public class ManagerIdentityService extends IdentityService {
                 "SELECT ID FROM REALM WHERE ENABLED = TRUE AND NAME = :realm"
             ).setParameter("realm", realm).getResultList();
             return result.size() > 0;
+        });
+    }
+
+    public String getActiveTenantName(String realm) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            // TODO Should also check NOT_BEFORE?
+            @SuppressWarnings("unchecked")
+            List<String> result = entityManager.createNativeQuery(
+                "SELECT ra.VALUE FROM REALM r JOIN REALM_ATTRIBUTE ra " +
+                    "ON r.ID = ra.REALM_ID AND ra.NAME = 'displayName' AND r.ENABLED = true AND r.NAME = :realm"
+            ).setParameter("realm", realm).getResultList();
+            return result.size() > 0 ? result.get(0) : null;
         });
     }
 

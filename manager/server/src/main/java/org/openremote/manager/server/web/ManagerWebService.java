@@ -26,6 +26,7 @@ import org.openremote.container.security.IdentityService;
 import org.openremote.container.web.WebService;
 import org.openremote.model.Constants;
 
+import javax.ws.rs.core.UriBuilder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.logging.Logger;
@@ -47,13 +48,15 @@ public class ManagerWebService extends WebService {
     public static final Pattern MANAGER_PATTERN = Pattern.compile(Pattern.quote(MANAGER_PATH) + "(/.*)?");
     public static final Pattern CONSOLE_PATTERN = Pattern.compile(Pattern.quote(CONSOLE_PATH) + "(/.*)?");
 
+    protected Path managerDocRoot;
+    protected Path consoleDocRoot;
     protected HttpHandler managerFileHandler;
 
     @Override
     public void init(Container container) throws Exception {
 
         // Serve the Manager client files unsecured
-        Path managerDocRoot = Paths.get(
+        managerDocRoot = Paths.get(
             getString(container.getConfig(), MANAGER_DOCROOT, MANAGER_DOCROOT_DEFAULT)
         );
         DeploymentInfo managerDeployment = ManagerFileServlet.createDeploymentInfo(
@@ -67,7 +70,7 @@ public class ManagerWebService extends WebService {
         );
 
         // Serve the Console client files unsecured
-        Path consoleDocRoot = Paths.get(
+         consoleDocRoot = Paths.get(
             getString(container.getConfig(), CONSOLE_DOCROOT, CONSOLE_DOCROOT_DEFAULT)
         );
         DeploymentInfo consoleDeployment = ManagerFileServlet.createDeploymentInfo(
@@ -91,6 +94,18 @@ public class ManagerWebService extends WebService {
     @Override
     protected HttpHandler getRealmIndexHandler() {
         return managerFileHandler;
+    }
+
+    public Path getManagerDocRoot() {
+        return managerDocRoot;
+    }
+
+    public Path getConsoleDocRoot() {
+        return consoleDocRoot;
+    }
+
+    public String getConsoleUrl(UriBuilder baseUri, String realm) {
+        return baseUri.path(CONSOLE_PATH).path(realm).build().toString();
     }
 
     @Override

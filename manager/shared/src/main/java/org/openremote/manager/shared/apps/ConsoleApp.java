@@ -17,24 +17,46 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.apps;
+package org.openremote.manager.shared.apps;
 
-import com.google.gwt.inject.client.AbstractGinModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import org.openremote.manager.shared.apps.ConsoleAppResource;
+/**
+ * An installed console app.
+ */
+public class ConsoleApp {
 
-public class AppsModule extends AbstractGinModule {
+    protected String name;
+    protected String url;
 
-    @Override
-    protected void configure() {
-        bind(AppsView.class).to(AppsViewImpl.class).in(Singleton.class);
-        bind(AppsActivity.class);
+    public ConsoleApp() {
+
     }
 
-    @Provides
-    @Singleton
-    public native ConsoleAppResource getConsoleAppResource() /*-{
-        return $wnd.ConsoleAppResource;
-    }-*/;
+    public ConsoleApp(String name, String url) {
+        this.name = name;
+        this.url = url;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "name='" + name + '\'' +
+            ", url='" + url + '\'' +
+            '}';
+    }
 }

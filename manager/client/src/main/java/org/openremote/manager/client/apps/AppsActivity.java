@@ -24,9 +24,13 @@ import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
+import org.openremote.manager.shared.apps.ConsoleApp;
+import org.openremote.manager.shared.apps.ConsoleAppResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
+
+import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
 public class AppsActivity
     extends AppActivity<AppsPlace>
@@ -34,11 +38,18 @@ public class AppsActivity
 
     final AppsView view;
     final Environment environment;
+    final ConsoleAppResource consoleAppResource;
+    final ConsoleAppArrayMapper consoleAppArrayMapper;
 
     @Inject
-    public AppsActivity(Environment environment, AppsView view) {
+    public AppsActivity(Environment environment,
+                        AppsView view,
+                        ConsoleAppResource consoleAppResource,
+                        ConsoleAppArrayMapper consoleAppArrayMapper) {
         this.environment = environment;
         this.view = view;
+        this.consoleAppResource = consoleAppResource;
+        this.consoleAppArrayMapper = consoleAppArrayMapper;
     }
 
     @Override
@@ -51,8 +62,13 @@ public class AppsActivity
         container.setWidget(view.asWidget());
         view.setPresenter(this);
 
-        // TODO Load console apps from server
-        // view.setApps(...);
+        environment.getRequestService().execute(
+            consoleAppArrayMapper,
+            consoleAppResource::getInstalledApps,
+            200,
+            view::setApps,
+            ex -> handleRequestException(ex, environment)
+        );
     }
 
     @Override
@@ -62,8 +78,7 @@ public class AppsActivity
     }
 
     @Override
-    public void onAppSelected(String name) {
-        // TODO Calculate URL of console app and open
-        // view.openAppUrl(...);
+    public void onAppSelected(ConsoleApp app) {
+        view.openAppUrl(app.getUrl());
     }
 }
