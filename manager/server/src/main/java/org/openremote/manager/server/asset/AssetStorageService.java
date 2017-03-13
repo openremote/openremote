@@ -68,7 +68,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
         managerIdentityService = container.getService(ManagerIdentityService.class);
 
         container.getService(WebService.class).getApiSingletons().add(
-            new AssetResourceImpl(this)
+            new AssetResourceImpl(this, container.getService(AssetProcessingService.class))
         );
     }
 
@@ -167,22 +167,21 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
     /**
      * Find protected assets by primary keys.
      *
-     * @param realm    The realm in which the assets must be.
      * @param assetIds The primary key identifier values of the assets to find.
      * @return The found assets or an empty array
      */
-    public ProtectedAssetInfo[] findProtectedById(String realm, String[] assetIds) {
-        if (realm == null || realm.length() == 0)
-            throw new IllegalArgumentException("Realm must be provided to query assets");
+    public ProtectedAssetInfo[] findProtectedById(String[] assetIds) {
+        // The IN SQL clause on Postgres is unlimited, so we must do some sanity check
+        if (assetIds.length > 1000) {
+            throw new IllegalArgumentException("Can't query more than 1000 asset IDs at a time");
+        }
         return persistenceService.doReturningTransaction(em -> {
-            // TODO The SQL IN clause is not limited on Postgres, we should have some sanity check here on the number of IDs!
             List<ProtectedAssetInfo> result = em.createQuery(
                 "select new org.openremote.manager.server.asset.ProtectedServerAssetInfo(" +
                     "a.id, a.version, a.name, a.createdOn, a.realm, a.type, a.parent.id, a.location, a.attributes" +
-                    ") from Asset a where a.id in :assetIds and a.realm = :realm order by a.createdOn asc",
+                    ") from Asset a where a.id in :assetIds order by a.createdOn asc",
                 ProtectedAssetInfo.class
-            ).setParameter("realm", realm)
-                .setParameter("assetIds", Arrays.asList(assetIds))
+            ).setParameter("assetIds", Arrays.asList(assetIds))
                 .getResultList();
             return result.toArray(new ProtectedAssetInfo[result.size()]);
         });
@@ -191,11 +190,10 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
     /**
      * Find protected assets linked to a user.
      *
-     * @param realm    The realm in which the assets must be.
      * @param username The username of the user.
      * @return The found assets or an empty array
      */
-    public ProtectedAssetInfo[] findProtectedOfUser(String realm, String username) {
+    public ProtectedAssetInfo[] findProtectedOfUser(String username) {
         return persistenceService.doReturningTransaction(em -> {
             Query userAttributesQuery = em.createNativeQuery(
                 "SELECT ua.NAME, ua.VALUE " +
@@ -206,7 +204,31 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
             String[] assetIds = ProtectedUserAssets.getAssetIdsFromUserAttributes(
                 userAttributesQuery.setParameter("username", username).getResultList()
             );
-            return findProtectedById(realm, assetIds);
+            return findProtectedById(assetIds);
+        });
+    }
+
+    /**
+     * Confirm if protected assets linked to a user contains given asset.
+     *
+     * @param username The username of the user.
+     * @param assetId  The asset ID value.
+     * @return The found assets or an empty array
+     */
+    public boolean findProtectedOfUserContains(String username, String assetId) {
+        return persistenceService.doReturningTransaction(em -> {
+            Query userAttributesQuery = em.createNativeQuery(
+                "SELECT ua.VALUE " +
+                    "FROM USER_ATTRIBUTE ua JOIN USER_ENTITY u ON u.ID = ua.USER_ID " +
+                    "WHERE u.USERNAME = :username " +
+                    "AND ua.NAME = :assetsAttributeName " +
+                    "AND ua.VALUE = :assetId"
+            );
+            List result = userAttributesQuery.setParameter("username", username)
+                .setParameter("assetsAttributeName", ProtectedUserAssets.ASSETS_ATTRIBUTE)
+                .setParameter("assetId", assetId)
+                .getResultList();
+            return result.size() > 0;
         });
     }
 
@@ -322,7 +344,8 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
         );
         if (!storeAttributeValue(assetId, attributeName, value, valueTimestamp)) {
             throw new RuntimeException("Database update failed, no rows updated");
-        };
+        }
+        ;
     }
 
     protected ServerAsset loadAsset(EntityManager em, String assetId) {

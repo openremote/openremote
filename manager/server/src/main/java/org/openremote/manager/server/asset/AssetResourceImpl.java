@@ -19,10 +19,12 @@
  */
 package org.openremote.manager.server.asset;
 
-import elemental.json.JsonValue;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.http.RequestParams;
+import org.openremote.model.AttributeEvent;
+import org.openremote.model.AttributeRef;
+import org.openremote.model.AttributeState;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetInfo;
 import org.openremote.model.asset.ProtectedAssetInfo;
@@ -30,6 +32,9 @@ import org.openremote.model.asset.ProtectedAssetInfo;
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
@@ -40,9 +45,11 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
     private static final Logger LOG = Logger.getLogger(AssetResourceImpl.class.getName());
 
     protected final AssetStorageService assetStorageService;
+    protected final AssetProcessingService assetProcessingService;
 
-    public AssetResourceImpl(AssetStorageService assetStorageService) {
+    public AssetResourceImpl(AssetStorageService assetStorageService, AssetProcessingService assetProcessingService) {
         this.assetStorageService = assetStorageService;
+        this.assetProcessingService = assetProcessingService;
     }
 
     @Override
@@ -51,7 +58,18 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
             if (isSuperUser() || !isRestrictedUser()) {
                 return new ProtectedAssetInfo[0];
             }
-            return assetStorageService.findProtectedOfUser(getAuthenticatedRealm(), getUsername());
+            List<ProtectedAssetInfo> assets = Arrays.asList(assetStorageService.findProtectedOfUser(getUsername()));
+            // Filter assets that might have been moved into a different realm and can no longer be accessed by user
+            // TODO: Should we forbid moving assets between realms?
+            Iterator<ProtectedAssetInfo> it = assets.iterator();
+            while (it.hasNext()) {
+                ProtectedAssetInfo assetInfo = it.next();
+                if (!assetInfo.getRealm().equals(getAuthenticatedRealm())) {
+                    LOG.warning("User '" + getUsername() + "' has protected asset outside of authenticated realm, skipping: " + assetInfo);
+                    it.remove();
+                }
+            }
+            return assets.toArray(new ProtectedAssetInfo[assets.size()]);
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }
@@ -152,8 +170,41 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
     }
 
     @Override
-    public void updateAttribute(@BeanParam RequestParams requestParams, String assetId, String attributeName, JsonValue value) {
-        throw new UnsupportedOperationException("Not Implemented"); // TODO
+    public void updateAttribute(@BeanParam RequestParams requestParams, AttributeState attributeState) {
+        try {
+            if (isRestrictedUser()) {
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
+            AttributeRef attributeRef = attributeState.getAttributeRef();
+            ServerAsset asset = assetStorageService.find(attributeRef.getEntityId());
+            if (asset == null)
+                throw new WebApplicationException(NOT_FOUND);
+
+            // Check realm, must be accessible
+            if (!isRealmAccessibleByUser(asset.getRealm())) {
+                LOG.fine(
+                    "Forbidden access for user '" + getUsername() + "', can't update asset '"
+                        + attributeRef.getEntityId() + " + ' of realm: " + asset.getRealm()
+                );
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
+
+            // Check restricted
+            if (isRestrictedUser() &&
+                !assetStorageService.findProtectedOfUserContains(getUsername(), asset.getId())) {
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
+
+            // Process update
+            try {
+                assetProcessingService.processClientUpdate(new AttributeEvent(attributeState));
+            } catch (RuntimeException ex) {
+                throw new IllegalStateException("Error updating attribute: " + attributeState, ex);
+            }
+
+        } catch (IllegalStateException ex) {
+            throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
+        }
     }
 
     @Override

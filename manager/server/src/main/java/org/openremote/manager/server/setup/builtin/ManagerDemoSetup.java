@@ -23,6 +23,10 @@ import com.vividsolutions.jts.geom.Coordinate;
 import elemental.json.Json;
 import org.apache.commons.io.IOUtils;
 import org.openremote.agent3.protocol.simulator.SimulatorProtocol;
+import org.openremote.agent3.protocol.simulator.element.ColorSimulatorElement;
+import org.openremote.agent3.protocol.simulator.element.DecimalSimulatorElement;
+import org.openremote.agent3.protocol.simulator.element.IntegerSimulatorElement;
+import org.openremote.agent3.protocol.simulator.element.SwitchSimulatorElement;
 import org.openremote.container.Container;
 import org.openremote.manager.server.agent.AgentAttributes;
 import org.openremote.manager.server.agent.ThingAttributes;
@@ -147,7 +151,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new AttributeRef(agent.getId(), "simulator123").asJsonValue()
                     ))
                     .add(new MetaItem(
-                        SimulatorProtocol.META_NAME_ELEMENT, Json.create("switch")
+                        SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(SwitchSimulatorElement.ELEMENT_NAME)
                     ))
                 ),
             new Attribute("light1Dimmer", INTEGER) // No initial value!
@@ -169,7 +173,10 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new AttributeRef(agent.getId(), "simulator123").asJsonValue()
                     ))
                     .add(new MetaItem(
-                        SimulatorProtocol.META_NAME_ELEMENT, Json.create("range")
+                        SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(IntegerSimulatorElement.ELEMENT_NAME_RANGE)
+                    ))
+                    .add(new MetaItem(
+                        SimulatorProtocol.SIMULATOR_REFLECT_ACTUATOR_WRITES, Json.create(true)
                     ))
                 ),
             new Attribute("light1Color", INTEGER_ARRAY, new ColorRGB(88, 123, 88).asJsonValue())
@@ -187,7 +194,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new AttributeRef(agent.getId(), "simulator123").asJsonValue()
                     ))
                     .add(new MetaItem(
-                        SimulatorProtocol.META_NAME_ELEMENT, Json.create("color")
+                        SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(ColorSimulatorElement.ELEMENT_NAME)
                     ))
                 ),
             new Attribute("light1PowerConsumption", DECIMAL, Json.create(12.345))
@@ -209,7 +216,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new AttributeRef(agent.getId(), "simulator123").asJsonValue()
                     ))
                     .add(new MetaItem(
-                        SimulatorProtocol.META_NAME_ELEMENT, Json.create("decimal")
+                        SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(DecimalSimulatorElement.ELEMENT_NAME)
                     ))
                     .add(new MetaItem(
                         AssetMeta.STORE_DATA_POINTS.getName(), Json.create(true)

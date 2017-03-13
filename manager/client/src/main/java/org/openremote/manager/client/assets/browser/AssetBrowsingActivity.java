@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -20,20 +20,20 @@
 package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
-import org.openremote.model.Consumer;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.util.TextUtil;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetResource;
-import org.openremote.model.asset.AssetType;
 import org.openremote.manager.shared.map.GeoJSON;
 import org.openremote.manager.shared.map.GeoJSONFeature;
 import org.openremote.manager.shared.map.GeoJSONGeometry;
+import org.openremote.model.Consumer;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetInfo;
+import org.openremote.model.asset.AssetType;
 
 import java.util.Collection;
 import java.util.logging.Logger;
@@ -146,7 +146,7 @@ abstract public class AssetBrowsingActivity<V extends AssetBrowsingView, T exten
             assetMapper,
             requestParams -> assetResource.get(requestParams, id),
             200,
-            assetConsumer::accept,
+            assetConsumer,
             ex -> handleRequestException(ex, environment)
         );
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -25,12 +25,12 @@ import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
+import org.openremote.manager.client.event.ShowInfoEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
 import org.openremote.manager.client.widget.AttributesEditor;
 import org.openremote.manager.shared.asset.AssetResource;
-import org.openremote.manager.client.event.ShowInfoEvent;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.model.Attributes;
 import org.openremote.model.asset.Asset;
@@ -210,9 +210,7 @@ public class AssetActivity
         readParent();
         environment.getRequestService().execute(
             assetMapper,
-            requestParams -> {
-                assetResource.update(requestParams, assetId, asset);
-            },
+            requestParams -> assetResource.update(requestParams, assetId, asset),
             204,
             () -> {
                 view.setFormBusy(false);

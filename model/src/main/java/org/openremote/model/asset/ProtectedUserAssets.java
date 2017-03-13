@@ -47,11 +47,13 @@ import static org.openremote.model.Constants.NAMESPACE;
  * The actual linked assets identifiers are stored in {@link #ASSETS_ATTRIBUTE} and therefore
  * in the Keycloak table <code>USER_ATTRIBUTES</code>. We query that table directly to retrieve
  * the assets linked to a user.
+ *
+ * TODO This doesn't work, users can change their own attributes!
  */
 public class ProtectedUserAssets {
 
     // Keycloak user attribute where the boolean flag "this user has linked assets" is stored
-    public static final String RESTRICTED_ATTRIBUTE = NAMESPACE + ":restrictedUser";
+    public static final String RESTRICTED_ATTRIBUTE = "restrictedUser";
 
     // Keycloak user attribute where the actual linked asset identifiers are stored
     public static final String ASSETS_ATTRIBUTE = NAMESPACE + ":userAssets";

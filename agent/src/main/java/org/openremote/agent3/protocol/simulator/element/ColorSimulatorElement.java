@@ -23,7 +23,9 @@ import org.openremote.model.AttributeType;
 
 public class ColorSimulatorElement extends SimulatorElement {
 
-    public ColorSimulatorElement() {
-        super(AttributeType.INTEGER_ARRAY);
+    public static final String ELEMENT_NAME = "color";
+
+    public ColorSimulatorElement(boolean reflectActuatorWrites) {
+        super(AttributeType.INTEGER_ARRAY, reflectActuatorWrites);
     }
 }

@@ -27,10 +27,13 @@ import org.openremote.model.AttributeType;
 public abstract class SimulatorElement<T> {
 
     final protected AttributeType expectedType;
+    final protected boolean reflectActuatorWrites;
+
     protected JsonValue state = Json.createNull();
 
-    public SimulatorElement(AttributeType expectedType) {
+    public SimulatorElement(AttributeType expectedType, boolean reflectActuatorWrites) {
         this.expectedType = expectedType;
+        this.reflectActuatorWrites = reflectActuatorWrites;
     }
 
     public JsonValue getState() {
@@ -45,8 +48,15 @@ public abstract class SimulatorElement<T> {
         if (isValid(state)) {
             this.state = state;
         } else {
-            throw new IllegalArgumentException("Invalid state, expected JSON type '" + expectedType + "': " + state.getType());
+            throw new IllegalArgumentException(
+                "Invalid state, expected JSON type '" + expectedType + "' but got '" + state.getType() + "' on: " + this
+            );
         }
+    }
+
+
+    public boolean isReflectActuatorWrites() {
+        return reflectActuatorWrites;
     }
 
     protected boolean isValid(JsonValue value) {

@@ -28,8 +28,11 @@ import elemental.json.JsonValue;
  */
 public class AttributeState {
 
-    final protected AttributeRef attributeRef;
-    final protected JsonValue value;
+    protected AttributeRef attributeRef;
+    protected JsonValue value;
+
+    public AttributeState() {
+    }
 
     public AttributeState(AttributeRef attributeRef, JsonValue value) {
         this.attributeRef = attributeRef;

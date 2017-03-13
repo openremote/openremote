@@ -23,7 +23,9 @@ import org.openremote.model.AttributeType;
 
 public class SwitchSimulatorElement extends SimulatorElement {
 
-    public SwitchSimulatorElement() {
-        super(AttributeType.BOOLEAN);
+    public static final String ELEMENT_NAME = "switch";
+
+    public SwitchSimulatorElement(boolean reflectActuatorWrites) {
+        super(AttributeType.BOOLEAN, reflectActuatorWrites);
     }
 }

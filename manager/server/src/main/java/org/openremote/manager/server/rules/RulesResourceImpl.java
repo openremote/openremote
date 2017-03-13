@@ -27,7 +27,6 @@ import org.openremote.manager.shared.rules.GlobalRulesDefinition;
 import org.openremote.manager.shared.rules.RulesResource;
 import org.openremote.manager.shared.rules.TenantRulesDefinition;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.ProtectedAssetInfo;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;
@@ -77,8 +76,9 @@ public class RulesResourceImpl extends WebResource implements RulesResource {
         if (!isRealmAccessibleByUser(realm)) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        if (isRestrictedUser()) {
-            checkProtectedAccess(assetId);
+        if (isRestrictedUser() &&
+            !assetStorageService.findProtectedOfUserContains(getUsername(), assetId)) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         List<AssetRulesDefinition> result = rulesStorageService.findAssetDefinitions(realm, assetId);
         return result.toArray(new AssetRulesDefinition[result.size()]);
@@ -196,8 +196,9 @@ public class RulesResourceImpl extends WebResource implements RulesResource {
         if (!isRealmAccessibleByUser(asset.getRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        if (isRestrictedUser()) {
-            checkProtectedAccess(assetId);
+        if (isRestrictedUser() &&
+            !assetStorageService.findProtectedOfUserContains(getUsername(), asset.getId())) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         rulesDefinition = rulesStorageService.merge(rulesDefinition);
     }
@@ -215,8 +216,9 @@ public class RulesResourceImpl extends WebResource implements RulesResource {
         if (!isRealmAccessibleByUser(asset.getRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        if (isRestrictedUser()) {
-            checkProtectedAccess(asset.getId());
+        if (isRestrictedUser() &&
+            !assetStorageService.findProtectedOfUserContains(getUsername(), asset.getId())) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         return existingDefinition;
     }
@@ -234,8 +236,9 @@ public class RulesResourceImpl extends WebResource implements RulesResource {
         if (!isRealmAccessibleByUser(asset.getRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        if (isRestrictedUser()) {
-            checkProtectedAccess(asset.getId());
+        if (isRestrictedUser() &&
+            !assetStorageService.findProtectedOfUserContains(getUsername(), asset.getId())) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (!id.equals(rulesDefinition.getId())) {
             throw new WebApplicationException("Requested ID and definition ID don't match", BAD_REQUEST);
@@ -259,24 +262,11 @@ public class RulesResourceImpl extends WebResource implements RulesResource {
         if (!isRealmAccessibleByUser(asset.getRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        if (isRestrictedUser()) {
-            checkProtectedAccess(asset.getId());
+        if (isRestrictedUser() &&
+            !assetStorageService.findProtectedOfUserContains(getUsername(), asset.getId())) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         rulesStorageService.delete(AssetRulesDefinition.class, id);
     }
 
-    /* ################################################################################################# */
-
-    protected void checkProtectedAccess(String assetId) {
-        boolean foundProtected = false;
-        ProtectedAssetInfo[] protectedAssets =
-            assetStorageService.findProtectedOfUser(getAuthenticatedRealm(), getUsername());
-        for (ProtectedAssetInfo protectedAsset : protectedAssets) {
-            if (protectedAsset.getId().equals(assetId))
-                foundProtected = true;
-        }
-        if (!foundProtected) {
-            throw new WebApplicationException(Response.Status.FORBIDDEN);
-        }
-    }
 }

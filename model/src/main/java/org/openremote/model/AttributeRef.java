@@ -31,10 +31,14 @@ import elemental.json.JsonArray;
  */
 public class AttributeRef {
 
-    final protected String entityId;
-    final protected String attributeName;
+    protected String entityId;
+    protected String attributeName;
+
     // Optional, can be null if reference has not been resolved
     protected String entityName;
+
+    public AttributeRef() {
+    }
 
     public AttributeRef(String entityId, String attributeName) {
         this.entityId = entityId;

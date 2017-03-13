@@ -148,7 +148,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
                         protocol.linkAttributes(attributes.get(protocolName));
                     } catch (Exception ex) {
                         // TODO: Better error handling?
-                        LOG.log(Level.INFO, "Ignoring error on attribute unlink for: " + thing, ex);
+                        LOG.log(Level.WARNING, "Ignoring error on attribute link for: " + thing, ex);
                     }
                 }
             }
@@ -164,7 +164,7 @@ public class AgentService extends RouteBuilder implements ContainerService {
                     protocol.unlinkAttributes(thing.getId());
                 } catch (Exception ex) {
                     // TODO: Better error handling?
-                    LOG.log(Level.INFO, "Ignoring error on attribute unlink for: " + thing, ex);
+                    LOG.log(Level.WARNING, "Ignoring error on attribute unlink for: " + thing, ex);
                 }
             }
         }

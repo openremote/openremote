@@ -56,6 +56,10 @@ public class RulesStorageService implements ContainerService {
 
     }
 
+    /**
+     * The {@link RulesDefinition#rules} property is not populated for this query to avoid
+     * loading multiple large strings.
+     */
     public List<GlobalRulesDefinition> findGlobalDefinitions() {
         return persistenceService.doReturningTransaction(entityManager ->
             entityManager.createQuery(
@@ -69,6 +73,10 @@ public class RulesStorageService implements ContainerService {
         );
     }
 
+    /**
+     * The {@link RulesDefinition#rules} property is not populated for this query to avoid
+     * loading multiple large strings.
+     */
     public List<TenantRulesDefinition> findTenantDefinitions(String realm) {
         return persistenceService.doReturningTransaction(entityManager ->
             entityManager.createQuery(
@@ -83,6 +91,10 @@ public class RulesStorageService implements ContainerService {
         );
     }
 
+    /**
+     * The {@link RulesDefinition#rules} property is not populated for this query to avoid
+     * loading multiple large strings.
+     */
     public List<AssetRulesDefinition> findAssetDefinitions(String realm, String assetId) {
         return persistenceService.doReturningTransaction(entityManager ->
             entityManager.createQuery(
