@@ -207,4 +207,18 @@ public class ManagerIdentityService extends IdentityService {
         return getClass().getSimpleName() + "{" +
             '}';
     }
+
+    public UserConfiguration getUserConfiguration(String realm, String subject) {
+        UserKey userKey = new UserKey(realm,subject);
+        UserConfiguration userConfiguration = persistenceService.doReturningTransaction(em -> em.find(UserConfiguration.class, userKey));
+        if (userConfiguration == null) {
+            LOG.info("No UserConfiguration Found, creating new one");
+            userConfiguration = new UserConfiguration(userKey);
+        }
+        return userConfiguration;
+    }
+
+    public UserConfiguration mergeUserConfiguration(UserConfiguration userConfiguration) {
+         return persistenceService.doReturningTransaction(em -> em.merge(userConfiguration));
+    }
 }

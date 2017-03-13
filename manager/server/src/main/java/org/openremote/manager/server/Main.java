@@ -34,6 +34,7 @@ import org.openremote.manager.server.i18n.I18NService;
 import org.openremote.manager.server.map.MapService;
 import org.openremote.manager.server.rules.AssetRulesService;
 import org.openremote.manager.server.rules.RulesStorageService;
+import org.openremote.manager.server.notification.NotificationService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.setup.SetupService;
 import org.openremote.manager.server.web.ManagerWebService;
@@ -65,6 +66,7 @@ public class Main {
                 ServiceLoader.load(Protocol.class).forEach(this::add);
                 addAll(Arrays.asList(
                     new MapService(),
+                    new NotificationService(),
                     new MessageBrokerService(),
                     new ManagerWebService()
                 ));

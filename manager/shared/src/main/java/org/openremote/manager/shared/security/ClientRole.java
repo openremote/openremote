@@ -36,6 +36,7 @@ public enum ClientRole {
 
     WRITE_ADMIN("write:admin", "Write system settings, tenants, and users"),
     WRITE_ASSETS("write:assets", "Write asset data"),
+    WRITE_USER("write:user", "Write data of the authenticated user"),
     WRITE_RULES("write:rules", "Write rule definitions"),
 
     READ("read", "Read all data", new ClientRole[]{
