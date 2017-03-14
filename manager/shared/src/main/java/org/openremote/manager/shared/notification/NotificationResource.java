@@ -34,7 +34,10 @@ import javax.ws.rs.Path;
 public interface NotificationResource {
 
     @PUT
+    @Path("token")
     @SuccessStatusCode(204)
     @RolesAllowed({"write:user"})
-    void setNotificationToken(@BeanParam RequestParams requestParams,@FormParam("token") String token , @FormParam("device_id") String deviceId);
+    void storeDeviceToken(@BeanParam RequestParams requestParams,
+                          @FormParam("device_id") String deviceId,
+                          @FormParam("token") String token);
 }

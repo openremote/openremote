@@ -19,78 +19,51 @@
  */
 package org.openremote.manager.server.security;
 
-import javax.persistence.*;
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
+// TODO Finish migration from Keycloak user attributes to this
 @Entity
 @Table(name = "USER_CONFIGURATION")
 public class UserConfiguration {
 
-    @EmbeddedId
-    private UserKey userKey;
+    @Id
+    @Column(name = "USER_ID", length = 36)
+    protected String userId;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @MapKeyColumn(name="DEVICE_ID")
-    @Column(name="TOKEN")
-    @CollectionTable(name="USER_CONFIGURATION_NOTIFICATION_TOKEN")
-    private Map<String,String> notificationTokenForDeviceId = new HashMap<String, String>();
+    @Column(name = "RESTRICTED", nullable = false)
+    protected boolean restricted;
 
-    private UserConfiguration() {};
-
-    public UserConfiguration(UserKey userKey) {
-        this.userKey = userKey;
-    }
-    public UserKey getUserKey() {
-        return userKey;
+    public UserConfiguration() {
     }
 
-    public void setUserKey(UserKey userKey) {
-        this.userKey = userKey;
+    public UserConfiguration(String userId) {
+        this.userId = userId;
     }
 
-    public Map<String, String> getNotificationTokenForDeviceId() {
-        return notificationTokenForDeviceId;
+    public String getUserId() {
+        return userId;
     }
 
-    public void setNotificationTokenForDeviceId(Map<String, String> notificationTokenForDeviceId) {
-        this.notificationTokenForDeviceId = notificationTokenForDeviceId;
-    }
-}
-
-@Embeddable
-class UserKey implements Serializable {
-
-    @Column(name = "ID_REALM", nullable = false)
-    private String realm;
-
-
-    @Column(name = "ID_USER_ID", nullable = false)
-    private String subject;
-
-    private UserKey() {
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 
-    public UserKey(String realm, String subject) {
-        this.realm = realm;
-        this.subject = subject;
+    public boolean isRestricted() {
+        return restricted;
     }
 
-    public String getRealm() {
-        return realm;
-    }
-
-    public String getSubject() {
-        return subject;
+    public void setRestricted(boolean restricted) {
+        this.restricted = restricted;
     }
 
     @Override
     public String toString() {
-        return "UserKey{" +
-                "realm='" + realm + '\'' +
-                ", subject='" + subject + '\'' +
-                '}';
+        return getClass().getSimpleName() + "{" +
+            "userId=" + userId +
+            ", restricted=" + restricted +
+            '}';
     }
-
 }

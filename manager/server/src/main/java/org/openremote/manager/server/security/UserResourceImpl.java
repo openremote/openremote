@@ -25,6 +25,7 @@ import org.keycloak.admin.client.resource.RolesResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.openremote.container.Container;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.server.i18n.I18NService;
 import org.openremote.manager.shared.http.RequestParams;
@@ -42,16 +43,13 @@ import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
-import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.openremote.container.json.JsonUtil.convert;
-import static org.openremote.model.Constants.*;
 import static org.openremote.manager.shared.validation.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
+import static org.openremote.model.Constants.*;
 
 public class UserResourceImpl extends WebResource implements UserResource {
-
-    private static final Logger LOG = Logger.getLogger(UserResourceImpl.class.getName());
 
     protected final ManagerIdentityService managerIdentityService;
 
@@ -103,7 +101,7 @@ public class UserResourceImpl extends WebResource implements UserResource {
         }
         try {
             managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).update(
-                convert(getContainer().JSON, UserRepresentation.class, user)
+                convert(Container.JSON, UserRepresentation.class, user)
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -116,7 +114,7 @@ public class UserResourceImpl extends WebResource implements UserResource {
     public void create(RequestParams requestParams, String realm, User user) {
         try {
             Response response = managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().create(
-                convert(getContainer().JSON, UserRepresentation.class, user)
+                convert(Container.JSON, UserRepresentation.class, user)
             );
             if (!response.getStatusInfo().equals(Response.Status.CREATED)) {
                 throw new WebApplicationException(
@@ -167,7 +165,7 @@ public class UserResourceImpl extends WebResource implements UserResource {
     public void resetPassword(@BeanParam RequestParams requestParams, String realm, String userId, Credential credential) {
         try {
             managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).resetPassword(
-                convert(getContainer().JSON, CredentialRepresentation.class, credential)
+                convert(Container.JSON, CredentialRepresentation.class, credential)
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -250,7 +248,7 @@ public class UserResourceImpl extends WebResource implements UserResource {
     }
 
     protected User convertUser(String realm, UserRepresentation userRepresentation) {
-        User user = convert(getContainer().JSON, User.class, userRepresentation);
+        User user = convert(Container.JSON, User.class, userRepresentation);
         user.setRealm(realm);
         return user;
     }

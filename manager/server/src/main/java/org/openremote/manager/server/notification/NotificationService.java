@@ -21,8 +21,8 @@ package org.openremote.manager.server.notification;
 
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
-import org.openremote.manager.server.security.ManagerIdentityService;
 
 import java.util.logging.Logger;
 
@@ -30,22 +30,38 @@ public class NotificationService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(NotificationService.class.getName());
 
+    protected PersistenceService persistenceService;
+
     @Override
     public void init(Container container) throws Exception {
-       container.getService(WebService.class).getApiSingletons().add(
-                new NotificationResourceImpl(container.getService(ManagerIdentityService.class))
+        this.persistenceService = container.getService(PersistenceService.class);
+
+        container.getService(WebService.class).getApiSingletons().add(
+            new NotificationResourceImpl(this)
         );
     }
 
     @Override
     public void start(Container container) throws Exception {
-        LOG.info("Starting Notification Service ...");
     }
 
     @Override
     public void stop(Container container) throws Exception {
-        LOG.info("Stopping Notification Service ...");
     }
 
+    public void storeDeviceToken(String deviceId, String userId, String token) {
+        persistenceService.doTransaction(entityManager -> {
+            DeviceNotificationToken.Id id = new DeviceNotificationToken.Id(deviceId, userId);
+            DeviceNotificationToken deviceToken = new DeviceNotificationToken(id, token);
+            entityManager.merge(deviceToken);
+        });
+    }
 
+    public String findDeviceToken(String deviceId, String userId) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            DeviceNotificationToken.Id id = new DeviceNotificationToken.Id(deviceId, userId);
+            DeviceNotificationToken deviceToken = entityManager.find(DeviceNotificationToken.class, id);
+            return deviceToken != null ? deviceToken.getToken() : null;
+        });
+    }
 }

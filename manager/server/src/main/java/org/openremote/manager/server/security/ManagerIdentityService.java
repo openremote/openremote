@@ -131,7 +131,7 @@ public class ManagerIdentityService extends IdentityService {
             // TODO Should also check NOT_BEFORE?
             @SuppressWarnings("unchecked")
             List<Object[]> result = entityManager.createNativeQuery(
-                "SELECT ID FROM REALM WHERE ENABLED = TRUE AND NAME = :realm"
+                "select ID from REALM where ENABLED = true and NAME = :realm"
             ).setParameter("realm", realm).getResultList();
             return result.size() > 0;
         });
@@ -142,8 +142,8 @@ public class ManagerIdentityService extends IdentityService {
             // TODO Should also check NOT_BEFORE?
             @SuppressWarnings("unchecked")
             List<String> result = entityManager.createNativeQuery(
-                "SELECT ra.VALUE FROM REALM r JOIN REALM_ATTRIBUTE ra " +
-                    "ON r.ID = ra.REALM_ID AND ra.NAME = 'displayName' AND r.ENABLED = true AND r.NAME = :realm"
+                "select RA.VALUE from REALM R join REALM_ATTRIBUTE RA " +
+                    "on R.ID = RA.REALM_ID and RA.NAME = 'displayName' and R.ENABLED = true and R.NAME = :realm"
             ).setParameter("realm", realm).getResultList();
             return result.size() > 0 ? result.get(0) : null;
         });
@@ -214,23 +214,25 @@ public class ManagerIdentityService extends IdentityService {
         protocolMappers.createMapper(userAssetMapper);
     }
 
+    public UserConfiguration getUserConfiguration(String userId) {
+        UserConfiguration userConfiguration = persistenceService.doReturningTransaction(em -> em.find(UserConfiguration.class, userId));
+        if (userConfiguration == null) {
+            userConfiguration = new UserConfiguration(userId);
+        }
+        return userConfiguration;
+    }
+
+    public UserConfiguration mergeUserConfiguration(UserConfiguration userConfiguration) {
+        if (userConfiguration.getUserId() == null || userConfiguration.getUserId().length() == 0) {
+            throw new IllegalArgumentException("User ID must be set on: " + userConfiguration);
+        }
+        return persistenceService.doReturningTransaction(em -> em.merge(userConfiguration));
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
             '}';
     }
 
-    public UserConfiguration getUserConfiguration(String realm, String subject) {
-        UserKey userKey = new UserKey(realm,subject);
-        UserConfiguration userConfiguration = persistenceService.doReturningTransaction(em -> em.find(UserConfiguration.class, userKey));
-        if (userConfiguration == null) {
-            LOG.info("No UserConfiguration Found, creating new one");
-            userConfiguration = new UserConfiguration(userKey);
-        }
-        return userConfiguration;
-    }
-
-    public UserConfiguration mergeUserConfiguration(UserConfiguration userConfiguration) {
-         return persistenceService.doReturningTransaction(em -> em.merge(userConfiguration));
-    }
 }

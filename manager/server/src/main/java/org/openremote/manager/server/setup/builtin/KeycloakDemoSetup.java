@@ -46,6 +46,10 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
 
     private static final Logger LOG = Logger.getLogger(KeycloakDemoSetup.class.getName());
 
+    public String testuser1Id;
+    public String testuser2Id;
+    public String testuser3Id;
+
     public KeycloakDemoSetup(Container container) {
         super(container);
     }
@@ -79,12 +83,14 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         testuser1.setEnabled(true);
         masterUsersResource.create(testuser1);
         testuser1 = masterUsersResource.search("testuser1", null, null, null, null, null).get(0);
+        this.testuser1Id = testuser1.getId();
         CredentialRepresentation testuser1Credentials = new CredentialRepresentation();
         testuser1Credentials.setType("password");
         testuser1Credentials.setValue("testuser1");
         testuser1Credentials.setTemporary(false);
         masterUsersResource.get(testuser1.getId()).resetPassword(testuser1Credentials);
         masterUsersResource.get(testuser1.getId()).roles().clientLevel(masterClientObjectId).add(Arrays.asList(
+            masterRolesResource.get(ClientRole.WRITE_USER.getValue()).toRepresentation(),
             masterRolesResource.get(ClientRole.READ_MAP.getValue()).toRepresentation(),
             masterRolesResource.get(ClientRole.READ_ASSETS.getValue()).toRepresentation(),
             masterRolesResource.get(ClientRole.READ_RULES.getValue()).toRepresentation(),
@@ -105,12 +111,14 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         testuser2.setEnabled(true);
         customerAUsersResource.create(testuser2);
         testuser2 = customerAUsersResource.search("testuser2", null, null, null, null, null).get(0);
+        this.testuser2Id = testuser2.getId();
         CredentialRepresentation testuser2Credentials = new CredentialRepresentation();
         testuser2Credentials.setType("password");
         testuser2Credentials.setValue("testuser2");
         testuser2Credentials.setTemporary(false);
         customerAUsersResource.get(testuser2.getId()).resetPassword(testuser2Credentials);
         customerAUsersResource.get(testuser2.getId()).roles().clientLevel(customerAClientObjectId).add(Arrays.asList(
+            customerARolesResource.get(ClientRole.WRITE_USER.getValue()).toRepresentation(),
             customerARolesResource.get(ClientRole.READ_MAP.getValue()).toRepresentation(),
             customerARolesResource.get(ClientRole.READ_ASSETS.getValue()).toRepresentation()
         ));
@@ -131,12 +139,14 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         ));
         customerAUsersResource.create(testuser3);
         testuser3 = customerAUsersResource.search("testuser3", null, null, null, null, null).get(0);
+        this.testuser3Id = testuser3.getId();
         CredentialRepresentation testuser3Credentials = new CredentialRepresentation();
         testuser3Credentials.setType("password");
         testuser3Credentials.setValue("testuser3");
         testuser3Credentials.setTemporary(false);
         customerAUsersResource.get(testuser3.getId()).resetPassword(testuser3Credentials);
         customerAUsersResource.get(testuser3.getId()).roles().clientLevel(customerAClientObjectId).add(Arrays.asList(
+            customerARolesResource.get(ClientRole.WRITE_USER.getValue()).toRepresentation(),
             customerARolesResource.get(ClientRole.READ_MAP.getValue()).toRepresentation(),
             customerARolesResource.get(ClientRole.READ_ASSETS.getValue()).toRepresentation(),
             customerARolesResource.get(ClientRole.WRITE_RULES.getValue()).toRepresentation(),

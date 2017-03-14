@@ -1,37 +1,26 @@
 package org.openremote.manager.server.notification;
 
-import elemental.json.JsonObject;
 import org.openremote.container.web.WebResource;
-import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.manager.server.security.UserConfiguration;
-import org.openremote.manager.shared.http.BadRequestException;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.notification.NotificationResource;
 
-import javax.ws.rs.BeanParam;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.Path;
-import java.util.logging.Logger;
+import javax.ws.rs.WebApplicationException;
+
+import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 
 public class NotificationResourceImpl extends WebResource implements NotificationResource {
 
-    private static final Logger LOG = Logger.getLogger(NotificationResourceImpl.class.getName());
+    final protected NotificationService notificationService;
 
-    private ManagerIdentityService managerIdentityService = null;
-
-    public NotificationResourceImpl(ManagerIdentityService managerIdentityService) {
-        this.managerIdentityService = managerIdentityService;
+    public NotificationResourceImpl(NotificationService notificationService) {
+        this.notificationService = notificationService;
     }
 
-
     @Override
-    @Path("notification_token")
-    public void setNotificationToken(@BeanParam RequestParams requestParams, @FormParam("token") String token, @FormParam("device_id") String deviceId) {
-        if (token == null || deviceId == null) {
-            throw new BadRequestException();
+    public void storeDeviceToken(RequestParams requestParams, String deviceId, String token) {
+        if (token == null || token.length() == 0 || deviceId == null || deviceId.length() == 0) {
+            throw new WebApplicationException("Missing token or device identifier", BAD_REQUEST);
         }
-        UserConfiguration userConfiguration = managerIdentityService.getUserConfiguration(getRealm(), getAccessToken().getSubject());
-        userConfiguration.getNotificationTokenForDeviceId().put(deviceId, token);
-        managerIdentityService.mergeUserConfiguration(userConfiguration);
+        notificationService.storeDeviceToken(deviceId, getAccessToken().getSubject(), token);
     }
 }

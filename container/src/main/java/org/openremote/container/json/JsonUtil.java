@@ -6,6 +6,7 @@ import java.util.Map;
 
 public class JsonUtil {
 
+    @SuppressWarnings("unchecked")
     public static <T> T convert(ObjectMapper objectMapper, Class<T> targetType, Object object) {
         Map<String, Object> props = objectMapper.convertValue(object, Map.class);
         return objectMapper.convertValue(props, targetType);
