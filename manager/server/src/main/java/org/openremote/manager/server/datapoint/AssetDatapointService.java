@@ -4,10 +4,11 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.manager.server.asset.AssetUpdate;
-import org.openremote.manager.server.asset.ServerAsset;
+import org.openremote.model.AttributeRef;
 import org.openremote.model.Consumer;
 import org.openremote.model.datapoint.AssetDatapoint;
 
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -34,8 +35,26 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetUp
 
     @Override
     public void accept(AssetUpdate assetUpdate) {
-        AssetDatapoint assetDatapoint = new AssetDatapoint(assetUpdate.getNewState());
-        // TODO Persist datapoint
+        if (assetUpdate.getAttribute().isStoreDatapoints()) {
+            AssetDatapoint assetDatapoint = new AssetDatapoint(assetUpdate.getNewState());
+            persistenceService.doTransaction(entityManager -> {
+                entityManager.persist(assetDatapoint);
+            });
+        }
+    }
+
+    public List<AssetDatapoint> getDatapoints(AttributeRef attributeRef) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            return entityManager.createQuery(
+                "select dp from AssetDatapoint dp " +
+                    "where dp.entityId = :assetId " +
+                    "and dp.attributeName = :attributeName " +
+                    "order by dp.timestamp asc",
+                AssetDatapoint.class)
+                .setParameter("assetId", attributeRef.getEntityId())
+                .setParameter("attributeName", attributeRef.getAttributeName())
+                .getResultList();
+        });
     }
 
     @Override

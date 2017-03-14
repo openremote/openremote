@@ -28,6 +28,7 @@ import java.util.NoSuchElementException;
 
 import static org.openremote.model.asset.AssetMeta.PROTECTED;
 import static org.openremote.model.asset.AssetMeta.READ_ONLY;
+import static org.openremote.model.asset.AssetMeta.STORE_DATA_POINTS;
 
 /**
  * Convenience overlay API for {@link JsonObject}.
@@ -179,6 +180,10 @@ public class Attribute extends AbstractValueTimestampHolder<Attribute> {
 
     public boolean isReadOnly() {
         return hasMetaItem(READ_ONLY) && firstMetaItem(READ_ONLY).isValueTrue();
+    }
+
+    public boolean isStoreDatapoints() {
+        return hasMetaItem(STORE_DATA_POINTS) && firstMetaItem(STORE_DATA_POINTS).isValueTrue();
     }
 
     /* ############################################################################### */

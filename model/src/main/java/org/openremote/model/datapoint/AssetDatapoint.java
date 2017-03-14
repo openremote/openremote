@@ -29,6 +29,7 @@ import javax.persistence.Table;
 
 @Entity
 @Table(name = "ASSET_DATAPOINT")
+@org.hibernate.annotations.Immutable
 public class AssetDatapoint extends Datapoint {
 
     public AssetDatapoint() {
