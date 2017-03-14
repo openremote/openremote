@@ -70,7 +70,7 @@ public enum AssetMeta {
     READ_ONLY(ASSET_META_NAMESPACE + ":readOnly", new Access(true, false, true), JsonType.BOOLEAN),
 
     /**
-     * Marks the attribute as protected and accessible to restricted users, see {@link ProtectedUserAssets}.
+     * Marks the attribute as protected and accessible to restricted users, see {@link UserAsset}.
      */
     PROTECTED(ASSET_META_NAMESPACE + ":protected", new Access(false, false, true), JsonType.BOOLEAN),
 

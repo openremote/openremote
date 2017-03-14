@@ -68,7 +68,11 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
         managerIdentityService = container.getService(ManagerIdentityService.class);
 
         container.getService(WebService.class).getApiSingletons().add(
-            new AssetResourceImpl(this, container.getService(AssetProcessingService.class))
+            new AssetResourceImpl(
+                managerIdentityService,
+                this,
+                container.getService(AssetProcessingService.class)
+            )
         );
     }
 
@@ -165,70 +169,49 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
     }
 
     /**
-     * Find protected assets by primary keys.
+     * Find protected assets linked to a user.
      *
-     * @param assetIds The primary key identifier values of the assets to find.
-     * @return The found assets or an empty array
+     * @return The found assets or an empty array.
      */
-    public ProtectedAssetInfo[] findProtectedById(String[] assetIds) {
-        // The IN SQL clause on Postgres is unlimited, so we must do some sanity check
-        if (assetIds.length > 1000) {
-            throw new IllegalArgumentException("Can't query more than 1000 asset IDs at a time");
-        }
+    public ProtectedAssetInfo[] findProtectedOfUser(String userId) {
         return persistenceService.doReturningTransaction(em -> {
             List<ProtectedAssetInfo> result = em.createQuery(
                 "select new org.openremote.manager.server.asset.ProtectedServerAssetInfo(" +
                     "a.id, a.version, a.name, a.createdOn, a.realm, a.type, a.parent.id, a.location, a.attributes" +
-                    ") from Asset a where a.id in :assetIds order by a.createdOn asc",
+                    ") from Asset a, UserAsset ua where a.id = ua.assetId and ua.userId = :userId order by a.createdOn asc",
                 ProtectedAssetInfo.class
-            ).setParameter("assetIds", Arrays.asList(assetIds))
-                .getResultList();
+            ).setParameter("userId", userId).getResultList();
             return result.toArray(new ProtectedAssetInfo[result.size()]);
-        });
-    }
-
-    /**
-     * Find protected assets linked to a user.
-     *
-     * @param username The username of the user.
-     * @return The found assets or an empty array
-     */
-    public ProtectedAssetInfo[] findProtectedOfUser(String username) {
-        return persistenceService.doReturningTransaction(em -> {
-            Query userAttributesQuery = em.createNativeQuery(
-                "SELECT ua.NAME, ua.VALUE " +
-                    "FROM USER_ATTRIBUTE ua JOIN USER_ENTITY u ON u.ID = ua.USER_ID " +
-                    "WHERE u.USERNAME = :username"
-            );
-            @SuppressWarnings("unchecked")
-            String[] assetIds = ProtectedUserAssets.getAssetIdsFromUserAttributes(
-                userAttributesQuery.setParameter("username", username).getResultList()
-            );
-            return findProtectedById(assetIds);
         });
     }
 
     /**
      * Confirm if protected assets linked to a user contains given asset.
      *
-     * @param username The username of the user.
-     * @param assetId  The asset ID value.
-     * @return The found assets or an empty array
+     * @return The found assets or an empty array.
      */
-    public boolean findProtectedOfUserContains(String username, String assetId) {
+    public boolean findProtectedOfUserContains(String userId, String assetId) {
         return persistenceService.doReturningTransaction(em -> {
-            Query userAttributesQuery = em.createNativeQuery(
-                "SELECT ua.VALUE " +
-                    "FROM USER_ATTRIBUTE ua JOIN USER_ENTITY u ON u.ID = ua.USER_ID " +
-                    "WHERE u.USERNAME = :username " +
-                    "AND ua.NAME = :assetsAttributeName " +
-                    "AND ua.VALUE = :assetId"
-            );
-            List result = userAttributesQuery.setParameter("username", username)
-                .setParameter("assetsAttributeName", ProtectedUserAssets.ASSETS_ATTRIBUTE)
-                .setParameter("assetId", assetId)
-                .getResultList();
+            List result = em.createQuery(
+                "select ua.assetId from UserAsset ua where ua.userId = :userId and ua.assetId = :assetId"
+            ).setParameter("assetId", assetId).setParameter("userId", userId).getResultList();
             return result.size() > 0;
+        });
+    }
+
+    public void storeProtected(String userId, String assetId) {
+        persistenceService.doTransaction(entityManager -> {
+            UserAsset userAsset = new UserAsset(userId, assetId);
+            entityManager.merge(userAsset);
+        });
+    }
+
+    public void deleteProtected(String userId, String assetId) {
+        persistenceService.doTransaction(entityManager -> {
+            UserAsset userAsset = entityManager.find(UserAsset.class, new UserAsset(userId, assetId));
+            if (userAsset != null) {
+                entityManager.remove(userAsset);
+            }
         });
     }
 
@@ -345,7 +328,6 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
         if (!storeAttributeValue(assetId, attributeName, value, valueTimestamp)) {
             throw new RuntimeException("Database update failed, no rows updated");
         }
-        ;
     }
 
     protected ServerAsset loadAsset(EntityManager em, String assetId) {
@@ -354,11 +336,11 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
             return null;
         asset.setPath(em.unwrap(Session.class).doReturningWork(connection -> {
             String query =
-                "WITH RECURSIVE ASSET_TREE(ID, PARENT_ID, PATH) AS (" +
-                    " SELECT a1.ID, a1.PARENT_ID, ARRAY[text(a1.ID)] FROM ASSET a1 WHERE a1.PARENT_ID IS NULL" +
-                    " UNION ALL" +
-                    " SELECT a2.ID, a2.PARENT_ID, array_append(at.PATH, text(a2.ID)) FROM ASSET a2, ASSET_TREE at WHERE a2.PARENT_ID = at.ID" +
-                    ") SELECT PATH FROM ASSET_TREE WHERE ID = ?";
+                "with recursive ASSET_TREE(ID, PARENT_ID, PATH) as (" +
+                    " select A1.ID, A1.PARENT_ID, array[text(A1.ID)] from ASSET A1 where A1.PARENT_ID is null" +
+                    " union all" +
+                    " select A2.ID, A2.PARENT_ID, array_append(AT.PATH, text(A2.ID)) from ASSET A2, ASSET_TREE AT where A2.PARENT_ID = AT.ID" +
+                    ") select PATH from ASSET_TREE where ID = ?";
 
             ResultSet result = null;
             try (PreparedStatement statement = connection.prepareStatement(query)) {
@@ -381,9 +363,9 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
             entityManager.unwrap(Session.class).doReturningWork(connection -> {
 
                 String update =
-                    "UPDATE ASSET" +
-                        " SET ATTRIBUTES = jsonb_set(jsonb_set(ATTRIBUTES, ?, ?, TRUE), ?, ?, TRUE)" +
-                        " WHERE ID = ? AND ATTRIBUTES -> ? IS NOT NULL";
+                    "update ASSET" +
+                        " set ATTRIBUTES = jsonb_set(jsonb_set(ATTRIBUTES, ?, ?, true), ?, ?, true)" +
+                        " where ID = ? and ATTRIBUTES -> ? is not null";
                 try (PreparedStatement statement = connection.prepareStatement(update)) {
 
                     // Bind the value

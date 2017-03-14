@@ -21,6 +21,6 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
         if (token == null || token.length() == 0 || deviceId == null || deviceId.length() == 0) {
             throw new WebApplicationException("Missing token or device identifier", BAD_REQUEST);
         }
-        notificationService.storeDeviceToken(deviceId, getAccessToken().getSubject(), token);
+        notificationService.storeDeviceToken(deviceId, getUserId(), token);
     }
 }

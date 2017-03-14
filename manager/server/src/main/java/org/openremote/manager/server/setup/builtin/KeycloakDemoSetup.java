@@ -28,7 +28,6 @@ import org.openremote.container.Container;
 import org.openremote.manager.server.setup.AbstractKeycloakSetup;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
-import org.openremote.model.asset.ProtectedUserAssets;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -129,14 +128,6 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         testuser3.setFirstName("Testuserfirst");
         testuser3.setLastName("Testuserlast");
         testuser3.setEnabled(true);
-        // Restrict access to assets
-        ManagerDemoSetup managerDemoSetup = setupService.getTaskOfType(ManagerDemoSetup.class);
-        testuser3.setAttributes(ProtectedUserAssets.createUserAttributes(
-            managerDemoSetup.apartment1Id,
-            managerDemoSetup.apartment1LivingroomId,
-            managerDemoSetup.apartment1LivingroomThermostatId,
-            managerDemoSetup.apartment2Id
-        ));
         customerAUsersResource.create(testuser3);
         testuser3 = customerAUsersResource.search("testuser3", null, null, null, null, null).get(0);
         this.testuser3Id = testuser3.getId();

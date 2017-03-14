@@ -21,6 +21,8 @@ package org.openremote.manager.server.rules;
 
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.server.asset.AssetStorageService;
+import org.openremote.manager.server.security.ManagerIdentityService;
+import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.rules.AssetRulesDefinition;
 import org.openremote.manager.shared.rules.GlobalRulesDefinition;
@@ -36,12 +38,15 @@ import java.util.List;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
-public class RulesResourceImpl extends WebResource implements RulesResource {
+public class RulesResourceImpl extends ManagerWebResource implements RulesResource {
 
     final protected RulesStorageService rulesStorageService;
     final protected AssetStorageService assetStorageService;
 
-    public RulesResourceImpl(RulesStorageService rulesStorageService, AssetStorageService assetStorageService) {
+    public RulesResourceImpl(ManagerIdentityService identityService,
+                             RulesStorageService rulesStorageService,
+                             AssetStorageService assetStorageService) {
+        super(identityService);
         this.rulesStorageService = rulesStorageService;
         this.assetStorageService = assetStorageService;
     }
@@ -77,7 +82,7 @@ public class RulesResourceImpl extends WebResource implements RulesResource {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (isRestrictedUser() &&
-            !assetStorageService.findProtectedOfUserContains(getUsername(), assetId)) {
+            !assetStorageService.findProtectedOfUserContains(getUserId(), assetId)) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         List<AssetRulesDefinition> result = rulesStorageService.findAssetDefinitions(realm, assetId);
@@ -197,7 +202,7 @@ public class RulesResourceImpl extends WebResource implements RulesResource {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (isRestrictedUser() &&
-            !assetStorageService.findProtectedOfUserContains(getUsername(), asset.getId())) {
+            !assetStorageService.findProtectedOfUserContains(getUserId(), asset.getId())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         rulesDefinition = rulesStorageService.merge(rulesDefinition);
@@ -217,7 +222,7 @@ public class RulesResourceImpl extends WebResource implements RulesResource {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (isRestrictedUser() &&
-            !assetStorageService.findProtectedOfUserContains(getUsername(), asset.getId())) {
+            !assetStorageService.findProtectedOfUserContains(getUserId(), asset.getId())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         return existingDefinition;
@@ -237,7 +242,7 @@ public class RulesResourceImpl extends WebResource implements RulesResource {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (isRestrictedUser() &&
-            !assetStorageService.findProtectedOfUserContains(getUsername(), asset.getId())) {
+            !assetStorageService.findProtectedOfUserContains(getUserId(), asset.getId())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (!id.equals(rulesDefinition.getId())) {
@@ -263,7 +268,7 @@ public class RulesResourceImpl extends WebResource implements RulesResource {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (isRestrictedUser() &&
-            !assetStorageService.findProtectedOfUserContains(getUsername(), asset.getId())) {
+            !assetStorageService.findProtectedOfUserContains(getUserId(), asset.getId())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         rulesStorageService.delete(AssetRulesDefinition.class, id);

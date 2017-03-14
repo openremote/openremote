@@ -13,6 +13,7 @@
         <class>org.openremote.manager.server.notification.DeviceNotificationToken</class>
         <class>org.openremote.manager.server.security.UserConfiguration</class>
         <class>org.openremote.model.datapoint.AssetDatapoint</class>
+        <class>org.openremote.model.asset.UserAsset</class>
         <class>org.openremote.manager.shared.rules.GlobalRulesDefinition</class>
         <class>org.openremote.manager.shared.rules.TenantRulesDefinition</class>
         <class>org.openremote.manager.shared.rules.AssetRulesDefinition</class>

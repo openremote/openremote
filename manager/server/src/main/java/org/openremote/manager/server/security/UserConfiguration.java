@@ -24,7 +24,6 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
-// TODO Finish migration from Keycloak user attributes to this
 @Entity
 @Table(name = "USER_CONFIGURATION")
 public class UserConfiguration {

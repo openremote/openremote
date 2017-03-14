@@ -46,18 +46,25 @@ import static org.openremote.model.asset.AssetType.THING;
 
 /**
  * Process asset data changes, routing asset-related messages.
+ * <p>
+ * The regular processor chain is:
  * <ul>
- * <li>
- * Listens to {@link AttributeState} messages on {@link Protocol#SENSOR_TOPIC} and processes them
- * with: {@link AssetRulesService}, {@link AssetStorageService}, {@link AssetDatapointService}
- * </li>
- * <li>
- * Listens for {@link PersistenceEvent} of {@link Asset} entity and detects changed attributes. Any
- * created or updated {@link ThingAttribute} will be send to its {@link Protocol#ACTUATOR_TOPIC}. Any
- * other created or updated attribute will be processed with: {@link AssetRulesService},
- * {@link AssetStorageService}, {@link AssetDatapointService}
- * </li>
+ * <li>{@link AssetRulesService}</li>
+ * <li>{@link AssetStorageService}</li>
+ * <li>{@link AssetDatapointService}</li>
  * </ul>
+ * <p>
+ * Listens for {@link AttributeEvent} messages on {@link Protocol#SENSOR_TOPIC} and processes them.
+ * <p>
+ * Listens for {@link PersistenceEvent} on {@link PersistenceEvent#PERSISTENCE_TOPIC} of {@link Asset}
+ * entity and detects changed attributes. Any created or updated {@link ThingAttribute} value will be
+ * send to its {@link Protocol#ACTUATOR_TOPIC}. Any other created or updated attribute will be processed.
+ * TODO This is not implemented
+ * <p>
+ * Accepts client update calls on {@link #processClientUpdate(AttributeEvent)}. An update event for
+ * a {@link ThingAttribute} will be send to its {@link Protocol#ACTUATOR_TOPIC}. An update event for
+ * other attributes will be processed.
+ * <p>
  * TODO What's the call path for thing attribute value updates from clients (northbound, not sensors)?
  * <p>
  * Proposal:

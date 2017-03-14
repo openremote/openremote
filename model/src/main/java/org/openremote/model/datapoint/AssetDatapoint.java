@@ -20,9 +20,9 @@
 package org.openremote.model.datapoint;
 
 import elemental.json.JsonValue;
+import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.AttributeState;
-import org.openremote.model.AttributeEvent;
 
 import javax.persistence.Entity;
 import javax.persistence.Table;

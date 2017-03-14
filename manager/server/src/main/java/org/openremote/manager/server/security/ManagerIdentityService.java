@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -19,9 +19,11 @@
  */
 package org.openremote.manager.server.security;
 
-import org.keycloak.admin.client.resource.*;
+import org.keycloak.admin.client.resource.ClientResource;
+import org.keycloak.admin.client.resource.ClientsResource;
+import org.keycloak.admin.client.resource.RealmsResource;
+import org.keycloak.admin.client.resource.RolesResource;
 import org.keycloak.representations.idm.ClientRepresentation;
-import org.keycloak.representations.idm.ProtocolMapperRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.openremote.container.Container;
@@ -32,10 +34,10 @@ import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.Constants;
-import org.openremote.model.asset.ProtectedUserAssets;
 
 import javax.ws.rs.core.UriBuilder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 import static org.openremote.container.json.JsonUtil.convert;
@@ -171,7 +173,6 @@ public class ManagerIdentityService extends IdentityService {
         client = clientsResource.findByClientId(client.getClientId()).get(0);
         ClientResource clientResource = clientsResource.get(client.getId());
         addDefaultRoles(clientResource.roles());
-        addDefaultMappers(clientResource.getProtocolMappers());
     }
 
     public void updateTenant(String bearerAuth, String realm, Tenant tenant) throws Exception {
@@ -203,21 +204,22 @@ public class ManagerIdentityService extends IdentityService {
         }
     }
 
-    public void addDefaultMappers(ProtocolMappersResource protocolMappers) {
-        // Link between user and asset ("ownership")
-        ProtocolMapperRepresentation userAssetMapper = new ProtocolMapperRepresentation();
-        userAssetMapper.setProtocol("openid-connect");
-        userAssetMapper.setProtocolMapper("oidc-usermodel-attribute-mapper");
-        userAssetMapper.setName(ProtectedUserAssets.ASSETS_ATTRIBUTE);
-        userAssetMapper.setConsentRequired(false);
-        userAssetMapper.setConfig(ProtectedUserAssets.RESTRICTED_MAPPER);
-        protocolMappers.createMapper(userAssetMapper);
+    public boolean isRestrictedUser(String userId) {
+        UserConfiguration userConfiguration = getUserConfiguration(userId);
+        return userConfiguration.isRestricted();
+    }
+
+    public void setRestrictedUser(String userId, boolean restricted) {
+        UserConfiguration userConfiguration = getUserConfiguration(userId);
+        userConfiguration.setRestricted(restricted);
+        mergeUserConfiguration(userConfiguration);
     }
 
     public UserConfiguration getUserConfiguration(String userId) {
         UserConfiguration userConfiguration = persistenceService.doReturningTransaction(em -> em.find(UserConfiguration.class, userId));
         if (userConfiguration == null) {
             userConfiguration = new UserConfiguration(userId);
+            userConfiguration = mergeUserConfiguration(userConfiguration);
         }
         return userConfiguration;
     }

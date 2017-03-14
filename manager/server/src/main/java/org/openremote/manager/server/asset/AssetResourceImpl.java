@@ -20,6 +20,8 @@
 package org.openremote.manager.server.asset;
 
 import org.openremote.container.web.WebResource;
+import org.openremote.manager.server.security.ManagerIdentityService;
+import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.model.AttributeEvent;
@@ -40,14 +42,17 @@ import java.util.logging.Logger;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
-public class AssetResourceImpl extends WebResource implements AssetResource {
+public class AssetResourceImpl extends ManagerWebResource implements AssetResource {
 
     private static final Logger LOG = Logger.getLogger(AssetResourceImpl.class.getName());
 
     protected final AssetStorageService assetStorageService;
     protected final AssetProcessingService assetProcessingService;
 
-    public AssetResourceImpl(AssetStorageService assetStorageService, AssetProcessingService assetProcessingService) {
+    public AssetResourceImpl(ManagerIdentityService identityService, 
+                             AssetStorageService assetStorageService, 
+                             AssetProcessingService assetProcessingService) {
+        super(identityService);
         this.assetStorageService = assetStorageService;
         this.assetProcessingService = assetProcessingService;
     }
@@ -58,7 +63,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
             if (isSuperUser() || !isRestrictedUser()) {
                 return new ProtectedAssetInfo[0];
             }
-            List<ProtectedAssetInfo> assets = Arrays.asList(assetStorageService.findProtectedOfUser(getUsername()));
+            List<ProtectedAssetInfo> assets = Arrays.asList(assetStorageService.findProtectedOfUser(getUserId()));
             // Filter assets that might have been moved into a different realm and can no longer be accessed by user
             // TODO: Should we forbid moving assets between realms?
             Iterator<ProtectedAssetInfo> it = assets.iterator();
@@ -191,7 +196,7 @@ public class AssetResourceImpl extends WebResource implements AssetResource {
 
             // Check restricted
             if (isRestrictedUser() &&
-                !assetStorageService.findProtectedOfUserContains(getUsername(), asset.getId())) {
+                !assetStorageService.findProtectedOfUserContains(getUserId(), asset.getId())) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 

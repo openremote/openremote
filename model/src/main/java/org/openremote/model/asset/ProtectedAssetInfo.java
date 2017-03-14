@@ -28,7 +28,6 @@ import org.openremote.model.MetaItem;
 import java.util.Date;
 
 import static org.openremote.model.Constants.NAMESPACE;
-import static org.openremote.model.asset.AssetMeta.PROTECTED;
 
 /**
  * Contains protected asset properties such as realm, name, creation timestamp, type,

@@ -31,6 +31,7 @@ import org.openremote.container.Container;
 import org.openremote.manager.server.agent.AgentAttributes;
 import org.openremote.manager.server.agent.ThingAttributes;
 import org.openremote.manager.server.asset.ServerAsset;
+import org.openremote.manager.server.security.UserConfiguration;
 import org.openremote.manager.server.setup.AbstractManagerSetup;
 import org.openremote.manager.shared.rules.AssetRulesDefinition;
 import org.openremote.manager.shared.rules.GlobalRulesDefinition;
@@ -316,6 +317,15 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment3Livingroom.setType(ROOM);
         apartment3Livingroom = assetStorageService.merge(apartment3Livingroom);
         apartment3LivingroomId = apartment3Livingroom.getId();
+
+        // ################################ Link demo users and assets ###################################
+
+        KeycloakDemoSetup keycloakDemoSetup = setupService.getTaskOfType(KeycloakDemoSetup.class);
+        identityService.setRestrictedUser(keycloakDemoSetup.testuser3Id, true);
+        assetStorageService.storeProtected(keycloakDemoSetup.testuser3Id, apartment1Id);
+        assetStorageService.storeProtected(keycloakDemoSetup.testuser3Id, apartment1LivingroomId);
+        assetStorageService.storeProtected(keycloakDemoSetup.testuser3Id, apartment1LivingroomThermostatId);
+        assetStorageService.storeProtected(keycloakDemoSetup.testuser3Id, apartment2Id);
 
         // ################################ Rules demo data ###################################
 

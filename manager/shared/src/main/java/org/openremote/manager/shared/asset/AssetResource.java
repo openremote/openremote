@@ -26,7 +26,6 @@ import org.openremote.model.AttributeState;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetInfo;
 import org.openremote.model.asset.ProtectedAssetInfo;
-import org.openremote.model.asset.ProtectedUserAssets;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
@@ -45,7 +44,9 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * </li>
  * <li>
  * A <em>restricted</em> user is linked to a subset of assets within its authenticated realm and
- * may have roles that allow read and/or write access to protected asset details (see {@link ProtectedUserAssets}).
+ * may have roles that allow read and/or write access to protected asset details (see
+ * {@link org.openremote.model.asset.UserAsset}).
+ *
  * The only operations a restricted user is able to perform are {@link #getCurrentUserAssets},
  * {@link #updateCurrentUserAsset}, and {@link #updateAttribute}
  * </li>

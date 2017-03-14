@@ -24,6 +24,7 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.asset.AssetStorageService;
+import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.rules.AssetRulesDefinition;
 import org.openremote.manager.shared.rules.GlobalRulesDefinition;
 import org.openremote.manager.shared.rules.RulesDefinition;
@@ -43,7 +44,11 @@ public class RulesStorageService implements ContainerService {
         persistenceService = container.getService(PersistenceService.class);
 
         container.getService(WebService.class).getApiSingletons().add(
-            new RulesResourceImpl(this, container.getService(AssetStorageService.class))
+            new RulesResourceImpl(
+                container.getService(ManagerIdentityService.class),
+                this,
+                container.getService(AssetStorageService.class)
+            )
         );
     }
 

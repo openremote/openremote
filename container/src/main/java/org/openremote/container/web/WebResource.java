@@ -24,7 +24,6 @@ import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.representations.AccessToken;
 import org.openremote.container.Container;
 import org.openremote.model.Constants;
-import org.openremote.model.asset.ProtectedUserAssets;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.*;
@@ -84,6 +83,10 @@ public class WebResource {
         return getAccessToken().getPreferredUsername();
     }
 
+    public String getUserId() {
+        return getAccessToken().getSubject();
+    }
+
     /**
      * This works only if the current caller is authenticated, we obtain the
      * realm from auth material.
@@ -117,12 +120,5 @@ public class WebResource {
      */
     public boolean isRealmAccessibleByUser(String realm) {
         return realm != null && realm.length() > 0 && (realm.equals(getAuthenticatedRealm()) || isSuperUser());
-    }
-
-    /**
-     * @return <code>true</code> if the authenticated user is a restricted user (access token claim check).
-     */
-    public boolean isRestrictedUser() {
-        return ProtectedUserAssets.isRestrictedUser(getAccessToken().getOtherClaims());
     }
 }

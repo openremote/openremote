@@ -20,12 +20,13 @@
 package org.openremote.model.datapoint;
 
 import elemental.json.JsonValue;
+import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.AttributeState;
-import org.openremote.model.AttributeEvent;
 
 import javax.persistence.Column;
 import javax.persistence.Id;
+import javax.persistence.IdClass;
 import javax.persistence.MappedSuperclass;
 import java.io.Serializable;
 
@@ -37,6 +38,7 @@ import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
  * <p>
  */
 @MappedSuperclass
+@IdClass(Datapoint.class)
 public abstract class Datapoint implements Serializable {
 
     @Id

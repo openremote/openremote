@@ -63,7 +63,6 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
 
             addTask(new KeycloakDemoSetup(container));
             addTask(new ManagerDemoSetup(container));
-            addTask(new FinalizeKeycloakDemoSetup(container));
 
         } else {
 
@@ -80,7 +79,6 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
             if (getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_DATA, SETUP_IMPORT_DEMO_DATA_DEFAULT)) {
                 addTask(new KeycloakDemoSetup(container));
                 addTask(new ManagerDemoSetup(container));
-                addTask(new FinalizeKeycloakDemoSetup(container));
             }
 
         }
