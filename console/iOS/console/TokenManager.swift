@@ -17,11 +17,14 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     var idToken : String?
     var hasToken: Bool
     var viewController : TokenManagerViewController
+    var myWebView : WKWebView
     
     static let sharedInstance = TokenManager()
     
     override init() {
         viewController = TokenManagerViewController()
+        let webCfg:WKWebViewConfiguration = WKWebViewConfiguration()
+        myWebView = WKWebView(frame: viewController.view.frame, configuration: webCfg)
         if let token = UserDefaults.standard.value(forKey: DefaultsKey.offlineToken) {
             hasToken = true
             offlineToken = token as? String
@@ -37,6 +40,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     }
     
     func authenticate() {
+        print("authenticate")
         let defaults = UserDefaults.standard
         let webCfg:WKWebViewConfiguration = WKWebViewConfiguration()
         
@@ -48,6 +52,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         
         var exec_template = "var iOSToken"
         if let offlineToken = defaults.object(forKey: DefaultsKey.offlineToken) {
+            print("offlinetoken exists")
             let refreshToken = defaults.object(forKey: DefaultsKey.refreshToken)
             let idToken = defaults.object(forKey: DefaultsKey.idToken)
             exec_template = String(format: "var iOSToken = \"%@\"; var iOSRefreshToken = \"%@\"; var iOSTokenId = \"%@\";", offlineToken as! String, refreshToken as! String, idToken as! String)
@@ -58,7 +63,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         
         
         webCfg.userContentController = userController;
-        let myWebView = WKWebView(frame: viewController.view.frame, configuration: webCfg)
+        myWebView = WKWebView(frame: viewController.view.frame, configuration: webCfg)
         myWebView.uiDelegate = self;
         myWebView.navigationDelegate = self;
         viewController.view.addSubview(myWebView)
@@ -94,6 +99,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         }
         if (offlineToken != nil && refreshToken != nil && idToken != nil ) {
             self.hasToken = true
+            //myWeb
             self.viewController.dismiss(animated: true, completion: {
                 let notificationName = Notification.Name(NotificationsNames.isAuthenticated)
                 NotificationCenter.default.post(name: notificationName, object: nil)
@@ -107,6 +113,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         let alertAction = UIAlertAction(title: "Done", style: .cancel) { (action) in
             completionHandler()
         }
+        print("javascript message %@",message)
         alertView.addAction(alertAction)
         viewController.present(alertView, animated: true, completion: nil)
     }
@@ -114,6 +121,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         showError(error: error)
     }
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        print("navigation failed %@",error)
         let errorCode = (error as NSError).code
         if errorCode != NSURLErrorCancelled {
             showError(error: error)
@@ -121,6 +129,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         }
     }
     func showError(error : Error) {
+        print("showing error %@",error)
         let alertVC = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
         let alertAction = UIAlertAction(title: "Done", style: .cancel) { (action) in
             self.viewController.dismiss(animated: true, completion: nil)

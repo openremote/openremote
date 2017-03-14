@@ -20,6 +20,19 @@
 		FAA226BC1E7163D9009A8FEC /* TokenManagerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAA226BB1E7163D9009A8FEC /* TokenManagerViewController.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		FAAFD0C61E78115700F01155 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		146098EE6A2181297FD32B8D /* Pods-console.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-console.debug.xcconfig"; path = "Pods/Target Support Files/Pods-console/Pods-console.debug.xcconfig"; sourceTree = "<group>"; };
 		6A25CEFE37281B00C9BA7EB5 /* Pods-console.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-console.release.xcconfig"; path = "Pods/Target Support Files/Pods-console/Pods-console.release.xcconfig"; sourceTree = "<group>"; };
@@ -36,6 +49,9 @@
 		FAA226B71E71563F009A8FEC /* TokenManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TokenManager.swift; sourceTree = "<group>"; };
 		FAA226B91E715ED6009A8FEC /* TokenManagerView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = TokenManagerView.xib; sourceTree = "<group>"; };
 		FAA226BB1E7163D9009A8FEC /* TokenManagerViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TokenManagerViewController.swift; sourceTree = "<group>"; };
+		FAAFD0B41E77EB6E00F01155 /* console.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = console.entitlements; sourceTree = "<group>"; };
+		FAAFD0BD1E78115700F01155 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		FAAFD0BF1E78115700F01155 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,6 +87,7 @@
 			isa = PBXGroup;
 			children = (
 				FA1D73E01E53374E00F6240A /* console */,
+				FAAFD0BC1E78115700F01155 /* consoleNSE */,
 				FA1D73DF1E53374E00F6240A /* Products */,
 				B5A9A3A4436D6649979AAD5D /* Pods */,
 				D99D42C10629DD05EE566F2F /* Frameworks */,
@@ -88,6 +105,7 @@
 		FA1D73E01E53374E00F6240A /* console */ = {
 			isa = PBXGroup;
 			children = (
+				FAAFD0B41E77EB6E00F01155 /* console.entitlements */,
 				FA1D73E11E53374E00F6240A /* AppDelegate.swift */,
 				FA1D73E31E53374E00F6240A /* ViewController.swift */,
 				FA1D73F51E53392F00F6240A /* ORViewController.swift */,
@@ -111,6 +129,15 @@
 			name = utils;
 			sourceTree = "<group>";
 		};
+		FAAFD0BC1E78115700F01155 /* consoleNSE */ = {
+			isa = PBXGroup;
+			children = (
+				FAAFD0BD1E78115700F01155 /* NotificationService.swift */,
+				FAAFD0BF1E78115700F01155 /* Info.plist */,
+			);
+			path = consoleNSE;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -124,6 +151,7 @@
 				FA1D73DC1E53374E00F6240A /* Resources */,
 				2E1F88AEF407A152C63657FF /* [CP] Embed Pods Frameworks */,
 				EE81FADDE7C1DBD70C93FA57 /* [CP] Copy Pods Resources */,
+				FAAFD0C61E78115700F01155 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
@@ -146,8 +174,17 @@
 				TargetAttributes = {
 					FA1D73DD1E53374E00F6240A = {
 						CreatedOnToolsVersion = 8.2.1;
+						DevelopmentTeam = 4W5599S8TP;
 						LastSwiftMigration = 0820;
 						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.BackgroundModes = {
+								enabled = 1;
+							};
+							com.apple.Push = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
@@ -366,7 +403,9 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = console/console.entitlements;
 				INFOPLIST_FILE = console/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.2;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = org.openremote.console;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -380,7 +419,9 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = console/console.entitlements;
 				INFOPLIST_FILE = console/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.2;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = org.openremote.console;
 				PRODUCT_NAME = "$(TARGET_NAME)";
