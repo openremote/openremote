@@ -55,4 +55,11 @@ public class AssetRulesDefinition extends RulesDefinition {
     public void setAssetId(String assetId) {
         this.assetId = assetId;
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "assetId='" + assetId + '\'' +
+            '}';
+    }
 }

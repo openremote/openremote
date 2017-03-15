@@ -36,6 +36,7 @@ import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.widget.*;
 import org.openremote.manager.client.widget.PushButton;
 import org.openremote.manager.shared.map.GeoJSON;
+import org.openremote.model.Constants;
 import org.openremote.model.Runnable;
 import org.openremote.model.asset.AssetType;
 
@@ -252,7 +253,7 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     @Override
     public void setCreatedOn(Date createdOn) {
         createdOnOutput.setText(
-            createdOn != null ? DateTimeFormat.getFormat("dd. MMM yyyy HH:mm:ss zzz").format(createdOn) : ""
+            createdOn != null ? DateTimeFormat.getFormat(Constants.DEFAULT_DATETIME_FORMAT).format(createdOn) : ""
         );
     }
 

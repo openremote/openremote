@@ -32,7 +32,6 @@ import org.openremote.manager.client.style.FormTreeStyle;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.FormInputText;
 import org.openremote.manager.client.widget.PushButton;
-import org.openremote.model.asset.AssetInfo;
 
 import javax.inject.Inject;
 import java.util.Arrays;
@@ -67,7 +66,7 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
 
     Presenter presenter;
     AssetTree assetTree;
-    AssetInfo assetTreeRoot = new AssetInfo();
+    final AssetTreeNode assetTreeRootNode = new AssetTreeNode();
 
     @Inject
     public AssetBrowserImpl(FormTreeStyle formTreeStyle) {
@@ -95,22 +94,21 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
     }
 
     @Override
-    public void showAndSelectAsset(String[] path, String selectedAssetId, boolean scrollIntoView) {
-        List<AssetInfo> selectedPath = new AssetTree.IdSearch().resolvePath(
+    public void showAndSelectNode(String[] path, AssetTreeNode treeNode, boolean scrollIntoView) {
+        List<AssetTreeNode> selectedPath = new AssetTree.IdSearch().resolvePath(
             Arrays.asList(path), assetTree.getRootTreeNode()
         );
 
         if (selectedPath.size() > 0) {
-            AssetInfo selectedAsset = selectedPath.get(selectedPath.size() - 1);
-            assetTree.getTreeViewModel().getSelectionModel().setSelected(selectedAsset, true);
+            AssetTreeNode selectedNode = selectedPath.get(selectedPath.size() - 1);
+            assetTree.getTreeViewModel().getSelectionModel().setSelected(selectedNode, true);
 
             if (!scrollIntoView)
                 return;
 
             // We place the selected asset in the middle of the tree container
             elemental.dom.Element treeElement = (elemental.dom.Element) assetTree.getElement();
-            String selector = "#asset-" + selectedAssetId.replaceAll(":", "\\\\:");
-            elemental.dom.Element assetElement = treeElement.querySelector(selector);
+            elemental.dom.Element assetElement = treeElement.querySelector(AssetTreeCell.CELL_ID_SELECTOR(treeNode));
             int offsetTop = 0;
             if (assetElement != null && assetElement.getOffsetParent() != null) {
                 elemental.dom.Element el = assetElement.getOffsetParent();
@@ -126,7 +124,7 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
     }
 
     @Override
-    public void deselectAssets() {
+    public void clearSelection() {
         assetTree.getTreeViewModel().getSelectionModel().clear();
     }
 
@@ -141,10 +139,10 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
     }
 
     protected void createAssetTree() {
-        AssetCell.Renderer assetCellRenderer = new AssetCell.Renderer(44);
+        AssetTreeCell.Renderer assetCellRenderer = new AssetTreeCell.Renderer(44);
         assetTree = new AssetTree(
             new AssetTreeModel(presenter, assetCellRenderer),
-            assetTreeRoot,
+            assetTreeRootNode,
             formTreeStyle,
             new CellTree.CellTreeMessages() {
                 @Override

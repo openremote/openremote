@@ -20,26 +20,37 @@
 package org.openremote.manager.client.rules;
 
 import com.google.gwt.inject.client.AbstractGinModule;
+import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import org.openremote.manager.client.rules.asset.RulesAssetActivity;
-import org.openremote.manager.client.rules.asset.RulesAssetView;
-import org.openremote.manager.client.rules.asset.RulesAssetViewImpl;
-import org.openremote.manager.client.rules.tenant.RulesTenantActivity;
-import org.openremote.manager.client.rules.tenant.RulesTenantView;
-import org.openremote.manager.client.rules.tenant.RulesTenantViewImpl;
+import org.openremote.manager.client.rules.asset.AssetRulesList;
+import org.openremote.manager.client.rules.asset.AssetRulesListActivity;
+import org.openremote.manager.client.rules.asset.AssetRulesListImpl;
+import org.openremote.manager.client.rules.global.*;
+import org.openremote.manager.client.rules.tenant.TenantRulesList;
+import org.openremote.manager.client.rules.tenant.TenantRulesListActivity;
+import org.openremote.manager.client.rules.tenant.TenantRulesListImpl;
+import org.openremote.manager.shared.rules.RulesResource;
 
 public class RulesModule extends AbstractGinModule {
 
     @Override
     protected void configure() {
-        bind(RulesGlobalView.class).to(RulesGlobalViewImpl.class).in(Singleton.class);
-        bind(RulesGlobalActivity.class);
+        bind(GlobalRulesList.class).to(GlobalRulesListImpl.class).in(Singleton.class);
+        bind(GlobalRulesListActivity.class);
 
-        bind(RulesTenantView.class).to(RulesTenantViewImpl.class).in(Singleton.class);
-        bind(RulesTenantActivity.class);
+        bind(GlobalRulesEditor.class).to(GlobalRulesEditorImpl.class).in(Singleton.class);
+        bind(GlobalRulesEditorActivity.class);
 
-        bind(RulesAssetView.class).to(RulesAssetViewImpl.class).in(Singleton.class);
-        bind(RulesAssetActivity.class);
+        bind(TenantRulesList.class).to(TenantRulesListImpl.class).in(Singleton.class);
+        bind(TenantRulesListActivity.class);
+
+        bind(AssetRulesList.class).to(AssetRulesListImpl.class).in(Singleton.class);
+        bind(AssetRulesListActivity.class);
     }
 
+    @Provides
+    @Singleton
+    public native RulesResource getRulesResource() /*-{
+        return $wnd.RulesResource;
+    }-*/;
 }

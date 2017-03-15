@@ -19,49 +19,57 @@
  */
 package org.openremote.manager.client.assets;
 
+import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
-import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
-import org.openremote.model.asset.AssetInfo;
-import org.openremote.manager.shared.asset.AssetResource;
+import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
+import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
+import org.openremote.manager.client.event.bus.EventBus;
+import org.openremote.manager.client.event.bus.EventRegistration;
+import org.openremote.manager.client.mvp.AppActivity;
 
 import javax.inject.Inject;
+import java.util.Collection;
 
 public class AssetsDashboardActivity
-    extends AssetBrowsingActivity<AssetsDashboard, AssetsDashboardPlace>
+    extends AssetBrowsingActivity<AssetsDashboardPlace>
     implements AssetsDashboard.Presenter {
+
+    final protected AssetsDashboard view;
 
     @Inject
     public AssetsDashboardActivity(Environment environment,
-                                   AssetsDashboard view,
                                    AssetBrowser.Presenter assetBrowserPresenter,
-                                   AssetResource assetResource,
-                                   AssetMapper assetMapper) {
-        super(environment, view, assetBrowserPresenter, assetResource, assetMapper);
+                                   AssetsDashboard view) {
+        super(environment, assetBrowserPresenter);
+        this.view = view;
+    }
+
+    @Override
+    protected AppActivity<AssetsDashboardPlace> init(AssetsDashboardPlace place) {
+        return this;
+    }
+
+    @Override
+    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
+        view.setPresenter(this);
+        container.setWidget(view.asWidget());
+
+        registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
+            if (event.isTenantSelection()) {
+                environment.getPlaceController().goTo(new AssetsTenantPlace(event.getSelectedNode().getRealm()));
+            } else if (event.isAssetSelection()) {
+                environment.getPlaceController().goTo(new AssetPlace(event.getSelectedNode().getId()));
+            }
+        }));
+
+        assetBrowserPresenter.clearSelection();
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        getView().setPresenter(null);
-    }
-
-    @Override
-    protected void onAssetLoaded() {
-    }
-
-    @Override
-    protected void onAssetsDeselected() {
-    }
-
-    @Override
-    protected void onAssetSelectionChange(AssetInfo selectedAssetInfo) {
-        environment.getPlaceController().goTo(new AssetPlace(selectedAssetInfo.getId()));
-    }
-
-    @Override
-    protected void onTenantSelected(String id, String realm) {
-
+        view.setPresenter(null);
     }
 }

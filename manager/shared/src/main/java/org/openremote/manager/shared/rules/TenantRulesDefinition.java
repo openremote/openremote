@@ -55,4 +55,11 @@ public class TenantRulesDefinition extends RulesDefinition {
     public void setRealm(String realm) {
         this.realm = realm;
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "realm='" + realm + '\'' +
+            '}';
+    }
 }

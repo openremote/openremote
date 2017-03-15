@@ -25,36 +25,40 @@ import com.google.inject.Provider;
 import org.openremote.manager.client.admin.overview.AdminOverviewActivity;
 import org.openremote.manager.client.admin.overview.AdminOverviewPlace;
 import org.openremote.manager.client.admin.tenant.AdminTenantActivity;
-import org.openremote.manager.client.admin.tenant.AdminTenantsActivity;
 import org.openremote.manager.client.admin.tenant.AdminTenantPlace;
+import org.openremote.manager.client.admin.tenant.AdminTenantsActivity;
 import org.openremote.manager.client.admin.tenant.AdminTenantsPlace;
 import org.openremote.manager.client.admin.users.AdminUserActivity;
 import org.openremote.manager.client.admin.users.AdminUserPlace;
 import org.openremote.manager.client.admin.users.AdminUsersActivity;
 import org.openremote.manager.client.admin.users.AdminUsersPlace;
-import org.openremote.manager.client.assets.asset.AssetActivity;
-import org.openremote.manager.client.assets.asset.AssetPlace;
-import org.openremote.manager.client.assets.AssetsDashboardActivity;
-import org.openremote.manager.client.assets.AssetsDashboardPlace;
-import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.apps.AppsActivity;
 import org.openremote.manager.client.apps.AppsPlace;
+import org.openremote.manager.client.assets.AssetsDashboardActivity;
+import org.openremote.manager.client.assets.AssetsDashboardPlace;
+import org.openremote.manager.client.assets.asset.AssetActivity;
+import org.openremote.manager.client.assets.asset.AssetPlace;
+import org.openremote.manager.client.assets.tenant.AssetsTenantActivity;
+import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
+import org.openremote.manager.client.event.ShowFailureEvent;
+import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.map.MapActivity;
 import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.mvp.AppActivityMapper;
 import org.openremote.manager.client.mvp.RoleRequiredException;
-import org.openremote.manager.client.rules.RulesGlobalActivity;
-import org.openremote.manager.client.rules.RulesGlobalPlace;
-import org.openremote.manager.client.rules.asset.RulesAssetActivity;
-import org.openremote.manager.client.rules.asset.RulesAssetPlace;
-import org.openremote.manager.client.rules.tenant.RulesTenantActivity;
-import org.openremote.manager.client.rules.tenant.RulesTenantPlace;
+import org.openremote.manager.client.rules.asset.AssetRulesListActivity;
+import org.openremote.manager.client.rules.asset.AssetRulesListPlace;
+import org.openremote.manager.client.rules.global.GlobalRulesEditorActivity;
+import org.openremote.manager.client.rules.global.GlobalRulesEditorPlace;
+import org.openremote.manager.client.rules.global.GlobalRulesListActivity;
+import org.openremote.manager.client.rules.global.GlobalRulesListPlace;
+import org.openremote.manager.client.rules.tenant.TenantRulesListActivity;
+import org.openremote.manager.client.rules.tenant.TenantRulesListPlace;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.user.UserAccountActivity;
 import org.openremote.manager.client.user.UserAccountPlace;
-import org.openremote.manager.client.event.ShowFailureEvent;
 
 import java.util.logging.Logger;
 
@@ -66,11 +70,13 @@ public class ManagerActivityMapper implements AppActivityMapper {
     protected final EventBus eventBus;
     protected final ManagerMessages managerMessages;
     protected final Provider<AssetsDashboardActivity> assetsDashboardActivityProvider;
+    protected final Provider<AssetsTenantActivity> assetsTenantActivityProvider;
     protected final Provider<AssetActivity> assetActivityProvider;
     protected final Provider<MapActivity> mapActivityProvider;
-    protected final Provider<RulesGlobalActivity> rulesGlobalActivityProvider;
-    protected final Provider<RulesTenantActivity> rulesTenantActivityProvider;
-    protected final Provider<RulesAssetActivity> rulesAssetActivityProvider;
+    protected final Provider<GlobalRulesListActivity> globalRulesActivityProvider;
+    protected final Provider<GlobalRulesEditorActivity> globalRulesEditorActivityProvider;
+    protected final Provider<TenantRulesListActivity> tenantRulesListActivityProvider;
+    protected final Provider<AssetRulesListActivity> assetRulesListActivityProvider;
     protected final Provider<AppsActivity> appsActivityProvider;
     protected final Provider<AdminOverviewActivity> adminOverviewActivityProvider;
     protected final Provider<AdminTenantsActivity> adminTenantsActivityProvider;
@@ -84,11 +90,13 @@ public class ManagerActivityMapper implements AppActivityMapper {
                                  EventBus eventBus,
                                  ManagerMessages managerMessages,
                                  Provider<AssetsDashboardActivity> assetsDashboardActivityProvider,
+                                 Provider<AssetsTenantActivity> assetsTenantActivityProvider,
                                  Provider<AssetActivity> assetActivityProvider,
                                  Provider<MapActivity> mapActivityProvider,
-                                 Provider<RulesGlobalActivity> rulesGlobalActivityProvider,
-                                 Provider<RulesTenantActivity> rulesTenantActivityProvider,
-                                 Provider<RulesAssetActivity> rulesAssetActivityProvider,
+                                 Provider<GlobalRulesListActivity> globalRulesActivityProvider,
+                                 Provider<GlobalRulesEditorActivity> globalRulesEditorActivityProvider,
+                                 Provider<TenantRulesListActivity> tenantRulesListActivityProvider,
+                                 Provider<AssetRulesListActivity> assetRulesListActivityProvider,
                                  Provider<AppsActivity> appsActivityProvider,
                                  Provider<AdminOverviewActivity> adminOverviewActivityProvider,
                                  Provider<AdminTenantsActivity> adminTenantsActivityProvider,
@@ -100,11 +108,13 @@ public class ManagerActivityMapper implements AppActivityMapper {
         this.eventBus = eventBus;
         this.managerMessages = managerMessages;
         this.assetsDashboardActivityProvider = assetsDashboardActivityProvider;
+        this.assetsTenantActivityProvider = assetsTenantActivityProvider;
         this.assetActivityProvider = assetActivityProvider;
         this.mapActivityProvider = mapActivityProvider;
-        this.rulesGlobalActivityProvider = rulesGlobalActivityProvider;
-        this.rulesTenantActivityProvider = rulesTenantActivityProvider;
-        this.rulesAssetActivityProvider = rulesAssetActivityProvider;
+        this.globalRulesActivityProvider = globalRulesActivityProvider;
+        this.globalRulesEditorActivityProvider = globalRulesEditorActivityProvider;
+        this.tenantRulesListActivityProvider = tenantRulesListActivityProvider;
+        this.assetRulesListActivityProvider = assetRulesListActivityProvider;
         this.appsActivityProvider = appsActivityProvider;
         this.adminOverviewActivityProvider = adminOverviewActivityProvider;
         this.adminTenantsActivityProvider = adminTenantsActivityProvider;
@@ -119,20 +129,26 @@ public class ManagerActivityMapper implements AppActivityMapper {
             if (place instanceof AssetsDashboardPlace) {
                 return assetsDashboardActivityProvider.get().init(securityService, (AssetsDashboardPlace) place);
             }
+            if (place instanceof AssetsTenantPlace) {
+                return assetsTenantActivityProvider.get().init(securityService, (AssetsTenantPlace) place);
+            }
             if (place instanceof AssetPlace) {
                 return assetActivityProvider.get().init(securityService, (AssetPlace) place);
             }
             if (place instanceof MapPlace) {
                 return mapActivityProvider.get().init(securityService, (MapPlace) place);
             }
-            if (place instanceof RulesGlobalPlace) {
-                return rulesGlobalActivityProvider.get().init(securityService, (RulesGlobalPlace) place);
+            if (place instanceof GlobalRulesListPlace) {
+                return globalRulesActivityProvider.get().init(securityService, (GlobalRulesListPlace) place);
             }
-            if (place instanceof RulesTenantPlace) {
-                return rulesTenantActivityProvider.get().init(securityService, (RulesTenantPlace) place);
+            if (place instanceof GlobalRulesEditorPlace) {
+                return globalRulesEditorActivityProvider.get().init(securityService, (GlobalRulesEditorPlace) place);
             }
-            if (place instanceof RulesAssetPlace) {
-                return rulesAssetActivityProvider.get().init(securityService, (RulesAssetPlace) place);
+            if (place instanceof TenantRulesListPlace) {
+                return tenantRulesListActivityProvider.get().init(securityService, (TenantRulesListPlace) place);
+            }
+            if (place instanceof AssetRulesListPlace) {
+                return assetRulesListActivityProvider.get().init(securityService, (AssetRulesListPlace) place);
             }
             if (place instanceof AppsPlace) {
                 return appsActivityProvider.get().init(securityService, (AppsPlace) place);

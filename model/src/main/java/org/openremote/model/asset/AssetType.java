@@ -43,8 +43,6 @@ public enum AssetType {
 
     CUSTOM(null, true, null),
 
-    TENANT(ASSET_NAMESPACE + ":tenant", false, null),
-
     BUILDING(ASSET_NAMESPACE + ":building", true, new Attributes().put(
         new Attribute("area", INTEGER)
             .setMeta(new Meta()
@@ -135,10 +133,5 @@ public enum AssetType {
                 return assetType;
         }
         return CUSTOM;
-    }
-
-    public static boolean isLeaf(AssetType wellKnownType) {
-        return false;
-        // TODO return wellKnownType != null && wellKnownType.equals(DEVICE);
     }
 }

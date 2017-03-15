@@ -19,18 +19,25 @@
  */
 package org.openremote.manager.client.assets.asset;
 
+import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceTokenizer;
 import com.google.gwt.place.shared.Prefix;
 import org.openremote.manager.client.assets.AssetsPlace;
-import org.openremote.manager.client.assets.browser.AssetBrowsingPlace;
 
-public class AssetPlace extends AssetBrowsingPlace implements AssetsPlace {
+public class AssetPlace extends Place implements AssetsPlace {
+
+    final String assetId;
 
     public AssetPlace(String assetId) {
-        super(assetId);
+        this.assetId = assetId;
     }
 
     public AssetPlace() {
+        this.assetId = null;
+    }
+
+    public String getAssetId() {
+        return assetId;
     }
 
     @Prefix("asset")
@@ -45,5 +52,12 @@ public class AssetPlace extends AssetBrowsingPlace implements AssetsPlace {
         public String getToken(AssetPlace place) {
             return place.getAssetId() != null ? place.getAssetId() : "";
         }
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "assetId='" + assetId + '\'' +
+            '}';
     }
 }

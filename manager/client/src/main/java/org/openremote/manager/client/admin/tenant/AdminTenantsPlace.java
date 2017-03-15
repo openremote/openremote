@@ -39,4 +39,8 @@ public class AdminTenantsPlace extends AdminPlace {
         }
     }
 
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{}";
+    }
 }

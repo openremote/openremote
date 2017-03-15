@@ -40,4 +40,11 @@ public class GlobalRulesDefinition extends RulesDefinition {
     public GlobalRulesDefinition(String name, String rules) {
         super(name, rules);
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{}";
+    }
+
+
 }

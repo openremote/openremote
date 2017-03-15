@@ -19,14 +19,39 @@
  */
 package org.openremote.manager.client.map;
 
+import com.google.gwt.user.client.ui.IsWidget;
 import elemental.json.JsonObject;
-import org.openremote.manager.client.assets.browser.AssetBrowsingView;
+import org.openremote.manager.client.util.TextUtil;
 import org.openremote.manager.shared.map.GeoJSON;
+import org.openremote.manager.shared.map.GeoJSONFeature;
+import org.openremote.manager.shared.map.GeoJSONGeometry;
+import org.openremote.model.asset.Asset;
 
-public interface MapView extends AssetBrowsingView<MapView.Presenter> {
+public interface MapView extends IsWidget {
 
-    interface Presenter extends AssetBrowsingView.Presenter {
+    static GeoJSON getFeature(Asset asset) {
+        if (asset == null
+            || asset.getId() == null
+            || asset.getName() == null
+            || asset.getCoordinates() == null)
+            return GeoJSON.EMPTY_FEATURE_COLLECTION;
+
+        return new GeoJSON().setType("FeatureCollection").setFeatures(
+            new GeoJSONFeature().setType("Feature")
+                .setProperty("id", asset.getId())
+                .setProperty("title", TextUtil.ellipsize(asset.getName(), 20))
+                .setGeometry(
+                    new GeoJSONGeometry().setPoint(
+                        asset.getCoordinates()
+                    )
+                )
+        );
     }
+
+    interface Presenter {
+    }
+
+    void setPresenter(Presenter presenter);
 
     void initialiseMap(JsonObject mapOptions);
 

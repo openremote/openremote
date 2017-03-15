@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -21,57 +21,38 @@ package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.view.client.SingleSelectionModel;
 import com.google.gwt.view.client.TreeViewModel;
-import org.openremote.model.asset.AssetInfo;
-import org.openremote.model.asset.AssetType;
-
-import java.util.logging.Logger;
 
 class AssetTreeModel implements TreeViewModel {
 
-    private static final Logger LOG = Logger.getLogger(AssetTreeModel.class.getName());
-
-    // This type is used when we have to stick a temporary asset into the tree for whatever reason,
-    // e.g. an asset that is really only a loading message or some other UI signal for the user
-    public static final String TEMPORARY_ASSET_TYPE = "TMP";
-
-    final protected AssetCell.Renderer renderer;
+    final protected AssetTreeCell.Renderer renderer;
     final AssetBrowser.Presenter presenter;
-    final SingleSelectionModel<AssetInfo> selectionModel = new SingleSelectionModel<>();
+    final SingleSelectionModel<AssetTreeNode> selectionModel = new SingleSelectionModel<>();
 
-    public AssetTreeModel(AssetBrowser.Presenter presenter, AssetCell.Renderer renderer) {
+    public AssetTreeModel(AssetBrowser.Presenter presenter, AssetTreeCell.Renderer renderer) {
         this.presenter = presenter;
         this.renderer = renderer;
         selectionModel.addSelectionChangeHandler(selectionChangeEvent -> {
-            if (selectionModel.getSelectedObject() != null) {
-                presenter.onAssetSelected(selectionModel.getSelectedObject());
-            }
+            presenter.onNodeSelected(selectionModel.getSelectedObject());
         });
     }
 
     @Override
     public <T> NodeInfo<?> getNodeInfo(T value) {
         return new DefaultNodeInfo<>(
-            new AssetDataProvider(presenter, (AssetInfo) value),
-            new AssetCell(renderer),
+            new AssetTreeDataProvider(presenter, (AssetTreeNode) value),
+            new AssetTreeCell(renderer),
             selectionModel,
             null);
     }
 
-    public SingleSelectionModel<AssetInfo> getSelectionModel() {
+    public SingleSelectionModel<AssetTreeNode> getSelectionModel() {
         return selectionModel;
     }
 
     public boolean isLeaf(Object value) {
-        if (value instanceof AssetInfo) {
-            AssetInfo asset = (AssetInfo) value;
-            if (asset.getType() != null) {
-                if (TEMPORARY_ASSET_TYPE.equals(asset.getType()))
-                    return true;
-
-                // And another exception are types which we know to be a leaf
-                if (AssetType.isLeaf(asset.getWellKnownType()))
-                    return true;
-            }
+        if (value instanceof AssetTreeNode) {
+            AssetTreeNode node = (AssetTreeNode) value;
+            return node.isLeaf();
         }
         return false;
     }

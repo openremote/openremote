@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -29,11 +29,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 abstract public class FormTree extends CellTree {
-
-    private static final Logger LOG = Logger.getLogger(FormTree.class.getName());
 
     public abstract static class Search<T, P> {
 
@@ -95,8 +92,8 @@ abstract public class FormTree extends CellTree {
 
     final protected WidgetStyle widgetStyle;
 
-    public <T> FormTree(TreeViewModel viewModel, T rootValue, FormTreeStyle formTreeStyle, CellTreeMessages messages) {
-        super(viewModel, rootValue, formTreeStyle.getCellTreeResources(), messages);
+    public <T> FormTree(TreeViewModel viewModel, T rootNode, FormTreeStyle formTreeStyle, CellTreeMessages messages) {
+        super(viewModel, rootNode, formTreeStyle.getCellTreeResources(), messages);
         this.widgetStyle = formTreeStyle.getWidgetStyle();
     }
 
@@ -138,7 +135,7 @@ abstract public class FormTree extends CellTree {
 
             openMap.put(getTreeNodeId(treeNode.getChildValue(i)), treeNode.isChildOpen(i));
 
-            /* This gets the child node, but doesn't change the open status (there 's no other way to get the child). */
+            // This gets the child node, but doesn't change the open status (there's no other way to get the child)
             TreeNode childNode = treeNode.setChildOpen(i, treeNode.isChildOpen(i));
 
             getNodeOpenMap(childNode, openMap);

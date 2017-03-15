@@ -1,0 +1,120 @@
+/*
+ * Copyright 2017, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.openremote.manager.client.rules;
+
+import com.google.gwt.i18n.client.DateTimeFormat;
+import com.google.gwt.resources.client.CssResource;
+import com.google.gwt.user.cellview.client.Column;
+import com.google.gwt.user.cellview.client.TextColumn;
+import com.google.gwt.user.client.ui.HasHorizontalAlignment;
+import com.google.gwt.view.client.SingleSelectionModel;
+import org.openremote.manager.client.i18n.ManagerMessages;
+import org.openremote.manager.client.style.FormTableStyle;
+import org.openremote.manager.client.widget.FormTable;
+import org.openremote.manager.client.widget.IconCell;
+import org.openremote.manager.shared.rules.RulesDefinition;
+import org.openremote.manager.shared.rules.TenantRulesDefinition;
+import org.openremote.model.Constants;
+
+public class RulesDefinitionTable<R extends RulesDefinition> extends FormTable<R> {
+
+    static protected DateTimeFormat dateTimeFormat = DateTimeFormat.getFormat(Constants.DEFAULT_DATETIME_FORMAT);
+
+    public interface Style extends CssResource {
+        String nameColumn();
+
+        String enabledColumn();
+
+        String createOnColumn();
+
+        String lastModifiedColumn();
+    }
+
+    final protected Style style;
+
+    final protected SingleSelectionModel<R> selectionModel = new SingleSelectionModel<>();
+
+    final protected TextColumn<R> nameColumn = new TextColumn<R>() {
+        @Override
+        public String getValue(R definition) {
+            return definition.getName();
+        }
+    };
+
+    final protected TextColumn<R> createOnColumn = new TextColumn<R>() {
+        @Override
+        public String getValue(R definition) {
+            return definition.getCreatedOn() != null ? dateTimeFormat.format(definition.getCreatedOn()) : "-";
+        }
+    };
+
+    final protected TextColumn<R> lastModifiedColumn = new TextColumn<R>() {
+        @Override
+        public String getValue(R definition) {
+            return definition.getLastModified() != null ? dateTimeFormat.format(definition.getLastModified()) : "-";
+        }
+    };
+
+    final protected Column<R, String> enabledColumn = new Column<R, String>(new IconCell()) {
+        @Override
+        public String getValue(R def) {
+            return def.isEnabled() ? "check-circle" : "circle-thin";
+        }
+    };
+
+    public RulesDefinitionTable(ManagerMessages managerMessages,
+                                Style style,
+                                FormTableStyle formTableStyle) {
+        super(Integer.MAX_VALUE, formTableStyle);
+
+        this.style = style;
+
+        setSelectionModel(selectionModel);
+
+        int i = 0;
+
+        applyStyleCellText(nameColumn);
+        addColumn(nameColumn, createHeader(managerMessages.rulesetName()));
+        addColumnStyleName(i++, style.nameColumn());
+
+        applyStyleCellText(createOnColumn);
+        addColumn(createOnColumn, createHeader(managerMessages.createdOn()));
+        addColumnStyleName(i++, style.createOnColumn());
+        createOnColumn.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_CENTER);
+
+        applyStyleCellText(lastModifiedColumn);
+        addColumn(lastModifiedColumn, createHeader(managerMessages.lastModifiedOn()));
+        addColumnStyleName(i++, style.lastModifiedColumn());
+        lastModifiedColumn.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_CENTER);
+
+        addColumn(enabledColumn, createHeader(managerMessages.enabled()));
+        addColumnStyleName(i++, style.enabledColumn());
+        enabledColumn.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_CENTER);
+    }
+
+    @Override
+    public SingleSelectionModel<R> getSelectionModel() {
+        return selectionModel;
+    }
+
+    public R getSelectedObject() {
+        return getSelectionModel().getSelectedObject();
+    }
+}

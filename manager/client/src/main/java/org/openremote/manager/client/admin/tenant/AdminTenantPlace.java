@@ -55,7 +55,7 @@ public class AdminTenantPlace extends AdminPlace {
 
     @Override
     public String toString() {
-        return "AdminTenantPlace{" +
+        return getClass().getSimpleName() + "{" +
             "realm='" + realm + '\'' +
             "}";
     }

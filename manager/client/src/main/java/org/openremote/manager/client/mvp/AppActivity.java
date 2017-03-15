@@ -31,7 +31,7 @@ import java.util.Collection;
 /**
  * Our own activity class because we don't want their event bus crap.
  */
-public abstract class AppActivity<T extends Place>  {
+public abstract class AppActivity<P extends Place>  {
 
     public String mayStop() {
         return null;
@@ -43,7 +43,7 @@ public abstract class AppActivity<T extends Place>  {
     public void onStop() {
     }
 
-    public AppActivity<T> init(SecurityService securityService, T place) throws RoleRequiredException {
+    public AppActivity<P> init(SecurityService securityService, P place) throws RoleRequiredException {
         for (String requiredRole : getRequiredRoles()) {
             if (!securityService.hasResourceRoleOrIsSuperUser(requiredRole, Constants.KEYCLOAK_CLIENT_ID)) {
                 throw new RoleRequiredException(requiredRole);
@@ -52,7 +52,7 @@ public abstract class AppActivity<T extends Place>  {
         return init(place);
     };
 
-    protected abstract AppActivity<T> init(T place);
+    protected abstract AppActivity<P> init(P place);
 
     /**
      * Any registrations added to the supplied collection will be unregistered automatically when the activity stops.

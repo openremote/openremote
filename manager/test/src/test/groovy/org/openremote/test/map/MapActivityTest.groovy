@@ -21,8 +21,6 @@ import spock.lang.Ignore
 import spock.lang.Specification
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.server.setup.SetupService.DEMO_ADMIN_PASSWORD
-import static org.openremote.manager.server.setup.SetupService.DEMO_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*;
 
 // TODO Fix this when we do Asset testing

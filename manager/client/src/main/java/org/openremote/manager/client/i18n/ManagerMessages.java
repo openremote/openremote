@@ -39,6 +39,10 @@ public interface ManagerMessages extends Messages {
 
     String admin();
 
+    String createOn();
+
+    String lastModifiedOn();
+
     String mapLoading();
 
     String loadingDotdotdot();
@@ -289,7 +293,19 @@ public interface ManagerMessages extends Messages {
 
     String fullscreen();
 
+    String selectConsoleApp();
+
+    String manageGlobalRulesets();
+
+    String manageTenantRulesets();
+
+    String newRuleset();
+
+    String rulesetName();
+
     String editGlobalRules();
 
-    String selectConsoleApp();
+    String manageTenantAssets();
+
+    String manageAssetRulesets();
 }

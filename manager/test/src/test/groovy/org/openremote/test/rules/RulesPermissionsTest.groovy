@@ -45,7 +45,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         def ruleDefinitions = rulesResource.getGlobalDefinitions(null)
 
         then: "result should match"
-        ruleDefinitions.length == 1
+        ruleDefinitions.length == 2
         ruleDefinitions[0].name == "Some global demo rules"
         ruleDefinitions[0].rules == null // Don't retrieve the (large) rules data when getting a list of rule definitions
 
@@ -76,7 +76,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         when: "global rules definitions is created"
         def globalRulesDefinition = new GlobalRulesDefinition("Test global definition", "ThisShouldBeDRL")
         rulesResource.createGlobalDefinition(null, globalRulesDefinition)
-        def rulesDefinitionId = rulesResource.getGlobalDefinitions(null)[1].id
+        def rulesDefinitionId = rulesResource.getGlobalDefinitions(null)[2].id
         globalRulesDefinition = rulesResource.getGlobalDefinition(null, rulesDefinitionId)
         def lastModified = globalRulesDefinition.lastModified
 

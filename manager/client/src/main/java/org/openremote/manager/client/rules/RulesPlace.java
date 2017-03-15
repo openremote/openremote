@@ -19,6 +19,8 @@
  */
 package org.openremote.manager.client.rules;
 
-public interface RulesPlace {
+import com.google.gwt.place.shared.Place;
+
+public class RulesPlace extends Place {
 
 }

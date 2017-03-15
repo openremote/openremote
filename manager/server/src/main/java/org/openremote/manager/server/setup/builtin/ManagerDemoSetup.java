@@ -213,6 +213,10 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         Json.create("%3d kWh"))
                     )
                     .add(new MetaItem(
+                        AssetMeta.UNITS,
+                        Json.create(AttributeUnits.ENERGY_KWH.name()))
+                    )
+                    .add(new MetaItem(
                         AssetMeta.AGENT_LINK,
                         new AttributeRef(agent.getId(), "simulator123").asJsonValue()
                     ))
@@ -332,6 +336,13 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeGlobalDemoRules.drl")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
             RulesDefinition rulesDefinition = new GlobalRulesDefinition("Some global demo rules", rules);
+            rulesStorageService.merge(rulesDefinition);
+        }
+
+        try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeGlobalDemoRules.drl")) {
+            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            RulesDefinition rulesDefinition = new GlobalRulesDefinition("Other global demo rules with a long name that should fill up space in UI", rules);
+            rulesDefinition.setEnabled(false);
             rulesStorageService.merge(rulesDefinition);
         }
 
