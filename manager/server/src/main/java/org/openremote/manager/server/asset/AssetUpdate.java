@@ -42,6 +42,11 @@ public class AssetUpdate {
         HANDLED,
 
         /**
+         * Don't process event in any more rules but continue through rest of processing chain
+         */
+        RULES_HANDLED,
+
+        /**
          * Processor encountered an error trying to process the update, cancel further processing and escalate.
          */
         ERROR

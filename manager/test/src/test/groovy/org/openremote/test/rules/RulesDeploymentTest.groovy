@@ -1,69 +1,76 @@
 package org.openremote.test.rules
 
-import elemental.json.Json
-import elemental.json.JsonObject
-import elemental.json.JsonType
-import org.openremote.agent3.protocol.simulator.SimulatorProtocol
-import org.openremote.manager.server.asset.AssetProcessingService
-import org.openremote.manager.server.asset.AssetStorageService
+import org.openremote.manager.server.rules.AssetRulesService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
-import org.openremote.model.AttributeEvent
-import org.openremote.model.Attributes
-import org.openremote.model.units.ColorRGB
+import org.openremote.model.Constants
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 class RulesDeploymentTest extends Specification implements ManagerContainerTrait {
 
-    def "Check agent and thing deployment"() {
+    def "Check basic rules engine deployment"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 30, initialDelay: 3)
+        def conditions = new PollingConditions(timeout: 10, initialDelay: 1)
 
-        when: "the demo agent and thing have been deployed"
+        when: "the demo assets and rule definitions have been deployed"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def simulatorProtocol = container.getService(SimulatorProtocol.class)
-        def assetStorageService = container.getService(AssetStorageService.class)
-        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def rulesService = container.getService(AssetRulesService.class)
 
-        then: "the simulator elements should have the initial state"
+        then: "a global rules engine should have been created and be running"
         conditions.eventually {
-            assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Toggle").asBoolean()
-            assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Dimmer").getType() == JsonType.NULL // No initial value!
-            assert new ColorRGB(simulatorProtocol.getState(managerDemoSetup.thingId, "light1Color") as JsonObject) == new ColorRGB(88, 123, 88)
-            assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1PowerConsumption").asNumber() == 12.345d
+            assert rulesService.globalDeployment != null
+            assert rulesService.globalDeployment.isRunning()
         }
 
-        when: "a client wants to change a thing attributes' value, triggering an actuator"
-        conditions = new PollingConditions(timeout: 3, initialDelay: 2)
-        def light1DimmerChange = new AttributeEvent(
-                managerDemoSetup.thingId, "light1Dimmer", Json.create(66)
-        )
-        assetProcessingService.processClientUpdate(light1DimmerChange)
-
-        then: "the simulator state and thing attribute value should be updated (simulator reflects actuator write as sensor read)"
+        and: "the global rules engine should contain the global demo rules definition"
         conditions.eventually {
-            assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Dimmer").asNumber() == 66
-            def thing = assetStorageService.find(managerDemoSetup.thingId)
-            def attributes = new Attributes(thing.getAttributes())
-            assert attributes.get("light1Dimmer").getValue().getType() == JsonType.NUMBER
-            assert attributes.get("light1Dimmer").getValueAsInteger() == 66
+            assert rulesService.globalDeployment.allRulesDefinitions.length == 1
+            assert rulesService.globalDeployment.allRulesDefinitions[0].enabled
+            assert rulesService.globalDeployment.allRulesDefinitions[0].name == "Some global demo rules"
         }
 
-        when: "a simulated sensor changes its value"
-        conditions = new PollingConditions(timeout: 3, initialDelay: 2)
-        simulatorProtocol.putState(managerDemoSetup.thingId, "light1Dimmer", Json.create(77))
-
-        then: "the thing attribute value should be updated"
+        and: "one tenant rules engines should have been created and be running"
         conditions.eventually {
-            def thing = assetStorageService.find(managerDemoSetup.thingId)
-            def attributes = new Attributes(thing.getAttributes())
-            assert attributes.get("light1Dimmer").getValue().getType() == JsonType.NUMBER
-            assert attributes.get("light1Dimmer").getValueAsInteger() == 77
+            assert rulesService.tenantDeployments.size() == 1
+            def masterEngine = rulesService.tenantDeployments.get(Constants.MASTER_REALM)
+            assert masterEngine != null
+            assert masterEngine.isRunning()
+        }
+
+        and: "the tenant rules engine should have the demo tenant rules definition"
+        conditions.eventually {
+            def masterEngine = rulesService.tenantDeployments.get(Constants.MASTER_REALM)
+            assert masterEngine.allRulesDefinitions.length == 1
+            assert masterEngine.allRulesDefinitions[0].enabled
+            assert masterEngine.allRulesDefinitions[0].name == "Some master tenant demo rules"
+        }
+
+        and: "two asset rules engines should have been created and be running"
+        conditions.eventually {
+            assert rulesService.assetDeployments.size() == 2
+            def apartment1Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment1Id)
+            def apartment3Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment3Id)
+            assert apartment1Engine != null
+            assert apartment1Engine.isRunning()
+            assert apartment3Engine != null
+            assert apartment3Engine.isRunning()
+        }
+
+        and: "each asset rules engine should have the demo asset rules definition"
+        conditions.eventually {
+            def apartment1Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment1Id)
+            def apartment3Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment3Id)
+            assert apartment1Engine.allRulesDefinitions.length == 1
+            assert apartment1Engine.allRulesDefinitions[0].enabled
+            assert apartment1Engine.allRulesDefinitions[0].name == "Some apartment 1 demo rules"
+            assert apartment3Engine.allRulesDefinitions.length == 1
+            assert apartment3Engine.allRulesDefinitions[0].enabled
+            assert apartment3Engine.allRulesDefinitions[0].name == "Some apartment 3 demo rules"
         }
 
         cleanup: "the server should be stopped"

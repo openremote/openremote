@@ -61,7 +61,7 @@ public abstract class RulesDefinition {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CREATED_ON", updatable = false, nullable = false)
     @org.hibernate.annotations.CreationTimestamp
-    protected Date createdOn;
+    protected Date createdOn = new Date();
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "LAST_MODIFIED", nullable = false)
@@ -110,6 +110,12 @@ public abstract class RulesDefinition {
         return createdOn;
     }
 
+    @PreUpdate
+    @PrePersist
+    public void setLastModified() {
+        this.lastModified = new Date();
+    }
+
     public Date getLastModified() {
         return lastModified;
     }
@@ -146,9 +152,15 @@ public abstract class RulesDefinition {
         this.deploymentStatus = deploymentStatus;
     }
 
-    @PreUpdate
-    @PrePersist
-    public void updateLastModified() {
-        this.lastModified = new Date();
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+                "id='" + id + '\'' +
+                ", version='" + version + '\'' +
+                ", name='" + name + '\'' +
+                ", createOn='" + createdOn + '\'' +
+                ", lastModified='" + lastModified + '\'' +
+                ", enabled='" + enabled + '\'' +
+                '}';
     }
 }

@@ -59,7 +59,13 @@ public class AssetRulesDefinition extends RulesDefinition {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "assetId='" + assetId + '\'' +
-            '}';
+                "id='" + id + '\'' +
+                ", version='" + version + '\'' +
+                ", name='" + name + '\'' +
+                ", createOn='" + createdOn + '\'' +
+                ", lastModified='" + lastModified + '\'' +
+                ", enabled='" + enabled + '\'' +
+                ", assetId='" + assetId + '\'' +
+                '}';
     }
 }

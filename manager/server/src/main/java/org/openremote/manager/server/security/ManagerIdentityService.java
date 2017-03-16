@@ -151,6 +151,21 @@ public class ManagerIdentityService extends IdentityService {
         });
     }
 
+    public String[] getActiveTenantNames() {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            // TODO Should also check NOT_BEFORE?
+            @SuppressWarnings("unchecked")
+            List<Object[]> results = entityManager.createNativeQuery(
+                    "SELECT NAME, ENABLED FROM REALM"
+            ).getResultList();
+
+            return results
+                    .stream()
+                    .map(record -> (String)record[0])
+                    .toArray(size -> new String[size]);
+        });
+    }
+
     public void configureRealm(RealmRepresentation realmRepresentation) {
         configureRealm(realmRepresentation, ACCESS_TOKEN_LIFESPAN_SECONDS);
     }

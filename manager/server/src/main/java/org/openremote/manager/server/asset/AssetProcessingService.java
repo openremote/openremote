@@ -95,7 +95,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     private static final Logger LOG = Logger.getLogger(AssetProcessingService.class.getName());
 
-    protected AssetRulesService assetRulesService;
+    protected AssetRulesService rulesService;
     protected AssetStorageService assetStorageService;
     protected AssetDatapointService assetDatapointService;
     protected MessageBrokerService messageBrokerService;
@@ -104,12 +104,12 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     @Override
     public void init(Container container) throws Exception {
-        assetRulesService = container.getService(AssetRulesService.class);
+        rulesService = container.getService(AssetRulesService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         assetDatapointService = container.getService(AssetDatapointService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
 
-        processors.add(assetRulesService);
+        processors.add(rulesService);
         processors.add(assetStorageService);
         processors.add(assetDatapointService);
 
@@ -149,6 +149,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     public void processClientUpdate(AttributeEvent attributeEvent) {
 
         ServerAsset asset = assetStorageService.find(attributeEvent.getEntityId());
+
+		if (asset == null) {
+			LOG.warning("Processing client update failed asset not found: " + attributeEvent);
+			return;
+		}
 
         switch (asset.getWellKnownType()) {
             case THING:

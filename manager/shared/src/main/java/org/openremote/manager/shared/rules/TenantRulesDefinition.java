@@ -59,7 +59,13 @@ public class TenantRulesDefinition extends RulesDefinition {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "realm='" + realm + '\'' +
-            '}';
+                "id='" + id + '\'' +
+                ", version='" + version + '\'' +
+                ", name='" + name + '\'' +
+                ", createOn='" + createdOn + '\'' +
+                ", lastModified='" + lastModified + '\'' +
+                ", enabled='" + enabled + '\'' +
+                ", realm='" + realm + '\'' +
+                '}';
     }
 }
