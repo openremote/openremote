@@ -46,6 +46,10 @@ import java.util.stream.IntStream;
  * asset definitions with same parent asset are not guaranteed also processing of definitions
  * with the same scope is not guaranteed)
  */
+// TODO: Listen to changes in tenant enabled status and start/stop engines accordingly
+// TODO: Listen to asset changes and start/stop engines accordingly
+// TODO: Listen to rule definition changes and update engines accordingly
+// TODO: When restarting rules engine should we wait for executing rules to finish?
 public class RulesService implements ContainerService, Consumer<AssetUpdate> {
     private static final Logger LOG = Logger.getLogger(RulesService.class.getName());
     protected PersistenceService persistenceService;
@@ -55,6 +59,7 @@ public class RulesService implements ContainerService, Consumer<AssetUpdate> {
     protected RulesDeployment<GlobalRulesDefinition> globalDeployment;
     protected final Map<String, RulesDeployment<TenantRulesDefinition>> tenantDeployments = new HashMap<>();
     protected final Map<String, RulesDeployment<AssetRulesDefinition>> assetDeployments = new HashMap<>();
+    protected String[] activeTenantNames;
 
     @Override
     public void init(Container container) throws Exception {
@@ -151,6 +156,10 @@ public class RulesService implements ContainerService, Consumer<AssetUpdate> {
     @Override
     public void accept(AssetUpdate assetUpdate) {
         processAssetUpdate(assetUpdate);
+    }
+
+    public void processTenantChange() {
+
     }
 
 //    protected boolean addResource(Resource resource, KieServices kieServices, KieFileSystem kfs) {
@@ -267,22 +276,13 @@ public class RulesService implements ContainerService, Consumer<AssetUpdate> {
         }
 
         // Add asset engines
-        List<RulesDeployment> matchedAssetDeployments = new ArrayList<>();
-        RulesDeployment assetDeployment = assetDeployments.get(asset.getId());
-        if (assetDeployment != null) {
-            matchedAssetDeployments.add(assetDeployment);
-        }
-
-        // TODO: Check if this is the correct procedure
-        for (String assetPathElement : asset.getReversePath()) {
-            RulesDeployment parentDeployment = assetDeployments.get(assetPathElement);
-            if (parentDeployment != null) {
-                matchedAssetDeployments.add(parentDeployment);
+        // Iterate through asset hierarchy using asset IDs from getPath
+        for (String assetId : asset.getPath()) {
+            RulesDeployment assetDeployment = assetDeployments.get(assetId);
+            if (assetDeployment != null) {
+                rulesDeployments.add(assetDeployment);
             }
         }
-
-        Collections.reverse(matchedAssetDeployments);
-        rulesDeployments.addAll(matchedAssetDeployments);
 
         // Pass through each engine if an engine is in error state then log and skip it
         for (RulesDeployment deployment : rulesDeployments) {
