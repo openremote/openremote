@@ -20,16 +20,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     var isGrantedNotificationAccess:Bool = false
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
-        // allows to catch all request and add custom headers (works only with UIWebView not WKWebView).
-        // For iOS 10 display notification (sent via APNS)
+        setActions()
         UNUserNotificationCenter.current().delegate = self
-        
         let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
         UNUserNotificationCenter.current().requestAuthorization(
             options: authOptions,
             completionHandler: {_, _ in })
         
-        // For iOS 10 data message (sent via FCM)
         FIRMessaging.messaging().remoteMessageDelegate = self
         
         FIRApp.configure()
@@ -37,22 +34,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         application.registerForRemoteNotifications()
         NotificationCenter.default.addObserver(self, selector: #selector(self.tokenRefreshNotification), name: NSNotification.Name.firInstanceIDTokenRefresh, object: nil)
         
-        UNUserNotificationCenter.current().requestAuthorization(
-            options: [.alert,.sound,.badge],
-            completionHandler: { (granted,error) in
-                self.isGrantedNotificationAccess = granted
-                let ok = UNNotificationAction(identifier: "OpenApp",
-                                              title: "Open App", options: [.foreground])
-                
-                let cancel = UNNotificationAction(identifier: "ResetAlarm",
-                                                  title: "Reset Alarm",
-                                                  options: [.destructive])
-                
-                let category = UNNotificationCategory(identifier: "message", actions: [ok, cancel], intentIdentifiers: [], options: [])
-                
-                UNUserNotificationCenter.current().setNotificationCategories([category])
-        }
-        )
+
         return true
     }
     
@@ -86,19 +68,26 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     }
     
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any]) {
-        if let messageID = userInfo[gcmMessageIDKey] {
-            print("Message ID: \(messageID)")
-        }
-        
         // Print full message.
         print(userInfo)
-        self.scheduleLocalNotification()
     }
     
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
-        self.scheduleLocalNotification()
+        //self.scheduleLocalNotification()
+        print(userInfo)
         completionHandler(UIBackgroundFetchResult.noData)
     }
+    
+    //MARK : - UNUserNotificationCenterDelegate
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.alert, .sound])
+    }
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        print("Action asked : ",response.actionIdentifier)
+    }
+
     
     func application(_ application: UIApplication, open url: URL, sourceApplication: String?, annotation: Any) -> Bool {
         if (self.currentAuthorizationFlow?.resumeAuthorizationFlow(with: url))! {
@@ -108,9 +97,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         return false
     }
     
-    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-        print("Action asked : ",response.actionIdentifier)
-    }
     
     func connectToFcm()
     {
@@ -121,7 +107,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             }
             else
             {
-                print("Connected to FCM. Token is ",FIRInstanceID.instanceID().token()! as String)
+                if let token = FIRInstanceID.instanceID().token() {
+                    print("Connected to FCM. Token is ",token as String)
+                } else {
+                    print("Connected to FCM. Token is currently nil")
+                }
             }
         }
     }
@@ -136,32 +126,30 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         connectToFcm()
     }
     
-    private func scheduleLocalNotification() {
-        // Create Notification Content
-        let notificationContent = UNMutableNotificationContent()
-        // Configure Notification Content
-        notificationContent.title = "Cocoacasts"
-        notificationContent.subtitle = "Local Notifications"
-        notificationContent.body = "In this tutorial, you learn how to schedule local notifications with the User Notifications framework."
-        notificationContent.categoryIdentifier = "message"
+    
+}
 
-        // Add Trigger
-        let notificationTrigger = UNTimeIntervalNotificationTrigger(timeInterval: 10.0, repeats: false)
-        
-        // Create Notification Request
-        let notificationRequest = UNNotificationRequest(identifier: "cocoacasts_local_notification", content: notificationContent, trigger: notificationTrigger)
-        
-        // Add Request to User Notification Center
-        UNUserNotificationCenter.current().add(notificationRequest) { (error) in
-            if let error = error {
-                print("Unable to Add Notification Request (\(error), \(error.localizedDescription))")
-            }
-        }
-    }
+func setActions() {
+    let openApp = UNNotificationAction(
+        identifier: "openApp",
+        title: "Open Application",
+        options : [.foreground]
+    )
+    let dismiss = UNNotificationAction(
+        identifier: "dismiss",
+        title: "Dismiss",
+        options: [.destructive]
+    )
+    let category = UNNotificationCategory(
+        identifier: "blok61Notification",
+        actions: [openApp, dismiss],
+        intentIdentifiers: []
+    )
+    
+    UNUserNotificationCenter.current().setNotificationCategories([category])
 }
 
 
-// [START ios_10_data_message_handling]
 extension AppDelegate : FIRMessagingDelegate {
     // Receive data message on iOS 10 devices while app is in the foreground.
     func applicationReceivedRemoteMessage(_ remoteMessage: FIRMessagingRemoteMessage) {
