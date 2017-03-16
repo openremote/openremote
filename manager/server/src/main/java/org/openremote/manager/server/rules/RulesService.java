@@ -19,8 +19,11 @@
  */
 package org.openremote.manager.server.rules;
 
+import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.message.MessageBrokerSetupService;
+import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.util.Pair;
 import org.openremote.manager.server.asset.AssetStorageService;
@@ -35,6 +38,9 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
+import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
+
 /**
  * Responsible for creating drools knowledge sessions for the rules definitions
  * and processing AssetUpdate events; an asset update is processed in the following
@@ -48,9 +54,8 @@ import java.util.stream.IntStream;
  */
 // TODO: Listen to changes in tenant enabled status and start/stop engines accordingly
 // TODO: Listen to asset changes and start/stop engines accordingly
-// TODO: Listen to rule definition changes and update engines accordingly
 // TODO: When restarting rules engine should we wait for executing rules to finish?
-public class RulesService implements ContainerService, Consumer<AssetUpdate> {
+public class RulesService extends RouteBuilder implements ContainerService, Consumer<AssetUpdate> {
     private static final Logger LOG = Logger.getLogger(RulesService.class.getName());
     protected PersistenceService persistenceService;
     protected RulesStorageService rulesStorageService;
@@ -67,6 +72,17 @@ public class RulesService implements ContainerService, Consumer<AssetUpdate> {
         rulesStorageService = container.getService(RulesStorageService.class);
         identityService = container.getService(ManagerIdentityService.class);
         assetStorageService = container.getService(AssetStorageService.class);
+        container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
+    }
+
+    @Override
+    public void configure() throws Exception {
+        from(PERSISTENCE_TOPIC)
+                .filter(isPersistenceEventForEntityType(RulesDefinition.class))
+                .process(exchange -> {
+                    PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
+                    processRulesDefinitionChange((RulesDefinition)persistenceEvent.getEntity(), persistenceEvent.getCause());
+                });
     }
 
     @Override
@@ -84,11 +100,6 @@ public class RulesService implements ContainerService, Consumer<AssetUpdate> {
             IntStream
                     .range(0, globalRules.length)
                     .forEach(i -> deployGlobalRulesDefinition(enabledGlobalDefinitions.get(i), globalRules[i]));
-
-            // Start the global rule engine (it will prevent start if there was any error)
-            if (globalDeployment != null) {
-                globalDeployment.start();
-            }
         }
 
         // Deploy tenant rules
@@ -109,9 +120,6 @@ public class RulesService implements ContainerService, Consumer<AssetUpdate> {
             IntStream
                     .range(0, tenantRules.length)
                     .forEach(i -> deployTenantRulesDefinition(enabledTenantDefinitions.get(i), tenantRules[i]));
-
-            // Start the tenant rule engines (they will prevent start if there was any error)
-            tenantDeployments.forEach((realm, td) -> td.start());
         }
 
         // Deploy asset rules - group by assetID then tenant then order hierarchically
@@ -129,12 +137,25 @@ public class RulesService implements ContainerService, Consumer<AssetUpdate> {
                 .filter(es -> Arrays
                         .stream(activeTenantRealmIds)
                         .anyMatch(at -> es.getKey().equals(at)))
-                .forEach(e ->
-                        deployTenantAssetRulesDefinitions(e.getValue())
-                );
+                .forEach(es -> {
+                    List<Pair<ServerAsset, List<AssetRulesDefinition>>> tenantAssetAndRules = es.getValue();
 
-        // Start the asset rule engines (they will prevent start if there was any error)
-        assetDeployments.forEach((id, ad) -> ad.start());
+                    // Order rules definitions by asset hierarchy within this tenant
+                    tenantAssetAndRules.stream()
+                            .sorted(Comparator.comparingInt(item -> item.key.getPath().length))
+                            .forEach(assetAndRules -> {
+                                        List<AssetRulesDefinition> rulesDefinitions = assetAndRules.value;
+                                        String[] assetRules = rulesStorageService.getRules(rulesDefinitions, AssetRulesDefinition.class);
+
+                                        if (assetRules.length != rulesDefinitions.size()) {
+                                            LOG.warning("Failed to retrieve asset rules definitions");
+                                        } else {
+                                            IntStream
+                                                    .range(0, assetRules.length)
+                                                    .forEach(i -> deployAssetRulesDefinition(rulesDefinitions.get(i), assetRules[i]));
+                                        }
+                                    });
+                });
     }
 
     @Override
@@ -160,6 +181,26 @@ public class RulesService implements ContainerService, Consumer<AssetUpdate> {
 
     public void processTenantChange() {
 
+    }
+
+    protected void processRulesDefinitionChange(RulesDefinition rulesDefinition, PersistenceEvent.Cause cause) {
+        if (cause == PersistenceEvent.Cause.DELETE) {
+            if (rulesDefinition instanceof GlobalRulesDefinition) {
+                retractGlobalRulesDefinition((GlobalRulesDefinition)rulesDefinition);
+            } else if (rulesDefinition instanceof TenantRulesDefinition) {
+                retractTenantRulesDefinition((TenantRulesDefinition)rulesDefinition);
+            } else if (rulesDefinition instanceof AssetRulesDefinition) {
+                retractAssetRulesDefinition((AssetRulesDefinition)rulesDefinition);
+            }
+        } else {
+            if (rulesDefinition instanceof GlobalRulesDefinition) {
+                deployGlobalRulesDefinition((GlobalRulesDefinition)rulesDefinition, rulesStorageService.getRules((GlobalRulesDefinition)rulesDefinition, GlobalRulesDefinition.class));
+            } else if (rulesDefinition instanceof TenantRulesDefinition) {
+                deployTenantRulesDefinition((TenantRulesDefinition)rulesDefinition, rulesStorageService.getRules((TenantRulesDefinition)rulesDefinition, TenantRulesDefinition.class));
+            } else if (rulesDefinition instanceof AssetRulesDefinition) {
+                deployAssetRulesDefinition((AssetRulesDefinition)rulesDefinition, rulesStorageService.getRules((AssetRulesDefinition)rulesDefinition, AssetRulesDefinition.class));
+            }
+        }
     }
 
 //    protected boolean addResource(Resource resource, KieServices kieServices, KieFileSystem kfs) {
@@ -215,7 +256,15 @@ public class RulesService implements ContainerService, Consumer<AssetUpdate> {
             globalDeployment = new RulesDeployment<>(GlobalRulesDefinition.class, "GLOBAL");
         }
 
-        globalDeployment.addRulesDefinition(rulesDefinition, rules);
+        globalDeployment.insertRulesDefinition(rulesDefinition, rules);
+    }
+
+    protected synchronized void retractGlobalRulesDefinition(GlobalRulesDefinition rulesDefinition) {
+        if (globalDeployment == null) {
+            return;
+        }
+
+        globalDeployment.retractRulesDefinition(rulesDefinition);
     }
 
     protected synchronized void deployTenantRulesDefinition(TenantRulesDefinition rulesDefinition, String rules) {
@@ -225,35 +274,36 @@ public class RulesService implements ContainerService, Consumer<AssetUpdate> {
                     new RulesDeployment<>(TenantRulesDefinition.class, rulesDefinition.getRealmId())
                 );
 
-        deployment.addRulesDefinition(rulesDefinition, rules);
+        deployment.insertRulesDefinition(rulesDefinition, rules);
     }
 
-    protected void deployTenantAssetRulesDefinitions(List<Pair<ServerAsset, List<AssetRulesDefinition>>> assetAndRules) {
-        // Order rules definitions by asset hierarchy
-        assetAndRules.stream()
-                .sorted(Comparator.comparingInt(item -> item.key.getPath().length))
-                .forEach(assetAndRule ->
-                        deployAssetRulesDefinitions(assetAndRule.key.getId(), assetAndRule.value)
-                );
-    }
-
-    protected void deployAssetRulesDefinitions(String assetId, List<AssetRulesDefinition> rulesDefinitions) {
-        // Look for existing deployment for this asset
-
-        RulesDeployment<AssetRulesDefinition> deployment = assetDeployments
-                .computeIfAbsent(assetId, (id) ->
-                    new RulesDeployment<>(AssetRulesDefinition.class, id)
-                );
-
-        String[] assetRules = rulesStorageService.getRules(rulesDefinitions, AssetRulesDefinition.class);
-
-        if (assetRules.length != rulesDefinitions.size()) {
-            LOG.warning("Failed to retrieve asset rules definitions");
-        } else {
-            IntStream
-                    .range(0, assetRules.length)
-                    .forEach(i -> deployment.addRulesDefinition(rulesDefinitions.get(i), assetRules[i]));
+    protected synchronized void retractTenantRulesDefinition(TenantRulesDefinition rulesDefinition) {
+        RulesDeployment<TenantRulesDefinition> deployment = tenantDeployments.get(rulesDefinition.getRealm());
+        if (deployment == null) {
+            return;
         }
+
+        deployment.retractRulesDefinition(rulesDefinition);
+    }
+
+
+    protected void deployAssetRulesDefinition(AssetRulesDefinition rulesDefinition, String rules) {
+        // Look for existing deployment for this asset
+        RulesDeployment<AssetRulesDefinition> deployment = assetDeployments
+                .computeIfAbsent(rulesDefinition.getAssetId(), (id) ->
+                        new RulesDeployment<>(AssetRulesDefinition.class, id)
+                );
+
+        deployment.insertRulesDefinition(rulesDefinition, rules);
+    }
+
+    protected synchronized void retractAssetRulesDefinition(AssetRulesDefinition rulesDefinition) {
+        RulesDeployment<AssetRulesDefinition> deployment = assetDeployments.get(rulesDefinition.getAssetId());
+        if (deployment == null) {
+            return;
+        }
+
+        deployment.retractRulesDefinition(rulesDefinition);
     }
 
     protected synchronized void processAssetUpdate(AssetUpdate assetUpdate) {

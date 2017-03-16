@@ -350,20 +350,6 @@ public class Asset implements IdentifiableEntity {
         this.path = path;
     }
 
-    /**
-     * The identifiers of all parents representing the path in the tree. The first
-     * element is the parent identifier of this instance, the last element is the
-     * outermost (root) parent identifier.
-     */
-    public String[] getReversePath() {
-        if (getPath() == null || getPath().length == 0)
-            return new String[0];
-        List<String> reversePath = new ArrayList<>(Arrays.asList(getPath()));
-        Collections.reverse(reversePath);
-        reversePath.remove(0);
-        return reversePath.toArray(new String[reversePath.size()]);
-    }
-
     public double[] getCoordinates() {
         return coordinates;
     }

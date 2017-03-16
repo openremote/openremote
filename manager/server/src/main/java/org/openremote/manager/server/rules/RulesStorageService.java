@@ -160,6 +160,7 @@ public class RulesStorageService implements ContainerService {
         );
     }
 
+    // TODO: Update this as order is not guaranteed
     protected <T extends RulesDefinition> String[] getRules(List<T> rulesDefinitions, Class<T> clazz) {
         if (rulesDefinitions == null || rulesDefinitions.size() == 0) {
             return new String[0];
@@ -178,6 +179,22 @@ public class RulesStorageService implements ContainerService {
                     .getResultList();
             return results
                     .toArray(new String[0]);
+        });
+    }
+
+    protected <T extends RulesDefinition> String getRules(T rulesDefinition, Class<T> clazz) {
+        if (rulesDefinition == null) {
+            return null;
+        }
+
+        return persistenceService.doReturningTransaction(entityManager -> {
+            List<String> results = entityManager.createQuery(
+                    "select rd.rules " +
+                            "from " + clazz.getSimpleName() + " rd " +
+                            "where rd.id = :id")
+                    .setParameter("id", rulesDefinition.getId())
+                    .getResultList();
+            return results.isEmpty() ? null : results.get(0);
         });
     }
 

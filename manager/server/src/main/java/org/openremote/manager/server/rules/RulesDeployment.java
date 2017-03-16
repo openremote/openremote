@@ -41,13 +41,18 @@ import org.openremote.model.AttributeRef;
 
 import java.lang.reflect.Array;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class RulesDeployment<T extends RulesDefinition> {
     private static final Logger LOG = Logger.getLogger(RulesDeployment.class.getName());
+    private static final int AUTO_START_DELAY_SECONDS = 2;
     static final protected RuleUtil ruleUtil = new RuleUtil();
-    protected List<T> ruleDefinitions = new ArrayList<>();
+    protected Map<Long, T> ruleDefinitions = new HashMap<>();
     protected RuleExecutionLogger ruleExecutionLogger = new RuleExecutionLogger();
     protected KieBase kb;
     protected KieSession knowledgeSession;
@@ -59,6 +64,8 @@ public class RulesDeployment<T extends RulesDefinition> {
     protected long currentFactCount;
     protected Class<T> clazz;
     final protected Map<AttributeRef, FactHandle> attributeFacts = new HashMap<>();
+    protected static final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+    protected ScheduledFuture startTimer;
 
     public RulesDeployment(Class<T> clazz, String id) {
         this.clazz = clazz;
@@ -67,7 +74,7 @@ public class RulesDeployment<T extends RulesDefinition> {
 
     public synchronized T[] getAllRulesDefinitions() {
         T[] arr = (T[])Array.newInstance(clazz, 0);
-        return ruleDefinitions.toArray(arr);
+        return ruleDefinitions.values().toArray(arr);
     }
 
     public String getId() {
@@ -90,7 +97,19 @@ public class RulesDeployment<T extends RulesDefinition> {
         }
     }
 
-    public synchronized boolean addRulesDefinition(T rulesDefinition, String rules) {
+    /**
+     * Adds the rules definition to the engine by first stopping the engine and
+     * then deploying new rules and then restarting the engine (after
+     * {@link #AUTO_START_DELAY_SECONDS}) to prevent excessive engine stop/start.
+     *
+     * If engine is in an error state (one of the rules definitions failed to deploy
+     * then the engine will not restart).
+     *
+     * @param rulesDefinition
+     * @param rules
+     * @return Whether or not the rules definition deployed successfully
+     */
+    public synchronized boolean insertRulesDefinition(T rulesDefinition, String rules) {
         if (rulesDefinition == null || rules == null || rules.isEmpty()) {
             // Assume it's a success if deploying an empty rules definition
             LOG.finest("Rules definition is empty so no rules to deploy");
@@ -113,11 +132,7 @@ public class RulesDeployment<T extends RulesDefinition> {
             LOG.info(kieBaseModel.toString());
         }
 
-        T existingDefinition = ruleDefinitions
-                .stream()
-                .filter(existing -> existing.getId() == rulesDefinition.getId())
-                .findFirst()
-                .orElse(null);
+        T existingDefinition = ruleDefinitions.get(rulesDefinition.getId());
 
         if (existingDefinition != null && existingDefinition.getVersion() == rulesDefinition.getVersion()) {
             LOG.fine("Rules definition version already deployed so ignoring");
@@ -171,21 +186,59 @@ public class RulesDeployment<T extends RulesDefinition> {
             // Prevent knowledge session from running again
             error = true;
 
+            // Remove any existing start timer
+            if (startTimer != null) {
+                startTimer.cancel(false);
+            }
+
             // Update status of each rules definition
-            ruleDefinitions.forEach(rd -> {
+            ruleDefinitions.forEach((id, rd) -> {
                 if (rd.getDeploymentStatus() == RulesDefinition.DeploymentStatus.DEPLOYED) {
                     rd.setDeploymentStatus(RulesDefinition.DeploymentStatus.READY);
                 }
             });
+        } else {
+            // Queue engine start
+            if (startTimer != null) {
+                startTimer.cancel(false);
+            }
+            startTimer = executorService.schedule(this::start, AUTO_START_DELAY_SECONDS, TimeUnit.SECONDS);
         }
 
         // Add new rules definition
         rulesDefinition.setDeploymentStatus(addSuccessful ? RulesDefinition.DeploymentStatus.DEPLOYED : RulesDefinition.DeploymentStatus.FAILED);
-        ruleDefinitions.add(rulesDefinition);
-
-        // TODO: Auto queue a restart of the knowledge session (want a timer to prevent excessive restarts)
+        ruleDefinitions.put(rulesDefinition.getId(), rulesDefinition);
 
         return addSuccessful;
+    }
+
+    protected synchronized void retractRulesDefinition(RulesDefinition rulesDefinition) {
+        if (kfs == null) {
+            return;
+        }
+
+        T matchedDefinition = ruleDefinitions.get(rulesDefinition.getId());
+        if (matchedDefinition == null) {
+            LOG.finer("Rules definition cannot be retracted as it was never deployed: " + rulesDefinition);
+            return;
+        }
+
+        // TODO: What is the best way to handle live deployment of new rules
+        if (isRunning()) {
+            stop();
+        }
+
+        // Remove this old rules file
+        kfs.delete("src/main/resources/" + rulesDefinition.getId());
+        ruleDefinitions.remove(rulesDefinition.getId());
+
+        if (!isError()) {
+            // Queue engine start
+            if (startTimer != null) {
+                startTimer.cancel(false);
+            }
+            startTimer = executorService.schedule(this::start, AUTO_START_DELAY_SECONDS, TimeUnit.SECONDS);
+        }
     }
 
     protected synchronized void start() {
@@ -300,7 +353,7 @@ public class RulesDeployment<T extends RulesDefinition> {
                 "name='" + id + '\'' +
                 "running='" + running + '\'' +
                 "error='" + error + '\'' +
-                ", definitions='" + Arrays.toString(ruleDefinitions.stream().map(rd -> rd.getName() + ": " + rd.getDeploymentStatus()).toArray(size -> new String[size])) + '\'' +
+                ", definitions='" + Arrays.toString(ruleDefinitions.values().stream().map(rd -> rd.getName() + ": " + rd.getDeploymentStatus()).toArray(size -> new String[size])) + '\'' +
                 '}';
     }
 }
