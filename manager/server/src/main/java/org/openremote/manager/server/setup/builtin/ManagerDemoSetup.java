@@ -66,6 +66,12 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String apartment3Id;
     public String apartment2LivingroomId;
     public String apartment3LivingroomId;
+    public long masterRulesDefinitionId;
+    public long customerARulesDefinitionId;
+    public long customerBRulesDefinitionId;
+    public long apartment1RulesDefinitionId;
+    public long apartment2RulesDefinitionId;
+    public long apartment3RulesDefinitionId;
 
     public ManagerDemoSetup(Container container) {
         super(container);
@@ -236,6 +242,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         // ################################ Demo assets for 'customerA' realm ###################################
 
         String customerARealmId = identityService.getActiveTenantRealmId("customerA");
+        String customerBRealmId = identityService.getActiveTenantRealmId("customerB");
 
         ServerAsset smartHome = new ServerAsset();
         smartHome.setRealmId(customerARealmId);
@@ -352,33 +359,45 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeTenantDemoRules.drl")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
             RulesDefinition rulesDefinition = new TenantRulesDefinition("Some master tenant demo rules", Constants.MASTER_REALM, rules);
-            rulesStorageService.merge(rulesDefinition);
+            rulesDefinition = rulesStorageService.merge(rulesDefinition);
+            masterRulesDefinitionId = rulesDefinition.getId();
         }
 
         try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeTenantDemoRules.drl")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
             RulesDefinition rulesDefinition = new TenantRulesDefinition("Some customerA tenant demo rules", customerARealmId, rules);
+            rulesDefinition = rulesStorageService.merge(rulesDefinition);
+            customerARulesDefinitionId = rulesDefinition.getId();
+        }
+
+        try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeTenantDemoRules.drl")) {
+            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            RulesDefinition rulesDefinition = new TenantRulesDefinition("Some customerB tenant demo rules", customerBRealmId, rules);
             rulesDefinition.setEnabled(false);
-            rulesStorageService.merge(rulesDefinition);
+            rulesDefinition = rulesStorageService.merge(rulesDefinition);
+            customerBRulesDefinitionId = rulesDefinition.getId();
         }
 
         try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeAssetDemoRules.drl")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
             RulesDefinition rulesDefinition = new AssetRulesDefinition("Some apartment 1 demo rules", apartment1Id, rules);
-            rulesStorageService.merge(rulesDefinition);
+            rulesDefinition = rulesStorageService.merge(rulesDefinition);
+            apartment1RulesDefinitionId = rulesDefinition.getId();
         }
 
         try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeAssetDemoRules.drl")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
             RulesDefinition rulesDefinition = new AssetRulesDefinition("Some apartment 2 demo rules", apartment2Id, rules);
             rulesDefinition.setEnabled(false);
-            rulesStorageService.merge(rulesDefinition);
+            rulesDefinition = rulesStorageService.merge(rulesDefinition);
+            apartment2RulesDefinitionId = rulesDefinition.getId();
         }
 
         try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeAssetDemoRules.drl")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
             RulesDefinition rulesDefinition = new AssetRulesDefinition("Some apartment 3 demo rules", apartment3Id, rules);
-            rulesStorageService.merge(rulesDefinition);
+            rulesDefinition = rulesStorageService.merge(rulesDefinition);
+            apartment3RulesDefinitionId = rulesDefinition.getId();
         }
 
     }

@@ -265,6 +265,10 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         }
 
         globalDeployment.retractRulesDefinition(rulesDefinition);
+
+        if (globalDeployment.isEmpty()) {
+            globalDeployment = null;
+        }
     }
 
     protected synchronized void deployTenantRulesDefinition(TenantRulesDefinition rulesDefinition, String rules) {
@@ -278,12 +282,16 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     }
 
     protected synchronized void retractTenantRulesDefinition(TenantRulesDefinition rulesDefinition) {
-        RulesDeployment<TenantRulesDefinition> deployment = tenantDeployments.get(rulesDefinition.getRealm());
+        RulesDeployment<TenantRulesDefinition> deployment = tenantDeployments.get(rulesDefinition.getRealmId());
         if (deployment == null) {
             return;
         }
 
         deployment.retractRulesDefinition(rulesDefinition);
+
+        if (deployment.isEmpty()) {
+            tenantDeployments.remove(rulesDefinition.getRealmId());
+        }
     }
 
 
@@ -304,6 +312,10 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         }
 
         deployment.retractRulesDefinition(rulesDefinition);
+
+        if (deployment.isEmpty()) {
+            assetDeployments.remove(rulesDefinition.getAssetId());
+        }
     }
 
     protected synchronized void processAssetUpdate(AssetUpdate assetUpdate) {

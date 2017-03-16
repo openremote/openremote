@@ -52,7 +52,7 @@ public class RulesDeployment<T extends RulesDefinition> {
     private static final Logger LOG = Logger.getLogger(RulesDeployment.class.getName());
     private static final int AUTO_START_DELAY_SECONDS = 2;
     static final protected RuleUtil ruleUtil = new RuleUtil();
-    protected Map<Long, T> ruleDefinitions = new HashMap<>();
+    protected Map<Long, T> ruleDefinitions = new LinkedHashMap<>();
     protected RuleExecutionLogger ruleExecutionLogger = new RuleExecutionLogger();
     protected KieBase kb;
     protected KieSession knowledgeSession;
@@ -87,6 +87,10 @@ public class RulesDeployment<T extends RulesDefinition> {
 
     public boolean isError() {
         return error;
+    }
+
+    public synchronized boolean isEmpty() {
+        return ruleDefinitions.isEmpty();
     }
 
     protected void setGlobal(String identifier, Object object) {
@@ -144,6 +148,11 @@ public class RulesDeployment<T extends RulesDefinition> {
             stop();
         }
 
+        // Stop any running start timer
+        if (startTimer != null) {
+            startTimer.cancel(false);
+        }
+
         // Check if rules definition is already deployed (maybe an older version)
         if (existingDefinition != null) {
             // Remove this old rules file
@@ -186,11 +195,6 @@ public class RulesDeployment<T extends RulesDefinition> {
             // Prevent knowledge session from running again
             error = true;
 
-            // Remove any existing start timer
-            if (startTimer != null) {
-                startTimer.cancel(false);
-            }
-
             // Update status of each rules definition
             ruleDefinitions.forEach((id, rd) -> {
                 if (rd.getDeploymentStatus() == RulesDefinition.DeploymentStatus.DEPLOYED) {
@@ -198,10 +202,6 @@ public class RulesDeployment<T extends RulesDefinition> {
                 }
             });
         } else {
-            // Queue engine start
-            if (startTimer != null) {
-                startTimer.cancel(false);
-            }
             startTimer = executorService.schedule(this::start, AUTO_START_DELAY_SECONDS, TimeUnit.SECONDS);
         }
 
@@ -228,15 +228,17 @@ public class RulesDeployment<T extends RulesDefinition> {
             stop();
         }
 
+        // Stop any running start timer
+        if (startTimer != null) {
+            startTimer.cancel(false);
+        }
+
         // Remove this old rules file
         kfs.delete("src/main/resources/" + rulesDefinition.getId());
         ruleDefinitions.remove(rulesDefinition.getId());
 
-        if (!isError()) {
+        if (!isError() && !isEmpty()) {
             // Queue engine start
-            if (startTimer != null) {
-                startTimer.cancel(false);
-            }
             startTimer = executorService.schedule(this::start, AUTO_START_DELAY_SECONDS, TimeUnit.SECONDS);
         }
     }
@@ -251,7 +253,7 @@ public class RulesDeployment<T extends RulesDefinition> {
             return;
         }
 
-        if (ruleDefinitions.size() == 0) {
+        if (isEmpty()) {
             LOG.finest("No rule definitions loaded so nothing to start");
             return;
         }
