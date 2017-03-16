@@ -2,6 +2,7 @@ package org.openremote.test
 
 import com.google.common.collect.Lists
 import org.openremote.agent3.protocol.Protocol
+import org.openremote.container.Container
 import org.openremote.container.ContainerService
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.message.MessageBrokerSetupService
@@ -50,5 +51,9 @@ trait ManagerContainerTrait extends ContainerTrait {
 
     static Iterable<ContainerService> defaultServices(ContainerService... additionalServices) {
         defaultServices(Arrays.asList(additionalServices))
+    }
+
+    static String getActiveTenantRealmId(Container container, String realm) {
+        container.getService(ManagerIdentityService.class).getActiveTenantRealmId(realm)
     }
 }

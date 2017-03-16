@@ -149,6 +149,18 @@ public class WidgetStyle {
         return "or-FormOutputText";
     }
 
+    public String FormTextArea() {
+        return "or-FormTextArea";
+    }
+
+    public String FormFileUpload() {
+        return "or-FormFileUpload";
+    }
+
+    public String FormFileUploadLabel() {
+        return "or-FormFileUploadLabel";
+    }
+
     public String FormValueListBox() {
         return "or-FormValueListBox";
     }

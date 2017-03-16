@@ -24,6 +24,11 @@ import org.openremote.manager.client.widget.FormView;
 public interface RulesEditor<P extends RulesEditor.Presenter> extends RulesView<P>, FormView {
 
     interface Presenter extends RulesPresenter {
+        void update();
+
+        void create();
+
+        void delete();
     }
 
     void setPresenter(P presenter);
@@ -31,5 +36,21 @@ public interface RulesEditor<P extends RulesEditor.Presenter> extends RulesView<
     void setName(String name);
 
     String getName();
+
+    void setNameError(boolean error);
+
+    void setRulesetEnabled(Boolean enabled);
+
+    boolean getRulesetEnabled();
+
+    void setRules(String rules);
+
+    String getRules();
+
+    void enableCreate(boolean enable);
+
+    void enableUpdate(boolean enable);
+
+    void enableDelete(boolean enable);
 
 }

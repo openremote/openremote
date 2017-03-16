@@ -17,6 +17,11 @@
         .formMessages {
             max-width: 30em;
         }
+
+        .rulesTextArea {
+            min-height: 50vh;
+            max-height: 75vh;
+        }
     </ui:style>
 
     <w:FlexSplitPanel handleStyle="{widgetStyle.SplitPanelHandle}"
@@ -75,29 +80,58 @@
                             </w:field>
                         </w:FormGroup>
 
-                    </w:Form>
+                        <w:FormGroup ui:field="enabledGroup">
+                            <w:label>
+                                <w:FormLabel text="{managerMessages.enabled}" required="false"/>
+                            </w:label>
+                            <w:field>
+                                <w:FormField>
+                                    <w:FormCheckBox ui:field="enabledCheckBox"/>
+                                </w:FormField>
+                            </w:field>
+                            <w:actions>
+                                <w:FormGroupActions>
+                                    <g:HTMLPanel>
+                                        <label ui:field="rulesFileUploadLabel"
+                                               class="{widgetStyle.FormControl} {widgetStyle.FormFileUploadLabel}">
+                                            <g:FileUpload ui:field="rulesFileUpload"/>
+                                            <w:FormInlineLabel icon="upload" text="{managerMessages.uploadRulesFile}"/>
+                                        </label>
+                                    </g:HTMLPanel>
+                                </w:FormGroupActions>
+                            </w:actions>
+                        </w:FormGroup>
 
-<!--
-                    <g:HTMLPanel styleName="flex-none layout horizontal">
-                        <w:Form ui:field="submitForm" addStyleNames="flex">
-                            <w:FormGroup ui:field="submitButtonGroup">
-                                <w:field>
-                                    <w:FormField>
-                                        <w:FormButton ui:field="updateButton" primary="true"
-                                                      text="{managerMessages.updateAsset}" visible="false"
-                                                      icon="save"/>
-                                        <w:FormButton ui:field="createButton" primary="true"
-                                                      text="{managerMessages.createAsset}" visible="false"
-                                                      icon="save"/>
-                                        <w:FormButton ui:field="deleteButton" danger="true"
-                                                      text="{managerMessages.deleteAsset}" visible="false"
-                                                      icon="trash"/>
-                                    </w:FormField>
-                                </w:field>
-                            </w:FormGroup>
-                        </w:Form>
-                    </g:HTMLPanel>
--->
+                        <w:FormGroup ui:field="rulesGroup" alignStart="true">
+                            <w:label>
+                                <w:FormLabel text="{managerMessages.rules}"/>
+                            </w:label>
+                            <w:field>
+                                <w:FormField addStyleNames="larger">
+                                    <w:FormTextArea ui:field="rulesTextArea"
+                                                    spellcheck="false"
+                                                    addStyleNames="{style.rulesTextArea} flex"/>
+                                </w:FormField>
+                            </w:field>
+                        </w:FormGroup>
+
+                        <w:FormGroup ui:field="submitButtonGroup">
+                            <w:field>
+                                <w:FormField>
+                                    <w:FormButton ui:field="updateButton" primary="true"
+                                                  text="{managerMessages.updateRuleset}" visible="false"
+                                                  icon="save"/>
+                                    <w:FormButton ui:field="createButton" primary="true"
+                                                  text="{managerMessages.createRuleset}" visible="false"
+                                                  icon="save"/>
+                                    <w:FormButton ui:field="deleteButton" danger="true"
+                                                  text="{managerMessages.deleteRuleset}" visible="false"
+                                                  icon="trash"/>
+                                </w:FormField>
+                            </w:field>
+                        </w:FormGroup>
+
+                    </w:Form>
 
                 </g:HTMLPanel>
 

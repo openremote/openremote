@@ -37,6 +37,7 @@ import org.openremote.model.Constants;
 
 import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -127,42 +128,68 @@ public class ManagerIdentityService extends IdentityService {
         );
     }
 
-    public boolean isTenantActive(String realm) {
-        // We use a direct database query, faster than calling Keycloak through HTTP
-        return persistenceService.doReturningTransaction(entityManager -> {
-            // TODO Should also check NOT_BEFORE?
-            @SuppressWarnings("unchecked")
-            List<Object[]> result = entityManager.createNativeQuery(
-                "select ID from REALM where ENABLED = true and NAME = :realm"
-            ).setParameter("realm", realm).getResultList();
-            return result.size() > 0;
-        });
+    public boolean isActiveTenantRealm(String realm) {
+        return Arrays.asList(getActiveTenantRealms()).contains(realm);
     }
 
-    public String getActiveTenantName(String realm) {
+    public boolean isActiveTenantRealmId(String realmId) {
+        return Arrays.asList(getActiveTenantRealmIds()).contains(realmId);
+    }
+
+    public String getActiveTenantDisplayName(String realm) {
         return persistenceService.doReturningTransaction(entityManager -> {
-            // TODO Should also check NOT_BEFORE?
             @SuppressWarnings("unchecked")
             List<String> result = entityManager.createNativeQuery(
                 "select RA.VALUE from REALM R join REALM_ATTRIBUTE RA " +
-                    "on R.ID = RA.REALM_ID and RA.NAME = 'displayName' and R.ENABLED = true and R.NAME = :realm"
+                    "on R.ID = RA.REALM_ID and RA.NAME = 'displayName' " +
+                    "and (R.ENABLED = true and (R.NOT_BEFORE is null or R.NOT_BEFORE = 0 or R.NOT_BEFORE <= extract(epoch from now()))) " +
+                    "and R.NAME = :realm"
             ).setParameter("realm", realm).getResultList();
             return result.size() > 0 ? result.get(0) : null;
         });
     }
 
-    public String[] getActiveTenantNames() {
+    public String getActiveTenantRealmId(String realm) {
         return persistenceService.doReturningTransaction(entityManager -> {
-            // TODO Should also check NOT_BEFORE?
             @SuppressWarnings("unchecked")
-            List<Object[]> results = entityManager.createNativeQuery(
-                    "SELECT NAME, ENABLED FROM REALM"
-            ).getResultList();
+            List<String> result = entityManager.createNativeQuery(
+                "select R.ID from REALM R where R.NAME  = :realm " +
+                    "and (R.ENABLED = true and (R.NOT_BEFORE is null or R.NOT_BEFORE = 0 or R.NOT_BEFORE <= extract(epoch from now()))) "
+            ).setParameter("realm", realm).getResultList();
+            return result.size() > 0 ? result.get(0) : null;
+        });
+    }
 
-            return results
-                    .stream()
-                    .map(record -> (String)record[0])
-                    .toArray(size -> new String[size]);
+    public String getActiveTenantRealm(String realmId) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            @SuppressWarnings("unchecked")
+            List<String> result = entityManager.createNativeQuery(
+                "select R.NAME from REALM R where R.ID = :realmId " +
+                    "and (R.ENABLED = true and (R.NOT_BEFORE is null or R.NOT_BEFORE = 0 or R.NOT_BEFORE <= extract(epoch from now())))"
+            ).setParameter("realmId", realmId).getResultList();
+            return result.size() > 0 ? result.get(0) : null;
+        });
+    }
+
+    public String[] getActiveTenantRealmIds() {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            @SuppressWarnings("unchecked")
+            List<String> results = entityManager.createNativeQuery(
+                "select R.ID from REALM R where " +
+                    "(R.ENABLED = true and (R.NOT_BEFORE is null or R.NOT_BEFORE = 0 or R.NOT_BEFORE <= extract(epoch from now()))) "
+            ).getResultList();
+            return results.toArray(new String[results.size()]);
+        });
+    }
+
+    public String[] getActiveTenantRealms() {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            @SuppressWarnings("unchecked")
+            List<String> results = entityManager.createNativeQuery(
+                "select R.NAME from REALM R where " +
+                    "(R.ENABLED = true and (R.NOT_BEFORE is null or R.NOT_BEFORE = 0 or R.NOT_BEFORE <= extract(epoch from now()))) "
+            ).getResultList();
+            return results.toArray(new String[results.size()]);
         });
     }
 

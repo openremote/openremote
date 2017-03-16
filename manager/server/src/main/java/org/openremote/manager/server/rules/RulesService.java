@@ -67,7 +67,7 @@ public class RulesService implements ContainerService, Consumer<AssetUpdate> {
     @Override
     public void start(Container container) throws Exception {
         // Get active tenants
-        String[] activeTenantNames = identityService.getActiveTenantNames();
+        String[] activeTenantNames = identityService.getActiveTenantRealms();
 
         // Deploy global rules
         List<GlobalRulesDefinition> enabledGlobalDefinitions = rulesStorageService.findEnabledGlobalDefinitions();
@@ -273,14 +273,12 @@ public class RulesService implements ContainerService, Consumer<AssetUpdate> {
             matchedAssetDeployments.add(assetDeployment);
         }
 
-        ServerAsset parentAsset = asset.getParent();
-        while (parentAsset != null) {
-            RulesDeployment parentDeployment = assetDeployments.get(asset.getId());
+        // TODO: Check if this is the correct procedure
+        for (String assetPathElement : asset.getReversePath()) {
+            RulesDeployment parentDeployment = assetDeployments.get(assetPathElement);
             if (parentDeployment != null) {
                 matchedAssetDeployments.add(parentDeployment);
             }
-
-            parentAsset = parentAsset.getParent();
         }
 
         Collections.reverse(matchedAssetDeployments);

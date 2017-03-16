@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.server.asset;
 
-import org.openremote.container.web.WebResource;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.asset.AssetResource;
@@ -49,8 +48,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     protected final AssetStorageService assetStorageService;
     protected final AssetProcessingService assetProcessingService;
 
-    public AssetResourceImpl(ManagerIdentityService identityService, 
-                             AssetStorageService assetStorageService, 
+    public AssetResourceImpl(ManagerIdentityService identityService,
+                             AssetStorageService assetStorageService,
                              AssetProcessingService assetProcessingService) {
         super(identityService);
         this.assetStorageService = assetStorageService;

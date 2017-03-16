@@ -24,6 +24,7 @@ import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.http.SuccessStatusCode;
 
 import javax.annotation.security.RolesAllowed;
+import javax.validation.Valid;
 import javax.ws.rs.*;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -78,7 +79,7 @@ public interface RulesResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
-    void createGlobalDefinition(@BeanParam RequestParams requestParams, GlobalRulesDefinition rulesDefinition);
+    void createGlobalDefinition(@BeanParam RequestParams requestParams, @Valid GlobalRulesDefinition rulesDefinition);
 
     /**
      * Retrieve a global rules definition. Only the superuser can perform this operation, a 403 status is
