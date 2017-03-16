@@ -46,8 +46,8 @@ import java.util.stream.IntStream;
  * asset definitions with same parent asset are not guaranteed also processing of definitions
  * with the same scope is not guaranteed)
  */
-public class AssetRulesService implements ContainerService, Consumer<AssetUpdate> {
-    private static final Logger LOG = Logger.getLogger(AssetRulesService.class.getName());
+public class RulesService implements ContainerService, Consumer<AssetUpdate> {
+    private static final Logger LOG = Logger.getLogger(RulesService.class.getName());
     protected PersistenceService persistenceService;
     protected RulesStorageService rulesStorageService;
     protected ManagerIdentityService identityService;

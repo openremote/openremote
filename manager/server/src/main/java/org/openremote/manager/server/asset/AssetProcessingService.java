@@ -28,7 +28,7 @@ import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.server.agent.ThingAttributes;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
-import org.openremote.manager.server.rules.AssetRulesService;
+import org.openremote.manager.server.rules.RulesService;
 import org.openremote.model.*;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.ThingAttribute;
@@ -49,7 +49,7 @@ import static org.openremote.model.asset.AssetType.THING;
  * <p>
  * The regular processor chain is:
  * <ul>
- * <li>{@link AssetRulesService}</li>
+ * <li>{@link RulesService}</li>
  * <li>{@link AssetStorageService}</li>
  * <li>{@link AssetDatapointService}</li>
  * </ul>
@@ -95,7 +95,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     private static final Logger LOG = Logger.getLogger(AssetProcessingService.class.getName());
 
-    protected AssetRulesService rulesService;
+    protected RulesService rulesService;
     protected AssetStorageService assetStorageService;
     protected AssetDatapointService assetDatapointService;
     protected MessageBrokerService messageBrokerService;
@@ -104,7 +104,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     @Override
     public void init(Container container) throws Exception {
-        rulesService = container.getService(AssetRulesService.class);
+        rulesService = container.getService(RulesService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         assetDatapointService = container.getService(AssetDatapointService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);

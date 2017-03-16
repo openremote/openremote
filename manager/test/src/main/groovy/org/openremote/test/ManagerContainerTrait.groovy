@@ -9,7 +9,7 @@ import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.server.apps.ConsoleAppService
 import org.openremote.manager.server.notification.NotificationService
 import org.openremote.manager.server.asset.AssetProcessingService
-import org.openremote.manager.server.rules.AssetRulesService
+import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.rules.RulesStorageService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.agent.AgentService
@@ -32,7 +32,7 @@ trait ManagerContainerTrait extends ContainerTrait {
                 new SetupService(),
                 new EventService(),
                 new RulesStorageService(),
-                new AssetRulesService(),
+                new RulesService(),
                 new AssetStorageService(),
                 new AssetDatapointService(),
                 new AssetProcessingService(),

@@ -33,7 +33,7 @@ import org.openremote.manager.server.datapoint.AssetDatapointService;
 import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.i18n.I18NService;
 import org.openremote.manager.server.map.MapService;
-import org.openremote.manager.server.rules.AssetRulesService;
+import org.openremote.manager.server.rules.RulesService;
 import org.openremote.manager.server.rules.RulesStorageService;
 import org.openremote.manager.server.notification.NotificationService;
 import org.openremote.manager.server.security.ManagerIdentityService;
@@ -58,7 +58,7 @@ public class Main {
                     new SetupService(),
                     new EventService(),
                     new RulesStorageService(),
-                    new AssetRulesService(),
+                    new RulesService(),
                     new AssetStorageService(),
                     new AssetDatapointService(),
                     new AssetProcessingService(),

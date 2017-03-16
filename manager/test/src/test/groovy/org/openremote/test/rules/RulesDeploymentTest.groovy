@@ -1,6 +1,6 @@
 package org.openremote.test.rules
 
-import org.openremote.manager.server.rules.AssetRulesService
+import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.model.Constants
@@ -19,7 +19,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def rulesService = container.getService(AssetRulesService.class)
+        def rulesService = container.getService(RulesService.class)
 
         then: "a global rules engine should have been created and be running"
         conditions.eventually {
