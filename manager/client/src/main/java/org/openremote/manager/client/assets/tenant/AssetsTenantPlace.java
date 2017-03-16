@@ -26,14 +26,14 @@ import org.openremote.manager.client.assets.AssetsPlace;
 
 public class AssetsTenantPlace extends Place implements AssetsPlace {
 
-    final String realm;
+    final String realmId;
 
-    public AssetsTenantPlace(String realm) {
-        this.realm = realm;
+    public AssetsTenantPlace(String realmId) {
+        this.realmId = realmId;
     }
 
-    public String getRealm() {
-        return realm;
+    public String getRealmId() {
+        return realmId;
     }
 
     @Prefix("assetsTenant")
@@ -46,14 +46,14 @@ public class AssetsTenantPlace extends Place implements AssetsPlace {
 
         @Override
         public String getToken(AssetsTenantPlace place) {
-            return place.getRealm() != null ? place.getRealm() : "";
+            return place.getRealmId() != null ? place.getRealmId() : "";
         }
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "realm='" + realm + '\'' +
+            "realmId='" + realmId + '\'' +
             '}';
     }
 }

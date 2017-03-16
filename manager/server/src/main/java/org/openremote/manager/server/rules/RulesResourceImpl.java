@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.server.rules;
 
-import org.openremote.container.web.WebResource;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebResource;
@@ -63,11 +62,11 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
     }
 
     @Override
-    public TenantRulesDefinition[] getTenantDefinitions(@BeanParam RequestParams requestParams, String realm) {
-        if (!isRealmAccessibleByUser(realm) || isRestrictedUser()) {
+    public TenantRulesDefinition[] getTenantDefinitions(@BeanParam RequestParams requestParams, String realmId) {
+        if (!isRealmAccessibleByUser(realmId) || isRestrictedUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        List<TenantRulesDefinition> result = rulesStorageService.findTenantDefinitions(realm);
+        List<TenantRulesDefinition> result = rulesStorageService.findTenantDefinitions(realmId);
         return result.toArray(new TenantRulesDefinition[result.size()]);
     }
 
@@ -77,7 +76,10 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (asset == null)
             return new AssetRulesDefinition[0];
 
-        String realm = asset.getRealm();
+        String realm = identityService.getActiveTenantRealm(asset.getRealmId());
+        if (realm == null) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
         if (!isRealmAccessibleByUser(realm)) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
@@ -85,7 +87,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
             !assetStorageService.findProtectedOfUserContains(getUserId(), assetId)) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        List<AssetRulesDefinition> result = rulesStorageService.findAssetDefinitions(realm, assetId);
+        List<AssetRulesDefinition> result = rulesStorageService.findAssetDefinitions(asset.getRealmId(), assetId);
         return result.toArray(new AssetRulesDefinition[result.size()]);
     }
 
@@ -134,8 +136,8 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
     @Override
     public void createTenantDefinition(@BeanParam RequestParams requestParams, TenantRulesDefinition rulesDefinition) {
-        String realm = rulesDefinition.getRealm();
-        if (realm == null || realm.length() == 0) {
+        String realm = identityService.getActiveTenantRealm(rulesDefinition.getRealmId());
+        if (realm == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
         if (!isRealmAccessibleByUser(realm) || isRestrictedUser()) {
@@ -150,7 +152,11 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (existingDefinition == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        if (!isRealmAccessibleByUser(existingDefinition.getRealm()) || isRestrictedUser()) {
+        String realm = identityService.getActiveTenantRealm(existingDefinition.getRealmId());
+        if (realm == null) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
+        if (!isRealmAccessibleByUser(realm) || isRestrictedUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         return existingDefinition;
@@ -162,13 +168,17 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (existingDefinition == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        if (!isRealmAccessibleByUser(existingDefinition.getRealm()) || isRestrictedUser()) {
+        String realm = identityService.getActiveTenantRealm(existingDefinition.getRealmId());
+        if (realm == null) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
+        if (!isRealmAccessibleByUser(realm) || isRestrictedUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (!id.equals(rulesDefinition.getId())) {
             throw new WebApplicationException("Requested ID and definition ID don't match", BAD_REQUEST);
         }
-        if (!existingDefinition.getRealm().equals(rulesDefinition.getRealm())) {
+        if (!existingDefinition.getRealmId().equals(rulesDefinition.getRealmId())) {
             throw new WebApplicationException("Requested realm and existing definition realm must match", BAD_REQUEST);
         }
         rulesDefinition = rulesStorageService.merge(rulesDefinition);
@@ -180,7 +190,11 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (existingDefinition == null) {
             return;
         }
-        if (!isRealmAccessibleByUser(existingDefinition.getRealm()) || isRestrictedUser()) {
+        String realm = identityService.getActiveTenantRealm(existingDefinition.getRealmId());
+        if (realm == null) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
+        if (!isRealmAccessibleByUser(realm) || isRestrictedUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         rulesStorageService.delete(TenantRulesDefinition.class, id);
@@ -198,7 +212,11 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        if (!isRealmAccessibleByUser(asset.getRealm())) {
+        String realm = identityService.getActiveTenantRealm(asset.getRealmId());
+        if (realm == null) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
+        if (!isRealmAccessibleByUser(realm)) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (isRestrictedUser() &&
@@ -218,7 +236,11 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        if (!isRealmAccessibleByUser(asset.getRealm())) {
+        String realm = identityService.getActiveTenantRealm(asset.getRealmId());
+        if (realm == null) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
+        if (!isRealmAccessibleByUser(realm)) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (isRestrictedUser() &&
@@ -238,7 +260,11 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        if (!isRealmAccessibleByUser(asset.getRealm())) {
+        String realm = identityService.getActiveTenantRealm(asset.getRealmId());
+        if (realm == null) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
+        if (!isRealmAccessibleByUser(realm)) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (isRestrictedUser() &&
@@ -264,7 +290,11 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        if (!isRealmAccessibleByUser(asset.getRealm())) {
+        String realm = identityService.getActiveTenantRealm(asset.getRealmId());
+        if (realm == null) {
+            throw new WebApplicationException(BAD_REQUEST);
+        }
+        if (!isRealmAccessibleByUser(realm)) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (isRestrictedUser() &&

@@ -99,17 +99,17 @@ public class RulesStorageService implements ContainerService {
      * The {@link RulesDefinition#rules} property is not populated for this query to avoid
      * loading multiple large strings.
      */
-    public List<TenantRulesDefinition> findTenantDefinitions(String realm) {
+    public List<TenantRulesDefinition> findTenantDefinitions(String realmId) {
         return persistenceService.doReturningTransaction(entityManager ->
             entityManager.createQuery(
                 "select new org.openremote.manager.shared.rules.TenantRulesDefinition(" +
-                    "rd.id, rd.version, rd.createdOn, rd.lastModified, rd.name, rd.enabled, rd.realm" +
+                    "rd.id, rd.version, rd.createdOn, rd.lastModified, rd.name, rd.enabled, rd.realmId" +
                     ") " +
                     "from TenantRulesDefinition rd " +
-                    "where rd.realm = :realm " +
+                    "where rd.realmId = :realmId " +
                     "order by rd.createdOn asc",
                 TenantRulesDefinition.class
-            ).setParameter("realm", realm).getResultList()
+            ).setParameter("realmId", realmId).getResultList()
         );
     }
 
@@ -117,7 +117,7 @@ public class RulesStorageService implements ContainerService {
         return persistenceService.doReturningTransaction(entityManager ->
                 entityManager.createQuery(
                         "select new org.openremote.manager.shared.rules.TenantRulesDefinition(" +
-                                "rd.id, rd.version, rd.createdOn, rd.lastModified, rd.name, rd.enabled, rd.realm" +
+                                "rd.id, rd.version, rd.createdOn, rd.lastModified, rd.name, rd.enabled, rd.realmId" +
                                 ") " +
                                 "from TenantRulesDefinition rd " +
                                 "where rd.enabled = TRUE " +
@@ -131,17 +131,17 @@ public class RulesStorageService implements ContainerService {
      * The {@link RulesDefinition#rules} property is not populated for this query to avoid
      * loading multiple large strings.
      */
-    public List<AssetRulesDefinition> findAssetDefinitions(String realm, String assetId) {
+    public List<AssetRulesDefinition> findAssetDefinitions(String realmId, String assetId) {
         return persistenceService.doReturningTransaction(entityManager ->
             entityManager.createQuery(
                 "select new org.openremote.manager.shared.rules.AssetRulesDefinition(" +
                     "rd.id, rd.version, rd.createdOn, rd.lastModified, rd.name, rd.enabled, rd.assetId" +
                     ") " +
                     "from AssetRulesDefinition rd, Asset a " +
-                    "where rd.assetId = :assetId and rd.assetId = a.id and a.realm = :realm " +
+                    "where rd.assetId = :assetId and rd.assetId = a.id and a.realmId = :realmId " +
                     "order by rd.createdOn asc",
                 AssetRulesDefinition.class
-            ).setParameter("realm", realm).setParameter("assetId", assetId).getResultList()
+            ).setParameter("realmId", realmId).setParameter("assetId", assetId).getResultList()
         );
     }
 

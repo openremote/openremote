@@ -43,8 +43,6 @@ public class AssetTreeNode {
 
     protected String name;
 
-    protected String realm;
-
     protected String type;
 
     /**
@@ -53,10 +51,9 @@ public class AssetTreeNode {
     public AssetTreeNode() {
     }
 
-    public AssetTreeNode(String id, String name, String realm, String type) {
+    public AssetTreeNode(String id, String name, String type) {
         this.id = id;
         this.name = name;
-        this.realm = realm;
         this.type = type;
     }
 
@@ -64,21 +61,21 @@ public class AssetTreeNode {
      * Asset node
      */
     public AssetTreeNode(AssetInfo assetInfo) {
-        this(assetInfo.getId(), assetInfo.getName(), assetInfo.getRealm(), assetInfo.getType());
+        this(assetInfo.getId(), assetInfo.getName(), assetInfo.getType());
     }
 
     /**
      * Tenant node
      */
     public AssetTreeNode(Tenant tenant) {
-        this(tenant.getId(), tenant.getDisplayName(), tenant.getRealm(), TENANT_TYPE);
+        this(tenant.getId(), tenant.getDisplayName(), TENANT_TYPE);
     }
 
     /**
      * Temporary node
      */
     public AssetTreeNode(String name) {
-        this(null, name, null, TEMPORARY_TYPE);
+        this(null, name, TEMPORARY_TYPE);
     }
 
     public String getId() {
@@ -95,14 +92,6 @@ public class AssetTreeNode {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public String getRealm() {
-        return realm;
-    }
-
-    public void setRealm(String realm) {
-        this.realm = realm;
     }
 
     public String getType() {
@@ -163,7 +152,6 @@ public class AssetTreeNode {
         return getClass().getSimpleName() + "{" +
             "id='" + id + '\'' +
             ", name='" + name + '\'' +
-            ", realm='" + realm + '\'' +
             ", type='" + type + '\'' +
             '}';
     }

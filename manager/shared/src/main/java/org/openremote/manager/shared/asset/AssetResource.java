@@ -91,7 +91,7 @@ public interface AssetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
-    AssetInfo[] getRoot(@BeanParam RequestParams requestParams, @QueryParam("realm") String realm);
+    AssetInfo[] getRoot(@BeanParam RequestParams requestParams, @QueryParam("realmId") String realmId);
 
     /**
      * Retrieve the child assets of the given parent asset. If the authenticated user is the superuser,

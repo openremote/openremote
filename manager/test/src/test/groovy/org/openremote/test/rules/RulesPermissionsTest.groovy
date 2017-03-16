@@ -25,10 +25,12 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "an authenticated admin user"
-        def realm = MASTER_REALM
+        def authRealm = MASTER_REALM
+        def masterRealmId = getActiveTenantRealmId(container, MASTER_REALM)
+        def customerARealmId = getActiveTenantRealmId(container, "customerA")
         def accessToken = authenticate(
                 container,
-                realm,
+                authRealm,
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
@@ -37,7 +39,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         and: "the rules resource"
         def client = createClient(container).build()
         def serverUri = serverUri(serverPort)
-        def rulesResource = getClientTarget(client, serverUri, realm, accessToken).proxy(RulesResource.class)
+        def rulesResource = getClientTarget(client, serverUri, authRealm, accessToken).proxy(RulesResource.class)
 
         /* ############################################## READ ####################################### */
 
@@ -50,14 +52,14 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ruleDefinitions[0].rules == null // Don't retrieve the (large) rules data when getting a list of rule definitions
 
         when: "some tenant rules are retrieved"
-        ruleDefinitions = rulesResource.getTenantDefinitions(null, MASTER_REALM)
+        ruleDefinitions = rulesResource.getTenantDefinitions(null, masterRealmId)
 
         then: "result should match"
         ruleDefinitions.length == 1
         ruleDefinitions[0].name == "Some master tenant demo rules"
 
         when: "some tenant rules in a non-authenticated realm are retrieved"
-        ruleDefinitions = rulesResource.getTenantDefinitions(null, "customerA")
+        ruleDefinitions = rulesResource.getTenantDefinitions(null, customerARealmId)
 
         then: "result should match"
         ruleDefinitions.length == 1
@@ -118,9 +120,9 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 404
 
         when: "a tenant rules definition is created in the authenticated realm"
-        def tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", MASTER_REALM, "ThisShouldBeDRL")
+        def tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", masterRealmId, "ThisShouldBeDRL")
         rulesResource.createTenantDefinition(null, tenantRulesDefinition)
-        rulesDefinitionId = rulesResource.getTenantDefinitions(null, MASTER_REALM)[1].id
+        rulesDefinitionId = rulesResource.getTenantDefinitions(null, masterRealmId)[1].id
         tenantRulesDefinition = rulesResource.getTenantDefinition(null, rulesDefinitionId)
         lastModified = tenantRulesDefinition.lastModified
 
@@ -131,7 +133,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         lastModified.time < System.currentTimeMillis()
         tenantRulesDefinition.name == "Test tenant definition"
         tenantRulesDefinition.rules == "ThisShouldBeDRL"
-        tenantRulesDefinition.realm == MASTER_REALM
+        tenantRulesDefinition.realmId == masterRealmId
 
         when: "a tenant rules definition is updated"
         tenantRulesDefinition.name = "Renamed test tenant definition"
@@ -146,10 +148,10 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         lastModified.time < System.currentTimeMillis()
         tenantRulesDefinition.name == "Renamed test tenant definition"
         tenantRulesDefinition.rules == "ThisShouldBeDRLAsWell"
-        tenantRulesDefinition.realm == MASTER_REALM
+        tenantRulesDefinition.realmId == masterRealmId
 
         when: "a tenant rules definition is updated with an invalid realm"
-        tenantRulesDefinition.realm = "thisdoesnotexist"
+        tenantRulesDefinition.realmId = "thisdoesnotexist"
         rulesResource.updateTenantDefinition(null, rulesDefinitionId, tenantRulesDefinition)
 
         then: "the request should be bad"
@@ -157,7 +159,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 400
 
         when: "a tenant rules definition is updated with an invalid id"
-        tenantRulesDefinition.realm = MASTER_REALM
+        tenantRulesDefinition.realmId = masterRealmId
         tenantRulesDefinition.id = 1234567890l
         rulesResource.updateTenantDefinition(null, rulesDefinitionId, tenantRulesDefinition)
 
@@ -181,9 +183,9 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 404
 
         when: "a tenant rules definition is created in a non-authenticated realm"
-        tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", "customerA", "ThisShouldBeDRL")
+        tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", customerARealmId, "ThisShouldBeDRL")
         rulesResource.createTenantDefinition(null, tenantRulesDefinition)
-        rulesDefinitionId = rulesResource.getTenantDefinitions(null, "customerA")[1].id
+        rulesDefinitionId = rulesResource.getTenantDefinitions(null, customerARealmId)[1].id
         tenantRulesDefinition = rulesResource.getTenantDefinition(null, rulesDefinitionId)
         lastModified = tenantRulesDefinition.lastModified
 
@@ -194,7 +196,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         lastModified.time < System.currentTimeMillis()
         tenantRulesDefinition.name == "Test tenant definition"
         tenantRulesDefinition.rules == "ThisShouldBeDRL"
-        tenantRulesDefinition.realm == "customerA"
+        tenantRulesDefinition.realmId == customerARealmId
 
         when: "an asset rules definition is created in the authenticated realm"
         def assetRulesDefinition = new AssetRulesDefinition("Test asset definition", managerDemoSetup.smartOfficeId, "ThisShouldBeDRL")
@@ -287,10 +289,12 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "an authenticated test user"
-        def realm = MASTER_REALM
+        def authRealm = MASTER_REALM
+        def masterRealmId = getActiveTenantRealmId(container, MASTER_REALM)
+        def customerARealmId = getActiveTenantRealmId(container, "customerA")
         def accessToken = authenticate(
                 container,
-                realm,
+                authRealm,
                 KEYCLOAK_CLIENT_ID,
                 "testuser1",
                 "testuser1"
@@ -299,7 +303,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         and: "the asset resource"
         def client = createClient(container).build()
         def serverUri = serverUri(serverPort)
-        def rulesResource = getClientTarget(client, serverUri, realm, accessToken).proxy(RulesResource.class)
+        def rulesResource = getClientTarget(client, serverUri, authRealm, accessToken).proxy(RulesResource.class)
 
         /* ############################################## READ ####################################### */
 
@@ -311,14 +315,14 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "some tenant rules are retrieved"
-        ruleDefinitions = rulesResource.getTenantDefinitions(null, MASTER_REALM)
+        ruleDefinitions = rulesResource.getTenantDefinitions(null, masterRealmId)
 
         then: "result should match"
         ruleDefinitions.length == 1
         ruleDefinitions[0].name == "Some master tenant demo rules"
 
         when: "some tenant rules in a non-authenticated realm are retrieved"
-        ruleDefinitions = rulesResource.getTenantDefinitions(null, "customerA")
+        ruleDefinitions = rulesResource.getTenantDefinitions(null, customerARealmId)
 
         then: "access should be forbidden"
         ex = thrown()
@@ -356,9 +360,9 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "a tenant rules definition is created in the authenticated realm"
-        def tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", MASTER_REALM, "ThisShouldBeDRL")
+        def tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", masterRealmId, "ThisShouldBeDRL")
         rulesResource.createTenantDefinition(null, tenantRulesDefinition)
-        def rulesDefinitionId = rulesResource.getTenantDefinitions(null, MASTER_REALM)[1].id
+        def rulesDefinitionId = rulesResource.getTenantDefinitions(null, masterRealmId)[1].id
         tenantRulesDefinition = rulesResource.getTenantDefinition(null, rulesDefinitionId)
         def lastModified = tenantRulesDefinition.lastModified
 
@@ -369,7 +373,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         lastModified.time < System.currentTimeMillis()
         tenantRulesDefinition.name == "Test tenant definition"
         tenantRulesDefinition.rules == "ThisShouldBeDRL"
-        tenantRulesDefinition.realm == MASTER_REALM
+        tenantRulesDefinition.realmId == masterRealmId
 
         when: "a tenant rules definition is updated"
         tenantRulesDefinition.name = "Renamed test tenant definition"
@@ -384,10 +388,10 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         lastModified.time < System.currentTimeMillis()
         tenantRulesDefinition.name == "Renamed test tenant definition"
         tenantRulesDefinition.rules == "ThisShouldBeDRLAsWell"
-        tenantRulesDefinition.realm == MASTER_REALM
+        tenantRulesDefinition.realmId == masterRealmId
 
         when: "a tenant rules definition is updated with an invalid realm"
-        tenantRulesDefinition.realm = "thisdoesnotexist"
+        tenantRulesDefinition.realmId = "thisdoesnotexist"
         rulesResource.updateTenantDefinition(null, rulesDefinitionId, tenantRulesDefinition)
 
         then: "the request should be bad"
@@ -395,7 +399,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 400
 
         when: "a tenant rules definition is updated with an invalid id"
-        tenantRulesDefinition.realm = MASTER_REALM
+        tenantRulesDefinition.realmId = masterRealmId
         tenantRulesDefinition.id = 1234567890l
         rulesResource.updateTenantDefinition(null, rulesDefinitionId, tenantRulesDefinition)
 
@@ -419,7 +423,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 404
 
         when: "a tenant rules definition is created in a non-authenticated realm"
-        tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", "customerA", "ThisShouldBeDRL")
+        tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", customerARealmId, "ThisShouldBeDRL")
         rulesResource.createTenantDefinition(null, tenantRulesDefinition)
 
         then: "access should be forbidden"
@@ -509,10 +513,13 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "an authenticated test user"
-        def realm = "customerA"
+        def authRealm = "customerA"
+        def masterRealmId = getActiveTenantRealmId(container, MASTER_REALM)
+        def customerARealmId = getActiveTenantRealmId(container, "customerA")
+        def customerBRealmId = getActiveTenantRealmId(container, "customerB")
         def accessToken = authenticate(
                 container,
-                realm,
+                authRealm,
                 KEYCLOAK_CLIENT_ID,
                 "testuser2",
                 "testuser2"
@@ -521,7 +528,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         and: "the asset resource"
         def client = createClient(container).build()
         def serverUri = serverUri(serverPort)
-        def rulesResource = getClientTarget(client, serverUri, realm, accessToken).proxy(RulesResource.class)
+        def rulesResource = getClientTarget(client, serverUri, authRealm, accessToken).proxy(RulesResource.class)
 
         /* ############################################## READ ####################################### */
 
@@ -533,14 +540,14 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "some tenant rules in a non-authenticated realm are retrieved"
-        ruleDefinitions = rulesResource.getTenantDefinitions(null, MASTER_REALM)
+        ruleDefinitions = rulesResource.getTenantDefinitions(null, masterRealmId)
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "some tenant rules in the authenticated realm are retrieved"
-        ruleDefinitions = rulesResource.getTenantDefinitions(null, "customerA")
+        ruleDefinitions = rulesResource.getTenantDefinitions(null, customerARealmId)
 
         then: "access should be forbidden"
         ex = thrown()
@@ -578,7 +585,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "a tenant rules definition is created in the authenticated realm"
-        def tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", "customerA", "ThisShouldBeDRL")
+        def tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", customerARealmId, "ThisShouldBeDRL")
         rulesResource.createTenantDefinition(null, tenantRulesDefinition)
 
         then: "access should be forbidden"
@@ -600,7 +607,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "a tenant rules definition is created in a non-authenticated realm"
-        tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", "customerB", "ThisShouldBeDRL")
+        tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", customerBRealmId, "ThisShouldBeDRL")
         rulesResource.createTenantDefinition(null, tenantRulesDefinition)
 
         then: "access should be forbidden"
@@ -608,7 +615,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "a tenant rules definition is created in the authenticated realm"
-        def assetRulesDefinition = new AssetRulesDefinition("Test asset definition", "customerA", "ThisShouldBeDRL")
+        def assetRulesDefinition = new AssetRulesDefinition("Test asset definition", customerARealmId, "ThisShouldBeDRL")
         rulesResource.createAssetDefinition(null, assetRulesDefinition)
 
         then: "access should be forbidden"
@@ -630,7 +637,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "a tenant rules definition is created in a non-authenticated realm"
-        assetRulesDefinition = new AssetRulesDefinition("Test asset definition", "customerB", "ThisShouldBeDRL")
+        assetRulesDefinition = new AssetRulesDefinition("Test asset definition", customerBRealmId, "ThisShouldBeDRL")
         rulesResource.createAssetDefinition(null, assetRulesDefinition)
 
         then: "access should be forbidden"
@@ -649,10 +656,13 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "an authenticated test user"
-        def realm = "customerA"
+        def authRealm = "customerA"
+        def masterRealmId = getActiveTenantRealmId(container, MASTER_REALM)
+        def customerARealmId = getActiveTenantRealmId(container, "customerA")
+        def customerBRealmId = getActiveTenantRealmId(container, "customerB")
         def accessToken = authenticate(
                 container,
-                realm,
+                authRealm,
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
@@ -661,7 +671,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         and: "the asset resource"
         def client = createClient(container).build()
         def serverUri = serverUri(serverPort)
-        def rulesResource = getClientTarget(client, serverUri, realm, accessToken).proxy(RulesResource.class)
+        def rulesResource = getClientTarget(client, serverUri, authRealm, accessToken).proxy(RulesResource.class)
 
         /* ############################################## READ ####################################### */
 
@@ -673,14 +683,14 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "some tenant rules in a non-authenticated realm are retrieved"
-        ruleDefinitions = rulesResource.getTenantDefinitions(null, MASTER_REALM)
+        ruleDefinitions = rulesResource.getTenantDefinitions(null, masterRealmId)
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "some tenant rules in the authenticated realm are retrieved"
-        ruleDefinitions = rulesResource.getTenantDefinitions(null, "customerA")
+        ruleDefinitions = rulesResource.getTenantDefinitions(null, customerARealmId)
 
         then: "access should be forbidden"
         ex = thrown()
@@ -732,7 +742,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "a tenant rules definition is created in the authenticated realm"
-        def tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", "customerA", "ThisShouldBeDRL")
+        def tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", customerARealmId, "ThisShouldBeDRL")
         rulesResource.createTenantDefinition(null, tenantRulesDefinition)
 
         then: "access should be forbidden"
@@ -755,7 +765,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 404
 
         when: "a tenant rules definition is created in a non-authenticated realm"
-        tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", "customerB", "ThisShouldBeDRL")
+        tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", customerBRealmId, "ThisShouldBeDRL")
         rulesResource.createTenantDefinition(null, tenantRulesDefinition)
 
         then: "access should be forbidden"

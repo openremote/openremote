@@ -120,10 +120,10 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     }
 
     @Override
-    public void selectTenant(String realm) {
+    public void selectTenant(String realmId) {
         AssetTreeNode selectedTenantNode = null;
         for (AssetTreeNode tenantNode : tenantNodes) {
-            if (tenantNode.getRealm().equals(realm))
+            if (tenantNode.getId().equals(realmId))
                 selectedTenantNode = tenantNode;
         }
         if (selectedTenantNode != null) {
@@ -179,7 +179,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                 requestParams.setAsync(false);
                 if (parent.isTenant()) {
                     LOG.fine("Loading root assets of: " + parent);
-                    assetResource.getRoot(requestParams, parent.getRealm());
+                    assetResource.getRoot(requestParams, parent.getId());
                 } else if (parent.isRoot()) {
                     LOG.fine("Loading user assets of authenticated user");
                     assetResource.getCurrentUserAssets(requestParams);
@@ -230,7 +230,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         List<String> path = new ArrayList<>();
         if (environment.getSecurityService().isSuperUser()) {
             for (AssetTreeNode tenantNode : tenantNodes) {
-                if (tenantNode.getRealm().equals(asset.getRealm())) {
+                if (tenantNode.getId().equals(asset.getRealmId())) {
                     path.add(tenantNode.getId());
                     break;
                 }

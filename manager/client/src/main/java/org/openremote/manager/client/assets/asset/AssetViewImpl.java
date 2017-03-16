@@ -246,8 +246,8 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     }
 
     @Override
-    public void setRealm(String realm) {
-        realmOutput.setText(realm);
+    public void setTenantDisplayName(String tenantDisplayName) {
+        realmOutput.setText(tenantDisplayName);
     }
 
     @Override
@@ -430,7 +430,7 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
             }
 
             @Override
-            public ManagerMessages getMessages(){
+            public ManagerMessages getMessages() {
                 return managerMessages;
             }
         };

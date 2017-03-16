@@ -75,7 +75,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
             assetId = mapAssetPlace.getAssetId();
         } else if (place instanceof MapTenantPlace) {
             MapTenantPlace mapTenantPlace = (MapTenantPlace) place;
-            realm = mapTenantPlace.getRealm();
+            realm = mapTenantPlace.getRealmId();
         }
         return this;
     }
@@ -87,7 +87,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
 
         registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
             if (event.isTenantSelection()) {
-                onTenantSelected(event.getSelectedNode().getRealm());
+                onTenantSelected(event.getSelectedNode().getId());
             } else if (event.isAssetSelection()) {
                 onAssetSelected(event.getSelectedNode().getId());
             }
@@ -138,8 +138,8 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
         environment.getPlaceController().goTo(new MapAssetPlace(assetId));
     }
 
-    protected void onTenantSelected(String realm) {
-        environment.getPlaceController().goTo(new MapTenantPlace(realm));
+    protected void onTenantSelected(String realmId) {
+        environment.getPlaceController().goTo(new MapTenantPlace(realmId));
     }
 
     protected void loadAsset(String id, Consumer<Asset> assetConsumer) {

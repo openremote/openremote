@@ -128,23 +128,19 @@ public class ManagerIdentityService extends IdentityService {
         );
     }
 
-    public boolean isActiveTenantRealm(String realm) {
-        return Arrays.asList(getActiveTenantRealms()).contains(realm);
-    }
-
     public boolean isActiveTenantRealmId(String realmId) {
         return Arrays.asList(getActiveTenantRealmIds()).contains(realmId);
     }
 
-    public String getActiveTenantDisplayName(String realm) {
+    public String getActiveTenantDisplayName(String realmId) {
         return persistenceService.doReturningTransaction(entityManager -> {
             @SuppressWarnings("unchecked")
             List<String> result = entityManager.createNativeQuery(
                 "select RA.VALUE from REALM R join REALM_ATTRIBUTE RA " +
                     "on R.ID = RA.REALM_ID and RA.NAME = 'displayName' " +
                     "and (R.ENABLED = true and (R.NOT_BEFORE is null or R.NOT_BEFORE = 0 or R.NOT_BEFORE <= extract(epoch from now()))) " +
-                    "and R.NAME = :realm"
-            ).setParameter("realm", realm).getResultList();
+                    "and R.ID = :realmId"
+            ).setParameter("realmId", realmId).getResultList();
             return result.size() > 0 ? result.get(0) : null;
         });
     }
@@ -176,17 +172,6 @@ public class ManagerIdentityService extends IdentityService {
             @SuppressWarnings("unchecked")
             List<String> results = entityManager.createNativeQuery(
                 "select R.ID from REALM R where " +
-                    "(R.ENABLED = true and (R.NOT_BEFORE is null or R.NOT_BEFORE = 0 or R.NOT_BEFORE <= extract(epoch from now()))) "
-            ).getResultList();
-            return results.toArray(new String[results.size()]);
-        });
-    }
-
-    public String[] getActiveTenantRealms() {
-        return persistenceService.doReturningTransaction(entityManager -> {
-            @SuppressWarnings("unchecked")
-            List<String> results = entityManager.createNativeQuery(
-                "select R.NAME from REALM R where " +
                     "(R.ENABLED = true and (R.NOT_BEFORE is null or R.NOT_BEFORE = 0 or R.NOT_BEFORE <= extract(epoch from now()))) "
             ).getResultList();
             return results.toArray(new String[results.size()]);

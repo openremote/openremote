@@ -24,18 +24,18 @@ import com.google.gwt.place.shared.Prefix;
 
 public class MapTenantPlace extends MapPlace {
 
-    final String realm;
+    final String realmId;
 
-    public MapTenantPlace(String realm) {
-        this.realm = realm;
+    public MapTenantPlace(String realmId) {
+        this.realmId = realmId;
     }
 
     public MapTenantPlace() {
-        this.realm = null;
+        this.realmId = null;
     }
 
-    public String getRealm() {
-        return realm;
+    public String getRealmId() {
+        return realmId;
     }
 
     @Prefix("mapTenant")
@@ -48,14 +48,14 @@ public class MapTenantPlace extends MapPlace {
 
         @Override
         public String getToken(MapTenantPlace place) {
-            return place.getRealm() != null ? place.getRealm() : "";
+            return place.getRealmId() != null ? place.getRealmId() : "";
         }
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "realm='" + realm + '\'' +
+            "realm='" + realmId + '\'' +
             '}';
     }
 }

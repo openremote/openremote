@@ -89,9 +89,13 @@ public class GlobalRulesEditorActivity
 
         registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
             if (event.isTenantSelection()) {
-                environment.getPlaceController().goTo(new TenantRulesListPlace(event.getSelectedNode().getRealm()));
+                environment.getPlaceController().goTo(
+                    new TenantRulesListPlace(event.getSelectedNode().getId())
+                );
             } else if (event.isAssetSelection()) {
-                environment.getPlaceController().goTo(new AssetRulesListPlace(event.getSelectedNode().getId()));
+                environment.getPlaceController().goTo(
+                    new AssetRulesListPlace(event.getSelectedNode().getId())
+                );
             }
         }));
 

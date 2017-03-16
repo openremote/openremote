@@ -29,31 +29,31 @@ import java.util.Date;
  * realm, and can only modify asset data in a particular realm.
  */
 @Entity
-@Table(name = "REALM_RULES")
+@Table(name = "TENANT_RULES")
 public class TenantRulesDefinition extends RulesDefinition {
 
-    @Column(name = "REALM", nullable = false)
-    public String realm;
+    @Column(name = "REALM_ID", nullable = false)
+    public String realmId;
 
     public TenantRulesDefinition() {
     }
 
-    public TenantRulesDefinition(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String realm) {
+    public TenantRulesDefinition(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String realmId) {
         super(id, version, createdOn, lastModified, name, enabled);
-        this.realm = realm;
+        this.realmId = realmId;
     }
 
-    public TenantRulesDefinition(String name, String realm, String rules) {
+    public TenantRulesDefinition(String name, String realmId, String rules) {
         super(name, rules);
-        this.realm = realm;
+        this.realmId = realmId;
     }
 
-    public String getRealm() {
-        return realm;
+    public String getRealmId() {
+        return realmId;
     }
 
-    public void setRealm(String realm) {
-        this.realm = realm;
+    public void setRealmId(String realmId) {
+        this.realmId = realmId;
     }
 
     @Override
@@ -62,10 +62,10 @@ public class TenantRulesDefinition extends RulesDefinition {
                 "id='" + id + '\'' +
                 ", version='" + version + '\'' +
                 ", name='" + name + '\'' +
-                ", createOn='" + createdOn + '\'' +
+                ", createdOn='" + createdOn + '\'' +
                 ", lastModified='" + lastModified + '\'' +
                 ", enabled='" + enabled + '\'' +
-                ", realm='" + realm + '\'' +
+                ", realmId='" + realmId + '\'' +
                 '}';
     }
 }

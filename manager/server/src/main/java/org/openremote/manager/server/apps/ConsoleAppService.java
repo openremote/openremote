@@ -60,7 +60,8 @@ public class ConsoleAppService implements ContainerService {
         List<ConsoleApp> result = new ArrayList<>();
         Files.list(managerWebService.getConsoleDocRoot()).forEach(path -> {
             String directoryName = path.getFileName().toString();
-            String tenantDisplayName = identityService.getActiveTenantDisplayName(directoryName);
+            String tenantRealm = identityService.getActiveTenantRealmId(directoryName);
+            String tenantDisplayName = identityService.getActiveTenantDisplayName(tenantRealm);
             if (tenantDisplayName != null) {
                 String appUrl = managerWebService.getConsoleUrl(
                     identityService.getExternalServerUri(),

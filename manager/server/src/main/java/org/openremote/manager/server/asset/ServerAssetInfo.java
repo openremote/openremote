@@ -30,9 +30,16 @@ import java.util.Date;
  */
 public class ServerAssetInfo extends AssetInfo {
 
-    public ServerAssetInfo(String id, long version, String name, Date createdOn, String realm, String type, String parentId, Geometry location) {
+    public ServerAssetInfo(String id,
+                           long version,
+                           String name,
+                           Date createdOn,
+                           String realmId,
+                           String type,
+                           String parentId,
+                           Geometry location) {
         super(
-            id, version, name, createdOn, realm, type, parentId,
+            id, version, name, createdOn, realmId, type, parentId,
             location != null ? new double[]{
                 location.getCoordinate().getOrdinate(Coordinate.X),
                 location.getCoordinate().getOrdinate(Coordinate.Y)

@@ -60,7 +60,7 @@ public interface AssetView extends FormView, IsWidget {
 
     String getName();
 
-    void setRealm(String realm);
+    void setTenantDisplayName(String tenantDisplayName);
 
     void setCreatedOn(Date createdOn);
 

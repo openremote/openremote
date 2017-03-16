@@ -34,18 +34,14 @@ import static org.openremote.container.util.MapAccess.getBoolean;
  * regardless of other configuration options. With developer mode disabled,
  * builtin tasks can be selectively enabled (they are disabled by default), see:
  * <ul>
- * <li>{@link #SETUP_CLEAN_INIT_KEYCLOAK}</li>
- * <li>{@link #SETUP_CLEAN_INIT_MANAGER}</li>
+ * <li>{@link #SETUP_INIT_CLEAN_DATABASE}</li>
  * <li>{@link #SETUP_IMPORT_DEMO_DATA}</li>
  * </ul>
  */
 public class BuiltinSetupTasks extends AbstractSetupTasks {
 
-    public static final String SETUP_CLEAN_INIT_KEYCLOAK = "SETUP_CLEAN_INIT_KEYCLOAK";
-    public static final boolean SETUP_CLEAN_INIT_KEYCLOAK_DEFAULT = false;
-
-    public static final String SETUP_CLEAN_INIT_MANAGER = "SETUP_CLEAN_INIT_MANAGER";
-    public static final boolean SETUP_CLEAN_INIT_MANAGER_DEFAULT = false;
+    public static final String SETUP_INIT_CLEAN_DATABASE = "SETUP_INIT_CLEAN_DATABASE";
+    public static final boolean SETUP_INIT_CLEAN_DATABASE_DEFAULT = false;
 
     public static final String SETUP_IMPORT_DEMO_DATA = "SETUP_IMPORT_DEMO_DATA";
     public static final boolean SETUP_IMPORT_DEMO_DATA_DEFAULT = false;
@@ -55,10 +51,9 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
 
         if (container.isDevMode()) {
 
+            addTask(new ManagerCleanSetup(container));
             addTask(new KeycloakCleanSetup(container));
             addTask(new KeycloakInitSetup(container));
-
-            addTask(new ManagerCleanSetup(container));
             addTask(new ManagerInitSetup(container));
 
             addTask(new KeycloakDemoSetup(container));
@@ -66,13 +61,10 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
 
         } else {
 
-            if (getBoolean(container.getConfig(), SETUP_CLEAN_INIT_KEYCLOAK, SETUP_CLEAN_INIT_KEYCLOAK_DEFAULT)) {
+            if (getBoolean(container.getConfig(), SETUP_INIT_CLEAN_DATABASE, SETUP_INIT_CLEAN_DATABASE_DEFAULT)) {
+                addTask(new ManagerCleanSetup(container));
                 addTask(new KeycloakCleanSetup(container));
                 addTask(new KeycloakInitSetup(container));
-            }
-
-            if (getBoolean(container.getConfig(), SETUP_CLEAN_INIT_MANAGER, SETUP_CLEAN_INIT_MANAGER_DEFAULT)) {
-                addTask(new ManagerCleanSetup(container));
                 addTask(new ManagerInitSetup(container));
             }
 

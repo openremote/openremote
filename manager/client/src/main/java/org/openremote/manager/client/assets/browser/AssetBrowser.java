@@ -44,7 +44,7 @@ public interface AssetBrowser extends IsWidget {
 
         void selectAsset(Asset asset);
 
-        void selectTenant(String realm);
+        void selectTenant(String realmId);
 
         void clearSelection();
     }

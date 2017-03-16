@@ -83,11 +83,29 @@ public class ProtectedAssetInfo extends AssetInfo {
     }
 
     public ProtectedAssetInfo(Asset asset) {
-        this(asset.getId(), asset.getVersion(), asset.getName(), asset.getCreatedOn(), asset.getRealm(), asset.getType(), asset.getParentId(), asset.getCoordinates(), asset.getAttributes());
+        this(
+            asset.getId(),
+            asset.getVersion(),
+            asset.getName(),
+            asset.getCreatedOn(),
+            asset.getRealmId(),
+            asset.getType(),
+            asset.parentId,
+            asset.getCoordinates(),
+            asset.getAttributes()
+        );
     }
 
-    public ProtectedAssetInfo(String id, long version, String name, Date createdOn, String realm, String type, String parentId, double[] coordinates, JsonObject attributes) {
-        super(id, version, name, createdOn, realm, type, parentId, coordinates);
+    public ProtectedAssetInfo(String id,
+                              long version,
+                              String name,
+                              Date createdOn,
+                              String realmId,
+                              String type,
+                              String parentId,
+                              double[] coordinates,
+                              JsonObject attributes) {
+        super(id, version, name, createdOn, realmId, type, parentId, coordinates);
         this.attributes = filterProtectedAttributes(attributes);
     }
 

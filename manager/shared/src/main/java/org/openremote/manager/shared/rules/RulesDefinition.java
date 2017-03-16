@@ -164,7 +164,7 @@ public abstract class RulesDefinition {
                 "id='" + id + '\'' +
                 ", version='" + version + '\'' +
                 ", name='" + name + '\'' +
-                ", createOn='" + createdOn + '\'' +
+                ", createdOn='" + createdOn + '\'' +
                 ", lastModified='" + lastModified + '\'' +
                 ", enabled='" + enabled + '\'' +
                 '}';

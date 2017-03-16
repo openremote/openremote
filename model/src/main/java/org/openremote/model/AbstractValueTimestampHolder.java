@@ -24,8 +24,8 @@ import elemental.json.*;
 /**
  * Base class for all model classes which have to internally store data in a
  * {@link JsonObject} that has a <code>value</code> field that accepts any
- * {@link JsonValue} and a <code>valueTimestamp</code> Unix timestamp field of
- * the most recent value change.
+ * {@link JsonValue} and a <code>valueTimestamp</code> timestamp field, in
+ * milliseconds since the Unix epoch, of the most recent value change.
  */
 public abstract class AbstractValueTimestampHolder<T extends AbstractValueTimestampHolder> extends AbstractValueHolder<T> {
 

@@ -76,8 +76,10 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         // ################################ Demo assets for 'master' realm ###################################
 
+        String masterRealmId = identityService.getActiveTenantRealmId(MASTER_REALM);
+
         ServerAsset smartOffice = new ServerAsset();
-        smartOffice.setRealm(MASTER_REALM);
+        smartOffice.setRealmId(masterRealmId);
         smartOffice.setName("Smart Office");
         smartOffice.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         smartOffice.setType(BUILDING);
@@ -233,8 +235,10 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         // ################################ Demo assets for 'customerA' realm ###################################
 
+        String customerARealmId = identityService.getActiveTenantRealmId("customerA");
+
         ServerAsset smartHome = new ServerAsset();
-        smartHome.setRealm("customerA");
+        smartHome.setRealmId(customerARealmId);
         smartHome.setName("Smart Home");
         smartHome.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
         smartHome.setType(BUILDING);
@@ -353,7 +357,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeTenantDemoRules.drl")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
-            RulesDefinition rulesDefinition = new TenantRulesDefinition("Some customerA tenant demo rules", "customerA", rules);
+            RulesDefinition rulesDefinition = new TenantRulesDefinition("Some customerA tenant demo rules", customerARealmId, rules);
             rulesDefinition.setEnabled(false);
             rulesStorageService.merge(rulesDefinition);
         }

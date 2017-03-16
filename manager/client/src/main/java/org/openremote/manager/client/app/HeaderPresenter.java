@@ -22,6 +22,7 @@ package org.openremote.manager.client.app;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.inject.Inject;
 import org.openremote.manager.client.admin.overview.AdminOverviewPlace;
+import org.openremote.manager.client.apps.AppsPlace;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
@@ -29,9 +30,7 @@ import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
 import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.event.bus.EventBus;
-import org.openremote.manager.client.apps.AppsPlace;
 import org.openremote.manager.client.map.MapAssetPlace;
-import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.map.MapTenantPlace;
 import org.openremote.manager.client.rules.asset.AssetRulesListPlace;
 import org.openremote.manager.client.rules.global.GlobalRulesListPlace;
@@ -94,7 +93,7 @@ public class HeaderPresenter implements HeaderView.Presenter {
             return;
         }
         if (assetBrowserSelection.isTenantSelection()) {
-            placeController.goTo(new MapTenantPlace(assetBrowserSelection.getSelectedNode().getRealm()));
+            placeController.goTo(new MapTenantPlace(assetBrowserSelection.getSelectedNode().getId()));
         } else if (assetBrowserSelection.isAssetSelection()){
             placeController.goTo(new MapAssetPlace(assetBrowserSelection.getSelectedNode().getId()));
         } else {
@@ -109,7 +108,7 @@ public class HeaderPresenter implements HeaderView.Presenter {
             return;
         }
         if (assetBrowserSelection.isTenantSelection()) {
-            placeController.goTo(new AssetsTenantPlace(assetBrowserSelection.getSelectedNode().getRealm()));
+            placeController.goTo(new AssetsTenantPlace(assetBrowserSelection.getSelectedNode().getId()));
         } else if (assetBrowserSelection.isAssetSelection()){
             placeController.goTo(new AssetPlace(assetBrowserSelection.getSelectedNode().getId()));
         } else {
@@ -124,7 +123,7 @@ public class HeaderPresenter implements HeaderView.Presenter {
             return;
         }
         if (assetBrowserSelection.isTenantSelection()) {
-            placeController.goTo(new TenantRulesListPlace(assetBrowserSelection.getSelectedNode().getRealm()));
+            placeController.goTo(new TenantRulesListPlace(assetBrowserSelection.getSelectedNode().getId()));
         } else if (assetBrowserSelection.isAssetSelection()){
             placeController.goTo(new AssetRulesListPlace(assetBrowserSelection.getSelectedNode().getId()));
         } else {

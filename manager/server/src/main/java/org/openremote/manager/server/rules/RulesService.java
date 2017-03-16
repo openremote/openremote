@@ -72,7 +72,7 @@ public class RulesService implements ContainerService, Consumer<AssetUpdate> {
     @Override
     public void start(Container container) throws Exception {
         // Get active tenants
-        String[] activeTenantNames = identityService.getActiveTenantRealms();
+        String[] activeTenantRealmIds = identityService.getActiveTenantRealmIds();
 
         // Deploy global rules
         List<GlobalRulesDefinition> enabledGlobalDefinitions = rulesStorageService.findEnabledGlobalDefinitions();
@@ -96,8 +96,8 @@ public class RulesService implements ContainerService, Consumer<AssetUpdate> {
                 .stream()
                 .filter(rd ->
                         Arrays
-                                .stream(activeTenantNames)
-                                .anyMatch(activeTenant -> rd.getRealm().equals(activeTenant))
+                                .stream(activeTenantRealmIds)
+                                .anyMatch(activeTenantRealmId -> rd.getRealmId().equals(activeTenantRealmId))
                 ).collect(Collectors.toList());
 
 
@@ -123,11 +123,11 @@ public class RulesService implements ContainerService, Consumer<AssetUpdate> {
                 .map(es ->
                         new Pair<>(assetStorageService.find(es.getKey()), es.getValue())
                 )
-                .collect(Collectors.groupingBy(assetAndRules -> assetAndRules.key.getRealm()))
+                .collect(Collectors.groupingBy(assetAndRules -> assetAndRules.key.getRealmId()))
                 .entrySet()
                 .stream()
                 .filter(es -> Arrays
-                        .stream(activeTenantNames)
+                        .stream(activeTenantRealmIds)
                         .anyMatch(at -> es.getKey().equals(at)))
                 .forEach(e ->
                         deployTenantAssetRulesDefinitions(e.getValue())
@@ -221,8 +221,8 @@ public class RulesService implements ContainerService, Consumer<AssetUpdate> {
     protected synchronized void deployTenantRulesDefinition(TenantRulesDefinition rulesDefinition, String rules) {
         // Look for existing deployment for this tenant
         RulesDeployment<TenantRulesDefinition> deployment = tenantDeployments
-                .computeIfAbsent(rulesDefinition.getRealm(), (realm) ->
-                    new RulesDeployment<>(TenantRulesDefinition.class, rulesDefinition.getRealm())
+                .computeIfAbsent(rulesDefinition.getRealmId(), (realm) ->
+                    new RulesDeployment<>(TenantRulesDefinition.class, rulesDefinition.getRealmId())
                 );
 
         deployment.addRulesDefinition(rulesDefinition, rules);
@@ -269,7 +269,7 @@ public class RulesService implements ContainerService, Consumer<AssetUpdate> {
         }
 
         // Add tenant engine (if it exists)
-        RulesDeployment tenantDeployment = tenantDeployments.get(asset.getRealm());
+        RulesDeployment tenantDeployment = tenantDeployments.get(asset.getRealmId());
 
         if (tenantDeployment != null) {
          rulesDeployments.add(tenantDeployment);

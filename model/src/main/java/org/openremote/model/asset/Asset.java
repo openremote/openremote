@@ -37,9 +37,11 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
  * of assets can be managed through a <code>null</code> {@link #parentId} property for root
  * assets, and a valid parent identifier for sub-assets.
  * <p>
- * An asset is stored in and therefore access-controlled through a {@link #realm}.
+ * An asset is stored in and therefore access-controlled through a {@link #realmId}, the
+ * transient properties {@link #tenantRealm} (the realm name) and {@link #tenantDisplayName} are
+ * also resolved and available when the asset is loaded from storage.
  * <p>
- * The {@link #createdOn} value is Unix time.
+ * The {@link #createdOn} value is milliseconds since the Unix epoch.
  * <p>
  * The {@link #type} of the asset is an arbitrary string, it should be a URI, thus avoiding
  * collisions and representing "ownership" of asset type. Well-known asset types handled by
@@ -60,7 +62,9 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 {
   "id": "0oI7Gf_kTh6WyRJFUTr8Lg",
   "version": 0,
-  "realm": "customerA",
+  "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248"
+  "tenant": "customerA",
+  "tenantDisplayName": "Customer A",
   "createdOn": 1489042784142,
   "name": "Smart Home",
   "type": "urn:openremote:asset:building",
@@ -77,7 +81,9 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 {
   "id": "B0x8ZOqZQHGjq_l0RxAJBA",
   "version": 0,
-  "realm": "customerA",
+  "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248"
+  "tenant": "customerA",
+  "tenantDisplayName": "Customer A",
   "createdOn": 1489042784148,
   "name": "Apartment 1",
   "type": "urn:openremote:asset:residence",
@@ -96,7 +102,9 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 {
   "id": "bzlRiJmSSMCl8HIUt9-lMg",
   "version": 0,
-  "realm": "customerA",
+  "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248"
+  "tenant": "customerA",
+  "tenantDisplayName": "Customer A",
   "createdOn": 1489042784157,
   "name": "Livingroom",
   "type": "urn:openremote:asset:room",
@@ -116,7 +124,9 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 {
   "id": "W7GV_lFeQVyHLlgHgE3dEQ",
   "version": 0,
-  "realm": "customerA",
+  "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248"
+  "tenant": "customerA",
+  "tenantDisplayName": "Customer A",
   "createdOn": 1489042784164,
   "name": "Livingroom Thermostat",
   "type": "urn:openremote:asset:thing",
@@ -156,11 +166,13 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
         }
       ],
       "type": "Decimal",
-      "value": 19.2
+      "value": 19.2,
+      "valueTimestamp": 1.489670166115E12
     },
     "somethingPrivate": {
       "type": "String",
-      "value": "Foobar"
+      "value": "Foobar",
+      "valueTimestamp": 1.489670156115E12
     }
   }
 }
@@ -181,8 +193,8 @@ public class Asset implements IdentifiableEntity {
     protected long version;
 
     @NotNull
-    @Column(name = "TENANT_REALM", nullable = false)
-    protected String realm;
+    @Column(name = "REALM_ID", nullable = false)
+    protected String realmId;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CREATED_ON", updatable = false, nullable = false)
@@ -205,6 +217,12 @@ public class Asset implements IdentifiableEntity {
     protected JsonObject attributes;
 
     @Transient
+    protected String tenantRealm;
+
+    @Transient
+    protected String tenantDisplayName;
+
+    @Transient
     protected String[] path;
 
     @Transient
@@ -217,8 +235,8 @@ public class Asset implements IdentifiableEntity {
         this(null, name, type);
     }
 
-    public Asset(String realm, String name, String type) {
-        this.realm = realm;
+    public Asset(String realmId, String name, String type) {
+        this.realmId = realmId;
         this.name = name;
         this.type = type;
     }
@@ -232,7 +250,7 @@ public class Asset implements IdentifiableEntity {
     }
 
     public Asset(Asset parent) {
-        this.realm = parent.getRealm();
+        this.realmId = parent.getRealmId();
         this.parentId = parent.getId();
     }
 
@@ -252,12 +270,12 @@ public class Asset implements IdentifiableEntity {
         this.version = version;
     }
 
-    public String getRealm() {
-        return realm;
+    public String getRealmId() {
+        return realmId;
     }
 
-    public void setRealm(String realm) {
-        this.realm = realm;
+    public void setRealmId(String realmId) {
+        this.realmId = realmId;
     }
 
     public Date getCreatedOn() {
@@ -294,6 +312,22 @@ public class Asset implements IdentifiableEntity {
 
     public void setParentId(String parentId) {
         this.parentId = parentId;
+    }
+
+    public String getTenantRealm() {
+        return tenantRealm;
+    }
+
+    public void setTenantRealm(String tenantRealm) {
+        this.tenantRealm = tenantRealm;
+    }
+
+    public String getTenantDisplayName() {
+        return tenantDisplayName;
+    }
+
+    public void setTenantDisplayName(String tenantDisplayName) {
+        this.tenantDisplayName = tenantDisplayName;
     }
 
     public JsonObject getAttributes() {
@@ -346,13 +380,8 @@ public class Asset implements IdentifiableEntity {
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "id='" + id + '\'' +
-            ", realm='" + realm + '\'' +
             ", name='" + name + '\'' +
-            ", createOn='" + createdOn + '\'' +
             ", type ='" + type + '\'' +
-            ", parent ='" + parentId + '\'' +
-            ", path ='" + Arrays.toString(path) + '\'' +
-            ", coordinates ='" + Arrays.toString(coordinates) + '\'' +
             '}';
     }
 }

@@ -49,11 +49,11 @@ public interface RulesResource {
      * An empty result will be returned if the realm can not be found.
      */
     @GET
-    @Path("tenant/for/{realm}")
+    @Path("tenant/for/{realmId}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:rules"})
-    TenantRulesDefinition[] getTenantDefinitions(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
+    TenantRulesDefinition[] getTenantDefinitions(@BeanParam RequestParams requestParams, @PathParam("realmId") String realmId);
 
     /**
      * Retrieve rules of an asset. The superuser can retrieve rules of all realms and assets, a 403 status

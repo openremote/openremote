@@ -28,7 +28,6 @@ import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.rules.asset.AssetRulesListPlace;
-import org.openremote.manager.client.rules.global.GlobalRulesEditorPlace;
 import org.openremote.manager.shared.rules.RulesResource;
 import org.openremote.manager.shared.rules.TenantRulesDefinition;
 
@@ -45,7 +44,7 @@ public class TenantRulesListActivity
     final TenantRulesDefinitionArrayMapper tenantRulesDefinitionArrayMapper;
     final RulesResource rulesResource;
 
-    String realm;
+    String realmId;
 
     @Inject
     public TenantRulesListActivity(Environment environment,
@@ -61,7 +60,7 @@ public class TenantRulesListActivity
 
     @Override
     protected AppActivity<TenantRulesListPlace> init(TenantRulesListPlace place) {
-        this.realm = place.getRealm();
+        this.realmId = place.getRealmId();
         return this;
     }
 
@@ -72,20 +71,24 @@ public class TenantRulesListActivity
 
         registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
             if (event.isTenantSelection()) {
-                environment.getPlaceController().goTo(new TenantRulesListPlace(event.getSelectedNode().getRealm()));
+                environment.getPlaceController().goTo(
+                    new TenantRulesListPlace(event.getSelectedNode().getId())
+                );
             } else if (event.isAssetSelection()) {
-                environment.getPlaceController().goTo(new AssetRulesListPlace(event.getSelectedNode().getId()));
+                environment.getPlaceController().goTo(
+                    new AssetRulesListPlace(event.getSelectedNode().getId())
+                );
             }
         }));
 
-        if (realm != null) {
-            view.setRealmLabel(realm);
+        if (realmId != null) {
+            view.setRealmLabel(realmId);
 
-            assetBrowserPresenter.selectTenant(realm);
+            assetBrowserPresenter.selectTenant(realmId);
 
             environment.getRequestService().execute(
                 tenantRulesDefinitionArrayMapper,
-                params -> rulesResource.getTenantDefinitions(params, realm),
+                params -> rulesResource.getTenantDefinitions(params, realmId),
                 200,
                 view::setRulesDefinitions,
                 ex -> handleRequestException(ex, environment)

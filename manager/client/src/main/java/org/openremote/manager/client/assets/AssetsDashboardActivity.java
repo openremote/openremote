@@ -58,9 +58,13 @@ public class AssetsDashboardActivity
 
         registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
             if (event.isTenantSelection()) {
-                environment.getPlaceController().goTo(new AssetsTenantPlace(event.getSelectedNode().getRealm()));
+                environment.getPlaceController().goTo(
+                    new AssetsTenantPlace(event.getSelectedNode().getId())
+                );
             } else if (event.isAssetSelection()) {
-                environment.getPlaceController().goTo(new AssetPlace(event.getSelectedNode().getId()));
+                environment.getPlaceController().goTo(
+                    new AssetPlace(event.getSelectedNode().getId())
+                );
             }
         }));
 

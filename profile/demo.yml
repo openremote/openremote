@@ -39,9 +39,8 @@ services:
       # If you are not running in developer mode, and this is the first time you are starting
       # the application, you can configure which setup tasks you want to execute. Careful,
       # these tasks will clean and populate Keycloak and the Manager database with demo data!
-      SETUP_CLEAN_INIT_KEYCLOAK: 'true'
+      SETUP_INIT_CLEAN_DATABASE: 'true'
       SETUP_KEYCLOAK_ADMIN_PASSWORD: secret
-      SETUP_CLEAN_INIT_MANAGER: 'true'
       SETUP_IMPORT_DEMO_DATA: 'true'
 
       # The service-internal interface and port to listen on. This should not be changed.

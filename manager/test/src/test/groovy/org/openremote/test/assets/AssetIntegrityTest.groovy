@@ -26,6 +26,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         and: "an authenticated admin user"
         def realm = MASTER_REALM
+        def realmId = getActiveTenantRealmId(container, realm)
         def accessToken = authenticate(
                 container,
                 realm,
@@ -40,7 +41,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         def assetResource = getClientTarget(client, serverUri, realm, accessToken).proxy(AssetResource.class)
 
         when: "an asset is created in the authenticated realm"
-        def testAsset = new Asset(MASTER_REALM, "Test Room", AssetType.ROOM)
+        def testAsset = new Asset(realmId, "Test Room", AssetType.ROOM)
         testAsset.setId(IdentifierUtil.generateGlobalUniqueId())
         assetResource.create(null, testAsset)
         testAsset = assetResource.get(null, testAsset.getId())
@@ -48,7 +49,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         then: "the asset should exist"
         testAsset.name == "Test Room"
         testAsset.wellKnownType == AssetType.ROOM
-        testAsset.realm == MASTER_REALM
+        testAsset.realmId == realmId
         testAsset.parentId == null
 
         when: "an asset is updated with a different type"
@@ -60,7 +61,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         testAsset.wellKnownType == AssetType.ROOM
 
         when: "an asset is updated with a non-existent realm"
-        testAsset.setRealm("thisdoesnotexistitreallydoesnt")
+        testAsset.setRealmId("thisdoesnotexistitreallydoesnt")
         assetResource.update(null, testAsset.id, testAsset)
 
         then: "the request should be bad"

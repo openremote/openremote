@@ -64,7 +64,8 @@ public class AssetActivity
     Asset asset;
     boolean isCreateAsset;
     double[] selectedCoordinates;
-    String realm;
+    String realmId;
+    String tenantDisplayName;
     Asset parentAsset;
     boolean isParentSelection;
     AttributesEditor attributesEditor;
@@ -98,7 +99,7 @@ public class AssetActivity
 
         registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
             if (event.isTenantSelection()) {
-                onTenantSelected(event.getSelectedNode().getRealm());
+                onTenantSelected(event.getSelectedNode().getId());
             } else if (event.isAssetSelection()) {
                 onAssetSelected(event.getSelectedNode().getId());
             }
@@ -263,7 +264,8 @@ public class AssetActivity
         view.setParentSelection(false);
         if (asset.getParentId() != null) {
             loadAsset(asset.getParentId(), loadedParentAsset -> {
-                this.realm = loadedParentAsset.getRealm();
+                this.realmId = loadedParentAsset.getRealmId();
+                this.tenantDisplayName = loadedParentAsset.getTenantDisplayName();
                 this.parentAsset = loadedParentAsset;
                 writeParentToView();
             });
@@ -292,11 +294,9 @@ public class AssetActivity
     protected void startCreateAsset() {
         assetBrowserPresenter.clearSelection();
         isCreateAsset = true;
-        realm = environment.getSecurityService().getAuthenticatedRealm();
         view.setFormBusy(true);
         asset = new Asset();
         asset.setName("My New Asset");
-        asset.setRealm(realm);
         asset.setType("urn:mydomain:customtype");
         writeToView();
         clearViewFieldErrors();
@@ -314,7 +314,8 @@ public class AssetActivity
 
     protected void onAssetLoaded() {
         isCreateAsset = false;
-        realm = asset.getRealm();
+        realmId = asset.getRealmId();
+        tenantDisplayName = asset.getTenantDisplayName();
         writeToView();
         clearViewFieldErrors();
         view.clearFormMessages();
@@ -335,13 +336,13 @@ public class AssetActivity
         }
     }
 
-    protected void onTenantSelected(String realm) {
+    protected void onTenantSelected(String realmId) {
         if (isParentSelection) {
             this.parentAsset = null;
-            this.realm = realm;
+            this.realmId = realmId;
             writeParentToView();
         } else {
-            environment.getPlaceController().goTo(new AssetsTenantPlace(this.realm));
+            environment.getPlaceController().goTo(new AssetsTenantPlace(this.realmId));
         }
     }
 
@@ -353,7 +354,8 @@ public class AssetActivity
                         new ShowInfoEvent(environment.getMessages().invalidAssetParent())
                     );
                 } else {
-                    this.realm = loadedParentAsset.getRealm();
+                    this.realmId = loadedParentAsset.getRealmId();
+                    this.tenantDisplayName = loadedParentAsset.getTenantDisplayName();
                     parentAsset = loadedParentAsset;
                     writeParentToView();
                 }
@@ -365,7 +367,7 @@ public class AssetActivity
 
     protected void writeToView() {
         view.setName(asset.getName());
-        view.setRealm(asset.getRealm());
+        view.setTenantDisplayName(asset.getTenantDisplayName());
         view.setCreatedOn(asset.getCreatedOn());
         view.setLocation(asset.getCoordinates());
         if (asset != null && asset.getId() != null) {
@@ -381,7 +383,7 @@ public class AssetActivity
 
     protected void writeParentToView() {
         view.setParent(parentAsset != null ? parentAsset.getName() : environment.getMessages().assetHasNoParent());
-        view.setRealm(realm);
+        view.setTenantDisplayName(parentAsset != null ? parentAsset.getTenantDisplayName() : "-");
     }
 
     protected void writeTypeToView() {
@@ -436,10 +438,10 @@ public class AssetActivity
 
     protected void readParent() {
         if (parentAsset != null) {
-            asset.setRealm(parentAsset.getRealm());
+            asset.setRealmId(parentAsset.getRealmId());
             asset.setParentId(parentAsset.getId());
         } else {
-            asset.setRealm(realm);
+            asset.setRealmId(realmId);
             asset.setParentId(null);
         }
     }

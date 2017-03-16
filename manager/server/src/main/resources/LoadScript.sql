@@ -1,5 +1,11 @@
-alter table REALM_RULES
-  add foreign key (REALM) references REALM (NAME) on update cascade on delete cascade;
+alter table ASSET
+  add foreign key (REALM_ID) references REALM (ID);
+
+alter table ASSET_DATAPOINT
+  add foreign key (ENTITY_ID) references ASSET (ID) on delete cascade;
+
+alter table TENANT_RULES
+  add foreign key (REALM_ID) references REALM (ID);
 
 alter table ASSET_RULES
   add foreign key (ASSET_ID) references ASSET (ID) on delete cascade;

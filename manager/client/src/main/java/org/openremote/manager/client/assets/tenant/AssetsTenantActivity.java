@@ -48,7 +48,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
 
     @Override
     protected AppActivity<AssetsTenantPlace> init(AssetsTenantPlace place) {
-        this.realm = place.getRealm();
+        this.realm = place.getRealmId();
         return this;
     }
 
@@ -59,9 +59,13 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
 
         registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
             if (event.isTenantSelection()) {
-                environment.getPlaceController().goTo(new AssetsTenantPlace(event.getSelectedNode().getRealm()));
+                environment.getPlaceController().goTo(
+                    new AssetsTenantPlace(event.getSelectedNode().getId())
+                );
             } else if (event.isAssetSelection()){
-                environment.getPlaceController().goTo(new AssetPlace(event.getSelectedNode().getId()));
+                environment.getPlaceController().goTo(
+                    new AssetPlace(event.getSelectedNode().getId())
+                );
             }
         }));
 
