@@ -19,14 +19,20 @@
  */
 package org.openremote.manager.client.rules;
 
+import com.google.gwt.core.client.JsArray;
+import com.google.gwt.dom.client.LabelElement;
+import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.uibinder.client.UiField;
+import com.google.gwt.uibinder.client.UiHandler;
+import com.google.gwt.user.client.ui.FileUpload;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.inject.Provider;
+import elemental.client.Browser;
+import elemental.html.Blob;
+import elemental.html.FileReader;
 import org.openremote.manager.client.app.dialog.ConfirmationDialog;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
-import org.openremote.manager.client.widget.FormGroup;
-import org.openremote.manager.client.widget.FormInputText;
-import org.openremote.manager.client.widget.FormViewImpl;
+import org.openremote.manager.client.widget.*;
 
 public abstract class AbstractRulesEditor<P extends RulesEditor.Presenter>
     extends FormViewImpl
@@ -40,13 +46,61 @@ public abstract class AbstractRulesEditor<P extends RulesEditor.Presenter>
     @UiField
     public FormInputText nameInput;
 
+    @UiField
+    public LabelElement rulesFileUploadLabel;
+    @UiField
+    public FileUpload rulesFileUpload;
+
+    @UiField
+    public FormGroup enabledGroup;
+    @UiField
+    public FormCheckBox enabledCheckBox;
+
+    @UiField
+    public FormGroup rulesGroup;
+    @UiField
+    public FormTextArea rulesTextArea;
+
+    @UiField
+    public FormGroup submitButtonGroup;
+    @UiField
+    public PushButton createButton;
+    @UiField
+    public PushButton updateButton;
+    @UiField
+    public PushButton deleteButton;
+
     final AssetBrowser assetBrowser;
     protected P presenter;
 
     public AbstractRulesEditor(Provider<ConfirmationDialog> confirmationDialogProvider, AssetBrowser assetBrowser) {
         super(confirmationDialogProvider);
         this.assetBrowser = assetBrowser;
+
+        initComposite();
+
+        rulesFileUpload.addChangeHandler(event -> {
+            rulesFileUploadLabel.removeClassName("error");
+            JsArray files = (JsArray) rulesFileUpload.getElement().getPropertyJSO("files");
+            if (files.length() != 1)
+                return;
+            Blob file = (Blob) files.get(0);
+            if (file.getType().matches("text.*") || rulesFileUpload.getFilename().endsWith(".drl")) {
+                final FileReader reader = Browser.getWindow().newFileReader();
+                reader.setOnloadend(evt -> setRules(reader.getResult().toString()));
+                reader.readAsText(file, "UTF-8");
+            } else {
+                if (!rulesFileUploadLabel.hasClassName("error")) {
+                    rulesFileUploadLabel.addClassName("error");
+                    Browser.getWindow().setTimeout(() -> {
+                        rulesFileUploadLabel.removeClassName("error");
+                    }, 1000);
+                }
+            }
+        });
     }
+
+    abstract protected void initComposite();
 
     @Override
     public void setPresenter(P presenter) {
@@ -58,8 +112,13 @@ public abstract class AbstractRulesEditor<P extends RulesEditor.Presenter>
             sidebarContainer.clear();
 
             // Restore initial state of view
+            nameGroup.setError(false);
             nameInput.setValue(null);
-
+            enabledCheckBox.setValue(true);
+            rulesTextArea.setValue(null);
+            createButton.setVisible(false);
+            updateButton.setVisible(false);
+            deleteButton.setVisible(false);
         }
     }
 
@@ -71,6 +130,64 @@ public abstract class AbstractRulesEditor<P extends RulesEditor.Presenter>
     @Override
     public String getName() {
         return nameInput.getValue().length() > 0 ? nameInput.getValue() : null;
+    }
+
+    @Override
+    public void setNameError(boolean error) {
+        nameGroup.setError(error);
+    }
+
+    @Override
+    public void setRulesetEnabled(Boolean enabled) {
+        enabledCheckBox.setValue(enabled != null ? enabled : false);
+    }
+
+    @Override
+    public boolean getRulesetEnabled() {
+        return enabledCheckBox.getValue();
+    }
+
+    @Override
+    public void setRules(String rules) {
+        rulesTextArea.setText(rules);
+    }
+
+    @Override
+    public String getRules() {
+        return rulesTextArea.getText();
+    }
+
+    @Override
+    public void enableCreate(boolean enable) {
+        createButton.setVisible(enable);
+    }
+
+    @Override
+    public void enableUpdate(boolean enable) {
+        updateButton.setVisible(enable);
+    }
+
+    @Override
+    public void enableDelete(boolean enable) {
+        deleteButton.setVisible(enable);
+    }
+
+    @UiHandler("updateButton")
+    public void updateClicked(ClickEvent e) {
+        if (presenter != null)
+            presenter.update();
+    }
+
+    @UiHandler("createButton")
+    public void createClicked(ClickEvent e) {
+        if (presenter != null)
+            presenter.create();
+    }
+
+    @UiHandler("deleteButton")
+    public void deleteClicked(ClickEvent e) {
+        if (presenter != null)
+            presenter.delete();
     }
 
 }

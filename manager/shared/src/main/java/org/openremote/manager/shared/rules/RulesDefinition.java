@@ -21,6 +21,7 @@ package org.openremote.manager.shared.rules;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 
 import java.util.Date;
 
@@ -67,8 +68,9 @@ public abstract class RulesDefinition {
     @Column(name = "LAST_MODIFIED", nullable = false)
     protected Date lastModified;
 
-    @NotNull
+    @NotNull(message = "{RulesDefinition.name.NotNull}")
     @Column(name = "NAME", nullable = false)
+    @Size(min = 3, max = 255, message = "{RulesDefinition.name.Size}")
     protected String name;
 
     @Column(name = "ENABLED", nullable = false)
@@ -112,8 +114,12 @@ public abstract class RulesDefinition {
 
     @PreUpdate
     @PrePersist
-    public void setLastModified() {
-        this.lastModified = new Date();
+    public void updateLastModified() { // Don't call this setLastModified(), it confuses gwt-jackson
+        setLastModified(new Date());
+    }
+
+    public void setLastModified(Date lastModified) {
+        this.lastModified = lastModified;
     }
 
     public Date getLastModified() {

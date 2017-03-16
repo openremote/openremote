@@ -39,9 +39,11 @@ public class GlobalRulesEditorImpl
     @Inject
     public GlobalRulesEditorImpl(Provider<ConfirmationDialog> confirmationDialogProvider, AssetBrowser assetBrowser) {
         super(confirmationDialogProvider, assetBrowser);
+    }
 
+    @Override
+    protected void initComposite() {
         GlobalRulesEditorImpl.UI ui = GWT.create(GlobalRulesEditorImpl.UI.class);
         initWidget(ui.createAndBindUi(this));
     }
-
 }

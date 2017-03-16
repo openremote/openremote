@@ -31,26 +31,25 @@ import org.openremote.container.Container;
 import org.openremote.manager.server.agent.AgentAttributes;
 import org.openremote.manager.server.agent.ThingAttributes;
 import org.openremote.manager.server.asset.ServerAsset;
-import org.openremote.manager.server.security.UserConfiguration;
 import org.openremote.manager.server.setup.AbstractManagerSetup;
 import org.openremote.manager.shared.rules.AssetRulesDefinition;
 import org.openremote.manager.shared.rules.GlobalRulesDefinition;
 import org.openremote.manager.shared.rules.RulesDefinition;
 import org.openremote.manager.shared.rules.TenantRulesDefinition;
 import org.openremote.model.*;
-import org.openremote.model.asset.*;
+import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.AssetType;
+import org.openremote.model.asset.ProtocolConfiguration;
 import org.openremote.model.units.AttributeUnits;
 import org.openremote.model.units.ColorRGB;
 
 import java.io.InputStream;
 import java.nio.charset.Charset;
 
-import static org.openremote.model.Constants.*;
 import static org.openremote.model.AttributeType.*;
+import static org.openremote.model.Constants.MASTER_REALM;
 import static org.openremote.model.asset.AssetMeta.*;
-import static org.openremote.model.asset.AssetType.RESIDENCE;
-import static org.openremote.model.asset.AssetType.BUILDING;
-import static org.openremote.model.asset.AssetType.ROOM;
+import static org.openremote.model.asset.AssetType.*;
 
 public class ManagerDemoSetup extends AbstractManagerSetup {
 
@@ -361,20 +360,20 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeAssetDemoRules.drl")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
-            RulesDefinition rulesDefinition = new AssetRulesDefinition("Some apartment 1 demo rules", apartment1Id , rules);
+            RulesDefinition rulesDefinition = new AssetRulesDefinition("Some apartment 1 demo rules", apartment1Id, rules);
             rulesStorageService.merge(rulesDefinition);
         }
 
         try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeAssetDemoRules.drl")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
-            RulesDefinition rulesDefinition = new AssetRulesDefinition("Some apartment 2 demo rules", apartment2Id , rules);
+            RulesDefinition rulesDefinition = new AssetRulesDefinition("Some apartment 2 demo rules", apartment2Id, rules);
             rulesDefinition.setEnabled(false);
             rulesStorageService.merge(rulesDefinition);
         }
 
         try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeAssetDemoRules.drl")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
-            RulesDefinition rulesDefinition = new AssetRulesDefinition("Some apartment 3 demo rules", apartment3Id , rules);
+            RulesDefinition rulesDefinition = new AssetRulesDefinition("Some apartment 3 demo rules", apartment3Id, rules);
             rulesStorageService.merge(rulesDefinition);
         }
 

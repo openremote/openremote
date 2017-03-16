@@ -308,4 +308,20 @@ public interface ManagerMessages extends Messages {
     String manageTenantAssets();
 
     String manageAssetRulesets();
+
+    String ruleset();
+
+    String uploadRulesFile();
+
+    String updateRuleset();
+
+    String createRuleset();
+
+    String deleteRuleset();
+
+    String rulesetCreated(String name);
+
+    String rulesetDeleted(String name);
+
+    String rulesetUpdated(String name);
 }

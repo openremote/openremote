@@ -161,6 +161,10 @@ public class RulesStorageService implements ContainerService {
     }
 
     protected <T extends RulesDefinition> String[] getRules(List<T> rulesDefinitions, Class<T> clazz) {
+        if (rulesDefinitions == null || rulesDefinitions.size() == 0) {
+            return new String[0];
+        }
+        
         List<Long> ids = rulesDefinitions
                 .stream()
                 .map(rd -> rd.getId())

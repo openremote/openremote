@@ -28,7 +28,6 @@ import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
-import org.openremote.manager.client.rules.global.GlobalRulesEditorPlace;
 import org.openremote.manager.client.rules.tenant.TenantRulesListPlace;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.rules.AssetRulesDefinition;
@@ -122,7 +121,7 @@ public class AssetRulesListActivity
 
     @Override
     public void createRule() {
-        environment.getPlaceController().goTo(new GlobalRulesEditorPlace());
+        // TODO environment.getPlaceController().goTo(new AssetRulesEditorPlace());
     }
 
     protected void loadAsset(String id, Consumer<Asset> assetConsumer) {

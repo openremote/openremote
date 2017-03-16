@@ -106,7 +106,7 @@ public class TenantRulesListActivity
 
     @Override
     public void createRule() {
-        environment.getPlaceController().goTo(new GlobalRulesEditorPlace());
+        // TODO environment.getPlaceController().goTo(new TenantRulesEditorPlace());
     }
 
 }

@@ -24,6 +24,7 @@ import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
+import org.openremote.manager.client.event.ShowInfoEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
@@ -31,6 +32,8 @@ import org.openremote.manager.client.rules.asset.AssetRulesListPlace;
 import org.openremote.manager.client.rules.tenant.TenantRulesListPlace;
 import org.openremote.manager.shared.rules.GlobalRulesDefinition;
 import org.openremote.manager.shared.rules.RulesResource;
+import org.openremote.manager.shared.validation.ConstraintViolation;
+import org.openremote.model.Consumer;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -44,6 +47,7 @@ public class GlobalRulesEditorActivity
     final GlobalRulesEditor view;
     final GlobalRulesDefinitionMapper globalRulesDefinitionMapper;
     final RulesResource rulesResource;
+    final Consumer<ConstraintViolation[]> validationErrorHandler;
 
     Long definitionId;
     GlobalRulesDefinition rulesDefinition;
@@ -58,6 +62,18 @@ public class GlobalRulesEditorActivity
         this.view = view;
         this.globalRulesDefinitionMapper = globalRulesDefinitionMapper;
         this.rulesResource = rulesResource;
+
+        validationErrorHandler = violations -> {
+            for (ConstraintViolation violation : violations) {
+                if (violation.getPath() != null) {
+                    if (violation.getPath().endsWith("name")) {
+                        view.setNameError(true);
+                    }
+                }
+                view.addFormMessageError(violation.getMessage());
+            }
+            view.setFormBusy(false);
+        };
     }
 
     @Override
@@ -78,6 +94,9 @@ public class GlobalRulesEditorActivity
                 environment.getPlaceController().goTo(new AssetRulesListPlace(event.getSelectedNode().getId()));
             }
         }));
+
+        view.clearFormMessages();
+        clearViewFieldErrors();
 
         if (definitionId != null) {
             environment.getRequestService().execute(
@@ -102,7 +121,96 @@ public class GlobalRulesEditorActivity
         view.setPresenter(null);
     }
 
+    @Override
+    public void update() {
+        view.setFormBusy(true);
+        view.clearFormMessages();
+        clearViewFieldErrors();
+        readFromView();
+        environment.getRequestService().execute(
+            globalRulesDefinitionMapper,
+            requestParams -> {
+                rulesResource.updateGlobalDefinition(requestParams, definitionId, rulesDefinition);
+            },
+            204,
+            () -> {
+                view.setFormBusy(false);
+                environment.getEventBus().dispatch(new ShowInfoEvent(
+                    environment.getMessages().rulesetUpdated(rulesDefinition.getName())
+                ));
+                environment.getPlaceController().goTo(new GlobalRulesEditorPlace(definitionId));
+            },
+            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
+        );
+    }
+
+    @Override
+    public void create() {
+        view.setFormBusy(true);
+        view.clearFormMessages();
+        clearViewFieldErrors();
+        readFromView();
+        environment.getRequestService().execute(
+            globalRulesDefinitionMapper,
+            requestParams -> {
+                rulesResource.createGlobalDefinition(requestParams, rulesDefinition);
+            },
+            204,
+            () -> {
+                view.setFormBusy(false);
+                environment.getEventBus().dispatch(new ShowInfoEvent(
+                    environment.getMessages().rulesetCreated(rulesDefinition.getName())
+                ));
+                environment.getPlaceController().goTo(new GlobalRulesListPlace());
+            },
+            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
+        );
+    }
+
+    @Override
+    public void delete() {
+        view.showConfirmation(
+            environment.getMessages().confirmation(),
+            environment.getMessages().confirmationDelete(rulesDefinition.getName()),
+            () -> {
+                view.setFormBusy(true);
+                view.clearFormMessages();
+                clearViewFieldErrors();
+                environment.getRequestService().execute(
+                    requestParams -> {
+                        rulesResource.deleteGlobalDefinition(requestParams, definitionId);
+                    },
+                    204,
+                    () -> {
+                        view.setFormBusy(false);
+                        environment.getEventBus().dispatch(new ShowInfoEvent(
+                            environment.getMessages().rulesetDeleted(rulesDefinition.getName())
+                        ));
+                        environment.getPlaceController().goTo(new GlobalRulesListPlace());
+                    },
+                    ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
+                );
+            }
+        );
+    }
+
     protected void writeToView() {
         view.setName(rulesDefinition.getName());
+        view.setRulesetEnabled(rulesDefinition.isEnabled());
+        view.setRules(rulesDefinition.getRules());
+        view.enableCreate(definitionId == null);
+        view.enableUpdate(definitionId != null);
+        view.enableDelete(definitionId != null);
     }
+
+    protected void readFromView() {
+        rulesDefinition.setName(view.getName());
+        rulesDefinition.setEnabled(view.getRulesetEnabled());
+        rulesDefinition.setRules(view.getRules());
+    }
+
+    protected void clearViewFieldErrors() {
+        view.setNameError(false);
+    }
+
 }

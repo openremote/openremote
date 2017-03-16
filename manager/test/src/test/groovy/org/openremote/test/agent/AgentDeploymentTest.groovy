@@ -1,7 +1,7 @@
 package org.openremote.test.agent
 
 import elemental.json.Json
-import elemental.json.JsonObject
+import elemental.json.JsonArray
 import elemental.json.JsonType
 import org.openremote.agent3.protocol.simulator.SimulatorProtocol
 import org.openremote.manager.server.asset.AssetProcessingService
@@ -34,7 +34,7 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         conditions.eventually {
             assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Toggle").asBoolean()
             assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Dimmer").getType() == JsonType.NULL // No initial value!
-            assert new ColorRGB(simulatorProtocol.getState(managerDemoSetup.thingId, "light1Color") as JsonObject) == new ColorRGB(88, 123, 88)
+            assert new ColorRGB(simulatorProtocol.getState(managerDemoSetup.thingId, "light1Color") as JsonArray) == new ColorRGB(88, 123, 88)
             assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1PowerConsumption").asNumber() == 12.345d
         }
 

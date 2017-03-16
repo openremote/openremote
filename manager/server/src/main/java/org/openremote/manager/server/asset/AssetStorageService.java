@@ -34,7 +34,6 @@ import org.openremote.model.asset.*;
 import org.postgresql.util.PGobject;
 
 import javax.persistence.EntityManager;
-import javax.persistence.Query;
 import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -282,7 +281,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
     public ServerAsset merge(ServerAsset asset) {
         return persistenceService.doReturningTransaction(em -> {
             // Validate realm
-            if (!managerIdentityService.isTenantActive(asset.getRealm())) {
+            if (!managerIdentityService.isActiveTenantRealm(asset.getRealm())) {
                 throw new IllegalStateException("Realm not found: " + asset.getRealm());
             }
             // Validate parent

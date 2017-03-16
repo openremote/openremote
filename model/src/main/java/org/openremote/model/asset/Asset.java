@@ -24,8 +24,7 @@ import org.openremote.model.IdentifiableEntity;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
-import java.util.Arrays;
-import java.util.Date;
+import java.util.*;
 
 import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
@@ -305,12 +304,30 @@ public class Asset implements IdentifiableEntity {
         this.attributes = attributes;
     }
 
+    /**
+     * The identifiers of all parents representing the path in the tree. The last element
+     * is the identifier of this instance.
+     */
     public String[] getPath() {
         return path;
     }
 
     public void setPath(String[] path) {
         this.path = path;
+    }
+
+    /**
+     * The identifiers of all parents representing the path in the tree. The first
+     * element is the parent identifier of this instance, the last element is the
+     * outermost (root) parent identifier.
+     */
+    public String[] getReversePath() {
+        if (getPath() == null || getPath().length == 0)
+            return new String[0];
+        List<String> reversePath = new ArrayList<>(Arrays.asList(getPath()));
+        Collections.reverse(reversePath);
+        reversePath.remove(0);
+        return reversePath.toArray(new String[reversePath.size()]);
     }
 
     public double[] getCoordinates() {

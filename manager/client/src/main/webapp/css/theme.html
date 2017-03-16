@@ -96,7 +96,8 @@
 
     }
 
-    .or-PushButton {
+    .or-PushButton,
+    .or-FormFileUploadLabel {
         background-color: var(--theme-lightgrey);
         color: var(--theme-black);
     }
@@ -152,6 +153,14 @@
         border-color: var(--theme-red);
     }
 
+    .or-FormControl.error {
+        background-color: var(--theme-red);
+    }
+
+    .or-FormControl.primary {
+        background-color: var(--theme-lightgreen);
+    }
+
     .or-FormGroup.error .or-FormLabel {
         color: var(--theme-red);
     }
@@ -190,6 +199,10 @@
     .or-FormInputText[readOnly]:focus,
     .or-FormInputNumber[readOnly]:focus {
         border-color: transparent;
+    }
+
+    .or-FormTextArea {
+        border-color: var(--theme-darkgrey);
     }
 
     .or-FormButton {

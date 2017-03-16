@@ -19,33 +19,33 @@
  */
 package org.openremote.manager.client.widget;
 
-import com.google.gwt.user.client.ui.TextBox;
+import com.google.gwt.user.client.ui.TextArea;
 
-public class FormInputText extends TextBox {
+public class FormTextArea extends TextArea {
 
-    String placeholder = "";
+    boolean spellcheck;
+    String wrap = "soft";
 
-    boolean autofocus;
-
-    public FormInputText() {
+    public FormTextArea() {
         super();
-        setStyleName("or-FormControl or-FormInputText");
+        setStyleName("or-FormControl or-FormTextArea");
     }
 
-    public String getPlaceholder() {
-        return placeholder;
+    public boolean isSpellcheck() {
+        return spellcheck;
     }
 
-    public void setPlaceholder(String text) {
-        placeholder = (text != null ? text : "");
-        getElement().setPropertyString("placeholder", placeholder);
+    public void setSpellcheck(boolean spellcheck) {
+        getElement().setPropertyBoolean("spellcheck", spellcheck);
     }
 
-    public boolean isAutofocus() {
-        return autofocus;
+    public String getWrap() {
+        return wrap;
     }
 
-    public void setAutofocus(boolean autofocus) {
-        getElement().setPropertyBoolean("autofocus", autofocus);
+    public void setWrap(String wrap) {
+        this.wrap = (wrap != null ? wrap : "soft");
+        getElement().setPropertyString("wrap", wrap);
     }
+
 }
