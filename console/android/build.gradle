@@ -24,7 +24,7 @@ repositories {
 }
 
 apply plugin: "com.android.application"
-apply plugin: 'com.google.gms.google-services'
+
 
 version = projectVersion
 
@@ -78,3 +78,5 @@ android {
         }
     }
 }
+
+apply plugin: 'com.google.gms.google-services'
