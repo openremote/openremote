@@ -4,7 +4,7 @@
     android:id="@+id/activity_web"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="org.openremote.android.MainActivity"
+    tools:context=".MainActivity"
     android:padding="0dp">
 
     <WebView
@@ -15,4 +15,6 @@
         android:layout_alignParentEnd="true">
 
     </WebView>
+        <include layout="@layout/error_layout"></include>
+    <include layout="@layout/no_connectivity_layout"></include>
 </RelativeLayout>

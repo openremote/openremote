@@ -20,10 +20,24 @@ import android.util.Log;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.FirebaseInstanceIdService;
 
+import org.openremote.android.service.TokenService;
+
 
 public class ORFirebaseInstanceIDService extends FirebaseInstanceIdService {
 
     private static final String TAG = "ORFirebaseIIDService";
+    private TokenService tokenService;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        tokenService = new TokenService(getApplicationContext());
+    }
+
+    public ORFirebaseInstanceIDService() {
+
+
+    }
 
     /**
      * Called if InstanceID token is updated. This may occur if the security of
@@ -52,7 +66,7 @@ public class ORFirebaseInstanceIDService extends FirebaseInstanceIdService {
      *
      * @param token The new token.
      */
-    private void sendRegistrationToServer(String token, String Id) {
-        // TODO: IF auth token avaible try to send it or store it to send it once authtoken is received
+    private void sendRegistrationToServer(final String token, final String id) {
+        tokenService.sendOrStoreFCMToken(token, id);
     }
 }
