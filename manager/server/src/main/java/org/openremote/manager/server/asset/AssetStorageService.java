@@ -308,6 +308,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
         }
     }
 
+    // TODO: Update this as order is not guaranteed
     public String[] getAssetRealmIds(List<String> assetIds) {
         if (assetIds == null || assetIds.size() == 0) {
             return new String[0];
