@@ -19,20 +19,18 @@
  */
 package org.openremote.manager.client.assets.asset;
 
+import com.google.gwt.user.client.ui.IsWidget;
 import elemental.json.JsonObject;
-import org.openremote.manager.client.assets.browser.AssetBrowsingView;
-import org.openremote.manager.client.assets.device.DeviceAttributesEditor;
 import org.openremote.manager.client.widget.AttributesEditor;
 import org.openremote.manager.client.widget.FormView;
-import org.openremote.model.asset.AssetType;
 import org.openremote.manager.shared.map.GeoJSON;
+import org.openremote.model.asset.AssetType;
 
 import java.util.Date;
 
-public interface AssetView extends AssetBrowsingView<AssetView.Presenter>, FormView {
+public interface AssetView extends FormView, IsWidget {
 
-    interface
-    Presenter extends AssetBrowsingView.Presenter {
+    interface Presenter {
 
         void beginParentSelection();
 
@@ -56,11 +54,13 @@ public interface AssetView extends AssetBrowsingView<AssetView.Presenter>, FormV
 
     }
 
+    void setPresenter(Presenter presenter);
+
     void setName(String name);
 
     String getName();
 
-    void setRealm(String realm);
+    void setTenantDisplayName(String tenantDisplayName);
 
     void setCreatedOn(Date createdOn);
 
@@ -101,8 +101,6 @@ public interface AssetView extends AssetBrowsingView<AssetView.Presenter>, FormV
     String getType();
 
     AttributesEditor.Container<AttributesEditor.Style> getAttributesEditorContainer();
-
-    AttributesEditor.Container<DeviceAttributesEditor.Style> getDeviceAttributesEditorContainer();
 
     void setAttributesEditor(AttributesEditor attributesEditor);
 

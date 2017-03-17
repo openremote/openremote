@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -28,8 +28,10 @@ import org.openremote.manager.client.assets.asset.AssetViewImpl;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserImpl;
 import org.openremote.manager.client.assets.browser.AssetBrowserPresenter;
+import org.openremote.manager.client.assets.tenant.AssetsTenant;
+import org.openremote.manager.client.assets.tenant.AssetsTenantActivity;
+import org.openremote.manager.client.assets.tenant.AssetsTenantImpl;
 import org.openremote.manager.shared.asset.AssetResource;
-import org.openremote.manager.shared.connector.ConnectorResource;
 
 public class AssetsModule extends AbstractGinModule {
 
@@ -41,29 +43,16 @@ public class AssetsModule extends AbstractGinModule {
         bind(AssetsDashboard.class).to(AssetsDashboardImpl.class).in(Singleton.class);
         bind(AssetsDashboardActivity.class);
 
+        bind(AssetsTenant.class).to(AssetsTenantImpl.class).in(Singleton.class);
+        bind(AssetsTenantActivity.class);
+
         bind(AssetView.class).to(AssetViewImpl.class).in(Singleton.class);
         bind(AssetActivity.class);
     }
 
     @Provides
     @Singleton
-    public AssetResource getAssetResource() {
-        return getNativeAssetResource();
-    }
-
-    public static native AssetResource getNativeAssetResource() /*-{
+    public native AssetResource getAssetResource() /*-{
         return $wnd.AssetResource;
     }-*/;
-
-
-    @Provides
-    @Singleton
-    public ConnectorResource getConnectorResource() {
-        return getNativeConnectorResource();
-    }
-
-    public static native ConnectorResource getNativeConnectorResource() /*-{
-        return $wnd.ConnectorResource;
-    }-*/;
-
 }

@@ -38,4 +38,9 @@ public class UserAccountPlace extends Place {
             return "";
         }
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{}";
+    }
 }

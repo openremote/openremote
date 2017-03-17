@@ -43,34 +43,6 @@
         }
     </ui:style>
 
-    <ui:style field="deviceAttributesEditorStyle"
-              type="org.openremote.manager.client.assets.asset.AssetViewImpl.DeviceAttributesEditorStyle">
-        .stringEditor {
-            width: 44%;
-        }
-
-        .integerEditor {
-            width: 5em;
-        }
-
-        .decimalEditor {
-            width: 5em;
-        }
-
-        .booleanEditor {
-        }
-
-        .readWriteInput {
-            width: 5em;
-        }
-
-        .readButton {
-        }
-
-        .writeButton {
-        }
-    </ui:style>
-
     <w:FlexSplitPanel ui:field="splitPanel"
                       handleStyle="{widgetStyle.SplitPanelHandle}"
                       firstPanelWidth="250"
@@ -226,10 +198,10 @@
                                 </w:label>
                                 <w:field>
                                     <w:FormField addStyleNames="larger">
-                                        <g:FlowPanel styleName="layout horizontal center">
+                                        <g:FlowPanel styleName="flex layout horizontal center">
                                             <w:FormValueListBox ui:field="typeListBox"/>
                                             <w:FormInputText ui:field="typeInput"
-                                                             addStyleNames="{style.typeInput}"
+                                                             addStyleNames="flex"
                                                              visible="false"/>
                                         </g:FlowPanel>
                                     </w:FormField>

@@ -20,27 +20,36 @@
 package org.openremote.manager.client.app;
 
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.uibinder.client.UiBinder;
+import com.google.gwt.uibinder.client.UiField;
+import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.inject.Inject;
 import org.openremote.manager.client.i18n.ManagerMessages;
+import org.openremote.manager.client.map.MapViewImpl;
+import org.openremote.manager.client.widget.PushButton;
 
 public class FooterViewImpl extends Composite implements FooterView {
 
     interface UI extends UiBinder<HTMLPanel, FooterViewImpl> {
     }
 
-    private static UI ui = GWT.create(UI.class);
+    @UiField
+    PushButton fullscreenButton;
 
     private Presenter presenter;
 
     private ManagerMessages messages;
 
+
     @Inject
     public FooterViewImpl(ManagerMessages messages) {
         this.messages = messages;
+
+        FooterViewImpl.UI ui = GWT.create(FooterViewImpl.UI.class);
         initWidget(ui.createAndBindUi(this));
     }
 
@@ -49,9 +58,39 @@ public class FooterViewImpl extends Composite implements FooterView {
         this.presenter = presenter;
     }
 
-
     @Override
     public void onPlaceChange(Place place) {
         // TODO
     }
+
+    @UiHandler("fullscreenButton")
+    public void onFullscreenClicked(ClickEvent e) {
+        toggleFullscreen();
+    }
+
+    protected native void toggleFullscreen() /*-{
+        var doc = $wnd.document;
+        if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+            if (doc.documentElement.requestFullscreen) {
+                doc.documentElement.requestFullscreen();
+            } else if (doc.documentElement.msRequestFullscreen) {
+                doc.documentElement.msRequestFullscreen();
+            } else if (doc.documentElement.mozRequestFullScreen) {
+                doc.documentElement.mozRequestFullScreen();
+            } else if (doc.documentElement.webkitRequestFullscreen) {
+                doc.documentElement.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+            }
+        } else {
+            if (doc.exitFullscreen) {
+                doc.exitFullscreen();
+            } else if (doc.msExitFullscreen) {
+                doc.msExitFullscreen();
+            } else if (doc.mozCancelFullScreen) {
+                doc.mozCancelFullScreen();
+            } else if (doc.webkitExitFullscreen) {
+                doc.webkitExitFullscreen();
+            }
+        }
+
+    }-*/;
 }

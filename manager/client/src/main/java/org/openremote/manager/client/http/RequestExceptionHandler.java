@@ -23,7 +23,7 @@ import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.model.Consumer;
-import org.openremote.manager.shared.event.ui.ShowFailureEvent;
+import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.shared.http.*;
 import org.openremote.manager.shared.validation.ConstraintViolation;
 

@@ -34,8 +34,8 @@ public class ThingAttribute extends Attribute {
     }
 
     static public AttributeRef getAgentLink(Attribute attribute) {
-        JsonArray array = attribute.hasMetaItem(AssetAttributeMeta.AGENT_LINK)
-            ? attribute.firstMetaItem(AssetAttributeMeta.AGENT_LINK).getValueAsArray()
+        JsonArray array = attribute.hasMetaItem(AssetMeta.AGENT_LINK)
+            ? attribute.firstMetaItem(AssetMeta.AGENT_LINK).getValueAsArray()
             : null;
         if (array == null || array.length() != 2)
             return null;

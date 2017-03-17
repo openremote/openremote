@@ -20,8 +20,18 @@
 package org.openremote.model;
 
 import elemental.json.JsonType;
+import elemental.json.JsonValue;
 
+/**
+ * The base type of an {@link Attribute}, how its {@link elemental.json.JsonValue} should be
+ * interpreted when working with an attribute (e.g. when testing, rendering, or editing
+ * the value).
+ *
+ * Additional constraints and integrity rules upon attribute values can be declared by
+ * adding arbitrary {@link Meta} to an {@link Attribute}.
+ */
 public enum AttributeType {
+
     STRING("String", JsonType.STRING),
     OBJECT("Object", JsonType.OBJECT),
     INTEGER("Integer", JsonType.NUMBER),
@@ -47,6 +57,10 @@ public enum AttributeType {
 
     public JsonType getJsonType() {
         return jsonType;
+    }
+
+    public boolean isValid(JsonValue value) {
+        return value == null || value.getType().equals(JsonType.NULL) || value.getType().equals(getJsonType());
     }
 
     public static AttributeType fromValue(String value) {

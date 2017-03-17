@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -19,22 +19,29 @@
  */
 package org.openremote.manager.server.security;
 
-import org.keycloak.admin.client.resource.*;
+import org.apache.camel.ExchangePattern;
+import org.keycloak.admin.client.resource.ClientResource;
+import org.keycloak.admin.client.resource.ClientsResource;
+import org.keycloak.admin.client.resource.RealmsResource;
+import org.keycloak.admin.client.resource.RolesResource;
 import org.keycloak.representations.idm.ClientRepresentation;
-import org.keycloak.representations.idm.ProtocolMapperRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.openremote.container.Container;
+import org.openremote.container.message.MessageBrokerService;
+import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.KeycloakResource;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.Constants;
-import org.openremote.model.asset.ProtectedUserAssets;
 
 import javax.ws.rs.core.UriBuilder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Logger;
 
 import static org.openremote.container.json.JsonUtil.convert;
@@ -45,6 +52,8 @@ public class ManagerIdentityService extends IdentityService {
     private static final Logger LOG = Logger.getLogger(ManagerIdentityService.class.getName());
 
     protected boolean devMode;
+    protected PersistenceService persistenceService;
+    protected MessageBrokerService messageBrokerService;
 
     public ManagerIdentityService() {
         super(Constants.KEYCLOAK_CLIENT_ID);
@@ -55,6 +64,8 @@ public class ManagerIdentityService extends IdentityService {
         super.init(container);
 
         this.devMode = container.isDevMode();
+        this.persistenceService = container.getService(PersistenceService.class);
+        this.messageBrokerService = container.getService(MessageBrokerService.class);
 
         enableAuthProxy(container.getService(WebService.class));
 
@@ -99,7 +110,7 @@ public class ManagerIdentityService extends IdentityService {
         List<RealmRepresentation> realms = getRealms(bearerAuth).findAll();
 
         // Make sure the master tenant is always on top
-        Collections.sort(realms, (o1, o2) -> {
+        realms.sort((o1, o2) -> {
             if (o1.getRealm().equals(MASTER_REALM))
                 return -1;
             if (o2.getRealm().equals(MASTER_REALM))
@@ -122,6 +133,56 @@ public class ManagerIdentityService extends IdentityService {
         );
     }
 
+    public boolean isActiveTenantRealmId(String realmId) {
+        return Arrays.asList(getActiveTenantRealmIds()).contains(realmId);
+    }
+
+    public String getActiveTenantDisplayName(String realmId) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            @SuppressWarnings("unchecked")
+            List<String> result = entityManager.createNativeQuery(
+                "select RA.VALUE from REALM R join REALM_ATTRIBUTE RA " +
+                    "on R.ID = RA.REALM_ID and RA.NAME = 'displayName' " +
+                    "and (R.ENABLED = true and (R.NOT_BEFORE is null or R.NOT_BEFORE = 0 or R.NOT_BEFORE <= extract(epoch from now()))) " +
+                    "and R.ID = :realmId"
+            ).setParameter("realmId", realmId).getResultList();
+            return result.size() > 0 ? result.get(0) : null;
+        });
+    }
+
+    public String getActiveTenantRealmId(String realm) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            @SuppressWarnings("unchecked")
+            List<String> result = entityManager.createNativeQuery(
+                "select R.ID from REALM R where R.NAME  = :realm " +
+                    "and (R.ENABLED = true and (R.NOT_BEFORE is null or R.NOT_BEFORE = 0 or R.NOT_BEFORE <= extract(epoch from now()))) "
+            ).setParameter("realm", realm).getResultList();
+            return result.size() > 0 ? result.get(0) : null;
+        });
+    }
+
+    public String getActiveTenantRealm(String realmId) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            @SuppressWarnings("unchecked")
+            List<String> result = entityManager.createNativeQuery(
+                "select R.NAME from REALM R where R.ID = :realmId " +
+                    "and (R.ENABLED = true and (R.NOT_BEFORE is null or R.NOT_BEFORE = 0 or R.NOT_BEFORE <= extract(epoch from now())))"
+            ).setParameter("realmId", realmId).getResultList();
+            return result.size() > 0 ? result.get(0) : null;
+        });
+    }
+
+    public String[] getActiveTenantRealmIds() {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            @SuppressWarnings("unchecked")
+            List<String> results = entityManager.createNativeQuery(
+                "select R.ID from REALM R where " +
+                    "(R.ENABLED = true and (R.NOT_BEFORE is null or R.NOT_BEFORE = 0 or R.NOT_BEFORE <= extract(epoch from now()))) "
+            ).getResultList();
+            return results.toArray(new String[results.size()]);
+        });
+    }
+
     public void configureRealm(RealmRepresentation realmRepresentation) {
         configureRealm(realmRepresentation, ACCESS_TOKEN_LIFESPAN_SECONDS);
     }
@@ -133,6 +194,7 @@ public class ManagerIdentityService extends IdentityService {
         getRealms(bearerAuth).create(realmRepresentation);
         // TODO This is not atomic, write compensation actions
         createClientApplication(bearerAuth, realmRepresentation.getRealm());
+        sendTenantModifiedMessage(PersistenceEvent.Cause.INSERT, tenant);
     }
 
     public void createClientApplication(String bearerAuth, String realm) {
@@ -144,7 +206,6 @@ public class ManagerIdentityService extends IdentityService {
         client = clientsResource.findByClientId(client.getClientId()).get(0);
         ClientResource clientResource = clientsResource.get(client.getId());
         addDefaultRoles(clientResource.roles());
-        addDefaultMappers(clientResource.getProtocolMappers());
     }
 
     public void updateTenant(String bearerAuth, String realm, Tenant tenant) throws Exception {
@@ -152,11 +213,14 @@ public class ManagerIdentityService extends IdentityService {
         getRealms(bearerAuth).realm(realm).update(
             convert(Container.JSON, RealmRepresentation.class, tenant)
         );
+        sendTenantModifiedMessage(PersistenceEvent.Cause.UPDATE, tenant);
     }
 
     public void deleteTenant(String bearerAuth, String realm) throws Exception {
+        Tenant tenant = getTenant(bearerAuth, realm);
         LOG.fine("Delete tenant: " + realm);
         getRealms(bearerAuth).realm(realm).remove();
+        sendTenantModifiedMessage(PersistenceEvent.Cause.DELETE, tenant);
     }
 
     public void addDefaultRoles(RolesResource rolesResource) {
@@ -176,16 +240,53 @@ public class ManagerIdentityService extends IdentityService {
         }
     }
 
-    public void addDefaultMappers(ProtocolMappersResource protocolMappers) {
+    public boolean isRestrictedUser(String userId) {
+        UserConfiguration userConfiguration = getUserConfiguration(userId);
+        return userConfiguration.isRestricted();
+    }
 
-        // Link between user and asset ("ownership")
-        ProtocolMapperRepresentation userAssetMapper = new ProtocolMapperRepresentation();
-        userAssetMapper.setProtocol("openid-connect");
-        userAssetMapper.setProtocolMapper("oidc-usermodel-attribute-mapper");
-        userAssetMapper.setName(ProtectedUserAssets.ASSETS_ATTRIBUTE);
-        userAssetMapper.setConsentRequired(false);
-        userAssetMapper.setConfig(ProtectedUserAssets.RESTRICTED_MAPPER);
-        protocolMappers.createMapper(userAssetMapper);
+    public void setRestrictedUser(String userId, boolean restricted) {
+        UserConfiguration userConfiguration = getUserConfiguration(userId);
+        userConfiguration.setRestricted(restricted);
+        mergeUserConfiguration(userConfiguration);
+    }
+
+    public UserConfiguration getUserConfiguration(String userId) {
+        UserConfiguration userConfiguration = persistenceService.doReturningTransaction(em -> em.find(UserConfiguration.class, userId));
+        if (userConfiguration == null) {
+            userConfiguration = new UserConfiguration(userId);
+            userConfiguration = mergeUserConfiguration(userConfiguration);
+        }
+        return userConfiguration;
+    }
+
+    public UserConfiguration mergeUserConfiguration(UserConfiguration userConfiguration) {
+        if (userConfiguration.getUserId() == null || userConfiguration.getUserId().length() == 0) {
+            throw new IllegalArgumentException("User ID must be set on: " + userConfiguration);
+        }
+        return persistenceService.doReturningTransaction(em -> em.merge(userConfiguration));
+    }
+
+    /**
+     * Use PERSISTENCE_TOPIC and persistence event
+     * @param tenant
+     */
+    protected void sendTenantModifiedMessage(PersistenceEvent.Cause cause, Tenant tenant) {
+        PersistenceEvent persistenceEvent = new PersistenceEvent(cause, tenant, new String[0], null);
+
+        messageBrokerService.getProducerTemplate().sendBodyAndHeader(
+                PersistenceEvent.PERSISTENCE_TOPIC,
+                ExchangePattern.InOnly,
+                persistenceEvent,
+                PersistenceEvent.HEADER_ENTITY_TYPE,
+                persistenceEvent.getEntity().getClass()
+        );
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            '}';
     }
 
 }

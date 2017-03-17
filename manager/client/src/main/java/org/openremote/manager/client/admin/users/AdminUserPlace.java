@@ -75,7 +75,7 @@ public class AdminUserPlace extends AdminPlace {
 
     @Override
     public String toString() {
-        return "AdminUserPlace{" +
+        return getClass().getSimpleName() + "{" +
             "realm='" + realm + '\'' +
             ", userId='" + userId + '\'' +
             "}";

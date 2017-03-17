@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -58,21 +58,13 @@ public class AdminModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    public TenantResource getTenantResource() {
-        return getNativeTenantResource();
-    }
-
-    public static native TenantResource getNativeTenantResource() /*-{
+    public native TenantResource getTenantResource()  /*-{
         return $wnd.TenantResource;
     }-*/;
 
     @Provides
     @Singleton
-    public UserResource getUserResource() {
-        return getNativeUserResource();
-    }
-
-    public static native UserResource getNativeUserResource() /*-{
+    public native UserResource getUserResource()  /*-{
         return $wnd.UserResource;
     }-*/;
 

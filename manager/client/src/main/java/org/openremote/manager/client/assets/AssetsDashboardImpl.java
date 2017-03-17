@@ -50,14 +50,12 @@ public class AssetsDashboardImpl extends Composite implements AssetsDashboard {
     SimplePanel assetsContentContainer;
 
     final AssetBrowser assetBrowser;
-    final FormTreeStyle formTreeStyle;
 
     Presenter presenter;
 
     @Inject
-    public AssetsDashboardImpl(AssetBrowser assetBrowser, FormTreeStyle formTreeStyle) {
+    public AssetsDashboardImpl(AssetBrowser assetBrowser) {
         this.assetBrowser = assetBrowser;
-        this.formTreeStyle = formTreeStyle;
 
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));

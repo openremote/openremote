@@ -1,0 +1,20 @@
+package org.openremote.test.rules;
+
+import org.openremote.model.*;
+import org.openremote.manager.server.asset.*;
+
+global java.util.logging.Logger LOG;
+
+rule "All"
+when
+  $e: AssetUpdate()
+then
+  return;
+end
+
+rule "All changed"
+when
+  $e: AssetUpdate(valueChanged)
+then
+  return;
+end

@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
-import org.openremote.container.persistence.IdentifiableEntity;
 import org.openremote.model.asset.Asset;
 
 import javax.persistence.*;
@@ -34,7 +33,7 @@ import javax.persistence.*;
  */
 @Entity(name = "Asset")
 // TODO Write on-insert/update SQL trigger that validates the asset realm, it must match the parent's realm
-public class ServerAsset extends Asset implements IdentifiableEntity {
+public class ServerAsset extends Asset {
 
     /**
      * Easy conversion between types, we copy all properties (not a deep copy!)
@@ -44,13 +43,17 @@ public class ServerAsset extends Asset implements IdentifiableEntity {
     }
 
     public static ServerAsset map(Asset asset, ServerAsset serverAsset,
-                                  String overrideRealm,
                                   String overrideParentId,
-                                  double[] overrideLocation) {
+                                  String overrideType,
+                                  Double[] overrideLocation) {
         serverAsset.setVersion(asset.getVersion());
-        serverAsset.setRealm(overrideRealm != null ? overrideRealm : asset.getRealm());
+        serverAsset.setRealmId(asset.getRealmId());
         serverAsset.setName(asset.getName());
-        serverAsset.setType(asset.getType());
+        if (overrideType != null) {
+            serverAsset.setType(overrideType);
+        } else {
+            serverAsset.setType(asset.getType());
+        }
 
         serverAsset.setParentId(overrideParentId != null ? overrideParentId : asset.getParentId());
 
@@ -88,7 +91,9 @@ public class ServerAsset extends Asset implements IdentifiableEntity {
 
     public ServerAsset(Asset parent) {
         super(parent);
-        setRealm(parent.getRealm());
+        setRealmId(parent.getRealmId());
+        setTenantRealm(parent.getTenantRealm());
+        setTenantDisplayName(parent.getTenantDisplayName());
     }
 
     public ServerAsset getParent() {

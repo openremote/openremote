@@ -22,17 +22,19 @@ package org.openremote.manager.client.app;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.inject.Inject;
 import org.openremote.manager.client.admin.overview.AdminOverviewPlace;
+import org.openremote.manager.client.apps.AppsPlace;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.asset.AssetPlace;
-import org.openremote.manager.client.assets.browser.AssetBrowser;
-import org.openremote.manager.client.assets.browser.AssetSelectedEvent;
+import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
+import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
 import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.manager.client.event.bus.EventBus;
-import org.openremote.manager.client.event.bus.EventRegistration;
-import org.openremote.manager.client.flows.FlowsPlace;
-import org.openremote.manager.client.map.MapPlace;
-import org.openremote.manager.client.rules.RulesPlace;
+import org.openremote.manager.client.map.MapAssetPlace;
+import org.openremote.manager.client.map.MapTenantPlace;
+import org.openremote.manager.client.rules.asset.AssetRulesListPlace;
+import org.openremote.manager.client.rules.global.GlobalRulesListPlace;
+import org.openremote.manager.client.rules.tenant.TenantRulesListPlace;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.user.UserControls;
 import org.openremote.model.Constants;
@@ -44,24 +46,19 @@ public class HeaderPresenter implements HeaderView.Presenter {
     private static final Logger LOG = Logger.getLogger(HeaderPresenter.class.getName());
 
     final protected HeaderView view;
-    final protected AssetBrowser.Presenter assetBrowserPresenter;
     final protected UserControls.Presenter userControlsPresenter;
     final protected PlaceController placeController;
     final protected SecurityService securityService;
 
-    protected String selectedAssetId;
-
-    protected EventRegistration<AssetSelectedEvent> assetSelectionRegistration;
+    protected AssetBrowserSelection assetBrowserSelection;
 
     @Inject
     public HeaderPresenter(HeaderView view,
-                           AssetBrowser.Presenter assetBrowserPresenter,
                            UserControls.Presenter userControlsPresenter,
                            SecurityService securityService,
                            PlaceController placeController,
                            EventBus eventBus) {
         this.view = view;
-        this.assetBrowserPresenter = assetBrowserPresenter;
         this.userControlsPresenter = userControlsPresenter;
         this.placeController = placeController;
         this.securityService = securityService;
@@ -73,8 +70,8 @@ public class HeaderPresenter implements HeaderView.Presenter {
             event -> view.onPlaceChange(event.getPlace())
         );
 
-        assetSelectionRegistration = eventBus.register(AssetSelectedEvent.class,
-            event -> selectedAssetId = event.getAssetInfo() != null ? event.getAssetInfo().getId() : null
+        eventBus.register(AssetBrowserSelection.class,
+            event -> assetBrowserSelection = event
         );
 
         view.setUsername(securityService.getParsedToken().getPreferredUsername());
@@ -91,17 +88,29 @@ public class HeaderPresenter implements HeaderView.Presenter {
 
     @Override
     public void navigateMap() {
-        if (selectedAssetId != null) {
-            placeController.goTo(new MapPlace(selectedAssetId));
+        if (assetBrowserSelection == null) {
+            placeController.goTo(new MapAssetPlace());
+            return;
+        }
+        if (assetBrowserSelection.isTenantSelection()) {
+            placeController.goTo(new MapTenantPlace(assetBrowserSelection.getSelectedNode().getId()));
+        } else if (assetBrowserSelection.isAssetSelection()){
+            placeController.goTo(new MapAssetPlace(assetBrowserSelection.getSelectedNode().getId()));
         } else {
-            placeController.goTo(new MapPlace());
+            placeController.goTo(new MapAssetPlace());
         }
     }
 
     @Override
     public void navigateAssets() {
-        if (selectedAssetId != null) {
-            placeController.goTo(new AssetPlace(selectedAssetId));
+        if (assetBrowserSelection == null) {
+            placeController.goTo(new AssetsDashboardPlace());
+            return;
+        }
+        if (assetBrowserSelection.isTenantSelection()) {
+            placeController.goTo(new AssetsTenantPlace(assetBrowserSelection.getSelectedNode().getId()));
+        } else if (assetBrowserSelection.isAssetSelection()){
+            placeController.goTo(new AssetPlace(assetBrowserSelection.getSelectedNode().getId()));
         } else {
             placeController.goTo(new AssetsDashboardPlace());
         }
@@ -109,14 +118,22 @@ public class HeaderPresenter implements HeaderView.Presenter {
 
     @Override
     public void navigateRules() {
-        placeController.goTo(new RulesPlace());
-
+        if (assetBrowserSelection == null) {
+            placeController.goTo(new GlobalRulesListPlace());
+            return;
+        }
+        if (assetBrowserSelection.isTenantSelection()) {
+            placeController.goTo(new TenantRulesListPlace(assetBrowserSelection.getSelectedNode().getId()));
+        } else if (assetBrowserSelection.isAssetSelection()){
+            placeController.goTo(new AssetRulesListPlace(assetBrowserSelection.getSelectedNode().getId()));
+        } else {
+            placeController.goTo(new GlobalRulesListPlace());
+        }
     }
 
     @Override
-    public void navigateFlows() {
-        placeController.goTo(new FlowsPlace());
-
+    public void navigateApps() {
+        placeController.goTo(new AppsPlace());
     }
 
     @Override

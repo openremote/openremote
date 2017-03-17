@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -21,11 +21,6 @@ package org.openremote.manager.client.rules;
 
 import com.google.gwt.user.client.ui.IsWidget;
 
-public interface RulesView extends IsWidget {
+public interface RulesView<P extends RulesPresenter> extends IsWidget {
 
-    interface Presenter {
-        String getFrameSource();
-    }
-
-    void setPresenter(Presenter presenter);
 }

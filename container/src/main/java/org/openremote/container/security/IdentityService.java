@@ -89,6 +89,9 @@ public abstract class IdentityService implements ContainerService {
 
     public static final String AUTH_PATH = "/auth";
 
+    // The externally visible address of this installation
+    protected UriBuilder externalServerUri;
+
     // Each realm in Keycloak has a client application with this identifier
     final protected String clientId;
 
@@ -128,18 +131,19 @@ public abstract class IdentityService implements ContainerService {
         int identityNetworkPort = getInteger(container.getConfig(), IDENTITY_NETWORK_WEBSERVER_PORT, IDENTITY_NETWORK_WEBSERVER_PORT_DEFAULT);
         sessionTimeoutSeconds = getInteger(container.getConfig(), IDENTITY_SESSION_TIMEOUT_SECONDS, IDENTITY_SESSION_TIMEOUT_SECONDS_DEFAULT);
 
-        UriBuilder externalAuthServerUrl = UriBuilder.fromUri("")
+        externalServerUri = UriBuilder.fromUri("")
             .scheme(identityNetworkSecure ? "https" : "http")
-            .host(identityNetworkHost)
-            .path(AUTH_PATH);
+            .host(identityNetworkHost);
 
         // Only set the port if it's not the default protocol port. Browsers do this and Keycloak will
         // bake the browsers' redirect URL into the token, so we need a matching config when verifying tokens.
         if (identityNetworkPort != 80 && identityNetworkPort != 443) {
-            externalAuthServerUrl = externalAuthServerUrl.port(identityNetworkPort);
+            externalServerUri = externalServerUri.port(identityNetworkPort);
         }
 
-        externalAuthServerUri = externalAuthServerUrl.build();
+        LOG.info("External system base URL: " + externalServerUri);
+
+        externalAuthServerUri = externalServerUri.clone().path(AUTH_PATH).build();
 
         LOG.info("Token issuer URL: " + externalAuthServerUri);
 
@@ -211,6 +215,10 @@ public abstract class IdentityService implements ContainerService {
     public void stop(Container container) throws Exception {
         if (getHttpClient() != null)
             getHttpClient().close();
+    }
+
+    public UriBuilder getExternalServerUri() {
+        return externalServerUri.clone();
     }
 
     public Client getHttpClient() {

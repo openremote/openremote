@@ -20,7 +20,7 @@
 package org.openremote.manager.client.event.bus;
 
 import jsinterop.annotations.JsFunction;
-import org.openremote.manager.shared.event.Event;
+import org.openremote.model.Event;
 
 @JsFunction
 public interface EventListener<E extends Event> {

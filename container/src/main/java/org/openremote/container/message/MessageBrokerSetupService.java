@@ -107,4 +107,10 @@ public class MessageBrokerSetupService implements ContainerService {
     public MessageBrokerContext getContext() {
         return context;
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            '}';
+    }
 }

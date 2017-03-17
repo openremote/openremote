@@ -30,6 +30,7 @@ import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.http.ConstraintViolationReportMapper;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.interop.keycloak.Keycloak;
+import org.openremote.manager.client.map.MapAssetPlace;
 import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.mvp.AppActivityManager;
 import org.openremote.manager.client.mvp.AppPlaceController;
@@ -116,7 +117,7 @@ public class ManagerModule extends AbstractGinModule {
                                                  PlaceHistoryMapper historyMapper,
                                                  com.google.web.bindery.event.shared.EventBus legacyEventBus) {
         PlaceHistoryHandler historyHandler = new PlaceHistoryHandler(historyMapper);
-        historyHandler.register(placeController, legacyEventBus, new MapPlace());
+        historyHandler.register(placeController, legacyEventBus, new MapAssetPlace());
         return historyHandler;
     }
 }

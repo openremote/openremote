@@ -24,10 +24,12 @@ import elemental.json.JsonObject;
 import org.openremote.model.*;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import static org.openremote.model.Constants.ASSET_NAMESPACE;
-import static org.openremote.model.asset.AssetAttributeMeta.*;
+import static org.openremote.model.asset.AssetMeta.*;
 import static org.openremote.model.AttributeType.INTEGER;
 import static org.openremote.model.AttributeType.STRING;
 
@@ -41,37 +43,32 @@ public enum AssetType {
 
     CUSTOM(null, true, null),
 
-    TENANT(ASSET_NAMESPACE + ":tenant", false, null),
-
-    // TODO Arbitrary group of assets? Semantics?
-    GROUP(ASSET_NAMESPACE + ":group", true, null),
-
     BUILDING(ASSET_NAMESPACE + ":building", true, new Attributes().put(
         new Attribute("area", INTEGER)
-            .setMetadata(new Metadata()
-                .add(createMetadataItem(LABEL, Json.create("Surface area")))
-                .add(createMetadataItem(DESCRIPTION, Json.create("Floor area of building measured in m²")))
-                .add(createMetadataItem(ABOUT, Json.create("http://project-haystack.org/tag/area")))
+            .setMeta(new Meta()
+                .add(createMetaItem(LABEL, Json.create("Surface area")))
+                .add(createMetaItem(DESCRIPTION, Json.create("Floor area of building measured in m²")))
+                .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/area")))
             ),
         new Attribute("geoStreet", STRING)
-            .setMetadata(new Metadata()
-                .add(createMetadataItem(LABEL, Json.create("Street")))
-                .add(createMetadataItem(ABOUT, Json.create("http://project-haystack.org/tag/geoStreet")))
+            .setMeta(new Meta()
+                .add(createMetaItem(LABEL, Json.create("Street")))
+                .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoStreet")))
             ),
         new Attribute("geoPostalCode", AttributeType.INTEGER)
-            .setMetadata(new Metadata()
-                .add(createMetadataItem(LABEL, Json.create("Postal Code")))
-                .add(createMetadataItem(ABOUT, Json.create("http://project-haystack.org/tag/geoPostalCode")))
+            .setMeta(new Meta()
+                .add(createMetaItem(LABEL, Json.create("Postal Code")))
+                .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoPostalCode")))
             ),
         new Attribute("geoCity", STRING)
-            .setMetadata(new Metadata()
-                .add(createMetadataItem(LABEL, Json.create("City")))
-                .add(createMetadataItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCity")))
+            .setMeta(new Meta()
+                .add(createMetaItem(LABEL, Json.create("City")))
+                .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCity")))
             ),
         new Attribute("geoCountry", STRING)
-            .setMetadata(new Metadata()
-                .add(createMetadataItem(LABEL, Json.create("Country")))
-                .add(createMetadataItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCountry")))
+            .setMeta(new Meta()
+                .add(createMetaItem(LABEL, Json.create("Country")))
+                .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCountry")))
             )
     ).getJsonObject()),
 
@@ -117,6 +114,14 @@ public enum AssetType {
             if (assetType.isEditable())
                 list.add(assetType);
         }
+
+        list.sort(Comparator.comparing(Enum::name));
+        if (list.contains(CUSTOM)) {
+            // CUSTOM should be first
+            list.remove(CUSTOM);
+            list.add(0, CUSTOM);
+        }
+
         return list.toArray(new AssetType[list.size()]);
     }
 
@@ -128,10 +133,5 @@ public enum AssetType {
                 return assetType;
         }
         return CUSTOM;
-    }
-
-    public static boolean isLeaf(AssetType wellKnownType) {
-        return false;
-        // TODO return wellKnownType != null && wellKnownType.equals(DEVICE);
     }
 }

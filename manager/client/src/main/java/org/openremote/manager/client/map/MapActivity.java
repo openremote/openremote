@@ -21,59 +21,111 @@ package org.openremote.manager.client.map;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
-import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
+import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
+import org.openremote.manager.client.event.ShowInfoEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
-import org.openremote.model.asset.AssetInfo;
+import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.map.MapResource;
+import org.openremote.model.Consumer;
+import org.openremote.model.asset.Asset;
 
 import javax.inject.Inject;
 import java.util.Collection;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
-public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implements MapView.Presenter {
+public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapView.Presenter {
 
+    final MapView view;
+    final AssetResource assetResource;
+    final AssetMapper assetMapper;
     final MapResource mapResource;
     final JsonObjectMapper jsonObjectMapper;
 
+    String assetId;
+    Asset asset;
+    String realm;
+
     @Inject
     public MapActivity(Environment environment,
-                       MapView view,
                        AssetBrowser.Presenter assetBrowserPresenter,
+                       MapView view,
                        AssetResource assetResource,
                        AssetMapper assetMapper,
                        MapResource mapResource,
                        JsonObjectMapper jsonObjectMapper) {
-        super(environment, view, assetBrowserPresenter, assetResource, assetMapper);
+        super(environment, assetBrowserPresenter);
+        this.view = view;
+        this.assetResource = assetResource;
+        this.assetMapper = assetMapper;
         this.mapResource = mapResource;
         this.jsonObjectMapper = jsonObjectMapper;
     }
 
     @Override
-    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
-        super.start(container, eventBus, registrations);
+    protected AppActivity<MapPlace> init(MapPlace place) {
+        if (place instanceof MapAssetPlace) {
+            MapAssetPlace mapAssetPlace = (MapAssetPlace) place;
+            assetId = mapAssetPlace.getAssetId();
+        } else if (place instanceof MapTenantPlace) {
+            MapTenantPlace mapTenantPlace = (MapTenantPlace) place;
+            realm = mapTenantPlace.getRealmId();
+        }
+        return this;
+    }
 
-        if (getView().isMapInitialised()) {
-            getView().refresh();
-            return;
+    @Override
+    public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
+        view.setPresenter(this);
+        container.setWidget(view.asWidget());
+
+        registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
+            if (event.isTenantSelection()) {
+                onTenantSelected(event.getSelectedNode().getId());
+            } else if (event.isAssetSelection()) {
+                onAssetSelected(event.getSelectedNode().getId());
+            }
+        }));
+
+        if (view.isMapInitialised()) {
+            view.refresh();
+        } else {
+            environment.getRequestService().execute(
+                jsonObjectMapper,
+                mapResource::getSettings,
+                200,
+                mapSettings -> {
+                    view.initialiseMap(mapSettings);
+                    if (asset != null) {
+                        showAssetOnMap();
+                    }
+                },
+                ex -> handleRequestException(ex, environment)
+            );
         }
 
-        environment.getRequestService().execute(
-            jsonObjectMapper,
-            mapResource::getSettings,
-            200,
-            mapSettings -> {
-                view.initialiseMap(mapSettings);
-                if (asset != null)
+        hideAssetOnMap();
+
+        asset = null;
+        if (assetId != null) {
+            loadAsset(assetId, loadedAsset -> {
+                this.asset = loadedAsset;
+                if (asset != null) {
+                    assetBrowserPresenter.selectAsset(asset);
                     showAssetOnMap();
-            },
-            ex -> handleRequestException(ex, environment)
-        );
+                }
+            });
+        } else if (realm != null) {
+            environment.getEventBus().dispatch(
+                new ShowInfoEvent("TODO: Showing all assets on map for tenant: " + realm)
+            );
+        }
     }
 
     @Override
@@ -82,35 +134,32 @@ public class MapActivity extends AssetBrowsingActivity<MapView, MapPlace> implem
         view.setPresenter(null);
     }
 
-    @Override
-    protected void onAssetLoaded() {
-        showAssetOnMap();
+    protected void onAssetSelected(String assetId) {
+        environment.getPlaceController().goTo(new MapAssetPlace(assetId));
     }
 
-    @Override
-    protected void onAssetsDeselected() {
-        hideAssetOnMap();
+    protected void onTenantSelected(String realmId) {
+        environment.getPlaceController().goTo(new MapTenantPlace(realmId));
     }
 
-    @Override
-    protected void onAssetSelectionChange(AssetInfo selectedAssetInfo) {
-        environment.getPlaceController().goTo(new MapPlace(selectedAssetInfo.getId()));
-    }
-
-    @Override
-    protected void onTenantSelected(String id, String realm) {
-        hideAssetOnMap();
+    protected void loadAsset(String id, Consumer<Asset> assetConsumer) {
+        environment.getRequestService().execute(
+            assetMapper,
+            requestParams -> assetResource.get(requestParams, id),
+            200,
+            assetConsumer,
+            ex -> handleRequestException(ex, environment)
+        );
     }
 
     protected void showAssetOnMap() {
         if (asset != null && asset.getCoordinates() != null) {
-            getView().showFeaturesSelection(getFeature(asset));
-            getView().flyTo(asset.getCoordinates());
+            view.showFeaturesSelection(MapView.getFeature(asset));
+            view.flyTo(asset.getCoordinates());
         }
     }
 
     protected void hideAssetOnMap() {
-        getView().hideFeaturesSelection();
+        view.hideFeaturesSelection();
     }
-
 }

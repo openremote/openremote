@@ -39,12 +39,11 @@
 
 package org.openremote.manager.server.event;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.camel.Converter;
 import org.apache.camel.Exchange;
 import org.apache.camel.TypeConverters;
 import org.openremote.container.Container;
-import org.openremote.manager.shared.event.Event;
+import org.openremote.model.Event;
 
 import java.util.logging.Logger;
 
@@ -55,16 +54,12 @@ public class EventTypeConverters implements TypeConverters {
     @Converter
     public String writeEvent(Event event, Exchange exchange) throws Exception {
         LOG.fine("Writing event JSON: " + event);
-        return getObjectMapper(exchange).writeValueAsString(event);
+        return Container.JSON.writeValueAsString(event);
     }
 
     @Converter
     public Event readEvent(String string, Exchange exchange) throws Exception {
         LOG.fine("Reading event JSON: " + string);
-        return getObjectMapper(exchange).readValue(string, Event.class);
+        return Container.JSON.readValue(string, Event.class);
     }
-
-    protected static ObjectMapper getObjectMapper(Exchange exchange) {
-        Container container = (Container) exchange.getContext().getRegistry().lookupByName(Container.class.getName());
-        return container.JSON;
-    }}
+}

@@ -26,11 +26,16 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.manager.server.agent.AgentService;
-import org.openremote.manager.server.asset.AssetService;
-import org.openremote.manager.server.asset.datapoint.DatapointService;
+import org.openremote.manager.server.apps.ConsoleAppService;
+import org.openremote.manager.server.asset.AssetProcessingService;
+import org.openremote.manager.server.asset.AssetStorageService;
+import org.openremote.manager.server.datapoint.AssetDatapointService;
 import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.i18n.I18NService;
 import org.openremote.manager.server.map.MapService;
+import org.openremote.manager.server.rules.RulesService;
+import org.openremote.manager.server.rules.RulesStorageService;
+import org.openremote.manager.server.notification.NotificationService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.setup.SetupService;
 import org.openremote.manager.server.web.ManagerWebService;
@@ -47,19 +52,24 @@ public class Main {
             {
                 addAll(Arrays.asList(
                     new I18NService(),
+                    new PersistenceService(),
                     new MessageBrokerSetupService(),
                     new ManagerIdentityService(),
-                    new PersistenceService(),
                     new SetupService(),
                     new EventService(),
-                    new AssetService(),
-                    new DatapointService(),
+                    new RulesStorageService(),
+                    new RulesService(),
+                    new AssetStorageService(),
+                    new AssetDatapointService(),
+                    new AssetProcessingService(),
                     new AgentService()
                 ));
                 ServiceLoader.load(Protocol.class).forEach(this::add);
                 addAll(Arrays.asList(
                     new MapService(),
+                    new NotificationService(),
                     new MessageBrokerService(),
+                    new ConsoleAppService(),
                     new ManagerWebService()
                 ));
             }

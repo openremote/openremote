@@ -23,8 +23,9 @@ import elemental.json.JsonValue;
 import org.openremote.agent3.protocol.AbstractProtocol;
 import org.openremote.agent3.protocol.simulator.element.*;
 import org.openremote.model.AttributeRef;
-import org.openremote.model.AttributeValueChange;
-import org.openremote.model.MetadataItem;
+import org.openremote.model.AttributeState;
+import org.openremote.model.AttributeEvent;
+import org.openremote.model.MetaItem;
 import org.openremote.model.asset.ThingAttribute;
 
 import java.util.HashMap;
@@ -33,15 +34,24 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
-import static org.openremote.model.asset.AssetAttributeMeta.RANGE_MAX;
-import static org.openremote.model.asset.AssetAttributeMeta.RANGE_MIN;
+import static org.openremote.model.asset.AssetMeta.RANGE_MAX;
+import static org.openremote.model.asset.AssetMeta.RANGE_MIN;
 
 public class SimulatorProtocol extends AbstractProtocol {
 
     private static final Logger LOG = Logger.getLogger(org.openremote.agent3.protocol.simulator.SimulatorProtocol.class.getName());
 
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":simulator";
-    public static final String META_NAME_ELEMENT = PROTOCOL_NAME + ":element";
+
+    /**
+     * Required meta item, the simulator element that should be used, see subclasses of {@link SimulatorElement}.
+     */
+    public static final String SIMULATOR_ELEMENT = PROTOCOL_NAME + ":element";
+
+    /**
+     * Optional (defaults to false) meta item, whether actuator writes should immediately be reflected as sensor reads.
+     */
+    public static final String SIMULATOR_REFLECT_ACTUATOR_WRITES = PROTOCOL_NAME + ":reflectActuatorWrites";
 
     static final protected Map<AttributeRef, SimulatorElement> elements = new HashMap<>();
 
@@ -52,10 +62,20 @@ public class SimulatorProtocol extends AbstractProtocol {
 
     @Override
     protected void onAttributeAdded(ThingAttribute attribute) {
-        String elementType = attribute.firstMetaItemOrThrow(META_NAME_ELEMENT).getValueAsString();
-        SimulatorElement element = createElement(elementType, attribute);
-        element.setState(attribute.getValue_TODO_BUG_IN_JAVASCRIPT());
-        LOG.fine("Putting element '" + element + "' for: " + attribute);
+        String elementType = attribute.firstMetaItemOrThrow(SIMULATOR_ELEMENT).getValueAsString();
+
+        boolean reflectActuatorWrites =
+            attribute.hasMetaItem(SIMULATOR_REFLECT_ACTUATOR_WRITES)
+                && attribute.firstMetaItem(SIMULATOR_REFLECT_ACTUATOR_WRITES).isValueTrue();
+
+        SimulatorElement element = createElement(elementType, reflectActuatorWrites, attribute);
+        try {
+            element.setState(attribute.getValue());
+        } catch (IllegalArgumentException ex) {
+            throw new RuntimeException("Error setting initial state of: " + attribute, ex);
+        }
+
+        LOG.info("Putting element '" + element + "' for: " + attribute);
         elements.put(attribute.getAttributeRef(), element);
     }
 
@@ -70,34 +90,46 @@ public class SimulatorProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void sendToActuator(AttributeValueChange attributeValueChange) {
-        putState(attributeValueChange.getAttributeRef(), attributeValueChange.getValue(), false);
-    }
-
-    public void putState(String entityId, String attributeName, JsonValue value) {
-        putState(new AttributeRef(entityId, attributeName), value, true);
-    }
-
-    public void putState(AttributeRef attributeRef, JsonValue value) {
-        putState(attributeRef, value, true);
+    protected void sendToActuator(AttributeEvent event) {
+        putState(event.getAttributeState(), false);
     }
 
     /**
-     * @param isSensorUpdate <code>true</code> if an {@link AttributeValueChange} message should be produced
+     * Call this to simulate a sensor read.
      */
-    public void putState(AttributeRef attributeRef, JsonValue value, boolean isSensorUpdate) {
-        synchronized (elements) {
-            LOG.fine("Put state '" + attributeRef + "': " + (value != null ? value.asString() : "null"));
+    public void putState(String entityId, String attributeName, JsonValue value) {
+        putState(new AttributeState(new AttributeRef(entityId, attributeName), value), true);
+    }
 
+    /**
+     * Call this to simulate a sensor read.
+     */
+    public void putState(AttributeRef attributeRef, JsonValue value) {
+        putState(new AttributeState(attributeRef, value), true);
+    }
+
+    /**
+     * Call this to simulate a sensor read or actuator write.
+     *
+     * @param simulateSensorRead <code>true</code> if an {@link AttributeEvent} sensor update should be produced
+     */
+    public void putState(AttributeState attributeState, boolean simulateSensorRead) {
+        synchronized (elements) {
+            LOG.info("Put simulator state: " + attributeState);
+
+            AttributeRef attributeRef = attributeState.getAttributeRef();
             SimulatorElement element = elements.get(attributeRef);
             if (element == null)
                 throw new IllegalArgumentException("No simulated element for: " + attributeRef);
 
-            element.setState(value);
+            element.setState(attributeState.getValue());
 
-            if (isSensorUpdate) {
-                LOG.fine("Propagating state change as sensor update: " + element);
-                onSensorUpdate(new AttributeValueChange(attributeRef, value));
+            if (simulateSensorRead) {
+                LOG.info("Propagating state change as sensor read: " + element);
+                onSensorUpdate(new AttributeEvent(attributeState));
+            } else if (element.isReflectActuatorWrites()) {
+                LOG.info("Reflecting actuator write as sensor read: " + element);
+                onSensorUpdate(new AttributeEvent(attributeState));
             }
         }
     }
@@ -115,22 +147,22 @@ public class SimulatorProtocol extends AbstractProtocol {
         }
     }
 
-    protected SimulatorElement createElement(String elementType, ThingAttribute attribute) {
+    protected SimulatorElement createElement(String elementType, boolean reflectActuatorWrites, ThingAttribute attribute) {
         switch (elementType.toLowerCase(Locale.ROOT)) {
-            case "switch":
-                return new SwitchSimulatorElement();
-            case "integer":
-                return new IntegerSimulatorElement();
-            case "decimal":
-                return new DecimalSimulatorElement();
-            case "range":
-                MetadataItem minItem = attribute.firstMetaItem(RANGE_MIN);
-                MetadataItem maxItem = attribute.firstMetaItem(RANGE_MAX);
+            case SwitchSimulatorElement.ELEMENT_NAME:
+                return new SwitchSimulatorElement(reflectActuatorWrites);
+            case IntegerSimulatorElement.ELEMENT_NAME_INTEGER:
+                return new IntegerSimulatorElement(reflectActuatorWrites);
+            case DecimalSimulatorElement.ELEMENT_NAME:
+                return new DecimalSimulatorElement(reflectActuatorWrites);
+            case IntegerSimulatorElement.ELEMENT_NAME_RANGE:
+                MetaItem minItem = attribute.firstMetaItem(RANGE_MIN);
+                MetaItem maxItem = attribute.firstMetaItem(RANGE_MAX);
                 double min = minItem != null ? minItem.getValueAsInteger() : 0;
                 double max = maxItem != null ? maxItem.getValueAsInteger() : 100;
-                return new IntegerSimulatorElement(min, max);
-            case "color":
-                return new ColorSimulatorElement();
+                return new IntegerSimulatorElement(reflectActuatorWrites, min, max);
+            case ColorSimulatorElement.ELEMENT_NAME:
+                return new ColorSimulatorElement(reflectActuatorWrites);
             default:
                 throw new UnsupportedOperationException("Can't simulate element '" + elementType + "': " + attribute);
         }

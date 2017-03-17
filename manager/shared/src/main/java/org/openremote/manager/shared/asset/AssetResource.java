@@ -19,14 +19,13 @@
  */
 package org.openremote.manager.shared.asset;
 
-import elemental.json.JsonValue;
 import jsinterop.annotations.JsType;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.http.SuccessStatusCode;
+import org.openremote.model.AttributeState;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetInfo;
 import org.openremote.model.asset.ProtectedAssetInfo;
-import org.openremote.model.asset.ProtectedUserAssets;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
@@ -45,7 +44,9 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * </li>
  * <li>
  * A <em>restricted</em> user is linked to a subset of assets within its authenticated realm and
- * may have roles that allow read and/or write access to protected asset details (see {@link ProtectedUserAssets}).
+ * may have roles that allow read and/or write access to protected asset details (see
+ * {@link org.openremote.model.asset.UserAsset}).
+ *
  * The only operations a restricted user is able to perform are {@link #getCurrentUserAssets},
  * {@link #updateCurrentUserAsset}, and {@link #updateAttribute}
  * </li>
@@ -90,7 +91,7 @@ public interface AssetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
-    AssetInfo[] getRoot(@BeanParam RequestParams requestParams, @QueryParam("realm") String realm);
+    AssetInfo[] getRoot(@BeanParam RequestParams requestParams, @QueryParam("realmId") String realmId);
 
     /**
      * Retrieve the child assets of the given parent asset. If the authenticated user is the superuser,
@@ -132,7 +133,7 @@ public interface AssetResource {
     void update(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, Asset asset);
 
     /**
-     * Updates an attribute of a user with a JSON value. Regular users can only update assets in
+     * Updates an attribute of an asset. Regular users can only update assets in
      * their authenticated realm, the superuser can update assets in other (all) realms. A 403 status
      * is returned if a regular user tries to update an asset in a realm different than its
      * authenticated realm, or if the user is restricted and the asset to update is not in the set of linked
@@ -140,15 +141,11 @@ public interface AssetResource {
      * the given value does not match the attribute's type.
      */
     @PUT
-    @Path("{assetId}/attribute/{attributeName}")
+    @Path("{assetId}/attribute")
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:assets"})
-    void updateAttribute(@BeanParam RequestParams requestParams,
-                         @PathParam("assetId") String assetId,
-                         @PathParam("attributeName") String attributeName,
-                         JsonValue value);
-
+    void updateAttribute(@BeanParam RequestParams requestParams, AttributeState attributeState);
 
     /**
      * Creates an asset. The identifier value of the asset can be provided, it should be a

@@ -17,6 +17,7 @@ dependencies {
 
     // This is not on regular classpath, only used when compiling GWT/running codeserver
     gwtDev "com.google.gwt:gwt-dev:$gwtVersion"
+
 }
 
 def gwtOutputDir = "${project.buildDir}/gwt/out"

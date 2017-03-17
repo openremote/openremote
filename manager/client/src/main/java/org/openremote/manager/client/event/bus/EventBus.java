@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.client.event.bus;
 
-import org.openremote.manager.shared.event.Event;
+import org.openremote.model.Event;
 
 import java.util.*;
 import java.util.logging.Level;

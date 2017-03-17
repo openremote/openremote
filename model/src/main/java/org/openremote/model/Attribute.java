@@ -19,12 +19,23 @@
  */
 package org.openremote.model;
 
-import elemental.json.*;
-import org.openremote.model.asset.AssetAttributeMeta;
+import elemental.json.Json;
+import elemental.json.JsonObject;
+import elemental.json.JsonValue;
+import org.openremote.model.asset.AssetMeta;
 
 import java.util.NoSuchElementException;
 
-public class Attribute extends AbstractValueHolder<Attribute> {
+import static org.openremote.model.asset.AssetMeta.PROTECTED;
+import static org.openremote.model.asset.AssetMeta.READ_ONLY;
+import static org.openremote.model.asset.AssetMeta.STORE_DATA_POINTS;
+
+/**
+ * Convenience overlay API for {@link JsonObject}.
+ * <p>
+ * Modifies the given or an empty object.
+ */
+public class Attribute extends AbstractValueTimestampHolder<Attribute> {
 
     protected String name;
 
@@ -50,6 +61,13 @@ public class Attribute extends AbstractValueHolder<Attribute> {
         this(name, Json.createObject());
         setType(type);
         setValue(value);
+    }
+
+    @Override
+    protected boolean isValidValue(JsonValue value) {
+        return getType() != null
+            ? getType().isValid(value)
+            : super.isValidValue(value);
     }
 
     public void setName(String name) {
@@ -78,40 +96,32 @@ public class Attribute extends AbstractValueHolder<Attribute> {
         return this;
     }
 
-    public boolean hasMetadata() {
-        return jsonObject.hasKey("metadata");
+    public boolean hasMeta() {
+        return jsonObject.hasKey("meta");
     }
 
-    public Metadata getMetadata() {
-        return hasMetadata() ? new Metadata(jsonObject.getArray("metadata")) : null;
+    public Meta getMeta() {
+        return hasMeta() ? new Meta(jsonObject.getArray("meta")) : null;
     }
 
-    public Attribute setMetadata(Metadata metadata) {
-        if (metadata != null) {
-            jsonObject.put("metadata", metadata.getJsonArray());
-        } else if (jsonObject.hasKey("metadata")) {
-            jsonObject.remove("metadata");
+    public Attribute setMeta(Meta meta) {
+        if (meta != null) {
+            jsonObject.put("meta", meta.getJsonArray());
+        } else if (jsonObject.hasKey("meta")) {
+            jsonObject.remove("meta");
         }
         return this;
     }
 
-    public boolean hasMetaItem(AssetAttributeMeta assetAttributeMeta) {
-        return hasMetaItem(assetAttributeMeta.getName());
-    }
-
     public boolean hasMetaItem(String name) {
-        return hasMetadata() && getMetadata().contains(name);
+        return hasMeta() && getMeta().contains(name);
     }
 
-    public MetadataItem firstMetaItem(AssetAttributeMeta assetAttributeMeta) {
-        return firstMetaItem(assetAttributeMeta.getName());
+    public MetaItem firstMetaItem(String name) {
+        return hasMetaItem(name) ? getMeta().first(name) : null;
     }
 
-    public MetadataItem firstMetaItem(String name) {
-        return hasMetaItem(name) ? getMetadata().first(name) : null;
-    }
-
-    public MetadataItem firstMetaItemOrThrow(String name) throws NoSuchElementException {
+    public MetaItem firstMetaItemOrThrow(String name) throws NoSuchElementException {
         if (!hasMetaItem(name))
             throw new NoSuchElementException("Missing item: " + name);
         return firstMetaItem(name);
@@ -124,4 +134,58 @@ public class Attribute extends AbstractValueHolder<Attribute> {
     public boolean isValid() {
         return getName() != null && getName().length() > 0 && getType() != null;
     }
+
+    public AttributeRef getAttributeRef(String entityId) {
+        return new AttributeRef(entityId, getName());
+    }
+
+    /**
+     * @return The current value and its  timestamp represented as an attribute event.
+     */
+    public AttributeEvent getStateEvent(String assetId) {
+        return new AttributeEvent(
+            getAttributeRef(assetId),
+            getValue(),
+            getValueTimestamp()
+        );
+    }
+
+    /**
+     * Set the attributes' value and updates the value timestamp to event time.
+     *
+     * @throws IllegalArgumentException If a constraint is violated.
+     */
+    public Attribute applyStateEvent(AttributeEvent attributeEvent) throws IllegalArgumentException {
+        if (!attributeEvent.getAttributeState().getAttributeRef().getAttributeName().equals(getName())) {
+            throw new IllegalArgumentException("Attribute name mismatch, expected: " + getName());
+        }
+        return setValue(attributeEvent.getAttributeState().getValue(), attributeEvent.getTimestamp());
+    }
+
+    /* ############################################################################### */
+
+    // The following methods are only applicable to attributes of assets, but they are very convenient here...
+
+    public boolean hasMetaItem(AssetMeta assetMeta) {
+        return hasMetaItem(assetMeta.getName());
+    }
+
+    public MetaItem firstMetaItem(AssetMeta assetMeta) {
+        return firstMetaItem(assetMeta.getName());
+    }
+
+    public boolean isProtected() {
+        return hasMetaItem(PROTECTED) && firstMetaItem(PROTECTED).isValueTrue();
+    }
+
+    public boolean isReadOnly() {
+        return hasMetaItem(READ_ONLY) && firstMetaItem(READ_ONLY).isValueTrue();
+    }
+
+    public boolean isStoreDatapoints() {
+        return hasMetaItem(STORE_DATA_POINTS) && firstMetaItem(STORE_DATA_POINTS).isValueTrue();
+    }
+
+    /* ############################################################################### */
+
 }

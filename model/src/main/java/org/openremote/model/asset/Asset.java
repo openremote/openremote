@@ -20,31 +20,168 @@
 package org.openremote.model.asset;
 
 import elemental.json.JsonObject;
+import org.openremote.model.IdentifiableEntity;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
-import java.util.Arrays;
-import java.util.Date;
+import java.util.*;
 
 import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 
+// @formatter:off
 /**
  * The main model class of this software.
  * <p>
  * An asset is an identifiable item in a composite relationship with other assets. This tree
  * of assets can be managed through a <code>null</code> {@link #parentId} property for root
- * items, and a valid parent identifier for sub-items.
+ * assets, and a valid parent identifier for sub-assets.
  * <p>
- * Each asset has dynamically typed optional attributes with an underlying
- * {@link elemental.json.Json} object model. Use the {@link org.openremote.model.Attributes}
+ * An asset is stored in and therefore access-controlled through a {@link #realmId}, the
+ * transient properties {@link #tenantRealm} (the realm name) and {@link #tenantDisplayName} are
+ * also resolved and available when the asset is loaded from storage.
+ * <p>
+ * The {@link #createdOn} value is milliseconds since the Unix epoch.
+ * <p>
+ * The {@link #type} of the asset is an arbitrary string, it should be a URI, thus avoiding
+ * collisions and representing "ownership" of asset type. Well-known asset types handled by
+ * the core platform are defined in {@link AssetType}, third-party extensions can defined
+ * their own asset types.
+ * <p>
+ * An asset may have dynamically-typed {@link #attributes} with an underlying
+ * {@link elemental.json.JsonObject} model. Use the {@link org.openremote.model.Attributes}
  * class to work with this API.
  * <p>
- * The location of an asset is stored as a pair of LNG/LAT coordinates.
+ * The {@link #path} is a list of parent asset identifiers, starting with the root of the
+ * asset tree.
+ * <p>
+ * The {@link #coordinates} are a pair of LNG/LAT values with the location of the asset.
+ * <p>
+ * Example JSON representation of an asset tree:
+ * <blockquote><pre>{@code
+{
+  "id": "0oI7Gf_kTh6WyRJFUTr8Lg",
+  "version": 0,
+  "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248"
+  "tenant": "customerA",
+  "tenantDisplayName": "Customer A",
+  "createdOn": 1489042784142,
+  "name": "Smart Home",
+  "type": "urn:openremote:asset:building",
+  "path": [
+    "0oI7Gf_kTh6WyRJFUTr8Lg"
+  ],
+  "coordinates": [
+    5.469751699216005,
+    51.44760787406028
+  ]
+}
+ * }</pre></blockquote>
+ * <blockquote><pre>{@code
+{
+  "id": "B0x8ZOqZQHGjq_l0RxAJBA",
+  "version": 0,
+  "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248"
+  "tenant": "customerA",
+  "tenantDisplayName": "Customer A",
+  "createdOn": 1489042784148,
+  "name": "Apartment 1",
+  "type": "urn:openremote:asset:residence",
+  "parentId": "0oI7Gf_kTh6WyRJFUTr8Lg",
+  "path": [
+    "0oI7Gf_kTh6WyRJFUTr8Lg",
+    "B0x8ZOqZQHGjq_l0RxAJBA"
+  ],
+  "coordinates": [
+    5.469751699216005,
+    51.44760787406028
+  ]
+}
+ * }</pre></blockquote>
+ * <blockquote><pre>{@code
+{
+  "id": "bzlRiJmSSMCl8HIUt9-lMg",
+  "version": 0,
+  "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248"
+  "tenant": "customerA",
+  "tenantDisplayName": "Customer A",
+  "createdOn": 1489042784157,
+  "name": "Livingroom",
+  "type": "urn:openremote:asset:room",
+  "parentId": "B0x8ZOqZQHGjq_l0RxAJBA",
+  "path": [
+    "0oI7Gf_kTh6WyRJFUTr8Lg",
+    "B0x8ZOqZQHGjq_l0RxAJBA",
+    "bzlRiJmSSMCl8HIUt9-lMg"
+  ],
+  "coordinates": [
+    5.469751699216005,
+    51.44760787406028
+  ]
+}
+ * }</pre></blockquote>
+ * <blockquote><pre>{@code
+{
+  "id": "W7GV_lFeQVyHLlgHgE3dEQ",
+  "version": 0,
+  "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248"
+  "tenant": "customerA",
+  "tenantDisplayName": "Customer A",
+  "createdOn": 1489042784164,
+  "name": "Livingroom Thermostat",
+  "type": "urn:openremote:asset:thing",
+  "parentId": "bzlRiJmSSMCl8HIUt9-lMg",
+  "path": [
+    "0oI7Gf_kTh6WyRJFUTr8Lg",
+    "B0x8ZOqZQHGjq_l0RxAJBA",
+    "bzlRiJmSSMCl8HIUt9-lMg",
+    "W7GV_lFeQVyHLlgHgE3dEQ"
+  ],
+  "coordinates": [
+    5.460315214821094,
+    51.44541688237109
+  ],
+  "attributes": {
+    "currentTemperature": {
+      "meta": [
+        {
+          "name": "urn:openremote:asset:meta:label",
+          "value": "Current Temp"
+        },
+        {
+          "name": "urn:openremote:asset:meta:protected",
+          "value": true
+        },
+        {
+          "name": "urn:openremote:asset:meta:readOnly",
+          "value": true
+        },
+        {
+          "name": "urn:openremote:foo:bar",
+          "value": "FOO"
+        },
+        {
+          "name": "urn:thirdparty:bar",
+          "value": "BAR"
+        }
+      ],
+      "type": "Decimal",
+      "value": 19.2,
+      "valueTimestamp": 1.489670166115E12
+    },
+    "somethingPrivate": {
+      "type": "String",
+      "value": "Foobar",
+      "valueTimestamp": 1.489670156115E12
+    }
+  }
+}
+ * }</pre></blockquote>
  */
+// @formatter:on
 @MappedSuperclass
 @Table(name = "ASSET")
-public class Asset {
+public class Asset implements IdentifiableEntity {
 
     @Id
     @Column(name = "ID", length = 27)
@@ -56,8 +193,8 @@ public class Asset {
     protected long version;
 
     @NotNull
-    @Column(name = "TENANT_REALM", nullable = false)
-    protected String realm;
+    @Column(name = "REALM_ID", nullable = false)
+    protected String realmId;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CREATED_ON", updatable = false, nullable = false)
@@ -69,7 +206,7 @@ public class Asset {
     protected String name;
 
     @NotNull
-    @Column(name = "ASSET_TYPE", nullable = false)
+    @Column(name = "ASSET_TYPE", nullable = false, updatable = false)
     protected String type;
 
     @Column(name = "PARENT_ID")
@@ -78,6 +215,12 @@ public class Asset {
     @Column(name = "ATTRIBUTES", columnDefinition = "jsonb")
     @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_OBJECT_TYPE)
     protected JsonObject attributes;
+
+    @Transient
+    protected String tenantRealm;
+
+    @Transient
+    protected String tenantDisplayName;
 
     @Transient
     protected String[] path;
@@ -92,8 +235,8 @@ public class Asset {
         this(null, name, type);
     }
 
-    public Asset(String realm, String name, String type) {
-        this.realm = realm;
+    public Asset(String realmId, String name, String type) {
+        this.realmId = realmId;
         this.name = name;
         this.type = type;
     }
@@ -107,7 +250,7 @@ public class Asset {
     }
 
     public Asset(Asset parent) {
-        this.realm = parent.getRealm();
+        this.realmId = parent.getRealmId();
         this.parentId = parent.getId();
     }
 
@@ -127,12 +270,12 @@ public class Asset {
         this.version = version;
     }
 
-    public String getRealm() {
-        return realm;
+    public String getRealmId() {
+        return realmId;
     }
 
-    public void setRealm(String realm) {
-        this.realm = realm;
+    public void setRealmId(String realmId) {
+        this.realmId = realmId;
     }
 
     public Date getCreatedOn() {
@@ -171,6 +314,22 @@ public class Asset {
         this.parentId = parentId;
     }
 
+    public String getTenantRealm() {
+        return tenantRealm;
+    }
+
+    public void setTenantRealm(String tenantRealm) {
+        this.tenantRealm = tenantRealm;
+    }
+
+    public String getTenantDisplayName() {
+        return tenantDisplayName;
+    }
+
+    public void setTenantDisplayName(String tenantDisplayName) {
+        this.tenantDisplayName = tenantDisplayName;
+    }
+
     public JsonObject getAttributes() {
         return attributes;
     }
@@ -179,6 +338,10 @@ public class Asset {
         this.attributes = attributes;
     }
 
+    /**
+     * The identifiers of all parents representing the path in the tree. The last element
+     * is the identifier of this instance.
+     */
     public String[] getPath() {
         return path;
     }
@@ -203,13 +366,8 @@ public class Asset {
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "id='" + id + '\'' +
-            ", realm='" + realm + '\'' +
             ", name='" + name + '\'' +
-            ", createOn='" + createdOn + '\'' +
             ", type ='" + type + '\'' +
-            ", parent ='" + parentId + '\'' +
-            ", path ='" + Arrays.toString(path) + '\'' +
-            ", coordinates ='" + Arrays.toString(coordinates) + '\'' +
             '}';
     }
 }

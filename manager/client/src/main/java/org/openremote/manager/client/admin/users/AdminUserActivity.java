@@ -28,7 +28,7 @@ import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.model.Consumer;
 import org.openremote.model.Runnable;
-import org.openremote.manager.shared.event.ui.ShowInfoEvent;
+import org.openremote.manager.client.event.ShowInfoEvent;
 import org.openremote.manager.shared.security.Credential;
 import org.openremote.manager.shared.security.Role;
 import org.openremote.manager.shared.security.User;

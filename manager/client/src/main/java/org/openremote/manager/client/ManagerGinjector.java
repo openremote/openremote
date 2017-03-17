@@ -25,7 +25,7 @@ import org.openremote.manager.client.admin.AdminModule;
 import org.openremote.manager.client.app.AppController;
 import org.openremote.manager.client.app.AppModule;
 import org.openremote.manager.client.assets.AssetsModule;
-import org.openremote.manager.client.flows.FlowsModule;
+import org.openremote.manager.client.apps.AppsModule;
 import org.openremote.manager.client.map.MapModule;
 import org.openremote.manager.client.mvp.MVPModule;
 import org.openremote.manager.client.rules.RulesModule;
@@ -40,7 +40,7 @@ import org.openremote.manager.client.user.UserModule;
     MapModule.class,
     AssetsModule.class,
     RulesModule.class,
-    FlowsModule.class,
+    AppsModule.class,
     AdminModule.class,
     UserModule.class
 })

@@ -97,4 +97,10 @@ public class SetupService implements ContainerService {
     public <S extends Setup> S getTaskOfType(Class<S> setupType) {
         return setupTasks.getTaskOfType(setupType);
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            '}';
+    }
 }

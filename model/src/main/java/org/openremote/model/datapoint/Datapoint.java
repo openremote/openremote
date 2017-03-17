@@ -19,10 +19,10 @@
  */
 package org.openremote.model.datapoint;
 
-import elemental.json.JsonObject;
 import elemental.json.JsonValue;
+import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeRef;
-import org.openremote.model.AttributeValueChange;
+import org.openremote.model.AttributeState;
 
 import javax.persistence.Column;
 import javax.persistence.Id;
@@ -38,6 +38,7 @@ import static org.openremote.model.Constants.PERSISTENCE_JSON_VALUE_TYPE;
  * <p>
  */
 @MappedSuperclass
+@IdClass(Datapoint.class)
 public abstract class Datapoint implements Serializable {
 
     @Id
@@ -60,15 +61,31 @@ public abstract class Datapoint implements Serializable {
     public Datapoint() {
     }
 
-    public Datapoint(AttributeValueChange attributeValueChange) {
-        this(attributeValueChange.getAttributeRef(), attributeValueChange.getValue());
+    public Datapoint(AttributeState attributeState) {
+        this(attributeState.getAttributeRef(), attributeState.getValue());
+    }
+
+    public Datapoint(AttributeEvent stateEvent) {
+        this(stateEvent.getAttributeState(), stateEvent.getTimestamp());
+    }
+
+    public Datapoint(AttributeState attributeState, long timestamp) {
+        this(attributeState.getAttributeRef(), attributeState.getValue(), timestamp);
     }
 
     public Datapoint(AttributeRef attributeRef, JsonValue value) {
-        this(attributeRef.getEntityId(), attributeRef.getAttributeName(), System.currentTimeMillis(), value);
+        this(attributeRef.getEntityId(), attributeRef.getAttributeName(), value);
     }
 
-    public Datapoint(String entityId, String attributeName, long timestamp, JsonValue value) {
+    public Datapoint(AttributeRef attributeRef, JsonValue value, long timestamp) {
+        this(attributeRef.getEntityId(), attributeRef.getAttributeName(), value, timestamp);
+    }
+
+    public Datapoint(String entityId, String attributeName, JsonValue value) {
+        this(entityId, attributeName, value, System.currentTimeMillis());
+    }
+
+    public Datapoint(String entityId, String attributeName, JsonValue value, long timestamp) {
         this.entityId = entityId;
         this.attributeName = attributeName;
         this.timestamp = timestamp;

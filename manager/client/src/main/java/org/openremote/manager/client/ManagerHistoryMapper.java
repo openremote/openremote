@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -26,20 +26,30 @@ import org.openremote.manager.client.admin.tenant.AdminTenantPlace;
 import org.openremote.manager.client.admin.tenant.AdminTenantsPlace;
 import org.openremote.manager.client.admin.users.AdminUserPlace;
 import org.openremote.manager.client.admin.users.AdminUsersPlace;
+import org.openremote.manager.client.apps.AppsPlace;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.asset.AssetPlace;
-import org.openremote.manager.client.flows.FlowsPlace;
-import org.openremote.manager.client.map.MapPlace;
-import org.openremote.manager.client.rules.RulesPlace;
+import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
+import org.openremote.manager.client.map.MapAssetPlace;
+import org.openremote.manager.client.map.MapTenantPlace;
+import org.openremote.manager.client.rules.asset.AssetRulesListPlace;
+import org.openremote.manager.client.rules.global.GlobalRulesEditorPlace;
+import org.openremote.manager.client.rules.global.GlobalRulesListPlace;
+import org.openremote.manager.client.rules.tenant.TenantRulesListPlace;
 import org.openremote.manager.client.user.UserAccountPlace;
 
 @WithTokenizers(
     { // You might have to restart SuperDevMode after changing tokenizers
-        MapPlace.Tokenizer.class,
+        MapAssetPlace.Tokenizer.class,
+        MapTenantPlace.Tokenizer.class,
         AssetsDashboardPlace.Tokenizer.class,
+        AssetsTenantPlace.Tokenizer.class,
         AssetPlace.Tokenizer.class,
-        RulesPlace.Tokenizer.class,
-        FlowsPlace.Tokenizer.class,
+        GlobalRulesListPlace.Tokenizer.class,
+        GlobalRulesEditorPlace.Tokenizer.class,
+        TenantRulesListPlace.Tokenizer.class,
+        AssetRulesListPlace.Tokenizer.class,
+        AppsPlace.Tokenizer.class,
         AdminOverviewPlace.Tokenizer.class,
         AdminTenantsPlace.Tokenizer.class,
         AdminTenantPlace.Tokenizer.class,

@@ -54,18 +54,6 @@
 
                     <w:Hyperlink
                             addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                            icon="map"
-                            targetHistoryToken="map:"
-                            text="Show all assets"/>
-
-                    <w:PushButton
-                            ui:field="fullscreenButton"
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                            icon="expand"
-                            text="Fullscreen"/>
-
-                    <w:Hyperlink
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                             icon="plus-square"
                             targetHistoryToken="asset:"
                             text="{managerMessages.createAsset}"/>

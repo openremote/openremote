@@ -21,39 +21,39 @@ package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.view.client.HasData;
-import org.openremote.manager.client.event.bus.EventListener;
-import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetInfo;
 
+/**
+ * Browse tenants and assets in a tree view.
+ *
+ * Listen to {@link AssetBrowserSelection} events to be notified of user selections. Call
+ * the methods {@link Presenter#selectAsset(Asset)}, {@link Presenter#selectTenant(String)}
+ * and {@link Presenter#clearSelection()} to modify the browser's current selected node.
+ */
 public interface AssetBrowser extends IsWidget {
 
     interface Presenter {
-
-        AssetBrowser getView();
 
         void onViewAttached();
 
         void onViewDetached();
 
-        void loadAssetChildren(AssetInfo parent, HasData<AssetInfo> display);
+        void loadNodeChildren(AssetTreeNode parent, HasData<AssetTreeNode> display);
 
-        void onAssetSelected(AssetInfo assetInfo);
+        void onNodeSelected(AssetTreeNode treeNode);
 
         void selectAsset(Asset asset);
 
-        void deselectAsset();
+        void selectTenant(String realmId);
 
-        EventRegistration<AssetSelectedEvent> onSelection(EventListener<AssetSelectedEvent> listener);
-
-        void removeRegistration(EventRegistration registration);
+        void clearSelection();
     }
 
     void setPresenter(Presenter presenter);
 
-    void showAndSelectAsset(String[] path, String selectedAssetId, boolean scrollIntoView);
+    void showAndSelectNode(String[] path, AssetTreeNode treeNode, boolean scrollIntoView);
 
-    void deselectAssets();
+    void clearSelection();
 
     void refreshAssets(boolean isRootRefresh);
 

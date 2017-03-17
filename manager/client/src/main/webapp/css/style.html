@@ -105,7 +105,8 @@
         padding: 1em;
     }
 
-    .or-PushButton {
+    .or-PushButton,
+    .or-FormFileUploadLabel {
         user-select: none;
         -webkit-user-select: none; /* Chrome/Safari/Opera */
         -moz-user-select: none; /* Firefox */
@@ -120,15 +121,19 @@
     }
 
     .or-PushButton,
-    .or-PushButton > * {
+    .or-FormFileUploadLabel,
+    .or-PushButton > *,
+    .or-FormFileUploadLabel > * {
         display: inline-block;
     }
 
-    .or-PushButton:hover {
+    .or-PushButton:hover,
+    .or-FormFileUploadLabel:hover {
         opacity: .8;
     }
 
-    .or-PushButton:active {
+    .or-PushButton:active,
+    .or-FormFileUploadLabel:active {
         -webkit-filter: contrast(44%);
         filter: contrast(44%);
         opacity: inherit;
@@ -138,7 +143,7 @@
         margin-left: 0.6em;
     }
 
-    .or-PushButton.or-PushButton-up-disabled {
+    .or-PushButton.or-PushButton-up-disabled{
         cursor: not-allowed;
         opacity: .44;
     }
@@ -160,7 +165,7 @@
     }
 
     .or-HyperlinkIcon {
-        width: 0.6em;
+        width: 0.8em;
     }
 
     .or-Hyperlink a,
@@ -278,6 +283,11 @@
         font-size: 1.2em;
     }
 
+    .or-FormInlineLabelIcon {
+        margin-right: 0.4em;
+        font-size: 1.2em;
+    }
+
     .or-FormLabel.larger {
         min-width: 15em;
     }
@@ -353,6 +363,20 @@
         border-bottom: 1px solid transparent;
     }
 
+    .or-FormTextArea {
+        font-size: 1em;
+        font-family: monospace;
+        border: 1px solid;
+        padding: 0.4em;
+        margin: 0 0.4em;
+        white-space: pre;
+    }
+
+    .or-FormFileUploadLabel input[type="file"] {
+        position: fixed;
+        top: -10000px;
+    }
+
     .or-FormButton,
     .or-FormButtonDanger,
     .or-FormButtonPrimary {
@@ -375,6 +399,8 @@
         text-shadow: none;
         border-bottom: 1px solid;
         text-align: left;
+        padding-right: 1em;
+        white-space:nowrap;
     }
 
     .or-FormTableHoveredRow {
@@ -386,7 +412,12 @@
     }
 
     .or-FormTableCell {
-        padding: 0.4em;
+        padding: 0.4em 1.2em 0.4em 0.4em;
+        white-space: nowrap;
+    }
+
+    .or-FormTableFirstColumn {
+        white-space: normal;
     }
 
     .or-FormTreeItem {

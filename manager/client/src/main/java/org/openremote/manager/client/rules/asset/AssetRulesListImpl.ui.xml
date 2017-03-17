@@ -1,0 +1,84 @@
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+             xmlns:g="urn:import:com.google.gwt.user.client.ui"
+             xmlns:w="urn:import:org.openremote.manager.client.widget">
+
+    <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
+    <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
+
+    <ui:style>
+        .rulesControls {
+
+        }
+
+        .navItem {
+            margin: 0 1em;
+        }
+    </ui:style>
+
+    <ui:style field="tableStyle" type="org.openremote.manager.client.rules.RulesDefinitionTable.Style">
+        .nameColumn {
+            width: 100%;
+        }
+
+        .createOnColumn {
+        }
+
+        .lastModifiedColumn {
+        }
+
+        .enabledColumn {
+        }
+
+    </ui:style>
+
+    <w:FlexSplitPanel handleStyle="{widgetStyle.SplitPanelHandle}"
+                      firstPanelWidth="250"
+                      firstPanelMinWidth="250"
+                      secondPanelMinWidth="600">
+        <w:first>
+            <g:HTMLPanel ui:field="sidebarContainer"
+                         styleName="flex layout vertical {widgetStyle.SidebarContent}"/>
+        </w:first>
+        <w:second>
+            <g:HTMLPanel styleName="flex layout vertical">
+
+                <g:HTMLPanel
+                        styleName="layout horizontal center end-justified {style.rulesControls} {widgetStyle.SecondaryNavHorizontal}">
+
+                    <w:Hyperlink
+                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
+                            icon="chain"
+                            targetHistoryToken="globalRules:"
+                            text="{managerMessages.manageGlobalRulesets}"/>
+
+                </g:HTMLPanel>
+
+                <g:HTMLPanel styleName="flex {widgetStyle.MainContent}">
+
+                    <div class="{widgetStyle.Headline1}">
+                        <g:InlineLabel text="{managerMessages.manageAssetRulesets}: "/>
+                        <g:InlineLabel ui:field="assetLabel"/>
+                    </div>
+
+                    <w:Form>
+                        <w:FormGroup>
+                            <w:field>
+                                <w:FormField>
+                                    <w:FormButton ui:field="createButton" primary="true" text="{managerMessages.newRuleset}"
+                                                  icon="plus-square"/>
+                                </w:FormField>
+                            </w:field>
+                        </w:FormGroup>
+
+                        <g:SimplePanel ui:field="tableContainer"/>
+
+                    </w:Form>
+
+                </g:HTMLPanel>
+
+            </g:HTMLPanel>
+
+        </w:second>
+    </w:FlexSplitPanel>
+
+</ui:UiBinder>

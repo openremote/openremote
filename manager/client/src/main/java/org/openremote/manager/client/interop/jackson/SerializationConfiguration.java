@@ -21,8 +21,7 @@ package org.openremote.manager.client.interop.jackson;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.github.nmorel.gwtjackson.client.AbstractConfiguration;
-import elemental.json.JsonArray;
-import elemental.json.JsonObject;
+import elemental.json.*;
 
 public class SerializationConfiguration extends AbstractConfiguration {
 
@@ -33,8 +32,11 @@ public class SerializationConfiguration extends AbstractConfiguration {
         setterVisibility(JsonAutoDetect.Visibility.NONE);
         isGetterVisibility(JsonAutoDetect.Visibility.NONE);
         creatorVisibility(JsonAutoDetect.Visibility.NONE);
-
         type(JsonObject.class).serializer(ElementalJsonSerializer.class).deserializer(ElementalJsonDeserializer.class);
         type(JsonArray.class).serializer(ElementalJsonSerializer.class).deserializer(ElementalJsonDeserializer.class);
+        type(JsonNull.class).serializer(ElementalJsonSerializer.class).deserializer(ElementalJsonDeserializer.class);
+        type(JsonNumber.class).serializer(ElementalJsonSerializer.class).deserializer(ElementalJsonDeserializer.class);
+        type(JsonBoolean.class).serializer(ElementalJsonSerializer.class).deserializer(ElementalJsonDeserializer.class);
+        type(JsonString.class).serializer(ElementalJsonSerializer.class).deserializer(ElementalJsonDeserializer.class);
     }
 }

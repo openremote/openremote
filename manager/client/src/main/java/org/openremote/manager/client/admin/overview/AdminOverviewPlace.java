@@ -39,4 +39,8 @@ public class AdminOverviewPlace extends AdminPlace {
         }
     }
 
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{}";
+    }
 }

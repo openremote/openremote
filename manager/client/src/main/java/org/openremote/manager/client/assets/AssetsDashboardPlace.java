@@ -19,11 +19,11 @@
  */
 package org.openremote.manager.client.assets;
 
+import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceTokenizer;
 import com.google.gwt.place.shared.Prefix;
-import org.openremote.manager.client.assets.browser.AssetBrowsingPlace;
 
-public class AssetsDashboardPlace extends AssetBrowsingPlace implements AssetsPlace {
+public class AssetsDashboardPlace extends Place implements AssetsPlace {
 
     public AssetsDashboardPlace() {
     }
@@ -40,5 +40,10 @@ public class AssetsDashboardPlace extends AssetBrowsingPlace implements AssetsPl
         public String getToken(AssetsDashboardPlace place) {
             return "";
         }
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{}";
     }
 }

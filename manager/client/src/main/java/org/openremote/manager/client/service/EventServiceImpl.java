@@ -25,12 +25,10 @@ import elemental.html.Location;
 import elemental.html.WebSocket;
 import org.openremote.manager.client.event.*;
 import org.openremote.manager.client.event.bus.EventBus;
+import org.openremote.manager.client.event.session.*;
 import org.openremote.manager.client.util.Timeout;
-import org.openremote.manager.shared.event.Event;
-import org.openremote.manager.shared.event.Message;
-import org.openremote.manager.shared.event.session.*;
-import org.openremote.manager.shared.event.ui.ShowFailureEvent;
 import org.openremote.model.Constants;
+import org.openremote.model.Event;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -169,7 +167,7 @@ public class EventServiceImpl implements EventService {
         }
 
         securityService.updateToken(
-            Constants.ACCESS_TOKEN_LIFESPAN_SECONDS/2,
+            Constants.ACCESS_TOKEN_LIFESPAN_SECONDS / 2,
             refreshed -> {
                 // If it wasn't refreshed, it was still valid, in both cases we can continue
                 LOG.fine("Connecting to event websocket: " + serviceUrl);
@@ -230,17 +228,12 @@ public class EventServiceImpl implements EventService {
 
     protected void onDataReceived(String data) {
         Event event = eventMapper.read(data);
-        if (event.getType().equals(Event.getType(Message.class))) {
-            Message message = (Message) event;
-            eventBus.dispatch(new MessageReceivedEvent(message));
-        } else {
-            eventBus.dispatch(event);
-        }
+        eventBus.dispatch(event);
     }
 
     protected void reconnect() {
         LOG.fine("Session reconnection attempt '" + serviceUrl + "' with delay milliseconds: " + DELAY_MILLIS);
         SessionConnectEvent event = new SessionConnectEvent();
-        Timeout.debounce(event.getType(), () -> eventBus.dispatch(event), DELAY_MILLIS);
+        Timeout.debounce(event.getEventType(), () -> eventBus.dispatch(event), DELAY_MILLIS);
     }
 }

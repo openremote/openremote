@@ -4,12 +4,11 @@ import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.shared.asset.AssetResource
 import org.openremote.model.Attributes
-import org.openremote.model.Metadata
+import org.openremote.model.Meta
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.ProtectedAssetInfo
 import org.openremote.model.AttributeType
-import org.openremote.model.AttributeUnits
-import org.openremote.model.asset.AssetAttributeMeta
+import org.openremote.model.asset.AssetMeta
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import org.openremote.model.asset.AssetType
@@ -31,10 +30,12 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "an authenticated admin user"
-        def realm = MASTER_REALM
+        def authRealm = MASTER_REALM
+        def masterRealmId = getActiveTenantRealmId(container, MASTER_REALM)
+        def customerARealmId = getActiveTenantRealmId(container, "customerA")
         def accessToken = authenticate(
                 container,
-                realm,
+                authRealm,
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
@@ -43,7 +44,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         and: "the asset resource"
         def client = createClient(container).build()
         def serverUri = serverUri(serverPort)
-        def assetResource = getClientTarget(client, serverUri, realm, accessToken).proxy(AssetResource.class)
+        def assetResource = getClientTarget(client, serverUri, authRealm, accessToken).proxy(AssetResource.class)
 
         /* ############################################## READ ####################################### */
 
@@ -54,7 +55,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assetInfos.length == 0
 
         when: "the root assets of the authenticated realm are retrieved"
-        assetInfos = assetResource.getRoot(null, MASTER_REALM)
+        assetInfos = assetResource.getRoot(null, masterRealmId)
 
         then: "result should match"
         assetInfos.length == 1
@@ -75,7 +76,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assetInfos[0].id == managerDemoSetup.smartOfficeId
 
         when: "the root assets of the given realm are retrieved"
-        assetInfos = assetResource.getRoot(null, "customerA")
+        assetInfos = assetResource.getRoot(null, customerARealmId)
 
         then: "result should match"
         assetInfos.length == 1
@@ -106,7 +107,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         /* ############################################## WRITE ####################################### */
 
         when: "an asset is created in the authenticated realm"
-        def testAsset = new Asset(MASTER_REALM, "Test Room", AssetType.ROOM)
+        def testAsset = new Asset(masterRealmId, "Test Room", AssetType.ROOM)
         testAsset.setId(IdentifierUtil.generateGlobalUniqueId())
         assetResource.create(null, testAsset)
         testAsset = assetResource.get(null, testAsset.getId())
@@ -114,7 +115,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "the asset should exist"
         testAsset.name == "Test Room"
         testAsset.wellKnownType == AssetType.ROOM
-        testAsset.realm == MASTER_REALM
+        testAsset.realmId == masterRealmId
         testAsset.parentId == null
 
         when: "an asset is updated with a new parent in the authenticated realm"
@@ -126,13 +127,13 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         testAsset.parentId == managerDemoSetup.groundFloorId
 
         when: "an asset is moved to a foreign realm and made a root asset"
-        testAsset.setRealm("customerA")
+        testAsset.setRealmId(customerARealmId)
         testAsset.setParentId(null)
         assetResource.update(null, testAsset.id, testAsset)
         testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the asset should be updated"
-        testAsset.realm == "customerA"
+        testAsset.realmId == customerARealmId
         testAsset.parentId == null
 
         when: "an asset is updated with a new parent in a foreign realm"
@@ -141,7 +142,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the asset should be updated"
-        testAsset.realm == "customerA"
+        testAsset.realmId == customerARealmId
         testAsset.parentId == managerDemoSetup.smartHomeId
 
         when: "an asset is deleted in the authenticated realm"
@@ -153,11 +154,12 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 404
 
         when: "an asset is deleted in a foreign realm"
-        assetResource.delete(null, managerDemoSetup.apartment1LivingroomId)
+        assetResource.delete(null, managerDemoSetup.apartment1LivingroomThermostatId)
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomThermostatId)
 
-        then: "there should be a conflict because it has children"
+        then: "the asset should be not found"
         ex = thrown()
-        ex.response.status == 400
+        ex.response.status == 404
 
         cleanup: "the server should be stopped"
         stopContainer(container)
@@ -171,10 +173,12 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "an authenticated test user"
-        def realm = MASTER_REALM
+        def authRealm = MASTER_REALM
+        def masterRealmId = getActiveTenantRealmId(container, MASTER_REALM)
+        def customerARealmId = getActiveTenantRealmId(container, "customerA")
         def accessToken = authenticate(
                 container,
-                realm,
+                authRealm,
                 KEYCLOAK_CLIENT_ID,
                 "testuser1",
                 "testuser1"
@@ -183,7 +187,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         and: "the asset resource"
         def client = createClient(container).build()
         def serverUri = serverUri(serverPort)
-        def assetResource = getClientTarget(client, serverUri, realm, accessToken).proxy(AssetResource.class)
+        def assetResource = getClientTarget(client, serverUri, authRealm, accessToken).proxy(AssetResource.class)
 
         /* ############################################## READ ####################################### */
 
@@ -194,7 +198,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assetInfos.length == 0
 
         when: "the root assets of the authenticated realm are retrieved"
-        assetInfos = assetResource.getRoot(null, MASTER_REALM)
+        assetInfos = assetResource.getRoot(null, masterRealmId)
 
         then: "result should match"
         assetInfos.length == 1
@@ -213,10 +217,10 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "result should match"
         assetInfos.length == 1
         assetInfos[0].id == managerDemoSetup.smartOfficeId
-        assetInfos[0].realm == MASTER_REALM
+        assetInfos[0].realmId == masterRealmId
 
         when: "the root assets of the given realm are retrieved"
-        assetInfos = assetResource.getRoot(null, "customerA")
+        assetInfos = assetResource.getRoot(null, customerARealmId)
 
         then: "result should match"
         assetInfos.length == 0
@@ -243,7 +247,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         /* ############################################## WRITE ####################################### */
 
         when: "an asset is created in the master realm"
-        def testAsset = new Asset(MASTER_REALM, "Test Room", AssetType.ROOM)
+        def testAsset = new Asset(masterRealmId, "Test Room", AssetType.ROOM)
         testAsset.setId(IdentifierUtil.generateGlobalUniqueId())
         assetResource.create(null, testAsset)
         testAsset = assetResource.get(null, testAsset.getId())
@@ -251,7 +255,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "the asset should exist"
         testAsset.name == "Test Room"
         testAsset.wellKnownType == AssetType.ROOM
-        testAsset.realm == MASTER_REALM
+        testAsset.realmId == masterRealmId
         testAsset.parentId == null
 
         when: "an asset is updated with a new parent in the authenticated realm"
@@ -263,7 +267,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         testAsset.parentId == managerDemoSetup.groundFloorId
 
         when: "an asset is moved to a foreign realm and made a root asset"
-        testAsset.setRealm("customerA")
+        testAsset.setRealmId(customerARealmId)
         testAsset.setParentId(null)
         assetResource.update(null, testAsset.id, testAsset)
 
@@ -288,8 +292,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 404
 
         when: "an asset is deleted in a foreign realm"
-        assetResource.delete(null, managerDemoSetup.apartment1LivingroomId)
-        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomId)
+        assetResource.delete(null, managerDemoSetup.apartment1LivingroomThermostatId)
+        testAsset = assetResource.get(null, managerDemoSetup.apartment1LivingroomThermostatId)
 
         then: "access should be forbidden"
         ex = thrown()
@@ -306,10 +310,13 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "an authenticated test user"
-        def realm = "customerA"
+        def authRealm = "customerA"
+        def masterRealmId = getActiveTenantRealmId(container, MASTER_REALM)
+        def customerARealmId = getActiveTenantRealmId(container, "customerA")
+        def customerBRealmId = getActiveTenantRealmId(container, "customerB")
         def accessToken = authenticate(
                 container,
-                realm,
+                authRealm,
                 KEYCLOAK_CLIENT_ID,
                 "testuser2",
                 "testuser2"
@@ -318,7 +325,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         and: "the asset resource"
         def client = createClient(container).build()
         def serverUri = serverUri(serverPort)
-        def assetResource = getClientTarget(client, serverUri, realm, accessToken).proxy(AssetResource.class)
+        def assetResource = getClientTarget(client, serverUri, authRealm, accessToken).proxy(AssetResource.class)
 
         /* ############################################## READ ####################################### */
 
@@ -329,7 +336,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assetInfos.length == 0
 
         when: "the root assets of a foreign realm are retrieved"
-        assetInfos = assetResource.getRoot(null, MASTER_REALM)
+        assetInfos = assetResource.getRoot(null, masterRealmId)
 
         then: "result should match"
         assetInfos.length == 0
@@ -340,10 +347,10 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "result should match"
         assetInfos.length == 1
         assetInfos[0].id == managerDemoSetup.smartHomeId
-        assetInfos[0].realm == "customerA"
+        assetInfos[0].realmId == customerARealmId
 
         when: "the root assets of the given realm are retrieved"
-        assetInfos = assetResource.getRoot(null, "customerB")
+        assetInfos = assetResource.getRoot(null, customerBRealmId)
 
         then: "result should match"
         assetInfos.length == 0
@@ -370,7 +377,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         /* ############################################## WRITE ####################################### */
 
         when: "an asset is created in a foreign realm"
-        def testAsset = new Asset(MASTER_REALM, "Test Room", AssetType.ROOM)
+        def testAsset = new Asset(masterRealmId, "Test Room", AssetType.ROOM)
         testAsset.setId(IdentifierUtil.generateGlobalUniqueId())
         assetResource.create(null, testAsset)
 
@@ -388,7 +395,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset is created in the authenticated realm"
-        testAsset = new Asset("customerA", "Test Room", AssetType.ROOM)
+        testAsset = new Asset(customerARealmId, "Test Room", AssetType.ROOM)
         testAsset.setId(IdentifierUtil.generateGlobalUniqueId())
         assetResource.create(null, testAsset)
 
@@ -397,7 +404,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset is deleted in the authenticated realm"
-        assetResource.delete(null, managerDemoSetup.apartment1LivingroomId)
+        assetResource.delete(null, managerDemoSetup.apartment1LivingroomThermostatId)
 
         then: "access should be forbidden"
         ex = thrown()
@@ -421,10 +428,13 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "an authenticated test user"
-        def realm = "customerA"
+        def authRealm = "customerA"
+        def masterRealmId = getActiveTenantRealmId(container, MASTER_REALM)
+        def customerARealmId = getActiveTenantRealmId(container, "customerA")
+        def customerBRealmId = getActiveTenantRealmId(container, "customerB")
         def accessToken = authenticate(
                 container,
-                realm,
+                authRealm,
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
@@ -433,7 +443,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         and: "the asset resource"
         def client = createClient(container).build()
         def serverUri = serverUri(serverPort)
-        def assetResource = getClientTarget(client, serverUri, realm, accessToken).proxy(AssetResource.class)
+        def assetResource = getClientTarget(client, serverUri, authRealm, accessToken).proxy(AssetResource.class)
 
         /* ############################################## READ ####################################### */
 
@@ -446,7 +456,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment1.id == managerDemoSetup.apartment1Id
         apartment1.name == "Apartment 1"
         apartment1.createdOn.getTime() < System.currentTimeMillis()
-        apartment1.realm == "customerA"
+        apartment1.realmId == customerARealmId
         apartment1.type == AssetType.RESIDENCE.value
         apartment1.parentId == managerDemoSetup.smartHomeId
         apartment1.coordinates[0] == 5.469751699216005d
@@ -465,17 +475,17 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         protectedAttributes.get("currentTemperature")
         protectedAttributes.get("currentTemperature").getType() == AttributeType.DECIMAL
         protectedAttributes.get("currentTemperature").getValueAsDecimal() == 19.2d
-        Metadata protectedMetadata = protectedAttributes.get("currentTemperature").getMetadata()
-        protectedMetadata.all().length == 2
-        protectedMetadata.first(AssetAttributeMeta.LABEL).getValueAsString() == "Current Temp"
-        protectedMetadata.first(AssetAttributeMeta.READ_ONLY).getValueAsBoolean()
+        Meta protectedMeta = protectedAttributes.get("currentTemperature").getMeta()
+        protectedMeta.all().length == 2
+        protectedMeta.first(AssetMeta.LABEL).getValueAsString() == "Current Temp"
+        protectedMeta.first(AssetMeta.READ_ONLY).getValueAsBoolean()
 
         ProtectedAssetInfo apartment2 = assetInfos[3]
         apartment2.id == managerDemoSetup.apartment2Id
         apartment2.name == "Apartment 2"
 
         when: "the root assets of a foreign realm are retrieved"
-        assetInfos = assetResource.getRoot(null, MASTER_REALM)
+        assetInfos = assetResource.getRoot(null, masterRealmId)
 
         then: "result should match"
         assetInfos.length == 0
@@ -487,7 +497,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assetInfos.length == 0
 
         when: "the root assets of the given realm are retrieved"
-        assetInfos = assetResource.getRoot(null, "customerB")
+        assetInfos = assetResource.getRoot(null, customerBRealmId)
 
         then: "result should match"
         assetInfos.length == 0
@@ -527,7 +537,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         /* ############################################## WRITE ####################################### */
 
         when: "an asset is created in a foreign realm"
-        def testAsset = new Asset(MASTER_REALM, "Test Room", AssetType.ROOM)
+        def testAsset = new Asset(masterRealmId, "Test Room", AssetType.ROOM)
         testAsset.setId(IdentifierUtil.generateGlobalUniqueId())
         assetResource.create(null, testAsset)
 
@@ -545,7 +555,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset is created in the authenticated realm"
-        testAsset = new Asset("customerA", "Test Room", AssetType.ROOM)
+        testAsset = new Asset(customerARealmId, "Test Room", AssetType.ROOM)
         testAsset.setId(IdentifierUtil.generateGlobalUniqueId())
         assetResource.create(null, testAsset)
 

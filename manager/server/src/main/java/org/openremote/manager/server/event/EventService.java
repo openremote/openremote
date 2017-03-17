@@ -23,11 +23,10 @@ import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.web.socket.WebsocketConstants;
-import org.openremote.manager.shared.event.Event;
+import org.openremote.model.Event;
 
 import java.util.logging.Logger;
 
@@ -94,4 +93,11 @@ public class EventService implements ContainerService {
     public void sendEvent(Event event) {
         sendEvent(null, event);
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            '}';
+    }
+
 }

@@ -21,7 +21,7 @@ package org.openremote.manager.client.event;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreType;
 import com.google.gwt.place.shared.Place;
-import org.openremote.manager.shared.event.Event;
+import org.openremote.model.Event;
 
 @JsonIgnoreType
 public abstract class WillGoToPlaceEvent extends Event {

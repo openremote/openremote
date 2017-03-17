@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -21,23 +21,25 @@ package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
-import org.openremote.manager.client.assets.agent.ConnectorArrayMapper;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
-import org.openremote.manager.client.assets.browser.AssetBrowsingActivity;
+import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
+import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
+import org.openremote.manager.client.event.ShowInfoEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
+import org.openremote.manager.client.map.MapView;
+import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.widget.AttributesEditor;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetInfo;
 import org.openremote.manager.shared.asset.AssetResource;
-import org.openremote.model.asset.AssetType;
-import org.openremote.manager.shared.connector.ConnectorResource;
-import org.openremote.manager.shared.event.ui.ShowInfoEvent;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.model.Attributes;
+import org.openremote.model.Consumer;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetType;
 
 import javax.inject.Inject;
 import java.util.Arrays;
@@ -47,46 +49,63 @@ import java.util.logging.Logger;
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
 public class AssetActivity
-    extends AssetBrowsingActivity<AssetView, AssetPlace>
+    extends AssetBrowsingActivity<AssetPlace>
     implements AssetView.Presenter {
 
     private static final Logger LOG = Logger.getLogger(AssetActivity.class.getName());
 
-    final protected MapResource mapResource;
-    final protected JsonObjectMapper jsonObjectMapper;
+    final AssetView view;
+    final AssetResource assetResource;
+    final AssetMapper assetMapper;
+    final MapResource mapResource;
+    final JsonObjectMapper jsonObjectMapper;
 
-    final protected ConnectorArrayMapper connectorArrayMapper;
-    final protected ConnectorResource connectorResource;
-
-    protected boolean isCreateAsset;
-    protected double[] selectedCoordinates;
-    protected String realm;
-    protected Asset parentAsset;
-    protected boolean isParentSelection;
-    protected AttributesEditor attributesEditor;
+    String assetId;
+    Asset asset;
+    boolean isCreateAsset;
+    double[] selectedCoordinates;
+    String realmId;
+    String tenantDisplayName;
+    Asset parentAsset;
+    boolean isParentSelection;
+    AttributesEditor attributesEditor;
 
     @Inject
     public AssetActivity(Environment environment,
-                         AssetView view,
                          AssetBrowser.Presenter assetBrowserPresenter,
+                         AssetView view,
                          AssetResource assetResource,
                          AssetMapper assetMapper,
                          MapResource mapResource,
-                         JsonObjectMapper jsonObjectMapper,
-                         ConnectorArrayMapper connectorArrayMapper,
-                         ConnectorResource connectorResource) {
-        super(environment, view, assetBrowserPresenter, assetResource, assetMapper);
+                         JsonObjectMapper jsonObjectMapper) {
+        super(environment, assetBrowserPresenter);
+        this.view = view;
+        this.assetResource = assetResource;
+        this.assetMapper = assetMapper;
         this.mapResource = mapResource;
         this.jsonObjectMapper = jsonObjectMapper;
-        this.connectorArrayMapper = connectorArrayMapper;
-        this.connectorResource = connectorResource;
+    }
+
+    @Override
+    protected AppActivity<AssetPlace> init(AssetPlace place) {
+        this.assetId = place.getAssetId();
+        return this;
     }
 
     @Override
     public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
-        super.start(container, eventBus, registrations);
+        view.setPresenter(this);
+        container.setWidget(view.asWidget());
 
-        if (!getView().isMapInitialised()) {
+        registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
+            if (event.isTenantSelection()) {
+                onTenantSelected(event.getSelectedNode().getId());
+            } else if (event.isAssetSelection()) {
+                onAssetSelected(event.getSelectedNode().getId());
+            }
+        }));
+
+        if (!view.isMapInitialised()) {
             environment.getRequestService().execute(
                 jsonObjectMapper,
                 mapResource::getSettings,
@@ -99,89 +118,18 @@ public class AssetActivity
         }
 
         view.setAvailableTypes(AssetType.editable());
-    }
 
-    @Override
-    protected void startCreateAsset() {
-        super.startCreateAsset();
-        isCreateAsset = true;
-        realm = environment.getSecurityService().getAuthenticatedRealm();
-        view.setFormBusy(true);
-        asset = new Asset();
-        asset.setName("My New Asset");
-        asset.setRealm(realm);
-        asset.setType("urn:mydomain:customtype");
-        writeToView();
-        clearViewFieldErrors();
-        view.clearFormMessages();
-        writeParentToView();
-        view.setTypeSelectionEnabled(true);
-        writeTypeToView();
-        writeAttributesEditorToView();
-        view.setFormBusy(false);
-    }
-
-    @Override
-    protected void onAssetLoaded() {
-        isCreateAsset = false;
-        realm = asset.getRealm();
-        writeToView();
-        clearViewFieldErrors();
-        view.clearFormMessages();
-        view.setTypeSelectionEnabled(false);
-        view.setEditable(asset.getWellKnownType().isEditable());
-        writeTypeToView();
-        if (asset.getParentId() != null) {
-            loadAsset(asset.getParentId(), loadedParentAsset -> {
-                this.parentAsset = loadedParentAsset;
-                writeParentToView();
-                writeAttributesEditorToView();
-                view.setFormBusy(false);
+        asset = null;
+        if (assetId != null) {
+            onBeforeAssetLoad();
+            loadAsset(assetId, loadedAsset -> {
+                this.asset = loadedAsset;
+                assetBrowserPresenter.selectAsset(asset);
+                onAssetLoaded();
             });
         } else {
-            writeParentToView();
-            writeAttributesEditorToView();
-            view.setFormBusy(false);
+            startCreateAsset();
         }
-    }
-
-    @Override
-    protected void onAssetsDeselected() {
-    }
-
-    @Override
-    protected void onAssetSelectionChange(AssetInfo selectedAssetInfo) {
-        if (isParentSelection) {
-            loadAsset(selectedAssetInfo.getId(), loadedParentAsset -> {
-                if (Arrays.asList(loadedParentAsset.getPath()).contains(asset.getId())) {
-                    environment.getEventBus().dispatch(
-                        new ShowInfoEvent(environment.getMessages().invalidAssetParent())
-                    );
-                } else {
-                    this.realm = loadedParentAsset.getRealm();
-                    parentAsset = loadedParentAsset;
-                    writeParentToView();
-                }
-            });
-        } else {
-            environment.getPlaceController().goTo(new AssetPlace(selectedAssetInfo.getId()));
-        }
-    }
-
-    @Override
-    protected void onTenantSelected(String id, String realm) {
-        if (isParentSelection) {
-            this.parentAsset = null;
-            this.realm = realm;
-            writeParentToView();
-        } else {
-            environment.getPlaceController().goTo(new AssetsDashboardPlace());
-        }
-    }
-
-    @Override
-    protected void onBeforeAssetLoad() {
-        view.setFormBusy(true);
     }
 
     @Override
@@ -219,9 +167,7 @@ public class AssetActivity
         readParent();
         environment.getRequestService().execute(
             assetMapper,
-            requestParams -> {
-                assetResource.update(requestParams, assetId, asset);
-            },
+            requestParams -> assetResource.update(requestParams, assetId, asset),
             204,
             () -> {
                 view.setFormBusy(false);
@@ -318,7 +264,8 @@ public class AssetActivity
         view.setParentSelection(false);
         if (asset.getParentId() != null) {
             loadAsset(asset.getParentId(), loadedParentAsset -> {
-                this.realm = loadedParentAsset.getRealm();
+                this.realmId = loadedParentAsset.getRealmId();
+                this.tenantDisplayName = loadedParentAsset.getTenantDisplayName();
                 this.parentAsset = loadedParentAsset;
                 writeParentToView();
             });
@@ -334,13 +281,97 @@ public class AssetActivity
         }
     }
 
+    protected void loadAsset(String id, Consumer<Asset> assetConsumer) {
+        environment.getRequestService().execute(
+            assetMapper,
+            requestParams -> assetResource.get(requestParams, id),
+            200,
+            assetConsumer,
+            ex -> handleRequestException(ex, environment)
+        );
+    }
+
+    protected void startCreateAsset() {
+        assetBrowserPresenter.clearSelection();
+        isCreateAsset = true;
+        view.setFormBusy(true);
+        asset = new Asset();
+        asset.setName("My New Asset");
+        asset.setType("urn:mydomain:customtype");
+        writeToView();
+        clearViewFieldErrors();
+        view.clearFormMessages();
+        writeParentToView();
+        view.setTypeSelectionEnabled(true);
+        writeTypeToView();
+        writeAttributesEditorToView();
+        view.setFormBusy(false);
+    }
+
+    protected void onBeforeAssetLoad() {
+        view.setFormBusy(true);
+    }
+
+    protected void onAssetLoaded() {
+        isCreateAsset = false;
+        realmId = asset.getRealmId();
+        tenantDisplayName = asset.getTenantDisplayName();
+        writeToView();
+        clearViewFieldErrors();
+        view.clearFormMessages();
+        view.setTypeSelectionEnabled(false);
+        view.setEditable(asset.getWellKnownType().isEditable());
+        writeTypeToView();
+        if (asset.getParentId() != null) {
+            loadAsset(asset.getParentId(), loadedParentAsset -> {
+                this.parentAsset = loadedParentAsset;
+                writeParentToView();
+                writeAttributesEditorToView();
+                view.setFormBusy(false);
+            });
+        } else {
+            writeParentToView();
+            writeAttributesEditorToView();
+            view.setFormBusy(false);
+        }
+    }
+
+    protected void onTenantSelected(String realmId) {
+        if (isParentSelection) {
+            this.parentAsset = null;
+            this.realmId = realmId;
+            writeParentToView();
+        } else {
+            environment.getPlaceController().goTo(new AssetsTenantPlace(this.realmId));
+        }
+    }
+
+    protected void onAssetSelected(String assetId) {
+        if (isParentSelection) {
+            loadAsset(assetId, loadedParentAsset -> {
+                if (Arrays.asList(loadedParentAsset.getPath()).contains(asset.getId())) {
+                    environment.getEventBus().dispatch(
+                        new ShowInfoEvent(environment.getMessages().invalidAssetParent())
+                    );
+                } else {
+                    this.realmId = loadedParentAsset.getRealmId();
+                    this.tenantDisplayName = loadedParentAsset.getTenantDisplayName();
+                    parentAsset = loadedParentAsset;
+                    writeParentToView();
+                }
+            });
+        } else {
+            environment.getPlaceController().goTo(new AssetPlace(assetId));
+        }
+    }
+
     protected void writeToView() {
         view.setName(asset.getName());
-        view.setRealm(asset.getRealm());
+        view.setTenantDisplayName(asset.getTenantDisplayName());
         view.setCreatedOn(asset.getCreatedOn());
         view.setLocation(asset.getCoordinates());
         if (asset != null && asset.getId() != null) {
-            view.showFeaturesSelection(getFeature(asset));
+            view.showFeaturesSelection(MapView.getFeature(asset));
             view.flyTo(asset.getCoordinates());
         } else {
             view.hideFeaturesSelection();
@@ -351,8 +382,8 @@ public class AssetActivity
     }
 
     protected void writeParentToView() {
-        view.setParent(parentAsset != null ? parentAsset.getName(): environment.getMessages().assetHasNoParent());
-        view.setRealm(realm);
+        view.setParent(parentAsset != null ? parentAsset.getName() : environment.getMessages().assetHasNoParent());
+        view.setTenantDisplayName(parentAsset != null ? parentAsset.getTenantDisplayName() : "-");
     }
 
     protected void writeTypeToView() {
@@ -363,18 +394,8 @@ public class AssetActivity
     }
 
     protected void writeAttributesEditorToView() {
-        switch(asset.getWellKnownType()) {
-            /* TODO
-            case DEVICE:
-                if (parentAsset != null) {
-                    attributesEditor = new DeviceAttributesEditor(
-                        environment,
-                        view.getDeviceAttributesEditorContainer(),
-                        new Attributes(asset.getAttributes()),
-                        parentAsset.getId()
-                    );
-                }
-                break;
+        switch (asset.getWellKnownType()) {
+            /* TODO Implement asset type-specific editors
             case AGENT:
                 attributesEditor = new AgentAttributesEditor(
                     environment,
@@ -417,10 +438,10 @@ public class AssetActivity
 
     protected void readParent() {
         if (parentAsset != null) {
-            asset.setRealm(parentAsset.getRealm());
+            asset.setRealmId(parentAsset.getRealmId());
             asset.setParentId(parentAsset.getId());
         } else {
-            asset.setRealm(realm);
+            asset.setRealmId(realmId);
             asset.setParentId(null);
         }
     }

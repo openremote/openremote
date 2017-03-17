@@ -19,10 +19,10 @@
  */
 package org.openremote.manager.server.agent;
 
-import org.openremote.model.Function;
 import org.openremote.model.Attribute;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.Attributes;
+import org.openremote.model.Function;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.ProtocolConfiguration;
 import org.openremote.model.asset.ThingAttribute;

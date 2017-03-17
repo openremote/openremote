@@ -24,15 +24,18 @@ import org.openremote.model.AttributeType;
 
 public class IntegerSimulatorElement extends SimulatorElement {
 
+    public static final String ELEMENT_NAME_INTEGER = "integer";
+    public static final String ELEMENT_NAME_RANGE = "range";
+
     final protected Double min;
     final protected Double max;
 
-    public IntegerSimulatorElement() {
-        this(null, null);
+    public IntegerSimulatorElement(boolean reflectActuatorWrites) {
+        this(reflectActuatorWrites, null, null);
     }
 
-    public IntegerSimulatorElement(Double min, Double max) {
-        super(AttributeType.INTEGER);
+    public IntegerSimulatorElement(boolean reflectActuatorWrites, Double min, Double max) {
+        super(AttributeType.INTEGER, reflectActuatorWrites);
         this.min = min;
         this.max = max;
     }

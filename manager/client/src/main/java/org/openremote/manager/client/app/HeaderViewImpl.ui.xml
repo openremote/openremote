@@ -53,10 +53,10 @@
                       icon="chain"
                       text="{managerMessages.rules}"/>
 
-        <w:PushButton ui:field="flowsButton"
+        <w:PushButton ui:field="appsButton"
                       addStyleNames="{widgetStyle.NavItem}"
                       icon="connectdevelop"
-                      text="{managerMessages.flows}"/>
+                      text="{managerMessages.apps}"/>
 
         <g:HTMLPanel styleName="flex"/>
 

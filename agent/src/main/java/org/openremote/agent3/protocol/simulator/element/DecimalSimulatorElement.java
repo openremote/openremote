@@ -23,8 +23,9 @@ import org.openremote.model.AttributeType;
 
 public class DecimalSimulatorElement extends SimulatorElement {
 
-    public DecimalSimulatorElement() {
-        super(AttributeType.DECIMAL);
-    }
+    public static final String ELEMENT_NAME = "decimal";
 
+    public DecimalSimulatorElement(boolean reflectActuatorWrites) {
+        super(AttributeType.DECIMAL, reflectActuatorWrites);
+    }
 }

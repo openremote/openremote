@@ -31,9 +31,18 @@ import java.util.Date;
  */
 public class ProtectedServerAssetInfo extends ProtectedAssetInfo {
 
-    public ProtectedServerAssetInfo(String id, long version, String name, Date createdOn, String realm, String type, String parentId, Geometry location, JsonObject attributes) {
+    public ProtectedServerAssetInfo(
+        String id,
+        long version,
+        String name,
+        Date createdOn,
+        String realmId,
+        String type,
+        String parentId,
+        Geometry location,
+        JsonObject attributes) {
         super(
-            id, version, name, createdOn, realm, type, parentId,
+            id, version, name, createdOn, realmId, type, parentId,
             location != null ? new double[]{
                 location.getCoordinate().getOrdinate(Coordinate.X),
                 location.getCoordinate().getOrdinate(Coordinate.Y)

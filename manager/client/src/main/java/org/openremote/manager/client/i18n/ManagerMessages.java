@@ -35,9 +35,13 @@ public interface ManagerMessages extends Messages {
 
     String rules();
 
-    String flows();
+    String apps();
 
     String admin();
+
+    String createOn();
+
+    String lastModifiedOn();
 
     String mapLoading();
 
@@ -287,4 +291,37 @@ public interface ManagerMessages extends Messages {
 
     String enterNameAndSelectType();
 
+    String fullscreen();
+
+    String selectConsoleApp();
+
+    String manageGlobalRulesets();
+
+    String manageTenantRulesets();
+
+    String newRuleset();
+
+    String rulesetName();
+
+    String editGlobalRules();
+
+    String manageTenantAssets();
+
+    String manageAssetRulesets();
+
+    String ruleset();
+
+    String uploadRulesFile();
+
+    String updateRuleset();
+
+    String createRuleset();
+
+    String deleteRuleset();
+
+    String rulesetCreated(String name);
+
+    String rulesetDeleted(String name);
+
+    String rulesetUpdated(String name);
 }

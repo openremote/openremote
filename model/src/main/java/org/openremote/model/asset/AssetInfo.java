@@ -35,7 +35,7 @@ public class AssetInfo {
 
     protected Date createdOn;
 
-    protected String realm;
+    protected String realmId;
 
     protected String type;
 
@@ -51,15 +51,31 @@ public class AssetInfo {
     }
 
     public AssetInfo(Asset asset) {
-        this(asset.getId(), asset.getVersion(), asset.getName(), asset.getCreatedOn(), asset.getRealm(), asset.getType(), asset.getParentId(), asset.getCoordinates());
+        this(
+            asset.getId(),
+            asset.getVersion(),
+            asset.getName(),
+            asset.getCreatedOn(),
+            asset.getRealmId(),
+            asset.getType(),
+            asset.getParentId(),
+            asset.getCoordinates()
+        );
     }
 
-    public AssetInfo(String id, long version, String name, Date createdOn, String realm, String type, String parentId, double[] coordinates) {
+    public AssetInfo(String id,
+                     long version,
+                     String name,
+                     Date createdOn,
+                     String realmId,
+                     String type,
+                     String parentId,
+                     double[] coordinates) {
         this.id = id;
         this.version = version;
         this.name = name;
         this.createdOn = createdOn;
-        this.realm = realm;
+        this.realmId = realmId;
         this.type = type;
         this.parentId = parentId;
         this.coordinates = coordinates;
@@ -86,12 +102,12 @@ public class AssetInfo {
         this.version = version;
     }
 
-    public String getRealm() {
-        return realm;
+    public String getRealmId() {
+        return realmId;
     }
 
-    public void setRealm(String realm) {
-        this.realm = realm;
+    public void setRealmId(String realmId) {
+        this.realmId = realmId;
     }
 
     public String getName() {
@@ -146,9 +162,9 @@ public class AssetInfo {
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "id='" + id + '\'' +
+            ", realmId='" + realmId + '\'' +
             ", name='" + name + '\'' +
-            ", createOn='" + createdOn + '\'' +
-            ", realm='" + realm + '\'' +
+            ", createdOn='" + createdOn + '\'' +
             ", type='" + type + '\'' +
             ", parentId='" + parentId + '\'' +
             ", coordinates='" + Arrays.toString(coordinates) + '\'' +

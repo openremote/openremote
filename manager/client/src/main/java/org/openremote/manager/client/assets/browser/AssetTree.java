@@ -21,20 +21,19 @@ package org.openremote.manager.client.assets.browser;
 
 import org.openremote.manager.client.style.FormTreeStyle;
 import org.openremote.manager.client.widget.FormTree;
-import org.openremote.model.asset.AssetInfo;
 
 public class AssetTree extends FormTree {
 
-    public static class IdSearch extends Search<AssetInfo, String> {
+    public static class IdSearch extends Search<AssetTreeNode, String> {
 
         @Override
-        protected boolean isMatchingPathElement(String pathElement, AssetInfo value) {
+        protected boolean isMatchingPathElement(String pathElement, AssetTreeNode value) {
             return value.getId().equals(pathElement);
         }
     }
 
-    public AssetTree(AssetTreeModel viewModel, AssetInfo rootValue, FormTreeStyle formTreeStyle, CellTreeMessages messages) {
-        super(viewModel, rootValue, formTreeStyle, messages);
+    public AssetTree(AssetTreeModel viewModel, AssetTreeNode rootNode, FormTreeStyle formTreeStyle, CellTreeMessages messages) {
+        super(viewModel, rootNode, formTreeStyle, messages);
     }
 
     @Override
@@ -44,9 +43,9 @@ public class AssetTree extends FormTree {
 
     @Override
     protected String getTreeNodeId(Object treeNodeValue) {
-        if (treeNodeValue instanceof AssetInfo) {
-            AssetInfo assetInfo = (AssetInfo) treeNodeValue;
-            return assetInfo.getId();
+        if (treeNodeValue instanceof AssetTreeNode) {
+            AssetTreeNode node = (AssetTreeNode) treeNodeValue;
+            return node.getId();
         }
         return treeNodeValue.toString();
     }

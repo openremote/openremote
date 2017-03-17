@@ -30,7 +30,7 @@ import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.inject.Inject;
 import org.openremote.manager.client.assets.AssetsPlace;
 import org.openremote.manager.client.admin.AdminPlace;
-import org.openremote.manager.client.flows.FlowsPlace;
+import org.openremote.manager.client.apps.AppsPlace;
 import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.rules.RulesPlace;
 import org.openremote.manager.client.user.UserAccountPlace;
@@ -57,7 +57,7 @@ public class HeaderViewImpl extends Composite implements HeaderView {
     PushButton rulesButton;
 
     @UiField
-    PushButton flowsButton;
+    PushButton appsButton;
 
     @UiField
     PushButton adminButton;
@@ -77,7 +77,7 @@ public class HeaderViewImpl extends Composite implements HeaderView {
         mapButton.setEnabled(presenter.isUserInRole("read:map"));
         assetsButton.setEnabled(presenter.isUserInRole("read:assets"));
         rulesButton.setEnabled(presenter.isUserInRole("read:rules"));
-        flowsButton.setEnabled(presenter.isUserInRole("read:flows"));
+        appsButton.setEnabled(presenter.isUserInRole("read:admin"));
         adminButton.setEnabled(presenter.isUserInRole("read:admin"));
     }
 
@@ -86,7 +86,7 @@ public class HeaderViewImpl extends Composite implements HeaderView {
         mapButton.removeStyleName("active");
         assetsButton.removeStyleName("active");
         rulesButton.removeStyleName("active");
-        flowsButton.removeStyleName("active");
+        appsButton.removeStyleName("active");
         adminButton.removeStyleName("active");
         userButton.removeStyleName("active");
 
@@ -99,8 +99,8 @@ public class HeaderViewImpl extends Composite implements HeaderView {
         if (place instanceof RulesPlace) {
             rulesButton.addStyleName("active");
         }
-        if (place instanceof FlowsPlace) {
-            flowsButton.addStyleName("active");
+        if (place instanceof AppsPlace) {
+            appsButton.addStyleName("active");
         }
         if (place instanceof AdminPlace) {
             adminButton.addStyleName("active");
@@ -136,9 +136,9 @@ public class HeaderViewImpl extends Composite implements HeaderView {
         presenter.navigateRules();
     }
 
-    @UiHandler("flowsButton")
-    void flowsClicked(ClickEvent e) {
-        presenter.navigateFlows();
+    @UiHandler("appsButton")
+    void appsClicked(ClickEvent e) {
+        presenter.navigateApps();
     }
 
     @UiHandler("userButton")

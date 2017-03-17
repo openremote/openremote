@@ -19,30 +19,8 @@
  */
 package org.openremote.manager.client.map;
 
-import com.google.gwt.place.shared.PlaceTokenizer;
-import com.google.gwt.place.shared.Prefix;
-import org.openremote.manager.client.assets.browser.AssetBrowsingPlace;
+import com.google.gwt.place.shared.Place;
 
-public class MapPlace extends AssetBrowsingPlace {
+public abstract class MapPlace extends Place {
 
-    public MapPlace(String assetId) {
-        super(assetId);
-    }
-
-    public MapPlace() {
-    }
-
-    @Prefix("map")
-    public static class Tokenizer implements PlaceTokenizer<MapPlace> {
-
-        @Override
-        public MapPlace getPlace(String token) {
-            return new MapPlace(token != null && token.length() > 0 ? token : null);
-        }
-
-        @Override
-        public String getToken(MapPlace place) {
-            return place.getAssetId() != null ? place.getAssetId() : "";
-        }
-    }
 }

@@ -21,9 +21,9 @@ import org.openremote.manager.client.service.EventService
 import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.service.SecurityService
 import org.openremote.manager.client.style.WidgetStyle
-import org.openremote.manager.shared.event.Event
-import org.openremote.manager.shared.event.ui.ShowFailureEvent
-import org.openremote.manager.shared.event.ui.ShowInfoEvent
+import org.openremote.model.Event
+import org.openremote.manager.client.event.ShowFailureEvent
+import org.openremote.manager.client.event.ShowInfoEvent
 import org.openremote.manager.shared.http.EntityReader
 import org.openremote.manager.shared.security.Tenant
 import org.openremote.manager.shared.security.TenantResource
@@ -149,6 +149,10 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
                 securityService,
                 eventBus,
                 managerMessages,
+                {},
+                {},
+                {},
+                {},
                 {},
                 {},
                 {},

@@ -10,14 +10,23 @@
         <class>org.openremote.container.persistence</class>
 
         <class>org.openremote.manager.server.asset.ServerAsset</class>
+        <class>org.openremote.manager.server.notification.DeviceNotificationToken</class>
+        <class>org.openremote.manager.server.security.UserConfiguration</class>
         <class>org.openremote.model.datapoint.AssetDatapoint</class>
+        <class>org.openremote.model.asset.UserAsset</class>
+        <class>org.openremote.manager.shared.rules.GlobalRulesDefinition</class>
+        <class>org.openremote.manager.shared.rules.TenantRulesDefinition</class>
+        <class>org.openremote.manager.shared.rules.AssetRulesDefinition</class>
 
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
+
         <properties>
             <property name="hibernate.format_sql" value="true"/>
             <property name="hibernate.use_sql_comments" value="true"/>
             <property name="hibernate.archive.autodetection" value="none"/>
             <property name="hibernate.current_session_context_class" value="thread"/>
+            <property name="hibernate.hbm2ddl.import_files_sql_extractor" value="org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor"/>
+            <property name="javax.persistence.sql-load-script-source" value="LoadScript.sql"/>
         </properties>
     </persistence-unit>
 

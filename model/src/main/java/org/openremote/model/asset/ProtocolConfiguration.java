@@ -23,13 +23,14 @@ import elemental.json.Json;
 import elemental.json.JsonObject;
 import org.openremote.model.Attribute;
 import org.openremote.model.AttributeType;
+import org.openremote.model.Meta;
 
 import java.util.Locale;
 
 /**
  * Agent attributes can be named protocol configurations, the value is a protocol URN.
  * <p>
- * Configuration details are managed as {@link org.openremote.model.Metadata} of the attribute.
+ * Configuration details are managed as {@link Meta} of the attribute.
  */
 public class ProtocolConfiguration extends Attribute {
 

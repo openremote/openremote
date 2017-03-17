@@ -57,4 +57,37 @@ public class TextUtil {
         return -1;
     }
 
+    public static String toCommaSeparated(String... strings) {
+        if (strings == null || strings.length == 0)
+            return null;
+        StringBuilder sb = new StringBuilder();
+        for (String s : strings) {
+            sb.append(s).append(",");
+        }
+        if (sb.length() > 0) {
+            sb.deleteCharAt(sb.length()-1);
+        }
+        return sb.toString();
+    }
+
+    public static String[] fromCommaSeparated(String commaWords) {
+        if (commaWords == null)
+            return new String[0];
+        return commaWords.split(",");
+    }
+
+    /**
+     * Get an enum value from a string without throwing exception.
+     * Enum should be in uppercase to use this method.
+     */
+    public static <T extends Enum<T>> T getEnumFromString(Class<T> c, String string) {
+        if (c != null && string != null) {
+            try {
+                return Enum.valueOf(c, string.trim().toUpperCase());
+            } catch (IllegalArgumentException ex) {
+            }
+        }
+        return null;
+    }
+
 }

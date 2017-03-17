@@ -23,7 +23,7 @@ import com.google.inject.Inject;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.ManagerHistoryMapper;
 import org.openremote.manager.client.event.UserChangeEvent;
-import org.openremote.manager.shared.event.ui.ShowFailureEvent;
+import org.openremote.manager.client.event.ShowFailureEvent;
 
 import java.util.logging.Logger;
 

@@ -23,11 +23,11 @@ import org.apache.camel.Predicate;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerSetupService;
+import org.openremote.model.AttributeEvent;
 import org.openremote.model.asset.ThingAttribute;
 import org.openremote.container.Container;
 import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.model.AttributeRef;
-import org.openremote.model.AttributeValueChange;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -39,12 +39,12 @@ public abstract class AbstractProtocol implements Protocol {
 
     private static final Logger LOG = Logger.getLogger(AbstractProtocol.class.getName());
 
-    static Predicate isAttributeValueChangeIn(Collection<AttributeRef> attributeRefs) {
+    static Predicate isAttributeStateForAny(Collection<AttributeRef> attributeRefs) {
         return exchange -> {
-            if (!(exchange.getIn().getBody() instanceof AttributeValueChange))
+            if (!(exchange.getIn().getBody() instanceof AttributeEvent))
                 return false;
-            AttributeValueChange valueChange = exchange.getIn().getBody(AttributeValueChange.class);
-            return attributeRefs.contains(valueChange.getAttributeRef());
+            AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
+            return attributeRefs.contains(event.getAttributeRef());
         };
     }
 
@@ -71,8 +71,8 @@ public abstract class AbstractProtocol implements Protocol {
                         .process(exchange -> {
                             synchronized (linkedAttributes) {
                                 // TODO This could be optimized, we must avoid inspecting all messages (maybe tag with protocol name in header?)
-                                if (isAttributeValueChangeIn(linkedAttributes.keySet()).matches(exchange)) {
-                                    sendToActuator(exchange.getIn().getBody(AttributeValueChange.class));
+                                if (isAttributeStateForAny(linkedAttributes.keySet()).matches(exchange)) {
+                                    sendToActuator(exchange.getIn().getBody(AttributeEvent.class));
                                 }
                             }
                         });
@@ -128,11 +128,17 @@ public abstract class AbstractProtocol implements Protocol {
         }
     }
 
-    protected void onSensorUpdate(AttributeValueChange attributeValueChange) {
-        producerTemplate.sendBody(SENSOR_TOPIC, attributeValueChange);
+    protected void onSensorUpdate(AttributeEvent event) {
+        producerTemplate.sendBody(SENSOR_TOPIC, event);
     }
 
-    abstract protected void sendToActuator(AttributeValueChange attributeValueChange);
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            '}';
+    }
+
+    abstract protected void sendToActuator(AttributeEvent event);
 
     abstract protected void onAttributeAdded(ThingAttribute attribute);
 

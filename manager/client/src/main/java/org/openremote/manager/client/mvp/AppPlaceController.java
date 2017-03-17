@@ -75,7 +75,9 @@ public class AppPlaceController extends PlaceController {
 
                 @Override
                 public String toString() {
-                    return "WillGoToPlaceEvent";
+                    return "WillGoToPlaceEvent{" +
+                        "place=" + event.getNewPlace()+
+                        '}';
                 }
             });
         });

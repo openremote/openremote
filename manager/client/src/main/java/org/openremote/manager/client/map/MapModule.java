@@ -34,11 +34,7 @@ public class MapModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    public MapResource getMapResource() {
-        return getNativeMapResource();
-    }
-
-    public static native MapResource getNativeMapResource() /*-{
+    public native MapResource getMapResource() /*-{
         return $wnd.MapResource;
     }-*/;
 

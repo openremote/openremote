@@ -77,9 +77,6 @@ public class MapViewImpl extends Composite implements MapView {
     @UiField
     MapWidget mapWidget;
 
-    @UiField
-    PushButton fullscreenButton;
-
     final AssetBrowser assetBrowser;
     final Provider<MapInfoPanel> infoPanelProvider;
     final MapInfoPanel infoPanel1;
@@ -171,11 +168,6 @@ public class MapViewImpl extends Composite implements MapView {
         mapWidget.flyTo(coordinates);
     }
 
-    @UiHandler("fullscreenButton")
-    public void onFullscreenClicked(ClickEvent e) {
-        toggleFullscreen();
-    }
-
     protected void showInfoPanels() {
 /* TODO There is a timing issue with the position when the map widget is initialized for the first time
         infoPanel1.showTopLeftOf(mapWidget, 10, 10);
@@ -187,30 +179,4 @@ public class MapViewImpl extends Composite implements MapView {
         infoPanel1.hide();
         infoPanel2.hide();
     }
-
-    protected native void toggleFullscreen() /*-{
-        var doc = $wnd.document;
-        if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
-            if (doc.documentElement.requestFullscreen) {
-                doc.documentElement.requestFullscreen();
-            } else if (doc.documentElement.msRequestFullscreen) {
-                doc.documentElement.msRequestFullscreen();
-            } else if (doc.documentElement.mozRequestFullScreen) {
-                doc.documentElement.mozRequestFullScreen();
-            } else if (doc.documentElement.webkitRequestFullscreen) {
-                doc.documentElement.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
-            }
-        } else {
-            if (doc.exitFullscreen) {
-                doc.exitFullscreen();
-            } else if (doc.msExitFullscreen) {
-                doc.msExitFullscreen();
-            } else if (doc.mozCancelFullScreen) {
-                doc.mozCancelFullScreen();
-            } else if (doc.webkitExitFullscreen) {
-                doc.webkitExitFullscreen();
-            }
-        }
-
-    }-*/;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -20,14 +20,37 @@
 package org.openremote.manager.client.rules;
 
 import com.google.gwt.inject.client.AbstractGinModule;
+import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import org.openremote.manager.client.rules.asset.AssetRulesList;
+import org.openremote.manager.client.rules.asset.AssetRulesListActivity;
+import org.openremote.manager.client.rules.asset.AssetRulesListImpl;
+import org.openremote.manager.client.rules.global.*;
+import org.openremote.manager.client.rules.tenant.TenantRulesList;
+import org.openremote.manager.client.rules.tenant.TenantRulesListActivity;
+import org.openremote.manager.client.rules.tenant.TenantRulesListImpl;
+import org.openremote.manager.shared.rules.RulesResource;
 
 public class RulesModule extends AbstractGinModule {
 
     @Override
     protected void configure() {
-        bind(RulesView.class).to(RulesViewImpl.class).in(Singleton.class);
-        bind(RulesActivity.class);
+        bind(GlobalRulesList.class).to(GlobalRulesListImpl.class).in(Singleton.class);
+        bind(GlobalRulesListActivity.class);
+
+        bind(GlobalRulesEditor.class).to(GlobalRulesEditorImpl.class).in(Singleton.class);
+        bind(GlobalRulesEditorActivity.class);
+
+        bind(TenantRulesList.class).to(TenantRulesListImpl.class).in(Singleton.class);
+        bind(TenantRulesListActivity.class);
+
+        bind(AssetRulesList.class).to(AssetRulesListImpl.class).in(Singleton.class);
+        bind(AssetRulesListActivity.class);
     }
 
+    @Provides
+    @Singleton
+    public native RulesResource getRulesResource() /*-{
+        return $wnd.RulesResource;
+    }-*/;
 }

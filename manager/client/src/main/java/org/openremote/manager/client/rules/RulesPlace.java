@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -20,22 +20,7 @@
 package org.openremote.manager.client.rules;
 
 import com.google.gwt.place.shared.Place;
-import com.google.gwt.place.shared.PlaceTokenizer;
-import com.google.gwt.place.shared.Prefix;
 
 public class RulesPlace extends Place {
 
-    @Prefix("rules")
-    public static class Tokenizer implements PlaceTokenizer<RulesPlace> {
-
-        @Override
-        public RulesPlace getPlace(String token) {
-            return new RulesPlace();
-        }
-
-        @Override
-        public String getToken(RulesPlace place) {
-            return "";
-        }
-    }
 }

@@ -20,14 +20,11 @@
 package org.openremote.manager.shared.security;
 
 import jsinterop.annotations.JsType;
-import org.keycloak.representations.idm.RoleRepresentation;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.http.SuccessStatusCode;
 
 import javax.validation.Valid;
 import javax.ws.rs.*;
-
-import java.util.List;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
