@@ -69,6 +69,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public long masterRulesDefinitionId;
     public long customerARulesDefinitionId;
     public long customerBRulesDefinitionId;
+    public long smartHomeRulesDefinitionId;
     public long apartment1RulesDefinitionId;
     public long apartment2RulesDefinitionId;
     public long apartment3RulesDefinitionId;
@@ -249,6 +250,14 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         smartHome.setName("Smart Home");
         smartHome.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
         smartHome.setType(BUILDING);
+        Attributes smartHomeAttributes = new Attributes();
+        smartHomeAttributes.put(
+                new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
+                new Attribute("demoString", STRING, Json.create("demo")),
+                new Attribute("demoInteger", INTEGER, Json.create(0)),
+                new Attribute("demoDecimal", DECIMAL, Json.create(0d))
+        );
+        smartHome.setAttributes(smartHomeAttributes.getJsonObject());
         smartHome = assetStorageService.merge(smartHome);
         smartHomeId = smartHome.getId();
 
@@ -256,6 +265,14 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1.setName("Apartment 1");
         apartment1.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
         apartment1.setType(RESIDENCE);
+        Attributes apartment1Attributes = new Attributes();
+        apartment1Attributes.put(
+                new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
+                new Attribute("demoString", STRING, Json.create("demo")),
+                new Attribute("demoInteger", INTEGER, Json.create(0)),
+                new Attribute("demoDecimal", DECIMAL, Json.create(0d))
+        );
+        apartment1.setAttributes(apartment1Attributes.getJsonObject());
         apartment1 = assetStorageService.merge(apartment1);
         apartment1Id = apartment1.getId();
 
@@ -263,6 +280,14 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1Livingroom.setName("Livingroom");
         apartment1Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
         apartment1Livingroom.setType(ROOM);
+        Attributes apartment1LivingroomAttributes = new Attributes();
+        apartment1LivingroomAttributes.put(
+                new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
+                new Attribute("demoString", STRING, Json.create("demo")),
+                new Attribute("demoInteger", INTEGER, Json.create(0)),
+                new Attribute("demoDecimal", DECIMAL, Json.create(0d))
+        );
+        apartment1Livingroom.setAttributes(apartment1LivingroomAttributes.getJsonObject());
         apartment1Livingroom = assetStorageService.merge(apartment1Livingroom);
         apartment1LivingroomId = apartment1Livingroom.getId();
 
@@ -272,6 +297,10 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1LivingroomThermostat.setType(AssetType.THING);
         ThingAttributes apartment1LivingroomThermostatAttributes = new ThingAttributes(apartment1LivingroomThermostat);
         apartment1LivingroomThermostatAttributes.put(
+            new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
+            new Attribute("demoString", STRING, Json.create("demo")),
+            new Attribute("demoInteger", INTEGER, Json.create(0)),
+            new Attribute("demoDecimal", DECIMAL, Json.create(0d)),
             new Attribute("currentTemperature", DECIMAL, Json.create(19.2))
                 .setMeta(new Meta()
                     .add(new MetaItem(
@@ -294,12 +323,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     ))
                 )
         );
-        apartment1LivingroomThermostatAttributes.put(
-            new Attribute("somethingPrivate", INTEGER, Json.create(123))
-        );
-        apartment1LivingroomThermostatAttributes.put(
-            new Attribute("somethingEmpty", DECIMAL, Json.createNull())
-        );
+
         apartment1LivingroomThermostat.setAttributes(apartment1LivingroomThermostatAttributes.getJsonObject());
         apartment1LivingroomThermostat = assetStorageService.merge(apartment1LivingroomThermostat);
         apartment1LivingroomThermostatId = apartment1LivingroomThermostat.getId();
@@ -308,6 +332,14 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment2.setName("Apartment 2");
         apartment2.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
         apartment2.setType(RESIDENCE);
+        Attributes apartment2Attributes = new Attributes();
+        apartment2Attributes.put(
+                new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
+                new Attribute("demoString", STRING, Json.create("demo")),
+                new Attribute("demoInteger", INTEGER, Json.create(0)),
+                new Attribute("demoDecimal", DECIMAL, Json.create(0d))
+        );
+        apartment2.setAttributes(apartment2Attributes.getJsonObject());
         apartment2 = assetStorageService.merge(apartment2);
         apartment2Id = apartment2.getId();
 
@@ -315,6 +347,14 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment2Livingroom.setName("Livingroom");
         apartment2Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
         apartment2Livingroom.setType(ROOM);
+        Attributes apartment2LivingroomAttributes = new Attributes();
+        apartment2LivingroomAttributes.put(
+                new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
+                new Attribute("demoString", STRING, Json.create("demo")),
+                new Attribute("demoInteger", INTEGER, Json.create(0)),
+                new Attribute("demoDecimal", DECIMAL, Json.create(0d))
+        );
+        apartment2Livingroom.setAttributes(apartment2LivingroomAttributes.getJsonObject());
         apartment2Livingroom = assetStorageService.merge(apartment2Livingroom);
         apartment2LivingroomId = apartment2Livingroom.getId();
 
@@ -322,6 +362,14 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment3.setName("Apartment 3");
         apartment3.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
         apartment3.setType(RESIDENCE);
+        Attributes apartment3Attributes = new Attributes();
+        apartment3Attributes.put(
+                new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
+                new Attribute("demoString", STRING, Json.create("demo")),
+                new Attribute("demoInteger", INTEGER, Json.create(0)),
+                new Attribute("demoDecimal", DECIMAL, Json.create(0d))
+        );
+        apartment3.setAttributes(apartment3Attributes.getJsonObject());
         apartment3 = assetStorageService.merge(apartment3);
         apartment3Id = apartment3.getId();
 
@@ -329,6 +377,14 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment3Livingroom.setName("Livingroom");
         apartment3Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
         apartment3Livingroom.setType(ROOM);
+        Attributes apartment3LivingroomAttributes = new Attributes();
+        apartment3LivingroomAttributes.put(
+                new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
+                new Attribute("demoString", STRING, Json.create("demo")),
+                new Attribute("demoInteger", INTEGER, Json.create(0)),
+                new Attribute("demoDecimal", DECIMAL, Json.create(0d))
+        );
+        apartment3Livingroom.setAttributes(apartment3LivingroomAttributes.getJsonObject());
         apartment3Livingroom = assetStorageService.merge(apartment3Livingroom);
         apartment3LivingroomId = apartment3Livingroom.getId();
 
@@ -376,6 +432,13 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             rulesDefinition.setEnabled(false);
             rulesDefinition = rulesStorageService.merge(rulesDefinition);
             customerBRulesDefinitionId = rulesDefinition.getId();
+        }
+
+        try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeAssetDemoRules.drl")) {
+            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            RulesDefinition rulesDefinition = new AssetRulesDefinition("Some smart home demo rules", smartHomeId, rules);
+            rulesDefinition = rulesStorageService.merge(rulesDefinition);
+            smartHomeRulesDefinitionId = rulesDefinition.getId();
         }
 
         try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeAssetDemoRules.drl")) {

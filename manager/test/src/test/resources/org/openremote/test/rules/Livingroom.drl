@@ -5,16 +5,9 @@ import org.openremote.manager.server.asset.*;
 
 global java.util.logging.Logger LOG;
 
-rule "All"
+rule "Living Room All"
 when
-  $e: AssetUpdate()
-then
-  return;
-end
-
-rule "All changed"
-when
-  $e: AssetUpdate(valueChanged)
+  $e: AssetUpdate(entityName == "Livingroom")
 then
   return;
 end

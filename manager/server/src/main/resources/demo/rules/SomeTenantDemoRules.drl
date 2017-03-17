@@ -1,12 +1,20 @@
 package org.openremote.test.rules;
 
-import org.openremote.agent.sensor.*;
+import org.openremote.model.*;
+import org.openremote.manager.server.asset.*;
 
-global org.openremote.agent.rules.SwitchFacade switches;
+global java.util.logging.Logger LOG;
 
-rule "Modify Switch State"
+rule "All"
 when
-  $switch : SwitchSensorState(sensorID == 123)
+  $e: AssetUpdate()
 then
-  switches.name($switch.getSensorName()).off();
+  return;
+end
+
+rule "All changed"
+when
+  $e: AssetUpdate(valueChanged)
+then
+  return;
 end

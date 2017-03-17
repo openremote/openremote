@@ -106,6 +106,14 @@ public class AssetUpdate {
         return status;
     }
 
+    public boolean isValueChanged() {
+        return !newState.getAttributeState().getValue().jsEquals(oldState.getAttributeState().getValue());
+    }
+
+    public String getEntityName() {
+        return newState.getEntityName();
+    }
+
     public void setStatus(Status status) {
         this.status = status;
     }
@@ -117,6 +125,22 @@ public class AssetUpdate {
     public void setError(Throwable error) {
         this.error = error;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AssetUpdate that = (AssetUpdate) o;
+
+        return oldState.equals(that.oldState) && newState.equals(that.newState);
+    }
+
+    @Override
+    public int hashCode() {
+        return oldState.hashCode() + newState.hashCode();
+    }
+
 
     @Override
     public String toString() {

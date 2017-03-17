@@ -19,13 +19,16 @@
  */
 package org.openremote.manager.server.rules;
 
+import org.drools.core.marshalling.impl.ProtobufMessages;
 import org.kie.api.KieBase;
 import org.kie.api.KieServices;
 import org.kie.api.builder.KieBuilder;
 import org.kie.api.builder.KieFileSystem;
 import org.kie.api.builder.Message;
+import org.kie.api.builder.ReleaseId;
 import org.kie.api.builder.model.KieBaseModel;
 import org.kie.api.builder.model.KieModuleModel;
+import org.kie.api.builder.model.KieSessionModel;
 import org.kie.api.conf.EqualityBehaviorOption;
 import org.kie.api.conf.EventProcessingOption;
 import org.kie.api.runtime.KieContainer;
@@ -49,15 +52,18 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class RulesDeployment<T extends RulesDefinition> {
-    private static final Logger LOG = Logger.getLogger(RulesDeployment.class.getName());
+    public static final Logger LOG = Logger.getLogger(RulesDeployment.class.getName());
     private static final int AUTO_START_DELAY_SECONDS = 2;
+    private static Long counter = 1L;
     static final protected RuleUtil ruleUtil = new RuleUtil();
     protected Map<Long, T> ruleDefinitions = new LinkedHashMap<>();
     protected RuleExecutionLogger ruleExecutionLogger = new RuleExecutionLogger();
-    protected KieBase kb;
     protected KieSession knowledgeSession;
     protected KieServices kieServices;
     protected KieFileSystem kfs;
+    // We need to be able to reference the KieModule dynamically generated for this engine
+    // from the singleton KieRepository to do this we need a pom.xml file with a release ID - crazy drools!!
+    protected ReleaseId releaseId;
     protected String id;
     protected boolean error;
     protected boolean running;
@@ -70,6 +76,12 @@ public class RulesDeployment<T extends RulesDefinition> {
     public RulesDeployment(Class<T> clazz, String id) {
         this.clazz = clazz;
         this.id = id;
+    }
+
+    protected static Long getNextCounter() {
+        synchronized (counter) {
+            return counter++;
+        }
     }
 
     public synchronized T[] getAllRulesDefinitions() {
@@ -87,6 +99,10 @@ public class RulesDeployment<T extends RulesDefinition> {
 
     public boolean isError() {
         return error;
+    }
+
+    public KieSession getKnowledgeSession() {
+        return knowledgeSession;
     }
 
     public synchronized boolean isEmpty() {
@@ -125,11 +141,20 @@ public class RulesDeployment<T extends RulesDefinition> {
             kieServices = KieServices.Factory.get();
             KieModuleModel kieModuleModel = kieServices.newKieModuleModel();
 
-            KieBaseModel kieBaseModel = kieModuleModel.newKieBaseModel("OpenRemoteKBase")
+            String versionId = getNextCounter().toString();
+            releaseId = kieServices.newReleaseId("org.openremote", "openremote-kiemodule", versionId);
+            KieBaseModel kieBaseModel = kieModuleModel.newKieBaseModel("OpenRemoteKModule");
+            kieBaseModel
                     .setDefault(true)
                     .setEqualsBehavior(EqualityBehaviorOption.EQUALITY)
-                    .setEventProcessingMode(EventProcessingOption.STREAM);
+                    .setEventProcessingMode(EventProcessingOption.STREAM)
+                    .newKieSessionModel("ksession1")
+                    .setDefault(true)
+                    .setType(KieSessionModel.KieSessionType.STATEFUL);
+                    // TODO: Provide mechanism for configuring the clock per rule engine
+                    //.setClockType();
             kfs = kieServices.newKieFileSystem();
+            kfs.generateAndWritePomXML(releaseId);
             kfs.writeKModuleXML(kieModuleModel.toXML());
 
             LOG.fine("Initialised rules service for deployment '" + getId() + "'");
@@ -265,7 +290,7 @@ public class RulesDeployment<T extends RulesDefinition> {
         }
 
         if (isError()) {
-            LOG.fine("Cannot start rules engine as one or more rule definitions are in error state");
+            LOG.fine("Cannot start rules engine as an error occurred during startup");
             return;
         }
 
@@ -276,24 +301,24 @@ public class RulesDeployment<T extends RulesDefinition> {
 
         LOG.fine("Starting RuleEngine: " + this);
 
-        KieContainer kieContainer = kieServices.newKieContainer(kieServices.getRepository().getDefaultReleaseId());
-        kb = kieContainer.getKieBase();
+        // Note each rule engine has its' own KieModule which are stored in a singleton register by drools
+        // we need to ensure we get the right module here otherwise we could be using the wrong rules
+        KieContainer kieContainer = kieServices.newKieContainer(releaseId);
         KieSessionConfiguration kieSessionConfiguration = kieServices.newKieSessionConfiguration();
         // Use this option to ensure timer rules are fired even in passive mode (triggered by fireAllRules.
         // This ensures compatibility with the behaviour of previously used Drools 5.1
         kieSessionConfiguration.setOption(TimedRuleExectionOption.YES);
 
-        // TODO: Add support for configuring the drools clock per deployment
-        //kieSessionConfiguration.setOption(ClockTypeOption.get("pseudo"));
-        knowledgeSession = kb.newKieSession(kieSessionConfiguration, null);
-
-        setGlobal("util", ruleUtil);
-        setGlobal("JSON", Container.JSON);
-        setGlobal("LOG", LOG);
-
         try {
+            knowledgeSession = kieContainer.newKieSession(kieSessionConfiguration);
+
+            setGlobal("util", ruleUtil);
+            setGlobal("JSON", Container.JSON);
+            setGlobal("LOG", LOG);
+
             knowledgeSession.addEventListener(ruleExecutionLogger);
         } catch (Throwable t) {
+            error = true;
             throw new RuntimeException(t);
         }
 
@@ -312,7 +337,6 @@ public class RulesDeployment<T extends RulesDefinition> {
         if (knowledgeSession != null) {
             knowledgeSession.halt();
             knowledgeSession.dispose();
-            kb = null;
             LOG.fine("Knowledge session disposed");
         }
 
@@ -322,35 +346,34 @@ public class RulesDeployment<T extends RulesDefinition> {
 
     protected void processUpdate(AssetUpdate assetUpdate) {
         long newFactCount;
-
-        AttributeEvent attributeEvent = assetUpdate.getNewState();
+        AttributeRef attributeRef = assetUpdate.getNewState().getAttributeRef();
 
         // If this fact is not in working memory (considering its equals() method)...
-        if (!knowledgeSession.getObjects().contains(attributeEvent)) {
+        if (!knowledgeSession.getObjects().contains(assetUpdate)) {
             // If there already is a fact in working memory for this attribute then delete it
-            FactHandle factHandle = attributeFacts.get(attributeEvent.getAttributeRef());
+            FactHandle factHandle = attributeFacts.get(attributeRef);
 
             if (factHandle != null) {
                 try {
                     // ... retract it from working memory ...
-                    LOG.finest("Removed stale attribute fact: " + attributeEvent.getAttributeRef());
+                    LOG.finest("Removed stale attribute fact: " + attributeRef);
                     knowledgeSession.delete(factHandle);
                 } finally {
                     // ... and make sure we don't keep a reference to the stale fact
-                    attributeFacts.remove(attributeEvent.getAttributeRef());
+                    attributeFacts.remove(attributeRef);
                 }
             }
 
             // Put the fact into working memory and store the handle
             boolean isUpdate = factHandle != null;
-            factHandle = knowledgeSession.insert(attributeEvent);
-            attributeFacts.put(attributeEvent.getAttributeRef(), factHandle);
-            LOG.finest(isUpdate ? "Updated: " : "Inserted: " + attributeEvent);
+            factHandle = knowledgeSession.insert(assetUpdate);
+            attributeFacts.put(attributeRef, factHandle);
+            LOG.finest(isUpdate ? "Updated: " : "Inserted: " + assetUpdate);
         }
 
         LOG.finest("Firing all rules");
-        knowledgeSession.fireAllRules();
-
+        int fireCount = knowledgeSession.fireAllRules();
+        LOG.finest("Fired rules count = " + fireCount);
 
         // TODO: Prevent run away fact creation (not sure how we can do this reliably as facts can be generated in rule RHS)
         // MR: this is heuristic number which comes good for finding facts memory leak in the drl file.
@@ -360,7 +383,7 @@ public class RulesDeployment<T extends RulesDefinition> {
         newFactCount = knowledgeSession.getFactCount();
         LOG.finest("New fact count: " + newFactCount);
         if (newFactCount != currentFactCount) {
-            LOG.finest("Fact count changed from " + currentFactCount + " to " + newFactCount + " on: " + attributeEvent);
+            LOG.finest("Fact count changed from " + currentFactCount + " to " + newFactCount + " on: " + assetUpdate);
         }
 
         currentFactCount = newFactCount;

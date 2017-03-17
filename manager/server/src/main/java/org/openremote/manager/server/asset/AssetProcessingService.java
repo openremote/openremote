@@ -244,7 +244,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
         // Check the last update timestamp of the attribute, ignoring any event that is older than last update
         // TODO: This means we drop out-of-sequence events, we might need better at-least-once handling
-        if (lastStateEvent.getTimestamp() >= 0 && attributeEvent.getTimestamp() < lastStateEvent.getTimestamp()) {
+        if (lastStateEvent.getTimestamp() >= 0 && attributeEvent.getTimestamp() <= lastStateEvent.getTimestamp()) {
             LOG.warning("Ignoring " + attributeEvent + ", event-time is older than attribute's last state " + lastStateEvent + " in: " + asset);
             return;
         }
