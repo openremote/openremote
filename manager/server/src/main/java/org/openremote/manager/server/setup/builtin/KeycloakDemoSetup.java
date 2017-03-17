@@ -28,6 +28,7 @@ import org.openremote.container.Container;
 import org.openremote.manager.server.setup.AbstractKeycloakSetup;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
+import org.openremote.model.Constants;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -48,6 +49,9 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
     public String testuser1Id;
     public String testuser2Id;
     public String testuser3Id;
+    public Tenant masterTenant;
+    public Tenant customerATenant;
+    public Tenant customerBTenant;
 
     public KeycloakDemoSetup(Container container) {
         super(container);
@@ -57,18 +61,21 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
     public void execute() throws Exception {
 
         // Tenants
+        masterTenant = identityService.getTenant(accessToken, Constants.MASTER_REALM);
 
         Tenant customerA = new Tenant();
         customerA.setRealm("customerA");
         customerA.setDisplayName("Customer A");
         customerA.setEnabled(true);
         identityService.createTenant(accessToken, customerA);
+        customerATenant = identityService.getTenant(accessToken, customerA.getRealm());
 
         Tenant customerB = new Tenant();
         customerB.setRealm("customerB");
         customerB.setDisplayName("Customer B");
         customerB.setEnabled(true);
         identityService.createTenant(accessToken, customerB);
+        customerBTenant = identityService.getTenant(accessToken, customerB.getRealm());
 
         // Users
 

@@ -237,6 +237,22 @@ public class RulesDeployment<T extends RulesDefinition> {
         kfs.delete("src/main/resources/" + rulesDefinition.getId());
         ruleDefinitions.remove(rulesDefinition.getId());
 
+        // Update status of each rules definition
+        boolean anyFailed = ruleDefinitions
+                .values()
+                .stream()
+                .anyMatch(rd -> rd.getDeploymentStatus() == RulesDefinition.DeploymentStatus.FAILED);
+
+        error = anyFailed;
+
+        if (!anyFailed) {
+            ruleDefinitions.forEach((id, rd) -> {
+                if (rd.getDeploymentStatus() == RulesDefinition.DeploymentStatus.READY) {
+                    rd.setDeploymentStatus(RulesDefinition.DeploymentStatus.DEPLOYED);
+                }
+            });
+        }
+
         if (!isError() && !isEmpty()) {
             // Queue engine start
             startTimer = executorService.schedule(this::start, AUTO_START_DELAY_SECONDS, TimeUnit.SECONDS);
@@ -294,6 +310,7 @@ public class RulesDeployment<T extends RulesDefinition> {
         LOG.fine("Stopping RuleEngine: " + this);
 
         if (knowledgeSession != null) {
+            knowledgeSession.halt();
             knowledgeSession.dispose();
             kb = null;
             LOG.fine("Knowledge session disposed");

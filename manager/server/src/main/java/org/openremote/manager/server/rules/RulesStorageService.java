@@ -160,6 +160,21 @@ public class RulesStorageService implements ContainerService {
         );
     }
 
+    public List<AssetRulesDefinition> findAllEnabledAssetDefinitions(String realmId) {
+        return persistenceService.doReturningTransaction(entityManager ->
+                entityManager.createQuery(
+                        "select new org.openremote.manager.shared.rules.AssetRulesDefinition(" +
+                                "rd.id, rd.version, rd.createdOn, rd.lastModified, rd.name, rd.enabled, rd.assetId" +
+                                ") " +
+                                "from AssetRulesDefinition rd, Asset a " +
+                                "where rd.assetId = a.id and a.realmId = :realmId " +
+                                "and rd.enabled = TRUE " +
+                                "order by rd.createdOn asc",
+                        AssetRulesDefinition.class
+                ).setParameter("realmId", realmId).getResultList()
+        );
+    }
+
     // TODO: Update this as order is not guaranteed
     protected <T extends RulesDefinition> String[] getRules(List<T> rulesDefinitions, Class<T> clazz) {
         if (rulesDefinitions == null || rulesDefinitions.size() == 0) {

@@ -31,7 +31,9 @@ import org.openremote.manager.server.asset.AssetUpdate;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.rules.*;
+import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.Consumer;
+import org.openremote.model.asset.Asset;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -52,9 +54,6 @@ import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceE
  * asset definitions with same parent asset are not guaranteed also processing of definitions
  * with the same scope is not guaranteed)
  */
-// TODO: Listen to changes in tenant enabled status and start/stop engines accordingly
-// TODO: Listen to asset changes and start/stop engines accordingly
-// TODO: When restarting rules engine should we wait for executing rules to finish?
 public class RulesService extends RouteBuilder implements ContainerService, Consumer<AssetUpdate> {
     private static final Logger LOG = Logger.getLogger(RulesService.class.getName());
     protected PersistenceService persistenceService;
@@ -64,7 +63,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     protected RulesDeployment<GlobalRulesDefinition> globalDeployment;
     protected final Map<String, RulesDeployment<TenantRulesDefinition>> tenantDeployments = new HashMap<>();
     protected final Map<String, RulesDeployment<AssetRulesDefinition>> assetDeployments = new HashMap<>();
-    protected String[] activeTenantNames;
+    protected String[] activeTenantRealmIds;
 
     @Override
     public void init(Container container) throws Exception {
@@ -77,18 +76,29 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
     @Override
     public void configure() throws Exception {
+        // If any rules definition was modified in the database then check its' status and retract, insert or update it
         from(PERSISTENCE_TOPIC)
                 .filter(isPersistenceEventForEntityType(RulesDefinition.class))
                 .process(exchange -> {
                     PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
                     processRulesDefinitionChange((RulesDefinition)persistenceEvent.getEntity(), persistenceEvent.getCause());
                 });
+
+        // If any tenant was modified in the database then check its' status and retract, insert or update any
+        // associated rule definitions
+        from(PERSISTENCE_TOPIC)
+                .filter(isPersistenceEventForEntityType(Tenant.class))
+                .process(exchange -> {
+                    PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
+                    Tenant tenant = (Tenant) persistenceEvent.getEntity();
+                    processTenantChange(tenant, persistenceEvent.getCause());
+                });
     }
 
     @Override
     public void start(Container container) throws Exception {
         // Get active tenants
-        String[] activeTenantRealmIds = identityService.getActiveTenantRealmIds();
+        activeTenantRealmIds = identityService.getActiveTenantRealmIds();
 
         // Deploy global rules
         List<GlobalRulesDefinition> enabledGlobalDefinitions = rulesStorageService.findEnabledGlobalDefinitions();
@@ -123,39 +133,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         }
 
         // Deploy asset rules - group by assetID then tenant then order hierarchically
-        rulesStorageService.findAllEnabledAssetDefinitions()
-                .stream()
-                .collect(Collectors.groupingBy(AssetRulesDefinition::getAssetId))
-                .entrySet()
-                .stream()
-                .map(es ->
-                        new Pair<>(assetStorageService.find(es.getKey()), es.getValue())
-                )
-                .collect(Collectors.groupingBy(assetAndRules -> assetAndRules.key.getRealmId()))
-                .entrySet()
-                .stream()
-                .filter(es -> Arrays
-                        .stream(activeTenantRealmIds)
-                        .anyMatch(at -> es.getKey().equals(at)))
-                .forEach(es -> {
-                    List<Pair<ServerAsset, List<AssetRulesDefinition>>> tenantAssetAndRules = es.getValue();
-
-                    // Order rules definitions by asset hierarchy within this tenant
-                    tenantAssetAndRules.stream()
-                            .sorted(Comparator.comparingInt(item -> item.key.getPath().length))
-                            .forEach(assetAndRules -> {
-                                        List<AssetRulesDefinition> rulesDefinitions = assetAndRules.value;
-                                        String[] assetRules = rulesStorageService.getRules(rulesDefinitions, AssetRulesDefinition.class);
-
-                                        if (assetRules.length != rulesDefinitions.size()) {
-                                            LOG.warning("Failed to retrieve asset rules definitions");
-                                        } else {
-                                            IntStream
-                                                    .range(0, assetRules.length)
-                                                    .forEach(i -> deployAssetRulesDefinition(rulesDefinitions.get(i), assetRules[i]));
-                                        }
-                                    });
-                });
+        deployAssetRulesDefinitions(rulesStorageService.findAllEnabledAssetDefinitions());
     }
 
     @Override
@@ -179,12 +157,65 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         processAssetUpdate(assetUpdate);
     }
 
-    public void processTenantChange() {
+    public synchronized void processTenantChange(Tenant tenant, PersistenceEvent.Cause cause) {
+        // Check if enabled status has changed
+        boolean wasEnabled = Arrays.asList(activeTenantRealmIds).contains(tenant.getId());
+        boolean isEnabled = tenant.getEnabled() && cause != PersistenceEvent.Cause.DELETE;
+        activeTenantRealmIds = identityService.getActiveTenantRealmIds();
 
+        if (wasEnabled == isEnabled) {
+            // Nothing to do here
+            return;
+        }
+
+        if (wasEnabled) {
+            // Remove tenant deployment for this tenant if it exists
+            RulesDeployment<TenantRulesDefinition> tenantDeployment = tenantDeployments.get(tenant.getId());
+            if (tenantDeployment != null) {
+                Arrays.stream(tenantDeployment.getAllRulesDefinitions())
+                        .forEach(rd -> retractTenantRulesDefinition(rd));
+            }
+
+            // Remove any asset deployments for assets in this realm
+            List<String> assetIds = new ArrayList<>(assetDeployments.keySet());
+            String[] realmIds = assetStorageService.getAssetRealmIds(assetIds);
+
+            if (realmIds.length != assetDeployments.size()) {
+                LOG.warning("Failed to retrieve asset realm ids");
+            } else {
+                for (int i=0; i<realmIds.length; i++) {
+                    String realmId = realmIds[i];
+                    if (realmId != null && realmId.equals(tenant.getId())) {
+                        RulesDeployment<AssetRulesDefinition> assetDeployment = assetDeployments.get(assetIds.get(i));
+                        Arrays.stream(assetDeployment.getAllRulesDefinitions())
+                                .forEach(rd -> retractAssetRulesDefinition(rd));
+                    }
+                }
+            }
+        } else {
+            // Insert tenant deployment for this tenant if it has any rule definitions
+            List<TenantRulesDefinition> enabledTenantDefinitions = rulesStorageService
+                    .findTenantDefinitions(tenant.getId())
+                    .stream()
+                    .filter(rd -> rd.isEnabled())
+                    .collect(Collectors.toList());
+            String[] tenantRules = rulesStorageService.getRules(enabledTenantDefinitions, TenantRulesDefinition.class);
+
+            if (tenantRules.length != enabledTenantDefinitions.size()) {
+                LOG.warning("Failed to retrieve tenant rules definitions");
+            } else {
+                IntStream
+                        .range(0, tenantRules.length)
+                        .forEach(i -> deployTenantRulesDefinition(enabledTenantDefinitions.get(i), tenantRules[i]));
+            }
+
+            // Insert any asset deployments for assets in this realm that have rule definitions
+            deployAssetRulesDefinitions(rulesStorageService.findAllEnabledAssetDefinitions(tenant.getId()));
+        }
     }
 
     protected void processRulesDefinitionChange(RulesDefinition rulesDefinition, PersistenceEvent.Cause cause) {
-        if (cause == PersistenceEvent.Cause.DELETE) {
+        if (cause == PersistenceEvent.Cause.DELETE || !rulesDefinition.isEnabled()) {
             if (rulesDefinition instanceof GlobalRulesDefinition) {
                 retractGlobalRulesDefinition((GlobalRulesDefinition)rulesDefinition);
             } else if (rulesDefinition instanceof TenantRulesDefinition) {
@@ -194,7 +225,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             }
         } else {
             if (rulesDefinition instanceof GlobalRulesDefinition) {
-                deployGlobalRulesDefinition((GlobalRulesDefinition)rulesDefinition, rulesStorageService.getRules((GlobalRulesDefinition)rulesDefinition, GlobalRulesDefinition.class));
+                deployGlobalRulesDefinition((GlobalRulesDefinition) rulesDefinition, rulesStorageService.getRules((GlobalRulesDefinition) rulesDefinition, GlobalRulesDefinition.class));
             } else if (rulesDefinition instanceof TenantRulesDefinition) {
                 deployTenantRulesDefinition((TenantRulesDefinition)rulesDefinition, rulesStorageService.getRules((TenantRulesDefinition)rulesDefinition, TenantRulesDefinition.class));
             } else if (rulesDefinition instanceof AssetRulesDefinition) {
@@ -292,6 +323,42 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         if (deployment.isEmpty()) {
             tenantDeployments.remove(rulesDefinition.getRealmId());
         }
+    }
+
+    protected void deployAssetRulesDefinitions(List<AssetRulesDefinition> assetRulesDefinitions) {
+            assetRulesDefinitions
+                .stream()
+                .collect(Collectors.groupingBy(AssetRulesDefinition::getAssetId))
+                .entrySet()
+                .stream()
+                .map(es ->
+                        new Pair<>(assetStorageService.find(es.getKey()), es.getValue())
+                )
+                .collect(Collectors.groupingBy(assetAndRules -> assetAndRules.key.getRealmId()))
+                .entrySet()
+                .stream()
+                .filter(es -> Arrays
+                        .stream(activeTenantRealmIds)
+                        .anyMatch(at -> es.getKey().equals(at)))
+                .forEach(es -> {
+                    List<Pair<ServerAsset, List<AssetRulesDefinition>>> tenantAssetAndRules = es.getValue();
+
+                    // Order rules definitions by asset hierarchy within this tenant
+                    tenantAssetAndRules.stream()
+                            .sorted(Comparator.comparingInt(item -> item.key.getPath().length))
+                            .forEach(assetAndRules -> {
+                                List<AssetRulesDefinition> rulesDefinitions = assetAndRules.value;
+                                String[] assetRules = rulesStorageService.getRules(rulesDefinitions, AssetRulesDefinition.class);
+
+                                if (assetRules.length != rulesDefinitions.size()) {
+                                    LOG.warning("Failed to retrieve asset rules definitions");
+                                } else {
+                                    IntStream
+                                            .range(0, assetRules.length)
+                                            .forEach(i -> deployAssetRulesDefinition(rulesDefinitions.get(i), assetRules[i]));
+                                }
+                            });
+                });
     }
 
 

@@ -40,6 +40,7 @@ import java.sql.ResultSet;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static org.openremote.model.asset.AssetType.AGENT;
 
@@ -307,6 +308,23 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
         }
     }
 
+    public String[] getAssetRealmIds(List<String> assetIds) {
+        if (assetIds == null || assetIds.size() == 0) {
+            return new String[0];
+        }
+
+        return persistenceService.doReturningTransaction(entityManager -> {
+            List<String> results = entityManager.createQuery(
+                    "select a.realmId " +
+                            "from Asset a " +
+                            "where a.id IN :ids")
+                    .setParameter("ids", assetIds)
+                    .getResultList();
+            return results
+                    .toArray(new String[0]);
+        });
+    }
+
     protected ServerAsset loadAsset(EntityManager em, String assetId, boolean loadDetails) {
         ServerAsset asset = em.find(ServerAsset.class, assetId);
         if (asset == null)
@@ -386,6 +404,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
             })
         );
     }
+
 
     public String toString() {
         return getClass().getSimpleName() + "{" +

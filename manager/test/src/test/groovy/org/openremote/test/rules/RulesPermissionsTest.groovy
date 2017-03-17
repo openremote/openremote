@@ -64,7 +64,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         then: "result should match"
         ruleDefinitions.length == 1
         ruleDefinitions[0].name == "Some customerA tenant demo rules"
-        !ruleDefinitions[0].enabled
+        ruleDefinitions[0].enabled
 
         when: "some asset rules are retrieved"
         ruleDefinitions = rulesResource.getAssetDefinitions(null, managerDemoSetup.apartment1Id)
