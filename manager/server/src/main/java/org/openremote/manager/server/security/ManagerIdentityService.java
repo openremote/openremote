@@ -126,13 +126,17 @@ public class ManagerIdentityService extends IdentityService {
     }
 
     public Tenant getTenant(String realm) {
-        String realmId = getActiveTenantRealmId(realm);
-        if (realmId == null)
-            return null;
-        String tenantDisplayName = getActiveTenantDisplayName(realmId);
-        if (tenantDisplayName == null)
-            return null;
-        return new Tenant(realm, realm, tenantDisplayName, true);
+        return persistenceService.doReturningTransaction(entityManager -> {
+            @SuppressWarnings("unchecked")
+            List<Object[]> result = entityManager.createNativeQuery(
+                "select R.ID, R.NAME, RA.VALUE, R.ENABLED from REALM R join REALM_ATTRIBUTE RA " +
+                    "on R.ID = RA.REALM_ID and RA.NAME = 'displayName' " +
+                    "and R.NAME = :realm"
+            ).setParameter("realm", realm).getResultList();
+            return result.size() > 0
+                ? new Tenant((String) result.get(0)[0], (String) result.get(0)[1], (String) result.get(0)[2], (Boolean) result.get(0)[3])
+                : null;
+        });
     }
 
     public boolean isActiveTenantRealmId(String realmId) {
@@ -271,17 +275,18 @@ public class ManagerIdentityService extends IdentityService {
 
     /**
      * Use PERSISTENCE_TOPIC and persistence event
+     *
      * @param tenant
      */
     protected void sendTenantModifiedMessage(PersistenceEvent.Cause cause, Tenant tenant) {
         PersistenceEvent persistenceEvent = new PersistenceEvent(cause, tenant, new String[0], null);
 
         messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-                PersistenceEvent.PERSISTENCE_TOPIC,
-                ExchangePattern.InOnly,
-                persistenceEvent,
-                PersistenceEvent.HEADER_ENTITY_TYPE,
-                persistenceEvent.getEntity().getClass()
+            PersistenceEvent.PERSISTENCE_TOPIC,
+            ExchangePattern.InOnly,
+            persistenceEvent,
+            PersistenceEvent.HEADER_ENTITY_TYPE,
+            persistenceEvent.getEntity().getClass()
         );
     }
 

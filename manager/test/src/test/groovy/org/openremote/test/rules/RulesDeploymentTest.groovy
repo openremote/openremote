@@ -32,8 +32,6 @@ import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
 
 class RulesDeploymentTest extends Specification implements ManagerContainerTrait {
 
-    // TODO Fix test
-    @Ignore
     def "Check basic rules engine deployment"() {
 
         given: "expected conditions"
