@@ -24,15 +24,15 @@ import org.openremote.manager.client.widget.FormTree;
 
 public class AssetTree extends FormTree {
 
-    public static class IdSearch extends Search<AssetTreeNode, String> {
+    public static class AssetIdSearch extends Search<BrowserTreeNode, String> {
 
         @Override
-        protected boolean isMatchingPathElement(String pathElement, AssetTreeNode value) {
+        protected boolean isMatchingPathElement(String pathElement, BrowserTreeNode value) {
             return value.getId().equals(pathElement);
         }
     }
 
-    public AssetTree(AssetTreeModel viewModel, AssetTreeNode rootNode, FormTreeStyle formTreeStyle, CellTreeMessages messages) {
+    public AssetTree(AssetTreeModel viewModel, BrowserTreeNode rootNode, FormTreeStyle formTreeStyle, CellTreeMessages messages) {
         super(viewModel, rootNode, formTreeStyle, messages);
     }
 
@@ -43,8 +43,8 @@ public class AssetTree extends FormTree {
 
     @Override
     protected String getTreeNodeId(Object treeNodeValue) {
-        if (treeNodeValue instanceof AssetTreeNode) {
-            AssetTreeNode node = (AssetTreeNode) treeNodeValue;
+        if (treeNodeValue instanceof BrowserTreeNode) {
+            BrowserTreeNode node = (BrowserTreeNode) treeNodeValue;
             return node.getId();
         }
         return treeNodeValue.toString();

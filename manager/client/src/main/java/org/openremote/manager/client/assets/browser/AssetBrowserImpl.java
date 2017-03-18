@@ -66,7 +66,7 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
 
     Presenter presenter;
     AssetTree assetTree;
-    final AssetTreeNode assetTreeRootNode = new AssetTreeNode();
+    final RootTreeNode rootTreeNode = new RootTreeNode();
 
     @Inject
     public AssetBrowserImpl(FormTreeStyle formTreeStyle) {
@@ -94,13 +94,18 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
     }
 
     @Override
-    public void showAndSelectNode(String[] path, AssetTreeNode treeNode, boolean scrollIntoView) {
-        List<AssetTreeNode> selectedPath = new AssetTree.IdSearch().resolvePath(
+    public Presenter getPresenter() {
+        return presenter;
+    }
+
+    @Override
+    public void showAndSelectNode(String[] path, BrowserTreeNode treeNode, boolean scrollIntoView) {
+        List<BrowserTreeNode> selectedPath = new AssetTree.AssetIdSearch().resolvePath(
             Arrays.asList(path), assetTree.getRootTreeNode()
         );
 
         if (selectedPath.size() > 0) {
-            AssetTreeNode selectedNode = selectedPath.get(selectedPath.size() - 1);
+            BrowserTreeNode selectedNode = selectedPath.get(selectedPath.size() - 1);
             assetTree.getTreeViewModel().getSelectionModel().setSelected(selectedNode, true);
 
             if (!scrollIntoView)
@@ -117,7 +122,7 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
                 } while ((el = el.getOffsetParent()) != null);
                 Element treeContainerElement = assetTreeContainer.getElement();
                 treeContainerElement.setAttribute("tabindex", "1");
-                int middleOffset = offsetTop - treeContainerElement.getClientHeight()/2 - treeContainerElement.getOffsetTop();
+                int middleOffset = offsetTop - treeContainerElement.getClientHeight() / 2 - treeContainerElement.getOffsetTop();
                 treeContainerElement.setScrollTop(middleOffset);
             }
         }
@@ -129,8 +134,8 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
     }
 
     @Override
-    public void refreshAssets(boolean isRootRefresh) {
-        if (isRootRefresh) {
+    public void refresh(boolean rootRefresh) {
+        if (rootRefresh) {
             // TODO Horrible but I have no idea how to force a reload of the root node of a CellTree
             createAssetTree();
         } else {
@@ -142,7 +147,7 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
         AssetTreeCell.Renderer assetCellRenderer = new AssetTreeCell.Renderer(44);
         assetTree = new AssetTree(
             new AssetTreeModel(presenter, assetCellRenderer),
-            assetTreeRootNode,
+            rootTreeNode,
             formTreeStyle,
             new CellTree.CellTreeMessages() {
                 @Override

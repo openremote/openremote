@@ -23,8 +23,12 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.AssetMapper;
+import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
+import org.openremote.manager.client.assets.browser.AssetTreeNode;
+import org.openremote.manager.client.assets.browser.TenantTreeNode;
+import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
@@ -81,11 +85,11 @@ public class AssetRulesListActivity
         container.setWidget(view.asWidget());
 
         registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
-            if (event.isTenantSelection()) {
+            if (event.getSelectedNode() instanceof TenantTreeNode) {
                 environment.getPlaceController().goTo(
                     new TenantRulesListPlace(event.getSelectedNode().getId())
                 );
-            } else if (event.isAssetSelection()) {
+            } else if (event.getSelectedNode() instanceof AssetTreeNode) {
                 environment.getPlaceController().goTo(
                     new AssetRulesListPlace(event.getSelectedNode().getId())
                 );
@@ -94,7 +98,7 @@ public class AssetRulesListActivity
 
         if (assetId != null) {
 
-            loadAsset(assetId, loadedAsset -> {
+            assetBrowserPresenter.loadAsset(assetId, loadedAsset -> {
                 this.asset = loadedAsset;
                 if (asset != null) {
                     assetBrowserPresenter.selectAsset(asset);
@@ -128,14 +132,5 @@ public class AssetRulesListActivity
         // TODO environment.getPlaceController().goTo(new AssetRulesEditorPlace());
     }
 
-    protected void loadAsset(String id, Consumer<Asset> assetConsumer) {
-        environment.getRequestService().execute(
-            assetMapper,
-            requestParams -> assetResource.get(requestParams, id),
-            200,
-            assetConsumer,
-            ex -> handleRequestException(ex, environment)
-        );
-    }
 
 }

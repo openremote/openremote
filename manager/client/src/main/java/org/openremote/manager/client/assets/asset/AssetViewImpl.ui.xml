@@ -1,6 +1,7 @@
 <ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
              xmlns:g="urn:import:com.google.gwt.user.client.ui"
-             xmlns:w="urn:import:org.openremote.manager.client.widget">
+             xmlns:w="urn:import:org.openremote.manager.client.widget"
+             xmlns:assetBrowser="urn:import:org.openremote.manager.client.assets.browser">
 
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
@@ -21,7 +22,7 @@
         .mapWidget {
             margin-left: 2em;
             width: 44%;
-            height: 14em;
+            height: 12.5em;
         }
     </ui:style>
 
@@ -123,47 +124,7 @@
                                 </w:actions>
                             </w:FormGroup>
 
-                            <w:FormGroup ui:field="realmGroup">
-                                <w:label>
-                                    <w:FormLabel text="{managerMessages.tenantName}"/>
-                                </w:label>
-                                <w:field>
-                                    <w:FormField>
-                                        <w:FormOutputText ui:field="realmOutput"/>
-                                    </w:FormField>
-                                </w:field>
-                            </w:FormGroup>
-
-                            <w:FormGroup>
-                                <w:label>
-                                    <w:FormLabel text="{managerMessages.parentAsset}"/>
-                                </w:label>
-                                <w:field>
-                                    <w:FormField addStyleNames="larger">
-                                        <w:FormInputText ui:field="parentLabel" readOnly="true"
-                                                         addStyleNames="flex"/>
-                                    </w:FormField>
-                                </w:field>
-                                <w:actions>
-                                    <w:FormGroupActions>
-                                        <w:FormButton ui:field="selectParentButton"
-                                                      text="{managerMessages.selectParentAsset}"
-                                                      icon="external-link-square"/>
-                                        <w:FormButton ui:field="setRootParentSelectionButton" visible="false"
-                                                      text="{managerMessages.setRootParentAsset}"
-                                                      icon="minus-square"/>
-                                        <w:FormButton ui:field="resetParentSelectionButton" visible="false"
-                                                      text="{managerMessages.reset}" icon="undo"/>
-                                        <w:FormButton ui:field="confirmParentSelectionButton" primary="true"
-                                                      visible="false" text="{managerMessages.OK}" icon="check"/>
-                                    </w:FormGroupActions>
-                                </w:actions>
-                                <w:info>
-                                    <g:Label ui:field="selectParentInfoLabel"
-                                             visible="false"
-                                             text="{managerMessages.selectParentInAssetTree}"/>
-                                </w:info>
-                            </w:FormGroup>
+                            <assetBrowser:AssetSelector ui:field="parentAssetSelector"/>
 
                             <w:FormGroup ui:field="locationGroup">
                                 <w:label>

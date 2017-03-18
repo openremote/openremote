@@ -21,14 +21,15 @@ package org.openremote.manager.client.assets.browser;
 
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.view.client.HasData;
+import org.openremote.model.Consumer;
 import org.openremote.model.asset.Asset;
 
 /**
  * Browse tenants and assets in a tree view.
  *
  * Listen to {@link AssetBrowserSelection} events to be notified of user selections. Call
- * the methods {@link Presenter#selectAsset(Asset)}, {@link Presenter#selectTenant(String)}
- * and {@link Presenter#clearSelection()} to modify the browser's current selected node.
+ * the methods {@link Presenter#selectAsset(Asset)}, {@link Presenter#selectTenant)}
+ * and {@link Presenter#clearSelection} to modify the browser's current selected node.
  */
 public interface AssetBrowser extends IsWidget {
 
@@ -38,23 +39,37 @@ public interface AssetBrowser extends IsWidget {
 
         void onViewDetached();
 
-        void loadNodeChildren(AssetTreeNode parent, HasData<AssetTreeNode> display);
+        void loadAsset(String id, Consumer<Asset> assetConsumer);
 
-        void onNodeSelected(AssetTreeNode treeNode);
+        void loadNodeChildren(BrowserTreeNode parent, HasData<BrowserTreeNode> display);
+
+        void onNodeSelected(BrowserTreeNode treeNode);
 
         void selectAsset(Asset asset);
+
+        void selectAssetById(String assetId);
 
         void selectTenant(String realmId);
 
         void clearSelection();
+
+        BrowserTreeNode getSelectedNode();
+
+        /**
+         * If not-null, the presenter will send selection change events to this instead of the event bus.
+         */
+        void useSelector(AssetSelector assetSelector);
+
+        void refresh(boolean rootRefresh);
     }
 
     void setPresenter(Presenter presenter);
 
-    void showAndSelectNode(String[] path, AssetTreeNode treeNode, boolean scrollIntoView);
+    Presenter getPresenter();
+
+    void showAndSelectNode(String[] path, BrowserTreeNode treeNode, boolean scrollIntoView);
 
     void clearSelection();
 
-    void refreshAssets(boolean isRootRefresh);
-
+    void refresh(boolean rootRefresh);
 }

@@ -125,12 +125,14 @@ public class ManagerIdentityService extends IdentityService {
         return tenants.toArray(new Tenant[tenants.size()]);
     }
 
-    public Tenant getTenant(String bearerAuth, String realm) {
-        return convert(
-            Container.JSON,
-            Tenant.class,
-            getRealms(bearerAuth).realm(realm).toRepresentation()
-        );
+    public Tenant getTenant(String realm) {
+        String realmId = getActiveTenantRealmId(realm);
+        if (realmId == null)
+            return null;
+        String tenantDisplayName = getActiveTenantDisplayName(realmId);
+        if (tenantDisplayName == null)
+            return null;
+        return new Tenant(realm, realm, tenantDisplayName, true);
     }
 
     public boolean isActiveTenantRealmId(String realmId) {
@@ -217,7 +219,7 @@ public class ManagerIdentityService extends IdentityService {
     }
 
     public void deleteTenant(String bearerAuth, String realm) throws Exception {
-        Tenant tenant = getTenant(bearerAuth, realm);
+        Tenant tenant = getTenant(realm);
         LOG.fine("Delete tenant: " + realm);
         getRealms(bearerAuth).realm(realm).remove();
         sendTenantModifiedMessage(PersistenceEvent.Cause.DELETE, tenant);

@@ -21,12 +21,13 @@ package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.admin.TenantMapper;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
-import org.openremote.manager.client.assets.browser.AssetBrowser;
-import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
+import org.openremote.manager.client.assets.browser.*;
 import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
+import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowInfoEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
@@ -36,15 +37,15 @@ import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.widget.AttributesEditor;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.map.MapResource;
+import org.openremote.manager.shared.security.Tenant;
+import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.model.Attributes;
-import org.openremote.model.Consumer;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetType;
 
 import javax.inject.Inject;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
@@ -52,22 +53,18 @@ public class AssetActivity
     extends AssetBrowsingActivity<AssetPlace>
     implements AssetView.Presenter {
 
-    private static final Logger LOG = Logger.getLogger(AssetActivity.class.getName());
-
     final AssetView view;
     final AssetResource assetResource;
     final AssetMapper assetMapper;
     final MapResource mapResource;
     final JsonObjectMapper jsonObjectMapper;
+    final TenantResource tenantResource;
+    final TenantMapper tenantMapper;
 
     String assetId;
     Asset asset;
-    boolean isCreateAsset;
     double[] selectedCoordinates;
-    String realmId;
-    String tenantDisplayName;
     Asset parentAsset;
-    boolean isParentSelection;
     AttributesEditor attributesEditor;
 
     @Inject
@@ -77,13 +74,17 @@ public class AssetActivity
                          AssetResource assetResource,
                          AssetMapper assetMapper,
                          MapResource mapResource,
-                         JsonObjectMapper jsonObjectMapper) {
+                         JsonObjectMapper jsonObjectMapper,
+                         TenantResource tenantResource,
+                         TenantMapper tenantMapper) {
         super(environment, assetBrowserPresenter);
         this.view = view;
         this.assetResource = assetResource;
         this.assetMapper = assetMapper;
         this.mapResource = mapResource;
         this.jsonObjectMapper = jsonObjectMapper;
+        this.tenantResource = tenantResource;
+        this.tenantMapper = tenantMapper;
     }
 
     @Override
@@ -98,10 +99,16 @@ public class AssetActivity
         container.setWidget(view.asWidget());
 
         registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
-            if (event.isTenantSelection()) {
-                onTenantSelected(event.getSelectedNode().getId());
-            } else if (event.isAssetSelection()) {
-                onAssetSelected(event.getSelectedNode().getId());
+            if (event.getSelectedNode() instanceof TenantTreeNode) {
+                environment.getPlaceController().goTo(
+                    new AssetsTenantPlace(event.getSelectedNode().getId())
+                );
+            } else if (event.getSelectedNode() instanceof AssetTreeNode) {
+                if (this.assetId == null || !this.assetId.equals(event.getSelectedNode().getId())) {
+                    environment.getPlaceController().goTo(
+                        new AssetPlace(event.getSelectedNode().getId())
+                    );
+                }
             }
         }));
 
@@ -117,18 +124,23 @@ public class AssetActivity
             view.refreshMap();
         }
 
-        view.setAvailableTypes(AssetType.editable());
-
         asset = null;
         if (assetId != null) {
-            onBeforeAssetLoad();
-            loadAsset(assetId, loadedAsset -> {
+            view.setFormBusy(true);
+            assetBrowserPresenter.loadAsset(assetId, loadedAsset -> {
                 this.asset = loadedAsset;
                 assetBrowserPresenter.selectAsset(asset);
-                onAssetLoaded();
+                startEditAsset();
             });
         } else {
-            startCreateAsset();
+            // To create an asset, we need realm details (ID, display name), we only have the realm name
+            environment.getRequestService().execute(
+                tenantMapper,
+                params -> tenantResource.get(params, environment.getSecurityService().getAuthenticatedRealm()),
+                200,
+                this::startCreateAsset,
+                ex -> handleRequestException(ex, environment)
+            );
         }
     }
 
@@ -138,10 +150,29 @@ public class AssetActivity
         if (attributesEditor != null) {
             attributesEditor.close();
         }
-        clearViewFieldErrors();
-
+        clearViewMessages();
         view.setPresenter(null);
-        view.clearFormMessages();
+    }
+
+    @Override
+    public void onParentSelection(BrowserTreeNode treeNode) {
+        if (treeNode instanceof TenantTreeNode) {
+            asset.setRealmId(treeNode.getId());
+            asset.setTenantDisplayName(treeNode.getLabel());
+            parentAsset = null;
+        } else if (treeNode instanceof AssetTreeNode) {
+            assetBrowserPresenter.loadAsset(treeNode.getId(), loadedAsset -> {
+                // The selected parent can not be our child or a leaf
+                if (Arrays.asList(loadedAsset.getPath()).contains(asset.getId()) || treeNode.isLeaf()) {
+                    environment.getEventBus().dispatch(
+                        new ShowFailureEvent(environment.getMessages().invalidAssetParent(), 3000)
+                    );
+                    writeParentToView();
+                } else {
+                    parentAsset = loadedAsset;
+                }
+            });
+        }
     }
 
     @Override
@@ -161,10 +192,8 @@ public class AssetActivity
     @Override
     public void update() {
         view.setFormBusy(true);
-        view.clearFormMessages();
-        clearViewFieldErrors();
+        clearViewMessages();
         readFromView();
-        readParent();
         environment.getRequestService().execute(
             assetMapper,
             requestParams -> assetResource.update(requestParams, assetId, asset),
@@ -174,6 +203,7 @@ public class AssetActivity
                 environment.getEventBus().dispatch(new ShowInfoEvent(
                     environment.getMessages().assetUpdated(asset.getName())
                 ));
+                assetBrowserPresenter.refresh(asset.getParentId() == null);
                 environment.getPlaceController().goTo(new AssetPlace(assetId));
             },
             ex -> handleRequestException(ex, environment)
@@ -183,21 +213,18 @@ public class AssetActivity
     @Override
     public void create() {
         view.setFormBusy(true);
-        view.clearFormMessages();
-        clearViewFieldErrors();
+        clearViewMessages();
         readFromView();
-        readParent();
         environment.getRequestService().execute(
             assetMapper,
-            requestParams -> {
-                assetResource.create(requestParams, asset);
-            },
+            requestParams -> assetResource.create(requestParams, asset),
             204,
             () -> {
                 view.setFormBusy(false);
                 environment.getEventBus().dispatch(new ShowInfoEvent(
                     environment.getMessages().assetCreated(asset.getName())
                 ));
+                assetBrowserPresenter.refresh(asset.getParentId() == null);
                 environment.getPlaceController().goTo(new AssetsDashboardPlace());
             },
             ex -> handleRequestException(ex, environment)
@@ -211,65 +238,22 @@ public class AssetActivity
             environment.getMessages().confirmationDelete(asset.getName()),
             () -> {
                 view.setFormBusy(true);
-                view.clearFormMessages();
-                clearViewFieldErrors();
+                clearViewMessages();
                 environment.getRequestService().execute(
-                    requestParams -> {
-                        assetResource.delete(requestParams, this.assetId);
-                    },
+                    requestParams -> assetResource.delete(requestParams, this.assetId),
                     204,
                     () -> {
                         view.setFormBusy(false);
                         environment.getEventBus().dispatch(new ShowInfoEvent(
                             environment.getMessages().assetDeleted(asset.getName())
                         ));
+                        assetBrowserPresenter.refresh(asset.getParentId() == null);
                         environment.getPlaceController().goTo(new AssetsDashboardPlace());
                     },
                     ex -> handleRequestException(ex, environment)
                 );
             }
         );
-    }
-
-    @Override
-    public void beginParentSelection() {
-        if (!isCreateAsset) {
-            assetBrowserPresenter.selectAsset(null);
-        }
-        view.setParentSelection(true);
-        isParentSelection = true;
-    }
-
-    @Override
-    public void confirmParentSelection() {
-        if (!isCreateAsset) {
-            assetBrowserPresenter.selectAsset(asset);
-        } else {
-            assetBrowserPresenter.selectAsset(null);
-        }
-        view.setParentSelection(false);
-        isParentSelection = false;
-    }
-
-    @Override
-    public void setRootParentSelection() {
-        this.parentAsset = null;
-        writeParentToView();
-    }
-
-    @Override
-    public void resetParentSelection() {
-        isParentSelection = false;
-        assetBrowserPresenter.selectAsset(asset);
-        view.setParentSelection(false);
-        if (asset.getParentId() != null) {
-            loadAsset(asset.getParentId(), loadedParentAsset -> {
-                this.realmId = loadedParentAsset.getRealmId();
-                this.tenantDisplayName = loadedParentAsset.getTenantDisplayName();
-                this.parentAsset = loadedParentAsset;
-                writeParentToView();
-            });
-        }
     }
 
     @Override
@@ -281,93 +265,44 @@ public class AssetActivity
         }
     }
 
-    protected void loadAsset(String id, Consumer<Asset> assetConsumer) {
-        environment.getRequestService().execute(
-            assetMapper,
-            requestParams -> assetResource.get(requestParams, id),
-            200,
-            assetConsumer,
-            ex -> handleRequestException(ex, environment)
-        );
-    }
-
-    protected void startCreateAsset() {
+    protected void startCreateAsset(Tenant authenticatedTenant) {
         assetBrowserPresenter.clearSelection();
-        isCreateAsset = true;
         view.setFormBusy(true);
         asset = new Asset();
         asset.setName("My New Asset");
+        asset.setRealmId(authenticatedTenant.getId());
+        asset.setTenantDisplayName(authenticatedTenant.getDisplayName());
         asset.setType("urn:mydomain:customtype");
-        writeToView();
-        clearViewFieldErrors();
-        view.clearFormMessages();
-        writeParentToView();
+        clearViewMessages();
         view.setTypeSelectionEnabled(true);
+        writeAssetToView();
+        writeParentToView();
         writeTypeToView();
         writeAttributesEditorToView();
         view.setFormBusy(false);
     }
 
-    protected void onBeforeAssetLoad() {
-        view.setFormBusy(true);
-    }
-
-    protected void onAssetLoaded() {
-        isCreateAsset = false;
-        realmId = asset.getRealmId();
-        tenantDisplayName = asset.getTenantDisplayName();
-        writeToView();
-        clearViewFieldErrors();
-        view.clearFormMessages();
+    protected void startEditAsset() {
+        clearViewMessages();
         view.setTypeSelectionEnabled(false);
         view.setEditable(asset.getWellKnownType().isEditable());
+        writeAssetToView();
         writeTypeToView();
+        writeAttributesEditorToView();
         if (asset.getParentId() != null) {
-            loadAsset(asset.getParentId(), loadedParentAsset -> {
-                this.parentAsset = loadedParentAsset;
+            assetBrowserPresenter.loadAsset(asset.getParentId(), loadedAsset -> {
+                this.parentAsset = loadedAsset;
                 writeParentToView();
-                writeAttributesEditorToView();
                 view.setFormBusy(false);
             });
         } else {
             writeParentToView();
-            writeAttributesEditorToView();
             view.setFormBusy(false);
         }
     }
 
-    protected void onTenantSelected(String realmId) {
-        if (isParentSelection) {
-            this.parentAsset = null;
-            this.realmId = realmId;
-            writeParentToView();
-        } else {
-            environment.getPlaceController().goTo(new AssetsTenantPlace(this.realmId));
-        }
-    }
-
-    protected void onAssetSelected(String assetId) {
-        if (isParentSelection) {
-            loadAsset(assetId, loadedParentAsset -> {
-                if (Arrays.asList(loadedParentAsset.getPath()).contains(asset.getId())) {
-                    environment.getEventBus().dispatch(
-                        new ShowInfoEvent(environment.getMessages().invalidAssetParent())
-                    );
-                } else {
-                    this.realmId = loadedParentAsset.getRealmId();
-                    this.tenantDisplayName = loadedParentAsset.getTenantDisplayName();
-                    parentAsset = loadedParentAsset;
-                    writeParentToView();
-                }
-            });
-        } else {
-            environment.getPlaceController().goTo(new AssetPlace(assetId));
-        }
-    }
-
-    protected void writeToView() {
+    protected void writeAssetToView() {
         view.setName(asset.getName());
-        view.setTenantDisplayName(asset.getTenantDisplayName());
         view.setCreatedOn(asset.getCreatedOn());
         view.setLocation(asset.getCoordinates());
         if (asset != null && asset.getId() != null) {
@@ -376,19 +311,29 @@ public class AssetActivity
         } else {
             view.hideFeaturesSelection();
         }
-        view.enableCreate(isCreateAsset);
-        view.enableUpdate(!isCreateAsset);
-        view.enableDelete(!isCreateAsset);
+        view.enableCreate(assetId == null);
+        view.enableUpdate(assetId != null);
+        view.enableDelete(assetId != null);
     }
 
     protected void writeParentToView() {
-        view.setParent(parentAsset != null ? parentAsset.getName() : environment.getMessages().assetHasNoParent());
-        view.setTenantDisplayName(parentAsset != null ? parentAsset.getTenantDisplayName() : "-");
+        if (parentAsset != null) {
+            view.setParentNode(
+                new AssetTreeNode(parentAsset, parentAsset.getTenantDisplayName())
+            );
+        } else {
+            view.setParentNode(
+                new TenantTreeNode(
+                    new Tenant(asset.getRealmId(), asset.getTenantRealm(), asset.getTenantDisplayName(), true)
+                )
+            );
+        }
     }
 
     protected void writeTypeToView() {
         AssetType assetType = asset.getWellKnownType();
         view.selectType(assetType);
+        view.setAvailableTypes(AssetType.editable());
         view.setTypeInputVisible(AssetType.CUSTOM.equals(assetType));
         view.setType(asset.getType());
     }
@@ -413,7 +358,7 @@ public class AssetActivity
                     environment,
                     view.getAttributesEditorContainer(),
                     new Attributes(
-                        isCreateAsset
+                        assetId == null
                             ? asset.getWellKnownType().getDefaultAttributes()
                             : asset.getAttributes()
                     )
@@ -425,6 +370,13 @@ public class AssetActivity
 
     protected void readFromView() {
         asset.setName(view.getName());
+        if (parentAsset != null) {
+            asset.setRealmId(parentAsset.getRealmId());
+            asset.setTenantDisplayName(parentAsset.getTenantDisplayName());
+            asset.setParentId(parentAsset.getId());
+        } else {
+            asset.setParentId(null);
+        }
         if (AssetType.CUSTOM.equals(asset.getWellKnownType())) {
             asset.setType(view.getType());
         }
@@ -436,18 +388,8 @@ public class AssetActivity
         );
     }
 
-    protected void readParent() {
-        if (parentAsset != null) {
-            asset.setRealmId(parentAsset.getRealmId());
-            asset.setParentId(parentAsset.getId());
-        } else {
-            asset.setRealmId(realmId);
-            asset.setParentId(null);
-        }
-    }
-
-    protected void clearViewFieldErrors() {
+    protected void clearViewMessages() {
         // TODO: Validation
+        view.clearFormMessages();
     }
-
 }

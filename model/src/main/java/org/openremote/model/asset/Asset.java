@@ -37,9 +37,10 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
  * of assets can be managed through a <code>null</code> {@link #parentId} property for root
  * assets, and a valid parent identifier for sub-assets.
  * <p>
- * An asset is stored in and therefore access-controlled through a {@link #realmId}, the
- * transient properties {@link #tenantRealm} (the realm name) and {@link #tenantDisplayName} are
- * also resolved and available when the asset is loaded from storage.
+ * An asset is stored in and therefore access-controlled through a {@link #realmId}. The
+ * transient and optional properties {@link #tenantRealm} (the unique realm name of the realm
+ * ID) and {@link #tenantDisplayName} are only resolved and usable when the asset is loaded
+ * from storage.
  * <p>
  * The {@link #createdOn} value is milliseconds since the Unix epoch.
  * <p>
@@ -63,7 +64,7 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
   "id": "0oI7Gf_kTh6WyRJFUTr8Lg",
   "version": 0,
   "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248"
-  "tenant": "customerA",
+  "tenantRealm": "customerA",
   "tenantDisplayName": "Customer A",
   "createdOn": 1489042784142,
   "name": "Smart Home",

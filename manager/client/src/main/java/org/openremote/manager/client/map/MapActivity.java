@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -25,6 +25,8 @@ import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
+import org.openremote.manager.client.assets.browser.AssetTreeNode;
+import org.openremote.manager.client.assets.browser.TenantTreeNode;
 import org.openremote.manager.client.event.ShowInfoEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
@@ -32,7 +34,6 @@ import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.map.MapResource;
-import org.openremote.model.Consumer;
 import org.openremote.model.asset.Asset;
 
 import javax.inject.Inject;
@@ -86,10 +87,14 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
         container.setWidget(view.asWidget());
 
         registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
-            if (event.isTenantSelection()) {
-                onTenantSelected(event.getSelectedNode().getId());
-            } else if (event.isAssetSelection()) {
-                onAssetSelected(event.getSelectedNode().getId());
+            if (event.getSelectedNode() instanceof TenantTreeNode) {
+                environment.getPlaceController().goTo(
+                    new MapTenantPlace(event.getSelectedNode().getId())
+                );
+            } else if (event.getSelectedNode() instanceof AssetTreeNode) {
+                environment.getPlaceController().goTo(
+                    new MapAssetPlace(event.getSelectedNode().getId())
+                );
             }
         }));
 
@@ -114,7 +119,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
 
         asset = null;
         if (assetId != null) {
-            loadAsset(assetId, loadedAsset -> {
+            assetBrowserPresenter.loadAsset(assetId, loadedAsset -> {
                 this.asset = loadedAsset;
                 if (asset != null) {
                     assetBrowserPresenter.selectAsset(asset);
@@ -132,24 +137,6 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
     public void onStop() {
         super.onStop();
         view.setPresenter(null);
-    }
-
-    protected void onAssetSelected(String assetId) {
-        environment.getPlaceController().goTo(new MapAssetPlace(assetId));
-    }
-
-    protected void onTenantSelected(String realmId) {
-        environment.getPlaceController().goTo(new MapTenantPlace(realmId));
-    }
-
-    protected void loadAsset(String id, Consumer<Asset> assetConsumer) {
-        environment.getRequestService().execute(
-            assetMapper,
-            requestParams -> assetResource.get(requestParams, id),
-            200,
-            assetConsumer,
-            ex -> handleRequestException(ex, environment)
-        );
     }
 
     protected void showAssetOnMap() {

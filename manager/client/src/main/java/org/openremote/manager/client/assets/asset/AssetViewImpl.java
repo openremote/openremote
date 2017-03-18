@@ -32,6 +32,8 @@ import com.google.inject.Provider;
 import elemental.json.JsonObject;
 import org.openremote.manager.client.app.dialog.ConfirmationDialog;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
+import org.openremote.manager.client.assets.browser.AssetSelector;
+import org.openremote.manager.client.assets.browser.BrowserTreeNode;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.widget.*;
 import org.openremote.manager.client.widget.PushButton;
@@ -46,11 +48,8 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.logging.Logger;
 
 public class AssetViewImpl extends FormViewImpl implements AssetView {
-
-    private static final Logger LOG = Logger.getLogger(AssetViewImpl.class.getName());
 
     interface UI extends UiBinder<FlexSplitPanel, AssetViewImpl> {
     }
@@ -103,23 +102,8 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     @UiField
     FormButton showHistoryButton;
 
-    @UiField
-    FormGroup realmGroup;
-    @UiField
-    FormOutputText realmOutput;
-
-    @UiField
-    TextBox parentLabel;
-    @UiField
-    PushButton selectParentButton;
-    @UiField
-    PushButton setRootParentSelectionButton;
-    @UiField
-    PushButton confirmParentSelectionButton;
-    @UiField
-    PushButton resetParentSelectionButton;
-    @UiField
-    Label selectParentInfoLabel;
+    @UiField(provided = true)
+    AssetSelector parentAssetSelector;
 
     @UiField
     FormGroup locationGroup;
@@ -163,16 +147,42 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     AttributesEditor attributesEditor;
 
     @Inject
-    public AssetViewImpl(AssetBrowser assetBrowser, Provider<ConfirmationDialog> confirmationDialogProvider) {
+    public AssetViewImpl(AssetBrowser assetBrowser,
+                         Provider<ConfirmationDialog> confirmationDialogProvider,
+                         ManagerMessages managerMessages) {
         super(confirmationDialogProvider);
         this.assetBrowser = assetBrowser;
+
+        parentAssetSelector = new AssetSelector(
+            assetBrowser.getPresenter(),
+            managerMessages,
+            managerMessages.parentAsset(),
+            managerMessages.selectAssetDescription(),
+            treeNode -> {
+                if (presenter != null) {
+                    presenter.onParentSelection(treeNode);
+                }
+            }
+        ) {
+            @Override
+            public void beginSelection() {
+                AssetViewImpl.this.setOpaque(true);
+                super.beginSelection();
+            }
+
+            @Override
+            public void endSelection() {
+                super.endSelection();
+                AssetViewImpl.this.setOpaque(false);
+            }
+        };
 
         typeListBox = new FormValueListBox<>(
             new AbstractRenderer<AssetType>() {
                 @Override
                 public String render(AssetType assetType) {
                     if (assetType == null)
-                        return managerMessages.noTypeSelected();
+                        assetType = AssetType.CUSTOM;
                     return managerMessages.assetTypeLabel(assetType.name());
                 }
             }
@@ -198,15 +208,8 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
         sidebarContainer.clear();
         nameInput.setReadOnly(false);
         nameInput.setValue(null);
-        realmOutput.setText("");
         createdOnOutput.setText("");
-        parentLabel.setText("");
-        selectParentButton.setVisible(true);
-        selectParentButton.setEnabled(true);
-        confirmParentSelectionButton.setVisible(false);
-        resetParentSelectionButton.setVisible(false);
-        setRootParentSelectionButton.setVisible(false);
-        selectParentInfoLabel.setVisible(false);
+        parentAssetSelector.init();
         locationOutput.setText("");
         centerMapButton.setEnabled(false);
         typeListBox.setValue(null);
@@ -246,11 +249,6 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     }
 
     @Override
-    public void setTenantDisplayName(String tenantDisplayName) {
-        realmOutput.setText(tenantDisplayName);
-    }
-
-    @Override
     public void setCreatedOn(Date createdOn) {
         createdOnOutput.setText(
             createdOn != null ? DateTimeFormat.getFormat(Constants.DEFAULT_DATETIME_FORMAT).format(createdOn) : ""
@@ -258,18 +256,8 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     }
 
     @Override
-    public void setParent(String name) {
-        parentLabel.setText(name != null ? name : "");
-    }
-
-    @Override
-    public void setParentSelection(boolean isSelecting) {
-        selectParentButton.setVisible(!isSelecting);
-        confirmParentSelectionButton.setVisible(isSelecting);
-        resetParentSelectionButton.setVisible(isSelecting);
-        setRootParentSelectionButton.setVisible(isSelecting);
-        selectParentInfoLabel.setVisible(isSelecting);
-        setOpaque(isSelecting);
+    public void setParentNode(BrowserTreeNode treeNode) {
+        parentAssetSelector.setSelectedNode(treeNode);
     }
 
     @Override
@@ -332,30 +320,6 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
         mapWidget.flyTo(coordinates);
     }
 
-    @UiHandler("selectParentButton")
-    void selectParentClicked(ClickEvent e) {
-        if (presenter != null)
-            presenter.beginParentSelection();
-    }
-
-    @UiHandler("setRootParentSelectionButton")
-    void setRootParentSelectionClicked(ClickEvent e) {
-        if (presenter != null)
-            presenter.setRootParentSelection();
-    }
-
-    @UiHandler("confirmParentSelectionButton")
-    void confirmParentSelectionClicked(ClickEvent e) {
-        if (presenter != null)
-            presenter.confirmParentSelection();
-    }
-
-    @UiHandler("resetParentSelectionButton")
-    void resetParentSelectionClicked(ClickEvent e) {
-        if (presenter != null)
-            presenter.resetParentSelection();
-    }
-
     @UiHandler("centerMapButton")
     void centerMapClicked(ClickEvent e) {
         if (presenter != null)
@@ -371,7 +335,7 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
 
     @Override
     public void setEditable(boolean editable) {
-        selectParentButton.setEnabled(editable);
+        parentAssetSelector.setEnabled(editable);
         nameInput.setReadOnly(!editable);
     }
 

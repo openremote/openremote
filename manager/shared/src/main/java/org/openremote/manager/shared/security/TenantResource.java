@@ -23,11 +23,19 @@ import jsinterop.annotations.JsType;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.http.SuccessStatusCode;
 
+import javax.annotation.security.RolesAllowed;
 import javax.validation.Valid;
 import javax.ws.rs.*;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
+/**
+ * Manage realms.
+ * <p>
+ * All operations can only be called by the superuser.
+ * <p>
+ * TODO Relax permissions to allow regular users to maintain their own realm
+ */
 @Path("tenant")
 @JsType(isNative = true)
 public interface TenantResource {
@@ -35,12 +43,17 @@ public interface TenantResource {
     @GET
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
+    @RolesAllowed("read:admin")
     Tenant[] getAll(@BeanParam RequestParams requestParams);
 
+    /**
+     * Regular users can call this, but only to obtain details about their currently authenticated realm.
+     */
     @GET
     @Path("{realm}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
+    @RolesAllowed("read:admin")
     Tenant get(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     @PUT
@@ -48,17 +61,20 @@ public interface TenantResource {
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
+    @RolesAllowed("write:admin")
     void update(@BeanParam RequestParams requestParams, @PathParam("realm") String realm, @Valid Tenant tenant);
 
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
+    @RolesAllowed("write:admin")
     void create(@BeanParam RequestParams requestParams, @Valid Tenant tenant);
 
     @DELETE
     @Path("{realm}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
+    @RolesAllowed("write:admin")
     void delete(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 }

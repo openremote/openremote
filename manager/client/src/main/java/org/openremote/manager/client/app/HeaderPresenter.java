@@ -26,6 +26,8 @@ import org.openremote.manager.client.apps.AppsPlace;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
+import org.openremote.manager.client.assets.browser.AssetTreeNode;
+import org.openremote.manager.client.assets.browser.TenantTreeNode;
 import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
 import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.UserChangeEvent;
@@ -92,9 +94,9 @@ public class HeaderPresenter implements HeaderView.Presenter {
             placeController.goTo(new MapAssetPlace());
             return;
         }
-        if (assetBrowserSelection.isTenantSelection()) {
+        if (assetBrowserSelection.getSelectedNode() instanceof TenantTreeNode) {
             placeController.goTo(new MapTenantPlace(assetBrowserSelection.getSelectedNode().getId()));
-        } else if (assetBrowserSelection.isAssetSelection()){
+        } else if (assetBrowserSelection.getSelectedNode() instanceof AssetTreeNode) {
             placeController.goTo(new MapAssetPlace(assetBrowserSelection.getSelectedNode().getId()));
         } else {
             placeController.goTo(new MapAssetPlace());
@@ -107,9 +109,9 @@ public class HeaderPresenter implements HeaderView.Presenter {
             placeController.goTo(new AssetsDashboardPlace());
             return;
         }
-        if (assetBrowserSelection.isTenantSelection()) {
+        if (assetBrowserSelection.getSelectedNode() instanceof TenantTreeNode) {
             placeController.goTo(new AssetsTenantPlace(assetBrowserSelection.getSelectedNode().getId()));
-        } else if (assetBrowserSelection.isAssetSelection()){
+        } else if (assetBrowserSelection.getSelectedNode() instanceof AssetTreeNode) {
             placeController.goTo(new AssetPlace(assetBrowserSelection.getSelectedNode().getId()));
         } else {
             placeController.goTo(new AssetsDashboardPlace());
@@ -122,9 +124,9 @@ public class HeaderPresenter implements HeaderView.Presenter {
             placeController.goTo(new GlobalRulesListPlace());
             return;
         }
-        if (assetBrowserSelection.isTenantSelection()) {
+        if (assetBrowserSelection.getSelectedNode() instanceof TenantTreeNode) {
             placeController.goTo(new TenantRulesListPlace(assetBrowserSelection.getSelectedNode().getId()));
-        } else if (assetBrowserSelection.isAssetSelection()){
+        } else if (assetBrowserSelection.getSelectedNode() instanceof AssetTreeNode) {
             placeController.goTo(new AssetRulesListPlace(assetBrowserSelection.getSelectedNode().getId()));
         } else {
             placeController.goTo(new GlobalRulesListPlace());

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -19,21 +19,17 @@
  */
 package org.openremote.manager.client.assets.browser;
 
-import com.google.gwt.view.client.AsyncDataProvider;
-import com.google.gwt.view.client.HasData;
+import com.fasterxml.jackson.annotation.JsonIgnoreType;
+import org.openremote.model.Event;
 
-class AssetTreeDataProvider extends AsyncDataProvider<BrowserTreeNode> {
+@JsonIgnoreType
+public class AssetBrowserSelectionCleared extends Event {
 
-    final protected AssetBrowser.Presenter presenter;
-    final protected BrowserTreeNode parent;
-
-    public AssetTreeDataProvider(AssetBrowser.Presenter presenter, BrowserTreeNode parent) {
-        this.presenter = presenter;
-        this.parent = parent;
+    public AssetBrowserSelectionCleared() {
     }
 
     @Override
-    protected void onRangeChanged(HasData<BrowserTreeNode> display) {
-        presenter.loadNodeChildren(parent, display);
+    public String toString() {
+        return getClass().getSimpleName() + "{}";
     }
 }

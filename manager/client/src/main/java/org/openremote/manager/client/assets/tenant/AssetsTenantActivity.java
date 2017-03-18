@@ -25,6 +25,8 @@ import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
+import org.openremote.manager.client.assets.browser.AssetTreeNode;
+import org.openremote.manager.client.assets.browser.TenantTreeNode;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
@@ -58,11 +60,11 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
         container.setWidget(view.asWidget());
 
         registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
-            if (event.isTenantSelection()) {
+            if (event.getSelectedNode() instanceof TenantTreeNode) {
                 environment.getPlaceController().goTo(
                     new AssetsTenantPlace(event.getSelectedNode().getId())
                 );
-            } else if (event.isAssetSelection()){
+            } else if (event.getSelectedNode() instanceof AssetTreeNode) {
                 environment.getPlaceController().goTo(
                     new AssetPlace(event.getSelectedNode().getId())
                 );

@@ -248,9 +248,11 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             if (isRestrictedUser()) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
-            String realm = asset.getRealmId() != null && asset.getRealmId().length() > 0
-                ? identityService.getActiveTenantRealm(asset.getRealmId())
-                : getAuthenticatedRealm();
+            // If there was no realm provided (create was called by regular user in manager UI), use the auth realm
+            if (asset.getRealmId() == null || asset.getRealmId().length() == 0) {
+                asset.setRealmId(identityService.getActiveTenantRealmId(getAuthenticatedRealm()));
+            }
+            String realm = identityService.getActiveTenantRealm(asset.getRealmId());
             if (realm == null) {
                 throw new WebApplicationException(BAD_REQUEST);
             }

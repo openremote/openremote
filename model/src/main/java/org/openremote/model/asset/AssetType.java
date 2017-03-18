@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -21,17 +21,19 @@ package org.openremote.model.asset;
 
 import elemental.json.Json;
 import elemental.json.JsonObject;
-import org.openremote.model.*;
+import org.openremote.model.Attribute;
+import org.openremote.model.AttributeType;
+import org.openremote.model.Attributes;
+import org.openremote.model.Meta;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import static org.openremote.model.Constants.ASSET_NAMESPACE;
-import static org.openremote.model.asset.AssetMeta.*;
 import static org.openremote.model.AttributeType.INTEGER;
 import static org.openremote.model.AttributeType.STRING;
+import static org.openremote.model.Constants.ASSET_NAMESPACE;
+import static org.openremote.model.asset.AssetMeta.*;
 
 /**
  * Asset type is an arbitrary string. It should be URI. This enum contains

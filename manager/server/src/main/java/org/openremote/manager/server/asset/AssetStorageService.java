@@ -334,9 +334,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
             return asset;
 
         asset.setTenantRealm(managerIdentityService.getActiveTenantRealm(asset.getRealmId()));
-        if (asset.getTenantRealm() != null) {
-            asset.setTenantDisplayName(managerIdentityService.getActiveTenantDisplayName(asset.getTenantRealm()));
-        }
+        asset.setTenantDisplayName(managerIdentityService.getActiveTenantDisplayName(asset.getRealmId()));
 
         asset.setPath(em.unwrap(Session.class).doReturningWork(connection -> {
             String query =

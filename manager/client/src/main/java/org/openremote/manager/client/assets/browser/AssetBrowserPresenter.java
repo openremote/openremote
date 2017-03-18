@@ -23,9 +23,11 @@ import com.google.gwt.view.client.HasData;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.admin.TenantArrayMapper;
 import org.openremote.manager.client.assets.AssetInfoArrayMapper;
+import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
+import org.openremote.model.Consumer;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetInfo;
 
@@ -34,29 +36,29 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
 public class AssetBrowserPresenter implements AssetBrowser.Presenter {
 
-    private static final Logger LOG = Logger.getLogger(AssetBrowserPresenter.class.getName());
-
     final Environment environment;
     final AssetBrowser view;
     final AssetResource assetResource;
+    final AssetMapper assetMapper;
     final AssetInfoArrayMapper assetInfoArrayMapper;
     final TenantResource tenantResource;
     final TenantArrayMapper tenantArrayMapper;
 
-    final List<AssetTreeNode> tenantNodes = new ArrayList<>();
-    AssetTreeNode selectedNode;
+    final List<TenantTreeNode> tenantNodes = new ArrayList<>();
+    BrowserTreeNode selectedNode;
     String[] selectedNodePath;
+    AssetSelector assetSelector;
 
     @Inject
     public AssetBrowserPresenter(Environment environment,
                                  AssetBrowser view,
                                  AssetResource assetResource,
+                                 AssetMapper assetMapper,
                                  AssetInfoArrayMapper assetInfoArrayMapper,
                                  TenantResource tenantResource,
                                  TenantArrayMapper tenantArrayMapper) {
@@ -65,6 +67,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         this.tenantResource = tenantResource;
         this.tenantArrayMapper = tenantArrayMapper;
         this.assetResource = assetResource;
+        this.assetMapper = assetMapper;
         this.assetInfoArrayMapper = assetInfoArrayMapper;
 
         view.setPresenter(this);
@@ -81,14 +84,25 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     }
 
     @Override
-    public void loadNodeChildren(AssetTreeNode parent, HasData<AssetTreeNode> display) {
+    public void loadAsset(String id, Consumer<Asset> assetConsumer) {
+        environment.getRequestService().execute(
+            assetMapper,
+            requestParams -> assetResource.get(requestParams, id),
+            200,
+            assetConsumer,
+            ex -> handleRequestException(ex, environment)
+        );
+    }
+
+    @Override
+    public void loadNodeChildren(BrowserTreeNode parent, HasData<BrowserTreeNode> display) {
         // If parent is the invisible root of the tree, show a loading message
-        if (parent.isRoot()) {
+        if (parent instanceof RootTreeNode) {
             showLoadingMessage(display);
         }
 
         // If the parent is the invisible root of the tree and this is the superuser, load all tenants
-        if (parent.isRoot() && environment.getSecurityService().isSuperUser()) {
+        if (parent instanceof RootTreeNode && environment.getSecurityService().isSuperUser()) {
             loadTenants(display);
         } else {
             loadAssets(parent, display);
@@ -96,21 +110,27 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     }
 
     @Override
-    public void onNodeSelected(AssetTreeNode treeNode) {
+    public void onNodeSelected(BrowserTreeNode treeNode) {
         if (treeNode == null) {
             // Reset the selected node
-            selectedNode  = null;
-            environment.getEventBus().dispatch(new AssetBrowserSelection());
+            selectedNode = null;
+            if (assetSelector == null) {
+                environment.getEventBus().dispatch(new AssetBrowserSelectionCleared());
+            }
         } else if (selectedNode == null || !selectedNode.getId().equals(treeNode.getId())) {
             // If there was no previous selection, or the new selected node is a different one, set and fire event
             selectedNode = treeNode;
-            environment.getEventBus().dispatch(new AssetBrowserSelection(treeNode));
+            if (assetSelector != null) {
+                assetSelector.setSelectedNode(treeNode);
+            } else {
+                environment.getEventBus().dispatch(new AssetBrowserSelection(treeNode));
+            }
         }
     }
 
     @Override
     public void selectAsset(Asset asset) {
-        onNodeSelected(asset != null ? new AssetTreeNode(new AssetInfo(asset)) : null);
+        onNodeSelected(asset != null ? new AssetTreeNode(asset, asset.getTenantDisplayName()) : null);
         selectedNodePath = asset != null ? getTenantAdjustedAssetPath(asset) : null;
         if (selectedNode != null) {
             updateViewSelection(true);
@@ -120,15 +140,24 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     }
 
     @Override
+    public void selectAssetById(String assetId) {
+        if (assetId == null) {
+            view.clearSelection();
+            return;
+        }
+        loadAsset(assetId, this::selectAsset);
+    }
+
+    @Override
     public void selectTenant(String realmId) {
-        AssetTreeNode selectedTenantNode = null;
-        for (AssetTreeNode tenantNode : tenantNodes) {
+        BrowserTreeNode selectedTenantNode = null;
+        for (BrowserTreeNode tenantNode : tenantNodes) {
             if (tenantNode.getId().equals(realmId))
                 selectedTenantNode = tenantNode;
         }
         if (selectedTenantNode != null) {
             onNodeSelected(selectedTenantNode);
-            selectedNodePath = new String[] { selectedTenantNode.getId() };
+            selectedNodePath = new String[]{selectedTenantNode.getId()};
             updateViewSelection(true);
         } else {
             view.clearSelection();
@@ -140,14 +169,29 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         selectAsset(null);
     }
 
-    protected void showLoadingMessage(HasData<AssetTreeNode> display) {
+    @Override
+    public BrowserTreeNode getSelectedNode() {
+        return selectedNode;
+    }
+
+    @Override
+    public void useSelector(AssetSelector assetSelector) {
+        this.assetSelector = assetSelector;
+    }
+
+    @Override
+    public void refresh(boolean rootRefresh) {
+        view.refresh(rootRefresh);
+    }
+
+    protected void showLoadingMessage(HasData<BrowserTreeNode> display) {
         display.setRowData(0, Collections.singletonList(
-            new AssetTreeNode(environment.getMessages().loadingAssets())
+            new LabelTreeNode(environment.getMessages().loadingAssets())
         ));
         display.setRowCount(1, true);
     }
 
-    protected void loadTenants(HasData<AssetTreeNode> display) {
+    protected void loadTenants(HasData<BrowserTreeNode> display) {
         environment.getRequestService().execute(
             tenantArrayMapper,
             requestParams -> {
@@ -159,7 +203,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
             tenants -> {
                 tenantNodes.clear();
                 for (Tenant tenant : tenants) {
-                    tenantNodes.add(new AssetTreeNode(tenant));
+                    tenantNodes.add(new TenantTreeNode(tenant));
                 }
                 display.setRowData(0, tenantNodes);
                 display.setRowCount(tenantNodes.size(), true);
@@ -169,7 +213,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         );
     }
 
-    protected void loadAssets(AssetTreeNode parent, HasData<AssetTreeNode> display) {
+    protected void loadAssets(BrowserTreeNode parent, HasData<BrowserTreeNode> display) {
         // TODO Pagination?
         // final Range range = display.getVisibleRange();
         environment.getRequestService().execute(
@@ -177,22 +221,19 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
             requestParams -> {
                 // This must be synchronous, so tree selection/searching works
                 requestParams.setAsync(false);
-                if (parent.isTenant()) {
-                    LOG.fine("Loading root assets of: " + parent);
+                if (parent instanceof TenantTreeNode) {
                     assetResource.getRoot(requestParams, parent.getId());
-                } else if (parent.isRoot()) {
-                    LOG.fine("Loading user assets of authenticated user");
+                } else if (parent instanceof RootTreeNode) {
                     assetResource.getCurrentUserAssets(requestParams);
                 } else {
-                    LOG.fine("Loading child assets of: " + parent);
                     assetResource.getChildren(requestParams, parent.getId());
                 }
             },
             200,
             assetInfos -> {
-                List<AssetTreeNode> treeNodes = new ArrayList<>();
+                List<BrowserTreeNode> treeNodes = new ArrayList<>();
                 for (AssetInfo assetInfo : assetInfos) {
-                    treeNodes.add(new AssetTreeNode(assetInfo));
+                    treeNodes.add(new AssetTreeNode(assetInfo, getTenantDisplayName(assetInfo)));
                 }
                 display.setRowData(0, treeNodes);
                 display.setRowCount(assetInfos.length, true);
@@ -209,11 +250,11 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         }
     }
 
-    protected void afterNodeLoadChildren(List<AssetTreeNode> children) {
+    protected void afterNodeLoadChildren(List<? extends BrowserTreeNode> children) {
         if (selectedNode != null) {
             // Only scroll the view if the selected node was loaded
             boolean scroll = false;
-            for (AssetTreeNode child : children) {
+            for (BrowserTreeNode child : children) {
                 if (child.getId().equals(selectedNode.getId()))
                     scroll = true;
             }
@@ -229,7 +270,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     protected String[] getTenantAdjustedAssetPath(Asset asset) {
         List<String> path = new ArrayList<>();
         if (environment.getSecurityService().isSuperUser()) {
-            for (AssetTreeNode tenantNode : tenantNodes) {
+            for (TenantTreeNode tenantNode : tenantNodes) {
                 if (tenantNode.getId().equals(asset.getRealmId())) {
                     path.add(tenantNode.getId());
                     break;
@@ -240,5 +281,13 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
             path.addAll(Arrays.asList(asset.getPath()));
         }
         return path.toArray(new String[path.size()]);
+    }
+
+    protected String getTenantDisplayName(AssetInfo assetInfo) {
+        for (TenantTreeNode tenantNode : tenantNodes) {
+            if (tenantNode.getId().equals(assetInfo.getRealmId()))
+                return tenantNode.getLabel();
+        }
+        return assetInfo.getRealmId();
     }
 }
