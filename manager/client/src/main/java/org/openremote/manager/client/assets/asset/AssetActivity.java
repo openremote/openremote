@@ -162,8 +162,10 @@ public class AssetActivity
             parentAsset = null;
         } else if (treeNode instanceof AssetTreeNode) {
             assetBrowserPresenter.loadAsset(treeNode.getId(), loadedAsset -> {
-                // The selected parent can not be our child or a leaf
-                if (Arrays.asList(loadedAsset.getPath()).contains(asset.getId()) || treeNode.isLeaf()) {
+                // The selected parent can not be our child, or a leaf, or the same
+                if (Arrays.asList(loadedAsset.getPath()).contains(asset.getId())
+                    || treeNode.isLeaf()
+                    || loadedAsset.getId().equals(asset.getId())) {
                     environment.getEventBus().dispatch(
                         new ShowFailureEvent(environment.getMessages().invalidAssetParent(), 3000)
                     );

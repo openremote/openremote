@@ -7,14 +7,14 @@ import org.openremote.manager.client.widget.*;
 import org.openremote.model.Consumer;
 
 /**
- * Shows an browser tree node in a form group, and encapsulates the process of
+ * Shows a browser tree node in a form group and encapsulates the process of
  * changing it by selecting a new node in the asset browser tree.
  */
 public abstract class AssetSelector extends FormGroup {
 
     final AssetBrowser.Presenter assetBrowserPresenter;
     final ManagerMessages managerMessages;
-    final Consumer<BrowserTreeNode> changeConsumer;
+    final Consumer<BrowserTreeNode> selectionConsumer;
 
     final FormLabel label = new FormLabel();
     final FormField field = new FormField();
@@ -36,10 +36,10 @@ public abstract class AssetSelector extends FormGroup {
                          ManagerMessages managerMessages,
                          String labelText,
                          String infoText,
-                         Consumer<BrowserTreeNode> changeConsumer) {
+                         Consumer<BrowserTreeNode> selectionConsumer) {
         this.assetBrowserPresenter = assetBrowserPresenter;
         this.managerMessages = managerMessages;
-        this.changeConsumer = changeConsumer;
+        this.selectionConsumer = selectionConsumer;
         addFormLabel(label);
         addFormField(field);
         addFormGroupActions(actions);
@@ -104,6 +104,10 @@ public abstract class AssetSelector extends FormGroup {
     }
 
     public void endSelection() {
+        selectAssetButton.setVisible(true);
+        confirmButton.setVisible(false);
+        infoLabel.setVisible(false);
+
         assetBrowserPresenter.useSelector(null);
         if (originalNode != null) {
             if (originalNode instanceof TenantTreeNode) {
@@ -111,15 +115,12 @@ public abstract class AssetSelector extends FormGroup {
             } else if (originalNode instanceof AssetTreeNode) {
                 assetBrowserPresenter.selectAssetById(originalNode.getId());
             }
+            originalNode = null;
         } else {
             assetBrowserPresenter.clearSelection();
         }
-        selectAssetButton.setVisible(true);
-        confirmButton.setVisible(false);
-        infoLabel.setVisible(false);
-        if (originalNode == null || !originalNode.getId().equals(selectedNode.getId())) {
-            changeConsumer.accept(selectedNode);
-        }
+
+        selectionConsumer.accept(selectedNode);
     }
 
     public void setEnabled(boolean enabled) {
