@@ -21,9 +21,9 @@ package org.openremote.manager.client.rules;
 
 import org.openremote.manager.shared.rules.RulesDefinition;
 
-public interface RulesList<P extends RulesList.Presenter<R>, R extends RulesDefinition> extends RulesView<P> {
+public interface RulesList<P extends RulesList.Presenter<R>, R extends RulesDefinition> extends RulesView {
 
-    interface Presenter<R extends RulesDefinition> extends RulesPresenter {
+    interface Presenter<R extends RulesDefinition>  {
 
         void onRulesDefinitionSelected(R definition);
 

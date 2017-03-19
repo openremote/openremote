@@ -53,8 +53,16 @@ public interface TenantResource {
     @Path("{realm}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
-    @RolesAllowed("read:admin")
     Tenant get(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
+
+    /**
+     * Regular users can call this, but only to obtain details about their currently authenticated realm.
+     */
+    @GET
+    @Path("for/{realmId}")
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    Tenant getForRealmId(@BeanParam RequestParams requestParams, @PathParam("realmId") String realmId);
 
     @PUT
     @Path("{realm}")

@@ -38,6 +38,10 @@ public class AssetRulesDefinition extends RulesDefinition {
     public AssetRulesDefinition() {
     }
 
+    public AssetRulesDefinition(String assetId) {
+        this.assetId = assetId;
+    }
+
     public AssetRulesDefinition(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String assetId) {
         super(id, version, createdOn, lastModified, name, enabled);
         this.assetId = assetId;

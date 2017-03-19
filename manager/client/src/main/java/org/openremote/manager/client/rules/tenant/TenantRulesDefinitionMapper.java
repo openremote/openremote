@@ -17,8 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.rules;
+package org.openremote.manager.client.rules.tenant;
 
-public interface RulesPresenter {
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
+import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
+import org.openremote.manager.shared.http.EntityReader;
+import org.openremote.manager.shared.http.EntityWriter;
+import org.openremote.manager.shared.rules.TenantRulesDefinition;
 
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = TenantRulesDefinition.class, mixIn = DefaultJsonMixin.class)})
+public interface TenantRulesDefinitionMapper
+    extends ObjectMapper<TenantRulesDefinition>,
+    EntityReader<TenantRulesDefinition>,
+    EntityWriter<TenantRulesDefinition> {
 }

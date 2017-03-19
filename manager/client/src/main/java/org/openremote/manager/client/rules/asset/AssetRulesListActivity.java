@@ -23,20 +23,15 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.AssetMapper;
-import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
-import org.openremote.manager.client.assets.browser.AssetTreeNode;
-import org.openremote.manager.client.assets.browser.TenantTreeNode;
-import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
-import org.openremote.manager.client.rules.tenant.TenantRulesListPlace;
+import org.openremote.manager.client.rules.RulesModule;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.rules.AssetRulesDefinition;
 import org.openremote.manager.shared.rules.RulesResource;
-import org.openremote.model.Consumer;
 import org.openremote.model.asset.Asset;
 
 import javax.inject.Inject;
@@ -84,17 +79,10 @@ public class AssetRulesListActivity
         view.setPresenter(this);
         container.setWidget(view.asWidget());
 
-        registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
-            if (event.getSelectedNode() instanceof TenantTreeNode) {
-                environment.getPlaceController().goTo(
-                    new TenantRulesListPlace(event.getSelectedNode().getId())
-                );
-            } else if (event.getSelectedNode() instanceof AssetTreeNode) {
-                environment.getPlaceController().goTo(
-                    new AssetRulesListPlace(event.getSelectedNode().getId())
-                );
-            }
-        }));
+        registrations.add(eventBus.register(
+            AssetBrowserSelection.class,
+            RulesModule.createDefaultNavigationListener(environment)
+        ));
 
         if (assetId != null) {
 
@@ -124,12 +112,12 @@ public class AssetRulesListActivity
 
     @Override
     public void onRulesDefinitionSelected(AssetRulesDefinition definition) {
-        // TODO environment.getPlaceController().goTo(new AssetRulesEditorPlace(definition.getId()));
+        environment.getPlaceController().goTo(new AssetRulesEditorPlace(assetId, definition.getId()));
     }
 
     @Override
     public void createRule() {
-        // TODO environment.getPlaceController().goTo(new AssetRulesEditorPlace());
+        environment.getPlaceController().goTo(new AssetRulesEditorPlace(assetId));
     }
 
 

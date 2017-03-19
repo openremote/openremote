@@ -43,6 +43,11 @@ public class TenantRulesDefinition extends RulesDefinition {
         this.realmId = realmId;
     }
 
+    public TenantRulesDefinition(String realmId) {
+        this(null, realmId, null);
+
+    }
+
     public TenantRulesDefinition(String name, String realmId, String rules) {
         super(name, rules);
         this.realmId = realmId;
@@ -59,13 +64,13 @@ public class TenantRulesDefinition extends RulesDefinition {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-                "id='" + id + '\'' +
-                ", version='" + version + '\'' +
-                ", name='" + name + '\'' +
-                ", createdOn='" + createdOn + '\'' +
-                ", lastModified='" + lastModified + '\'' +
-                ", enabled='" + enabled + '\'' +
-                ", realmId='" + realmId + '\'' +
-                '}';
+            "id='" + id + '\'' +
+            ", version='" + version + '\'' +
+            ", name='" + name + '\'' +
+            ", createdOn='" + createdOn + '\'' +
+            ", lastModified='" + lastModified + '\'' +
+            ", enabled='" + enabled + '\'' +
+            ", realmId='" + realmId + '\'' +
+            '}';
     }
 }

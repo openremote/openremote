@@ -290,4 +290,10 @@ public interface ManagerMessages extends Messages {
     String rulesetDeleted(String name);
 
     String rulesetUpdated(String name);
+
+    String downloadRulesFile();
+
+    String editTenantRuleset(String name);
+
+    String editAssetRuleset(String name);
 }

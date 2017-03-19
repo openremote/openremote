@@ -49,7 +49,7 @@
                 <g:HTMLPanel styleName="flex {widgetStyle.MainContent}">
 
                     <div class="{widgetStyle.Headline1}">
-                        <g:InlineLabel text="{managerMessages.editGlobalRules}"/>
+                        <g:InlineLabel ui:field="headlineLabel"/>
                     </div>
 
                     <g:FlowPanel
@@ -91,6 +91,9 @@
                             </w:field>
                             <w:actions>
                                 <w:FormGroupActions>
+                                    <w:PushButton ui:field="rulesFileDownload"
+                                                  icon="download"
+                                                  text="{managerMessages.downloadRulesFile}"/>
                                     <g:HTMLPanel>
                                         <label ui:field="rulesFileUploadLabel"
                                                class="{widgetStyle.FormControl} {widgetStyle.FormFileUploadLabel}">
@@ -127,6 +130,9 @@
                                     <w:FormButton ui:field="deleteButton" danger="true"
                                                   text="{managerMessages.deleteRuleset}" visible="false"
                                                   icon="trash"/>
+                                    <w:FormButton ui:field="cancelButton"
+                                                  text="{managerMessages.cancel}" visible="true"
+                                                  icon="close"/>
                                 </w:FormField>
                             </w:field>
                         </w:FormGroup>

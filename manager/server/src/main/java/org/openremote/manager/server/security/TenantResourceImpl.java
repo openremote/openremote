@@ -27,6 +27,7 @@ import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.manager.shared.validation.ConstraintViolation;
 import org.openremote.manager.shared.validation.ConstraintViolationReport;
 
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
@@ -70,6 +71,15 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
         if (result == null)
             throw new WebApplicationException(NOT_FOUND);
         return result;
+    }
+
+    @Override
+    public Tenant getForRealmId(RequestParams requestParams, String realmId) {
+        String realm = identityService.getActiveTenantRealm(realmId);
+        if (realm == null) {
+            throw new WebApplicationException(NOT_FOUND);
+        }
+        return get(requestParams, realm);
     }
 
     @Override

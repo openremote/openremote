@@ -24,27 +24,21 @@ import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
-import org.openremote.manager.client.assets.browser.AssetTreeNode;
-import org.openremote.manager.client.assets.browser.TenantTreeNode;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
-import org.openremote.manager.client.rules.asset.AssetRulesListPlace;
-import org.openremote.manager.client.rules.tenant.TenantRulesListPlace;
+import org.openremote.manager.client.rules.RulesModule;
 import org.openremote.manager.shared.rules.GlobalRulesDefinition;
 import org.openremote.manager.shared.rules.RulesResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
-import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
 public class GlobalRulesListActivity
     extends AssetBrowsingActivity<GlobalRulesListPlace>
     implements GlobalRulesList.Presenter {
-
-    private static final Logger LOG = Logger.getLogger(GlobalRulesListActivity.class.getName());
 
     final GlobalRulesList view;
     final GlobalRulesDefinitionArrayMapper globalRulesDefinitionArrayMapper;
@@ -72,17 +66,10 @@ public class GlobalRulesListActivity
         view.setPresenter(this);
         container.setWidget(view.asWidget());
 
-        registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
-            if (event.getSelectedNode() instanceof TenantTreeNode) {
-                environment.getPlaceController().goTo(
-                    new TenantRulesListPlace(event.getSelectedNode().getId())
-                );
-            } else if (event.getSelectedNode() instanceof AssetTreeNode) {
-                environment.getPlaceController().goTo(
-                    new AssetRulesListPlace(event.getSelectedNode().getId())
-                );
-            }
-        }));
+        registrations.add(eventBus.register(
+            AssetBrowserSelection.class,
+            RulesModule.createDefaultNavigationListener(environment)
+        ));
 
         environment.getRequestService().execute(
             globalRulesDefinitionArrayMapper,

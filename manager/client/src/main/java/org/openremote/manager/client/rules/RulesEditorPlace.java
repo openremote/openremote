@@ -19,42 +19,30 @@
  */
 package org.openremote.manager.client.rules;
 
-import org.openremote.manager.client.widget.FormView;
+public class RulesEditorPlace extends RulesPlace {
 
-public interface RulesEditor extends RulesView, FormView {
+    final protected Long definitionId;
 
-    interface Presenter {
-        void update();
-
-        void create();
-
-        void delete();
-
-        void cancel();
+    public RulesEditorPlace() {
+        this.definitionId = null;
     }
 
-    void setPresenter(Presenter presenter);
+    public RulesEditorPlace(String definitionId) {
+        this(definitionId != null ? Long.valueOf(definitionId) : null);
+    }
 
-    void setHeadline(String headline);
+    public RulesEditorPlace(Long definitionId) {
+        this.definitionId = definitionId;
+    }
 
-    void setName(String name);
+    public Long getDefinitionId() {
+        return definitionId;
+    }
 
-    String getName();
-
-    void setNameError(boolean error);
-
-    void setRulesetEnabled(Boolean enabled);
-
-    boolean getRulesetEnabled();
-
-    void setRules(String rules);
-
-    String getRules();
-
-    void enableCreate(boolean enable);
-
-    void enableUpdate(boolean enable);
-
-    void enableDelete(boolean enable);
-
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "definitionId=" + definitionId +
+            '}';
+    }
 }

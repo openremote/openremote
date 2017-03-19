@@ -21,17 +21,17 @@ package org.openremote.manager.client.rules.tenant;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.admin.TenantMapper;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
-import org.openremote.manager.client.assets.browser.AssetTreeNode;
-import org.openremote.manager.client.assets.browser.TenantTreeNode;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
-import org.openremote.manager.client.rules.asset.AssetRulesListPlace;
+import org.openremote.manager.client.rules.RulesModule;
 import org.openremote.manager.shared.rules.RulesResource;
 import org.openremote.manager.shared.rules.TenantRulesDefinition;
+import org.openremote.manager.shared.security.TenantResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -43,6 +43,8 @@ public class TenantRulesListActivity
     implements TenantRulesList.Presenter {
 
     final TenantRulesList view;
+    final TenantMapper tenantMapper;
+    final TenantResource tenantResource;
     final TenantRulesDefinitionArrayMapper tenantRulesDefinitionArrayMapper;
     final RulesResource rulesResource;
 
@@ -52,10 +54,14 @@ public class TenantRulesListActivity
     public TenantRulesListActivity(Environment environment,
                                    AssetBrowser.Presenter assetBrowserPresenter,
                                    TenantRulesList view,
+                                   TenantMapper tenantMapper,
+                                   TenantResource tenantResource,
                                    TenantRulesDefinitionArrayMapper tenantRulesDefinitionArrayMapper,
                                    RulesResource rulesResource) {
         super(environment, assetBrowserPresenter);
         this.view = view;
+        this.tenantMapper = tenantMapper;
+        this.tenantResource = tenantResource;
         this.tenantRulesDefinitionArrayMapper = tenantRulesDefinitionArrayMapper;
         this.rulesResource = rulesResource;
     }
@@ -71,22 +77,23 @@ public class TenantRulesListActivity
         view.setPresenter(this);
         container.setWidget(view.asWidget());
 
-        registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
-            if (event.getSelectedNode() instanceof TenantTreeNode) {
-                environment.getPlaceController().goTo(
-                    new TenantRulesListPlace(event.getSelectedNode().getId())
-                );
-            } else if (event.getSelectedNode() instanceof AssetTreeNode) {
-                environment.getPlaceController().goTo(
-                    new AssetRulesListPlace(event.getSelectedNode().getId())
-                );
-            }
-        }));
+        registrations.add(eventBus.register(
+            AssetBrowserSelection.class,
+            RulesModule.createDefaultNavigationListener(environment)
+        ));
 
         if (realmId != null) {
-            view.setRealmLabel(realmId);
-
             assetBrowserPresenter.selectTenant(realmId);
+
+            environment.getRequestService().execute(
+                tenantMapper,
+                params -> tenantResource.getForRealmId(params, realmId),
+                200,
+                tenant -> {
+                    view.setRealmLabel(tenant.getDisplayName());
+                },
+                ex -> handleRequestException(ex, environment)
+            );
 
             environment.getRequestService().execute(
                 tenantRulesDefinitionArrayMapper,
@@ -106,12 +113,12 @@ public class TenantRulesListActivity
 
     @Override
     public void onRulesDefinitionSelected(TenantRulesDefinition definition) {
-        // TODO environment.getPlaceController().goTo(new TenantRulesEditorPlace(definition.getId()));
+        environment.getPlaceController().goTo(new TenantRulesEditorPlace(realmId, definition.getId()));
     }
 
     @Override
     public void createRule() {
-        // TODO environment.getPlaceController().goTo(new TenantRulesEditorPlace());
+        environment.getPlaceController().goTo(new TenantRulesEditorPlace(realmId));
     }
 
 }

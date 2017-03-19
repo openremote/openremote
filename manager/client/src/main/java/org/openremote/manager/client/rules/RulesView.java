@@ -21,6 +21,6 @@ package org.openremote.manager.client.rules;
 
 import com.google.gwt.user.client.ui.IsWidget;
 
-public interface RulesView<P extends RulesPresenter> extends IsWidget {
+public interface RulesView extends IsWidget {
 
 }

@@ -22,30 +22,49 @@ package org.openremote.manager.client.rules;
 import com.google.gwt.inject.client.AbstractGinModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
+import org.openremote.manager.client.assets.browser.AssetTreeNode;
+import org.openremote.manager.client.assets.browser.TenantTreeNode;
+import org.openremote.manager.client.event.bus.EventListener;
 import org.openremote.manager.client.rules.asset.AssetRulesList;
 import org.openremote.manager.client.rules.asset.AssetRulesListActivity;
 import org.openremote.manager.client.rules.asset.AssetRulesListImpl;
+import org.openremote.manager.client.rules.asset.AssetRulesListPlace;
 import org.openremote.manager.client.rules.global.*;
-import org.openremote.manager.client.rules.tenant.TenantRulesList;
-import org.openremote.manager.client.rules.tenant.TenantRulesListActivity;
-import org.openremote.manager.client.rules.tenant.TenantRulesListImpl;
+import org.openremote.manager.client.rules.tenant.*;
 import org.openremote.manager.shared.rules.RulesResource;
 
 public class RulesModule extends AbstractGinModule {
+
+    public static EventListener<AssetBrowserSelection> createDefaultNavigationListener(Environment environment) {
+        return event -> {
+            if (event.getSelectedNode() instanceof TenantTreeNode) {
+                environment.getPlaceController().goTo(
+                    new TenantRulesListPlace(event.getSelectedNode().getId())
+                );
+            } else if (event.getSelectedNode() instanceof AssetTreeNode) {
+                environment.getPlaceController().goTo(
+                    new AssetRulesListPlace(event.getSelectedNode().getId())
+                );
+            }
+        };
+    }
 
     @Override
     protected void configure() {
         bind(GlobalRulesList.class).to(GlobalRulesListImpl.class).in(Singleton.class);
         bind(GlobalRulesListActivity.class);
 
-        bind(GlobalRulesEditor.class).to(GlobalRulesEditorImpl.class).in(Singleton.class);
-        bind(GlobalRulesEditorActivity.class);
-
         bind(TenantRulesList.class).to(TenantRulesListImpl.class).in(Singleton.class);
         bind(TenantRulesListActivity.class);
 
         bind(AssetRulesList.class).to(AssetRulesListImpl.class).in(Singleton.class);
         bind(AssetRulesListActivity.class);
+
+        bind(RulesEditor.class).to(RulesEditorImpl.class).in(Singleton.class);
+        bind(GlobalRulesEditorActivity.class);
+        bind(TenantRulesEditorActivity.class);
     }
 
     @Provides

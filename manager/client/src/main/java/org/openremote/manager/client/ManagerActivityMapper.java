@@ -48,12 +48,16 @@ import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.mvp.AppActivityMapper;
 import org.openremote.manager.client.mvp.RoleRequiredException;
+import org.openremote.manager.client.rules.asset.AssetRulesEditorActivity;
+import org.openremote.manager.client.rules.asset.AssetRulesEditorPlace;
 import org.openremote.manager.client.rules.asset.AssetRulesListActivity;
 import org.openremote.manager.client.rules.asset.AssetRulesListPlace;
 import org.openremote.manager.client.rules.global.GlobalRulesEditorActivity;
 import org.openremote.manager.client.rules.global.GlobalRulesEditorPlace;
 import org.openremote.manager.client.rules.global.GlobalRulesListActivity;
 import org.openremote.manager.client.rules.global.GlobalRulesListPlace;
+import org.openremote.manager.client.rules.tenant.TenantRulesEditorActivity;
+import org.openremote.manager.client.rules.tenant.TenantRulesEditorPlace;
 import org.openremote.manager.client.rules.tenant.TenantRulesListActivity;
 import org.openremote.manager.client.rules.tenant.TenantRulesListPlace;
 import org.openremote.manager.client.service.SecurityService;
@@ -76,7 +80,9 @@ public class ManagerActivityMapper implements AppActivityMapper {
     protected final Provider<GlobalRulesListActivity> globalRulesActivityProvider;
     protected final Provider<GlobalRulesEditorActivity> globalRulesEditorActivityProvider;
     protected final Provider<TenantRulesListActivity> tenantRulesListActivityProvider;
+    protected final Provider<TenantRulesEditorActivity> tenantRulesEditorActivityProvider;
     protected final Provider<AssetRulesListActivity> assetRulesListActivityProvider;
+    protected final Provider<AssetRulesEditorActivity> assetRulesEditorActivityProvider;
     protected final Provider<AppsActivity> appsActivityProvider;
     protected final Provider<AdminOverviewActivity> adminOverviewActivityProvider;
     protected final Provider<AdminTenantsActivity> adminTenantsActivityProvider;
@@ -96,7 +102,9 @@ public class ManagerActivityMapper implements AppActivityMapper {
                                  Provider<GlobalRulesListActivity> globalRulesActivityProvider,
                                  Provider<GlobalRulesEditorActivity> globalRulesEditorActivityProvider,
                                  Provider<TenantRulesListActivity> tenantRulesListActivityProvider,
+                                 Provider<TenantRulesEditorActivity> tenantRulesEditorActivityProvider,
                                  Provider<AssetRulesListActivity> assetRulesListActivityProvider,
+                                 Provider<AssetRulesEditorActivity> assetRulesEditorActivityProvider,
                                  Provider<AppsActivity> appsActivityProvider,
                                  Provider<AdminOverviewActivity> adminOverviewActivityProvider,
                                  Provider<AdminTenantsActivity> adminTenantsActivityProvider,
@@ -114,7 +122,9 @@ public class ManagerActivityMapper implements AppActivityMapper {
         this.globalRulesActivityProvider = globalRulesActivityProvider;
         this.globalRulesEditorActivityProvider = globalRulesEditorActivityProvider;
         this.tenantRulesListActivityProvider = tenantRulesListActivityProvider;
+        this.tenantRulesEditorActivityProvider = tenantRulesEditorActivityProvider;
         this.assetRulesListActivityProvider = assetRulesListActivityProvider;
+        this.assetRulesEditorActivityProvider = assetRulesEditorActivityProvider;
         this.appsActivityProvider = appsActivityProvider;
         this.adminOverviewActivityProvider = adminOverviewActivityProvider;
         this.adminTenantsActivityProvider = adminTenantsActivityProvider;
@@ -147,8 +157,14 @@ public class ManagerActivityMapper implements AppActivityMapper {
             if (place instanceof TenantRulesListPlace) {
                 return tenantRulesListActivityProvider.get().init(securityService, (TenantRulesListPlace) place);
             }
+            if (place instanceof TenantRulesEditorPlace) {
+                return tenantRulesEditorActivityProvider.get().init(securityService, (TenantRulesEditorPlace) place);
+            }
             if (place instanceof AssetRulesListPlace) {
                 return assetRulesListActivityProvider.get().init(securityService, (AssetRulesListPlace) place);
+            }
+            if (place instanceof AssetRulesEditorPlace) {
+                return assetRulesEditorActivityProvider.get().init(securityService, (AssetRulesEditorPlace) place);
             }
             if (place instanceof AppsPlace) {
                 return appsActivityProvider.get().init(securityService, (AppsPlace) place);

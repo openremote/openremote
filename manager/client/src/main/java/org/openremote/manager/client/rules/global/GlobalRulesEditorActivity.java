@@ -21,202 +21,95 @@ package org.openremote.manager.client.rules.global;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
-import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
-import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
-import org.openremote.manager.client.assets.browser.AssetTreeNode;
-import org.openremote.manager.client.assets.browser.TenantTreeNode;
-import org.openremote.manager.client.event.ShowInfoEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
-import org.openremote.manager.client.mvp.AppActivity;
-import org.openremote.manager.client.rules.asset.AssetRulesListPlace;
-import org.openremote.manager.client.rules.tenant.TenantRulesListPlace;
+import org.openremote.manager.client.rules.AbstractRulesEditorActivity;
+import org.openremote.manager.client.rules.RulesEditor;
+import org.openremote.manager.shared.http.EntityReader;
+import org.openremote.manager.shared.http.EntityWriter;
+import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.rules.GlobalRulesDefinition;
 import org.openremote.manager.shared.rules.RulesResource;
-import org.openremote.manager.shared.validation.ConstraintViolation;
 import org.openremote.model.Consumer;
 
 import javax.inject.Inject;
 import java.util.Collection;
 
-import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
-
 public class GlobalRulesEditorActivity
-    extends AssetBrowsingActivity<GlobalRulesEditorPlace>
-    implements GlobalRulesEditor.Presenter {
+    extends AbstractRulesEditorActivity<GlobalRulesDefinition, GlobalRulesEditorPlace> {
 
-    final GlobalRulesEditor view;
     final GlobalRulesDefinitionMapper globalRulesDefinitionMapper;
-    final RulesResource rulesResource;
-    final Consumer<ConstraintViolation[]> validationErrorHandler;
-
-    Long definitionId;
-    GlobalRulesDefinition rulesDefinition;
 
     @Inject
     public GlobalRulesEditorActivity(Environment environment,
                                      AssetBrowser.Presenter assetBrowserPresenter,
-                                     GlobalRulesEditor view,
-                                     GlobalRulesDefinitionMapper globalRulesDefinitionMapper,
-                                     RulesResource rulesResource) {
-        super(environment, assetBrowserPresenter);
-        this.view = view;
+                                     RulesEditor view,
+                                     RulesResource rulesResource,
+                                     GlobalRulesDefinitionMapper globalRulesDefinitionMapper) {
+        super(environment, assetBrowserPresenter, view, rulesResource);
         this.globalRulesDefinitionMapper = globalRulesDefinitionMapper;
-        this.rulesResource = rulesResource;
-
-        validationErrorHandler = violations -> {
-            for (ConstraintViolation violation : violations) {
-                if (violation.getPath() != null) {
-                    if (violation.getPath().endsWith("name")) {
-                        view.setNameError(true);
-                    }
-                }
-                view.addFormMessageError(violation.getMessage());
-            }
-            view.setFormBusy(false);
-        };
-    }
-
-    @Override
-    protected AppActivity<GlobalRulesEditorPlace> init(GlobalRulesEditorPlace place) {
-        definitionId = place.getDefinitionId();
-        return this;
     }
 
     @Override
     public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
-        view.setPresenter(this);
-        container.setWidget(view.asWidget());
+        super.start(container, eventBus, registrations);
 
-        registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
-            if (event.getSelectedNode() instanceof TenantTreeNode) {
-                environment.getPlaceController().goTo(
-                    new TenantRulesListPlace(event.getSelectedNode().getId())
-                );
-            } else if (event.getSelectedNode() instanceof AssetTreeNode) {
-                environment.getPlaceController().goTo(
-                    new AssetRulesListPlace(event.getSelectedNode().getId())
-                );
-            }
-        }));
-
-        view.clearFormMessages();
-        clearViewFieldErrors();
-
-        if (definitionId != null) {
-            environment.getRequestService().execute(
-                globalRulesDefinitionMapper,
-                params -> rulesResource.getGlobalDefinition(params, definitionId),
-                200,
-                rulesDefinition -> {
-                    this.rulesDefinition = rulesDefinition;
-                    writeToView();
-                },
-                ex -> handleRequestException(ex, environment)
-            );
-        } else {
-            rulesDefinition = new GlobalRulesDefinition();
-            writeToView();
-        }
+        view.setHeadline(environment.getMessages().editGlobalRules());
     }
 
     @Override
-    public void onStop() {
-        super.onStop();
-        view.setPresenter(null);
+    protected GlobalRulesDefinition newDefinition() {
+        return new GlobalRulesDefinition();
     }
 
     @Override
-    public void update() {
-        view.setFormBusy(true);
-        view.clearFormMessages();
-        clearViewFieldErrors();
-        readFromView();
-        environment.getRequestService().execute(
-            globalRulesDefinitionMapper,
-            requestParams -> {
-                rulesResource.updateGlobalDefinition(requestParams, definitionId, rulesDefinition);
-            },
-            204,
-            () -> {
-                view.setFormBusy(false);
-                environment.getEventBus().dispatch(new ShowInfoEvent(
-                    environment.getMessages().rulesetUpdated(rulesDefinition.getName())
-                ));
-                environment.getPlaceController().goTo(new GlobalRulesEditorPlace(definitionId));
-            },
-            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
-        );
+    protected EntityReader<GlobalRulesDefinition> getEntityReader() {
+        return globalRulesDefinitionMapper;
     }
 
     @Override
-    public void create() {
-        view.setFormBusy(true);
-        view.clearFormMessages();
-        clearViewFieldErrors();
-        readFromView();
-        environment.getRequestService().execute(
-            globalRulesDefinitionMapper,
-            requestParams -> {
-                rulesResource.createGlobalDefinition(requestParams, rulesDefinition);
-            },
-            204,
-            () -> {
-                view.setFormBusy(false);
-                environment.getEventBus().dispatch(new ShowInfoEvent(
-                    environment.getMessages().rulesetCreated(rulesDefinition.getName())
-                ));
-                environment.getPlaceController().goTo(new GlobalRulesListPlace());
-            },
-            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
-        );
+    protected Consumer<RequestParams<GlobalRulesDefinition>> loadRequestConsumer() {
+        return params -> rulesResource.getGlobalDefinition(params, definitionId);
     }
 
     @Override
-    public void delete() {
-        view.showConfirmation(
-            environment.getMessages().confirmation(),
-            environment.getMessages().confirmationDelete(rulesDefinition.getName()),
-            () -> {
-                view.setFormBusy(true);
-                view.clearFormMessages();
-                clearViewFieldErrors();
-                environment.getRequestService().execute(
-                    requestParams -> {
-                        rulesResource.deleteGlobalDefinition(requestParams, definitionId);
-                    },
-                    204,
-                    () -> {
-                        view.setFormBusy(false);
-                        environment.getEventBus().dispatch(new ShowInfoEvent(
-                            environment.getMessages().rulesetDeleted(rulesDefinition.getName())
-                        ));
-                        environment.getPlaceController().goTo(new GlobalRulesListPlace());
-                    },
-                    ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
-                );
-            }
-        );
+    protected EntityWriter<GlobalRulesDefinition> getEntityWriter() {
+        return globalRulesDefinitionMapper;
     }
 
-    protected void writeToView() {
-        view.setName(rulesDefinition.getName());
-        view.setRulesetEnabled(rulesDefinition.isEnabled());
-        view.setRules(rulesDefinition.getRules());
-        view.enableCreate(definitionId == null);
-        view.enableUpdate(definitionId != null);
-        view.enableDelete(definitionId != null);
+    @Override
+    protected Consumer<RequestParams<Void>> createRequestConsumer() {
+        return params -> rulesResource.createGlobalDefinition(params, rulesDefinition);
     }
 
-    protected void readFromView() {
-        rulesDefinition.setName(view.getName());
-        rulesDefinition.setEnabled(view.getRulesetEnabled());
-        rulesDefinition.setRules(view.getRules());
+    @Override
+    protected void afterCreate() {
+        environment.getPlaceController().goTo(new GlobalRulesListPlace());
     }
 
-    protected void clearViewFieldErrors() {
-        view.setNameError(false);
+    @Override
+    protected Consumer<RequestParams<Void>> updateRequestConsumer() {
+        return params -> rulesResource.updateGlobalDefinition(params, definitionId, rulesDefinition);
     }
 
+    @Override
+    protected void afterUpdate() {
+        environment.getPlaceController().goTo(new GlobalRulesEditorPlace(definitionId));
+    }
+
+    @Override
+    protected Consumer<RequestParams<Void>> deleteRequestConsumer() {
+        return params -> rulesResource.deleteGlobalDefinition(params, definitionId);
+    }
+
+    @Override
+    protected void afterDelete() {
+        environment.getPlaceController().goTo(new GlobalRulesListPlace());
+    }
+
+    @Override
+    public void cancel() {
+        environment.getPlaceController().goTo(new GlobalRulesListPlace());
+    }
 }
