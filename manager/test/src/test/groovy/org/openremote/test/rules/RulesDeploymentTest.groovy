@@ -383,8 +383,6 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         stopContainer(container)
     }
 
-    // TODO Test not stable
-    @Ignore
     def "Check firing of rules LHS"() {
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10)
@@ -393,20 +391,18 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def identityService = container.getService(ManagerIdentityService.class)
         def rulesStorageService = container.getService(RulesStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def customerARealmId = identityService.getActiveTenantRealmId("customerA")
-        def customerBRealmId = identityService.getActiveTenantRealmId("customerB")
         RulesDeployment globalEngine, masterEngine, customerAEngine, smartHomeEngine, apartment1Engine, apartment3Engine
-        List<String> globalEngineFiredRules = new ArrayList<>();
-        List<String> masterEngineFiredRules = new ArrayList<>();
-        List<String> customerAEngineFiredRules = new ArrayList<>();
-        List<String> smartHomeEngineFiredRules = new ArrayList<>();
-        List<String> apartment1EngineFiredRules = new ArrayList<>();
-        List<String> apartment3EngineFiredRules = new ArrayList<>();
+        List<String> globalEngineFiredRules = [];
+        List<String> masterEngineFiredRules = [];
+        List<String> customerAEngineFiredRules = [];
+        List<String> smartHomeEngineFiredRules = [];
+        List<String> apartment1EngineFiredRules = [];
+        List<String> apartment3EngineFiredRules = [];
 
         expect: "the rule engines to become available and be running"
         conditions.eventually {
@@ -447,19 +443,16 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         then: "the rule engines in scope should fire the 'All' and 'All changed' rules"
         conditions.eventually {
+            def expectedFiredRules = ["All", "All changed"]
             assert globalEngineFiredRules.size() == 2
-            assert globalEngineFiredRules.get(0) == "All"
-            assert globalEngineFiredRules.get(1) == "All changed"
+            assert globalEngineFiredRules.containsAll(expectedFiredRules)
             assert masterEngineFiredRules.size() == 0
             assert customerAEngineFiredRules.size() == 2
-            assert customerAEngineFiredRules.get(0) == "All"
-            assert customerAEngineFiredRules.get(1) == "All changed"
+            assert customerAEngineFiredRules.containsAll(expectedFiredRules)
             assert smartHomeEngineFiredRules.size() == 2
-            assert smartHomeEngineFiredRules.get(0) == "All"
-            assert smartHomeEngineFiredRules.get(1) == "All changed"
+            assert smartHomeEngineFiredRules.containsAll(expectedFiredRules)
             assert apartment1EngineFiredRules.size() == 2
-            assert apartment1EngineFiredRules.get(0) == "All"
-            assert apartment1EngineFiredRules.get(1) == "All changed"
+            assert apartment1EngineFiredRules.containsAll(expectedFiredRules)
             assert apartment3EngineFiredRules.size() == 0
         }
 
@@ -470,18 +463,10 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         then: "after a few seconds no rules should have fired on any engines"
         conditions.eventually {
             assert globalEngineFiredRules.size() == 2
-            assert globalEngineFiredRules.get(0) == "All"
-            assert globalEngineFiredRules.get(1) == "All changed"
             assert masterEngineFiredRules.size() == 0
             assert customerAEngineFiredRules.size() == 2
-            assert customerAEngineFiredRules.get(0) == "All"
-            assert customerAEngineFiredRules.get(1) == "All changed"
             assert smartHomeEngineFiredRules.size() == 2
-            assert smartHomeEngineFiredRules.get(0) == "All"
-            assert smartHomeEngineFiredRules.get(1) == "All changed"
             assert apartment1EngineFiredRules.size() == 2
-            assert apartment1EngineFiredRules.get(0) == "All"
-            assert apartment1EngineFiredRules.get(1) == "All changed"
             assert apartment3EngineFiredRules.size() == 0
         }
 
@@ -495,22 +480,18 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         then: "the rule engines in scope should fire the 'All' rule but not the 'All changed' rule"
         conditions.eventually {
             assert globalEngineFiredRules.size() == 3
-            assert globalEngineFiredRules.get(0) == "All"
-            assert globalEngineFiredRules.get(1) == "All changed"
-            assert globalEngineFiredRules.get(2) == "All"
+            assert globalEngineFiredRules.findIndexValues {it == "All"}.size() == 2
+            assert globalEngineFiredRules.findIndexValues {it == "All changed"}.size() == 1
             assert masterEngineFiredRules.size() == 0
             assert customerAEngineFiredRules.size() == 3
-            assert customerAEngineFiredRules.get(0) == "All"
-            assert customerAEngineFiredRules.get(1) == "All changed"
-            assert customerAEngineFiredRules.get(2) == "All"
+            assert customerAEngineFiredRules.findIndexValues {it == "All"}.size() == 2
+            assert customerAEngineFiredRules.findIndexValues {it == "All changed"}.size() == 1
             assert smartHomeEngineFiredRules.size() == 3
-            assert smartHomeEngineFiredRules.get(0) == "All"
-            assert smartHomeEngineFiredRules.get(1) == "All changed"
-            assert smartHomeEngineFiredRules.get(2) == "All"
+            assert smartHomeEngineFiredRules.findIndexValues {it == "All"}.size() == 2
+            assert smartHomeEngineFiredRules.findIndexValues {it == "All changed"}.size() == 1
             assert apartment1EngineFiredRules.size() == 3
-            assert apartment1EngineFiredRules.get(0) == "All"
-            assert apartment1EngineFiredRules.get(1) == "All changed"
-            assert apartment1EngineFiredRules.get(2) == "All"
+            assert apartment1EngineFiredRules.findIndexValues {it == "All"}.size() == 2
+            assert apartment1EngineFiredRules.findIndexValues {it == "All changed"}.size() == 1
             assert apartment3EngineFiredRules.size() == 0
         }
 
@@ -521,7 +502,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         def rulesDefinition = new AssetRulesDefinition("Some lounge asset rules", managerDemoSetup.apartment3Id, rules)
         rulesStorageService.merge(rulesDefinition)
 
-        then: "the apartment 3 rule engine should have loaded the new rule definition and restart"
+        then: "the apartment 3 rule engine should have loaded the new rule definition and restarted"
         conditions.eventually {
             assert apartment3Engine != null
             assert apartment3Engine.isRunning()
@@ -542,15 +523,13 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         )
         assetProcessingService.processClientUpdate(apartment3LivingRoomDemoStringChange)
 
-        then: "the apartment 3 rule engine should have fired the 'Living Room All' rule"
+        then: "the apartment 3 rule engine should have fired the 'All', 'All changed' and 'Living Room All' rules"
         conditions.eventually {
+            def expectedFiredRules = ["All", "All changed", "Living Room All"]
             assert apartment3EngineFiredRules.size() == 3
-            assert apartment3EngineFiredRules.get(0) == "All"
-            assert apartment3EngineFiredRules.get(1) == "All changed"
-            assert apartment3EngineFiredRules.get(2) == "Living Room All"
+            assert apartment3EngineFiredRules.containsAll(expectedFiredRules)
         }
     }
-
 
     def attachRuleExecutionLogger(RulesDeployment ruleEngine, List<String> executedRules) {
         def session = ruleEngine.getKnowledgeSession()
