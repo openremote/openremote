@@ -51,17 +51,20 @@ import static org.openremote.model.Constants.*;
 
 public class UserResourceImpl extends WebResource implements UserResource {
 
-    protected final ManagerIdentityService managerIdentityService;
+    protected final ManagerIdentityService identityService;
 
-    public UserResourceImpl(ManagerIdentityService managerIdentityService) {
-        this.managerIdentityService = managerIdentityService;
+    public UserResourceImpl(ManagerIdentityService identityService) {
+        this.identityService = identityService;
     }
 
     @Override
     public User[] getAll(RequestParams requestParams, String realm) {
+        if (!isSuperUser()) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
         try {
             List<UserRepresentation> userRepresentations =
-                managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().search(null, 0, Integer.MAX_VALUE);
+                identityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().search(null, 0, Integer.MAX_VALUE);
             List<User> users = new ArrayList<>();
             for (UserRepresentation userRepresentation : userRepresentations) {
                 users.add(convertUser(realm, userRepresentation));
@@ -76,10 +79,13 @@ public class UserResourceImpl extends WebResource implements UserResource {
 
     @Override
     public User get(RequestParams requestParams, String realm, String userId) {
+        if (!isSuperUser()) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
         try {
             return convertUser(
                 realm,
-                managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).toRepresentation()
+                identityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).toRepresentation()
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -90,6 +96,9 @@ public class UserResourceImpl extends WebResource implements UserResource {
 
     @Override
     public void update(RequestParams requestParams, String realm, String userId, User user) {
+        if (!isSuperUser()) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
         ConstraintViolationReport violationReport;
         if ((violationReport = isIllegalMasterAdminUserMutation(requestParams, realm, user)) != null) {
             throw new WebApplicationException(
@@ -100,7 +109,7 @@ public class UserResourceImpl extends WebResource implements UserResource {
             );
         }
         try {
-            managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).update(
+            identityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).update(
                 convert(Container.JSON, UserRepresentation.class, user)
             );
         } catch (ClientErrorException ex) {
@@ -112,8 +121,11 @@ public class UserResourceImpl extends WebResource implements UserResource {
 
     @Override
     public void create(RequestParams requestParams, String realm, User user) {
+        if (!isSuperUser()) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
         try {
-            Response response = managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().create(
+            Response response = identityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().create(
                 convert(Container.JSON, UserRepresentation.class, user)
             );
             if (!response.getStatusInfo().equals(Response.Status.CREATED)) {
@@ -134,6 +146,9 @@ public class UserResourceImpl extends WebResource implements UserResource {
 
     @Override
     public void delete(RequestParams requestParams, String realm, String userId) {
+        if (!isSuperUser()) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
         ConstraintViolationReport violationReport;
         if ((violationReport = isIllegalMasterAdminUserDeletion(requestParams, realm, userId)) != null) {
             throw new WebApplicationException(
@@ -144,7 +159,7 @@ public class UserResourceImpl extends WebResource implements UserResource {
             );
         }
         try {
-            Response response = managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().delete(userId);
+            Response response = identityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().delete(userId);
             if (!response.getStatusInfo().equals(Response.Status.NO_CONTENT)) {
                 throw new WebApplicationException(
                     Response.status(response.getStatus())
@@ -163,8 +178,11 @@ public class UserResourceImpl extends WebResource implements UserResource {
 
     @Override
     public void resetPassword(@BeanParam RequestParams requestParams, String realm, String userId, Credential credential) {
+        if (!isSuperUser()) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
         try {
-            managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).resetPassword(
+            identityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).resetPassword(
                 convert(Container.JSON, CredentialRepresentation.class, credential)
             );
         } catch (ClientErrorException ex) {
@@ -176,11 +194,14 @@ public class UserResourceImpl extends WebResource implements UserResource {
 
     @Override
     public Role[] getRoles(@BeanParam RequestParams requestParams, String realm, String userId) {
+        if (!isSuperUser()) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
         try {
             RoleMappingResource roleMappingResource =
-                managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).roles();
+                identityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).roles();
             ClientsResource clientsResource =
-                managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).clients();
+                identityService.getRealms(requestParams.getBearerAuth()).realm(realm).clients();
             String clientId = clientsResource.findByClientId(KEYCLOAK_CLIENT_ID).get(0).getId();
             RolesResource rolesResource = clientsResource.get(clientId).roles();
 
@@ -215,11 +236,14 @@ public class UserResourceImpl extends WebResource implements UserResource {
 
     @Override
     public void updateRoles(@BeanParam RequestParams requestParams, String realm, String userId, Role[] roles) {
+        if (!isSuperUser()) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
         try {
             RoleMappingResource roleMappingResource =
-                managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).roles();
+                identityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).roles();
             ClientsResource clientsResource =
-                managerIdentityService.getRealms(requestParams.getBearerAuth()).realm(realm).clients();
+                identityService.getRealms(requestParams.getBearerAuth()).realm(realm).clients();
             String clientId = clientsResource.findByClientId(KEYCLOAK_CLIENT_ID).get(0).getId();
 
             List<RoleRepresentation> rolesToAdd = new ArrayList<>();
@@ -300,7 +324,7 @@ public class UserResourceImpl extends WebResource implements UserResource {
     }
 
     protected UserRepresentation getMasterRealmAdminUser(RequestParams requestParams) {
-        List<UserRepresentation> adminUsers = managerIdentityService
+        List<UserRepresentation> adminUsers = identityService
             .getRealms(requestParams.getBearerAuth()).realm(MASTER_REALM)
             .users().search(MASTER_REALM_ADMIN_USER, null, null);
         if (adminUsers.size() == 0) {

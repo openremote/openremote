@@ -26,7 +26,7 @@ class AssetTreeModel implements TreeViewModel {
 
     final protected AssetTreeCell.Renderer renderer;
     final AssetBrowser.Presenter presenter;
-    final SingleSelectionModel<AssetTreeNode> selectionModel = new SingleSelectionModel<>();
+    final SingleSelectionModel<BrowserTreeNode> selectionModel = new SingleSelectionModel<>();
 
     public AssetTreeModel(AssetBrowser.Presenter presenter, AssetTreeCell.Renderer renderer) {
         this.presenter = presenter;
@@ -39,19 +39,19 @@ class AssetTreeModel implements TreeViewModel {
     @Override
     public <T> NodeInfo<?> getNodeInfo(T value) {
         return new DefaultNodeInfo<>(
-            new AssetTreeDataProvider(presenter, (AssetTreeNode) value),
+            new AssetTreeDataProvider(presenter, (BrowserTreeNode) value),
             new AssetTreeCell(renderer),
             selectionModel,
             null);
     }
 
-    public SingleSelectionModel<AssetTreeNode> getSelectionModel() {
+    public SingleSelectionModel<BrowserTreeNode> getSelectionModel() {
         return selectionModel;
     }
 
     public boolean isLeaf(Object value) {
-        if (value instanceof AssetTreeNode) {
-            AssetTreeNode node = (AssetTreeNode) value;
+        if (value instanceof BrowserTreeNode) {
+            BrowserTreeNode node = (BrowserTreeNode) value;
             return node.isLeaf();
         }
         return false;

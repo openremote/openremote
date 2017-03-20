@@ -17,8 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.rules;
+package org.openremote.manager.client.assets.browser;
 
-public interface RulesPresenter {
+import com.fasterxml.jackson.annotation.JsonIgnoreType;
+import org.openremote.model.Event;
 
+@JsonIgnoreType
+public class AssetBrowserSelectionCleared extends Event {
+
+    public AssetBrowserSelectionCleared() {
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{}";
+    }
 }

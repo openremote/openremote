@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,23 +17,32 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.assets.browser;
+package org.openremote.manager.client.rules;
 
-import com.google.gwt.view.client.AsyncDataProvider;
-import com.google.gwt.view.client.HasData;
+public class RulesEditorPlace extends RulesPlace {
 
-class AssetTreeDataProvider extends AsyncDataProvider<BrowserTreeNode> {
+    final protected Long definitionId;
 
-    final protected AssetBrowser.Presenter presenter;
-    final protected BrowserTreeNode parent;
+    public RulesEditorPlace() {
+        this.definitionId = null;
+    }
 
-    public AssetTreeDataProvider(AssetBrowser.Presenter presenter, BrowserTreeNode parent) {
-        this.presenter = presenter;
-        this.parent = parent;
+    public RulesEditorPlace(String definitionId) {
+        this(definitionId != null ? Long.valueOf(definitionId) : null);
+    }
+
+    public RulesEditorPlace(Long definitionId) {
+        this.definitionId = definitionId;
+    }
+
+    public Long getDefinitionId() {
+        return definitionId;
     }
 
     @Override
-    protected void onRangeChanged(HasData<BrowserTreeNode> display) {
-        presenter.loadNodeChildren(parent, display);
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "definitionId=" + definitionId +
+            '}';
     }
 }

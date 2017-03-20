@@ -39,8 +39,6 @@ public interface ManagerMessages extends Messages {
 
     String admin();
 
-    String createOn();
-
     String lastModifiedOn();
 
     String mapLoading();
@@ -151,13 +149,7 @@ public interface ManagerMessages extends Messages {
 
     String emptyAsset();
 
-    String connector();
-
     String description();
-
-    String noConnectorAssigned();
-
-    String connectorNotInstalled();
 
     String unsupportedAttributeType(String name);
 
@@ -185,8 +177,6 @@ public interface ManagerMessages extends Messages {
 
     String assetDeleted(String name);
 
-    String editDashboard();
-
     String showDashboard();
 
     String location();
@@ -199,15 +189,11 @@ public interface ManagerMessages extends Messages {
 
     String parentAsset();
 
-    String selectParentAsset();
+    String selectAsset();
 
     String assetHasNoParent();
 
-    String setRootParentAsset();
-
-    String selectParentInAssetTree();
-
-    String reset();
+    String selectAssetDescription();
 
     String invalidAssetParent();
 
@@ -219,29 +205,11 @@ public interface ManagerMessages extends Messages {
 
     String assetTypeLabel(@Select String name);
 
-    String noTypeSelected();
-
     String enterCustomAssetType();
-
-    String deviceKey();
-
-    String resourceKey();
 
     String read();
 
     String write();
-
-    String enableLiveUpdates();
-
-    String actions();
-
-    String refreshInventory();
-
-    String inventoryRefreshed(String aget);
-
-    String enableAgentDescription();
-
-    String confirmationInventoryRefresh(String agent);
 
     String noAgentsFound();
 
@@ -309,8 +277,6 @@ public interface ManagerMessages extends Messages {
 
     String manageAssetRulesets();
 
-    String ruleset();
-
     String uploadRulesFile();
 
     String updateRuleset();
@@ -324,4 +290,10 @@ public interface ManagerMessages extends Messages {
     String rulesetDeleted(String name);
 
     String rulesetUpdated(String name);
+
+    String downloadRulesFile();
+
+    String editTenantRuleset(String name);
+
+    String editAssetRuleset(String name);
 }

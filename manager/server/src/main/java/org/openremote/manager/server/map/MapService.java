@@ -64,7 +64,7 @@ public class MapService implements ContainerService {
         mapTilesPath = Paths.get(getString(container.getConfig(), MAP_TILES_PATH, MAP_TILES_PATH_DEFAULT));
         if (!Files.isRegularFile(mapTilesPath)) {
             throw new IllegalStateException(
-                "MapWidget tiles data file not found: " + mapTilesPath.toAbsolutePath()
+                "Map tiles data file not found (wrong working directory?): " + mapTilesPath.toAbsolutePath()
             );
         }
 

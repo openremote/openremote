@@ -28,11 +28,10 @@ import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
-import org.openremote.manager.client.rules.tenant.TenantRulesListPlace;
+import org.openremote.manager.client.rules.RulesModule;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.rules.AssetRulesDefinition;
 import org.openremote.manager.shared.rules.RulesResource;
-import org.openremote.model.Consumer;
 import org.openremote.model.asset.Asset;
 
 import javax.inject.Inject;
@@ -80,21 +79,14 @@ public class AssetRulesListActivity
         view.setPresenter(this);
         container.setWidget(view.asWidget());
 
-        registrations.add(eventBus.register(AssetBrowserSelection.class, event -> {
-            if (event.isTenantSelection()) {
-                environment.getPlaceController().goTo(
-                    new TenantRulesListPlace(event.getSelectedNode().getId())
-                );
-            } else if (event.isAssetSelection()) {
-                environment.getPlaceController().goTo(
-                    new AssetRulesListPlace(event.getSelectedNode().getId())
-                );
-            }
-        }));
+        registrations.add(eventBus.register(
+            AssetBrowserSelection.class,
+            RulesModule.createDefaultNavigationListener(environment)
+        ));
 
         if (assetId != null) {
 
-            loadAsset(assetId, loadedAsset -> {
+            assetBrowserPresenter.loadAsset(assetId, loadedAsset -> {
                 this.asset = loadedAsset;
                 if (asset != null) {
                     assetBrowserPresenter.selectAsset(asset);
@@ -120,22 +112,13 @@ public class AssetRulesListActivity
 
     @Override
     public void onRulesDefinitionSelected(AssetRulesDefinition definition) {
-        // TODO environment.getPlaceController().goTo(new AssetRulesEditorPlace(definition.getId()));
+        environment.getPlaceController().goTo(new AssetRulesEditorPlace(assetId, definition.getId()));
     }
 
     @Override
     public void createRule() {
-        // TODO environment.getPlaceController().goTo(new AssetRulesEditorPlace());
+        environment.getPlaceController().goTo(new AssetRulesEditorPlace(assetId));
     }
 
-    protected void loadAsset(String id, Consumer<Asset> assetConsumer) {
-        environment.getRequestService().execute(
-            assetMapper,
-            requestParams -> assetResource.get(requestParams, id),
-            200,
-            assetConsumer,
-            ex -> handleRequestException(ex, environment)
-        );
-    }
 
 }

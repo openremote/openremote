@@ -27,6 +27,7 @@ import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.manager.shared.validation.ConstraintViolation;
 import org.openremote.manager.shared.validation.ConstraintViolationReport;
 
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
@@ -35,21 +36,25 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static org.openremote.model.Constants.*;
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.openremote.manager.shared.validation.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
+import static org.openremote.model.Constants.MASTER_REALM;
 
 public class TenantResourceImpl extends WebResource implements TenantResource {
 
-    protected final ManagerIdentityService managerIdentityService;
+    protected final ManagerIdentityService identityService;
 
-    public TenantResourceImpl(ManagerIdentityService managerIdentityService) {
-        this.managerIdentityService = managerIdentityService;
+    public TenantResourceImpl(ManagerIdentityService identityService) {
+        this.identityService = identityService;
     }
 
     @Override
     public Tenant[] getAll(RequestParams requestParams) {
+        if (!isSuperUser()) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
         try {
-            return managerIdentityService.getTenants(requestParams.getBearerAuth());
+            return identityService.getTenants(requestParams.getBearerAuth());
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -59,17 +64,29 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
 
     @Override
     public Tenant get(RequestParams requestParams, String realm) {
-        try {
-            return managerIdentityService.getTenant(requestParams.getBearerAuth(), realm);
-        } catch (ClientErrorException ex) {
-            throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
-        } catch (Exception ex) {
-            throw new WebApplicationException(ex);
+        if (!isSuperUser() && !getAuthenticatedRealm().equals(realm)) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
+        Tenant result = identityService.getTenant(realm);
+        if (result == null)
+            throw new WebApplicationException(NOT_FOUND);
+        return result;
+    }
+
+    @Override
+    public Tenant getForRealmId(RequestParams requestParams, String realmId) {
+        String realm = identityService.getActiveTenantRealm(realmId);
+        if (realm == null) {
+            throw new WebApplicationException(NOT_FOUND);
+        }
+        return get(requestParams, realm);
     }
 
     @Override
     public void update(RequestParams requestParams, String realm, Tenant tenant) {
+        if (!isSuperUser()) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
         // TODO If the realm name changes, what happens to all the assets?
         ConstraintViolationReport violationReport;
         if ((violationReport = isIllegalMasterRealmMutation(realm, tenant)) != null) {
@@ -81,7 +98,7 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
             );
         }
         try {
-            managerIdentityService.updateTenant(requestParams.getBearerAuth(), realm, tenant);
+            identityService.updateTenant(requestParams.getBearerAuth(), realm, tenant);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -91,8 +108,11 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
 
     @Override
     public void create(RequestParams requestParams, Tenant tenant) {
+        if (!isSuperUser()) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
         try {
-            managerIdentityService.createTenant(requestParams.getBearerAuth(), tenant);
+            identityService.createTenant(requestParams.getBearerAuth(), tenant);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -102,6 +122,9 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
 
     @Override
     public void delete(RequestParams requestParams, String realm) {
+        if (!isSuperUser()) {
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
+        }
         // TODO Delete all assets in that realm?
         ConstraintViolationReport violationReport;
         if ((violationReport = isIllegalMasterRealmDeletion(realm)) != null) {
@@ -113,7 +136,7 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
             );
         }
         try {
-            managerIdentityService.deleteTenant(requestParams.getBearerAuth(), realm);
+            identityService.deleteTenant(requestParams.getBearerAuth(), realm);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {

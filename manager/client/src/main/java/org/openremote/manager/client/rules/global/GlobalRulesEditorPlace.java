@@ -21,26 +21,19 @@ package org.openremote.manager.client.rules.global;
 
 import com.google.gwt.place.shared.PlaceTokenizer;
 import com.google.gwt.place.shared.Prefix;
-import org.openremote.manager.client.rules.RulesPlace;
+import org.openremote.manager.client.rules.RulesEditorPlace;
 
-public class GlobalRulesEditorPlace extends RulesPlace {
-
-    final protected Long definitionId;
+public class GlobalRulesEditorPlace extends RulesEditorPlace {
 
     public GlobalRulesEditorPlace() {
-        definitionId = null;
     }
 
     public GlobalRulesEditorPlace(String definitionId) {
-        this(Long.valueOf(definitionId));
+        super(definitionId);
     }
 
     public GlobalRulesEditorPlace(Long definitionId) {
-        this.definitionId = definitionId;
-    }
-
-    public Long getDefinitionId() {
-        return definitionId;
+        super(definitionId);
     }
 
     @Prefix("globalRulesEditor")
@@ -55,12 +48,5 @@ public class GlobalRulesEditorPlace extends RulesPlace {
         public String getToken(GlobalRulesEditorPlace place) {
             return place.getDefinitionId() != null ? String.valueOf(place.getDefinitionId()) : "";
         }
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "definitionId=" + definitionId +
-            '}';
     }
 }

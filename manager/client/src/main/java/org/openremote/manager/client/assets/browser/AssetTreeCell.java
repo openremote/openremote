@@ -28,31 +28,31 @@ import com.google.gwt.safehtml.shared.SafeHtmlUtils;
 import com.google.gwt.text.shared.SafeHtmlRenderer;
 import org.openremote.manager.client.util.TextUtil;
 
-class AssetTreeCell extends AbstractSafeHtmlCell<AssetTreeNode> {
+class AssetTreeCell extends AbstractSafeHtmlCell<BrowserTreeNode> {
 
     public static final String CELL_ID_PREFIX = "assetTreeNode";
 
-    public static String CELL_ID_SELECTOR(AssetTreeNode treeNode) {
+    public static String CELL_ID_SELECTOR(BrowserTreeNode treeNode) {
         return "#" + CELL_ID_PREFIX + "-" + treeNode.getId().replaceAll(":", "\\\\:");
     }
 
     public interface AssetTemplates extends SafeHtmlTemplates {
         @Template("<div id=\"" + CELL_ID_PREFIX + "-{0}\"><span class=\"or-FormTreeIcon fa fa-{2}\"></span>{1}</div>")
-        SafeHtml treeNode(String id, String name, String icon);
+        SafeHtml treeNode(String id, String label, String icon);
     }
 
     private static final AssetTemplates TEMPLATES = GWT.create(AssetTemplates.class);
 
-    public static class Renderer implements SafeHtmlRenderer<AssetTreeNode> {
+    public static class Renderer implements SafeHtmlRenderer<BrowserTreeNode> {
 
-        final protected int maxNameLength;
+        final protected int maxLabelLength;
 
-        public Renderer(int maxNameLength) {
-            this.maxNameLength = maxNameLength;
+        public Renderer(int maxLabelLength) {
+            this.maxLabelLength = maxLabelLength;
         }
 
         @Override
-        public SafeHtml render(AssetTreeNode node) {
+        public SafeHtml render(BrowserTreeNode node) {
             if (node == null)
                 return SafeHtmlUtils.EMPTY_SAFE_HTML;
             SafeHtmlBuilder builder = new SafeHtmlBuilder();
@@ -61,10 +61,10 @@ class AssetTreeCell extends AbstractSafeHtmlCell<AssetTreeNode> {
         }
 
         @Override
-        public void render(AssetTreeNode node, SafeHtmlBuilder appendable) {
+        public void render(BrowserTreeNode node, SafeHtmlBuilder appendable) {
             appendable.append(TEMPLATES.treeNode(
                 node.getId(),
-                TextUtil.ellipsize(node.getName(), maxNameLength),
+                TextUtil.ellipsize(node.getLabel(), maxLabelLength),
                 node.getIcon()
             ));
         }

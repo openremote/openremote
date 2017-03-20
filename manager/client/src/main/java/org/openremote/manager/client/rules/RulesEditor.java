@@ -21,17 +21,21 @@ package org.openremote.manager.client.rules;
 
 import org.openremote.manager.client.widget.FormView;
 
-public interface RulesEditor<P extends RulesEditor.Presenter> extends RulesView<P>, FormView {
+public interface RulesEditor extends RulesView, FormView {
 
-    interface Presenter extends RulesPresenter {
+    interface Presenter {
         void update();
 
         void create();
 
         void delete();
+
+        void cancel();
     }
 
-    void setPresenter(P presenter);
+    void setPresenter(Presenter presenter);
+
+    void setHeadline(String headline);
 
     void setName(String name);
 

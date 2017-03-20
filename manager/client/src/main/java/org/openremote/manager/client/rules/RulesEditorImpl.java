@@ -19,65 +19,97 @@
  */
 package org.openremote.manager.client.rules;
 
+import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.dom.client.LabelElement;
 import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.FileUpload;
 import com.google.gwt.user.client.ui.HTMLPanel;
+import com.google.gwt.user.client.ui.InlineLabel;
 import com.google.inject.Provider;
 import elemental.client.Browser;
+import elemental.html.AnchorElement;
 import elemental.html.Blob;
 import elemental.html.FileReader;
 import org.openremote.manager.client.app.dialog.ConfirmationDialog;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.widget.*;
 
-public abstract class AbstractRulesEditor<P extends RulesEditor.Presenter>
+import javax.inject.Inject;
+import java.util.logging.Logger;
+
+public class RulesEditorImpl
     extends FormViewImpl
-    implements RulesEditor<P> {
+    implements RulesEditor {
+
+    private static final Logger LOG = Logger.getLogger(RulesEditorImpl.class.getName());
+
+    interface UI extends UiBinder<FlexSplitPanel, RulesEditorImpl> {
+    }
 
     @UiField
-    public HTMLPanel sidebarContainer;
+    HTMLPanel sidebarContainer;
 
     @UiField
-    public FormGroup nameGroup;
-    @UiField
-    public FormInputText nameInput;
+    InlineLabel headlineLabel;
 
     @UiField
-    public LabelElement rulesFileUploadLabel;
+    FormGroup nameGroup;
     @UiField
-    public FileUpload rulesFileUpload;
+    FormInputText nameInput;
 
     @UiField
-    public FormGroup enabledGroup;
+    PushButton rulesFileDownload;
     @UiField
-    public FormCheckBox enabledCheckBox;
+    LabelElement rulesFileUploadLabel;
+    @UiField
+    FileUpload rulesFileUpload;
 
     @UiField
-    public FormGroup rulesGroup;
+    FormGroup enabledGroup;
     @UiField
-    public FormTextArea rulesTextArea;
+    FormCheckBox enabledCheckBox;
 
     @UiField
-    public FormGroup submitButtonGroup;
+    FormGroup rulesGroup;
     @UiField
-    public PushButton createButton;
+    FormTextArea rulesTextArea;
+
     @UiField
-    public PushButton updateButton;
+    FormGroup submitButtonGroup;
     @UiField
-    public PushButton deleteButton;
+    PushButton createButton;
+    @UiField
+    PushButton updateButton;
+    @UiField
+    PushButton deleteButton;
+    @UiField
+    FormButton cancelButton;
 
     final AssetBrowser assetBrowser;
-    protected P presenter;
+    protected Presenter presenter;
 
-    public AbstractRulesEditor(Provider<ConfirmationDialog> confirmationDialogProvider, AssetBrowser assetBrowser) {
+    @Inject
+    public RulesEditorImpl(Provider<ConfirmationDialog> confirmationDialogProvider, AssetBrowser assetBrowser) {
         super(confirmationDialogProvider);
         this.assetBrowser = assetBrowser;
 
-        initComposite();
+        RulesEditorImpl.UI ui = GWT.create(RulesEditorImpl.UI.class);
+        initWidget(ui.createAndBindUi(this));
+
+        rulesFileDownload.addClickHandler(event -> {
+            AnchorElement downloadAnchor = (AnchorElement) Browser.getDocument().createElement("a");
+            downloadAnchor.setDownload(
+                getName() != null && getName().length() > 0 ? getName() + ".drl.txt" : "OpenRemote-Rules.drl.txt"
+            );
+            downloadAnchor.setHref(Browser.encodeURI("data:text/plain," + getRules()));
+            Browser.getDocument().getBody().appendChild(downloadAnchor);
+            downloadAnchor.click();
+            Browser.getDocument().getBody().removeChild(downloadAnchor);
+        });
 
         rulesFileUpload.addChangeHandler(event -> {
             rulesFileUploadLabel.removeClassName("error");
@@ -100,10 +132,8 @@ public abstract class AbstractRulesEditor<P extends RulesEditor.Presenter>
         });
     }
 
-    abstract protected void initComposite();
-
     @Override
-    public void setPresenter(P presenter) {
+    public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
         if (presenter != null) {
             assetBrowser.asWidget().removeFromParent();
@@ -112,6 +142,7 @@ public abstract class AbstractRulesEditor<P extends RulesEditor.Presenter>
             sidebarContainer.clear();
 
             // Restore initial state of view
+            headlineLabel.setText(null);
             nameGroup.setError(false);
             nameInput.setValue(null);
             enabledCheckBox.setValue(true);
@@ -120,6 +151,11 @@ public abstract class AbstractRulesEditor<P extends RulesEditor.Presenter>
             updateButton.setVisible(false);
             deleteButton.setVisible(false);
         }
+    }
+
+    @Override
+    public void setHeadline(String headline) {
+        headlineLabel.setText(headline);
     }
 
     @Override
@@ -188,6 +224,12 @@ public abstract class AbstractRulesEditor<P extends RulesEditor.Presenter>
     public void deleteClicked(ClickEvent e) {
         if (presenter != null)
             presenter.delete();
+    }
+
+    @UiHandler("cancelButton")
+    public void cancelClicked(ClickEvent e) {
+        if (presenter != null)
+            presenter.cancel();
     }
 
 }

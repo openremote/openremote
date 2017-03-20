@@ -33,7 +33,7 @@ import java.util.Date;
 public class TenantRulesDefinition extends RulesDefinition {
 
     @Column(name = "REALM_ID", nullable = false)
-    public String realmId;
+    protected String realmId;
 
     public TenantRulesDefinition() {
     }
@@ -41,6 +41,16 @@ public class TenantRulesDefinition extends RulesDefinition {
     public TenantRulesDefinition(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String realmId) {
         super(id, version, createdOn, lastModified, name, enabled);
         this.realmId = realmId;
+    }
+
+    public TenantRulesDefinition(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, String realmId) {
+        super(id, version, createdOn, lastModified, name, enabled, rules);
+        this.realmId = realmId;
+    }
+
+    public TenantRulesDefinition(String realmId) {
+        this(null, realmId, null);
+
     }
 
     public TenantRulesDefinition(String name, String realmId, String rules) {
@@ -59,13 +69,13 @@ public class TenantRulesDefinition extends RulesDefinition {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-                "id='" + id + '\'' +
-                ", version='" + version + '\'' +
-                ", name='" + name + '\'' +
-                ", createdOn='" + createdOn + '\'' +
-                ", lastModified='" + lastModified + '\'' +
-                ", enabled='" + enabled + '\'' +
-                ", realmId='" + realmId + '\'' +
-                '}';
+            "id='" + id + '\'' +
+            ", version='" + version + '\'' +
+            ", name='" + name + '\'' +
+            ", createdOn='" + createdOn + '\'' +
+            ", lastModified='" + lastModified + '\'' +
+            ", enabled='" + enabled + '\'' +
+            ", realmId='" + realmId + '\'' +
+            '}';
     }
 }

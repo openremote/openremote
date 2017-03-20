@@ -125,12 +125,18 @@ public class ManagerIdentityService extends IdentityService {
         return tenants.toArray(new Tenant[tenants.size()]);
     }
 
-    public Tenant getTenant(String bearerAuth, String realm) {
-        return convert(
-            Container.JSON,
-            Tenant.class,
-            getRealms(bearerAuth).realm(realm).toRepresentation()
-        );
+    public Tenant getTenant(String realm) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            @SuppressWarnings("unchecked")
+            List<Object[]> result = entityManager.createNativeQuery(
+                "select R.ID, R.NAME, RA.VALUE, R.ENABLED from REALM R join REALM_ATTRIBUTE RA " +
+                    "on R.ID = RA.REALM_ID and RA.NAME = 'displayName' " +
+                    "and R.NAME = :realm"
+            ).setParameter("realm", realm).getResultList();
+            return result.size() > 0
+                ? new Tenant((String) result.get(0)[0], (String) result.get(0)[1], (String) result.get(0)[2], (Boolean) result.get(0)[3])
+                : null;
+        });
     }
 
     public boolean isActiveTenantRealmId(String realmId) {
@@ -217,7 +223,7 @@ public class ManagerIdentityService extends IdentityService {
     }
 
     public void deleteTenant(String bearerAuth, String realm) throws Exception {
-        Tenant tenant = getTenant(bearerAuth, realm);
+        Tenant tenant = getTenant(realm);
         LOG.fine("Delete tenant: " + realm);
         getRealms(bearerAuth).realm(realm).remove();
         sendTenantModifiedMessage(PersistenceEvent.Cause.DELETE, tenant);
@@ -269,17 +275,18 @@ public class ManagerIdentityService extends IdentityService {
 
     /**
      * Use PERSISTENCE_TOPIC and persistence event
+     *
      * @param tenant
      */
     protected void sendTenantModifiedMessage(PersistenceEvent.Cause cause, Tenant tenant) {
         PersistenceEvent persistenceEvent = new PersistenceEvent(cause, tenant, new String[0], null);
 
         messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-                PersistenceEvent.PERSISTENCE_TOPIC,
-                ExchangePattern.InOnly,
-                persistenceEvent,
-                PersistenceEvent.HEADER_ENTITY_TYPE,
-                persistenceEvent.getEntity().getClass()
+            PersistenceEvent.PERSISTENCE_TOPIC,
+            ExchangePattern.InOnly,
+            persistenceEvent,
+            PersistenceEvent.HEADER_ENTITY_TYPE,
+            persistenceEvent.getEntity().getClass()
         );
     }
 

@@ -21,7 +21,11 @@ package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.user.client.ui.IsWidget;
 import elemental.json.JsonObject;
+import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
+import org.openremote.manager.client.assets.browser.AssetTreeNode;
+import org.openremote.manager.client.assets.browser.BrowserTreeNode;
 import org.openremote.manager.client.widget.AttributesEditor;
+import org.openremote.manager.client.assets.browser.AssetSelector;
 import org.openremote.manager.client.widget.FormView;
 import org.openremote.manager.shared.map.GeoJSON;
 import org.openremote.model.asset.AssetType;
@@ -32,13 +36,7 @@ public interface AssetView extends FormView, IsWidget {
 
     interface Presenter {
 
-        void beginParentSelection();
-
-        void confirmParentSelection();
-
-        void setRootParentSelection();
-
-        void resetParentSelection();
+        void onParentSelection(BrowserTreeNode treeNode);
 
         void centerMap();
 
@@ -51,7 +49,6 @@ public interface AssetView extends FormView, IsWidget {
         void create();
 
         void delete();
-
     }
 
     void setPresenter(Presenter presenter);
@@ -60,13 +57,9 @@ public interface AssetView extends FormView, IsWidget {
 
     String getName();
 
-    void setTenantDisplayName(String tenantDisplayName);
-
     void setCreatedOn(Date createdOn);
 
-    void setParent(String name);
-
-    void setParentSelection(boolean isSelecting);
+    void setParentNode(BrowserTreeNode treeNode);
 
     void initialiseMap(JsonObject mapOptions);
 

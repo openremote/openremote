@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
+import org.hibernate.annotations.Check;
 import org.openremote.model.asset.Asset;
 
 import javax.persistence.*;
@@ -32,6 +33,7 @@ import javax.persistence.*;
  * which can not be serialized or compiled on the client.
  */
 @Entity(name = "Asset")
+@Check(constraints = "ID != PARENT_ID")
 // TODO Write on-insert/update SQL trigger that validates the asset realm, it must match the parent's realm
 public class ServerAsset extends Asset {
 

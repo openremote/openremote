@@ -29,6 +29,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.*;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 
 public class WebResource {
 
@@ -70,7 +71,7 @@ public class WebResource {
         KeycloakPrincipal<KeycloakSecurityContext> principal =
             (KeycloakPrincipal<KeycloakSecurityContext>) securityContext.getUserPrincipal();
         if (principal == null) {
-            throw new IllegalStateException("Request is not authenticated, can't access user principal");
+            throw new WebApplicationException("Request is not authenticated, can't access user principal", FORBIDDEN);
         }
         return principal;
     }

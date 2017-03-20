@@ -1,18 +1,21 @@
 package org.openremote.test.rules
 
-import org.openremote.manager.server.asset.AssetProcessingService
 import elemental.json.Json
+import org.apache.commons.io.IOUtils
 import org.kie.api.event.rule.AfterMatchFiredEvent
 import org.kie.api.event.rule.DefaultAgendaEventListener
+import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.rules.RulesDeployment
 import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.rules.RulesStorageService
-import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
-import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.security.ManagerIdentityService
-import org.openremote.manager.shared.rules.*
+import org.openremote.manager.server.setup.SetupService
+import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
+import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.shared.rules.AssetRulesDefinition
+import org.openremote.manager.shared.rules.GlobalRulesDefinition
 import org.openremote.manager.shared.rules.RulesDefinition.DeploymentStatus
+import org.openremote.manager.shared.rules.TenantRulesDefinition
 import org.openremote.model.AttributeEvent
 import org.openremote.model.AttributeRef
 import org.openremote.model.AttributeState
@@ -20,20 +23,18 @@ import org.openremote.model.Constants
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
-import org.apache.commons.io.IOUtils
 
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
-import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
-import static org.openremote.model.Constants.MASTER_REALM
-import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
+import static org.openremote.model.Constants.*
 
 class RulesDeploymentTest extends Specification implements ManagerContainerTrait {
+
     def "Check basic rules engine deployment"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, initialDelay: 1)
+        def conditions = new PollingConditions(timeout: 10)
 
         and: "the demo assets and rule definitions are deployed"
         def serverPort = findEphemeralPort()
@@ -74,7 +75,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         and: "two tenant rules engines should have been created and be running"
         conditions.eventually {
             assert rulesService.tenantDeployments.size() == 2
-            def masterEngine = rulesService.tenantDeployments.get(Constants.MASTER_REALM)
+            def masterEngine = rulesService.tenantDeployments.get(masterRealmId)
             def customerAEngine = rulesService.tenantDeployments.get(customerARealmId)
             assert masterEngine != null
             assert masterEngine.isRunning()
@@ -84,7 +85,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         and: "the tenant rules engines should have the demo tenant rules definition"
         conditions.eventually {
-            def masterEngine = rulesService.tenantDeployments.get(Constants.MASTER_REALM)
+            def masterEngine = rulesService.tenantDeployments.get(masterRealmId)
             def customerAEngine = rulesService.tenantDeployments.get(customerARealmId)
             assert masterEngine.allRulesDefinitions.length == 1
             assert masterEngine.allRulesDefinitions[0].enabled
@@ -130,6 +131,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         }
 
         when: "a new global rule definition is added"
+        conditions = new PollingConditions(timeout: 10)
         def inputStream = getClass().getResourceAsStream("/org/openremote/test/rules/GlobalRules.drl")
         String rules = IOUtils.toString(inputStream, "UTF-8")
         def rulesDefinition = new GlobalRulesDefinition("Some more global rules", rules)
@@ -149,6 +151,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         }
 
         when: "a new tenant rule definition is added to customer A"
+        conditions = new PollingConditions(timeout: 10)
         inputStream = getClass().getResourceAsStream("/org/openremote/test/rules/TenantRules.drl")
         rules = IOUtils.toString(inputStream, "UTF-8")
         rulesDefinition = new TenantRulesDefinition("Some more customerA tenant rules", customerARealmId, rules)
@@ -169,6 +172,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         }
 
         when: "a new tenant rule definition is added to customer B"
+        conditions = new PollingConditions(timeout: 10)
         inputStream = getClass().getResourceAsStream("/org/openremote/test/rules/TenantRules.drl")
         rules = IOUtils.toString(inputStream, "UTF-8")
         rulesDefinition = new TenantRulesDefinition("Some more customerB tenant rules", customerBRealmId, rules)
@@ -187,6 +191,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         }
 
         when: "the disabled rule definition for customer B is enabled"
+        conditions = new PollingConditions(timeout: 10)
         rulesDefinition = rulesStorageService.findById(TenantRulesDefinition.class, managerDemoSetup.customerBRulesDefinitionId)
         rulesDefinition.setEnabled(true)
         rulesDefinition = rulesStorageService.merge(rulesDefinition)
@@ -207,6 +212,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         }
 
         when: "the enabled rule definition for customer B is disabled"
+        conditions = new PollingConditions(timeout: 10)
         rulesDefinition.setEnabled(false)
         rulesStorageService.merge(rulesDefinition)
 
@@ -222,6 +228,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         }
 
         when: "the asset rule definition for apartment 1 is deleted"
+        conditions = new PollingConditions(timeout: 10)
         rulesStorageService.delete(AssetRulesDefinition.class, managerDemoSetup.apartment1RulesDefinitionId)
 
         then: "the apartment rules engine should be removed"
@@ -238,6 +245,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         }
 
         when: "a broken rule definition is added to the global rules engine"
+        conditions = new PollingConditions(timeout: 10)
         inputStream = getClass().getResourceAsStream("/org/openremote/test/rules/BrokenRules.drl")
         rules = IOUtils.toString(inputStream, "UTF-8")
         rulesDefinition = new GlobalRulesDefinition("Some broken global rules", rules)
@@ -260,6 +268,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         }
 
         when: "the broken rule definition is removed from the global engine"
+        conditions = new PollingConditions(timeout: 10)
         rulesStorageService.delete(GlobalRulesDefinition.class, rulesDefinition.getId())
 
         then: "the global rules engine should restart"
@@ -276,6 +285,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         }
 
         when: "a tenant is disabled"
+        conditions = new PollingConditions(timeout: 10)
         def customerAEngine = rulesService.tenantDeployments.get(customerARealmId)
         def smartHomeEngine = rulesService.assetDeployments.get(managerDemoSetup.smartHomeId)
         def apartment3Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment3Id)
@@ -300,7 +310,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         conditions.eventually {
             assert rulesService.tenantDeployments.size() == 2
             assert rulesService.assetDeployments.size() == 0
-            def masterEngine = rulesService.tenantDeployments.get(Constants.MASTER_REALM)
+            def masterEngine = rulesService.tenantDeployments.get(masterRealmId)
             def customerBEngine = rulesService.tenantDeployments.get(customerBRealmId)
             assert masterEngine != null
             assert masterEngine.isRunning()
@@ -309,6 +319,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         }
 
         when: "the disabled tenant is re-enabled"
+        conditions = new PollingConditions(timeout: 10)
         customerATenant.setEnabled(true)
         identityService.updateTenant(accessToken, customerATenant.getRealm(), customerATenant)
 
@@ -373,33 +384,32 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
     def "Check firing of rules LHS"() {
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, initialDelay: 1)
+        def conditions = new PollingConditions(timeout: 10)
 
         and: "the demo assets and rule definitions are deployed"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def identityService = container.getService(ManagerIdentityService.class)
         def rulesStorageService = container.getService(RulesStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
+        def masterRealmId = getActiveTenantRealmId(container, MASTER_REALM)
         def customerARealmId = identityService.getActiveTenantRealmId("customerA")
-        def customerBRealmId = identityService.getActiveTenantRealmId("customerB")
         RulesDeployment globalEngine, masterEngine, customerAEngine, smartHomeEngine, apartment1Engine, apartment3Engine
-        List<String> globalEngineFiredRules = new ArrayList<>();
-        List<String> masterEngineFiredRules = new ArrayList<>();
-        List<String> customerAEngineFiredRules = new ArrayList<>();
-        List<String> smartHomeEngineFiredRules = new ArrayList<>();
-        List<String> apartment1EngineFiredRules = new ArrayList<>();
-        List<String> apartment3EngineFiredRules = new ArrayList<>();
+        List<String> globalEngineFiredRules = []
+        List<String> masterEngineFiredRules = []
+        List<String> customerAEngineFiredRules = []
+        List<String> smartHomeEngineFiredRules = []
+        List<String> apartment1EngineFiredRules = []
+        List<String> apartment3EngineFiredRules = []
 
         expect: "the rule engines to become available and be running"
         conditions.eventually {
             globalEngine = rulesService.globalDeployment
             assert globalEngine != null
             assert globalEngine.isRunning()
-            masterEngine = rulesService.tenantDeployments.get(Constants.MASTER_REALM)
+            masterEngine = rulesService.tenantDeployments.get(masterRealmId)
             assert masterEngine != null
             assert masterEngine.isRunning()
             customerAEngine = rulesService.tenantDeployments.get(customerARealmId)
@@ -417,6 +427,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         }
 
         when: "rule execution loggers are attached to the engines"
+        conditions = new PollingConditions(timeout: 10)
         attachRuleExecutionLogger(globalEngine, globalEngineFiredRules)
         attachRuleExecutionLogger(masterEngine, masterEngineFiredRules)
         attachRuleExecutionLogger(customerAEngine, customerAEngineFiredRules)
@@ -432,44 +443,35 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         then: "the rule engines in scope should fire the 'All' and 'All changed' rules"
         conditions.eventually {
+            def expectedFiredRules = ["All", "All changed"]
             assert globalEngineFiredRules.size() == 2
-            assert globalEngineFiredRules.get(0) == "All"
-            assert globalEngineFiredRules.get(1) == "All changed"
+            assert globalEngineFiredRules.containsAll(expectedFiredRules)
             assert masterEngineFiredRules.size() == 0
             assert customerAEngineFiredRules.size() == 2
-            assert customerAEngineFiredRules.get(0) == "All"
-            assert customerAEngineFiredRules.get(1) == "All changed"
+            assert customerAEngineFiredRules.containsAll(expectedFiredRules)
             assert smartHomeEngineFiredRules.size() == 2
-            assert smartHomeEngineFiredRules.get(0) == "All"
-            assert smartHomeEngineFiredRules.get(1) == "All changed"
+            assert smartHomeEngineFiredRules.containsAll(expectedFiredRules)
             assert apartment1EngineFiredRules.size() == 2
-            assert apartment1EngineFiredRules.get(0) == "All"
-            assert apartment1EngineFiredRules.get(1) == "All changed"
+            assert apartment1EngineFiredRules.containsAll(expectedFiredRules)
             assert apartment3EngineFiredRules.size() == 0
         }
 
         when: "an old (stale) attribute event is pushed into the system"
+        conditions = new PollingConditions(timeout: 10, initialDelay: 5)
         assetProcessingService.processClientUpdate(apartment1LivingRoomDemoBooleanChange)
 
         then: "after a few seconds no rules should have fired on any engines"
-        new PollingConditions(timeout: 10, initialDelay: 5).eventually {
+        conditions.eventually {
             assert globalEngineFiredRules.size() == 2
-            assert globalEngineFiredRules.get(0) == "All"
-            assert globalEngineFiredRules.get(1) == "All changed"
             assert masterEngineFiredRules.size() == 0
             assert customerAEngineFiredRules.size() == 2
-            assert customerAEngineFiredRules.get(0) == "All"
-            assert customerAEngineFiredRules.get(1) == "All changed"
             assert smartHomeEngineFiredRules.size() == 2
-            assert smartHomeEngineFiredRules.get(0) == "All"
-            assert smartHomeEngineFiredRules.get(1) == "All changed"
             assert apartment1EngineFiredRules.size() == 2
-            assert apartment1EngineFiredRules.get(0) == "All"
-            assert apartment1EngineFiredRules.get(1) == "All changed"
             assert apartment3EngineFiredRules.size() == 0
         }
 
         when: "an attribute event with the same value as current value is pushed into the system"
+        conditions = new PollingConditions(timeout: 10)
         apartment1LivingRoomDemoBooleanChange = new AttributeEvent(
                 new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoBoolean"), Json.create(false))
         )
@@ -478,32 +480,29 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         then: "the rule engines in scope should fire the 'All' rule but not the 'All changed' rule"
         conditions.eventually {
             assert globalEngineFiredRules.size() == 3
-            assert globalEngineFiredRules.get(0) == "All"
-            assert globalEngineFiredRules.get(1) == "All changed"
-            assert globalEngineFiredRules.get(2) == "All"
+            assert globalEngineFiredRules.findIndexValues {it == "All"}.size() == 2
+            assert globalEngineFiredRules.findIndexValues {it == "All changed"}.size() == 1
             assert masterEngineFiredRules.size() == 0
             assert customerAEngineFiredRules.size() == 3
-            assert customerAEngineFiredRules.get(0) == "All"
-            assert customerAEngineFiredRules.get(1) == "All changed"
-            assert customerAEngineFiredRules.get(2) == "All"
+            assert customerAEngineFiredRules.findIndexValues {it == "All"}.size() == 2
+            assert customerAEngineFiredRules.findIndexValues {it == "All changed"}.size() == 1
             assert smartHomeEngineFiredRules.size() == 3
-            assert smartHomeEngineFiredRules.get(0) == "All"
-            assert smartHomeEngineFiredRules.get(1) == "All changed"
-            assert smartHomeEngineFiredRules.get(2) == "All"
+            assert smartHomeEngineFiredRules.findIndexValues {it == "All"}.size() == 2
+            assert smartHomeEngineFiredRules.findIndexValues {it == "All changed"}.size() == 1
             assert apartment1EngineFiredRules.size() == 3
-            assert apartment1EngineFiredRules.get(0) == "All"
-            assert apartment1EngineFiredRules.get(1) == "All changed"
-            assert apartment1EngineFiredRules.get(2) == "All"
+            assert apartment1EngineFiredRules.findIndexValues {it == "All"}.size() == 2
+            assert apartment1EngineFiredRules.findIndexValues {it == "All changed"}.size() == 1
             assert apartment3EngineFiredRules.size() == 0
         }
 
         when: "a living room specific rule definition is loaded into apartment 3"
+        conditions = new PollingConditions(timeout: 10)
         def inputStream = getClass().getResourceAsStream("/org/openremote/test/rules/Livingroom.drl")
         def rules = IOUtils.toString(inputStream, "UTF-8")
         def rulesDefinition = new AssetRulesDefinition("Some lounge asset rules", managerDemoSetup.apartment3Id, rules)
         rulesStorageService.merge(rulesDefinition)
 
-        then: "the apartment 3 rule engine should have loaded the new rule definition and restart"
+        then: "the apartment 3 rule engine should have loaded the new rule definition and restarted"
         conditions.eventually {
             assert apartment3Engine != null
             assert apartment3Engine.isRunning()
@@ -517,21 +516,20 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         }
 
         when: "an apartment 3 living room attribute event occurs"
+        conditions = new PollingConditions(timeout: 10)
         attachRuleExecutionLogger(apartment3Engine, apartment3EngineFiredRules)
         def apartment3LivingRoomDemoStringChange = new AttributeEvent(
                 new AttributeState(new AttributeRef(managerDemoSetup.apartment3LivingroomId, "demoString"), Json.create("demo2"))
         )
         assetProcessingService.processClientUpdate(apartment3LivingRoomDemoStringChange)
 
-        then: "the apartment 3 rule engine should have fired the 'Living Room All' rule"
+        then: "the apartment 3 rule engine should have fired the 'All', 'All changed' and 'Living Room All' rules"
         conditions.eventually {
+            def expectedFiredRules = ["All", "All changed", "Living Room All"]
             assert apartment3EngineFiredRules.size() == 3
-            assert apartment3EngineFiredRules.get(0) == "All"
-            assert apartment3EngineFiredRules.get(1) == "All changed"
-            assert apartment3EngineFiredRules.get(2) == "Living Room All"
+            assert apartment3EngineFiredRules.containsAll(expectedFiredRules)
         }
     }
-
 
     def attachRuleExecutionLogger(RulesDeployment ruleEngine, List<String> executedRules) {
         def session = ruleEngine.getKnowledgeSession()

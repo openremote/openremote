@@ -19,119 +19,48 @@
  */
 package org.openremote.manager.client.assets.browser;
 
-import org.openremote.manager.shared.security.Tenant;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetInfo;
 import org.openremote.model.asset.AssetType;
 
-/**
- * Represent an asset, tenant, the invisible root, or a temporary node in the tree.
- * <p>
- * The invisible root of the tree (should be only one of those) is special, it has no
- * ID, no name, no realm, no type.
- */
-public class AssetTreeNode {
+public class AssetTreeNode extends BrowserTreeNode {
 
-    // This type is used when the node represents a tenant
-    public static final String TENANT_TYPE = AssetTreeNode.class.getSimpleName() + ".TENANT";
+    final protected AssetInfo assetInfo;
 
-    // This type is used when we have to stick a temporary node into the tree for whatever reason,
-    // e.g. a node that is not an asset nor tenant, but for example a loading message or some
-    // other UI signal for the user
-    public static final String TEMPORARY_TYPE = AssetTreeNode.class.getSimpleName() + ".TEMPORARY";
+    final protected String tenantDisplayName;
 
-    protected String id;
-
-    protected String name;
-
-    protected String type;
-
-    /**
-     * Invisible root node
-     */
-    public AssetTreeNode() {
+    public AssetTreeNode(Asset asset, String tenantDisplayName) {
+        this(new AssetInfo(asset), tenantDisplayName);
+    }
+    public AssetTreeNode(AssetInfo assetInfo, String tenantDisplayName) {
+        super(assetInfo.getName());
+        this.assetInfo = assetInfo;
+        this.tenantDisplayName = tenantDisplayName;
     }
 
-    public AssetTreeNode(String id, String name, String type) {
-        this.id = id;
-        this.name = name;
-        this.type = type;
+    public AssetInfo getAssetInfo() {
+        return assetInfo;
     }
 
-    /**
-     * Asset node
-     */
-    public AssetTreeNode(AssetInfo assetInfo) {
-        this(assetInfo.getId(), assetInfo.getName(), assetInfo.getType());
+    public String getTenantDisplayName() {
+        return tenantDisplayName;
     }
 
-    /**
-     * Tenant node
-     */
-    public AssetTreeNode(Tenant tenant) {
-        this(tenant.getId(), tenant.getDisplayName(), TENANT_TYPE);
-    }
-
-    /**
-     * Temporary node
-     */
-    public AssetTreeNode(String name) {
-        this(null, name, TEMPORARY_TYPE);
-    }
-
+    @Override
     public String getId() {
-        return id;
+        return assetInfo.getId();
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public boolean isRoot() {
-        return getId() == null;
-    }
-
-    public boolean isTemporary() {
-        return TEMPORARY_TYPE.equals(getType());
-    }
-
-    public boolean isTenant() {
-        return TENANT_TYPE.equals(getType());
-    }
-
-    public AssetType getWellKnownType() {
-        return getType() != null ? AssetType.getByValue(getType()) : null;
-    }
-
-    public boolean isWellKnownType(AssetType assetType) {
-        return assetType.equals(getWellKnownType());
-    }
-
+    @Override
     public boolean isLeaf() {
-        return isWellKnownType(AssetType.THING) || isTemporary();
+        return assetInfo.isWellKnownType(AssetType.THING);
     }
 
+    @Override
     public String getIcon() {
-        if (isTenant())
-            return "group";
-        if (getWellKnownType() == null)
+        if (assetInfo.getWellKnownType() == null)
             return "cube";
-        switch (getWellKnownType()) {
+        switch (assetInfo.getWellKnownType()) {
             case BUILDING:
                 return "building";
             case RESIDENCE:
@@ -145,14 +74,5 @@ public class AssetTreeNode {
             default:
                 return "cube";
         }
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "id='" + id + '\'' +
-            ", name='" + name + '\'' +
-            ", type='" + type + '\'' +
-            '}';
     }
 }

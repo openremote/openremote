@@ -246,8 +246,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         /* ############################################## WRITE ####################################### */
 
-        when: "an asset is created in the master realm"
-        def testAsset = new Asset(masterRealmId, "Test Room", AssetType.ROOM)
+        when: "an asset is created in the authenticated realm"
+        def testAsset = new Asset("Test Room", AssetType.ROOM)  // Note: no realm means auth realm
         testAsset.setId(IdentifierUtil.generateGlobalUniqueId())
         assetResource.create(null, testAsset)
         testAsset = assetResource.get(null, testAsset.getId())

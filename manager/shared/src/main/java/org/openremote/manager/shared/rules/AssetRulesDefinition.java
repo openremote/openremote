@@ -22,6 +22,7 @@ package org.openremote.manager.shared.rules;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 import java.util.Date;
 
 /**
@@ -33,19 +34,31 @@ import java.util.Date;
 public class AssetRulesDefinition extends RulesDefinition {
 
     @Column(name = "ASSET_ID", nullable = false)
-    public String assetId;
+    protected String assetId;
+
+    @Transient
+    protected String realmId;
 
     public AssetRulesDefinition() {
     }
 
-    public AssetRulesDefinition(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String assetId) {
-        super(id, version, createdOn, lastModified, name, enabled);
+    public AssetRulesDefinition(String assetId) {
         this.assetId = assetId;
+    }
+
+    public AssetRulesDefinition(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String assetId) {
+        this(id, version, createdOn, lastModified, name, enabled, null, null, assetId);
     }
 
     public AssetRulesDefinition(String name, String assetId, String rules) {
         super(name, rules);
         this.assetId = assetId;
+    }
+
+    public AssetRulesDefinition(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, String assetId, String realmId) {
+        super(id, version, createdOn, lastModified, name, enabled, rules);
+        this.assetId = assetId;
+        this.realmId = realmId;
     }
 
     public String getAssetId() {
@@ -54,6 +67,14 @@ public class AssetRulesDefinition extends RulesDefinition {
 
     public void setAssetId(String assetId) {
         this.assetId = assetId;
+    }
+
+    public String getRealmId() {
+        return realmId;
+    }
+
+    public void setRealmId(String realmId) {
+        this.realmId = realmId;
     }
 
     @Override

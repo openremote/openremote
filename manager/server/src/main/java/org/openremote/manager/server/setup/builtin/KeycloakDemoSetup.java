@@ -61,21 +61,21 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
     public void execute() throws Exception {
 
         // Tenants
-        masterTenant = identityService.getTenant(accessToken, Constants.MASTER_REALM);
+        masterTenant = identityService.getTenant(Constants.MASTER_REALM);
 
         Tenant customerA = new Tenant();
         customerA.setRealm("customerA");
         customerA.setDisplayName("Customer A");
         customerA.setEnabled(true);
         identityService.createTenant(accessToken, customerA);
-        customerATenant = identityService.getTenant(accessToken, customerA.getRealm());
+        customerATenant = identityService.getTenant(customerA.getRealm());
 
         Tenant customerB = new Tenant();
         customerB.setRealm("customerB");
         customerB.setDisplayName("Customer B");
         customerB.setEnabled(true);
         identityService.createTenant(accessToken, customerB);
-        customerBTenant = identityService.getTenant(accessToken, customerB.getRealm());
+        customerBTenant = identityService.getTenant(customerB.getRealm());
 
         // Users
 

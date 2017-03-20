@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -29,6 +29,16 @@ public class Tenant {
     protected String realm;
     protected String displayName;
     protected Boolean enabled;
+
+    public Tenant() {
+    }
+
+    public Tenant(String id, String realm, String displayName, Boolean enabled) {
+        this.id = id;
+        this.realm = realm;
+        this.displayName = displayName;
+        this.enabled = enabled;
+    }
 
     public String getId() {
         return id;

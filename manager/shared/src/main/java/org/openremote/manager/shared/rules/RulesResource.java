@@ -101,7 +101,7 @@ public interface RulesResource {
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
-    void updateGlobalDefinition(@BeanParam RequestParams requestParams, @PathParam("id") Long id, GlobalRulesDefinition rulesDefinition);
+    void updateGlobalDefinition(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid GlobalRulesDefinition rulesDefinition);
 
     /**
      * Deletes a global rules definition. Only the superuser can perform this operation, a 403 status is
@@ -127,7 +127,7 @@ public interface RulesResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
-    void createTenantDefinition(@BeanParam RequestParams requestParams, TenantRulesDefinition rulesDefinition);
+    void createTenantDefinition(@BeanParam RequestParams requestParams, @Valid TenantRulesDefinition rulesDefinition);
 
     /**
      * Retrieve a tenant rules definition. The superuser can retrieve rules of all realms, a 403 status
@@ -151,7 +151,7 @@ public interface RulesResource {
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
-    void updateTenantDefinition(@BeanParam RequestParams requestParams, @PathParam("id") Long id, TenantRulesDefinition rulesDefinition);
+    void updateTenantDefinition(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid TenantRulesDefinition rulesDefinition);
 
     /**
      * Delete a tenant rules definition. The superuser can delete rules of all realms, a 403 status
@@ -178,7 +178,7 @@ public interface RulesResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
-    void createAssetDefinition(@BeanParam RequestParams requestParams, AssetRulesDefinition rulesDefinition);
+    void createAssetDefinition(@BeanParam RequestParams requestParams, @Valid AssetRulesDefinition rulesDefinition);
 
     /**
      * Retrieve an asset rules definition. The superuser can retrieve rules of all assets, a 403 status
@@ -202,7 +202,7 @@ public interface RulesResource {
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
-    void updateAssetDefinition(@BeanParam RequestParams requestParams, @PathParam("id") Long id, AssetRulesDefinition rulesDefinition);
+    void updateAssetDefinition(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid AssetRulesDefinition rulesDefinition);
 
     /**
      * Delete an asset rules definition. The superuser can delete rules of all assets, a 403 status

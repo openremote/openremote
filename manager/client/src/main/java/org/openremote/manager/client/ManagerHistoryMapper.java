@@ -32,9 +32,11 @@ import org.openremote.manager.client.assets.asset.AssetPlace;
 import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
 import org.openremote.manager.client.map.MapAssetPlace;
 import org.openremote.manager.client.map.MapTenantPlace;
+import org.openremote.manager.client.rules.asset.AssetRulesEditorPlace;
 import org.openremote.manager.client.rules.asset.AssetRulesListPlace;
 import org.openremote.manager.client.rules.global.GlobalRulesEditorPlace;
 import org.openremote.manager.client.rules.global.GlobalRulesListPlace;
+import org.openremote.manager.client.rules.tenant.TenantRulesEditorPlace;
 import org.openremote.manager.client.rules.tenant.TenantRulesListPlace;
 import org.openremote.manager.client.user.UserAccountPlace;
 
@@ -48,7 +50,9 @@ import org.openremote.manager.client.user.UserAccountPlace;
         GlobalRulesListPlace.Tokenizer.class,
         GlobalRulesEditorPlace.Tokenizer.class,
         TenantRulesListPlace.Tokenizer.class,
+        TenantRulesEditorPlace.Tokenizer.class,
         AssetRulesListPlace.Tokenizer.class,
+        AssetRulesEditorPlace.Tokenizer.class,
         AppsPlace.Tokenizer.class,
         AdminOverviewPlace.Tokenizer.class,
         AdminTenantsPlace.Tokenizer.class,

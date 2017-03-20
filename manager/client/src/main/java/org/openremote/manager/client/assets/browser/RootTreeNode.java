@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -19,21 +19,18 @@
  */
 package org.openremote.manager.client.assets.browser;
 
-import com.google.gwt.view.client.AsyncDataProvider;
-import com.google.gwt.view.client.HasData;
+/**
+ * The invisible root of the tree (should be only one of those) is special, it
+ * has no label because it should not be shown at all.
+ */
+public class RootTreeNode extends BrowserTreeNode {
 
-class AssetTreeDataProvider extends AsyncDataProvider<BrowserTreeNode> {
-
-    final protected AssetBrowser.Presenter presenter;
-    final protected BrowserTreeNode parent;
-
-    public AssetTreeDataProvider(AssetBrowser.Presenter presenter, BrowserTreeNode parent) {
-        this.presenter = presenter;
-        this.parent = parent;
+    public RootTreeNode() {
+        super(null);
     }
 
     @Override
-    protected void onRangeChanged(HasData<BrowserTreeNode> display) {
-        presenter.loadNodeChildren(parent, display);
+    public String getId() {
+        return null;
     }
 }

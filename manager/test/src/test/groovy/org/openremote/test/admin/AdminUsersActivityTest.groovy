@@ -175,6 +175,8 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
                 {},
                 {},
                 {},
+                {},
+                {},
                 {
                     adminUsersActivity = new AdminUsersActivity(
                             environment, adminView, adminNavigationPresenter, adminUsersView, tenantResource, tenantArrayMapper, userResource, userArrayMapper

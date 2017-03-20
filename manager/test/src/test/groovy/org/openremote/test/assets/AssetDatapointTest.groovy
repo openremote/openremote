@@ -34,8 +34,11 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
 
         when: "a simulated sensor changes its value several times"
         conditions = new PollingConditions(timeout: 3, initialDelay: 2)
+        sleep(10)
         simulatorProtocol.putState(managerDemoSetup.thingId, "light1PowerConsumption", Json.create(13.3))
+        sleep(10)
         simulatorProtocol.putState(managerDemoSetup.thingId, "light1PowerConsumption", Json.create(14.4))
+        sleep(10)
         simulatorProtocol.putState(managerDemoSetup.thingId, "light1PowerConsumption", Json.create(15.5))
 
         then: "the thing attribute value should be updated and the datapoints stored"

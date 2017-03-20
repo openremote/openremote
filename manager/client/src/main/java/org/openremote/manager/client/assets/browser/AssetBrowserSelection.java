@@ -25,34 +25,14 @@ import org.openremote.model.Event;
 @JsonIgnoreType
 public class AssetBrowserSelection extends Event {
 
-    final protected AssetTreeNode selectedNode;
+    final protected BrowserTreeNode selectedNode;
 
-    public AssetBrowserSelection() {
-        selectedNode = null;
-    }
-
-    public AssetBrowserSelection(AssetTreeNode selectedNode) {
+    public AssetBrowserSelection(BrowserTreeNode selectedNode) {
         this.selectedNode = selectedNode;
     }
 
-    public AssetTreeNode getSelectedNode() {
+    public BrowserTreeNode getSelectedNode() {
         return selectedNode;
-    }
-
-    public boolean isClearedSelection() {
-        return getSelectedNode() == null;
-    }
-
-    public boolean isTenantSelection() {
-        return getSelectedNode() != null
-            && getSelectedNode().isTenant();
-    }
-
-    public boolean isAssetSelection() {
-        return getSelectedNode() != null
-            && !getSelectedNode().isTenant()
-            && !getSelectedNode().isRoot()
-            && !getSelectedNode().isTemporary();
     }
 
     @Override
