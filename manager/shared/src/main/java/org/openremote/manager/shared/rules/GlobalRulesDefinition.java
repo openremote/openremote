@@ -37,6 +37,10 @@ public class GlobalRulesDefinition extends RulesDefinition {
         super(id, version, createdOn, lastModified, name, enabled);
     }
 
+    public GlobalRulesDefinition(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules) {
+        super(id, version, createdOn, lastModified, name, enabled, rules);
+    }
+
     public GlobalRulesDefinition(String name, String rules) {
         super(name, rules);
     }

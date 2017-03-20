@@ -33,13 +33,18 @@ import java.util.Date;
 public class TenantRulesDefinition extends RulesDefinition {
 
     @Column(name = "REALM_ID", nullable = false)
-    public String realmId;
+    protected String realmId;
 
     public TenantRulesDefinition() {
     }
 
     public TenantRulesDefinition(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String realmId) {
         super(id, version, createdOn, lastModified, name, enabled);
+        this.realmId = realmId;
+    }
+
+    public TenantRulesDefinition(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, String realmId) {
+        super(id, version, createdOn, lastModified, name, enabled, rules);
         this.realmId = realmId;
     }
 

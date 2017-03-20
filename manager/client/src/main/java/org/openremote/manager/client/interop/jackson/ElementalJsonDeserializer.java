@@ -22,14 +22,11 @@ package org.openremote.manager.client.interop.jackson;
 import com.github.nmorel.gwtjackson.client.JsonDeserializationContext;
 import com.github.nmorel.gwtjackson.client.JsonDeserializer;
 import com.github.nmorel.gwtjackson.client.JsonDeserializerParameters;
-import com.github.nmorel.gwtjackson.client.stream.JsonToken;
-import com.google.gwt.core.client.JsArrayInteger;
 import elemental.json.Json;
-import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 
 /**
- * This can only (safely) deserialize JSON Objects and Arrays, not primitives.
+ * This can only (safely) deserialize JSON ObjectIs and Arrays, not primitives.
  */
 public class ElementalJsonDeserializer extends JsonDeserializer<JsonValue> {
 

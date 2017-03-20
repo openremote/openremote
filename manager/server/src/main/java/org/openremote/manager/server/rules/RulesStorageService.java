@@ -31,12 +31,8 @@ import org.openremote.manager.shared.rules.RulesDefinition;
 import org.openremote.manager.shared.rules.TenantRulesDefinition;
 
 import java.util.List;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 public class RulesStorageService implements ContainerService {
-
-    private static final Logger LOG = Logger.getLogger(RulesStorageService.class.getName());
 
     protected PersistenceService persistenceService;
     protected ManagerIdentityService identityService;
@@ -81,20 +77,6 @@ public class RulesStorageService implements ContainerService {
         );
     }
 
-    public List<GlobalRulesDefinition> findEnabledGlobalDefinitions() {
-        return persistenceService.doReturningTransaction(entityManager ->
-                entityManager.createQuery(
-                        "select new org.openremote.manager.shared.rules.GlobalRulesDefinition(" +
-                                "rd.id, rd.version, rd.createdOn, rd.lastModified, rd.name, rd.enabled" +
-                                ") " +
-                                "from GlobalRulesDefinition rd " +
-                                "where rd.enabled = TRUE " +
-                                "order by rd.createdOn asc",
-                        GlobalRulesDefinition.class
-                ).getResultList()
-        );
-    }
-
     /**
      * The {@link RulesDefinition#rules} property is not populated for this query to avoid
      * loading multiple large strings.
@@ -110,20 +92,6 @@ public class RulesStorageService implements ContainerService {
                     "order by rd.createdOn asc",
                 TenantRulesDefinition.class
             ).setParameter("realmId", realmId).getResultList()
-        );
-    }
-
-    public List<TenantRulesDefinition> findAllEnabledTenantDefinitions() {
-        return persistenceService.doReturningTransaction(entityManager ->
-                entityManager.createQuery(
-                        "select new org.openremote.manager.shared.rules.TenantRulesDefinition(" +
-                                "rd.id, rd.version, rd.createdOn, rd.lastModified, rd.name, rd.enabled, rd.realmId" +
-                                ") " +
-                                "from TenantRulesDefinition rd " +
-                                "where rd.enabled = TRUE " +
-                                "order by rd.createdOn asc",
-                        TenantRulesDefinition.class
-                ).getResultList()
         );
     }
 
@@ -145,72 +113,86 @@ public class RulesStorageService implements ContainerService {
         );
     }
 
-    public List<AssetRulesDefinition> findAllEnabledAssetDefinitions() {
+    /**
+     * @return Fully populated rules definitions including {@link RulesDefinition#rules} property.
+     */
+    public List<GlobalRulesDefinition> findEnabledGlobalDefinitions() {
         return persistenceService.doReturningTransaction(entityManager ->
-                entityManager.createQuery(
-                        "select new org.openremote.manager.shared.rules.AssetRulesDefinition(" +
-                                "rd.id, rd.version, rd.createdOn, rd.lastModified, rd.name, rd.enabled, rd.assetId" +
-                                ") " +
-                                "from AssetRulesDefinition rd, Asset a " +
-                                "where rd.assetId = a.id " +
-                                "and rd.enabled = TRUE " +
-                                "order by rd.createdOn asc",
-                        AssetRulesDefinition.class
-                ).getResultList()
+            entityManager.createQuery(
+                "select new org.openremote.manager.shared.rules.GlobalRulesDefinition(" +
+                    "rd.id, rd.version, rd.createdOn, rd.lastModified, rd.name, rd.enabled, rd.rules" +
+                    ") " +
+                    "from GlobalRulesDefinition rd " +
+                    "where rd.enabled = true",
+                GlobalRulesDefinition.class
+            ).getResultList()
         );
     }
 
-    public List<AssetRulesDefinition> findAllEnabledAssetDefinitions(String realmId) {
+    /**
+     * @return Fully populated rules definitions including {@link RulesDefinition#rules} property.
+     */
+    public List<TenantRulesDefinition> findEnabledTenantDefinitions() {
         return persistenceService.doReturningTransaction(entityManager ->
-                entityManager.createQuery(
-                        "select new org.openremote.manager.shared.rules.AssetRulesDefinition(" +
-                                "rd.id, rd.version, rd.createdOn, rd.lastModified, rd.name, rd.enabled, rd.assetId" +
-                                ") " +
-                                "from AssetRulesDefinition rd, Asset a " +
-                                "where rd.assetId = a.id and a.realmId = :realmId " +
-                                "and rd.enabled = TRUE " +
-                                "order by rd.createdOn asc",
-                        AssetRulesDefinition.class
-                ).setParameter("realmId", realmId).getResultList()
+            entityManager.createQuery(
+                "select new org.openremote.manager.shared.rules.TenantRulesDefinition(" +
+                    "rd.id, rd.version, rd.createdOn, rd.lastModified, rd.name, rd.enabled, rd.rules, rd.realmId" +
+                    ") " +
+                    "from TenantRulesDefinition rd " +
+                    "where rd.enabled = true",
+                TenantRulesDefinition.class
+            ).getResultList()
         );
     }
 
-    // TODO: Update this as order is not guaranteed
-    protected <T extends RulesDefinition> String[] getRules(List<T> rulesDefinitions, Class<T> clazz) {
-        if (rulesDefinitions == null || rulesDefinitions.size() == 0) {
-            return new String[0];
-        }
-        
-        List<Long> ids = rulesDefinitions
-                .stream()
-                .map(rd -> rd.getId())
-                .collect(Collectors.toList());
-        return persistenceService.doReturningTransaction(entityManager -> {
-            List<String> results = entityManager.createQuery(
-                    "select rd.rules " +
-                            "from " + clazz.getSimpleName() + " rd " +
-                            "where rd.id IN :ids")
-                    .setParameter("ids", ids)
-                    .getResultList();
-            return results
-                    .toArray(new String[0]);
-        });
+    /**
+     * @return Fully populated rules definitions including {@link RulesDefinition#rules} property.
+     */
+    public List<TenantRulesDefinition> findEnabledTenantDefinitions(String realmId) {
+        return persistenceService.doReturningTransaction(entityManager ->
+            entityManager.createQuery(
+                "select new org.openremote.manager.shared.rules.TenantRulesDefinition(" +
+                    "rd.id, rd.version, rd.createdOn, rd.lastModified, rd.name, rd.enabled, rd.rules, rd.realmId" +
+                    ") " +
+                    "from TenantRulesDefinition rd " +
+                    "where rd.enabled = true and rd.realmId = :realmId",
+                TenantRulesDefinition.class
+            ).setParameter("realmId", realmId).getResultList()
+        );
     }
 
-    protected <T extends RulesDefinition> String getRules(T rulesDefinition, Class<T> clazz) {
-        if (rulesDefinition == null) {
-            return null;
-        }
+    /**
+     * @return Fully populated rules definitions including {@link RulesDefinition#rules} property.
+     */
+    public List<AssetRulesDefinition> findEnabledAssetDefinitions() {
+        return persistenceService.doReturningTransaction(entityManager ->
+            entityManager.createQuery(
+                "select new org.openremote.manager.shared.rules.AssetRulesDefinition(" +
+                    "rd.id, rd.version, rd.createdOn, rd.lastModified, rd.name, rd.enabled, rd.rules, rd.assetId, a.realmId" +
+                    ") " +
+                    "from AssetRulesDefinition rd, Asset a " +
+                    "where rd.assetId = a.id " +
+                    "and rd.enabled = true ",
+                AssetRulesDefinition.class
+            ).getResultList()
+        );
+    }
 
-        return persistenceService.doReturningTransaction(entityManager -> {
-            List<String> results = entityManager.createQuery(
-                    "select rd.rules " +
-                            "from " + clazz.getSimpleName() + " rd " +
-                            "where rd.id = :id")
-                    .setParameter("id", rulesDefinition.getId())
-                    .getResultList();
-            return results.isEmpty() ? null : results.get(0);
-        });
+    /**
+     * @return Fully populated rules definitions including {@link RulesDefinition#rules} property.
+     */
+    public List<AssetRulesDefinition> findEnabledAssetDefinitions(String realmId) {
+        return persistenceService.doReturningTransaction(entityManager ->
+            entityManager.createQuery(
+                "select new org.openremote.manager.shared.rules.AssetRulesDefinition(" +
+                    "rd.id, rd.version, rd.createdOn, rd.lastModified, rd.name, rd.enabled, rd.rules, rd.assetId, a.realmId" +
+                    ") " +
+                    "from AssetRulesDefinition rd, Asset a " +
+                    "where rd.assetId = a.id and a.realmId = :realmId " +
+                    "and rd.enabled = true",
+                AssetRulesDefinition.class
+            ).setParameter("realmId", realmId).getResultList()
+        );
     }
 
     public <T extends RulesDefinition> T findById(Class<T> rulesDefinitionType, Long id) {

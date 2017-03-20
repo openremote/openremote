@@ -21,7 +21,6 @@ import org.openremote.model.AttributeRef
 import org.openremote.model.AttributeState
 import org.openremote.model.Constants
 import org.openremote.test.ManagerContainerTrait
-import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -76,7 +75,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         and: "two tenant rules engines should have been created and be running"
         conditions.eventually {
             assert rulesService.tenantDeployments.size() == 2
-            def masterEngine = rulesService.tenantDeployments.get(Constants.MASTER_REALM)
+            def masterEngine = rulesService.tenantDeployments.get(masterRealmId)
             def customerAEngine = rulesService.tenantDeployments.get(customerARealmId)
             assert masterEngine != null
             assert masterEngine.isRunning()
@@ -86,7 +85,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         and: "the tenant rules engines should have the demo tenant rules definition"
         conditions.eventually {
-            def masterEngine = rulesService.tenantDeployments.get(Constants.MASTER_REALM)
+            def masterEngine = rulesService.tenantDeployments.get(masterRealmId)
             def customerAEngine = rulesService.tenantDeployments.get(customerARealmId)
             assert masterEngine.allRulesDefinitions.length == 1
             assert masterEngine.allRulesDefinitions[0].enabled
@@ -311,7 +310,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         conditions.eventually {
             assert rulesService.tenantDeployments.size() == 2
             assert rulesService.assetDeployments.size() == 0
-            def masterEngine = rulesService.tenantDeployments.get(Constants.MASTER_REALM)
+            def masterEngine = rulesService.tenantDeployments.get(masterRealmId)
             def customerBEngine = rulesService.tenantDeployments.get(customerBRealmId)
             assert masterEngine != null
             assert masterEngine.isRunning()
@@ -395,21 +394,22 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         def identityService = container.getService(ManagerIdentityService.class)
         def rulesStorageService = container.getService(RulesStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
+        def masterRealmId = getActiveTenantRealmId(container, MASTER_REALM)
         def customerARealmId = identityService.getActiveTenantRealmId("customerA")
         RulesDeployment globalEngine, masterEngine, customerAEngine, smartHomeEngine, apartment1Engine, apartment3Engine
-        List<String> globalEngineFiredRules = [];
-        List<String> masterEngineFiredRules = [];
-        List<String> customerAEngineFiredRules = [];
-        List<String> smartHomeEngineFiredRules = [];
-        List<String> apartment1EngineFiredRules = [];
-        List<String> apartment3EngineFiredRules = [];
+        List<String> globalEngineFiredRules = []
+        List<String> masterEngineFiredRules = []
+        List<String> customerAEngineFiredRules = []
+        List<String> smartHomeEngineFiredRules = []
+        List<String> apartment1EngineFiredRules = []
+        List<String> apartment3EngineFiredRules = []
 
         expect: "the rule engines to become available and be running"
         conditions.eventually {
             globalEngine = rulesService.globalDeployment
             assert globalEngine != null
             assert globalEngine.isRunning()
-            masterEngine = rulesService.tenantDeployments.get(MASTER_REALM)
+            masterEngine = rulesService.tenantDeployments.get(masterRealmId)
             assert masterEngine != null
             assert masterEngine.isRunning()
             customerAEngine = rulesService.tenantDeployments.get(customerARealmId)

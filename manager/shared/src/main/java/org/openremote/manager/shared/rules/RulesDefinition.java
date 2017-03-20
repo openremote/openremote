@@ -87,12 +87,17 @@ public abstract class RulesDefinition {
     }
 
     public RulesDefinition(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled) {
+        this(id, version, createdOn, lastModified, name, enabled, null);
+    }
+
+    public RulesDefinition(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules) {
         this.id = id;
         this.version = version;
         this.createdOn = createdOn;
         this.lastModified = lastModified;
         this.name = name;
         this.enabled = enabled;
+        this.rules = rules;
     }
 
     public RulesDefinition(String name, String rules) {

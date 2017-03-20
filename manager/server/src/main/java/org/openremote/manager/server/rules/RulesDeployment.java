@@ -19,8 +19,6 @@
  */
 package org.openremote.manager.server.rules;
 
-import org.drools.core.marshalling.impl.ProtobufMessages;
-import org.kie.api.KieBase;
 import org.kie.api.KieServices;
 import org.kie.api.builder.KieBuilder;
 import org.kie.api.builder.KieFileSystem;
@@ -39,7 +37,6 @@ import org.kie.api.runtime.rule.FactHandle;
 import org.openremote.container.Container;
 import org.openremote.manager.server.asset.AssetUpdate;
 import org.openremote.manager.shared.rules.RulesDefinition;
-import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeRef;
 
 import java.lang.reflect.Array;
@@ -52,6 +49,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class RulesDeployment<T extends RulesDefinition> {
+
     public static final Logger LOG = Logger.getLogger(RulesDeployment.class.getName());
     private static final int AUTO_START_DELAY_SECONDS = 2;
     private static Long counter = 1L;
@@ -85,7 +83,7 @@ public class RulesDeployment<T extends RulesDefinition> {
     }
 
     public synchronized T[] getAllRulesDefinitions() {
-        T[] arr = (T[])Array.newInstance(clazz, 0);
+        T[] arr = (T[]) Array.newInstance(clazz, 0);
         return ruleDefinitions.values().toArray(arr);
     }
 
@@ -121,16 +119,14 @@ public class RulesDeployment<T extends RulesDefinition> {
      * Adds the rules definition to the engine by first stopping the engine and
      * then deploying new rules and then restarting the engine (after
      * {@link #AUTO_START_DELAY_SECONDS}) to prevent excessive engine stop/start.
-     *
+     * <p>
      * If engine is in an error state (one of the rules definitions failed to deploy
      * then the engine will not restart).
      *
-     * @param rulesDefinition
-     * @param rules
      * @return Whether or not the rules definition deployed successfully
      */
-    public synchronized boolean insertRulesDefinition(T rulesDefinition, String rules) {
-        if (rulesDefinition == null || rules == null || rules.isEmpty()) {
+    public synchronized boolean insertRulesDefinition(T rulesDefinition) {
+        if (rulesDefinition == null || rulesDefinition.getRules() == null || rulesDefinition.getRules().isEmpty()) {
             // Assume it's a success if deploying an empty rules definition
             LOG.finest("Rules definition is empty so no rules to deploy");
             return true;
@@ -145,14 +141,14 @@ public class RulesDeployment<T extends RulesDefinition> {
             releaseId = kieServices.newReleaseId("org.openremote", "openremote-kiemodule", versionId);
             KieBaseModel kieBaseModel = kieModuleModel.newKieBaseModel("OpenRemoteKModule");
             kieBaseModel
-                    .setDefault(true)
-                    .setEqualsBehavior(EqualityBehaviorOption.EQUALITY)
-                    .setEventProcessingMode(EventProcessingOption.STREAM)
-                    .newKieSessionModel("ksession1")
-                    .setDefault(true)
-                    .setType(KieSessionModel.KieSessionType.STATEFUL);
-                    // TODO: Provide mechanism for configuring the clock per rule engine
-                    //.setClockType();
+                .setDefault(true)
+                .setEqualsBehavior(EqualityBehaviorOption.EQUALITY)
+                .setEventProcessingMode(EventProcessingOption.STREAM)
+                .newKieSessionModel("ksession1")
+                .setDefault(true)
+                .setType(KieSessionModel.KieSessionType.STATEFUL);
+            // TODO: Provide mechanism for configuring the clock per rule engine
+            //.setClockType();
             kfs = kieServices.newKieFileSystem();
             kfs.generateAndWritePomXML(releaseId);
             kfs.writeKModuleXML(kieModuleModel.toXML());
@@ -191,7 +187,7 @@ public class RulesDeployment<T extends RulesDefinition> {
 
         try {
             // ID will be unique within the scope of a rules deployment as rules definition will all be of same type
-            kfs.write("src/main/resources/" + rulesDefinition.getId() + ".drl", rules);
+            kfs.write("src/main/resources/" + rulesDefinition.getId() + ".drl", rulesDefinition.getRules());
             KieBuilder kieBuilder = kieServices.newKieBuilder(kfs).buildAll();
 
             if (kieBuilder.getResults().hasMessages(Message.Level.ERROR)) {
@@ -207,11 +203,7 @@ public class RulesDeployment<T extends RulesDefinition> {
                 addSuccessful = true;
             }
         } catch (Throwable t) {
-            LOG.log(
-                    Level.SEVERE,
-                    "Error in rule definition: " + rulesDefinition,
-                    t
-            );
+            LOG.log(Level.SEVERE, "Error in rule definition: " + rulesDefinition, t);
             // If compilation failed, remove rules from FileSystem so it won't fail on next pass here if any
             kfs.delete("src/main/resources/" + rulesDefinition.getId());
         }
@@ -264,9 +256,9 @@ public class RulesDeployment<T extends RulesDefinition> {
 
         // Update status of each rules definition
         boolean anyFailed = ruleDefinitions
-                .values()
-                .stream()
-                .anyMatch(rd -> rd.getDeploymentStatus() == RulesDefinition.DeploymentStatus.FAILED);
+            .values()
+            .stream()
+            .anyMatch(rd -> rd.getDeploymentStatus() == RulesDefinition.DeploymentStatus.FAILED);
 
         error = anyFailed;
 
@@ -392,10 +384,10 @@ public class RulesDeployment<T extends RulesDefinition> {
     @Override
     public synchronized String toString() {
         return getClass().getSimpleName() + "{" +
-                "name='" + id + '\'' +
-                "running='" + running + '\'' +
-                "error='" + error + '\'' +
-                ", definitions='" + Arrays.toString(ruleDefinitions.values().stream().map(rd -> rd.getName() + ": " + rd.getDeploymentStatus()).toArray(size -> new String[size])) + '\'' +
-                '}';
+            "name='" + id + '\'' +
+            ", running='" + running + '\'' +
+            ", error='" + error + '\'' +
+            ", definitions='" + Arrays.toString(ruleDefinitions.values().stream().map(rd -> rd.getName() + ": " + rd.getDeploymentStatus()).toArray(String[]::new)) + '\'' +
+            '}';
     }
 }
