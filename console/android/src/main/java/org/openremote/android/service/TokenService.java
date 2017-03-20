@@ -31,7 +31,7 @@ public class TokenService {
 
     public TokenService(Context context) {
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("http://192.168.0.143:8080")
+                .baseUrl(context.getString(R.string.OR_BASE_SERVER))
                 .addConverterFactory(JacksonConverterFactory.create())
                 .build();
 

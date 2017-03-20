@@ -62,6 +62,13 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+
+        unregisterReceiver(connectivityChangeReceiver);
+    }
+
+    @Override
     protected void onSaveInstanceState(Bundle outState) {
         webView.saveState(outState);
     }

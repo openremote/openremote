@@ -3,6 +3,8 @@ package org.openremote.test.user
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.notification.NotificationService
+import org.openremote.manager.shared.notification.AlertAction
+import org.openremote.manager.shared.notification.AlertNotification
 import org.openremote.manager.shared.notification.NotificationResource
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -30,6 +32,17 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
                 "testuser1"
         ).token
 
+        def notificationAlert = new AlertNotification(
+                title: "The Title",
+                actions: [new AlertAction(
+                        name: "TEST_ACTION",
+                        type: "TEST"
+                )],
+                appUrl: '#test',
+                message: "Message",
+
+        )
+
         and: "the notification resource"
         def client = createClient(container).build()
         def serverUri = serverUri(serverPort)
@@ -48,6 +61,15 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
 
         then: "the updated token should be in the database"
         notificationService.findDeviceToken("device456", keycloakDemoSetup.testuser1Id) == "token789"
+        notificationService.findAllTokenForUser(keycloakDemoSetup.testuser1Id).size() == 2
+
+        when: "the Alert Notification is stored"
+        notificationResource.storeAlertNotification(notificationAlert)
+
+        then: "it should be one alert notification pending"
+        notificationResource.getAlertNotification().size() == 1
+
+        //TODO: delete alertResource //then should be 0 pending
 
         cleanup: "the server should be stopped"
         stopContainer(container)

@@ -24,10 +24,11 @@ import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.http.SuccessStatusCode;
 
 import javax.annotation.security.RolesAllowed;
-import javax.ws.rs.BeanParam;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
+import javax.ws.rs.*;
+
+import java.util.List;
+
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("notification")
 @JsType(isNative = true)
@@ -40,4 +41,17 @@ public interface NotificationResource {
     void storeDeviceToken(@BeanParam RequestParams requestParams,
                           @FormParam("device_id") String deviceId,
                           @FormParam("token") String token);
+
+    @POST
+    @Path("alert")
+    @SuccessStatusCode(204)
+    @Consumes(APPLICATION_JSON)
+    @RolesAllowed({"write:user"})
+    void storeAlertNotification(AlertNotification alertNotification);
+
+    @GET
+    @Path("alert")
+    @Produces(APPLICATION_JSON)
+    @RolesAllowed({"write:user"})
+    List<AlertNotification> getAlertNotification();
 }

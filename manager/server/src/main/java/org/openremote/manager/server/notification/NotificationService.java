@@ -23,7 +23,12 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.shared.notification.AlertNotification;
+import org.openremote.manager.shared.notification.DeliveryStatus;
 
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class NotificationService implements ContainerService {
@@ -37,7 +42,7 @@ public class NotificationService implements ContainerService {
         this.persistenceService = container.getService(PersistenceService.class);
 
         container.getService(WebService.class).getApiSingletons().add(
-            new NotificationResourceImpl(this)
+                new NotificationResourceImpl(this)
         );
     }
 
@@ -62,6 +67,37 @@ public class NotificationService implements ContainerService {
             DeviceNotificationToken.Id id = new DeviceNotificationToken.Id(deviceId, userId);
             DeviceNotificationToken deviceToken = entityManager.find(DeviceNotificationToken.class, id);
             return deviceToken != null ? deviceToken.getToken() : null;
+        });
+    }
+
+    public List<DeviceNotificationToken> findAllTokenForUser(String userId) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            Query query = entityManager.createQuery("SELECT dnt FROM DeviceNotificationToken dnt WHERE dnt.id.userId =:userId");
+            query.setParameter("userId", userId);
+            return query.getResultList();
+        });
+    }
+
+    public void storeAlertNotification(String userId, AlertNotification alertNotification) {
+        alertNotification.setUserId(userId);
+        alertNotification.setDeliveryStatus(DeliveryStatus.PENDING);
+        persistenceService.doTransaction((EntityManager entityManager) -> {
+            AlertNotification notification = entityManager.merge(alertNotification);
+            List<DeviceNotificationToken> allTokenForUser = findAllTokenForUser(userId);
+            for (DeviceNotificationToken notificationToken : allTokenForUser) {
+                //TODO: Send FCM notification
+            }
+        });
+
+
+    }
+
+    public List<AlertNotification> getPendingAlertForUserId(String userId) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            Query query = entityManager.createQuery("SELECT an FROM AlertNotification an WHERE an.userId =:userId and an.deliveryStatus =:deliveryStatus");
+            query.setParameter("userId", userId);
+            query.setParameter("deliveryStatus",DeliveryStatus.PENDING);
+            return query.getResultList();
         });
     }
 }
