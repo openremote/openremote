@@ -427,7 +427,6 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         }
 
         when: "rule execution loggers are attached to the engines"
-        conditions = new PollingConditions(timeout: 10)
         attachRuleExecutionLogger(globalEngine, globalEngineFiredRules)
         attachRuleExecutionLogger(masterEngine, masterEngineFiredRules)
         attachRuleExecutionLogger(customerAEngine, customerAEngineFiredRules)
@@ -470,8 +469,13 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
             assert apartment3EngineFiredRules.size() == 0
         }
 
-        when: "an attribute event with the same value as current value is pushed into the system"
-        conditions = new PollingConditions(timeout: 10)
+        when: "the engine counters are reset"
+        globalEngineFiredRules.clear();
+        customerAEngineFiredRules.clear();
+        smartHomeEngineFiredRules.clear();
+        apartment1EngineFiredRules.clear();
+
+        and: "an attribute event with the same value as current value is pushed into the system"
         apartment1LivingRoomDemoBooleanChange = new AttributeEvent(
                 new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoBoolean"), Json.create(false))
         )
@@ -479,55 +483,82 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         then: "the rule engines in scope should fire the 'All' rule but not the 'All changed' rule"
         conditions.eventually {
-            assert globalEngineFiredRules.size() == 3
-            assert globalEngineFiredRules.findIndexValues {it == "All"}.size() == 2
-            assert globalEngineFiredRules.findIndexValues {it == "All changed"}.size() == 1
+            assert globalEngineFiredRules.size() == 1
+            assert globalEngineFiredRules[0] == "All"
             assert masterEngineFiredRules.size() == 0
-            assert customerAEngineFiredRules.size() == 3
-            assert customerAEngineFiredRules.findIndexValues {it == "All"}.size() == 2
-            assert customerAEngineFiredRules.findIndexValues {it == "All changed"}.size() == 1
-            assert smartHomeEngineFiredRules.size() == 3
-            assert smartHomeEngineFiredRules.findIndexValues {it == "All"}.size() == 2
-            assert smartHomeEngineFiredRules.findIndexValues {it == "All changed"}.size() == 1
-            assert apartment1EngineFiredRules.size() == 3
-            assert apartment1EngineFiredRules.findIndexValues {it == "All"}.size() == 2
-            assert apartment1EngineFiredRules.findIndexValues {it == "All changed"}.size() == 1
+            assert customerAEngineFiredRules.size() == 1
+            assert customerAEngineFiredRules[0] == "All"
+            assert smartHomeEngineFiredRules.size() == 1
+            assert smartHomeEngineFiredRules[0] == "All"
+            assert apartment1EngineFiredRules.size() == 1
+            assert apartment1EngineFiredRules[0] == "All"
             assert apartment3EngineFiredRules.size() == 0
         }
 
-        when: "a living room specific rule definition is loaded into apartment 3"
-        conditions = new PollingConditions(timeout: 10)
+        when: "a living room specific rule definition is loaded into apartment 1 and 3"
         def inputStream = getClass().getResourceAsStream("/org/openremote/test/rules/Livingroom.drl")
         def rules = IOUtils.toString(inputStream, "UTF-8")
-        def rulesDefinition = new AssetRulesDefinition("Some lounge asset rules", managerDemoSetup.apartment3Id, rules)
-        rulesStorageService.merge(rulesDefinition)
+        def apartment1RulesDefinition = new AssetRulesDefinition("Some apartment 1 lounge asset rules", managerDemoSetup.apartment1Id, rules)
+        def apartment3RulesDefinition = new AssetRulesDefinition("Some apartment 3 lounge asset rules", managerDemoSetup.apartment3Id, rules)
+        rulesStorageService.merge(apartment1RulesDefinition)
+        rulesStorageService.merge(apartment3RulesDefinition)
 
-        then: "the apartment 3 rule engine should have loaded the new rule definition and restarted"
+        then: "apartments 1 and 3 rule engines should have loaded the new rule definition and restarted"
         conditions.eventually {
+            assert apartment1Engine != null
+            assert apartment1Engine.isRunning()
             assert apartment3Engine != null
             assert apartment3Engine.isRunning()
+            assert apartment1Engine.allRulesDefinitions.length == 2
+            assert apartment1Engine.allRulesDefinitions[0].enabled
+            assert apartment1Engine.allRulesDefinitions[0].name == "Some apartment 1 demo rules"
+            assert apartment1Engine.allRulesDefinitions[0].deploymentStatus == DeploymentStatus.DEPLOYED
+            assert apartment1Engine.allRulesDefinitions[1].enabled
+            assert apartment1Engine.allRulesDefinitions[1].name == "Some apartment 1 lounge asset rules"
+            assert apartment1Engine.allRulesDefinitions[1].deploymentStatus == DeploymentStatus.DEPLOYED
             assert apartment3Engine.allRulesDefinitions.length == 2
             assert apartment3Engine.allRulesDefinitions[0].enabled
             assert apartment3Engine.allRulesDefinitions[0].name == "Some apartment 3 demo rules"
             assert apartment3Engine.allRulesDefinitions[0].deploymentStatus == DeploymentStatus.DEPLOYED
             assert apartment3Engine.allRulesDefinitions[1].enabled
-            assert apartment3Engine.allRulesDefinitions[1].name == "Some lounge asset rules"
+            assert apartment3Engine.allRulesDefinitions[1].name == "Some apartment 3 lounge asset rules"
             assert apartment3Engine.allRulesDefinitions[1].deploymentStatus == DeploymentStatus.DEPLOYED
         }
 
-        when: "an apartment 3 living room attribute event occurs"
-        conditions = new PollingConditions(timeout: 10)
+        when: "the engine counters are reset and engine loggers are re-attached"
+        globalEngineFiredRules.clear();
+        customerAEngineFiredRules.clear();
+        smartHomeEngineFiredRules.clear();
+        apartment1EngineFiredRules.clear();
+        attachRuleExecutionLogger(apartment1Engine, apartment1EngineFiredRules)
         attachRuleExecutionLogger(apartment3Engine, apartment3EngineFiredRules)
+
+        and: "an apartment 3 living room attribute event occurs"
         def apartment3LivingRoomDemoStringChange = new AttributeEvent(
                 new AttributeState(new AttributeRef(managerDemoSetup.apartment3LivingroomId, "demoString"), Json.create("demo2"))
         )
         assetProcessingService.processClientUpdate(apartment3LivingRoomDemoStringChange)
 
-        then: "the apartment 3 rule engine should have fired the 'All', 'All changed' and 'Living Room All' rules"
+        then: "the apartment 3 rule engine should have fired the 'All', 'All changed' and 'Living Room All' rules but apartment 1 shouldn't have fired any"
         conditions.eventually {
             def expectedFiredRules = ["All", "All changed", "Living Room All"]
             assert apartment3EngineFiredRules.size() == 3
             assert apartment3EngineFiredRules.containsAll(expectedFiredRules)
+            assert apartment1EngineFiredRules.size() == 0
+        }
+
+        when: "an apartment 1 living room attribute event occurs"
+        def apartment1LivingRoomDemoStringChange = new AttributeEvent(
+                new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoDecimal"), Json.create(22.5))
+        )
+        assetProcessingService.processClientUpdate(apartment1LivingRoomDemoStringChange)
+
+        then: "the apartment 1 rule engine should have fired the 'All', 'All changed' and 'Living Room All' rules but apartment 3 shouldn't have fired any"
+        conditions.eventually {
+            def expectedFiredRules = ["All", "All changed", "Living Room All"]
+            assert apartment1EngineFiredRules.size() == 3
+            assert apartment1EngineFiredRules.containsAll(expectedFiredRules)
+            assert apartment3EngineFiredRules.size() == 3
         }
     }
 

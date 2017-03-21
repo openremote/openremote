@@ -11,3 +11,10 @@ when
 then
   return;
 end
+
+rule "Living Room Thermostat"
+when
+  $e: AssetUpdate(entityName == "Livingroom Thermostat")
+then
+  return;
+end
