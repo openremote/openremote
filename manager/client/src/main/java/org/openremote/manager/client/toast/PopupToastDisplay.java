@@ -229,17 +229,23 @@ public class PopupToastDisplay implements ToastDisplay {
             getElement().getStyle().setZIndex(1000);
             setWidget(content);
 
-            boolean isInfo = toast.getType() == Toast.Type.INFO;
-
             content.setStyleName("layout horizontal center");
             content.addStyleName(widgetStyle.Toast());
-            if (isInfo) {
-                content.addStyleName(widgetStyle.ToastInfo());
-            } else {
-                content.addStyleName(widgetStyle.ToastFailure());
-            }
 
-            content.add(new MessagesIcon(isInfo));
+            switch (toast.getType()) {
+                case INFO:
+                    content.addStyleName(widgetStyle.ToastInfo());
+                    content.add(new MessagesIcon("info-circle"));
+                    break;
+                case SUCCESS:
+                    content.addStyleName(widgetStyle.ToastSuccess());
+                    content.add(new MessagesIcon("check"));
+                    break;
+                default:
+                    content.addStyleName(widgetStyle.ToastFailure());
+                    content.add(new MessagesIcon("warning"));
+                    break;
+            }
 
             Label text = new Label(toast.getText());
             content.add(text);

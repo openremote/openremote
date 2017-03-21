@@ -34,6 +34,7 @@ import org.openremote.manager.client.app.dialog.ConfirmationDialog;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetSelector;
 import org.openremote.manager.client.assets.browser.BrowserTreeNode;
+import org.openremote.manager.client.assets.editor.AttributesEditor;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.widget.*;
 import org.openremote.manager.client.widget.PushButton;
@@ -206,12 +207,14 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
 
         // Restore initial state of view
         sidebarContainer.clear();
+        nameGroup.setError(false);
         nameInput.setReadOnly(false);
         nameInput.setValue(null);
         createdOnOutput.setText("");
         parentAssetSelector.init();
         locationOutput.setText("");
         centerMapButton.setEnabled(false);
+        typeGroup.setError(false);
         typeListBox.setValue(null);
         typeListBox.setAcceptableValues(new ArrayList<>());
         typeListBox.setEnabled(true);
@@ -249,6 +252,11 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     }
 
     @Override
+    public void setNameError(boolean error) {
+        nameGroup.setError(error);
+    }
+
+    @Override
     public void setCreatedOn(Date createdOn) {
         createdOnOutput.setText(
             createdOn != null ? DateTimeFormat.getFormat(Constants.DEFAULT_DATETIME_FORMAT).format(createdOn) : ""
@@ -276,9 +284,12 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
 
     @Override
     public void initialiseMap(JsonObject mapOptions) {
-        mapWidget.initialise(mapOptions);
+        mapWidget.setVisible(false);
+        mapWidget.initialise(mapOptions, () -> {
+            mapWidget.resize();
+            mapWidget.setVisible(true);
+        });
         mapWidget.addNavigationControl();
-        mapWidget.resize();
 
         mapWidget.setClickListener((lng, lat) -> {
             presenter.onMapClicked(lng, lat);
@@ -363,6 +374,11 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     @Override
     public String getType() {
         return typeInput.getValue().length() > 0 ? typeInput.getValue() : null;
+    }
+
+    @Override
+    public void setTypeError(boolean error) {
+        typeGroup.setError(error);
     }
 
     @Override

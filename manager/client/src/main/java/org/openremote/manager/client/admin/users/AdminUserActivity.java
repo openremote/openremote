@@ -23,17 +23,17 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.admin.*;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
+import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
-import org.openremote.model.Consumer;
-import org.openremote.model.Runnable;
-import org.openremote.manager.client.event.ShowInfoEvent;
 import org.openremote.manager.shared.security.Credential;
 import org.openremote.manager.shared.security.Role;
 import org.openremote.manager.shared.security.User;
 import org.openremote.manager.shared.security.UserResource;
 import org.openremote.manager.shared.validation.ConstraintViolation;
+import org.openremote.model.Consumer;
+import org.openremote.model.Runnable;
 
 import javax.inject.Inject;
 import java.util.*;
@@ -191,7 +191,7 @@ public class AdminUserActivity
             204,
             () -> {
                 adminContent.setFormBusy(false);
-                environment.getEventBus().dispatch(new ShowInfoEvent(
+                environment.getEventBus().dispatch(new ShowSuccessEvent(
                     environment.getMessages().userCreated(user.getUsername())
                 ));
                 environment.getPlaceController().goTo(new AdminUsersPlace(realm));
@@ -284,7 +284,7 @@ public class AdminUserActivity
                     204,
                     () -> {
                         adminContent.setFormBusy(false);
-                        environment.getEventBus().dispatch(new ShowInfoEvent(
+                        environment.getEventBus().dispatch(new ShowSuccessEvent(
                             environment.getMessages().userDeleted(user.getUsername())
                         ));
                         environment.getPlaceController().goTo(new AdminUsersPlace(realm));

@@ -136,6 +136,13 @@ public abstract class AbstractValueHolder<T extends AbstractValueHolder> {
     }
 
     /**
+     * Use this in Javascript, can't do null checks on JsonValue.
+     */
+    public void setValueUnchecked(JsonValue value) {
+        jsonObject.put(VALUE_FIELD_NAME, value);
+    }
+
+    /**
      * Override to implement constraints.
      */
     protected boolean isValidValue(JsonValue value) {

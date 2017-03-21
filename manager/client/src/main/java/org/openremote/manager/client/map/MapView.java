@@ -57,7 +57,7 @@ public interface MapView extends IsWidget {
 
     boolean isMapInitialised();
 
-    void refresh();
+    void showInfo(String text);
 
     void showFeaturesAll(GeoJSON mapFeatures);
 

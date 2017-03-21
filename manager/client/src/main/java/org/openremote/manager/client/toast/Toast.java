@@ -21,10 +21,11 @@ package org.openremote.manager.client.toast;
 
 public class Toast {
 
-    public static final int INFO_DEFAULT_MAX_AGE = 5000;
+    public static final int DEFAULT_MAX_AGE = 5000;
 
     public enum Type {
         INFO,
+        SUCCESS,
         FAILURE,
         DURABLE_FAILURE
     }

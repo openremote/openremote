@@ -29,6 +29,9 @@ import org.openremote.model.Consumer;
 import org.openremote.manager.shared.http.*;
 import org.openremote.manager.shared.validation.ConstraintViolationReport;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -91,7 +94,16 @@ public class RequestServiceImpl implements RequestService {
                               int expectedStatusCode,
                               Consumer<OUT> onResponse,
                               Consumer<RequestException> onException) {
-        execute(entityReader, null, onRequest, expectedStatusCode, onResponse, onException);
+        execute(entityReader, null, onRequest, Collections.singletonList(expectedStatusCode), onResponse, onException);
+    }
+
+    @Override
+    public <OUT> void execute(EntityReader<OUT> entityReader,
+                              Consumer<RequestParams<OUT>> onRequest,
+                              Integer[] expectedStatusCodes,
+                              Consumer<OUT> onResponse,
+                              Consumer<RequestException> onException) {
+        execute(entityReader, null, onRequest, Arrays.asList(expectedStatusCodes), onResponse, onException);
     }
 
     @Override
@@ -100,14 +112,14 @@ public class RequestServiceImpl implements RequestService {
                              int expectedStatusCode,
                              Runnable onResponse,
                              Consumer<RequestException> onException) {
-        this.execute(null, entityWriter, onRequest, expectedStatusCode, out -> onResponse.run(), onException);
+        this.execute(null, entityWriter, onRequest, Collections.singletonList(expectedStatusCode), out -> onResponse.run(), onException);
     }
 
     @Override
     public <IN, OUT> void execute(EntityReader<OUT> entityReader,
                                   EntityWriter<IN> entityWriter,
                                   Consumer<RequestParams<OUT>> onRequest,
-                                  int expectedStatusCode,
+                                  List<Integer> expectedStatusCodes,
                                   Consumer<OUT> onResponse,
                                   Consumer<RequestException> onException) {
 
@@ -156,8 +168,8 @@ public class RequestServiceImpl implements RequestService {
                         LOG.fine("Received response status: " + responseCode);
                     }
 
-                    if (expectedStatusCode != ANY_STATUS_CODE && responseCode != expectedStatusCode) {
-                        onException.accept(new UnexpectedStatusRequestException(responseCode, expectedStatusCode));
+                    if (!expectedStatusCodes.contains(ANY_STATUS_CODE) && !expectedStatusCodes.contains(responseCode)) {
+                        onException.accept(new UnexpectedStatusRequestException(responseCode, expectedStatusCodes));
                         return;
                     }
 

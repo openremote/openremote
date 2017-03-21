@@ -27,7 +27,6 @@ import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.assets.browser.AssetTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
-import org.openremote.manager.client.event.ShowInfoEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
@@ -37,6 +36,8 @@ import org.openremote.manager.shared.map.MapResource;
 import org.openremote.model.asset.Asset;
 
 import javax.inject.Inject;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Collection;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
@@ -98,9 +99,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
             }
         }));
 
-        if (view.isMapInitialised()) {
-            view.refresh();
-        } else {
+        if (!view.isMapInitialised()) {
             environment.getRequestService().execute(
                 jsonObjectMapper,
                 mapResource::getSettings,
@@ -127,9 +126,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
                 }
             });
         } else if (realm != null) {
-            environment.getEventBus().dispatch(
-                new ShowInfoEvent("TODO: Showing all assets on map for tenant: " + realm)
-            );
+            view.showInfo("TODO: Tenant map not implemented");
         }
     }
 
@@ -141,12 +138,30 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
 
     protected void showAssetOnMap() {
         if (asset != null && asset.getCoordinates() != null) {
+            if (asset.getCreatedOn() != null && asset.getCoordinates().length == 2) {
+                // TODO: This assumes 0 is Lng and 1 is Lat, which is true for PostGIS backend
+                // TODO: Because Lat/Lng is the 'right way', we flip it here for display
+                // TODO: Rounding to 5 decimals gives us precision of about 1 meter, should be enough
+                view.showInfo("Location: " + (
+                        round(asset.getCoordinates()[1], 5) + " " + round(asset.getCoordinates()[0], 5) + " Lat|Lng"
+                    )
+                );
+            } else {
+                view.showInfo(null);
+            }
             view.showFeaturesSelection(MapView.getFeature(asset));
             view.flyTo(asset.getCoordinates());
+        } else {
+            view.showInfo(null);
         }
     }
 
     protected void hideAssetOnMap() {
         view.hideFeaturesSelection();
     }
+
+    protected String round(double d, int places) {
+        return new BigDecimal(d).setScale(places, RoundingMode.HALF_UP).toString();
+    }
+
 }

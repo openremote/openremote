@@ -90,6 +90,21 @@ import static org.openremote.model.asset.AssetType.THING;
  * successful.
  * <p>
  * 4c. Should "forceUpdate" be the default behavior?
+ *
+ * The {@link Protocol} could be in the processing chain (via {@link org.openremote.manager.server.agent.AgentService})
+ * and then the protocol can decide whether to mark the asset update as handled or not so then attribute
+ * event either makes it to the {@link AssetStorageService} or it doesn't...the protocol should know what is
+ * best (i.e. it should know if the sensor value will update instantly or in N seconds).
+ *
+ * Question then is where in the processing chain should it go, the following would give rules the opportunity
+ * to prevent the attribute change which could be nice:
+ *
+ * <ul>
+ * <li>{@link RulesService}</li>
+ * <li>{@link org.openremote.manager.server.agent.AgentService}  (only process thing attribute events linked to protocols)</li>
+ * <li>{@link AssetStorageService}</li>
+ * <li>{@link AssetDatapointService}</li>
+ * </ul>
  */
 public class AssetProcessingService extends RouteBuilder implements ContainerService {
 

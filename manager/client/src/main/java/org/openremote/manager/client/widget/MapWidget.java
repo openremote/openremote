@@ -137,7 +137,7 @@ public class MapWidget extends ComplexPanel {
 
     public MapWidget(JsonObject mapOptions) {
         this();
-        initialise(mapOptions);
+        initialise(mapOptions, null);
     }
 
     public MapWidget() {
@@ -152,7 +152,7 @@ public class MapWidget extends ComplexPanel {
         return mapboxMap != null;
     }
 
-    public void initialise(JsonObject mapOptions) {
+    public void initialise(JsonObject mapOptions, Runnable onLoad) {
         if (mapOptions == null) {
             return;
         }
@@ -172,6 +172,8 @@ public class MapWidget extends ComplexPanel {
         mapboxMap = new MapboxMap(mapOptions);
 
         mapboxMap.on(EventType.LOAD, eventData -> {
+            if (onLoad != null)
+                onLoad.run();
             addFeaturesOnLoad();
         });
 

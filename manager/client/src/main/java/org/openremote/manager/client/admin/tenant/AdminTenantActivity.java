@@ -25,14 +25,14 @@ import org.openremote.manager.client.admin.AbstractAdminActivity;
 import org.openremote.manager.client.admin.AdminView;
 import org.openremote.manager.client.admin.TenantMapper;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
+import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
-import org.openremote.model.Consumer;
-import org.openremote.manager.client.event.ShowInfoEvent;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.manager.shared.validation.ConstraintViolation;
+import org.openremote.model.Consumer;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -69,7 +69,7 @@ public class AdminTenantActivity
     protected Tenant tenant;
 
     @Inject
-    public AdminTenantActivity(Environment environment, 
+    public AdminTenantActivity(Environment environment,
                                AdminView adminView,
                                AdminNavigation.Presenter adminNavigationPresenter,
                                AdminTenant view,
@@ -135,7 +135,7 @@ public class AdminTenantActivity
             204,
             () -> {
                 adminContent.setFormBusy(false);
-                environment.getEventBus().dispatch(new ShowInfoEvent(
+                environment.getEventBus().dispatch(new ShowSuccessEvent(
                     environment.getMessages().tenantCreated(tenant.getDisplayName())
                 ));
                 environment.getPlaceController().goTo(new AdminTenantsPlace());
@@ -181,7 +181,7 @@ public class AdminTenantActivity
                     204,
                     () -> {
                         adminContent.setFormBusy(false);
-                        environment.getEventBus().dispatch(new ShowInfoEvent(
+                        environment.getEventBus().dispatch(new ShowSuccessEvent(
                             environment.getMessages().tenantDeleted(tenant.getDisplayName())
                         ));
                         environment.getPlaceController().goTo(new AdminTenantsPlace());

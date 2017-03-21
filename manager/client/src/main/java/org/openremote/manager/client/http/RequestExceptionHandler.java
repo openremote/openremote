@@ -27,6 +27,8 @@ import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.shared.http.*;
 import org.openremote.manager.shared.validation.ConstraintViolation;
 
+import java.util.Arrays;
+
 public interface RequestExceptionHandler {
 
     static void handleRequestException(RequestException ex,
@@ -42,7 +44,10 @@ public interface RequestExceptionHandler {
             msg = managerMessages.noResponseFromServer();
         } else if (ex instanceof UnexpectedStatusRequestException) {
             UnexpectedStatusRequestException unexpectedEx = (UnexpectedStatusRequestException) ex;
-            msg = managerMessages.unexpectedResponseStatus(unexpectedEx.getStatusCode(), unexpectedEx.getExpectedStatusCode());
+            msg = managerMessages.unexpectedResponseStatus(
+                unexpectedEx.getStatusCode(),
+                Arrays.toString(unexpectedEx.getExpectedStatusCodes().toArray())
+            );
         } else if (ex instanceof BadRequestException) {
             msg = managerMessages.badRequest();
         } else if (ex instanceof ConflictRequestException) {

@@ -20,26 +20,33 @@
 package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
+import elemental.json.Json;
+import elemental.json.JsonValue;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.admin.TenantMapper;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.browser.*;
+import org.openremote.manager.client.assets.editor.AttributesEditor;
 import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
 import org.openremote.manager.client.event.ShowFailureEvent;
-import org.openremote.manager.client.event.ShowInfoEvent;
+import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
 import org.openremote.manager.client.map.MapView;
 import org.openremote.manager.client.mvp.AppActivity;
-import org.openremote.manager.client.widget.AttributesEditor;
 import org.openremote.manager.shared.asset.AssetResource;
+import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
+import org.openremote.manager.shared.validation.ConstraintViolation;
+import org.openremote.model.Attribute;
 import org.openremote.model.Attributes;
+import org.openremote.model.Consumer;
+import org.openremote.model.Runnable;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetType;
 
@@ -60,6 +67,7 @@ public class AssetActivity
     final JsonObjectMapper jsonObjectMapper;
     final TenantResource tenantResource;
     final TenantMapper tenantMapper;
+    final protected Consumer<ConstraintViolation[]> validationErrorHandler;
 
     String assetId;
     Asset asset;
@@ -85,6 +93,21 @@ public class AssetActivity
         this.jsonObjectMapper = jsonObjectMapper;
         this.tenantResource = tenantResource;
         this.tenantMapper = tenantMapper;
+
+        validationErrorHandler = violations -> {
+            for (ConstraintViolation violation : violations) {
+                if (violation.getPath() != null) {
+                    if (violation.getPath().endsWith("name")) {
+                        view.setNameError(true);
+                    } else if (violation.getPath().endsWith("type")) {
+                        view.setTypeError(true);
+                    }
+                }
+                view.addFormMessageError(violation.getMessage());
+            }
+            view.setFormBusy(false);
+        };
+
     }
 
     @Override
@@ -202,13 +225,13 @@ public class AssetActivity
             204,
             () -> {
                 view.setFormBusy(false);
-                environment.getEventBus().dispatch(new ShowInfoEvent(
+                environment.getEventBus().dispatch(new ShowSuccessEvent(
                     environment.getMessages().assetUpdated(asset.getName())
                 ));
                 assetBrowserPresenter.refresh(asset.getParentId() == null);
                 environment.getPlaceController().goTo(new AssetPlace(assetId));
             },
-            ex -> handleRequestException(ex, environment)
+            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
         );
     }
 
@@ -223,13 +246,13 @@ public class AssetActivity
             204,
             () -> {
                 view.setFormBusy(false);
-                environment.getEventBus().dispatch(new ShowInfoEvent(
+                environment.getEventBus().dispatch(new ShowSuccessEvent(
                     environment.getMessages().assetCreated(asset.getName())
                 ));
                 assetBrowserPresenter.refresh(asset.getParentId() == null);
                 environment.getPlaceController().goTo(new AssetsDashboardPlace());
             },
-            ex -> handleRequestException(ex, environment)
+            ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
         );
     }
 
@@ -246,13 +269,13 @@ public class AssetActivity
                     204,
                     () -> {
                         view.setFormBusy(false);
-                        environment.getEventBus().dispatch(new ShowInfoEvent(
+                        environment.getEventBus().dispatch(new ShowSuccessEvent(
                             environment.getMessages().assetDeleted(asset.getName())
                         ));
                         assetBrowserPresenter.refresh(asset.getParentId() == null);
                         environment.getPlaceController().goTo(new AssetsDashboardPlace());
                     },
-                    ex -> handleRequestException(ex, environment)
+                    ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
                 );
             }
         );
@@ -356,15 +379,46 @@ public class AssetActivity
                 break;
             */
             default:
-                attributesEditor = new AttributesEditor<>(
+                attributesEditor = new AttributesEditor<AttributesEditor.Style>(
                     environment,
                     view.getAttributesEditorContainer(),
                     new Attributes(
                         assetId == null
                             ? asset.getWellKnownType().getDefaultAttributes()
                             : asset.getAttributes()
-                    )
-                );
+                    ),
+                    assetId == null
+                ) {
+                    @Override
+                    protected void readAttributeValue(Attribute attribute, Runnable onSuccess) {
+                        environment.getRequestService().execute(
+                            value -> value,
+                            requestParams -> assetResource.readAttributeValue(requestParams, assetId, attribute.getName()),
+                            new Integer[]{200, 204},
+                            result -> {
+                                JsonValue value = Json.instance().parse(result);
+                                // TODO Bug in Elemental, can't check this value for null etc.
+                                attribute.setValueUnchecked(value);
+                                showInfo(container.getMessages().attributeValueRefreshed(attribute.getName()));
+                                onSuccess.run();
+                            },
+                            ex -> handleRequestException(ex, environment)
+                        );
+                    }
+
+                    @Override
+                    protected void writeAttributeValue(Attribute attribute) {
+                        environment.getRequestService().execute(
+                            (EntityWriter<String>) value -> value,
+                            requestParams -> assetResource.writeAttributeValue(
+                                requestParams, assetId, attribute.getName(), attribute.getValue().toJson()
+                            ),
+                            204,
+                            () -> showSuccess(container.getMessages().attributeValueStored(attribute.getName())),
+                            ex -> handleRequestException(ex, environment)
+                        );
+                    }
+                };
         }
         view.setAttributesEditor(attributesEditor);
         attributesEditor.build();
@@ -391,7 +445,13 @@ public class AssetActivity
     }
 
     protected void clearViewMessages() {
-        // TODO: Validation
         view.clearFormMessages();
+        clearViewFieldErrors();
     }
+
+    protected void clearViewFieldErrors() {
+        view.setNameError(false);
+        view.setTypeError(false);
+    }
+
 }

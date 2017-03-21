@@ -360,12 +360,12 @@ public class RulesDeployment<T extends RulesDefinition> {
             boolean isUpdate = factHandle != null;
             factHandle = knowledgeSession.insert(assetUpdate);
             attributeFacts.put(attributeRef, factHandle);
-            LOG.finest(isUpdate ? "Updated: " : "Inserted: " + assetUpdate);
+            LOG.finest("On " + this + ", fact " + (isUpdate ? "updated: " : "inserted: " + assetUpdate));
         }
 
-        LOG.finest("Firing all rules");
+        LOG.finest("On " + this + ", firing all rules");
         int fireCount = knowledgeSession.fireAllRules();
-        LOG.finest("Fired rules count = " + fireCount);
+        LOG.finest("On " + this + ", fired rules count: " + fireCount);
 
         // TODO: Prevent run away fact creation (not sure how we can do this reliably as facts can be generated in rule RHS)
         // MR: this is heuristic number which comes good for finding facts memory leak in the drl file.
@@ -373,9 +373,9 @@ public class RulesDeployment<T extends RulesDefinition> {
         // are usually few 100 facts in drl's I'm working with, putting arbitrary number gives me early feedback
         // that there is potential problem. Perhaps we should think about a better solution to this problem?
         newFactCount = knowledgeSession.getFactCount();
-        LOG.finest("New fact count: " + newFactCount);
+        LOG.finest("On " + this + ", new fact count: " + newFactCount);
         if (newFactCount != currentFactCount) {
-            LOG.finest("Fact count changed from " + currentFactCount + " to " + newFactCount + " on: " + assetUpdate);
+            LOG.finest("On " + this + ", fact count changed from " + currentFactCount + " to " + newFactCount + " after: " + assetUpdate);
         }
 
         currentFactCount = newFactCount;
@@ -384,7 +384,7 @@ public class RulesDeployment<T extends RulesDefinition> {
     @Override
     public synchronized String toString() {
         return getClass().getSimpleName() + "{" +
-            "name='" + id + '\'' +
+            "id='" + id + '\'' +
             ", running='" + running + '\'' +
             ", error='" + error + '\'' +
             ", definitions='" + Arrays.toString(ruleDefinitions.values().stream().map(rd -> rd.getName() + ": " + rd.getDeploymentStatus()).toArray(String[]::new)) + '\'' +

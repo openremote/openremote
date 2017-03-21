@@ -24,14 +24,10 @@
             z-index: 1;
         }
 
-        .infoPanel1 {
-            width: 8em;
-            height: 5em;
-        }
-
-        .infoPanel2 {
-            width: 15em;
-            height: 6em;
+        .infoPanel {
+            width: 20em;
+            height: 2em;
+            text-align: center;
         }
     </ui:style>
 

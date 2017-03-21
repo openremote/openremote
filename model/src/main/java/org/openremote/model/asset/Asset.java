@@ -24,6 +24,7 @@ import org.openremote.model.IdentifiableEntity;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.util.*;
 
 import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
@@ -193,7 +194,6 @@ public class Asset implements IdentifiableEntity {
     @Column(name = "OBJ_VERSION", nullable = false)
     protected long version;
 
-    @NotNull
     @Column(name = "REALM_ID", nullable = false)
     protected String realmId;
 
@@ -202,11 +202,13 @@ public class Asset implements IdentifiableEntity {
     @org.hibernate.annotations.CreationTimestamp
     protected Date createdOn = new Date();
 
-    @NotNull
-    @Column(name = "NAME", nullable = false)
+    @NotNull(message = "{Asset.name.NotNull}")
+    @Size(min = 3, max = 1023, message = "{Asset.name.Size}")
+    @Column(name = "NAME", nullable = false, length = 1023)
     protected String name;
 
-    @NotNull
+    @NotNull(message = "{Asset.type.NotNull}")
+    @Size(min = 3, max = 255, message = "{Asset.type.Size}")
     @Column(name = "ASSET_TYPE", nullable = false, updatable = false)
     protected String type;
 

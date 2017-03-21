@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,14 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.widget;
+package org.openremote.manager.client.event;
 
-import com.google.gwt.user.client.ui.InlineLabel;
+import com.fasterxml.jackson.annotation.JsonIgnoreType;
+import org.openremote.model.Event;
 
-public class MessagesIcon extends InlineLabel {
+@JsonIgnoreType
+public class ShowSuccessEvent extends Event {
 
-    public MessagesIcon(String icon) {
-        setStyleName("fa fa-" + icon);
-        addStyleName("or-MessagesIcon");
+    public String text;
+
+    public ShowSuccessEvent() {
+    }
+
+    public ShowSuccessEvent(String text) {
+        this.text = text;
+    }
+
+    public String getText() {
+        return text;
     }
 }

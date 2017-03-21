@@ -25,6 +25,7 @@ import com.google.gwt.place.shared.PlaceHistoryHandler;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.inject.Provider;
+import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.toast.Toast;
 import org.openremote.manager.client.toast.Toasts;
@@ -62,7 +63,14 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
         eventBus.register(
             ShowInfoEvent.class,
             event -> toasts.showToast(
-                new Toast(Toast.Type.INFO, event.getText(), Toast.INFO_DEFAULT_MAX_AGE)
+                new Toast(Toast.Type.INFO, event.getText(), Toast.DEFAULT_MAX_AGE)
+            )
+        );
+
+        eventBus.register(
+            ShowSuccessEvent.class,
+            event -> toasts.showToast(
+                new Toast(Toast.Type.SUCCESS, event.getText(), Toast.DEFAULT_MAX_AGE)
             )
         );
 

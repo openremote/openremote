@@ -24,7 +24,7 @@ import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
-import org.openremote.manager.client.event.ShowInfoEvent;
+import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
@@ -187,7 +187,7 @@ public abstract class AbstractRulesEditorActivity<T extends RulesDefinition, PLA
     protected Runnable afterCreateRunnable() {
         return () -> {
             view.setFormBusy(false);
-            environment.getEventBus().dispatch(new ShowInfoEvent(
+            environment.getEventBus().dispatch(new ShowSuccessEvent(
                 environment.getMessages().rulesetCreated(rulesDefinition.getName())
             ));
             afterCreate();
@@ -197,7 +197,7 @@ public abstract class AbstractRulesEditorActivity<T extends RulesDefinition, PLA
     protected Runnable afterUpdateRunnable() {
         return () -> {
             view.setFormBusy(false);
-            environment.getEventBus().dispatch(new ShowInfoEvent(
+            environment.getEventBus().dispatch(new ShowSuccessEvent(
                 environment.getMessages().rulesetUpdated(rulesDefinition.getName())
             ));
             afterUpdate();
@@ -207,7 +207,7 @@ public abstract class AbstractRulesEditorActivity<T extends RulesDefinition, PLA
     protected Runnable afterDeleteRunnable() {
         return () -> {
             view.setFormBusy(false);
-            environment.getEventBus().dispatch(new ShowInfoEvent(
+            environment.getEventBus().dispatch(new ShowSuccessEvent(
                 environment.getMessages().rulesetDeleted(rulesDefinition.getName())
             ));
             afterDelete();

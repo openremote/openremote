@@ -381,4 +381,9 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             }
         }
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{}";
+    }
 }

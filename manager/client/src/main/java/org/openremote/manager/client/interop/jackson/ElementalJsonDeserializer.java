@@ -26,7 +26,7 @@ import elemental.json.Json;
 import elemental.json.JsonValue;
 
 /**
- * This can only (safely) deserialize JSON ObjectIs and Arrays, not primitives.
+ * This can only (safely) deserialize JSON Objects and Arrays, not primitives.
  */
 public class ElementalJsonDeserializer extends JsonDeserializer<JsonValue> {
 

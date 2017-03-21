@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.server.asset;
 
+import elemental.json.JsonType;
 import elemental.json.JsonValue;
 import org.hibernate.Session;
 import org.openremote.container.Container;
@@ -27,9 +28,7 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.agent.AgentAttributes;
 import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.model.AttributeRef;
-import org.openremote.model.Consumer;
-import org.openremote.model.Function;
+import org.openremote.model.*;
 import org.openremote.model.asset.*;
 import org.postgresql.util.PGobject;
 
@@ -40,12 +39,15 @@ import java.sql.ResultSet;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import static org.openremote.model.asset.AssetType.AGENT;
 
 public class AssetStorageService implements ContainerService, Consumer<AssetUpdate> {
 
     private static final Logger LOG = Logger.getLogger(AssetStorageService.class.getName());
+
+    protected final Pattern attributeNamePattern = Pattern.compile(Attribute.ATTRIBUTE_NAME_PATTERN);
 
     protected PersistenceService persistenceService;
     protected ManagerIdentityService managerIdentityService;
@@ -254,7 +256,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
 
     /**
      * @return The current stored asset state.
-     * @throws IllegalArgumentException if the realm or parent is invalid.
+     * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
      */
     public ServerAsset merge(ServerAsset asset) {
         return persistenceService.doReturningTransaction(em -> {
@@ -272,6 +274,15 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
                 // ... the parent can not be a child of the asset
                 if (Arrays.asList(parent.getPath()).contains(asset.getId()))
                     throw new IllegalStateException("Invalid parent");
+            }
+            // Validate attribute names
+            Attributes attributes = new Attributes(asset.getAttributes());
+            for (Attribute attribute : attributes.get()) {
+                if (!attributeNamePattern.matcher(attribute.getName()).matches()) {
+                    throw new IllegalStateException(
+                        "Invalid attribute name (must match '" + Attribute.ATTRIBUTE_NAME_PATTERN + "'): " + attribute.getName()
+                    );
+                }
             }
             return em.merge(asset);
         });
@@ -351,15 +362,24 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
                         " where ID = ? and ATTRIBUTES -> ? is not null";
                 try (PreparedStatement statement = connection.prepareStatement(update)) {
 
-                    // Bind the value
+                    // Bind the value (and check we don't have a SQL injection hole in attribute name!)
+                    if (!attributeNamePattern.matcher(attributeName).matches()) {
+                        LOG.fine(
+                            "Invalid attribute name (must match '" + Attribute.ATTRIBUTE_NAME_PATTERN + "'): " + attributeName
+                        );
+                        return false;
+                    }
+
                     Array attributeValuePath = connection.createArrayOf(
                         "text",
                         new String[]{attributeName, "value"}
                     );
                     statement.setArray(1, attributeValuePath);
+
                     PGobject pgJsonValue = new PGobject();
                     pgJsonValue.setType("jsonb");
-                    pgJsonValue.setValue(value.toJson());
+                    // Careful, do not set Java null (as returned by value.toJson()) here! It will erase your whole SQL column!
+                    pgJsonValue.setValue(value == null || value.getType() == JsonType.NULL ? "null" : value.toJson());
                     statement.setObject(2, pgJsonValue);
 
                     // Bind the value timestamp

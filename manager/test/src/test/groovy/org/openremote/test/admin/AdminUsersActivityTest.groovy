@@ -12,6 +12,7 @@ import org.openremote.manager.client.admin.navigation.AdminNavigation
 import org.openremote.manager.client.admin.navigation.AdminNavigationPresenter
 import org.openremote.manager.client.admin.users.*
 import org.openremote.manager.client.event.GoToPlaceEvent
+import org.openremote.manager.client.event.ShowSuccessEvent
 import org.openremote.manager.client.event.WillGoToPlaceEvent
 import org.openremote.manager.client.event.bus.EventListener
 import org.openremote.manager.client.i18n.ManagerMessages
@@ -19,12 +20,11 @@ import org.openremote.manager.client.service.EventService
 import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.service.SecurityService
 import org.openremote.manager.client.style.WidgetStyle
-import org.openremote.model.Event
-import org.openremote.manager.client.event.ShowInfoEvent
 import org.openremote.manager.shared.http.EntityReader
 import org.openremote.manager.shared.security.*
 import org.openremote.manager.shared.validation.ConstraintViolationReport
 import org.openremote.model.Consumer
+import org.openremote.model.Event
 import org.openremote.model.Runnable
 import org.openremote.test.ClientObjectMapper
 import org.openremote.test.GwtClientTrait
@@ -33,8 +33,9 @@ import spock.lang.Specification
 import spock.util.concurrent.BlockingVariables
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.*
-import static org.openremote.model.Constants.*;
+import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
+import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.model.Constants.*
 
 class AdminUsersActivityTest extends Specification implements ManagerContainerTrait, GwtClientTrait {
 
@@ -92,7 +93,8 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
                 "TestMessagePasswordsMustMatch"
             }
             passwordUpdated() >> {
-                "TestMessagePasswordUpdated" }
+                "TestMessagePasswordUpdated"
+            }
 
             requestFailed(_) >> {
                 "TestMessageRequestFailed:" + it[0]
@@ -349,7 +351,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         }
 
         and: "The success toast should be shown"
-        result.appEvents[0] instanceof ShowInfoEvent
+        result.appEvents[0] instanceof ShowSuccessEvent
         result.appEvents[0].text == "TestMessageUserCreated:testuser"
 
         and: "The form should be cleared, the activity stopped"
@@ -576,7 +578,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         1 * adminUserView.setPasswordError(false)
 
         and: "The success toast should be shown"
-        result.appEvents[0] instanceof ShowInfoEvent
+        result.appEvents[0] instanceof ShowSuccessEvent
         result.appEvents[0].text == "TestMessageUserDeleted:testuser"
 
         and: "The form should be cleared, the activity stopped"

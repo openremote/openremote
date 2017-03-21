@@ -17,10 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.widget;
+package org.openremote.manager.client.assets.editor;
 
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.event.dom.client.DomEvent;
+import com.google.gwt.regexp.shared.RegExp;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.InsertPanel;
 import com.google.gwt.user.client.ui.IsWidget;
@@ -29,12 +30,14 @@ import elemental.json.Json;
 import elemental.json.JsonType;
 import elemental.json.JsonValue;
 import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.event.ShowFailureEvent;
+import org.openremote.manager.client.event.ShowInfoEvent;
+import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.util.CollectionsUtil;
 import org.openremote.manager.client.util.JsUtil;
 import org.openremote.manager.client.util.TextUtil;
-import org.openremote.manager.client.event.ShowFailureEvent;
-import org.openremote.manager.client.event.ShowInfoEvent;
+import org.openremote.manager.client.widget.*;
 import org.openremote.model.*;
 import org.openremote.model.Runnable;
 import org.openremote.model.asset.AssetMeta;
@@ -43,10 +46,11 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.logging.Logger;
 
-
-public class AttributesEditor<S extends AttributesEditor.Style> {
+public abstract class AttributesEditor<S extends AttributesEditor.Style> {
 
     private static final Logger LOG = Logger.getLogger(AttributesEditor.class.getName());
+
+    protected final RegExp attributeNameRegExp = RegExp.compile(Attribute.ATTRIBUTE_NAME_PATTERN);
 
     public interface Container<S extends AttributesEditor.Style> {
         FormView getFormView();
@@ -76,13 +80,15 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
     final protected Environment environment;
     final protected Container<S> container;
     final protected Attributes attributes;
+    final protected boolean isCreate;
     protected FormGroup attributeEditorGroup;
     final protected LinkedHashMap<Attribute, FormGroup> attributeGroups = new LinkedHashMap<>();
 
-    public AttributesEditor(Environment environment, Container<S> container, Attributes attributes) {
+    public AttributesEditor(Environment environment, Container<S> container, Attributes attributes, boolean isCreate) {
         this.environment = environment;
         this.container = container;
         this.attributes = attributes;
+        this.isCreate = isCreate;
     }
 
     public Attributes getAttributes() {
@@ -126,6 +132,12 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
 
     /* ####################################################################### */
 
+    abstract protected void readAttributeValue(Attribute attribute, Runnable onSuccess);
+
+    abstract protected void writeAttributeValue(Attribute attribute);
+
+    /* ####################################################################### */
+
     protected FormGroup createAttributeEditor() {
         Attribute attribute = new Attribute();
 
@@ -166,7 +178,13 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         FormInputText nameInput = createFormInputText(container.getStyle().stringEditor());
         nameInput.setPlaceholder(environment.getMessages().attributeName());
         nameInput.addValueChangeHandler(event -> {
-            attribute.setName(event.getValue());
+            if (!attributeNameRegExp.test(event.getValue())) {
+                formGroup.setError(true);
+                showValidationError(environment.getMessages().invalidAttributeName());
+            } else {
+                formGroup.setError(false);
+                attribute.setName(event.getValue());
+            }
         });
         formField.add(nameInput);
 
@@ -194,16 +212,44 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         FormLabel formLabel = createAttributeLabel(attribute);
         formGroup.addFormLabel(formLabel);
 
-        FormField formField = new FormField();
-        formGroup.addFormField(formField);
-        formField.add(createEditor(attribute, formGroup));
-
         MetaItem description = AssetMeta.getFirst(attribute, AssetMeta.DESCRIPTION);
         if (description != null) {
             formGroup.addInfolabel(new Label(description.getValueAsString()));
         }
 
         FormGroupActions formGroupActions = new FormGroupActions();
+
+        FormField formField = new FormField();
+
+        IsWidget editor = createEditor(attribute, formGroup);
+
+        // Allow direct read/write of attribute value if asset exists in database and we understand attribute type
+        if (!isCreate && editor != null) {
+            FormButton writeValueButton = new FormButton();
+            writeValueButton.setText(container.getMessages().write());
+            writeValueButton.setPrimary(true);
+            writeValueButton.setIcon("cloud-upload");
+            writeValueButton.addClickHandler(clickEvent -> {
+                writeAttributeValue(attribute);
+            });
+            formGroupActions.add(writeValueButton);
+
+            FormButton readValueButton = new FormButton();
+            readValueButton.setText(container.getMessages().read());
+            readValueButton.setIcon("cloud-download");
+            readValueButton.addClickHandler(clickEvent -> {
+                readAttributeValue(attribute, () -> {
+                    if (formField.getWidgetCount() > 0) {
+                        formField.getWidget(0).removeFromParent();
+                    }
+                    IsWidget refreshedEditor = createEditor(attribute, formGroup);
+                    if (refreshedEditor == null)
+                        refreshedEditor = createUnsupportedEditor(attribute);
+                    formField.add(refreshedEditor);
+                });
+            });
+            formGroupActions.add(readValueButton);
+        }
 
         FormButton deleteButton = new FormButton();
         deleteButton.setText(container.getMessages().deleteAttribute());
@@ -214,8 +260,12 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         });
         formGroupActions.add(deleteButton);
 
-        formGroup.addFormGroupActions(formGroupActions);
+        if (editor == null)
+            editor = createUnsupportedEditor(attribute);
+        formField.add(editor);
 
+        formGroup.addFormField(formField);
+        formGroup.addFormGroupActions(formGroupActions);
         formGroup.addExtension(createMetaEditor(attribute));
 
         return formGroup;
@@ -279,13 +329,17 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
             };
             editor = createBooleanEditor(style, currentValue, defaultValue, updateConsumer);
         } else {
-            FormField unsupportedField = new FormField();
-            unsupportedField.add(new FormOutputText(
-                environment.getMessages().unsupportedAttributeType(attribute.getType().getValue())
-            ));
-            editor = unsupportedField;
+            return null;
         }
         return editor;
+    }
+
+    protected IsWidget createUnsupportedEditor(Attribute attribute) {
+        FormField unsupportedField = new FormField();
+        unsupportedField.add(new FormOutputText(
+            environment.getMessages().unsupportedAttributeType(attribute.getType().getValue())
+        ));
+        return unsupportedField;
     }
 
     protected IsWidget createEditor(MetaItem item, JsonType valueType, boolean forceEditable, FormGroup formGroup) {
@@ -474,8 +528,12 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
         attributeGroups.remove(attribute);
     }
 
-    protected void showInfo(String info) {
-        environment.getEventBus().dispatch(new ShowInfoEvent(info));
+    protected void showInfo(String text) {
+        environment.getEventBus().dispatch(new ShowInfoEvent(text));
+    }
+
+    protected void showSuccess(String text) {
+        environment.getEventBus().dispatch(new ShowSuccessEvent(text));
     }
 
     protected void showValidationError(String error) {
@@ -483,7 +541,6 @@ public class AttributesEditor<S extends AttributesEditor.Style> {
     }
 
     /* ####################################################################### */
-
 
     public class MetaEditor extends FlowPanel {
 

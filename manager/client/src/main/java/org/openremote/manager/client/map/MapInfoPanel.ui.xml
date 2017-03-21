@@ -20,7 +20,7 @@
         <g:HTMLPanel styleName="flex layout vertical"
                      addStyleNames="{style.content} {widgetStyle.PopupPanelContent}">
 
-            <div>TODO: Asset Info Panel</div>
+            <g:InlineLabel ui:field="infoLabel"/>
 
         </g:HTMLPanel>
     </g:PopupPanel>

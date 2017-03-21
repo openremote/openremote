@@ -22,6 +22,7 @@ package org.openremote.manager.client.map;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
+import com.google.gwt.user.client.ui.InlineLabel;
 import com.google.gwt.user.client.ui.PopupPanel;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.WidgetStyle;
@@ -38,11 +39,26 @@ public class MapInfoPanel extends AbstractAppPanel {
     @UiField
     WidgetStyle widgetStyle;
 
+    @UiField
+    InlineLabel infoLabel;
+
     public MapInfoPanel() {
         super(GWT.create(UI.class));
     }
 
     public void addStyleName(String styleName) {
         getPopupPanel().addStyleName(styleName);
+    }
+
+    public void init() {
+        infoLabel.setText(null);
+    }
+
+    public void setInfoText(String text) {
+        infoLabel.setText(text);
+    }
+
+    public String getInfoText() {
+        return infoLabel.getText();
     }
 }

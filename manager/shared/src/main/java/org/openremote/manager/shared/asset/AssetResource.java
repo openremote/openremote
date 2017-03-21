@@ -22,12 +22,12 @@ package org.openremote.manager.shared.asset;
 import jsinterop.annotations.JsType;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.http.SuccessStatusCode;
-import org.openremote.model.AttributeState;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetInfo;
 import org.openremote.model.asset.ProtectedAssetInfo;
 
 import javax.annotation.security.RolesAllowed;
+import javax.validation.Valid;
 import javax.ws.rs.*;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -48,7 +48,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * {@link org.openremote.model.asset.UserAsset}).
  *
  * The only operations a restricted user is able to perform are {@link #getCurrentUserAssets},
- * {@link #updateCurrentUserAsset}, and {@link #updateAttribute}
+ * {@link #updateCurrentUserAsset}, {@link #readAttributeValue} and {@link #writeAttributeValue}.
  * </li>
  * </ul>
  *
@@ -130,7 +130,7 @@ public interface AssetResource {
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:assets"})
-    void update(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, Asset asset);
+    void update(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @Valid Asset asset);
 
     /**
      * Updates an attribute of an asset. Regular users can only update assets in
@@ -138,14 +138,29 @@ public interface AssetResource {
      * is returned if a regular user tries to update an asset in a realm different than its
      * authenticated realm, or if the user is restricted and the asset to update is not in the set of linked
      * assets of the restricted user. A 400 status is returned if the update was not successful, e.g. because
-     * the given value does not match the attribute's type.
+     * the given value does not match the attribute's type. Note that this update does not increment the version
+     * of an asset entity, thus concurrent updates can overwrite data undetected ("last commit wins").
      */
     @PUT
-    @Path("{assetId}/attribute")
+    @Path("{assetId}/attribute/{attributeName}")
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:assets"})
-    void updateAttribute(@BeanParam RequestParams requestParams, AttributeState attributeState);
+    void writeAttributeValue(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @PathParam("attributeName") String attributeName, String rawJson);
+
+    /**
+     * Reads the attribute state of an asset. Regular users can only access assets in
+     * their authenticated realm, the superuser can access assets in other (all) realms. A 403 status
+     * is returned if a regular user tries to access an asset in a realm different than its
+     * authenticated realm, or if the user is restricted and the asset to read is not in the set of linked
+     * assets of the restricted user.
+     */
+    @GET
+    @Path("{assetId}/attribute/{attributeName}")
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    @RolesAllowed({"read:assets"})
+    String readAttributeValue(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @PathParam("attributeName") String attributeName);
 
     /**
      * Creates an asset. The identifier value of the asset can be provided, it should be a
@@ -161,7 +176,7 @@ public interface AssetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:assets"})
-    void create(@BeanParam RequestParams requestParams, Asset asset);
+    void create(@BeanParam RequestParams requestParams, @Valid Asset asset);
 
     /**
      * Deletes an asset. Regular users can only delete assets in their authenticated realm,

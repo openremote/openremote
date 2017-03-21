@@ -20,12 +20,9 @@
 package org.openremote.manager.client.map;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.core.client.Scheduler;
-import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
-import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.Label;
@@ -34,7 +31,6 @@ import elemental.json.JsonObject;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.widget.FlexSplitPanel;
 import org.openremote.manager.client.widget.MapWidget;
-import org.openremote.manager.client.widget.PushButton;
 import org.openremote.manager.shared.map.GeoJSON;
 
 import javax.inject.Inject;
@@ -57,9 +53,7 @@ public class MapViewImpl extends Composite implements MapView {
 
         String mapWidget();
 
-        String infoPanel1();
-
-        String infoPanel2();
+        String infoPanel();
     }
 
     @UiField
@@ -79,8 +73,7 @@ public class MapViewImpl extends Composite implements MapView {
 
     final AssetBrowser assetBrowser;
     final Provider<MapInfoPanel> infoPanelProvider;
-    final MapInfoPanel infoPanel1;
-    final MapInfoPanel infoPanel2;
+    final MapInfoPanel infoPanel;
 
     Presenter presenter;
 
@@ -92,15 +85,18 @@ public class MapViewImpl extends Composite implements MapView {
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
 
-        splitPanel.setOnResize(this::refresh);
+        splitPanel.setOnResize(() -> {
+            if (mapWidget.isInitialised()) {
+                mapWidget.resize();
+                showInfoPanel();
+            }
+        });
 
         mapLoadingLabel.setVisible(true);
         mapWidget.setVisible(false);
 
-        infoPanel1 = infoPanelProvider.get();
-        infoPanel1.addStyleName(style.infoPanel1());
-        infoPanel2 = infoPanelProvider.get();
-        infoPanel2.addStyleName(style.infoPanel2());
+        infoPanel = infoPanelProvider.get();
+        infoPanel.addStyleName(style.infoPanel());
     }
 
     @Override
@@ -109,27 +105,24 @@ public class MapViewImpl extends Composite implements MapView {
         if (presenter != null) {
             assetBrowser.asWidget().removeFromParent();
             sidebarContainer.add(assetBrowser.asWidget());
-            if (isMapInitialised()) {
-                showInfoPanels();
-            }
         } else {
             sidebarContainer.clear();
             hideFeaturesAll();
             hideFeaturesSelection();
-            hideInfoPanels();
+            infoPanel.hide();
+            infoPanel.init();
         }
     }
 
     @Override
     public void initialiseMap(JsonObject mapOptions) {
         mapLoadingLabel.setVisible(false);
-        mapWidget.initialise(mapOptions);
+        mapWidget.initialise(mapOptions, () -> {
+            mapWidget.resize();
+            mapWidget.setVisible(true);
+            showInfoPanel();
+        });
         mapWidget.addNavigationControl();
-        mapWidget.setVisible(true);
-        mapWidget.resize();
-        showInfoPanels();
-        // Wait until the map is visible/sized so panels can be positioned properly
-        Scheduler.get().scheduleDeferred(this::showInfoPanels);
     }
 
     @Override
@@ -138,9 +131,14 @@ public class MapViewImpl extends Composite implements MapView {
     }
 
     @Override
-    public void refresh() {
-        mapWidget.resize();
-        showInfoPanels();
+    public void showInfo(String text) {
+        infoPanel.setInfoText(text);
+        if (text != null && !infoPanel.isShowing()) {
+            showInfoPanel();
+        } else if (text == null) {
+            infoPanel.hide();
+            infoPanel.init();
+        }
     }
 
     @Override
@@ -168,15 +166,9 @@ public class MapViewImpl extends Composite implements MapView {
         mapWidget.flyTo(coordinates);
     }
 
-    protected void showInfoPanels() {
-/* TODO There is a timing issue with the position when the map widget is initialized for the first time
-        infoPanel1.showTopLeftOf(mapWidget, 10, 10);
-        infoPanel2.showBottomRightOf(mapWidget, 10, 30);
-*/
-    }
-
-    protected void hideInfoPanels() {
-        infoPanel1.hide();
-        infoPanel2.hide();
+    protected void showInfoPanel() {
+        if (mapWidget.isInitialised() && infoPanel.getInfoText() != null && !infoPanel.getInfoText().isEmpty()) {
+            infoPanel.showBottomRightOf(mapWidget, 10, 30);
+        }
     }
 }

@@ -14,6 +14,8 @@ import org.openremote.manager.client.admin.navigation.AdminNavigation
 import org.openremote.manager.client.admin.navigation.AdminNavigationPresenter
 import org.openremote.manager.client.admin.tenant.*
 import org.openremote.manager.client.event.GoToPlaceEvent
+import org.openremote.manager.client.event.ShowFailureEvent
+import org.openremote.manager.client.event.ShowSuccessEvent
 import org.openremote.manager.client.event.WillGoToPlaceEvent
 import org.openremote.manager.client.event.bus.EventListener
 import org.openremote.manager.client.i18n.ManagerMessages
@@ -21,14 +23,12 @@ import org.openremote.manager.client.service.EventService
 import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.service.SecurityService
 import org.openremote.manager.client.style.WidgetStyle
-import org.openremote.model.Event
-import org.openremote.manager.client.event.ShowFailureEvent
-import org.openremote.manager.client.event.ShowInfoEvent
 import org.openremote.manager.shared.http.EntityReader
 import org.openremote.manager.shared.security.Tenant
 import org.openremote.manager.shared.security.TenantResource
 import org.openremote.manager.shared.validation.ConstraintViolationReport
 import org.openremote.model.Consumer
+import org.openremote.model.Event
 import org.openremote.model.Runnable
 import org.openremote.test.ClientObjectMapper
 import org.openremote.test.GwtClientTrait
@@ -37,8 +37,9 @@ import spock.lang.Specification
 import spock.util.concurrent.BlockingVariables
 
 import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.manager.server.setup.AbstractKeycloakSetup.*
-import static org.openremote.model.Constants.*;
+import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
+import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
+import static org.openremote.model.Constants.*
 
 class AdminTenantsActivityTest extends Specification implements ManagerContainerTrait, GwtClientTrait {
 
@@ -278,7 +279,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         }
 
         and: "The success toast should be shown"
-        result.appEvents[0] instanceof ShowInfoEvent
+        result.appEvents[0] instanceof ShowSuccessEvent
         result.appEvents[0].text == "TestMessageTenantCreated:Test Name"
 
         and: "The form should be cleared the activity stopped"
@@ -399,7 +400,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         1 * adminTenantView.setTenantEnabledError(false)
 
         and: "The success toast should be shown"
-        result.appEvents[0] instanceof ShowInfoEvent
+        result.appEvents[0] instanceof ShowSuccessEvent
         result.appEvents[0].text == "TestMessageTenantDeleted:Test Name2"
 
         and: "The form should be cleared the activity stopped"

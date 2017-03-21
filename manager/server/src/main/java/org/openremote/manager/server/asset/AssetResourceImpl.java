@@ -19,19 +19,19 @@
  */
 package org.openremote.manager.server.asset;
 
-import org.openremote.container.web.WebApplication;
+import elemental.json.Json;
+import elemental.json.JsonValue;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.http.RequestParams;
+import org.openremote.model.Attribute;
 import org.openremote.model.AttributeEvent;
-import org.openremote.model.AttributeRef;
-import org.openremote.model.AttributeState;
+import org.openremote.model.Attributes;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetInfo;
 import org.openremote.model.asset.ProtectedAssetInfo;
 
-import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.util.Arrays;
@@ -58,7 +58,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public ProtectedAssetInfo[] getCurrentUserAssets(@BeanParam RequestParams requestParams) {
+    public ProtectedAssetInfo[] getCurrentUserAssets(RequestParams requestParams) {
         try {
             if (isSuperUser() || !isRestrictedUser()) {
                 return new ProtectedAssetInfo[0];
@@ -82,12 +82,12 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public void updateCurrentUserAsset(@BeanParam RequestParams requestParams, String assetId, ProtectedAssetInfo assetInfo) {
+    public void updateCurrentUserAsset(RequestParams requestParams, String assetId, ProtectedAssetInfo assetInfo) {
         throw new UnsupportedOperationException("Not Implemented"); // TODO
     }
 
     @Override
-    public AssetInfo[] getRoot(@BeanParam RequestParams requestParams, String realmId) {
+    public AssetInfo[] getRoot(RequestParams requestParams, String realmId) {
         try {
             if (realmId == null || realmId.length() == 0) {
                 realmId = identityService.getActiveTenantRealmId(getAuthenticatedRealm());
@@ -106,7 +106,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public AssetInfo[] getChildren(@BeanParam RequestParams requestParams, String parentId) {
+    public AssetInfo[] getChildren(RequestParams requestParams, String parentId) {
         try {
             if (isRestrictedUser()) {
                 return new AssetInfo[0];
@@ -126,7 +126,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public Asset get(@BeanParam RequestParams requestParams, String assetId) {
+    public Asset get(RequestParams requestParams, String assetId) {
         try {
             if (isRestrictedUser()) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
@@ -152,7 +152,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public void update(@BeanParam RequestParams requestParams, String assetId, Asset asset) {
+    public void update(RequestParams requestParams, String assetId, Asset asset) {
         try {
             if (isRestrictedUser()) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
@@ -200,14 +200,15 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public void updateAttribute(@BeanParam RequestParams requestParams, AttributeState attributeState) {
+    public void writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, String rawJson) {
         try {
-            if (isRestrictedUser()) {
-                throw new WebApplicationException(Response.Status.FORBIDDEN);
-            }
-            AttributeRef attributeRef = attributeState.getAttributeRef();
-            ServerAsset asset = assetStorageService.find(attributeRef.getEntityId());
+            ServerAsset asset = assetStorageService.find(assetId);
             if (asset == null)
+                throw new WebApplicationException(NOT_FOUND);
+
+            // Check attribute exists
+            Attributes attributes = new Attributes(asset.getAttributes());
+            if (!attributes.hasAttribute(attributeName))
                 throw new WebApplicationException(NOT_FOUND);
 
             String realm = identityService.getActiveTenantRealm(asset.getRealmId());
@@ -219,7 +220,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             if (!isRealmAccessibleByUser(realm)) {
                 LOG.fine(
                     "Forbidden access for user '" + getUsername() + "', can't update asset '"
-                        + attributeRef.getEntityId() + " + ' of realm: " + realm
+                        + assetId + " + ' of realm: " + realm
                 );
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
@@ -232,9 +233,10 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             // Process update
             try {
-                assetProcessingService.processClientUpdate(new AttributeEvent(attributeState));
+                JsonValue value = Json.instance().parse(rawJson);
+                assetProcessingService.processClientUpdate(new AttributeEvent(assetId, attributeName, value));
             } catch (RuntimeException ex) {
-                throw new IllegalStateException("Error updating attribute: " + attributeState, ex);
+                throw new IllegalStateException("Error updating attribute: " + attributeName, ex);
             }
 
         } catch (IllegalStateException ex) {
@@ -243,7 +245,47 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public void create(@BeanParam RequestParams requestParams, Asset asset) {
+    public String readAttributeValue(RequestParams requestParams, String assetId, String attributeName) {
+        try {
+            ServerAsset asset = assetStorageService.find(assetId);
+            if (asset == null)
+                throw new WebApplicationException(NOT_FOUND);
+
+            String realm = identityService.getActiveTenantRealm(asset.getRealmId());
+            if (realm == null) {
+                throw new WebApplicationException(BAD_REQUEST);
+            }
+
+            // Check realm, must be accessible
+            if (!isRealmAccessibleByUser(realm)) {
+                LOG.fine(
+                    "Forbidden access for user '" + getUsername() + "', can't read asset '"
+                        + assetId + " + ' of realm: " + realm
+                );
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
+
+            // Check restricted
+            if (isRestrictedUser() &&
+                !assetStorageService.findProtectedOfUserContains(getUserId(), asset.getId())) {
+                throw new WebApplicationException(Response.Status.FORBIDDEN);
+            }
+
+            Attributes attributes = new Attributes(asset.getAttributes());
+            Attribute attribute = attributes.get(attributeName);
+            if (attribute == null) {
+                throw new WebApplicationException(NOT_FOUND);
+            }
+
+            return attribute.getValue().toJson();
+
+        } catch (IllegalStateException ex) {
+            throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
+        }
+    }
+
+    @Override
+    public void create(RequestParams requestParams, Asset asset) {
         try {
             if (isRestrictedUser()) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
@@ -281,7 +323,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public void delete(@BeanParam RequestParams requestParams, String assetId) {
+    public void delete(RequestParams requestParams, String assetId) {
         try {
             if (isRestrictedUser()) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);

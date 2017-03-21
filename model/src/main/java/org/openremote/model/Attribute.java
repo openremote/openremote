@@ -37,6 +37,11 @@ import static org.openremote.model.asset.AssetMeta.STORE_DATA_POINTS;
  */
 public class Attribute extends AbstractValueTimestampHolder<Attribute> {
 
+    /**
+     * Attribute names should be very simple, as we use them in SQL path expressions, etc. and must manually escape.
+     */
+    public static final String ATTRIBUTE_NAME_PATTERN = "^\\w+$";
+
     protected String name;
 
     public Attribute() {
@@ -140,7 +145,17 @@ public class Attribute extends AbstractValueTimestampHolder<Attribute> {
     }
 
     /**
-     * @return The current value and its  timestamp represented as an attribute event.
+     * @return The current value.
+     */
+    public AttributeState getState(String assetId) {
+        return new AttributeState(
+            getAttributeRef(assetId),
+            getValue()
+        );
+    }
+
+    /**
+     * @return The current value and its timestamp represented as an attribute event.
      */
     public AttributeEvent getStateEvent(String assetId) {
         return new AttributeEvent(

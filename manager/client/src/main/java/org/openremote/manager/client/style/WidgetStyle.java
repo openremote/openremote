@@ -81,6 +81,10 @@ public class WidgetStyle {
         return "or-ToastInfo";
     }
 
+    public String ToastSuccess() {
+        return "or-ToastSuccess";
+    }
+
     public String ToastFailure() {
         return "or-ToastFailure";
     }

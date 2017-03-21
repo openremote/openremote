@@ -22,6 +22,8 @@ package org.openremote.manager.client.i18n;
 import com.google.gwt.i18n.client.LocalizableResource;
 import com.google.gwt.i18n.client.Messages;
 
+import java.util.List;
+
 @LocalizableResource.DefaultLocale("en")
 public interface ManagerMessages extends Messages {
 
@@ -119,7 +121,7 @@ public interface ManagerMessages extends Messages {
 
     String errorMarshallingResponse(String error);
 
-    String unexpectedResponseStatus(int statusCode, int expectedStatusCode);
+    String unexpectedResponseStatus(int statusCode, String expectedStatusCodes);
 
     String unknownError();
 
@@ -296,4 +298,10 @@ public interface ManagerMessages extends Messages {
     String editTenantRuleset(String name);
 
     String editAssetRuleset(String name);
+
+    String attributeValueRefreshed(String name);
+
+    String attributeValueStored(String name);
+
+    String invalidAttributeName();
 }
