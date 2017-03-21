@@ -180,6 +180,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     assetStorageService.getAgentLinkResolver(), attributeEvent.getAttributeName()
                 );
 
+                // TODO: This is broken a thing should be able to have attributes not linked to a protocol
                 if (thingAttribute == null) {
                     throw new RuntimeException("Ignoring " + attributeEvent + ", thing attribute not available or linked to agent: " + asset);
                 }
