@@ -118,6 +118,10 @@ public class AssetUpdate {
         return newState.getEntityName();
     }
 
+    public String getEntityId() {
+        return newState.getEntityId();
+    }
+
     public void setStatus(Status status) {
         this.status = status;
     }

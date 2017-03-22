@@ -294,6 +294,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 LOG.fine("Processor " + processor + " accepts: " + assetUpdate);
                 processor.accept(assetUpdate);
             } catch (Throwable t) {
+                LOG.log(Level.SEVERE, "Asset update consumer '" + processor + "' threw an exception whilst consuming the update:" + assetUpdate, t);
                 assetUpdate.setStatus(AssetUpdate.Status.ERROR);
                 assetUpdate.setError(t);
             }
@@ -301,9 +302,10 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             switch (assetUpdate.getStatus()) {
                 case HANDLED:
                     LOG.fine("Processor " + processor + " finally handled: " + assetUpdate);
-                    break;
+                    return;
                 case ERROR:
                     // TODO Better error handling, not sure we need rewind?
+                    LOG.severe("Asset update status is '" + assetUpdate.getStatus() + "' cannot continue processing");
                     throw new RuntimeException("Processor " + processor + " error: " + assetUpdate, assetUpdate.getError());
             }
         }

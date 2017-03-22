@@ -53,10 +53,12 @@ import static org.openremote.model.asset.AssetType.*;
 
 public class ManagerDemoSetup extends AbstractManagerSetup {
 
+    public String masterRealmId;
     public String smartOfficeId;
     public String groundFloorId;
     public String lobbyId;
-    public String agentId;
+    public String demoAgentId;
+    public final String demoAgentProtocolConfigName = "simulator123";
     public String thingId;
     public String smartHomeId;
     public String apartment1Id;
@@ -83,7 +85,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         // ################################ Demo assets for 'master' realm ###################################
 
-        String masterRealmId = identityService.getActiveTenantRealmId(MASTER_REALM);
+        masterRealmId = identityService.getActiveTenantRealmId(MASTER_REALM);
 
         ServerAsset smartOffice = new ServerAsset();
         smartOffice.setRealmId(masterRealmId);
@@ -137,11 +139,11 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         agent.setType(AssetType.AGENT);
         AgentAttributes agentAttributes = new AgentAttributes();
         agentAttributes.setEnabled(false);
-        ProtocolConfiguration protocolConfigSimulator123 = new ProtocolConfiguration("simulator123", SimulatorProtocol.PROTOCOL_NAME);
+        ProtocolConfiguration protocolConfigSimulator123 = new ProtocolConfiguration(demoAgentProtocolConfigName, SimulatorProtocol.PROTOCOL_NAME);
         agentAttributes.put(protocolConfigSimulator123);
         agent.setAttributes(agentAttributes.getJsonObject());
         agent = assetStorageService.merge(agent);
-        agentId = agent.getId();
+        demoAgentId = agent.getId();
 
         ServerAsset thing = new ServerAsset(agent);
         thing.setName("Demo Thing");
