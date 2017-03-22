@@ -19,6 +19,9 @@
  */
 package org.openremote.manager.server.notification;
 
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
+import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
@@ -28,6 +31,9 @@ import org.openremote.manager.shared.notification.DeliveryStatus;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -37,13 +43,25 @@ public class NotificationService implements ContainerService {
 
     protected PersistenceService persistenceService;
 
+    protected ResteasyWebTarget target;
+
+    private String fcmKey;
+
     @Override
     public void init(Container container) throws Exception {
+
+        fcmKey = container.getConfig().get("FCM_KEY");
+        if (fcmKey == null) {
+            LOG.severe("FCM_KEY not defined, notification service cannot send fcm notification");
+        }
         this.persistenceService = container.getService(PersistenceService.class);
 
         container.getService(WebService.class).getApiSingletons().add(
                 new NotificationResourceImpl(this)
         );
+
+        ResteasyClient client = new ResteasyClientBuilder().build();
+        target = client.target("https://fcm.googleapis.com/fcm/send");
     }
 
     @Override
@@ -78,14 +96,21 @@ public class NotificationService implements ContainerService {
         });
     }
 
-    public void storeAlertNotification(String userId, AlertNotification alertNotification) {
+
+    public void storeAndNotifyAlertNotification(String userId, AlertNotification alertNotification) {
         alertNotification.setUserId(userId);
         alertNotification.setDeliveryStatus(DeliveryStatus.PENDING);
         persistenceService.doTransaction((EntityManager entityManager) -> {
-            AlertNotification notification = entityManager.merge(alertNotification);
-            List<DeviceNotificationToken> allTokenForUser = findAllTokenForUser(userId);
-            for (DeviceNotificationToken notificationToken : allTokenForUser) {
-                //TODO: Send FCM notification
+            entityManager.merge(alertNotification);
+            if (fcmKey != null) {
+                List<DeviceNotificationToken> allTokenForUser = findAllTokenForUser(userId);
+                for (DeviceNotificationToken notificationToken : allTokenForUser) {
+                    Invocation.Builder builder = target.request().header("Authorization", "key=");
+                    Response response = builder.post(Entity.entity(new FCMMessage(notificationToken.getToken()), "application/json"));
+                    if (response.getStatus() != 200) {
+                        LOG.severe("Error send FCM notification status=["+response.getStatus()+"], statusInformation=[" +response.getStatusInfo()+"]");
+                    }
+                }
             }
         });
 
@@ -99,5 +124,14 @@ public class NotificationService implements ContainerService {
             query.setParameter("deliveryStatus",DeliveryStatus.PENDING);
             return query.getResultList();
         });
+    }
+
+    public void removeAlertNotification(Long id) {
+        persistenceService.doTransaction(entityManager -> {
+            Query query = entityManager.createQuery("UPDATE AlertNotification SET deliveryStatus=:status  WHERE id =:id");
+            query.setParameter("id", id);
+            query.setParameter("status",DeliveryStatus.DELIVERED);
+            query.executeUpdate();
+            });
     }
 }

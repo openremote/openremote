@@ -28,15 +28,23 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
     }
 
     @Override
-    public void storeAlertNotification( AlertNotification alertNotification) {
+    public void storeAlertNotification(AlertNotification alertNotification) {
         if (alertNotification == null) {
             throw new WebApplicationException("Missing alertNotification", BAD_REQUEST);
         }
-        notificationService.storeAlertNotification(getUserId(), alertNotification);
+        notificationService.storeAndNotifyAlertNotification(getUserId(), alertNotification);
     }
 
     @Override
     public List<AlertNotification> getAlertNotification() {
         return notificationService.getPendingAlertForUserId(getUserId());
+    }
+
+    @Override
+    public void removeAlertNotification(Long id) {
+        if (id == null) {
+            throw new WebApplicationException("Missing alert id", BAD_REQUEST);
+        }
+        notificationService.removeAlertNotification(id);
     }
 }

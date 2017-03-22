@@ -24,7 +24,7 @@ public class AlertNotification {
     @Column(name = "MESSAGE", nullable = false)
     private String message;
 
-    @OneToMany(cascade = CascadeType.ALL)
+    @OneToMany(cascade = CascadeType.ALL,fetch = FetchType.EAGER)
     @JoinColumn(name="ALERT_ID")
     private Set<AlertAction> actions;
 

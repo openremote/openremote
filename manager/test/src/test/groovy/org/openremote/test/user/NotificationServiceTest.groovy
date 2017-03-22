@@ -65,11 +65,16 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
 
         when: "the Alert Notification is stored"
         notificationResource.storeAlertNotification(notificationAlert)
+        def alerts = notificationResource.getAlertNotification()
 
         then: "it should be one alert notification pending"
-        notificationResource.getAlertNotification().size() == 1
+        alerts.size() == 1
 
-        //TODO: delete alertResource //then should be 0 pending
+        when: "the alert Notification is acknowledge"
+        notificationResource.removeAlertNotification(alerts.get(0).id)
+
+        then: "it should be no allert"
+        notificationResource.getAlertNotification().size() == 0
 
         cleanup: "the server should be stopped"
         stopContainer(container)

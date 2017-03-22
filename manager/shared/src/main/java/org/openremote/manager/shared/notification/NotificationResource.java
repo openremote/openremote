@@ -54,4 +54,10 @@ public interface NotificationResource {
     @Produces(APPLICATION_JSON)
     @RolesAllowed({"write:user"})
     List<AlertNotification> getAlertNotification();
+
+    @DELETE
+    @Path("alert/{alertId}")
+    @SuccessStatusCode(204)
+    @RolesAllowed({"write:user"})
+    void removeAlertNotification(@PathParam("alertId") Long id);
 }
