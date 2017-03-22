@@ -277,7 +277,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 throw new WebApplicationException(NOT_FOUND);
             }
 
-            return attribute.getValue().toJson();
+            // No idea why toJson() would produce a Java null instead of a "null" literal, but it does
+            return attribute.hasValue() ? attribute.getValue().toJson() : "null";
 
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);

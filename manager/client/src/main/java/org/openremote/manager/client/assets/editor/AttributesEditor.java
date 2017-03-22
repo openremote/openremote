@@ -668,7 +668,7 @@ public abstract class AttributesEditor<S extends AttributesEditor.Style> {
             formGroup.addFormField(formField);
 
             FormListBox wellknownListBox = new FormListBox();
-            wellknownListBox.addItem(environment.getMessages().selectStandard());
+            wellknownListBox.addItem(environment.getMessages().selectItem());
             for (AssetMeta wellknown : AssetMeta.editable()) {
                 wellknownListBox.addItem(wellknown.name());
             }

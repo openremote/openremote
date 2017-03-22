@@ -394,7 +394,7 @@ public class AssetActivity
                         environment.getRequestService().execute(
                             value -> value,
                             requestParams -> assetResource.readAttributeValue(requestParams, assetId, attribute.getName()),
-                            new Integer[]{200, 204},
+                            200,
                             result -> {
                                 JsonValue value = Json.instance().parse(result);
                                 // TODO Bug in Elemental, can't check this value for null etc.

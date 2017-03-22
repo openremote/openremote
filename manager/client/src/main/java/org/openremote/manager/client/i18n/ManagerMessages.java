@@ -22,9 +22,7 @@ package org.openremote.manager.client.i18n;
 import com.google.gwt.i18n.client.LocalizableResource;
 import com.google.gwt.i18n.client.Messages;
 
-import java.util.List;
-
-@LocalizableResource.DefaultLocale("en")
+@LocalizableResource.DefaultLocale
 public interface ManagerMessages extends Messages {
 
     String logout();
@@ -237,7 +235,7 @@ public interface ManagerMessages extends Messages {
 
     String and();
 
-    String selectStandard();
+    String selectItem();
 
     String enterCustomAssetAttributeMetaName();
 
