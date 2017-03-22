@@ -93,14 +93,7 @@ public abstract class AssetSelector extends FormGroup {
 
     public void setSelectedNode(BrowserTreeNode selectedNode) {
         this.selectedNode = selectedNode;
-        if (selectedNode instanceof TenantTreeNode) {
-            outputTenantDisplayName.setText(selectedNode.getLabel());
-            outputAssetName.setText(managerMessages.assetHasNoParent());
-        } else if (selectedNode instanceof AssetTreeNode) {
-            AssetTreeNode assetTreeNode = (AssetTreeNode) selectedNode;
-            outputTenantDisplayName.setText(assetTreeNode.getTenantDisplayName());
-            outputAssetName.setText(selectedNode.getLabel());
-        }
+        renderTreeNode(managerMessages, selectedNode, outputTenantDisplayName, outputAssetName);
     }
 
     public void endSelection() {
@@ -125,5 +118,20 @@ public abstract class AssetSelector extends FormGroup {
 
     public void setEnabled(boolean enabled) {
         selectAssetButton.setEnabled(enabled);
+    }
+
+    public static void renderTreeNode(ManagerMessages managerMessages,
+                                      BrowserTreeNode treeNode,
+                                      FormOutputText outputTenantDisplayName,
+                                      FormInputText outputAssetName) {
+
+        if (treeNode instanceof TenantTreeNode) {
+            outputTenantDisplayName.setText(treeNode.getLabel());
+            outputAssetName.setText(managerMessages.assetHasNoParent());
+        } else if (treeNode instanceof AssetTreeNode) {
+            AssetTreeNode assetTreeNode = (AssetTreeNode) treeNode;
+            outputTenantDisplayName.setText(assetTreeNode.getTenantDisplayName());
+            outputAssetName.setText(treeNode.getLabel());
+        }
     }
 }

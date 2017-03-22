@@ -36,8 +36,10 @@ import org.openremote.manager.client.apps.AppsActivity;
 import org.openremote.manager.client.apps.AppsPlace;
 import org.openremote.manager.client.assets.AssetsDashboardActivity;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
-import org.openremote.manager.client.assets.asset.AssetActivity;
-import org.openremote.manager.client.assets.asset.AssetPlace;
+import org.openremote.manager.client.assets.asset.AssetEditActivity;
+import org.openremote.manager.client.assets.asset.AssetEditPlace;
+import org.openremote.manager.client.assets.asset.AssetViewActivity;
+import org.openremote.manager.client.assets.asset.AssetViewPlace;
 import org.openremote.manager.client.assets.tenant.AssetsTenantActivity;
 import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
 import org.openremote.manager.client.event.ShowFailureEvent;
@@ -75,7 +77,8 @@ public class ManagerActivityMapper implements AppActivityMapper {
     protected final ManagerMessages managerMessages;
     protected final Provider<AssetsDashboardActivity> assetsDashboardActivityProvider;
     protected final Provider<AssetsTenantActivity> assetsTenantActivityProvider;
-    protected final Provider<AssetActivity> assetActivityProvider;
+    protected final Provider<AssetViewActivity> assetViewActivityProvider;
+    protected final Provider<AssetEditActivity> assetEditActivityProvider;
     protected final Provider<MapActivity> mapActivityProvider;
     protected final Provider<GlobalRulesListActivity> globalRulesActivityProvider;
     protected final Provider<GlobalRulesEditorActivity> globalRulesEditorActivityProvider;
@@ -97,7 +100,8 @@ public class ManagerActivityMapper implements AppActivityMapper {
                                  ManagerMessages managerMessages,
                                  Provider<AssetsDashboardActivity> assetsDashboardActivityProvider,
                                  Provider<AssetsTenantActivity> assetsTenantActivityProvider,
-                                 Provider<AssetActivity> assetActivityProvider,
+                                 Provider<AssetViewActivity> assetViewActivityProvider,
+                                 Provider<AssetEditActivity> assetEditActivityProvider,
                                  Provider<MapActivity> mapActivityProvider,
                                  Provider<GlobalRulesListActivity> globalRulesActivityProvider,
                                  Provider<GlobalRulesEditorActivity> globalRulesEditorActivityProvider,
@@ -117,7 +121,8 @@ public class ManagerActivityMapper implements AppActivityMapper {
         this.managerMessages = managerMessages;
         this.assetsDashboardActivityProvider = assetsDashboardActivityProvider;
         this.assetsTenantActivityProvider = assetsTenantActivityProvider;
-        this.assetActivityProvider = assetActivityProvider;
+        this.assetViewActivityProvider = assetViewActivityProvider;
+        this.assetEditActivityProvider = assetEditActivityProvider;
         this.mapActivityProvider = mapActivityProvider;
         this.globalRulesActivityProvider = globalRulesActivityProvider;
         this.globalRulesEditorActivityProvider = globalRulesEditorActivityProvider;
@@ -142,8 +147,11 @@ public class ManagerActivityMapper implements AppActivityMapper {
             if (place instanceof AssetsTenantPlace) {
                 return assetsTenantActivityProvider.get().init(securityService, (AssetsTenantPlace) place);
             }
-            if (place instanceof AssetPlace) {
-                return assetActivityProvider.get().init(securityService, (AssetPlace) place);
+            if (place instanceof AssetViewPlace) {
+                return assetViewActivityProvider.get().init(securityService, (AssetViewPlace) place);
+            }
+            if (place instanceof AssetEditPlace) {
+                return assetEditActivityProvider.get().init(securityService, (AssetEditPlace) place);
             }
             if (place instanceof MapPlace) {
                 return mapActivityProvider.get().init(securityService, (MapPlace) place);

@@ -19,12 +19,11 @@
  */
 package org.openremote.manager.client.assets.tenant;
 
-import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceTokenizer;
 import com.google.gwt.place.shared.Prefix;
 import org.openremote.manager.client.assets.AssetsPlace;
 
-public class AssetsTenantPlace extends Place implements AssetsPlace {
+public class AssetsTenantPlace extends AssetsPlace {
 
     final String realmId;
 

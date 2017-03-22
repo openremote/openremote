@@ -22,7 +22,7 @@ package org.openremote.manager.client.assets.tenant;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
-import org.openremote.manager.client.assets.asset.AssetPlace;
+import org.openremote.manager.client.assets.asset.AssetViewPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.assets.browser.AssetTreeNode;
@@ -66,7 +66,7 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
                 );
             } else if (event.getSelectedNode() instanceof AssetTreeNode) {
                 environment.getPlaceController().goTo(
-                    new AssetPlace(event.getSelectedNode().getId())
+                    new AssetViewPlace(event.getSelectedNode().getId())
                 );
             }
         }));

@@ -293,7 +293,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         ServerAsset apartment1LivingroomThermostat = new ServerAsset(apartment1Livingroom);
         apartment1LivingroomThermostat.setName("Livingroom Thermostat");
-        apartment1LivingroomThermostat.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
         apartment1LivingroomThermostat.setType(AssetType.THING);
         ThingAttributes apartment1LivingroomThermostatAttributes = new ThingAttributes(apartment1LivingroomThermostat);
         apartment1LivingroomThermostatAttributes.put(

@@ -19,28 +19,25 @@
  */
 package org.openremote.manager.client.assets.asset;
 
-import org.openremote.manager.client.assets.AssetsPlace;
+import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.assets.AssetBrowsingActivity;
+import org.openremote.manager.client.assets.browser.AssetBrowser;
+import org.openremote.manager.client.mvp.AppActivity;
+import org.openremote.model.asset.Asset;
 
-public abstract class AssetPlace extends AssetsPlace {
+public abstract class AbstractAssetActivity<PLACE extends AssetPlace> extends AssetBrowsingActivity<PLACE> {
 
-    final String assetId;
+    protected String assetId;
+    protected Asset asset;
+    protected Asset parentAsset;
 
-    public AssetPlace(String assetId) {
-        this.assetId = assetId;
-    }
-
-    public AssetPlace() {
-        this.assetId = null;
-    }
-
-    public String getAssetId() {
-        return assetId;
+    public AbstractAssetActivity(Environment environment, AssetBrowser.Presenter assetBrowserPresenter) {
+        super(environment, assetBrowserPresenter);
     }
 
     @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "assetId='" + assetId + '\'' +
-            '}';
+    protected AppActivity<PLACE> init(PLACE place) {
+        this.assetId = place.getAssetId();
+        return this;
     }
 }

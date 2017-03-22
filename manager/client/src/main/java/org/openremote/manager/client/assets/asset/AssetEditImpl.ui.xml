@@ -6,9 +6,13 @@
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
 
-    <ui:style field="style" type="org.openremote.manager.client.assets.asset.AssetViewImpl.Style">
+    <ui:style field="style" type="org.openremote.manager.client.assets.asset.AssetEditImpl.Style">
         .navItem {
             margin: 0 1em;
+        }
+
+        .formMessages {
+            max-width: 30em;
         }
 
         .mapWidget {
@@ -18,8 +22,8 @@
         }
     </ui:style>
 
-    <ui:style field="attributesBrowserStyle"
-              type="org.openremote.manager.client.assets.asset.AssetViewImpl.AttributesBrowserStyle">
+    <ui:style field="attributesEditorStyle"
+              type="org.openremote.manager.client.assets.asset.AssetEditImpl.AttributesEditorStyle">
         .stringEditor {
             width: 100%;
         }
@@ -73,14 +77,41 @@
                             <g:InlineLabel ui:field="headlineLabel"/>
                         </div>
                         <div>
-                            <w:FormButton ui:field="editButton"
-                                          text="{managerMessages.editAsset}"
-                                          icon="edit"/>
+                            <w:FormButton ui:field="viewButton"
+                                          text="{managerMessages.viewAsset}"
+                                          visible="false"
+                                          icon="eye"/>
                         </div>
                     </div>
 
-                    <div class="flex-none layout horizontal">
+                    <g:FlowPanel
+                            styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"
+                            visible="false">
+                        <w:IconLabel icon="check"
+                                     addStyleNames="{widgetStyle.MessagesIcon}"/>
+                        <g:FlowPanel ui:field="formMessagesSuccess"/>
+                    </g:FlowPanel>
+
+                    <g:FlowPanel
+                            styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} error"
+                            visible="false">
+                        <w:IconLabel icon="warning"
+                                     addStyleNames="{widgetStyle.MessagesIcon}"/>
+                        <g:FlowPanel ui:field="formMessagesError"/>
+                    </g:FlowPanel>
+
+                    <g:HTMLPanel styleName="flex-none layout horizontal">
                         <w:Form ui:field="form" addStyleNames="flex">
+                            <w:FormGroup ui:field="nameGroup">
+                                <w:label>
+                                    <w:FormLabel text="{managerMessages.assetName}"/>
+                                </w:label>
+                                <w:field>
+                                    <w:FormField addStyleNames="larger">
+                                        <w:FormInputText ui:field="nameInput" addStyleNames="flex"/>
+                                    </w:FormField>
+                                </w:field>
+                            </w:FormGroup>
 
                             <w:FormGroup ui:field="createdOnGroup">
                                 <w:label>
@@ -101,19 +132,7 @@
                                 </w:actions>
                             </w:FormGroup>
 
-                            <w:FormGroup ui:field="parentGroup" alignStart="true">
-                                <w:label>
-                                    <w:FormLabel text="{managerMessages.parentAsset}"/>
-                                </w:label>
-                                <w:field>
-                                    <w:FormField>
-                                        <g:HTMLPanel styleName="layout vertical">
-                                            <w:FormOutputText ui:field="tenantDisplayName"/>
-                                            <w:FormInputText ui:field="parentAssetName" readOnly="true"/>
-                                        </g:HTMLPanel>
-                                    </w:FormField>
-                                </w:field>
-                            </w:FormGroup>
+                            <assetBrowser:AssetSelector ui:field="parentAssetSelector"/>
 
                             <w:FormGroup ui:field="locationGroup">
                                 <w:label>
@@ -127,33 +146,64 @@
                                 <w:actions>
                                     <w:FormGroupActions>
                                         <w:FormButton ui:field="centerMapButton"
+                                                      enabled="false"
                                                       text="{managerMessages.centerMap}"
                                                       icon="location-arrow"/>
                                     </w:FormGroupActions>
                                 </w:actions>
                             </w:FormGroup>
+                        </w:Form>
+
+                        <w:MapWidget ui:field="mapWidget"
+                                     addStyleNames="{style.mapWidget} {widgetStyle.ItemWithBorder}"/>
+                    </g:HTMLPanel>
+
+                    <g:HTMLPanel styleName="flex-none layout horizontal">
+                        <w:Form ui:field="attributesForm" addStyleNames="flex">
 
                             <w:FormGroup ui:field="typeGroup">
                                 <w:label>
                                     <w:FormLabel text="{managerMessages.assetType}"/>
                                 </w:label>
                                 <w:field>
+                                    <w:FormField addStyleNames="larger">
+                                        <g:FlowPanel styleName="flex layout horizontal center">
+                                            <w:FormValueListBox ui:field="typeListBox"/>
+                                            <w:FormInputText ui:field="typeInput"
+                                                             addStyleNames="flex"
+                                                             visible="false"/>
+                                        </g:FlowPanel>
+                                    </w:FormField>
+                                </w:field>
+                                <w:info>
+                                    <g:Label ui:field="customTypeInfoLabel" visible="false"
+                                             text="{managerMessages.enterCustomAssetType}"/>
+                                </w:info>
+
+                            </w:FormGroup>
+
+                            <g:FlowPanel ui:field="attributesEditorContainer"/>
+
+                        </w:Form>
+                    </g:HTMLPanel>
+
+                    <g:HTMLPanel styleName="flex-none layout horizontal">
+                        <w:Form ui:field="submitForm" addStyleNames="flex">
+                            <w:FormGroup ui:field="submitButtonGroup">
+                                <w:field>
                                     <w:FormField>
-                                        <w:FormInputText ui:field="typeLabel" addStyleNames="flex" readOnly="true"/>
+                                        <w:FormButton ui:field="updateButton" primary="true"
+                                                      text="{managerMessages.updateAsset}" visible="false"
+                                                      icon="save"/>
+                                        <w:FormButton ui:field="createButton" primary="true"
+                                                      text="{managerMessages.createAsset}" visible="false"
+                                                      icon="save"/>
+                                        <w:FormButton ui:field="deleteButton" danger="true"
+                                                      text="{managerMessages.deleteAsset}" visible="false"
+                                                      icon="trash"/>
                                     </w:FormField>
                                 </w:field>
                             </w:FormGroup>
-
-                        </w:Form>
-
-                        <w:MapWidget ui:field="mapWidget"
-                                     visible="false"
-                                     addStyleNames="{style.mapWidget} {widgetStyle.ItemWithBorder}"/>
-                    </div>
-
-                    <g:HTMLPanel styleName="flex-none layout horizontal">
-                        <w:Form ui:field="attributesForm" addStyleNames="flex">
-                            <g:FlowPanel ui:field="attributesBrowserContainer"/>
                         </w:Form>
                     </g:HTMLPanel>
 

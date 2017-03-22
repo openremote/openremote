@@ -27,6 +27,7 @@ import org.openremote.model.Attributes;
 import org.openremote.model.Meta;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
@@ -89,12 +90,10 @@ public enum AssetType {
     THING(ASSET_NAMESPACE + ":thing", true, null);
 
     final protected String value;
-    final protected boolean editable;
     final protected JsonObject defaultAttributes;
 
     AssetType(String value, boolean editable, JsonObject defaultAttributes) {
         this.value = value;
-        this.editable = editable;
         this.defaultAttributes = defaultAttributes;
     }
 
@@ -102,20 +101,12 @@ public enum AssetType {
         return value;
     }
 
-    public boolean isEditable() {
-        return editable;
-    }
-
     public JsonObject getDefaultAttributes() {
         return defaultAttributes;
     }
 
-    public static AssetType[] editable() {
-        List<AssetType> list = new ArrayList<>();
-        for (AssetType assetType : values()) {
-            if (assetType.isEditable())
-                list.add(assetType);
-        }
+    public static AssetType[] valuesSorted() {
+        List<AssetType> list = new ArrayList<>(Arrays.asList(values()));
 
         list.sort(Comparator.comparing(Enum::name));
         if (list.contains(CUSTOM)) {

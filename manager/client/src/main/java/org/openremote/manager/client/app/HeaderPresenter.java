@@ -24,7 +24,7 @@ import com.google.inject.Inject;
 import org.openremote.manager.client.admin.overview.AdminOverviewPlace;
 import org.openremote.manager.client.apps.AppsPlace;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
-import org.openremote.manager.client.assets.asset.AssetPlace;
+import org.openremote.manager.client.assets.asset.AssetViewPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.assets.browser.AssetTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
@@ -112,7 +112,7 @@ public class HeaderPresenter implements HeaderView.Presenter {
         if (assetBrowserSelection.getSelectedNode() instanceof TenantTreeNode) {
             placeController.goTo(new AssetsTenantPlace(assetBrowserSelection.getSelectedNode().getId()));
         } else if (assetBrowserSelection.getSelectedNode() instanceof AssetTreeNode) {
-            placeController.goTo(new AssetPlace(assetBrowserSelection.getSelectedNode().getId()));
+            placeController.goTo(new AssetViewPlace(assetBrowserSelection.getSelectedNode().getId()));
         } else {
             placeController.goTo(new AssetsDashboardPlace());
         }

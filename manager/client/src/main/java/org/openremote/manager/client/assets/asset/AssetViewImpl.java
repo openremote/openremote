@@ -23,7 +23,6 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.resources.client.CssResource;
-import com.google.gwt.text.shared.AbstractRenderer;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
@@ -31,26 +30,20 @@ import com.google.gwt.user.client.ui.*;
 import com.google.inject.Provider;
 import elemental.json.JsonObject;
 import org.openremote.manager.client.app.dialog.ConfirmationDialog;
+import org.openremote.manager.client.assets.attributes.AttributesBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetSelector;
 import org.openremote.manager.client.assets.browser.BrowserTreeNode;
-import org.openremote.manager.client.assets.editor.AttributesEditor;
 import org.openremote.manager.client.i18n.ManagerMessages;
+import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.*;
-import org.openremote.manager.client.widget.PushButton;
 import org.openremote.manager.shared.map.GeoJSON;
 import org.openremote.model.Constants;
-import org.openremote.model.Runnable;
-import org.openremote.model.asset.AssetType;
 
 import javax.inject.Inject;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 
-public class AssetViewImpl extends FormViewImpl implements AssetView {
+public class AssetViewImpl extends Composite implements AssetView {
 
     interface UI extends UiBinder<FlexSplitPanel, AssetViewImpl> {
     }
@@ -59,14 +52,10 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
 
         String navItem();
 
-        String formMessages();
-
         String mapWidget();
-
-        String typeInput();
     }
 
-    interface AttributesEditorStyle extends CssResource, AttributesEditor.Style {
+    interface AttributesBrowserStyle extends CssResource, AttributesBrowser.Style {
 
         String integerEditor();
 
@@ -78,10 +67,16 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     }
 
     @UiField
+    public WidgetStyle widgetStyle;
+
+    @UiField
+    public ManagerMessages managerMessages;
+
+    @UiField
     Style style;
 
     @UiField
-    AttributesEditorStyle attributesEditorStyle;
+    AttributesBrowserStyle attributesBrowserStyle;
 
     @UiField
     FlexSplitPanel splitPanel;
@@ -89,12 +84,16 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     @UiField
     HTMLPanel sidebarContainer;
 
+    @UiField
+    InlineLabel headlineLabel;
+
+    @UiField
+    FormButton editButton;
+
     /* ############################################################################ */
 
     @UiField
-    FormGroup nameGroup;
-    @UiField
-    TextBox nameInput;
+    public Form form;
 
     @UiField
     FormGroup createdOnGroup;
@@ -103,15 +102,20 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     @UiField
     FormButton showHistoryButton;
 
-    @UiField(provided = true)
-    AssetSelector parentAssetSelector;
+    @UiField
+    FormGroup parentGroup;
+    @UiField
+    FormOutputText tenantDisplayName;
+    @UiField
+    FormInputText parentAssetName;
 
     @UiField
     FormGroup locationGroup;
     @UiField
-    FormOutputText locationOutput;
+    FormOutputLocation locationOutput;
     @UiField
     FormButton centerMapButton;
+
     @UiField
     MapWidget mapWidget;
 
@@ -119,86 +123,35 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
 
     @UiField
     Form attributesForm;
+
     @UiField
     FormGroup typeGroup;
-    @UiField(provided = true)
-    FormValueListBox<AssetType> typeListBox;
+
     @UiField
-    FormInputText typeInput;
+    FormInputText typeLabel;
+
     @UiField
-    Label customTypeInfoLabel;
-    @UiField
-    FlowPanel attributesEditorContainer;
+    FlowPanel attributesBrowserContainer;
 
     /* ############################################################################ */
 
-    @UiField
-    Form submitForm;
-    @UiField
-    FormGroup submitButtonGroup;
-    @UiField
-    PushButton createButton;
-    @UiField
-    PushButton updateButton;
-    @UiField
-    PushButton deleteButton;
-
     final AssetBrowser assetBrowser;
+    final Provider<ConfirmationDialog> confirmationDialogProvider;
     Presenter presenter;
-    AttributesEditor attributesEditor;
+    AttributesBrowser attributesBrowser;
 
     @Inject
     public AssetViewImpl(AssetBrowser assetBrowser,
-                         Provider<ConfirmationDialog> confirmationDialogProvider,
-                         ManagerMessages managerMessages) {
-        super(confirmationDialogProvider);
+                         Provider<ConfirmationDialog> confirmationDialogProvider) {
         this.assetBrowser = assetBrowser;
-
-        parentAssetSelector = new AssetSelector(
-            assetBrowser.getPresenter(),
-            managerMessages,
-            managerMessages.parentAsset(),
-            managerMessages.selectAssetDescription(),
-            treeNode -> {
-                if (presenter != null) {
-                    presenter.onParentSelection(treeNode);
-                }
-            }
-        ) {
-            @Override
-            public void beginSelection() {
-                AssetViewImpl.this.setOpaque(true);
-                super.beginSelection();
-            }
-
-            @Override
-            public void endSelection() {
-                super.endSelection();
-                AssetViewImpl.this.setOpaque(false);
-            }
-        };
-
-        typeListBox = new FormValueListBox<>(
-            new AbstractRenderer<AssetType>() {
-                @Override
-                public String render(AssetType assetType) {
-                    if (assetType == null)
-                        assetType = AssetType.CUSTOM;
-                    return managerMessages.assetTypeLabel(assetType.name());
-                }
-            }
-        );
-
-        typeListBox.addValueChangeHandler(event -> {
-            if (presenter != null) {
-                presenter.onAssetTypeSelected(event.getValue());
-            }
-        });
+        this.confirmationDialogProvider = confirmationDialogProvider;
 
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
 
-        splitPanel.setOnResize(this::refreshMap);
+        splitPanel.setOnResize(() -> mapWidget.resize());
+
+        setFormBusy(true);
     }
 
     @Override
@@ -207,24 +160,18 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
 
         // Restore initial state of view
         sidebarContainer.clear();
-        nameGroup.setError(false);
-        nameInput.setReadOnly(false);
-        nameInput.setValue(null);
-        createdOnOutput.setText("");
-        parentAssetSelector.init();
-        locationOutput.setText("");
-        centerMapButton.setEnabled(false);
-        typeGroup.setError(false);
-        typeListBox.setValue(null);
-        typeListBox.setAcceptableValues(new ArrayList<>());
-        typeListBox.setEnabled(true);
-        typeInput.setVisible(false);
-        customTypeInfoLabel.setVisible(false);
-        hideFeaturesSelection();
-        hideMapPopup();
-        setOpaque(false);
-        attributesEditorContainer.clear();
-        attributesEditor = null;
+        setFormBusy(true);
+        headlineLabel.setText(null);
+        createdOnOutput.setText(null);
+        tenantDisplayName.setText(null);
+        parentAssetName.setText(null);
+        locationGroup.setVisible(false);
+        locationOutput.setText(null);
+        mapWidget.setVisible(false);
+        showFeaturesSelection(GeoJSON.EMPTY_FEATURE_COLLECTION);
+        typeLabel.setText(null);
+        attributesBrowserContainer.clear();
+        attributesBrowser = null;
 
         if (presenter != null) {
             assetBrowser.asWidget().removeFromParent();
@@ -234,26 +181,21 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
 
     @Override
     public void setFormBusy(boolean busy) {
-        super.setFormBusy(busy);
+        form.setBusy(busy);
         attributesForm.setBusy(busy);
-        submitForm.setBusy(busy);
     }
 
     /* ############################################################################ */
 
     @Override
     public void setName(String name) {
-        nameInput.setValue(name);
+        headlineLabel.setText(name);
     }
 
-    @Override
-    public String getName() {
-        return nameInput.getValue().length() > 0 ? nameInput.getValue() : null;
-    }
-
-    @Override
-    public void setNameError(boolean error) {
-        nameGroup.setError(error);
+    @UiHandler("editButton")
+    void editClicked(ClickEvent e) {
+        if (presenter != null)
+            presenter.edit();
     }
 
     @Override
@@ -265,35 +207,28 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
 
     @Override
     public void setParentNode(BrowserTreeNode treeNode) {
-        parentAssetSelector.setSelectedNode(treeNode);
+        AssetSelector.renderTreeNode(managerMessages, treeNode, tenantDisplayName, parentAssetName);
     }
+
+    /* ############################################################################ */
 
     @Override
     public void setLocation(double[] coordinates) {
-        if (coordinates != null && coordinates.length == 2) {
-            // TODO: This assumes 0 is Lng and 1 is Lat, which is true for PostGIS backend
-            // TODO: Because Lat/Lng is the 'right way', we flip it here for display
-            // TODO: Rounding to 5 decimals gives us precision of about 1 meter, should be enough
-            locationOutput.setText(round(coordinates[1], 5) + " " + round(coordinates[0], 5) + " Lat|Lng");
-            centerMapButton.setEnabled(true);
+        if (locationOutput.setCoordinates(managerMessages.selectLocation(), coordinates)) {
+            locationGroup.setVisible(true);
+            mapWidget.setVisible(true);
+            mapWidget.resize();
         } else {
-            locationOutput.setText(managerMessages.selectLocation());
-            centerMapButton.setEnabled(false);
+            locationGroup.setVisible(false);
+            mapWidget.setVisible(false);
         }
     }
 
     @Override
     public void initialiseMap(JsonObject mapOptions) {
-        mapWidget.setVisible(false);
         mapWidget.initialise(mapOptions, () -> {
-            mapWidget.resize();
-            mapWidget.setVisible(true);
         });
         mapWidget.addNavigationControl();
-
-        mapWidget.setClickListener((lng, lat) -> {
-            presenter.onMapClicked(lng, lat);
-        });
     }
 
     @Override
@@ -302,28 +237,8 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     }
 
     @Override
-    public void refreshMap() {
-        mapWidget.resize();
-    }
-
-    @Override
-    public void showMapPopup(double lng, double lat, String text) {
-        mapWidget.showPopup(lng, lat, text);
-    }
-
-    @Override
-    public void hideMapPopup() {
-        mapWidget.hidePopup();
-    }
-
-    @Override
     public void showFeaturesSelection(GeoJSON mapFeatures) {
         mapWidget.showFeatures(MapWidget.FEATURES_SOURCE_SELECTION, mapFeatures);
-    }
-
-    @Override
-    public void hideFeaturesSelection() {
-        showFeaturesSelection(GeoJSON.EMPTY_FEATURE_COLLECTION);
     }
 
     @Override
@@ -340,73 +255,22 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     /* ############################################################################ */
 
     @Override
-    public void setTypeSelectionEnabled(boolean enabled) {
-        typeListBox.setEnabled(enabled);
-    }
-
-    @Override
-    public void setEditable(boolean editable) {
-        parentAssetSelector.setEnabled(editable);
-        nameInput.setReadOnly(!editable);
-    }
-
-    @Override
-    public void setAvailableTypes(AssetType[] assetTypes) {
-        typeListBox.setAcceptableValues(Arrays.asList(assetTypes));
-    }
-
-    @Override
-    public void selectType(AssetType assetType) {
-        typeListBox.setValue(assetType);
-    }
-
-    @Override
-    public void setTypeInputVisible(boolean visible) {
-        typeInput.setVisible(visible);
-        customTypeInfoLabel.setVisible(visible);
-    }
-
-    @Override
     public void setType(String type) {
-        typeInput.setValue(type);
+        typeLabel.setText(type);
     }
 
     @Override
-    public String getType() {
-        return typeInput.getValue().length() > 0 ? typeInput.getValue() : null;
-    }
-
-    @Override
-    public void setTypeError(boolean error) {
-        typeGroup.setError(error);
-    }
-
-    @Override
-    public AttributesEditor.Container<AttributesEditor.Style> getAttributesEditorContainer() {
-        return new AttributesEditor.Container<AttributesEditor.Style>() {
-            @Override
-            public FormView getFormView() {
-                return AssetViewImpl.this;
-            }
+    public AttributesBrowser.Container getAttributesBrowserContainer() {
+        return new AttributesBrowser.Container() {
 
             @Override
-            public AttributesEditor.Style getStyle() {
-                return attributesEditorStyle;
+            public AttributesBrowser.Style getStyle() {
+                return attributesBrowserStyle;
             }
 
             @Override
             public InsertPanel getPanel() {
-                return attributesEditorContainer;
-            }
-
-            @Override
-            public void showConfirmation(String title, String text, Runnable onConfirm) {
-                AssetViewImpl.this.showConfirmation(title, text, onConfirm);
-            }
-
-            @Override
-            public void showConfirmation(String title, String text, Runnable onConfirm, Runnable onCancel) {
-                AssetViewImpl.this.showConfirmation(title, text, onConfirm, onCancel);
+                return attributesBrowserContainer;
             }
 
             @Override
@@ -417,60 +281,8 @@ public class AssetViewImpl extends FormViewImpl implements AssetView {
     }
 
     @Override
-    public void setAttributesEditor(AttributesEditor editor) {
-        this.attributesEditor = editor;
-        attributesEditorContainer.clear();
-    }
-
-    /* ############################################################################ */
-
-    @Override
-    public void enableCreate(boolean enable) {
-        createButton.setVisible(enable);
-    }
-
-    @Override
-    public void enableUpdate(boolean enable) {
-        updateButton.setVisible(enable);
-    }
-
-    @Override
-    public void enableDelete(boolean enable) {
-        deleteButton.setVisible(enable);
-    }
-
-    @UiHandler("updateButton")
-    void updateClicked(ClickEvent e) {
-        if (presenter != null)
-            presenter.update();
-    }
-
-    @UiHandler("createButton")
-    void createClicked(ClickEvent e) {
-        if (presenter != null)
-            presenter.create();
-    }
-
-    @UiHandler("deleteButton")
-    void deleteClicked(ClickEvent e) {
-        if (presenter != null)
-            presenter.delete();
-    }
-
-    /* ############################################################################ */
-
-    protected void setOpaque(boolean opaque) {
-        nameGroup.setOpaque(opaque);
-        createdOnGroup.setOpaque(opaque);
-        locationGroup.setOpaque(opaque);
-        mapWidget.setOpaque(opaque);
-        typeGroup.setOpaque(opaque);
-        if (attributesEditor != null)
-            attributesEditor.setOpaque(opaque);
-        submitButtonGroup.setOpaque(opaque);
-    }
-
-    protected String round(double d, int places) {
-        return new BigDecimal(d).setScale(places, RoundingMode.HALF_UP).toString();
+    public void setAttributesBrowser(AttributesBrowser browser) {
+        this.attributesBrowser = browser;
+        attributesBrowserContainer.clear();
     }
 }

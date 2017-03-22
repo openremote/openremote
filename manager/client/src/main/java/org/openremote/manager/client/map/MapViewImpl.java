@@ -66,9 +66,6 @@ public class MapViewImpl extends Composite implements MapView {
     HTMLPanel sidebarContainer;
 
     @UiField
-    Label mapLoadingLabel;
-
-    @UiField
     MapWidget mapWidget;
 
     final AssetBrowser assetBrowser;
@@ -86,14 +83,9 @@ public class MapViewImpl extends Composite implements MapView {
         initWidget(ui.createAndBindUi(this));
 
         splitPanel.setOnResize(() -> {
-            if (mapWidget.isInitialised()) {
-                mapWidget.resize();
-                showInfoPanel();
-            }
+            mapWidget.resize();
+            showInfoPanel();
         });
-
-        mapLoadingLabel.setVisible(true);
-        mapWidget.setVisible(false);
 
         infoPanel = infoPanelProvider.get();
         infoPanel.addStyleName(style.infoPanel());
@@ -116,10 +108,7 @@ public class MapViewImpl extends Composite implements MapView {
 
     @Override
     public void initialiseMap(JsonObject mapOptions) {
-        mapLoadingLabel.setVisible(false);
         mapWidget.initialise(mapOptions, () -> {
-            mapWidget.resize();
-            mapWidget.setVisible(true);
             showInfoPanel();
         });
         mapWidget.addNavigationControl();

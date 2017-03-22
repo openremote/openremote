@@ -166,12 +166,15 @@ public class MapWidget extends ComplexPanel {
         host = new FlowPanel();
         host.getElement().getStyle().setHeight(100, Style.Unit.PCT);
         host.getElement().setId(hostElementId);
+        host.setVisible(false);
         add(host, (Element) getElement());
 
         mapOptions.put("container", hostElementId);
         mapboxMap = new MapboxMap(mapOptions);
 
         mapboxMap.on(EventType.LOAD, eventData -> {
+            host.setVisible(true);
+            resize();
             if (onLoad != null)
                 onLoad.run();
             addFeaturesOnLoad();
@@ -194,10 +197,6 @@ public class MapWidget extends ComplexPanel {
         if (mapboxMap == null)
             return;
         mapboxMap.resize();
-        // We need to do this again asynchronous, sometimes the layout isn't ready
-        Browser.getWindow().setTimeout(() -> {
-            mapboxMap.resize();
-        }, 10);
     }
 
     public void setOpaque(boolean opaque) {

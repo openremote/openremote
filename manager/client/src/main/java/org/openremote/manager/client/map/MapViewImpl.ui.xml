@@ -51,14 +51,10 @@
                     <w:Hyperlink
                             addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                             icon="plus-square"
-                            targetHistoryToken="asset:"
+                            targetHistoryToken="assetEdit:"
                             text="{managerMessages.createAsset}"/>
 
                 </g:HTMLPanel>
-
-                <g:Label ui:field="mapLoadingLabel"
-                         text="{managerMessages.mapLoading}"
-                         addStyleNames="{style.mapLoadingLabel}"/>
 
                 <w:MapWidget ui:field="mapWidget"
                              addStyleNames="{style.mapWidget}"/>

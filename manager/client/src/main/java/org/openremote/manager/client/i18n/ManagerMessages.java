@@ -302,4 +302,8 @@ public interface ManagerMessages extends Messages {
     String attributeValueStored(String name);
 
     String invalidAttributeName();
+
+    String editAsset();
+
+    String viewAsset();
 }

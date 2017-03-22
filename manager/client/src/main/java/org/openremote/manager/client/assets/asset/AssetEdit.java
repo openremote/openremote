@@ -21,26 +21,42 @@ package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.user.client.ui.IsWidget;
 import elemental.json.JsonObject;
-import org.openremote.manager.client.assets.attributes.AttributesBrowser;
+import org.openremote.manager.client.assets.attributes.AttributesEditor;
 import org.openremote.manager.client.assets.browser.BrowserTreeNode;
+import org.openremote.manager.client.widget.FormView;
 import org.openremote.manager.shared.map.GeoJSON;
+import org.openremote.model.asset.AssetType;
 
 import java.util.Date;
 
-public interface AssetView extends IsWidget {
+public interface AssetEdit extends FormView, IsWidget {
 
     interface Presenter {
 
+        void view();
+
+        void onParentSelection(BrowserTreeNode treeNode);
+
         void centerMap();
 
-        void edit();
+        void onMapClicked(double lng, double lat);
+
+        void onAssetTypeSelected(AssetType value);
+
+        void update();
+
+        void create();
+
+        void delete();
     }
 
     void setPresenter(Presenter presenter);
 
-    void setFormBusy(boolean busy);
-
     void setName(String name);
+
+    String getName();
+
+    void setNameError(boolean error);
 
     void setCreatedOn(Date createdOn);
 
@@ -52,13 +68,36 @@ public interface AssetView extends IsWidget {
 
     void setLocation(double[] coordinates);
 
+    void showMapPopup(double lng, double lat, String text);
+
+    void hideMapPopup();
+
     void showFeaturesSelection(GeoJSON mapFeatures);
 
     void flyTo(double[] coordinates);
 
+    void setTypeSelectionEnabled(boolean enabled);
+
+    void setAvailableTypes(AssetType[] assetTypes);
+
+    void selectType(AssetType assetType);
+
+    void setTypeInputVisible(boolean visible);
+
     void setType(String type);
 
-    AttributesBrowser.Container getAttributesBrowserContainer();
+    String getType();
 
-    void setAttributesBrowser(AttributesBrowser attributesBrowser);
+    void setTypeError(boolean error);
+
+    AttributesEditor.Container getAttributesEditorContainer();
+
+    void setAttributesEditor(AttributesEditor attributesEditor);
+
+    void enableCreate(boolean enable);
+
+    void enableUpdate(boolean enable);
+
+    void enableDelete(boolean enable);
+
 }
