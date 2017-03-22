@@ -24,6 +24,7 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.model.AttributeEvent;
+import org.openremote.model.AttributeState;
 import org.openremote.model.asset.ThingAttribute;
 import org.openremote.container.Container;
 import org.openremote.container.message.MessageBrokerContext;
@@ -128,8 +129,12 @@ public abstract class AbstractProtocol implements Protocol {
         }
     }
 
-    protected void onSensorUpdate(AttributeEvent event) {
-        producerTemplate.sendBody(SENSOR_TOPIC, event);
+    protected void onSensorUpdate(AttributeState state, long timestamp) {
+        producerTemplate.sendBody(SENSOR_TOPIC, new AttributeEvent(state, this.getClass(), timestamp));
+    }
+
+    protected void onSensorUpdate(AttributeState state) {
+        onSensorUpdate(state, System.currentTimeMillis());
     }
 
     @Override

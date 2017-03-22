@@ -161,6 +161,7 @@ public class Attribute extends AbstractValueTimestampHolder<Attribute> {
         return new AttributeEvent(
             getAttributeRef(assetId),
             getValue(),
+            null,
             getValueTimestamp()
         );
     }

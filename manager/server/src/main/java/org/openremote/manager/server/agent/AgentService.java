@@ -20,21 +20,26 @@
 package org.openremote.manager.server.agent;
 
 import org.apache.camel.builder.RouteBuilder;
+import org.openremote.agent3.protocol.AbstractProtocol;
 import org.openremote.agent3.protocol.Protocol;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.server.asset.AssetStorageService;
+import org.openremote.manager.server.asset.AssetUpdate;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
 import org.openremote.model.asset.*;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.openremote.agent3.protocol.Protocol.ACTUATOR_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForAssetType;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
@@ -44,20 +49,21 @@ import static org.openremote.model.asset.AssetType.THING;
 /**
  * Finds all {@link AssetType#AGENT} and {@link AssetType#THING} assets and starts the protocols for them.
  */
-public class AgentService extends RouteBuilder implements ContainerService {
+public class AgentService extends RouteBuilder implements ContainerService, Consumer<AssetUpdate> {
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
 
     protected Container container;
     protected AssetStorageService assetStorageService;
     protected AssetDatapointService assetDatapointService;
+    protected MessageBrokerService messageBrokerService;
 
     @Override
     public void init(Container container) throws Exception {
         this.container = container;
         assetStorageService = container.getService(AssetStorageService.class);
         assetDatapointService = container.getService(AssetDatapointService.class);
-
+        messageBrokerService = container.getService(MessageBrokerService.class);
         container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
     }
 
@@ -168,6 +174,58 @@ public class AgentService extends RouteBuilder implements ContainerService {
                 }
             }
         }
+    }
+
+    /**
+     * If this update is not for an asset of type THING or it has been initiated by
+     * a protocol then we ignore it.
+     *
+     * Otherwise we push the update to the protocol to handle and prevent any further
+     * processing of this event by the processing chain, the protocol should raise
+     * sensor updates as required (i.e. the protocol is responsible for synchronising state)
+     *
+     * @param assetUpdate
+     */
+    @Override
+    public void accept(AssetUpdate assetUpdate) {
+        // Check that asset is a THING
+        if (assetUpdate.getAsset().getWellKnownType() != THING) {
+            LOG.fine("Ignoring asset update as asset is not a THING:" + assetUpdate);
+            return;
+        }
+
+        // If update was initiated by a protocol ignore it
+        if (AbstractProtocol.class.isAssignableFrom(assetUpdate.getSender())) {
+            LOG.fine("Ignoring asset update as it came from a protocol:" + assetUpdate);
+            return;
+        }
+
+        boolean hasAgentLink = ThingAttribute.getAgentLink(assetUpdate.getAttribute()) != null;
+
+        if (hasAgentLink) {
+            // Check attribute is linked to an actual agent
+            ThingAttributes thingAttributes = new ThingAttributes(assetUpdate.getAsset());
+            ThingAttribute thingAttribute = thingAttributes.getLinkedAttribute(
+                    assetStorageService.getAgentLinkResolver(), assetUpdate.getAttribute().getName()
+            );
+
+            if (thingAttribute == null) {
+                LOG.warning("Cannot process asset update as agent link is invalid:" + assetUpdate);
+                assetUpdate.setStatus(AssetUpdate.Status.ERROR);
+                return;
+            }
+        } else {
+            // This is just a non protocol attribute so allow the processing to continue
+            LOG.fine("Ignoring asset update as it is not for an attribute linked to an agent:" + assetUpdate);
+            return;
+        }
+
+        // Send it to the protocol actuator
+        LOG.fine("Processing asset update: " + assetUpdate);
+        // Its' a send to actuator - push the update to the protocol
+        // TODO See class Javadoc, should we have a forceUpdate flag?
+        messageBrokerService.getProducerTemplate().sendBody(ACTUATOR_TOPIC, assetUpdate.getNewState());
+        assetUpdate.setStatus(AssetUpdate.Status.HANDLED);
     }
 
     public String toString() {

@@ -20,6 +20,7 @@
 package org.openremote.manager.server.rules;
 
 import org.apache.camel.builder.RouteBuilder;
+import org.openremote.agent3.protocol.AbstractProtocol;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerSetupService;
@@ -35,9 +36,9 @@ import org.openremote.manager.shared.rules.GlobalRulesDefinition;
 import org.openremote.manager.shared.rules.RulesDefinition;
 import org.openremote.manager.shared.rules.TenantRulesDefinition;
 import org.openremote.manager.shared.security.Tenant;
-import org.openremote.model.Consumer;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -132,6 +133,12 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
     @Override
     public void accept(AssetUpdate assetUpdate) {
+        // If update was initiated by a protocol then rules shouldn't be allowed to prevent it
+        // the update from progressing through the system
+        if (AbstractProtocol.class.isAssignableFrom(assetUpdate.getSender())) {
+            // TODO: Prevent rules RHS from blocking protocol initiated updates
+        }
+
         processAssetUpdate(assetUpdate);
     }
 

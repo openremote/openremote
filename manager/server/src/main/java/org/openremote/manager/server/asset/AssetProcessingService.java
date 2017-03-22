@@ -26,17 +26,20 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
+import org.openremote.manager.server.agent.AgentService;
 import org.openremote.manager.server.agent.ThingAttributes;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
 import org.openremote.manager.server.rules.RulesService;
 import org.openremote.model.*;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.ThingAttribute;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.function.Consumer;
 
 import static org.openremote.agent3.protocol.Protocol.ACTUATOR_TOPIC;
 import static org.openremote.agent3.protocol.Protocol.SENSOR_TOPIC;
@@ -50,6 +53,7 @@ import static org.openremote.model.asset.AssetType.THING;
  * The regular processor chain is:
  * <ul>
  * <li>{@link RulesService}</li>
+ * <li>{@link AgentService}</li>
  * <li>{@link AssetStorageService}</li>
  * <li>{@link AssetDatapointService}</li>
  * </ul>
@@ -61,7 +65,7 @@ import static org.openremote.model.asset.AssetType.THING;
  * send to its {@link Protocol#ACTUATOR_TOPIC}. Any other created or updated attribute will be processed.
  * TODO This is not implemented
  * <p>
- * Accepts client update calls on {@link #processClientUpdate(AttributeEvent)}. An update event for
+ * Accepts client update calls on {@link #updateAttributeValue(AttributeEvent)}. An update event for
  * a {@link ThingAttribute} will be send to its {@link Protocol#ACTUATOR_TOPIC}. An update event for
  * other attributes will be processed.
  * <p>
@@ -111,6 +115,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     private static final Logger LOG = Logger.getLogger(AssetProcessingService.class.getName());
 
     protected RulesService rulesService;
+    protected AgentService agentService;
     protected AssetStorageService assetStorageService;
     protected AssetDatapointService assetDatapointService;
     protected MessageBrokerService messageBrokerService;
@@ -120,11 +125,13 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     @Override
     public void init(Container container) throws Exception {
         rulesService = container.getService(RulesService.class);
+        agentService = container.getService(AgentService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         assetDatapointService = container.getService(AssetDatapointService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
 
         processors.add(rulesService);
+        processors.add(agentService);
         processors.add(assetStorageService);
         processors.add(assetDatapointService);
 
@@ -161,8 +168,27 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             });
     }
 
-    public void processClientUpdate(AttributeEvent attributeEvent) {
+    /**
+     * This is the entry point for any attribute value change event in the entire system. This deals
+     * with single attribute value changes and pushes them through the attribute event processing chain
+     * where each consumer is given the opportunity to consume the event or allow it progress to the
+     * next consumer {@link AssetUpdate.Status}.
+     *
+     * NOTE: An attribute value can be changed during Asset CRUD but this does not come through
+     * this route but is handled separately see {@link AssetResourceImpl}. Any attribute values
+     * assigned during Asset CRUD can be thought of as the attributes initial value and is subject
+     * to change by the following actors (depending on attribute meta etc.) all actors use this
+     * entry point to initiate an attribute value change:
+     *
+     * Rules
+     * Protocol
+     * User
+     *
+     * @param attributeEvent
+     */
+    public void updateAttributeValue(AttributeEvent attributeEvent) {
 
+        // Check this event relates to a valid asset
         ServerAsset asset = assetStorageService.find(attributeEvent.getEntityId());
 
 		if (asset == null) {
@@ -170,43 +196,35 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 			return;
 		}
 
-        switch (asset.getWellKnownType()) {
-            case THING:
-                // Send it to the protocol actuator after checking if it's a thing asset and linked attribute
-                LOG.fine("Processing client " + attributeEvent + " for thing: " + asset);
-
-                ThingAttributes thingAttributes = new ThingAttributes(asset);
-                ThingAttribute thingAttribute = thingAttributes.getLinkedAttribute(
-                    assetStorageService.getAgentLinkResolver(), attributeEvent.getAttributeName()
-                );
-
-                // TODO: This is broken a thing should be able to have attributes not linked to a protocol
-                if (thingAttribute == null) {
-                    throw new RuntimeException("Ignoring " + attributeEvent + ", thing attribute not available or linked to agent: " + asset);
-                }
-
-                // TODO See class Javadoc, should we have a forceUpdate flag?
-                // processUpdate(asset, thingAttribute, attributeEvent, false);
-
-                // Push it to protocol actuator
-                messageBrokerService.getProducerTemplate().sendBody(ACTUATOR_TOPIC, attributeEvent);
-
-                break;
-
-            case AGENT:
-                // TODO We don't want to allow agent attribute updates?! Not sure why but it seems like a good idea...
-                throw new RuntimeException("Agent attributes can not be updated individually, update the whole asset instead");
-
-            default:
-                // Perform regular asset attribute update
-                LOG.fine("Processing client " + attributeEvent + " for: " + asset);
-                Attributes attributes = new Attributes(asset.getAttributes());
-                Attribute attribute = attributes.get(attributeEvent.getAttributeName());
-                processUpdate(asset, attribute, attributeEvent, false); // Don't ignore readOnly flag
-                break;
+		// Prevent editing of individual agent attributes
+        if (asset.getWellKnownType() == AssetType.AGENT) {
+            throw new RuntimeException("Agent attributes can not be updated individually, update the whole asset instead");
         }
+
+        // Pass attribute event through the processing chain
+        LOG.fine("Processing client " + attributeEvent + " for: " + asset);
+        Attributes attributes = new Attributes(asset.getAttributes());
+        Attribute attribute = attributes.get(attributeEvent.getAttributeName());
+
+        if (attribute == null) {
+            LOG.warning("Ignoring " + attributeEvent + ", attribute doesn't exist on asset: " + asset);
+            return;
+        }
+
+        // Prevent editing of read only attributes
+        if (attribute.isReadOnly()) {
+            LOG.warning("Ignoring " + attributeEvent + ", attribute is read-only in: " + asset);
+            return;
+        }
+
+        processUpdate(asset, attribute, attributeEvent);
     }
 
+    /**
+     * We get here if a protocol pushes a sensor update message.
+     *
+     * @param attributeEvent
+     */
     protected void processSensorUpdate(AttributeEvent attributeEvent) {
         // Must reference a thing asset
         ServerAsset thing = assetStorageService.find(attributeEvent.getEntityId());
@@ -226,26 +244,20 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             assetStorageService.getAgentLinkResolver(), attributeEvent.getAttributeName()
         );
 
-        processUpdate(thing, thingAttribute, attributeEvent, true);
+        if (thingAttribute == null) {
+            LOG.warning("Processing sensor update failed attribute not linked to an agent: " + attributeEvent);
+            return;
+        }
+
+        // Protocols can write to readonly attributes (i.e. sensor attributes)
+        // So no need to check readonly flag
+
+        processUpdate(thing, thingAttribute, attributeEvent);
     }
 
     protected void processUpdate(ServerAsset asset,
                                  Attribute attribute,
-                                 AttributeEvent attributeEvent,
-                                 boolean ignoreReadOnly) {
-
-        // Check the asset has this attribute (might also not be present if a Thing's attribute is unlinked)
-        if (attribute == null) {
-            LOG.warning("Ignoring " + attributeEvent + ", attribute not available: " + asset);
-            return;
-        }
-
-        // Check attribute isn't readonly
-        if (!ignoreReadOnly && attribute.isReadOnly()) {
-            LOG.warning("Ignoring " + attributeEvent + ", attribute is read-only in: " + asset);
-            return;
-        }
-
+                                 AttributeEvent attributeEvent) {
         // Ensure timestamp of event is not in the future as that would essentially block access to
         // the attribute until after that time (maybe that is desirable behaviour)
         // Allow a leniency of 1s

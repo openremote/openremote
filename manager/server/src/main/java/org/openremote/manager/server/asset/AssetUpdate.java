@@ -98,6 +98,10 @@ public class AssetUpdate {
         return newState;
     }
 
+    public Class<?> getSender() {
+        return newState.getSender();
+    }
+
     public AttributeEvent getOldState() {
         return oldState;
     }

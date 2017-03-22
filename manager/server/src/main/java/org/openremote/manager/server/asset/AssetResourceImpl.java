@@ -27,6 +27,7 @@ import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.model.Attribute;
 import org.openremote.model.AttributeEvent;
+import org.openremote.model.AttributeRef;
 import org.openremote.model.Attributes;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetInfo;
@@ -234,7 +235,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             // Process update
             try {
                 JsonValue value = Json.instance().parse(rawJson);
-                assetProcessingService.processClientUpdate(new AttributeEvent(assetId, attributeName, value));
+                assetProcessingService.updateAttributeValue(new AttributeEvent(new AttributeRef(assetId, attributeName), value, this.getClass()));
             } catch (RuntimeException ex) {
                 throw new IllegalStateException("Error updating attribute: " + attributeName, ex);
             }

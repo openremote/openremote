@@ -5,11 +5,11 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.manager.server.asset.AssetUpdate;
 import org.openremote.model.AttributeRef;
-import org.openremote.model.Consumer;
 import org.openremote.model.datapoint.AssetDatapoint;
 
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.function.Consumer;
 
 /**
  * Store and retrieve datapoints.

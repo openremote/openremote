@@ -19,7 +19,6 @@ import org.openremote.manager.shared.rules.TenantRulesDefinition
 import org.openremote.model.AttributeEvent
 import org.openremote.model.AttributeRef
 import org.openremote.model.AttributeState
-import org.openremote.model.Constants
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -436,9 +435,9 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         and: "an attribute event is pushed into the system"
         def apartment1LivingRoomDemoBooleanChange = new AttributeEvent(
-                new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoBoolean"), Json.create(false))
+                new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoBoolean"), Json.create(false)), getClass()
         )
-        assetProcessingService.processClientUpdate(apartment1LivingRoomDemoBooleanChange)
+        assetProcessingService.updateAttributeValue(apartment1LivingRoomDemoBooleanChange)
 
         then: "the rule engines in scope should fire the 'All' and 'All changed' rules"
         conditions.eventually {
@@ -457,7 +456,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         when: "an old (stale) attribute event is pushed into the system"
         conditions = new PollingConditions(timeout: 10, initialDelay: 5)
-        assetProcessingService.processClientUpdate(apartment1LivingRoomDemoBooleanChange)
+        assetProcessingService.updateAttributeValue(apartment1LivingRoomDemoBooleanChange)
 
         then: "after a few seconds no rules should have fired on any engines"
         conditions.eventually {
@@ -477,9 +476,9 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         and: "an attribute event with the same value as current value is pushed into the system"
         apartment1LivingRoomDemoBooleanChange = new AttributeEvent(
-                new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoBoolean"), Json.create(false))
+                new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoBoolean"), Json.create(false)), getClass()
         )
-        assetProcessingService.processClientUpdate(apartment1LivingRoomDemoBooleanChange)
+        assetProcessingService.updateAttributeValue(apartment1LivingRoomDemoBooleanChange)
 
         then: "the rule engines in scope should fire the 'All' rule but not the 'All changed' rule"
         conditions.eventually {
@@ -535,9 +534,9 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         and: "an apartment 3 living room attribute event occurs"
         def apartment3LivingRoomDemoStringChange = new AttributeEvent(
-                new AttributeState(new AttributeRef(managerDemoSetup.apartment3LivingroomId, "demoString"), Json.create("demo2"))
+                new AttributeState(new AttributeRef(managerDemoSetup.apartment3LivingroomId, "demoString"), Json.create("demo2")), getClass()
         )
-        assetProcessingService.processClientUpdate(apartment3LivingRoomDemoStringChange)
+        assetProcessingService.updateAttributeValue(apartment3LivingRoomDemoStringChange)
 
         then: "the apartment 3 rule engine should have fired the 'All', 'All changed' and 'Living Room All' rules but apartment 1 shouldn't have fired any"
         conditions.eventually {
@@ -549,9 +548,9 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         when: "an apartment 1 living room attribute event occurs"
         def apartment1LivingRoomDemoStringChange = new AttributeEvent(
-                new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoDecimal"), Json.create(22.5))
+                new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoDecimal"), Json.create(22.5)), getClass()
         )
-        assetProcessingService.processClientUpdate(apartment1LivingRoomDemoStringChange)
+        assetProcessingService.updateAttributeValue(apartment1LivingRoomDemoStringChange)
 
         then: "the apartment 1 rule engine should have fired the 'All', 'All changed' and 'Living Room All' rules but apartment 3 shouldn't have fired any"
         conditions.eventually {

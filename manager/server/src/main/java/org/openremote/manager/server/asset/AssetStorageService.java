@@ -40,6 +40,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import java.util.function.Consumer;
 
 import static org.openremote.model.asset.AssetType.AGENT;
 
@@ -51,6 +52,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
 
     protected PersistenceService persistenceService;
     protected ManagerIdentityService managerIdentityService;
+    protected AssetProcessingService assetProcessingService;
 
     final protected Function<AttributeRef, ProtocolConfiguration> agentLinkResolver = agentLink -> {
         // Resolve the agent and the protocol configuration
@@ -67,6 +69,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
     public void init(Container container) throws Exception {
         persistenceService = container.getService(PersistenceService.class);
         managerIdentityService = container.getService(ManagerIdentityService.class);
+        assetProcessingService = container.getService(AssetProcessingService.class);
 
         container.getService(WebService.class).getApiSingletons().add(
             new AssetResourceImpl(
@@ -301,6 +304,11 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
             }
             return true;
         });
+    }
+
+    // Here for convenience - a single service to handle Asset/AssetAttribute events
+    public void updateAttributeValue(AttributeEvent attributeEvent) {
+        assetProcessingService.updateAttributeValue(attributeEvent);
     }
 
     @Override

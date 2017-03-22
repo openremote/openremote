@@ -126,10 +126,10 @@ public class SimulatorProtocol extends AbstractProtocol {
 
             if (simulateSensorRead) {
                 LOG.info("Propagating state change as sensor read: " + element);
-                onSensorUpdate(new AttributeEvent(attributeState));
+                onSensorUpdate(attributeState);
             } else if (element.isReflectActuatorWrites()) {
                 LOG.info("Reflecting actuator write as sensor read: " + element);
-                onSensorUpdate(new AttributeEvent(attributeState));
+                onSensorUpdate(attributeState);
             }
         }
     }
