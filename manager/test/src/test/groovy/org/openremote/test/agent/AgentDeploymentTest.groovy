@@ -46,7 +46,7 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         then: "the simulator state and thing attribute value should be updated (simulator reflects actuator write as sensor read)"
         conditions.eventually {
             assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Dimmer").asNumber() == 66
-            def thing = assetStorageService.find(managerDemoSetup.thingId)
+            def thing = assetStorageService.find(managerDemoSetup.thingId, true)
             def attributes = new Attributes(thing.getAttributes())
             assert attributes.get("light1Dimmer").getValue().getType() == JsonType.NUMBER
             assert attributes.get("light1Dimmer").getValueAsInteger() == 66
@@ -58,7 +58,7 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
 
         then: "the thing attribute value should be updated"
         conditions.eventually {
-            def thing = assetStorageService.find(managerDemoSetup.thingId)
+            def thing = assetStorageService.find(managerDemoSetup.thingId, true)
             def attributes = new Attributes(thing.getAttributes())
             assert attributes.get("light1Dimmer").getValue().getType() == JsonType.NUMBER
             assert attributes.get("light1Dimmer").getValueAsInteger() == 77

@@ -100,43 +100,42 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
         // If any asset was modified in the database, detect changed attributes
         from(PERSISTENCE_TOPIC)
-                .filter(isPersistenceEventForEntityType(Asset.class))
-                .process(exchange -> {
-                    PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
-                    Asset asset = (Asset) persistenceEvent.getEntity();
-                    ServerAsset serverAsset = ServerAsset.map(asset, new ServerAsset());
+            .filter(isPersistenceEventForEntityType(Asset.class))
+            .process(exchange -> {
+                PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
+                Asset asset = (Asset) persistenceEvent.getEntity();
+                ServerAsset serverAsset = ServerAsset.map(asset, new ServerAsset());
 
-                    switch (persistenceEvent.getCause())
-                    {
-                        case INSERT:
-                            // New asset has been created so get attributes that have RULES_FACT meta
-                            Attributes addedAttributes = new Attributes(asset.getAttributes());
-                            Arrays.stream(addedAttributes.get())
-                                    .filter(attribute -> attribute.hasMetaItem(AssetMeta.RULES_FACT))
-                                    .forEach(attribute -> {
-                                        AssetUpdate update = new AssetUpdate(serverAsset, attribute, attribute.getStateEvent(asset.getId()), null);
-                                        // TODO: What if a rule engine marks the fact as handled it should still go into other engines here???
-                                        insertFact(update);
-                                    });
-                            break;
-                        case UPDATE:
-                            // TODO: Handle update case
-                            break;
-                        case DELETE:
-                            // Retract any facts that were associated with this asset
-                            Attributes removedAttributes = new Attributes(asset.getAttributes());
-                            Arrays.stream(removedAttributes.get())
-                                    .filter(attribute -> attribute.hasMetaItem(AssetMeta.RULES_FACT))
-                                    .forEach(attribute -> {
-                                        AssetUpdate update = new AssetUpdate(serverAsset, attribute, attribute.getStateEvent(asset.getId()), null);
-                                        // TODO: What if a rule engine marks the fact as handled it should still go into other engines here???
-                                        retractFact(update);
-                                    });
-                            break;
-                    }
-                    // TODO: Detect which attribute was created/updated in the database and handle it
+                switch (persistenceEvent.getCause()) {
+                    case INSERT:
+                        // New asset has been created so get attributes that have RULES_FACT meta
+                        Attributes addedAttributes = new Attributes(asset.getAttributes());
+                        Arrays.stream(addedAttributes.get())
+                            .filter(attribute -> attribute.hasMetaItem(AssetMeta.RULES_FACT))
+                            .forEach(attribute -> {
+                                AssetUpdate update = new AssetUpdate(serverAsset, attribute, attribute.getStateEvent(asset.getId()), null);
+                                // TODO: What if a rule engine marks the fact as handled it should still go into other engines here???
+                                insertFact(update);
+                            });
+                        break;
+                    case UPDATE:
+                        // TODO: Handle update case
+                        break;
+                    case DELETE:
+                        // Retract any facts that were associated with this asset
+                        Attributes removedAttributes = new Attributes(asset.getAttributes());
+                        Arrays.stream(removedAttributes.get())
+                            .filter(attribute -> attribute.hasMetaItem(AssetMeta.RULES_FACT))
+                            .forEach(attribute -> {
+                                AssetUpdate update = new AssetUpdate(serverAsset, attribute, attribute.getStateEvent(asset.getId()), null);
+                                // TODO: What if a rule engine marks the fact as handled it should still go into other engines here???
+                                retractFact(update);
+                            });
+                        break;
+                }
+                // TODO: Detect which attribute was created/updated in the database and handle it
 
-                });
+            });
     }
 
     @Override
@@ -288,7 +287,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             .entrySet()
             .stream()
             .map(es ->
-                new Pair<>(assetStorageService.find(es.getKey()), es.getValue())
+                new Pair<>(assetStorageService.find(es.getKey(), true), es.getValue())
             )
             .collect(Collectors.groupingBy(assetAndRules -> assetAndRules.key.getRealmId()))
             .entrySet()
@@ -337,7 +336,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
         // Get the chain of rule engines that we need to pass through
         ServerAsset asset = assetUpdate.getAsset();
-        List<RulesDeployment> rulesDeployments = getEnginesInScope(asset.getRealmId(), asset.getPath());
+        List<RulesDeployment> rulesDeployments = getEnginesInScope(asset.getRealmId(), asset.getReversePath());
 
         // Pass through each engine and try and insert the fact
         for (RulesDeployment deployment : rulesDeployments) {
@@ -360,7 +359,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
         // Get the chain of rule engines that we need to pass through
         ServerAsset asset = assetUpdate.getAsset();
-        List<RulesDeployment> rulesDeployments = getEnginesInScope(asset.getRealmId(), asset.getPath());
+        List<RulesDeployment> rulesDeployments = getEnginesInScope(asset.getRealmId(), asset.getReversePath());
 
         // Pass through each engine and retract this fact
         for (RulesDeployment deployment : rulesDeployments) {

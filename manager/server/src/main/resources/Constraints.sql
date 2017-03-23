@@ -1,4 +1,7 @@
 alter table ASSET
+  add foreign key (PARENT_ID) references ASSET (ID);
+
+alter table ASSET
   add foreign key (REALM_ID) references REALM (ID);
 
 alter table ASSET_DATAPOINT

@@ -166,9 +166,7 @@ public class AssetViewActivity
 
     protected void writeParentToView() {
         if (parentAsset != null) {
-            view.setParentNode(
-                new AssetTreeNode(parentAsset, parentAsset.getTenantDisplayName())
-            );
+            view.setParentNode(new AssetTreeNode(parentAsset));
         } else {
             view.setParentNode(
                 new TenantTreeNode(

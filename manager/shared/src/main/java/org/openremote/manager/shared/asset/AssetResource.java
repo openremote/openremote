@@ -23,8 +23,7 @@ import jsinterop.annotations.JsType;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.http.SuccessStatusCode;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetInfo;
-import org.openremote.model.asset.ProtectedAssetInfo;
+import org.openremote.model.asset.ProtectedAsset;
 
 import javax.annotation.security.RolesAllowed;
 import javax.validation.Valid;
@@ -67,7 +66,7 @@ public interface AssetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
-    ProtectedAssetInfo[] getCurrentUserAssets(@BeanParam RequestParams requestParams);
+    ProtectedAsset[] getCurrentUserAssets(@BeanParam RequestParams requestParams);
 
     /**
      * Updates an asset linked to the current user. A 403 status is returned if a regular user tries to update an
@@ -79,7 +78,7 @@ public interface AssetResource {
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:assets"})
-    void updateCurrentUserAsset(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, ProtectedAssetInfo assetInfo);
+    void updateCurrentUserAsset(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, ProtectedAsset protectedAsset);
 
     /**
      * Retrieve the assets without parent (root assets) of the given realm, or if the realm argument
@@ -91,7 +90,7 @@ public interface AssetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
-    AssetInfo[] getRoot(@BeanParam RequestParams requestParams, @QueryParam("realmId") String realmId);
+    Asset[] getRoot(@BeanParam RequestParams requestParams, @QueryParam("realmId") String realmId);
 
     /**
      * Retrieve the child assets of the given parent asset. If the authenticated user is the superuser,
@@ -104,7 +103,7 @@ public interface AssetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
-    AssetInfo[] getChildren(@BeanParam RequestParams requestParams, @PathParam("assetId") String parentId);
+    Asset[] getChildren(@BeanParam RequestParams requestParams, @PathParam("assetId") String parentId);
 
     /**
      * Retrieve the asset. Regular users can only access assets in their authenticated realm,

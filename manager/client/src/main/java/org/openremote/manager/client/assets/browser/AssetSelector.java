@@ -130,7 +130,7 @@ public abstract class AssetSelector extends FormGroup {
             outputAssetName.setText(managerMessages.assetHasNoParent());
         } else if (treeNode instanceof AssetTreeNode) {
             AssetTreeNode assetTreeNode = (AssetTreeNode) treeNode;
-            outputTenantDisplayName.setText(assetTreeNode.getTenantDisplayName());
+            outputTenantDisplayName.setText(assetTreeNode.getAsset().getTenantDisplayName());
             outputAssetName.setText(treeNode.getLabel());
         }
     }

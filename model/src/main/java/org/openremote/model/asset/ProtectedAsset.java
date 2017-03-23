@@ -30,16 +30,14 @@ import java.util.Date;
 import static org.openremote.model.Constants.NAMESPACE;
 
 /**
- * Contains protected asset properties such as realm, name, creation timestamp, type,
- * parent identifier, and location of an {@link Asset}, as well as all protected
- * attributes, and their protected metadata (see {@link AssetMeta#PROTECTED},
- * {@link AssetMeta.Access}).
+ * Filters attributes of an asset as to only contain protected attributes, and their
+ * protected metadata (see {@link AssetMeta#PROTECTED}, {@link AssetMeta.Access}).
  * <p>
  * Note that third-party metadata items (not in the
  * {@link org.openremote.model.Constants#NAMESPACE}) are never included on
  * a protected attribute!
  */
-public class ProtectedAssetInfo extends AssetInfo {
+public class ProtectedAsset extends Asset {
 
     static JsonObject filterProtectedAttributes(JsonObject unfilteredAttributes) {
         Attributes filteredAttributes = new Attributes();
@@ -51,7 +49,7 @@ public class ProtectedAssetInfo extends AssetInfo {
                 continue;
             }
 
-            Attribute protectedAttribute = new Attribute(attribute.getName(), attribute.getJsonObject());
+            Attribute protectedAttribute = attribute.copy();
             filteredAttributes.put(protectedAttribute);
 
             if (!protectedAttribute.hasMeta())
@@ -77,43 +75,39 @@ public class ProtectedAssetInfo extends AssetInfo {
         return filteredAttributes.getJsonObject();
     }
 
-    protected JsonObject attributes;
-
-    public ProtectedAssetInfo() {
+    public ProtectedAsset() {
     }
 
-    public ProtectedAssetInfo(Asset asset) {
-        this(
-            asset.getId(),
-            asset.getVersion(),
-            asset.getName(),
-            asset.getCreatedOn(),
-            asset.getRealmId(),
-            asset.getType(),
-            asset.parentId,
-            asset.getCoordinates(),
-            asset.getAttributes()
+    public ProtectedAsset(String name, AssetType type) {
+        super(name, type);
+    }
+
+    public ProtectedAsset(String realm, String name, AssetType type) {
+        super(realm, name, type);
+    }
+
+    public ProtectedAsset(String realmId, String name, String type) {
+        super(realmId, name, type);
+    }
+
+    public ProtectedAsset(String id, long version, Date createdOn, String name, String type,
+                          String parentId, String parentName, String parentType, String[] path,
+                          String realmId, String tenantRealm, String tenantDisplayName,
+                          JsonObject attributes) {
+        super(
+            id, version, createdOn, name, type,
+            parentId, parentName, parentType, path,
+            realmId, tenantRealm, tenantDisplayName,
+            filterProtectedAttributes(attributes)
         );
     }
 
-    public ProtectedAssetInfo(String id,
-                              long version,
-                              String name,
-                              Date createdOn,
-                              String realmId,
-                              String type,
-                              String parentId,
-                              double[] coordinates,
-                              JsonObject attributes) {
-        super(id, version, name, createdOn, realmId, type, parentId, coordinates);
-        this.attributes = filterProtectedAttributes(attributes);
+    public ProtectedAsset(Asset parent) {
+        super(parent);
     }
 
-    public JsonObject getAttributes() {
-        return attributes;
-    }
-
+    @Override
     public void setAttributes(JsonObject attributes) {
-        this.attributes = attributes;
+        super.setAttributes(filterProtectedAttributes(attributes));
     }
 }

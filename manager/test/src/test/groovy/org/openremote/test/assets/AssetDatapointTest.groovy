@@ -43,7 +43,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
 
         then: "the thing attribute value should be updated and the datapoints stored"
         conditions.eventually {
-            def thing = assetStorageService.find(managerDemoSetup.thingId)
+            def thing = assetStorageService.find(managerDemoSetup.thingId, true)
             def attributes = new Attributes(thing.getAttributes())
             assert attributes.get("light1PowerConsumption").getValueAsDecimal() == 15.5d
             def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerDemoSetup.thingId, "light1PowerConsumption"))

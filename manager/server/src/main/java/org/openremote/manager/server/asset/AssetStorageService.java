@@ -28,19 +28,26 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.agent.AgentAttributes;
 import org.openremote.manager.server.security.ManagerIdentityService;
+import org.openremote.manager.server.security.RealmView;
 import org.openremote.model.*;
-import org.openremote.model.asset.*;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetType;
+import org.openremote.model.asset.ProtocolConfiguration;
+import org.openremote.model.asset.UserAsset;
 import org.postgresql.util.PGobject;
 
 import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
+import javax.persistence.criteria.*;
 import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-import java.util.function.Consumer;
 
 import static org.openremote.model.asset.AssetType.AGENT;
 
@@ -57,7 +64,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
     final protected Function<AttributeRef, ProtocolConfiguration> agentLinkResolver = agentLink -> {
         // Resolve the agent and the protocol configuration
         // TODO This is very inefficient and requires Hibernate second-level caching
-        Asset agent = find(agentLink.getEntityId());
+        Asset agent = find(agentLink.getEntityId(), true);
         if (agent != null && agent.getWellKnownType().equals(AGENT)) {
             AgentAttributes agentAttributes = new AgentAttributes(agent);
             return agentAttributes.getProtocolConfiguration(agentLink.getAttributeName());
@@ -96,96 +103,127 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
     /**
      * Find assets without a parent in a realm.
      *
-     * @param realmId The realm to search.
+     * @param realmId      The realm to search.
+     * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
      * @return The root assets of the realm ordered ascending by creation date, or an empty array if there is no data.
      */
-    public AssetInfo[] findRoot(String realmId) {
+    public ServerAsset[] findRoot(String realmId, boolean loadComplete) {
         if (realmId == null || realmId.length() == 0)
             throw new IllegalArgumentException("Realm must be provided to query assets");
         return persistenceService.doReturningTransaction(em -> {
-            List<AssetInfo> result = em.createQuery(
-                "select new org.openremote.manager.server.asset.ServerAssetInfo(" +
-                    "a.id, a.version, a.name, a.createdOn, a.realmId, a.type, a.parent.id, a.location" +
-                    ") from Asset a where a.parent is null and a.realmId = :realmId order by a.createdOn asc",
-                AssetInfo.class
-            ).setParameter("realmId", realmId).getResultList();
-            return result.toArray(new AssetInfo[result.size()]);
+            List<ServerAsset> result = em.createQuery(buildAssetQuery(
+                em.getCriteriaBuilder(),
+                ServerAsset.class, null, null, realmId, null, null, true, loadComplete, null
+            )).getResultList();
+            return result.toArray(new ServerAsset[result.size()]);
         });
     }
 
     /**
      * Retrieve the children of an asset.
      *
-     * @param parentId The ID of the parent asset.
+     * @param parentId     The ID of the parent asset.
+     * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
      * @return The child assets ordered ascending by creation date, or an empty array if there is no data.
      */
-    public AssetInfo[] findChildren(String parentId) {
+    public ServerAsset[] findChildren(String parentId, boolean loadComplete) {
         return persistenceService.doReturningTransaction(em -> {
-            Asset parent = loadAsset(em, parentId, false);
-            if (parent == null)
-                return new AssetInfo[0];
-            List<AssetInfo> result =
-                em.createQuery(
-                    "select new org.openremote.manager.server.asset.ServerAssetInfo(" +
-                        "a.id, a.version, a.name, a.createdOn, a.realmId, a.type, a.parent.id, a.location" +
-                        ") from Asset a where a.parent.id = :parentId order by a.createdOn asc",
-                    AssetInfo.class
-                ).setParameter("parentId", parentId).getResultList();
-            return result.toArray(new AssetInfo[result.size()]);
+            List<ServerAsset> result = em.createQuery(buildAssetQuery(
+                em.getCriteriaBuilder(),
+                ServerAsset.class, null, parentId, null, null, null, false, loadComplete, null
+            )).getResultList();
+            return result.toArray(new ServerAsset[result.size()]);
         });
     }
 
     /**
      * Retrieve the children of an asset in a particular realm.
      *
-     * @param parentId The ID of the parent asset.
-     * @param realmId  The realm in which both parent asset and its children must be.
+     * @param parentId     The ID of the parent asset.
+     * @param realmId      The realm in which both parent asset and its children must be.
+     * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
      * @return The child assets ordered ascending by creation date, or an empty array if there is no data.
      */
-    public AssetInfo[] findChildrenInRealm(String parentId, String realmId) {
+    public ServerAsset[] findChildrenInRealm(String parentId, String realmId, boolean loadComplete) {
         return persistenceService.doReturningTransaction(em -> {
-            Asset parent = loadAsset(em, parentId, false);
-            if (parent == null)
-                return new AssetInfo[0];
-            List<AssetInfo> result =
-                em.createQuery(
-                    "select new org.openremote.manager.server.asset.ServerAssetInfo(" +
-                        "a.id, a.version, a.name, a.createdOn, a.realmId, a.type, a.parent.id, a.location" +
-                        ") from Asset a, Asset p where p.id = :parentId and a.parent.id = :parentId " +
-                        "and p.realmId = :realmId and a.realmId = :realmId " +
-                        "order by a.createdOn asc",
-                    AssetInfo.class
-                ).setParameter("parentId", parentId)
-                    .setParameter("realmId", realmId)
-                    .getResultList();
-            return result.toArray(new AssetInfo[result.size()]);
+            List<ServerAsset> result = em.createQuery(buildAssetQuery(
+                em.getCriteriaBuilder(),
+                ServerAsset.class, null, parentId, realmId, null, null, false, loadComplete, null
+            )).getResultList();
+            return result.toArray(new ServerAsset[result.size()]);
         });
     }
 
     /**
      * Find an asset by primary key and populate all transient details (path, tenant).
      *
-     * @param assetId The primary key identifier value of the asset.
+     * @param assetId      The primary key identifier value of the asset.
+     * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
      * @return The asset or <code>null</code> if the asset doesn't exist.
      */
-    public ServerAsset find(String assetId) {
-        return persistenceService.doReturningTransaction(em -> loadAsset(em, assetId, true));
+    public ServerAsset find(String assetId, boolean loadComplete) {
+        return persistenceService.doReturningTransaction(em -> {
+            try {
+                return em.createQuery(buildAssetQuery(
+                    em.getCriteriaBuilder(),
+                    ServerAsset.class, assetId, null, null, null, null, false, loadComplete, null
+                )).getSingleResult();
+            } catch (NoResultException ex) {
+                return null;
+            }
+        });
     }
+
+    /**
+     * Find assets by type in all realms.
+     *
+     * @param assetType    The type of the assets to find.
+     * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
+     * @return The found assets or an empty array
+     */
+    public ServerAsset[] findByType(String assetType, boolean loadComplete) {
+        return persistenceService.doReturningTransaction(em -> {
+            List<ServerAsset> result = em.createQuery(buildAssetQuery(
+                em.getCriteriaBuilder(),
+                ServerAsset.class, null, null, null, null, assetType, false, loadComplete, null
+            )).getResultList();
+            return result.toArray(new ServerAsset[result.size()]);
+        });
+    }
+
+    /**
+     * Find children of the given asset by type.
+     *
+     * @param parentId     The ID of the parent asset.
+     * @param assetType    The well-known type of the assets to find.
+     * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
+     * @return The found assets or an empty array
+     */
+    public ServerAsset[] findChildrenByType(String parentId, AssetType assetType, boolean loadComplete) {
+        return persistenceService.doReturningTransaction(em -> {
+            List<ServerAsset> result = em.createQuery(buildAssetQuery(
+                em.getCriteriaBuilder(),
+                ServerAsset.class, null, parentId, null, null, assetType.getValue(), false, loadComplete, null
+            )).getResultList();
+            return result.toArray(new ServerAsset[result.size()]);
+        });
+    }
+
 
     /**
      * Find protected assets linked to a user.
      *
+     * @param userId       The primary key identifier value of the user.
+     * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
      * @return The found assets or an empty array.
      */
-    public ProtectedAssetInfo[] findProtectedOfUser(String userId) {
+    public ProtectedServerAsset[] findProtectedOfUser(String userId, boolean loadComplete) {
         return persistenceService.doReturningTransaction(em -> {
-            List<ProtectedAssetInfo> result = em.createQuery(
-                "select new org.openremote.manager.server.asset.ProtectedServerAssetInfo(" +
-                    "a.id, a.version, a.name, a.createdOn, a.realmId, a.type, a.parent.id, a.location, a.attributes" +
-                    ") from Asset a, UserAsset ua where a.id = ua.assetId and ua.userId = :userId order by a.createdOn asc",
-                ProtectedAssetInfo.class
-            ).setParameter("userId", userId).getResultList();
-            return result.toArray(new ProtectedAssetInfo[result.size()]);
+            List<ProtectedServerAsset> result = em.createQuery(buildAssetQuery(
+                em.getCriteriaBuilder(),
+                ProtectedServerAsset.class, null, null, null, userId, null, false, loadComplete, null
+            )).getResultList();
+            return result.toArray(new ProtectedServerAsset[result.size()]);
         });
     }
 
@@ -220,44 +258,6 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
     }
 
     /**
-     * Find assets by type in all realms.
-     *
-     * @param assetType The type of the assets to find.
-     * @return The found assets or an empty array
-     */
-    public ServerAsset[] findByType(String assetType) {
-        return persistenceService.doReturningTransaction(em -> {
-            List<ServerAsset> result =
-                em.createQuery(
-                    "select a from Asset a where a.type = :assetType order by a.createdOn asc",
-                    ServerAsset.class)
-                    .setParameter("assetType", assetType)
-                    .getResultList();
-            return result.toArray(new ServerAsset[result.size()]);
-        });
-    }
-
-    /**
-     * Find children of the given asset by type.
-     *
-     * @param parentId  The ID of the parent asset.
-     * @param assetType The well-known type of the assets to find.
-     * @return The found assets or an empty array
-     */
-    public ServerAsset[] findChildrenByType(String parentId, AssetType assetType) {
-        return persistenceService.doReturningTransaction(em -> {
-            List<ServerAsset> result =
-                em.createQuery(
-                    "select a from Asset a where a.type = :assetType and a.parentId = :parentId order by a.createdOn asc",
-                    ServerAsset.class)
-                    .setParameter("assetType", assetType.getValue())
-                    .setParameter("parentId", parentId)
-                    .getResultList();
-            return result.toArray(new ServerAsset[result.size()]);
-        });
-    }
-
-    /**
      * @return The current stored asset state.
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
      */
@@ -275,7 +275,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
                 if (parent == null)
                     throw new IllegalStateException("Parent not found: " + asset.getParentId());
                 // ... the parent can not be a child of the asset
-                if (Arrays.asList(parent.getPath()).contains(asset.getId()))
+                if (parent.pathContains(asset.getId()))
                     throw new IllegalStateException("Invalid parent");
             }
             // Validate attribute names
@@ -298,7 +298,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
         return persistenceService.doReturningTransaction(em -> {
             Asset asset = em.find(ServerAsset.class, assetId);
             if (asset != null) {
-                if (findChildren(asset.getId()).length > 0)
+                if (findChildren(asset.getId(), false).length > 0)
                     return false;
                 em.remove(asset);
             }
@@ -413,6 +413,72 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
         );
     }
 
+    protected <T extends Asset> CriteriaQuery<T> buildAssetQuery(CriteriaBuilder cb,
+                                                                 Class<T> resultClass,
+                                                                 String assetId,
+                                                                 String parentAssetId,
+                                                                 String realmId,
+                                                                 String userId,
+                                                                 String type,
+                                                                 boolean withoutParent,
+                                                                 boolean loadComplete,
+                                                                 String orderBy) {
+        CriteriaQuery<T> criteria = cb.createQuery(resultClass);
+        Root<ServerAsset> assetRoot = criteria.from(ServerAsset.class);
+        Root<ServerAsset> assetParentRoot = criteria.from(ServerAsset.class);
+        Root<RealmView> realmViewRoot = criteria.from(RealmView.class);
+        Root<UserAsset> userAssetRoot = userId != null ? criteria.from(UserAsset.class) : null;
+        List<Predicate> predicates = new ArrayList<Predicate>() {{
+            add(cb.equal(assetRoot.get("id"), assetParentRoot.get("id")));
+            add(cb.equal(assetRoot.get("realmId"), realmViewRoot.get("id")));
+            if (assetId != null) {
+                add(cb.equal(assetRoot.get("id"), assetId));
+            }
+            if (!withoutParent && parentAssetId != null) {
+                add(cb.equal(assetRoot.get("parentId"), parentAssetId));
+            } else if (withoutParent) {
+                add(cb.isNull(assetRoot.get("parentId")));
+            }
+            if (realmId != null) {
+                add(cb.equal(assetRoot.get("realmId"), realmId));
+            }
+            if (type != null) {
+                add(cb.equal(assetRoot.get("type"), type));
+            }
+            if (userId != null) {
+                add(cb.equal(userAssetRoot.get("userId"), userId));
+                add(cb.equal(assetRoot.get("id"), userAssetRoot.get("assetId")));
+            }
+        }};
+        criteria.where(predicates.toArray(new Predicate[predicates.size()]));
+        if (assetId == null) {
+            criteria.orderBy(cb.asc(assetRoot.get(orderBy != null ? orderBy : "createdOn")));
+        }
+        List<Selection> projectionArgs = new ArrayList<Selection>() {{
+            add(assetRoot.get("id"));
+            add(assetRoot.get("version"));
+            add(assetRoot.get("createdOn"));
+            add(assetRoot.get("name"));
+            add(assetRoot.get("type"));
+            add(assetRoot.get("parentId"));
+            add(assetParentRoot.get("name"));
+            add(assetParentRoot.get("type"));
+            if (loadComplete)
+                add(assetRoot.get("path"));
+            add(assetRoot.get("realmId"));
+            add(realmViewRoot.get("name"));
+            add(realmViewRoot.get("displayName"));
+            add(assetRoot.get("location"));
+            if (loadComplete)
+                add(assetRoot.get("attributes"));
+        }};
+        return criteria.select(
+            cb.construct(
+                resultClass,
+                projectionArgs.toArray(new Selection[projectionArgs.size()])
+            )
+        );
+    }
 
     public String toString() {
         return getClass().getSimpleName() + "{" +

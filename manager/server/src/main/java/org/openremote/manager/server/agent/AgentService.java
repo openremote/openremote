@@ -69,7 +69,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
     @Override
     public void start(Container container) throws Exception {
-        Asset[] agents = assetStorageService.findByType(AGENT.getValue());
+        Asset[] agents = assetStorageService.findByType(AGENT.getValue(), false);
         LOG.fine("Deploy all agents in all realms: " + agents.length);
         for (Asset agent : agents) {
             deployAgent(agent, PersistenceEvent.Cause.UPDATE);
@@ -102,7 +102,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         switch (cause) {
             case UPDATE:
                 // TODO: Find everything with this agent ID in the asset tree not just children
-                Asset[] things = assetStorageService.findChildrenByType(agent.getId(), THING);
+                Asset[] things = assetStorageService.findChildrenByType(agent.getId(), THING, true);
                 for (Asset thing : things) {
                     deployThing(thing, PersistenceEvent.Cause.UPDATE);
                 }

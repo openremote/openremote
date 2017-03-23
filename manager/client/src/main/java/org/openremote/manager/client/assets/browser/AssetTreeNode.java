@@ -20,47 +20,34 @@
 package org.openremote.manager.client.assets.browser;
 
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetInfo;
 import org.openremote.model.asset.AssetType;
 
 public class AssetTreeNode extends BrowserTreeNode {
 
-    final protected AssetInfo assetInfo;
+    final protected Asset asset;
 
-    final protected String tenantDisplayName;
-
-    public AssetTreeNode(Asset asset, String tenantDisplayName) {
-        this(new AssetInfo(asset), tenantDisplayName);
-    }
-    public AssetTreeNode(AssetInfo assetInfo, String tenantDisplayName) {
-        super(assetInfo.getName());
-        this.assetInfo = assetInfo;
-        this.tenantDisplayName = tenantDisplayName;
-    }
-
-    public AssetInfo getAssetInfo() {
-        return assetInfo;
-    }
-
-    public String getTenantDisplayName() {
-        return tenantDisplayName;
+    public AssetTreeNode(Asset asset) {
+        super(asset.getName());
+        this.asset = asset;
     }
 
     @Override
     public String getId() {
-        return assetInfo.getId();
+        return asset.getId();
+    }
+
+    public Asset getAsset() {
+        return asset;
     }
 
     @Override
     public boolean isLeaf() {
-        return assetInfo.isWellKnownType(AssetType.THING);
+        return asset.isWellKnownType(AssetType.THING);
     }
 
     @Override
     public String getIcon() {
-        if (assetInfo.getWellKnownType() == null)
-            return "cube";
-        switch (assetInfo.getWellKnownType()) {
+        switch (asset.getWellKnownType()) {
             case BUILDING:
                 return "building";
             case RESIDENCE:

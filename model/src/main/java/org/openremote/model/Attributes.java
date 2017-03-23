@@ -24,7 +24,6 @@ import elemental.json.Json;
 import elemental.json.JsonObject;
 
 import java.util.*;
-import java.util.regex.Pattern;
 
 /**
  * Convenience overlay API for {@link JsonObject}.

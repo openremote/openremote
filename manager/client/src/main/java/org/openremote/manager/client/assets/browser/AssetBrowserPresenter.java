@@ -22,14 +22,13 @@ package org.openremote.manager.client.assets.browser;
 import com.google.gwt.view.client.HasData;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.admin.TenantArrayMapper;
-import org.openremote.manager.client.assets.AssetInfoArrayMapper;
+import org.openremote.manager.client.assets.AssetArrayMapper;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.model.Consumer;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetInfo;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -45,7 +44,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     final AssetBrowser view;
     final AssetResource assetResource;
     final AssetMapper assetMapper;
-    final AssetInfoArrayMapper assetInfoArrayMapper;
+    final AssetArrayMapper assetArrayMapper;
     final TenantResource tenantResource;
     final TenantArrayMapper tenantArrayMapper;
 
@@ -59,7 +58,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                                  AssetBrowser view,
                                  AssetResource assetResource,
                                  AssetMapper assetMapper,
-                                 AssetInfoArrayMapper assetInfoArrayMapper,
+                                 AssetArrayMapper assetArrayMapper,
                                  TenantResource tenantResource,
                                  TenantArrayMapper tenantArrayMapper) {
         this.environment = environment;
@@ -68,7 +67,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         this.tenantArrayMapper = tenantArrayMapper;
         this.assetResource = assetResource;
         this.assetMapper = assetMapper;
-        this.assetInfoArrayMapper = assetInfoArrayMapper;
+        this.assetArrayMapper = assetArrayMapper;
 
         view.setPresenter(this);
     }
@@ -130,7 +129,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
 
     @Override
     public void selectAsset(Asset asset) {
-        onNodeSelected(asset != null ? new AssetTreeNode(asset, asset.getTenantDisplayName()) : null);
+        onNodeSelected(asset != null ? new AssetTreeNode(asset) : null);
         selectedNodePath = asset != null ? getTenantAdjustedAssetPath(asset) : null;
         if (selectedNode != null) {
             updateViewSelection(true);
@@ -217,7 +216,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         // TODO Pagination?
         // final Range range = display.getVisibleRange();
         environment.getRequestService().execute(
-            assetInfoArrayMapper,
+            assetArrayMapper,
             requestParams -> {
                 // This must be synchronous, so tree selection/searching works
                 requestParams.setAsync(false);
@@ -230,13 +229,13 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                 }
             },
             200,
-            assetInfos -> {
+            assets -> {
                 List<BrowserTreeNode> treeNodes = new ArrayList<>();
-                for (AssetInfo assetInfo : assetInfos) {
-                    treeNodes.add(new AssetTreeNode(assetInfo, getTenantDisplayName(assetInfo)));
+                for (Asset asset : assets) {
+                    treeNodes.add(new AssetTreeNode(asset));
                 }
                 display.setRowData(0, treeNodes);
-                display.setRowCount(assetInfos.length, true);
+                display.setRowCount(assets.length, true);
                 afterNodeLoadChildren(treeNodes);
             },
             ex -> handleRequestException(ex, environment)
@@ -278,16 +277,8 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
             }
         }
         if (asset.getPath() != null) {
-            path.addAll(Arrays.asList(asset.getPath()));
+            path.addAll(Arrays.asList(asset.getReversePath()));
         }
         return path.toArray(new String[path.size()]);
-    }
-
-    protected String getTenantDisplayName(AssetInfo assetInfo) {
-        for (TenantTreeNode tenantNode : tenantNodes) {
-            if (tenantNode.getId().equals(assetInfo.getRealmId()))
-                return tenantNode.getLabel();
-        }
-        return assetInfo.getRealmId();
     }
 }

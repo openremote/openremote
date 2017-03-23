@@ -37,7 +37,7 @@ import java.io.Serializable;
  * </li>
  * </ul>
  * Asset attribute data can be protected with {@link AssetMeta#PROTECTED} and {@link AssetMeta.Access},
- * it is filtered in {@link ProtectedAssetInfo}.
+ * it is filtered in {@link ProtectedAsset}.
  */
 @Entity
 @Table(name = "USER_ASSET")

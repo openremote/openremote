@@ -72,15 +72,11 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
     @Override
     public AssetRulesDefinition[] getAssetDefinitions(@BeanParam RequestParams requestParams, String assetId) {
-        Asset asset = assetStorageService.find(assetId);
+        Asset asset = assetStorageService.find(assetId, false);
         if (asset == null)
             return new AssetRulesDefinition[0];
 
-        String realm = identityService.getActiveTenantRealm(asset.getRealmId());
-        if (realm == null) {
-            throw new WebApplicationException(BAD_REQUEST);
-        }
-        if (!isRealmAccessibleByUser(realm)) {
+        if (!isRealmAccessibleByUser(asset.getTenantRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (isRestrictedUser() &&
@@ -98,7 +94,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (!isSuperUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        rulesDefinition = rulesStorageService.merge(rulesDefinition);
+        rulesStorageService.merge(rulesDefinition);
     }
 
     @Override
@@ -121,7 +117,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         GlobalRulesDefinition existingDefinition = rulesStorageService.findById(GlobalRulesDefinition.class, id);
         if (existingDefinition == null)
             throw new WebApplicationException(NOT_FOUND);
-        rulesDefinition = rulesStorageService.merge(rulesDefinition);
+        rulesStorageService.merge(rulesDefinition);
     }
 
     @Override
@@ -143,7 +139,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (!isRealmAccessibleByUser(realm) || isRestrictedUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        rulesDefinition = rulesStorageService.merge(rulesDefinition);
+        rulesStorageService.merge(rulesDefinition);
     }
 
     @Override
@@ -181,7 +177,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (!existingDefinition.getRealmId().equals(rulesDefinition.getRealmId())) {
             throw new WebApplicationException("Requested realm and existing definition realm must match", BAD_REQUEST);
         }
-        rulesDefinition = rulesStorageService.merge(rulesDefinition);
+        rulesStorageService.merge(rulesDefinition);
     }
 
     @Override
@@ -208,22 +204,18 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (assetId == null || assetId.length() == 0) {
             throw new WebApplicationException("Missing asset identifier value", BAD_REQUEST);
         }
-        Asset asset = assetStorageService.find(assetId);
+        Asset asset = assetStorageService.find(assetId, false);
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        String realm = identityService.getActiveTenantRealm(asset.getRealmId());
-        if (realm == null) {
-            throw new WebApplicationException(BAD_REQUEST);
-        }
-        if (!isRealmAccessibleByUser(realm)) {
+        if (!isRealmAccessibleByUser(asset.getTenantRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (isRestrictedUser() &&
             !assetStorageService.findProtectedOfUserContains(getUserId(), asset.getId())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        rulesDefinition = rulesStorageService.merge(rulesDefinition);
+        rulesStorageService.merge(rulesDefinition);
     }
 
     @Override
@@ -232,15 +224,11 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (existingDefinition == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        Asset asset = assetStorageService.find(existingDefinition.getAssetId());
+        Asset asset = assetStorageService.find(existingDefinition.getAssetId(), false);
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        String realm = identityService.getActiveTenantRealm(asset.getRealmId());
-        if (realm == null) {
-            throw new WebApplicationException(BAD_REQUEST);
-        }
-        if (!isRealmAccessibleByUser(realm)) {
+        if (!isRealmAccessibleByUser(asset.getTenantRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (isRestrictedUser() &&
@@ -256,15 +244,11 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (existingDefinition == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        Asset asset = assetStorageService.find(existingDefinition.getAssetId());
+        Asset asset = assetStorageService.find(existingDefinition.getAssetId(), false);
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        String realm = identityService.getActiveTenantRealm(asset.getRealmId());
-        if (realm == null) {
-            throw new WebApplicationException(BAD_REQUEST);
-        }
-        if (!isRealmAccessibleByUser(realm)) {
+        if (!isRealmAccessibleByUser(asset.getTenantRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (isRestrictedUser() &&
@@ -277,7 +261,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (!existingDefinition.getAssetId().equals(rulesDefinition.getAssetId())) {
             throw new WebApplicationException("Can't update asset ID, delete and create the definition to reassign", BAD_REQUEST);
         }
-        rulesDefinition = rulesStorageService.merge(rulesDefinition);
+        rulesStorageService.merge(rulesDefinition);
     }
 
     @Override
@@ -286,15 +270,11 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (existingDefinition == null) {
             return;
         }
-        Asset asset = assetStorageService.find(existingDefinition.getAssetId());
+        Asset asset = assetStorageService.find(existingDefinition.getAssetId(), false);
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        String realm = identityService.getActiveTenantRealm(asset.getRealmId());
-        if (realm == null) {
-            throw new WebApplicationException(BAD_REQUEST);
-        }
-        if (!isRealmAccessibleByUser(realm)) {
+        if (!isRealmAccessibleByUser(asset.getTenantRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (isRestrictedUser() &&

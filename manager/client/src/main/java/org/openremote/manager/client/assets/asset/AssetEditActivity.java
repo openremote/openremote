@@ -176,7 +176,7 @@ public class AssetEditActivity
         } else if (treeNode instanceof AssetTreeNode) {
             assetBrowserPresenter.loadAsset(treeNode.getId(), loadedAsset -> {
                 // The selected parent can not be our child, or a leaf, or the same
-                if (Arrays.asList(loadedAsset.getPath()).contains(asset.getId())
+                if (loadedAsset.pathContains(asset.getId())
                     || treeNode.isLeaf()
                     || loadedAsset.getId().equals(asset.getId())) {
                     environment.getEventBus().dispatch(
@@ -327,9 +327,7 @@ public class AssetEditActivity
 
     protected void writeParentToView() {
         if (parentAsset != null) {
-            view.setParentNode(
-                new AssetTreeNode(parentAsset, parentAsset.getTenantDisplayName())
-            );
+            view.setParentNode(new AssetTreeNode(parentAsset));
         } else {
             view.setParentNode(
                 new TenantTreeNode(

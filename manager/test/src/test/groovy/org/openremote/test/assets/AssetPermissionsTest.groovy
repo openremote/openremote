@@ -6,7 +6,7 @@ import org.openremote.manager.shared.asset.AssetResource
 import org.openremote.model.Attributes
 import org.openremote.model.Meta
 import org.openremote.model.asset.Asset
-import org.openremote.model.asset.ProtectedAssetInfo
+import org.openremote.model.asset.ProtectedAsset
 import org.openremote.model.AttributeType
 import org.openremote.model.asset.AssetMeta
 import org.openremote.test.ManagerContainerTrait
@@ -49,48 +49,48 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         /* ############################################## READ ####################################### */
 
         when: "the home assets of the authenticated user are retrieved"
-        def assetInfos = assetResource.getCurrentUserAssets(null)
+        def assets = assetResource.getCurrentUserAssets(null)
 
         then: "result should match"
-        assetInfos.length == 0
+        assets.length == 0
 
         when: "the root assets of the authenticated realm are retrieved"
-        assetInfos = assetResource.getRoot(null, masterRealmId)
+        assets = assetResource.getRoot(null, masterRealmId)
 
         then: "result should match"
-        assetInfos.length == 1
-        assetInfos[0].id == managerDemoSetup.smartOfficeId
+        assets.length == 1
+        assets[0].id == managerDemoSetup.smartOfficeId
 
         when: "the child assets of an asset in the authenticated realm are retrieved"
-        assetInfos = assetResource.getChildren(null, assetInfos[0].id)
+        assets = assetResource.getChildren(null, assets[0].id)
 
         then: "result should match"
-        assetInfos.length == 1
-        assetInfos[0].id == managerDemoSetup.groundFloorId
+        assets.length == 1
+        assets[0].id == managerDemoSetup.groundFloorId
 
         when: "the root assets of the authenticated realm are retrieved"
-        assetInfos = assetResource.getRoot(null, null)
+        assets = assetResource.getRoot(null, null)
 
         then: "result should match"
-        assetInfos.length == 1
-        assetInfos[0].id == managerDemoSetup.smartOfficeId
+        assets.length == 1
+        assets[0].id == managerDemoSetup.smartOfficeId
 
         when: "the root assets of the given realm are retrieved"
-        assetInfos = assetResource.getRoot(null, customerARealmId)
+        assets = assetResource.getRoot(null, customerARealmId)
 
         then: "result should match"
-        assetInfos.length == 1
-        assetInfos[0].id == managerDemoSetup.smartHomeId
+        assets.length == 1
+        assets[0].id == managerDemoSetup.smartHomeId
 
         when: "the child assets of an asset in a foreign realm are retrieved"
-        assetInfos = assetResource.getChildren(null, assetInfos[0].id)
+        assets = assetResource.getChildren(null, assets[0].id)
 
         then: "result should match"
-        assetInfos.length == 3
+        assets.length == 3
         // Should be ordered by creation time
-        assetInfos[0].id == managerDemoSetup.apartment1Id
-        assetInfos[1].id == managerDemoSetup.apartment2Id
-        assetInfos[2].id == managerDemoSetup.apartment3Id
+        assets[0].id == managerDemoSetup.apartment1Id
+        assets[1].id == managerDemoSetup.apartment2Id
+        assets[2].id == managerDemoSetup.apartment3Id
 
         when: "an asset is retrieved by ID in the authenticated realm"
         def demoThing = assetResource.get(null, managerDemoSetup.thingId)
@@ -192,44 +192,44 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         /* ############################################## READ ####################################### */
 
         when: "the home assets of the authenticated user are retrieved"
-        def assetInfos = assetResource.getCurrentUserAssets(null)
+        def assets = assetResource.getCurrentUserAssets(null)
 
         then: "result should match"
-        assetInfos.length == 0
+        assets.length == 0
 
         when: "the root assets of the authenticated realm are retrieved"
-        assetInfos = assetResource.getRoot(null, masterRealmId)
+        assets = assetResource.getRoot(null, masterRealmId)
 
         then: "result should match"
-        assetInfos.length == 1
-        assetInfos[0].id == managerDemoSetup.smartOfficeId
+        assets.length == 1
+        assets[0].id == managerDemoSetup.smartOfficeId
 
         when: "the child assets of an asset in the authenticated realm are retrieved"
-        assetInfos = assetResource.getChildren(null, assetInfos[0].id)
+        assets = assetResource.getChildren(null, assets[0].id)
 
         then: "result should match"
-        assetInfos.length == 1
-        assetInfos[0].id == managerDemoSetup.groundFloorId
+        assets.length == 1
+        assets[0].id == managerDemoSetup.groundFloorId
 
         when: "the root assets of the authenticated realm are retrieved"
-        assetInfos = assetResource.getRoot(null, null)
+        assets = assetResource.getRoot(null, null)
 
         then: "result should match"
-        assetInfos.length == 1
-        assetInfos[0].id == managerDemoSetup.smartOfficeId
-        assetInfos[0].realmId == masterRealmId
+        assets.length == 1
+        assets[0].id == managerDemoSetup.smartOfficeId
+        assets[0].realmId == masterRealmId
 
         when: "the root assets of the given realm are retrieved"
-        assetInfos = assetResource.getRoot(null, customerARealmId)
+        assets = assetResource.getRoot(null, customerARealmId)
 
         then: "result should match"
-        assetInfos.length == 0
+        assets.length == 0
 
         when: "the child assets of an asset in a foreign realm are retrieved"
-        assetInfos = assetResource.getChildren(null, managerDemoSetup.smartHomeId)
+        assets = assetResource.getChildren(null, managerDemoSetup.smartHomeId)
 
         then: "result should be empty"
-        assetInfos.length == 0
+        assets.length == 0
 
         when: "an asset is retrieved by ID in the authenticated realm"
         def demoThing = assetResource.get(null, managerDemoSetup.thingId)
@@ -330,36 +330,36 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         /* ############################################## READ ####################################### */
 
         when: "the home assets of the authenticated user are retrieved"
-        def assetInfos = assetResource.getCurrentUserAssets(null)
+        def assets = assetResource.getCurrentUserAssets(null)
 
         then: "result should match"
-        assetInfos.length == 0
+        assets.length == 0
 
         when: "the root assets of a foreign realm are retrieved"
-        assetInfos = assetResource.getRoot(null, masterRealmId)
+        assets = assetResource.getRoot(null, masterRealmId)
 
         then: "result should match"
-        assetInfos.length == 0
+        assets.length == 0
 
         when: "the root assets of the authenticated realm are retrieved"
-        assetInfos = assetResource.getRoot(null, null)
+        assets = assetResource.getRoot(null, null)
 
         then: "result should match"
-        assetInfos.length == 1
-        assetInfos[0].id == managerDemoSetup.smartHomeId
-        assetInfos[0].realmId == customerARealmId
+        assets.length == 1
+        assets[0].id == managerDemoSetup.smartHomeId
+        assets[0].realmId == customerARealmId
 
         when: "the root assets of the given realm are retrieved"
-        assetInfos = assetResource.getRoot(null, customerBRealmId)
+        assets = assetResource.getRoot(null, customerBRealmId)
 
         then: "result should match"
-        assetInfos.length == 0
+        assets.length == 0
 
         when: "the child assets of an asset in a foreign realm are retrieved"
-        assetInfos = assetResource.getChildren(null, managerDemoSetup.thingId)
+        assets = assetResource.getChildren(null, managerDemoSetup.thingId)
 
         then: "result should be empty"
-        assetInfos.length == 0
+        assets.length == 0
 
         when: "an asset is retrieved by ID in the authenticated realm"
         def demoSmartHome = assetResource.get(null, managerDemoSetup.smartHomeId)
@@ -448,11 +448,11 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         /* ############################################## READ ####################################### */
 
         when: "the home assets of the authenticated user are retrieved"
-        def assetInfos = assetResource.getCurrentUserAssets(null)
+        def assets = assetResource.getCurrentUserAssets(null)
 
         then: "result should match"
-        assetInfos.length == 4
-        ProtectedAssetInfo apartment1 = assetInfos[0]
+        assets.length == 4
+        ProtectedAsset apartment1 = assets[0]
         apartment1.id == managerDemoSetup.apartment1Id
         apartment1.name == "Apartment 1"
         apartment1.createdOn.getTime() < System.currentTimeMillis()
@@ -462,11 +462,11 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment1.coordinates[0] == 5.469751699216005d
         apartment1.coordinates[1] == 51.44760787406028d
 
-        ProtectedAssetInfo apartment1Livingroom = assetInfos[1]
+        ProtectedAsset apartment1Livingroom = assets[1]
         apartment1Livingroom.id == managerDemoSetup.apartment1LivingroomId
         apartment1Livingroom.name == "Livingroom"
 
-        ProtectedAssetInfo apartment1LivingroomThermostat = assetInfos[2]
+        ProtectedAsset apartment1LivingroomThermostat = assets[2]
         apartment1LivingroomThermostat.id == managerDemoSetup.apartment1LivingroomThermostatId
         apartment1LivingroomThermostat.name == "Livingroom Thermostat"
 
@@ -480,45 +480,45 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         protectedMeta.first(AssetMeta.LABEL).getValueAsString() == "Current Temp"
         protectedMeta.first(AssetMeta.READ_ONLY).getValueAsBoolean()
 
-        ProtectedAssetInfo apartment2 = assetInfos[3]
+        ProtectedAsset apartment2 = assets[3]
         apartment2.id == managerDemoSetup.apartment2Id
         apartment2.name == "Apartment 2"
 
         when: "the root assets of a foreign realm are retrieved"
-        assetInfos = assetResource.getRoot(null, masterRealmId)
+        assets = assetResource.getRoot(null, masterRealmId)
 
         then: "result should match"
-        assetInfos.length == 0
+        assets.length == 0
 
         when: "the root assets of the authenticated realm are retrieved"
-        assetInfos = assetResource.getRoot(null, null)
+        assets = assetResource.getRoot(null, null)
 
         then: "result should match"
-        assetInfos.length == 0
+        assets.length == 0
 
         when: "the root assets of the given realm are retrieved"
-        assetInfos = assetResource.getRoot(null, customerBRealmId)
+        assets = assetResource.getRoot(null, customerBRealmId)
 
         then: "result should match"
-        assetInfos.length == 0
+        assets.length == 0
 
         when: "the child assets of linked asset are retrieved"
-        assetInfos = assetResource.getChildren(null, managerDemoSetup.apartment1Id)
+        assets = assetResource.getChildren(null, managerDemoSetup.apartment1Id)
 
         then: "result should match"
-        assetInfos.length == 0
+        assets.length == 0
 
         when: "the child assets of an asset in the authenticated realm are retrieved"
-        assetInfos = assetResource.getChildren(null, managerDemoSetup.smartHomeId)
+        assets = assetResource.getChildren(null, managerDemoSetup.smartHomeId)
 
         then: "result should match"
-        assetInfos.length == 0
+        assets.length == 0
 
         when: "the child assets of an asset in a foreign realm are retrieved"
-        assetInfos = assetResource.getChildren(null, managerDemoSetup.thingId)
+        assets = assetResource.getChildren(null, managerDemoSetup.thingId)
 
         then: "result should be empty"
-        assetInfos.length == 0
+        assets.length == 0
 
         when: "an asset is retrieved by ID in the authenticated realm"
         def asset = assetResource.get(null, managerDemoSetup.smartHomeId)
