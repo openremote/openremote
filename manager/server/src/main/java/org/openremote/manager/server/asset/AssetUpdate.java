@@ -49,7 +49,13 @@ public class AssetUpdate {
         /**
          * Processor encountered an error trying to process the update, cancel further processing and escalate.
          */
-        ERROR
+        ERROR,
+
+        /**
+         * Indicates that this update has been through the entire processing chain; the object can no longer be
+         * mutated at this stage
+         */
+        COMPLETED
     }
 
     final protected ServerAsset asset;

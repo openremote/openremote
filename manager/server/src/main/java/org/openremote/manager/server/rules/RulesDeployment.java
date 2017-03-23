@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.server.rules;
 
+import elemental.json.Json;
 import org.kie.api.KieServices;
 import org.kie.api.builder.KieBuilder;
 import org.kie.api.builder.KieFileSystem;
@@ -32,9 +33,10 @@ import org.kie.api.conf.EventProcessingOption;
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
 import org.kie.api.runtime.KieSessionConfiguration;
+import org.kie.api.runtime.conf.ClockTypeOption;
 import org.kie.api.runtime.conf.TimedRuleExectionOption;
 import org.kie.api.runtime.rule.FactHandle;
-import org.openremote.container.Container;
+import org.kie.api.time.SessionClock;
 import org.openremote.manager.server.asset.AssetUpdate;
 import org.openremote.manager.shared.rules.RulesDefinition;
 import org.openremote.model.AttributeRef;
@@ -49,24 +51,25 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class RulesDeployment<T extends RulesDefinition> {
-
     public static final Logger LOG = Logger.getLogger(RulesDeployment.class.getName());
+    // This is here so Clock Type can be set to pseudo from tests
+    protected static ClockTypeOption DefaultClockType;
     private static final int AUTO_START_DELAY_SECONDS = 2;
     private static Long counter = 1L;
     static final protected RuleUtil ruleUtil = new RuleUtil();
-    protected Map<Long, T> ruleDefinitions = new LinkedHashMap<>();
-    protected RuleExecutionLogger ruleExecutionLogger = new RuleExecutionLogger();
+    protected final Map<Long, T> ruleDefinitions = new LinkedHashMap<>();
+    protected final RuleExecutionLogger ruleExecutionLogger = new RuleExecutionLogger();
     protected KieSession knowledgeSession;
     protected KieServices kieServices;
     protected KieFileSystem kfs;
     // We need to be able to reference the KieModule dynamically generated for this engine
     // from the singleton KieRepository to do this we need a pom.xml file with a release ID - crazy drools!!
     protected ReleaseId releaseId;
-    protected String id;
+    protected final String id;
     protected boolean error;
     protected boolean running;
     protected long currentFactCount;
-    protected Class<T> clazz;
+    protected final Class<T> clazz;
     final protected Map<AttributeRef, FactHandle> attributeFacts = new HashMap<>();
     protected static final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     protected ScheduledFuture startTimer;
@@ -76,12 +79,11 @@ public class RulesDeployment<T extends RulesDefinition> {
         this.id = id;
     }
 
-    protected static Long getNextCounter() {
-        synchronized (counter) {
-            return counter++;
-        }
+    protected synchronized static Long getNextCounter() {
+        return counter++;
     }
 
+    @SuppressWarnings("unchecked")
     public synchronized T[] getAllRulesDefinitions() {
         T[] arr = (T[]) Array.newInstance(clazz, 0);
         return ruleDefinitions.values().toArray(arr);
@@ -101,6 +103,15 @@ public class RulesDeployment<T extends RulesDefinition> {
 
     public KieSession getKnowledgeSession() {
         return knowledgeSession;
+    }
+
+    public SessionClock getSessionClock() {
+        KieSession session = getKnowledgeSession();
+        if (session != null) {
+            return session.getSessionClock();
+        }
+
+        return null;
     }
 
     public synchronized boolean isEmpty() {
@@ -133,28 +144,7 @@ public class RulesDeployment<T extends RulesDefinition> {
         }
 
         if (kfs == null) {
-            // Initialise
-            kieServices = KieServices.Factory.get();
-            KieModuleModel kieModuleModel = kieServices.newKieModuleModel();
-
-            String versionId = getNextCounter().toString();
-            releaseId = kieServices.newReleaseId("org.openremote", "openremote-kiemodule", versionId);
-            KieBaseModel kieBaseModel = kieModuleModel.newKieBaseModel("OpenRemoteKModule");
-            kieBaseModel
-                .setDefault(true)
-                .setEqualsBehavior(EqualityBehaviorOption.EQUALITY)
-                .setEventProcessingMode(EventProcessingOption.STREAM)
-                .newKieSessionModel("ksession1")
-                .setDefault(true)
-                .setType(KieSessionModel.KieSessionType.STATEFUL);
-            // TODO: Provide mechanism for configuring the clock per rule engine
-            //.setClockType();
-            kfs = kieServices.newKieFileSystem();
-            kfs.generateAndWritePomXML(releaseId);
-            kfs.writeKModuleXML(kieModuleModel.toXML());
-
-            LOG.fine("Initialised rules service for deployment '" + getId() + "'");
-            LOG.info(kieBaseModel.toString());
+            initialiseEngine();
         }
 
         T existingDefinition = ruleDefinitions.get(rulesDefinition.getId());
@@ -178,6 +168,7 @@ public class RulesDeployment<T extends RulesDefinition> {
         if (existingDefinition != null) {
             // Remove this old rules file
             kfs.delete("src/main/resources/" + rulesDefinition.getId());
+            //noinspection SuspiciousMethodCalls
             ruleDefinitions.remove(existingDefinition);
         }
 
@@ -240,7 +231,6 @@ public class RulesDeployment<T extends RulesDefinition> {
             return;
         }
 
-        // TODO: What is the best way to handle live deployment of new rules
         if (isRunning()) {
             stop();
         }
@@ -276,6 +266,32 @@ public class RulesDeployment<T extends RulesDefinition> {
         }
     }
 
+    protected void initialiseEngine() {
+        // Initialise
+        kieServices = KieServices.Factory.get();
+        KieModuleModel kieModuleModel = kieServices.newKieModuleModel();
+
+        String versionId = getNextCounter().toString();
+        releaseId = kieServices.newReleaseId("org.openremote", "openremote-kiemodule", versionId);
+        KieBaseModel kieBaseModel = kieModuleModel.newKieBaseModel("OpenRemoteKModule");
+        ClockTypeOption clockType = DefaultClockType != null ? DefaultClockType : ClockTypeOption.get("realtime");
+
+        kieBaseModel
+                .setDefault(true)
+                .setEqualsBehavior(EqualityBehaviorOption.EQUALITY)
+                .setEventProcessingMode(EventProcessingOption.STREAM)
+                .newKieSessionModel("ksession1")
+                .setDefault(true)
+                .setType(KieSessionModel.KieSessionType.STATEFUL)
+                .setClockType(clockType);
+        kfs = kieServices.newKieFileSystem();
+        kfs.generateAndWritePomXML(releaseId);
+        kfs.writeKModuleXML(kieModuleModel.toXML());
+
+        LOG.fine("Initialised rules service for deployment '" + getId() + "'");
+        LOG.info(kieBaseModel.toString());
+    }
+
     protected synchronized void start() {
         if (isRunning()) {
             return;
@@ -305,7 +321,7 @@ public class RulesDeployment<T extends RulesDefinition> {
             knowledgeSession = kieContainer.newKieSession(kieSessionConfiguration);
 
             setGlobal("util", ruleUtil);
-            setGlobal("JSON", Container.JSON);
+            setGlobal("JSON", Json.instance());
             setGlobal("LOG", LOG);
 
             knowledgeSession.addEventListener(ruleExecutionLogger);
@@ -336,7 +352,15 @@ public class RulesDeployment<T extends RulesDefinition> {
         running = false;
     }
 
-    protected void processUpdate(AssetUpdate assetUpdate) {
+    protected synchronized void processUpdate(AssetUpdate assetUpdate) {
+        if (isError()) {
+            LOG.warning("Rules engine is in error state so cannot process update event: " + this);
+            return;
+        } else if (!isRunning()) {
+            LOG.warning("Rules engine is not running so cannot process update event:" + this);
+            return;
+        }
+
         long newFactCount;
         AttributeRef attributeRef = assetUpdate.getNewState().getAttributeRef();
 

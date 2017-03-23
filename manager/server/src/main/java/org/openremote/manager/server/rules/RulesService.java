@@ -20,7 +20,6 @@
 package org.openremote.manager.server.rules;
 
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.agent3.protocol.AbstractProtocol;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerSetupService;
@@ -133,12 +132,6 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
     @Override
     public void accept(AssetUpdate assetUpdate) {
-        // If update was initiated by a protocol then rules shouldn't be allowed to prevent it
-        // the update from progressing through the system
-        if (AbstractProtocol.class.isAssignableFrom(assetUpdate.getSender())) {
-            // TODO: Prevent rules RHS from blocking protocol initiated updates
-        }
-
         processAssetUpdate(assetUpdate);
     }
 
@@ -197,53 +190,6 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             }
         }
     }
-
-//    protected boolean addResource(Resource resource, KieServices kieServices, KieFileSystem kfs) {
-//        String sourcePath = resource.getSourcePath();
-//        if (sourcePath == null) {
-//            throw new IllegalArgumentException("Resource definition must have source path: " + resource);
-//        }
-//        LOG.info("Adding rule definition: " + resource);
-//        try {
-//
-//            // TODO Drools config API is shit, this is hidden in some internal code
-//            if (ResourceType.DTABLE.matchesExtension(sourcePath)) {
-//                int lastDot = sourcePath.lastIndexOf('.');
-//                if (lastDot >= 0 && sourcePath.length() > lastDot + 1) {
-//                    String extension = sourcePath.substring(lastDot + 1);
-//                    DecisionTableConfiguration tableConfig = KnowledgeBuilderFactory.newDecisionTableConfiguration();
-//                    tableConfig.setInputType(DecisionTableInputType.valueOf(extension.toUpperCase()));
-//                    resource.setConfiguration(tableConfig);
-//                }
-//            }
-//
-//            LOG.fine("Rule definition resource config: " + resource.getConfiguration().toProperties());
-//            kfs.write("src/main/resources/" + sourcePath, resource);
-//            KieBuilder kieBuilder = kieServices.newKieBuilder(kfs).buildAll();
-//
-//            if (kieBuilder.getResults().hasMessages(Message.Level.ERROR)) {
-//                Collection<Message> errors = kieBuilder.getResults().getMessages(Message.Level.ERROR);
-//                LOG.severe("Error in rule definition: " + resource);
-//                for (Message error : errors) {
-//                    LOG.severe(error.getText());
-//                }
-//                // If compilation failed, remove rules from FileSystem so it won't fail on next pass here if any
-//                kfs.delete("src/main/resources/" + sourcePath);
-//            } else {
-//                LOG.info("Added rule definition: " + resource);
-//                return true;
-//            }
-//        } catch (Throwable t) {
-//            LOG.log(
-//                Level.SEVERE,
-//                "Error in rule definition: " + resource,
-//                t
-//            );
-//            // If compilation failed, remove rules from FileSystem so it won't fail on next pass here if any
-//            kfs.delete("src/main/resources/" + sourcePath);
-//        }
-//        return false;
-//    }
 
     protected synchronized void deployGlobalRulesDefinition(GlobalRulesDefinition rulesDefinition) {
         // Global rules have access to everything in the system
@@ -315,7 +261,6 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             });
     }
 
-
     protected void deployAssetRulesDefinition(AssetRulesDefinition rulesDefinition) {
         // Look for existing deployment for this asset
         RulesDeployment<AssetRulesDefinition> deployment = assetDeployments
@@ -369,22 +314,13 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
         // Pass through each engine if an engine is in error state then log and skip it
         for (RulesDeployment deployment : rulesDeployments) {
-            synchronized (deployment) {
-                if (deployment.isError()) {
-                    LOG.warning("Rules engine is in error state so cannot process update event: " + deployment);
-                } else if (!deployment.isRunning()) {
-                    LOG.warning("Rules engine is not running so cannot process update event:" + deployment);
-                } else {
-                    // TODO: Handle any exceptions in rule RHS
-                    deployment.processUpdate(assetUpdate);
-                    if (assetUpdate.getStatus() != AssetUpdate.Status.CONTINUE) {
-                        LOG.info("Rules engine has marked update event as '" + assetUpdate.getStatus() + "' so not processing anymore");
-                        if (assetUpdate.getStatus() == AssetUpdate.Status.RULES_HANDLED) {
-                            assetUpdate.setStatus(AssetUpdate.Status.CONTINUE);
-                        }
-                        break;
-                    }
+            deployment.processUpdate(assetUpdate);
+            if (assetUpdate.getStatus() != AssetUpdate.Status.CONTINUE) {
+                LOG.info("Rules engine has marked update event as '" + assetUpdate.getStatus() + "' so not processing anymore");
+                if (assetUpdate.getStatus() == AssetUpdate.Status.RULES_HANDLED) {
+                    assetUpdate.setStatus(AssetUpdate.Status.CONTINUE);
                 }
+                break;
             }
         }
     }

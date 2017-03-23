@@ -220,10 +220,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             return;
         }
 
-        // Send it to the protocol actuator
-        LOG.fine("Processing asset update: " + assetUpdate);
         // Its' a send to actuator - push the update to the protocol
-        // TODO See class Javadoc, should we have a forceUpdate flag?
+        LOG.fine("Processing asset update: " + assetUpdate);
         messageBrokerService.getProducerTemplate().sendBody(ACTUATOR_TOPIC, assetUpdate.getNewState());
         assetUpdate.setStatus(AssetUpdate.Status.HANDLED);
     }
