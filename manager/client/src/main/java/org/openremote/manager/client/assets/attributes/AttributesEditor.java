@@ -62,6 +62,12 @@ public class AttributesEditor
     }
 
     @Override
+    public void setOpaque(boolean opaque) {
+        super.setOpaque(opaque);
+        newAttributeGroup.setOpaque(opaque);
+    }
+
+    @Override
     protected void addAttributeActions(Attribute attribute,
                                        FormGroup formGroup,
                                        FormField formField,
@@ -343,9 +349,9 @@ public class AttributesEditor
                     AssetMeta assetMeta = AssetMeta.editable()[wellknownListBox.getSelectedIndex() - 1];
                     itemNameInput.setText(assetMeta.getName());
                     item.setName(assetMeta.getName());
-                    AssetMeta.ValueType valueType = AssetMeta.ValueType.byValueType(assetMeta.getValueType());
+                    AssetMeta.EditableType editableType = AssetMeta.EditableType.byValueType(assetMeta.getValueType());
                     typeListBox.setSelectedIndex(
-                        valueType != null ? valueType.ordinal() + 1 : 0
+                        editableType != null ? editableType.ordinal() + 1 : 0
                     );
                 } else {
                     itemNameInput.setText(null);
@@ -369,8 +375,8 @@ public class AttributesEditor
             formGroup.addFormField(formField);
 
             typeListBox.addItem(environment.getMessages().selectType());
-            for (AssetMeta.ValueType metaValueType : AssetMeta.ValueType.values()) {
-                typeListBox.addItem(metaValueType.name, metaValueType.name());
+            for (AssetMeta.EditableType metaEditableType : AssetMeta.EditableType.values()) {
+                typeListBox.addItem(metaEditableType.label, metaEditableType.name());
             }
             typeListBox.addChangeHandler(event -> resetItemValueEditor(item, formGroup, formField, typeListBox));
 
@@ -390,7 +396,7 @@ public class AttributesEditor
             // Create and add new editor, default to empty STRING
             item.clearValue();
             JsonType valueType = typeListBox.getSelectedIndex() > 0
-                ? AssetMeta.ValueType.valueOf(typeListBox.getSelectedValue()).valueType
+                ? AssetMeta.EditableType.valueOf(typeListBox.getSelectedValue()).valueType
                 : JsonType.STRING;
             if (valueType == JsonType.BOOLEAN) {
                 item.setValueAsBoolean(false); // Special case boolean editor, has an "initial" state, there is always a value

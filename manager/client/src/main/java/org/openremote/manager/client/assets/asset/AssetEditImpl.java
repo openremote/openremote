@@ -215,7 +215,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         nameInput.setValue(null);
         createdOnOutput.setText(null);
         parentAssetSelector.init();
-        locationOutput.setText(null);
+        locationOutput.setCoordinates(null, null);
         centerMapButton.setEnabled(false);
         typeGroup.setError(false);
         typeListBox.setValue(null);

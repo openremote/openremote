@@ -166,7 +166,7 @@ public class AssetViewImpl extends Composite implements AssetView {
         tenantDisplayName.setText(null);
         parentAssetName.setText(null);
         locationGroup.setVisible(false);
-        locationOutput.setText(null);
+        locationOutput.setCoordinates(null, null);
         mapWidget.setVisible(false);
         showFeaturesSelection(GeoJSON.EMPTY_FEATURE_COLLECTION);
         typeLabel.setText(null);

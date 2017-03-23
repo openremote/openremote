@@ -118,6 +118,12 @@
         font-weight: 600;
         display: inline-block;
         white-space: nowrap;
+        /* https://stackoverflow.com/questions/25594630/img-moves-when-changing-opacity-on-hover */
+        -backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        -moz-backface-visibility: hidden;
+        -o-backface-visibility: hidden;
+        -webkit-transform: translateZ(0) scale(1.0, 1.0);
     }
 
     .or-PushButton,
@@ -377,6 +383,7 @@
     }
 
     .or-FormButton,
+    .or-FormButtonDown,
     .or-FormButtonDanger,
     .or-FormButtonPrimary {
         padding: 0 0.4em;

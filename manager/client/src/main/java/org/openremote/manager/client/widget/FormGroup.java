@@ -177,13 +177,13 @@ public class FormGroup extends FlowPanel implements HasWidgets {
             add(extensionPanel);
             addStyleName("expanded");
             toggleExtensionButton.setIcon("caret-up");
-            toggleExtensionButton.addStyleName("or-FormButtonPrimary");
+            toggleExtensionButton.addStyleName("or-FormButtonDown");
             toggleExtensionButton.removeStyleName("or-FormButton");
         } else {
             remove(extensionPanel);
             removeStyleName("expanded");
             toggleExtensionButton.setIcon("caret-down");
-            toggleExtensionButton.removeStyleName("or-FormButtonPrimary");
+            toggleExtensionButton.removeStyleName("or-FormButtonDown");
             toggleExtensionButton.addStyleName("or-FormButton");
         }
     }

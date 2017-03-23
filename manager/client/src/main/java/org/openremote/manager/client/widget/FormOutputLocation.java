@@ -19,33 +19,63 @@
  */
 package org.openremote.manager.client.widget;
 
-import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.Composite;
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.InlineLabel;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-public class FormOutputLocation extends Label {
+public class FormOutputLocation extends Composite {
+
+    protected FlowPanel panel = new FlowPanel();
+    protected InlineLabel coordinatesLabel = new InlineLabel();
+    protected FormButton toggleButton = new FormButton();
+
+    protected boolean reversed = false;
+    protected double[] coordinates;
 
     public FormOutputLocation() {
-        setStyleName("or-FormControl or-FormOutputText");
+        initWidget(panel);
+
+        panel.add(coordinatesLabel);
+        panel.add(toggleButton);
+
+        panel.setStyleName("layout horizontal center");
+        coordinatesLabel.setStyleName("or-FormControl or-FormOutputText");
+        toggleButton.setVisible(false);
+
+        toggleButton.addClickHandler(event -> {
+            reversed = !reversed;
+            update();
+        });
     }
 
     public boolean setCoordinates(String noLocationText, double[] coordinates) {
-        // Rounding to 5 decimals gives us precision of about 1 meter, should be enough
-        return setCoordinates(noLocationText, coordinates, 5);
-    }
-
-    public boolean setCoordinates(String noLocationText, double[] coordinates, int roundDecimalPlaces) {
         if (coordinates != null && coordinates.length == 2) {
-            // TODO: This assumes 0 is Lng and 1 is Lat, which is true for PostGIS backend
-            // TODO: Because Lat/Lng is the 'right way', we flip it here for display
-            setText(round(coordinates[1], roundDecimalPlaces) + " " + round(coordinates[0], roundDecimalPlaces) + " Lat|Lng");
+            this.coordinates = coordinates;
+            toggleButton.setVisible(true);
+            update();
             return true;
         }
-        setText(noLocationText);
+        toggleButton.setVisible(false);
+        coordinatesLabel.setText(noLocationText);
         return false;
     }
 
+    protected void update() {
+        // TODO: This assumes 0 is Lng and 1 is Lat, which is true for PostGIS backend
+        // Rounding to 5 decimals gives us precision of about 1 meter, should be enough
+        if (reversed) {
+            coordinatesLabel.setText(round(coordinates[0], 5) + " " + round(coordinates[1], 5));
+            toggleButton.getUpFace().setText("Lng|Lat");
+            toggleButton.getDownFace().setText("Lng|Lat");
+        } else {
+            coordinatesLabel.setText(round(coordinates[1], 5) + " " + round(coordinates[0], 5));
+            toggleButton.getUpFace().setText("Lat|Lng");
+            toggleButton.getDownFace().setText("Lat|Lng");
+        }
+    }
     protected String round(double d, int places) {
         return new BigDecimal(d).setScale(places, RoundingMode.HALF_UP).toString();
     }

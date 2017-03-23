@@ -42,7 +42,7 @@ public class AssetUpdate {
         HANDLED,
 
         /**
-         * Don't process event in any more rules but continue through rest of processing chain
+         * Don't process event in any more rules but continue through rest of processing chain.
          */
         RULES_HANDLED,
 
@@ -145,11 +145,11 @@ public class AssetUpdate {
         return oldState.hashCode() + newState.hashCode();
     }
 
-
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "newState=" + newState +
+            ", oldState=" + oldState +
             ", status=" + status +
             '}';
     }

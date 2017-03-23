@@ -52,6 +52,12 @@ public abstract class AttributesBrowser extends AttributesView<AttributesBrowser
     }
 
     @Override
+    public void setOpaque(boolean opaque) {
+        super.setOpaque(opaque);
+        liveUpdatesGroup.setOpaque(opaque);
+    }
+
+    @Override
     protected void addAttributeActions(Attribute attribute,
                                        FormGroup formGroup,
                                        FormField formField,

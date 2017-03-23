@@ -110,6 +110,9 @@ public enum AssetMeta {
      */
     STORE_DATA_POINTS(ASSET_META_NAMESPACE + ":storeDataPoints", new Access(true, false, true), JsonType.BOOLEAN),
 
+    /**
+     * Should attribute writes be processed by the rules engines and inserted as facts into their knowledge sessions.
+     */
     RULES_FACT(ASSET_META_NAMESPACE + ":rulesFact", new Access(true, false, true), JsonType.BOOLEAN);
 
     final protected String name;
@@ -172,22 +175,25 @@ public enum AssetMeta {
             : null;
     }
 
-    // In theory, meta item values can be of any JSON type. In practice, these are the types we can edit.
-    public enum ValueType {
+    /**
+     * In theory, meta item values can be of any JSON type. In practice, these are the
+     * types we can edit/have editor UI for. We inspect the actual JSON value and
+     */
+    public enum EditableType {
         STRING("String", JsonType.STRING),
         DECIMAL("Decimal", JsonType.NUMBER),
         BOOLEAN("Boolean", JsonType.BOOLEAN);
 
-        ValueType(String name, JsonType valueType) {
-            this.name = name;
+        EditableType(String label, JsonType valueType) {
+            this.label = label;
             this.valueType = valueType;
         }
 
-        public final String name;
+        public final String label;
         public final JsonType valueType;
 
-        public static ValueType byValueType(JsonType valueType) {
-            for (ValueType vt : values()) {
+        public static EditableType byValueType(JsonType valueType) {
+            for (EditableType vt : values()) {
                 if (vt.valueType == valueType)
                     return vt;
             }
