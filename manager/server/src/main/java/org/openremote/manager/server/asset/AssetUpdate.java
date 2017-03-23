@@ -82,14 +82,19 @@ public class AssetUpdate {
         if (!newState.getAttributeRef().getAttributeName().equals(attribute.getName())) {
             throw new IllegalArgumentException("New state attribute name must match: " + attribute);
         }
-        if (!oldState.getAttributeRef().getEntityId().equals(asset.getId())) {
-            throw new IllegalArgumentException("Old state entity ID must match: " + asset);
+
+        if (oldState != null) {
+            if (!oldState.getAttributeRef().getEntityId().equals(asset.getId())) {
+                throw new IllegalArgumentException("Old state entity ID must match: " + asset);
+            }
+            if (!oldState.getAttributeRef().getAttributeName().equals(attribute.getName())) {
+                throw new IllegalArgumentException("Old state attribute name must match: " + attribute);
+            }
+
+            oldState.getAttributeRef().setEntityName(asset.getName());
         }
-        if (!oldState.getAttributeRef().getAttributeName().equals(attribute.getName())) {
-            throw new IllegalArgumentException("Old state attribute name must match: " + attribute);
-        }
+
         newState.getAttributeRef().setEntityName(asset.getName());
-        oldState.getAttributeRef().setEntityName(asset.getName());
     }
 
     public ServerAsset getAsset() {
@@ -151,7 +156,8 @@ public class AssetUpdate {
 
         AssetUpdate that = (AssetUpdate) o;
 
-        return oldState.equals(that.oldState) && newState.equals(that.newState);
+        return ((oldState == null && that.oldState == null) || (oldState != null && that.oldState != null && oldState.equals(that.oldState)))
+                && ((newState == null && that.newState == null) || (newState != null && that.newState != null && newState.equals(that.newState)));
     }
 
     @Override

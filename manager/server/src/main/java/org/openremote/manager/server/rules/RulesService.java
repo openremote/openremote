@@ -35,6 +35,9 @@ import org.openremote.manager.shared.rules.GlobalRulesDefinition;
 import org.openremote.manager.shared.rules.RulesDefinition;
 import org.openremote.manager.shared.rules.TenantRulesDefinition;
 import org.openremote.manager.shared.security.Tenant;
+import org.openremote.model.Attributes;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetMeta;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -52,7 +55,7 @@ import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceE
  * Global Definitions
  * Tenant Definitions
  * Asset Definitions (in hierarchical order from oldest ancestor down - ordering of
- * asset definitions with same parent asset are not guaranteed also processing of definitions
+ * asset definitions with same parent asset are not guaranteed also processing order of definitions
  * with the same scope is not guaranteed)
  */
 public class RulesService extends RouteBuilder implements ContainerService, Consumer<AssetUpdate> {
@@ -94,6 +97,46 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                 Tenant tenant = (Tenant) persistenceEvent.getEntity();
                 processTenantChange(tenant, persistenceEvent.getCause());
             });
+
+        // If any asset was modified in the database, detect changed attributes
+        from(PERSISTENCE_TOPIC)
+                .filter(isPersistenceEventForEntityType(Asset.class))
+                .process(exchange -> {
+                    PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
+                    Asset asset = (Asset) persistenceEvent.getEntity();
+                    ServerAsset serverAsset = ServerAsset.map(asset, new ServerAsset());
+
+                    switch (persistenceEvent.getCause())
+                    {
+                        case INSERT:
+                            // New asset has been created so get attributes that have RULES_FACT meta
+                            Attributes addedAttributes = new Attributes(asset.getAttributes());
+                            Arrays.stream(addedAttributes.get())
+                                    .filter(attribute -> attribute.hasMetaItem(AssetMeta.RULES_FACT))
+                                    .forEach(attribute -> {
+                                        AssetUpdate update = new AssetUpdate(serverAsset, attribute, attribute.getStateEvent(asset.getId()), null);
+                                        // TODO: What if a rule engine marks the fact as handled it should still go into other engines here???
+                                        insertFact(update);
+                                    });
+                            break;
+                        case UPDATE:
+                            // TODO: Handle update case
+                            break;
+                        case DELETE:
+                            // Retract any facts that were associated with this asset
+                            Attributes removedAttributes = new Attributes(asset.getAttributes());
+                            Arrays.stream(removedAttributes.get())
+                                    .filter(attribute -> attribute.hasMetaItem(AssetMeta.RULES_FACT))
+                                    .forEach(attribute -> {
+                                        AssetUpdate update = new AssetUpdate(serverAsset, attribute, attribute.getStateEvent(asset.getId()), null);
+                                        // TODO: What if a rule engine marks the fact as handled it should still go into other engines here???
+                                        retractFact(update);
+                                    });
+                            break;
+                    }
+                    // TODO: Detect which attribute was created/updated in the database and handle it
+
+                });
     }
 
     @Override
@@ -112,6 +155,9 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
         // Deploy asset rules - group by assetID then tenant then order hierarchically
         deployAssetRulesDefinitions(rulesStorageService.findEnabledAssetDefinitions());
+
+        // TODO: Look for attributes that contain RULES_FACT meta and push Attribute Events for them
+        // into the rule engines.
     }
 
     @Override
@@ -132,7 +178,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
     @Override
     public void accept(AssetUpdate assetUpdate) {
-        processAssetUpdate(assetUpdate);
+        insertFact(assetUpdate);
     }
 
     public synchronized void processTenantChange(Tenant tenant, PersistenceEvent.Cause cause) {
@@ -253,9 +299,10 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             .forEach(es -> {
                 List<Pair<ServerAsset, List<AssetRulesDefinition>>> tenantAssetAndRules = es.getValue();
 
+                // RT: Not sure we need ordering here for starting engines so removing it
                 // Order rules definitions by asset hierarchy within this tenant
                 tenantAssetAndRules.stream()
-                    .sorted(Comparator.comparingInt(item -> item.key.getPath().length))
+                    //.sorted(Comparator.comparingInt(item -> item.key.getPath().length))
                     .flatMap(assetAndRules -> assetAndRules.value.stream())
                     .forEach(this::deployAssetRulesDefinition);
             });
@@ -284,37 +331,20 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         }
     }
 
-    protected synchronized void processAssetUpdate(AssetUpdate assetUpdate) {
+    // TODO: What should we do when inserting facts into engines that aren't running? should we update the status to error?
+    protected synchronized void insertFact(AssetUpdate assetUpdate) {
         // TODO: implement rules processing error state handling
 
         // Get the chain of rule engines that we need to pass through
         ServerAsset asset = assetUpdate.getAsset();
-        List<RulesDeployment> rulesDeployments = new ArrayList<>();
+        List<RulesDeployment> rulesDeployments = getEnginesInScope(asset.getRealmId(), asset.getPath());
 
-        // Add global engine (if it exists)
-        if (globalDeployment != null) {
-            rulesDeployments.add(globalDeployment);
-        }
-
-        // Add tenant engine (if it exists)
-        RulesDeployment tenantDeployment = tenantDeployments.get(asset.getRealmId());
-
-        if (tenantDeployment != null) {
-            rulesDeployments.add(tenantDeployment);
-        }
-
-        // Add asset engines
-        // Iterate through asset hierarchy using asset IDs from getPath
-        for (String assetId : asset.getPath()) {
-            RulesDeployment assetDeployment = assetDeployments.get(assetId);
-            if (assetDeployment != null) {
-                rulesDeployments.add(assetDeployment);
-            }
-        }
-
-        // Pass through each engine if an engine is in error state then log and skip it
+        // Pass through each engine and try and insert the fact
         for (RulesDeployment deployment : rulesDeployments) {
-            deployment.processUpdate(assetUpdate);
+            deployment.insertFact(assetUpdate);
+
+            // We have to check status between each engine insert as a rule in the engine could have updated
+            // the status
             if (assetUpdate.getStatus() != AssetUpdate.Status.CONTINUE) {
                 LOG.info("Rules engine has marked update event as '" + assetUpdate.getStatus() + "' so not processing anymore");
                 if (assetUpdate.getStatus() == AssetUpdate.Status.RULES_HANDLED) {
@@ -323,6 +353,46 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                 break;
             }
         }
+    }
+
+    protected void retractFact(AssetUpdate assetUpdate) {
+        // TODO: implement rules processing error state handling
+
+        // Get the chain of rule engines that we need to pass through
+        ServerAsset asset = assetUpdate.getAsset();
+        List<RulesDeployment> rulesDeployments = getEnginesInScope(asset.getRealmId(), asset.getPath());
+
+        // Pass through each engine and retract this fact
+        for (RulesDeployment deployment : rulesDeployments) {
+            deployment.retractFact(assetUpdate);
+        }
+    }
+
+    protected List<RulesDeployment> getEnginesInScope(String assetRealmId, String[] assetPath) {
+        List<RulesDeployment> rulesDeployments = new ArrayList<>();
+
+        // Add global engine (if it exists)
+        if (globalDeployment != null) {
+            rulesDeployments.add(globalDeployment);
+        }
+
+        // Add tenant engine (if it exists)
+        RulesDeployment tenantDeployment = tenantDeployments.get(assetRealmId);
+
+        if (tenantDeployment != null) {
+            rulesDeployments.add(tenantDeployment);
+        }
+
+        // Add asset engines
+        // Iterate through asset hierarchy using asset IDs from getPath
+        for (String assetId : assetPath) {
+            RulesDeployment assetDeployment = assetDeployments.get(assetId);
+            if (assetDeployment != null) {
+                rulesDeployments.add(assetDeployment);
+            }
+        }
+
+        return rulesDeployments;
     }
 
     @Override

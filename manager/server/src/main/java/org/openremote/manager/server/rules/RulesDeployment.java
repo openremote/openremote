@@ -20,6 +20,7 @@
 package org.openremote.manager.server.rules;
 
 import elemental.json.Json;
+import org.drools.core.factmodel.Fact;
 import org.kie.api.KieServices;
 import org.kie.api.builder.KieBuilder;
 import org.kie.api.builder.KieFileSystem;
@@ -40,6 +41,7 @@ import org.kie.api.time.SessionClock;
 import org.openremote.manager.server.asset.AssetUpdate;
 import org.openremote.manager.shared.rules.RulesDefinition;
 import org.openremote.model.AttributeRef;
+import org.openremote.model.asset.Asset;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -70,7 +72,7 @@ public class RulesDeployment<T extends RulesDefinition> {
     protected boolean running;
     protected long currentFactCount;
     protected final Class<T> clazz;
-    final protected Map<AttributeRef, FactHandle> attributeFacts = new HashMap<>();
+    final protected Map<AssetUpdate, FactHandle> facts = new HashMap<>();
     protected static final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     protected ScheduledFuture startTimer;
 
@@ -179,6 +181,8 @@ public class RulesDeployment<T extends RulesDefinition> {
         try {
             // ID will be unique within the scope of a rules deployment as rules definition will all be of same type
             kfs.write("src/main/resources/" + rulesDefinition.getId() + ".drl", rulesDefinition.getRules());
+            // Unload the rules string from the definition we don't need it anymore and don't want it using memory
+            rulesDefinition.setRules(null);
             KieBuilder kieBuilder = kieServices.newKieBuilder(kfs).buildAll();
 
             if (kieBuilder.getResults().hasMessages(Message.Level.ERROR)) {
@@ -325,6 +329,11 @@ public class RulesDeployment<T extends RulesDefinition> {
             setGlobal("LOG", LOG);
 
             knowledgeSession.addEventListener(ruleExecutionLogger);
+
+            // Insert all the facts into the session
+            Set<Map.Entry<AssetUpdate, FactHandle>> factEntries = facts.entrySet();
+            facts.clear();
+            factEntries.forEach(factEntry -> insertFactIntoSession(factEntry.getKey()));
         } catch (Throwable t) {
             error = true;
             throw new RuntimeException(t);
@@ -348,61 +357,74 @@ public class RulesDeployment<T extends RulesDefinition> {
             LOG.fine("Knowledge session disposed");
         }
 
-        attributeFacts.clear();
+        facts.clear();
         running = false;
     }
 
-    protected synchronized void processUpdate(AssetUpdate assetUpdate) {
-        if (isError()) {
-            LOG.warning("Rules engine is in error state so cannot process update event: " + this);
-            return;
-        } else if (!isRunning()) {
-            LOG.warning("Rules engine is not running so cannot process update event:" + this);
-            return;
+    protected synchronized void insertFact(AssetUpdate assetUpdate) {
+        // Check if fact already exists using equals()
+        if (!facts.containsKey(assetUpdate)) {
+            // Delete any existing fact for this attribute ref
+            // Put the fact into working memory and store the handle
+            retractFact(assetUpdate);
+            insertFactIntoSession(assetUpdate);
         }
+    }
 
-        long newFactCount;
+    protected synchronized void retractFact(AssetUpdate assetUpdate) {
         AttributeRef attributeRef = assetUpdate.getNewState().getAttributeRef();
 
-        // If this fact is not in working memory (considering its equals() method)...
-        if (!knowledgeSession.getObjects().contains(assetUpdate)) {
-            // If there already is a fact in working memory for this attribute then delete it
-            FactHandle factHandle = attributeFacts.get(attributeRef);
+        // If there already is a fact in working memory for this attribute then delete it
+        AssetUpdate update = facts.keySet()
+                .stream()
+                .filter(au -> au.getAttribute().getAttributeRef(au.getEntityId()).equals(attributeRef))
+                .findFirst()
+                .orElse(null);
 
-            if (factHandle != null) {
-                try {
-                    // ... retract it from working memory ...
-                    LOG.finest("Removed stale attribute fact: " + attributeRef);
-                    knowledgeSession.delete(factHandle);
-                } finally {
-                    // ... and make sure we don't keep a reference to the stale fact
-                    attributeFacts.remove(attributeRef);
-                }
+        FactHandle factHandle = update != null ? facts.get(update) : null;
+
+        if (factHandle != null && knowledgeSession != null) {
+            try {
+                // ... retract it from working memory ...
+                LOG.finest("Removed stale attribute fact: " + attributeRef);
+                knowledgeSession.delete(factHandle);
+            } finally {
+                // ... and make sure we don't keep a reference to the stale fact
+                facts.remove(update);
+            }
+        }
+
+        return;
+    }
+
+    protected FactHandle insertFactIntoSession(AssetUpdate assetUpdate) {
+        FactHandle factHandle = null;
+
+        if (!isError() && isRunning()) {
+            long newFactCount;
+            factHandle = knowledgeSession.insert(assetUpdate);
+            facts.put(assetUpdate, factHandle);
+            LOG.finest("Inserted fact into session");
+
+            LOG.finest("On " + this + ", firing all rules");
+            int fireCount = knowledgeSession.fireAllRules();
+            LOG.finest("On " + this + ", fired rules count: " + fireCount);
+
+            // TODO: Prevent run away fact creation (not sure how we can do this reliably as facts can be generated in rule RHS)
+            // MR: this is heuristic number which comes good for finding facts memory leak in the drl file.
+            // problem - when you are not careful then drl can insert new facts till memory exhaustion. As there
+            // are usually few 100 facts in drl's I'm working with, putting arbitrary number gives me early feedback
+            // that there is potential problem. Perhaps we should think about a better solution to this problem?
+            newFactCount = knowledgeSession.getFactCount();
+            LOG.finest("On " + this + ", new fact count: " + newFactCount);
+            if (newFactCount != currentFactCount) {
+                LOG.finest("On " + this + ", fact count changed from " + currentFactCount + " to " + newFactCount + " after: " + assetUpdate);
             }
 
-            // Put the fact into working memory and store the handle
-            boolean isUpdate = factHandle != null;
-            factHandle = knowledgeSession.insert(assetUpdate);
-            attributeFacts.put(attributeRef, factHandle);
-            LOG.finest("On " + this + ", fact " + (isUpdate ? "updated: " : "inserted: " + assetUpdate));
+            currentFactCount = newFactCount;
         }
 
-        LOG.finest("On " + this + ", firing all rules");
-        int fireCount = knowledgeSession.fireAllRules();
-        LOG.finest("On " + this + ", fired rules count: " + fireCount);
-
-        // TODO: Prevent run away fact creation (not sure how we can do this reliably as facts can be generated in rule RHS)
-        // MR: this is heuristic number which comes good for finding facts memory leak in the drl file.
-        // problem - when you are not careful then drl can insert new facts till memory exhaustion. As there
-        // are usually few 100 facts in drl's I'm working with, putting arbitrary number gives me early feedback
-        // that there is potential problem. Perhaps we should think about a better solution to this problem?
-        newFactCount = knowledgeSession.getFactCount();
-        LOG.finest("On " + this + ", new fact count: " + newFactCount);
-        if (newFactCount != currentFactCount) {
-            LOG.finest("On " + this + ", fact count changed from " + currentFactCount + " to " + newFactCount + " after: " + assetUpdate);
-        }
-
-        currentFactCount = newFactCount;
+        return factHandle;
     }
 
     @Override

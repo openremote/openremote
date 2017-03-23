@@ -212,6 +212,8 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         when: "the enabled rule definition for customer B is disabled"
         conditions = new PollingConditions(timeout: 10)
+        // TODO: If we don't do this then test will fail
+        rulesDefinition = rulesStorageService.findById(TenantRulesDefinition.class, managerDemoSetup.customerBRulesDefinitionId)
         rulesDefinition.setEnabled(false)
         rulesStorageService.merge(rulesDefinition)
 

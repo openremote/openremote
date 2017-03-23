@@ -38,6 +38,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 1)
 
+        // TODO: Update this to use Simulator Protocol
         and: "a mock protocol"
         def mockProtocolName =  Constants.PROTOCOL_NAMESPACE + ":mockProtocol"
         def protocolDeployed = false

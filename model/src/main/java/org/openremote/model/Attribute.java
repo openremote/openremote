@@ -140,6 +140,7 @@ public class Attribute extends AbstractValueTimestampHolder<Attribute> {
         return getName() != null && getName().length() > 0 && getType() != null;
     }
 
+    // TODO: This needs to go into AssetAttribute - bit weird here
     public AttributeRef getAttributeRef(String entityId) {
         return new AttributeRef(entityId, getName());
     }

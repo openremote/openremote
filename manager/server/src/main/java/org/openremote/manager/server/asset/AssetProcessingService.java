@@ -24,7 +24,6 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
-import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.server.agent.AgentService;
 import org.openremote.manager.server.agent.ThingAttributes;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
@@ -33,7 +32,6 @@ import org.openremote.model.Attribute;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeState;
 import org.openremote.model.Attributes;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.ThingAttribute;
 
@@ -44,8 +42,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.agent3.protocol.Protocol.SENSOR_TOPIC;
-import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
-import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
 import static org.openremote.model.asset.AssetType.THING;
 
 /**
@@ -169,15 +165,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             .filter(body().isInstanceOf(AttributeEvent.class))
             .process(exchange -> {
                 processSensorUpdate(exchange.getIn().getBody(AttributeEvent.class));
-            });
-
-        // If any asset was modified in the database, detect changed attributes
-        from(PERSISTENCE_TOPIC)
-            .filter(isPersistenceEventForEntityType(Asset.class))
-            .process(exchange -> {
-                PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
-                Asset asset = (Asset) persistenceEvent.getEntity();
-                // TODO: Detect which attribute was created/updated in the database and handle it
             });
     }
 
