@@ -209,7 +209,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert sendToActuatorEvents.size() == 0
             assert updatesPassedStartOfProcessingChain[0].entityId == mockThing.id
             assert updatesPassedStartOfProcessingChain[0].attribute.name == "light2Toggle"
-            assert updatesPassedStartOfProcessingChain[0].status == AssetUpdate.Status.ERROR
+            assert updatesPassedStartOfProcessingChain[0].status == AssetUpdate.Status.COMPLETED
         }
     }
 }

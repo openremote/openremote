@@ -116,6 +116,10 @@ public class AssetUpdate {
         return status;
     }
 
+    public boolean isCompleted() {
+        return getStatus() == Status.COMPLETED;
+    }
+
     public boolean isValueChanged() {
         return !newState.getAttributeState().getValue().jsEquals(oldState.getAttributeState().getValue());
     }
