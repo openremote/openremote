@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.server.rules;
 
+import elemental.json.JsonObject;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
@@ -35,7 +36,9 @@ import org.openremote.manager.shared.rules.GlobalRulesDefinition;
 import org.openremote.manager.shared.rules.RulesDefinition;
 import org.openremote.manager.shared.rules.TenantRulesDefinition;
 import org.openremote.manager.shared.security.Tenant;
+import org.openremote.model.Attribute;
 import org.openremote.model.Attributes;
+import org.openremote.model.MetaItem;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetMeta;
 
@@ -106,35 +109,83 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                 Asset asset = (Asset) persistenceEvent.getEntity();
                 ServerAsset serverAsset = ServerAsset.map(asset, new ServerAsset());
 
-                switch (persistenceEvent.getCause()) {
-                    case INSERT:
-                        // New asset has been created so get attributes that have RULES_FACT meta
-                        Attributes addedAttributes = new Attributes(asset.getAttributes());
-                        Arrays.stream(addedAttributes.get())
-                            .filter(attribute -> attribute.hasMetaItem(AssetMeta.RULES_FACT))
-                            .forEach(attribute -> {
-                                AssetUpdate update = new AssetUpdate(serverAsset, attribute, attribute.getStateEvent(asset.getId()), null);
-                                // TODO: What if a rule engine marks the fact as handled it should still go into other engines here???
-                                insertFact(update);
-                            });
-                        break;
-                    case UPDATE:
-                        // TODO: Handle update case
-                        break;
-                    case DELETE:
-                        // Retract any facts that were associated with this asset
-                        Attributes removedAttributes = new Attributes(asset.getAttributes());
-                        Arrays.stream(removedAttributes.get())
-                            .filter(attribute -> attribute.hasMetaItem(AssetMeta.RULES_FACT))
-                            .forEach(attribute -> {
-                                AssetUpdate update = new AssetUpdate(serverAsset, attribute, attribute.getStateEvent(asset.getId()), null);
-                                // TODO: What if a rule engine marks the fact as handled it should still go into other engines here???
-                                retractFact(update);
-                            });
-                        break;
-                }
-                // TODO: Detect which attribute was created/updated in the database and handle it
+                    switch (persistenceEvent.getCause()) {
+                        case INSERT:
+                            // New asset has been created so get attributes that have RULES_FACT meta
+                            Attributes addedAttributes = new Attributes(asset.getAttributes());
+                            Arrays.stream(addedAttributes.get())
+                                    .filter(attribute -> {
+                                        MetaItem rulesFact = attribute.firstMetaItem(AssetMeta.RULES_FACT);
+                                        return rulesFact != null && rulesFact.getValueAsBoolean();
+                                    })
+                                    .forEach(attribute -> {
+                                        AssetUpdate update = new AssetUpdate(serverAsset, attribute, attribute.getStateEvent(asset.getId()), null);
+                                        // Set the status to completed already so rules cannot interfere with this initial insert
+                                        update.setStatus(AssetUpdate.Status.COMPLETED);
+                                        insertFact(update, true);
+                                    });
+                            break;
+                        case UPDATE:
+                            int attributesIndex = Arrays.asList(persistenceEvent.getPropertyNames()).indexOf("attributes");
+                            if (attributesIndex >= 0) {
+                                // Attributes have possibly changed so need to compare old and new state to determine
+                                // which facts to retract and which to insert
+                                Attributes oldAttributes = new Attributes((JsonObject)persistenceEvent.getPreviousState()[attributesIndex]);
+                                Attributes newAttributes = new Attributes((JsonObject)persistenceEvent.getCurrentState()[attributesIndex]);
 
+                                List<Attribute> oldLinkedAttributes = Arrays.stream(oldAttributes.get())
+                                        .filter(attribute ->  {
+                                            MetaItem rulesFact = attribute.firstMetaItem(AssetMeta.RULES_FACT);
+                                            return rulesFact != null && rulesFact.getValueAsBoolean();
+                                        })
+                                        .collect(Collectors.toList());
+
+                                List<Attribute> newLinkedAttributes = Arrays.stream(newAttributes.get())
+                                        .filter(attribute -> {
+                                            MetaItem rulesFact = attribute.firstMetaItem(AssetMeta.RULES_FACT);
+                                            return rulesFact != null && rulesFact.getValueAsBoolean();
+                                        })
+                                        .collect(Collectors.toList());
+
+                                // Compare attributes using JsonObject.jsEquals()
+                                // Retract facts for attributes that are in oldLinkedAttributes but not in newLinkedAttributes
+                                oldLinkedAttributes
+                                        .stream()
+                                        .filter(oldLink -> newLinkedAttributes
+                                                .stream()
+                                                .noneMatch(newLink -> oldLink.getJsonObject().jsEquals(newLink.getJsonObject())))
+                                        .forEach(obsoleteLink -> {
+                                            AssetUpdate update = new AssetUpdate(serverAsset, obsoleteLink, obsoleteLink.getStateEvent(asset.getId()), null);
+                                            retractFact(update);
+                                        });
+
+                                // Insert facts for attributes that are in newLinkedAttributes but not in oldLinkedAttributes
+                                newLinkedAttributes
+                                        .stream()
+                                        .filter(newFact -> oldLinkedAttributes
+                                                .stream()
+                                                .noneMatch(oldFact -> newFact.getJsonObject().jsEquals(newFact.getJsonObject())))
+                                        .forEach(newLinkedAttribute -> {
+                                            AssetUpdate update = new AssetUpdate(serverAsset, newLinkedAttribute, newLinkedAttribute.getStateEvent(asset.getId()), null);
+                                            // Set the status to completed already so rules cannot interfere with this initial insert
+                                            insertFact(update, true);
+                                        });
+                            }
+                            break;
+                        case DELETE:
+                            // Retract any facts that were associated with this asset
+                            Attributes removedAttributes = new Attributes(asset.getAttributes());
+                            Arrays.stream(removedAttributes.get())
+                                    .filter(attribute -> {
+                                        MetaItem rulesFact = attribute.firstMetaItem(AssetMeta.RULES_FACT);
+                                        return rulesFact != null && rulesFact.getValueAsBoolean();
+                                    })
+                                    .forEach(attribute -> {
+                                        AssetUpdate update = new AssetUpdate(serverAsset, attribute, attribute.getStateEvent(asset.getId()), null);
+                                        retractFact(update);
+                                    });
+                            break;
+                    }
             });
     }
 
@@ -152,7 +203,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     .anyMatch(activeTenantRealmId -> rd.getRealmId().equals(activeTenantRealmId))
             ).forEach(this::deployTenantRulesDefinition);
 
-        // Deploy asset rules - group by assetID then tenant then order hierarchically
+        // Deploy asset rules - group by asset ID then tenant and check tenant is enabled
         deployAssetRulesDefinitions(rulesStorageService.findEnabledAssetDefinitions());
 
         // TODO: Look for attributes that contain RULES_FACT meta and push Attribute Events for them
@@ -177,7 +228,13 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
     @Override
     public void accept(AssetUpdate assetUpdate) {
-        insertFact(assetUpdate);
+        // Check attribute has RULES_FACT meta set to true
+        Attribute attribute = assetUpdate.getAttribute();
+
+        MetaItem rulesFact = attribute.firstMetaItem(AssetMeta.RULES_FACT);
+        if (rulesFact != null && rulesFact.getValueAsBoolean()) {
+            insertFact(assetUpdate, false);
+        }
     }
 
     public synchronized void processTenantChange(Tenant tenant, PersistenceEvent.Cause cause) {
@@ -331,7 +388,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     }
 
     // TODO: What should we do when inserting facts into engines that aren't running? should we update the status to error?
-    protected synchronized void insertFact(AssetUpdate assetUpdate) {
+    protected synchronized void insertFact(AssetUpdate assetUpdate, boolean skipStatusCheck) {
         // TODO: implement rules processing error state handling
 
         // Get the chain of rule engines that we need to pass through
@@ -342,21 +399,21 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         for (RulesDeployment deployment : rulesDeployments) {
             deployment.insertFact(assetUpdate);
 
-            // We have to check status between each engine insert as a rule in the engine could have updated
-            // the status
-            if (assetUpdate.getStatus() != AssetUpdate.Status.CONTINUE) {
-                LOG.info("Rules engine has marked update event as '" + assetUpdate.getStatus() + "' so not processing anymore");
-                if (assetUpdate.getStatus() == AssetUpdate.Status.RULES_HANDLED) {
-                    assetUpdate.setStatus(AssetUpdate.Status.CONTINUE);
+            if (!skipStatusCheck) {
+                // We have to check status between each engine insert as a rule in the engine could have updated
+                // the status
+                if (assetUpdate.getStatus() != AssetUpdate.Status.CONTINUE) {
+                    LOG.info("Rules engine has marked update event as '" + assetUpdate.getStatus() + "' so not processing anymore");
+                    if (assetUpdate.getStatus() == AssetUpdate.Status.RULES_HANDLED) {
+                        assetUpdate.setStatus(AssetUpdate.Status.CONTINUE);
+                    }
+                    break;
                 }
-                break;
             }
         }
     }
 
     protected void retractFact(AssetUpdate assetUpdate) {
-        // TODO: implement rules processing error state handling
-
         // Get the chain of rule engines that we need to pass through
         ServerAsset asset = assetUpdate.getAsset();
         List<RulesDeployment> rulesDeployments = getEnginesInScope(asset.getRealmId(), asset.getReversePath());
