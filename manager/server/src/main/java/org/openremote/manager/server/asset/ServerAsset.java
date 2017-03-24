@@ -24,11 +24,16 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
+import elemental.json.Json;
 import elemental.json.JsonObject;
+import org.geolatte.geom.jts.JTS;
 import org.hibernate.annotations.Check;
+import org.hibernate.spatial.dialect.postgis.PGGeometryTypeDescriptor;
 import org.openremote.model.asset.Asset;
 
 import javax.persistence.*;
+import java.sql.Array;
+import java.sql.SQLException;
 import java.util.Date;
 
 /**
@@ -45,14 +50,14 @@ public class ServerAsset extends Asset {
     /**
      * Easy conversion between types, we copy all properties (not a deep copy!)
      */
-    public static <T extends ServerAsset> T map(Asset asset, T serverAsset) {
+    public static ServerAsset map(Asset asset, ServerAsset serverAsset) {
         return map(asset, serverAsset, null, null, null);
     }
 
-    public static <T extends ServerAsset> T map(Asset asset, T serverAsset,
-                                                String overrideParentId,
-                                                String overrideType,
-                                                Double[] overrideLocation) {
+    public static ServerAsset map(Asset asset, ServerAsset serverAsset,
+                                  String overrideParentId,
+                                  String overrideType,
+                                  Double[] overrideLocation) {
         serverAsset.setVersion(asset.getVersion());
         serverAsset.setRealmId(asset.getRealmId());
         serverAsset.setName(asset.getName());
@@ -91,31 +96,26 @@ public class ServerAsset extends Asset {
     public ServerAsset() {
     }
 
-    public ServerAsset(String id, long version, Date createdOn, String name, String type,
+    public ServerAsset(boolean filterProtectedAttributes,
+                       String id, long version, Date createdOn, String name, String type,
                        String parentId, String parentName, String parentType,
                        String realmId, String tenantRealm, String tenantDisplayName,
-                       Geometry location) {
-        this(
-            id, version, createdOn, name, type,
-            parentId, parentName, parentType, null,
-            realmId, tenantRealm, tenantDisplayName,
-            location,
-            null
-        );
-    }
-
-    public ServerAsset(String id, long version, Date createdOn, String name, String type,
-                       String parentId, String parentName, String parentType, String[] path,
-                       String realmId, String tenantRealm, String tenantDisplayName,
-                       Geometry location,
-                       JsonObject attributes) {
+                       Object location,
+                       Array path, String attributes) throws SQLException {
         super(
+            filterProtectedAttributes,
             id, version, createdOn, name, type,
-            parentId, parentName, parentType, path,
+            parentId, parentName, parentType,
             realmId, tenantRealm, tenantDisplayName,
-            attributes
+            path != null ? (String[]) path.getArray() : null,
+            attributes != null && attributes.length() > 0 ? Json.instance().parse(attributes) : null
         );
-        setLocation((Point) location);
+
+        setLocation(
+            location != null
+                ? (Point) JTS.to(PGGeometryTypeDescriptor.toGeometry(location))
+                : null
+        );
     }
 
     public ServerAsset(Asset parent) {

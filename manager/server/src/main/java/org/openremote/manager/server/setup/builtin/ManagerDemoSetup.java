@@ -393,10 +393,10 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         KeycloakDemoSetup keycloakDemoSetup = setupService.getTaskOfType(KeycloakDemoSetup.class);
         identityService.setRestrictedUser(keycloakDemoSetup.testuser3Id, true);
-        assetStorageService.storeProtected(keycloakDemoSetup.testuser3Id, apartment1Id);
-        assetStorageService.storeProtected(keycloakDemoSetup.testuser3Id, apartment1LivingroomId);
-        assetStorageService.storeProtected(keycloakDemoSetup.testuser3Id, apartment1LivingroomThermostatId);
-        assetStorageService.storeProtected(keycloakDemoSetup.testuser3Id, apartment2Id);
+        assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment1Id);
+        assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment1LivingroomId);
+        assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment1LivingroomThermostatId);
+        assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment2Id);
 
         // ################################ Rules demo data ###################################
 

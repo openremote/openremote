@@ -29,8 +29,12 @@ import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.AssetUpdate;
+import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
-import org.openremote.model.asset.*;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetQuery;
+import org.openremote.model.asset.AssetType;
+import org.openremote.model.asset.ThingAttribute;
 
 import java.util.Collection;
 import java.util.List;
@@ -69,8 +73,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
     @Override
     public void start(Container container) throws Exception {
-        Asset[] agents = assetStorageService.findByType(AGENT.getValue(), false);
-        LOG.fine("Deploy all agents in all realms: " + agents.length);
+        List<ServerAsset> agents = assetStorageService.findAll(new AssetQuery().type(AssetType.AGENT));
+        LOG.fine("Deploy all agents in all realms: " + agents.size());
         for (Asset agent : agents) {
             deployAgent(agent, PersistenceEvent.Cause.UPDATE);
         }
@@ -102,7 +106,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         switch (cause) {
             case UPDATE:
                 // TODO: Find everything with this agent ID in the asset tree not just children
-                Asset[] things = assetStorageService.findChildrenByType(agent.getId(), THING, true);
+                List<ServerAsset> things = assetStorageService.findAll(new AssetQuery()
+                    .select(new AssetQuery.Select(true, false))
+                    .type(THING)
+                    .parent(new AssetQuery.Parent(agent.getId()))
+                );
                 for (Asset thing : things) {
                     deployThing(thing, PersistenceEvent.Cause.UPDATE);
                 }
@@ -179,7 +187,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     /**
      * If this update is not for an asset of type THING or it has been initiated by
      * a protocol then we ignore it.
-     *
+     * <p>
      * Otherwise we push the update to the protocol to handle and prevent any further
      * processing of this event by the processing chain, the protocol should raise
      * sensor updates as required (i.e. the protocol is responsible for synchronising state)
@@ -206,7 +214,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             // Check attribute is linked to an actual agent
             ThingAttributes thingAttributes = new ThingAttributes(assetUpdate.getAsset());
             ThingAttribute thingAttribute = thingAttributes.getLinkedAttribute(
-                    assetStorageService.getAgentLinkResolver(), assetUpdate.getAttribute().getName()
+                assetStorageService.getAgentLinkResolver(), assetUpdate.getAttribute().getName()
             );
 
             if (thingAttribute == null) {

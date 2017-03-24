@@ -112,7 +112,7 @@ public abstract class AttributesBrowser extends AttributesView<AttributesBrowser
         liveUpdatesCheckBox.addValueChangeHandler(event -> showInfo("TODO: Not implemented"));
         formField.add(liveUpdatesCheckBox);
 
-        if (attributes.get().length > 0) {
+        if (attributes.size() > 0) {
             FormGroupActions formGroupActions = new FormGroupActions();
 
             FormButton readAllButton = new FormButton();

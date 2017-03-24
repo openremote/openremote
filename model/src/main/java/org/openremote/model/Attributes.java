@@ -55,6 +55,10 @@ public class Attributes {
         return jsonObject.keys();
     }
 
+    public int size() {
+        return get().length;
+    }
+
     public Attribute[] get() {
         Set<Attribute> attributes = new LinkedHashSet<>();
         String[] keys = jsonObject.keys();

@@ -30,7 +30,7 @@ import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.Attributes;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.ProtectedAsset;
+import org.openremote.model.asset.AssetQuery;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
@@ -58,31 +58,34 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     }
 
     @Override
-    public ProtectedAsset[] getCurrentUserAssets(RequestParams requestParams) {
+    public Asset[] getCurrentUserAssets(RequestParams requestParams) {
         try {
             if (isSuperUser() || !isRestrictedUser()) {
-                return new ProtectedAsset[0];
+                return new Asset[0];
             }
-            List<ProtectedAsset> assets = Arrays.asList(assetStorageService.findProtectedOfUser(getUserId(), true));
+            List<ServerAsset> assets = assetStorageService.findAll(
+                new AssetQuery().select(new AssetQuery.Select(true, true)).userId(getUserId())
+            );
+
             // Filter assets that might have been moved into a different realm and can no longer be accessed by user
             // TODO: Should we forbid moving assets between realms?
-            Iterator<ProtectedAsset> it = assets.iterator();
+            Iterator<ServerAsset> it = assets.iterator();
             while (it.hasNext()) {
-                ProtectedAsset asset = it.next();
+                ServerAsset asset = it.next();
                 String assetRealm = identityService.getActiveTenantRealm(asset.getRealmId());
                 if (!assetRealm.equals(getAuthenticatedRealm())) {
                     LOG.warning("User '" + getUsername() + "' has protected asset outside of authenticated realm, skipping: " + asset);
                     it.remove();
                 }
             }
-            return assets.toArray(new ProtectedAsset[assets.size()]);
+            return assets.toArray(new ServerAsset[assets.size()]);
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }
     }
 
     @Override
-    public void updateCurrentUserAsset(RequestParams requestParams, String assetId, ProtectedAsset protectedAsset) {
+    public void updateCurrentUserAsset(RequestParams requestParams, String assetId, Asset protectedAsset) {
         throw new UnsupportedOperationException("Not Implemented"); // TODO
     }
 
@@ -99,7 +102,14 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             if (!isRealmAccessibleByUser(realm) || isRestrictedUser()) {
                 return new Asset[0];
             }
-            return assetStorageService.findRoot(realmId, false);
+
+            List<ServerAsset> result = assetStorageService.findAll(
+                new AssetQuery()
+                    .parent(new AssetQuery.Parent(true))
+                    .realm(new AssetQuery.Realm(realmId))
+            );
+            return result.toArray(new Asset[result.size()]);
+
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }
@@ -112,13 +122,22 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 return new Asset[0];
             }
             if (isSuperUser()) {
-                return assetStorageService.findChildren(parentId, false);
+                List<ServerAsset> result = assetStorageService.findAll(
+                    new AssetQuery()
+                        .parent(new AssetQuery.Parent(parentId))
+                );
+                return result.toArray(new Asset[result.size()]);
             } else {
                 String realmId = identityService.getActiveTenantRealmId(getAuthenticatedRealm());
                 if (realmId == null) {
                     throw new WebApplicationException(NOT_FOUND);
                 }
-                return assetStorageService.findChildrenInRealm(parentId, realmId, false);
+                List<ServerAsset> result = assetStorageService.findAll(
+                    new AssetQuery()
+                        .parent(new AssetQuery.Parent(parentId))
+                        .realm(new AssetQuery.Realm(realmId))
+                );
+                return result.toArray(new Asset[result.size()]);
             }
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
@@ -157,7 +176,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             if (isRestrictedUser()) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
-            ServerAsset serverAsset = assetStorageService.find(assetId, true);
+            ServerAsset serverAsset = assetStorageService.find(assetId, true, false);
             if (serverAsset == null)
                 throw new WebApplicationException(NOT_FOUND);
 
@@ -202,7 +221,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     @Override
     public void writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, String rawJson) {
         try {
-            ServerAsset asset = assetStorageService.find(assetId, true);
+            ServerAsset asset = assetStorageService.find(assetId, true, false);
             if (asset == null)
                 throw new WebApplicationException(NOT_FOUND);
 
@@ -227,7 +246,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             // Check restricted
             if (isRestrictedUser() &&
-                !assetStorageService.findProtectedOfUserContains(getUserId(), asset.getId())) {
+                !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
@@ -247,7 +266,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     @Override
     public String readAttributeValue(RequestParams requestParams, String assetId, String attributeName) {
         try {
-            ServerAsset asset = assetStorageService.find(assetId, true);
+            ServerAsset asset = assetStorageService.find(assetId, true, false);
             if (asset == null)
                 throw new WebApplicationException(NOT_FOUND);
 
@@ -267,7 +286,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             // Check restricted
             if (isRestrictedUser() &&
-                !assetStorageService.findProtectedOfUserContains(getUserId(), asset.getId())) {
+                !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
@@ -329,7 +348,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             if (isRestrictedUser()) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
-            ServerAsset serverAsset = assetStorageService.find(assetId, true);
+            ServerAsset serverAsset = assetStorageService.find(assetId, true, false);
             if (serverAsset == null)
                 return;
             String realm = identityService.getActiveTenantRealm(serverAsset.getRealmId());

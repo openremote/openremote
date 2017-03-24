@@ -23,7 +23,6 @@ import jsinterop.annotations.JsType;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.http.SuccessStatusCode;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.ProtectedAsset;
 
 import javax.annotation.security.RolesAllowed;
 import javax.validation.Valid;
@@ -45,12 +44,11 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * A <em>restricted</em> user is linked to a subset of assets within its authenticated realm and
  * may have roles that allow read and/or write access to protected asset details (see
  * {@link org.openremote.model.asset.UserAsset}).
- *
+ * <p>
  * The only operations a restricted user is able to perform are {@link #getCurrentUserAssets},
  * {@link #updateCurrentUserAsset}, {@link #readAttributeValue} and {@link #writeAttributeValue}.
  * </li>
  * </ul>
- *
  */
 @Path("asset")
 @JsType(isNative = true)
@@ -66,7 +64,7 @@ public interface AssetResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
-    ProtectedAsset[] getCurrentUserAssets(@BeanParam RequestParams requestParams);
+    Asset[] getCurrentUserAssets(@BeanParam RequestParams requestParams);
 
     /**
      * Updates an asset linked to the current user. A 403 status is returned if a regular user tries to update an
@@ -78,7 +76,7 @@ public interface AssetResource {
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:assets"})
-    void updateCurrentUserAsset(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, ProtectedAsset protectedAsset);
+    void updateCurrentUserAsset(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, Asset protectedAsset);
 
     /**
      * Retrieve the assets without parent (root assets) of the given realm, or if the realm argument

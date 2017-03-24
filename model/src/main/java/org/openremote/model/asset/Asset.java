@@ -22,7 +22,7 @@ package org.openremote.model.asset;
 import elemental.json.JsonObject;
 import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.Type;
-import org.openremote.model.IdentifiableEntity;
+import org.openremote.model.*;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import static org.openremote.model.Constants.NAMESPACE;
 import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 
@@ -70,6 +71,13 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
  * {@link elemental.json.JsonObject} model. Use the {@link org.openremote.model.Attributes}
  * class to work with this API. This property can be empty when certain optimized loading
  * operations are used.
+ * <p>
+ * Constructors can filter attributes of an asset as to only contain protected attributes,
+ * and their protected metadata (see {@link AssetMeta#PROTECTED}, {@link AssetMeta.Access}).
+ * <p>
+ * Note that third-party metadata items (not in the
+ * {@link org.openremote.model.Constants#NAMESPACE}) are never included on
+ * a protected attribute!
  * <p>
  * Example JSON representation of an asset tree:
  * <blockquote><pre>{@code
@@ -202,6 +210,43 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 @MappedSuperclass
 public class Asset implements IdentifiableEntity {
 
+    static JsonObject filterProtectedAttributes(JsonObject originalAttributes) {
+        if (originalAttributes == null)
+            return null;
+        Attributes filteredAttributes = new Attributes();
+        for (Attribute originalAttribute : new Attributes(originalAttributes).get()) {
+
+            // An attribute must be protected to be included
+            if (!originalAttribute.isProtected()) {
+                continue;
+            }
+
+            Attribute protectedAttribute = originalAttribute.copy();
+            filteredAttributes.put(protectedAttribute);
+
+            if (!protectedAttribute.hasMeta())
+                continue;
+
+            // Any meta item of the attribute, if it's in our namespace, must be protected READ to be included
+            Meta protectedMeta = new Meta();
+            for (MetaItem metaItem : protectedAttribute.getMeta().all()) {
+                if (!metaItem.getName().startsWith(NAMESPACE))
+                    continue;
+
+                AssetMeta wellKnownMeta = AssetMeta.byName(metaItem.getName());
+                if (wellKnownMeta != null && wellKnownMeta.getAccess().protectedRead) {
+                    protectedMeta.add(
+                        new MetaItem(metaItem.getName(), metaItem.getValue())
+                    );
+                }
+            }
+            if (protectedMeta.size() > 0)
+                protectedAttribute.setMeta(protectedMeta);
+
+        }
+        return filteredAttributes.getJsonObject();
+    }
+
     @Id
     @Column(name = "ID", length = 27)
     @GeneratedValue(generator = PERSISTENCE_UNIQUE_ID_GENERATOR)
@@ -226,7 +271,7 @@ public class Asset implements IdentifiableEntity {
     @Column(name = "ASSET_TYPE", nullable = false, updatable = false)
     protected String type;
 
-    @Column(name = "PARENT_ID", length =  27)
+    @Column(name = "PARENT_ID", length = 27)
     protected String parentId;
 
     @Transient
@@ -234,10 +279,6 @@ public class Asset implements IdentifiableEntity {
 
     @Transient
     protected String parentType;
-
-    @Formula("GET_ASSET_TREE_PATH(ID)")
-    @Type(type = "org.openremote.container.persistence.ArrayUserType")
-    protected String[] path;
 
     @Column(name = "REALM_ID", nullable = false)
     protected String realmId;
@@ -250,6 +291,11 @@ public class Asset implements IdentifiableEntity {
 
     @Transient
     protected double[] coordinates;
+
+    // The following are expensive to query, so if they are null, they might not have been loaded
+
+    @Transient
+    protected String[] path;
 
     @Column(name = "ATTRIBUTES", columnDefinition = "jsonb")
     @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_OBJECT_TYPE)
@@ -272,10 +318,11 @@ public class Asset implements IdentifiableEntity {
         this.type = type;
     }
 
-    public Asset(String id, long version, Date createdOn, String name, String type,
-                 String parentId, String parentName, String parentType, String[] path,
+    public Asset(boolean filterProtectedAttributes,
+                 String id, long version, Date createdOn, String name, String type,
+                 String parentId, String parentName, String parentType,
                  String realmId, String tenantRealm, String tenantDisplayName,
-                 JsonObject attributes) {
+                 String[] path, JsonObject attributes) {
         this.id = id;
         this.version = version;
         this.createdOn = createdOn;
@@ -284,11 +331,11 @@ public class Asset implements IdentifiableEntity {
         this.parentId = parentId;
         this.parentName = parentName;
         this.parentType = parentType;
-        this.path = path;
         this.realmId = realmId;
         this.tenantRealm = tenantRealm;
         this.tenantDisplayName = tenantDisplayName;
-        this.attributes = attributes;
+        this.path = path;
+        this.attributes = filterProtectedAttributes ? filterProtectedAttributes(attributes) : attributes;
     }
 
     public Asset(Asset parent) {
@@ -298,7 +345,7 @@ public class Asset implements IdentifiableEntity {
         this.realmId = parent.getRealmId();
         this.tenantRealm = parent.getTenantRealm();
         this.tenantDisplayName = parent.getTenantDisplayName();
-    };
+    }
 
     public String getId() {
         return id;
@@ -372,34 +419,6 @@ public class Asset implements IdentifiableEntity {
         this.parentType = parentType;
     }
 
-    /**
-     * The identifiers of all parents representing the path in the tree. The first element
-     * is the identifier of this instance, the last is the root asset without a parent.
-     */
-    public String[] getPath() {
-        return path;
-    }
-
-    /**
-     * The identifiers of all parents representing the path in the tree. The first element
-     * is the root asset without a parent, the last is the identifier of this instance.
-     */
-    public String[] getReversePath() {
-        if (path == null)
-            return null;
-        List<String> list = Arrays.asList(getPath());
-        Collections.reverse(list);
-        return list.toArray(new String[list.size()]);
-    }
-
-    public boolean pathContains(String assetId) {
-        return path != null && Arrays.asList(getPath()).contains(assetId);
-    }
-
-    public void setPath(String[] path) {
-        this.path = path;
-    }
-
     public String getRealmId() {
         return realmId;
     }
@@ -436,6 +455,34 @@ public class Asset implements IdentifiableEntity {
         return getCoordinates() != null && getCoordinates().length > 0;
     }
 
+    /**
+     * The identifiers of all parents representing the path in the tree. The first element
+     * is the identifier of this instance, the last is the root asset without a parent.
+     */
+    public String[] getPath() {
+        return path;
+    }
+
+    /**
+     * The identifiers of all parents representing the path in the tree. The first element
+     * is the root asset without a parent, the last is the identifier of this instance.
+     */
+    public String[] getReversePath() {
+        if (path == null)
+            return null;
+        List<String> list = Arrays.asList(getPath());
+        Collections.reverse(list);
+        return list.toArray(new String[list.size()]);
+    }
+
+    public boolean pathContains(String assetId) {
+        return path != null && Arrays.asList(getPath()).contains(assetId);
+    }
+
+    public void setPath(String[] path) {
+        this.path = path;
+    }
+
     public JsonObject getAttributes() {
         return attributes;
     }
@@ -466,8 +513,8 @@ public class Asset implements IdentifiableEntity {
             ", realmId='" + realmId + '\'' +
             ", tenantRealm='" + tenantRealm + '\'' +
             ", tenantDisplayName='" + tenantDisplayName + '\'' +
-            ", path=" + Arrays.toString(path) +
             ", coordinates=" + Arrays.toString(coordinates) +
+            ", path=" + Arrays.toString(path) +
             ", attributes=" + attributes +
             '}';
     }

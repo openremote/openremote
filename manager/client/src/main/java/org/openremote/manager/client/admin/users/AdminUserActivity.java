@@ -37,12 +37,15 @@ import org.openremote.model.Runnable;
 
 import javax.inject.Inject;
 import java.util.*;
+import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
 public class AdminUserActivity
     extends AbstractAdminActivity<AdminUserPlace, AdminUser>
     implements AdminUser.Presenter {
+
+    private static final Logger LOG = Logger.getLogger(AdminUserActivity.class.getName());
 
     final protected Environment environment;
     final protected UserResource userResource;
@@ -331,7 +334,7 @@ public class AdminUserActivity
             roles -> {
                 List<Role> roleList = new ArrayList<>();
                 roleList.addAll(Arrays.asList(roles));
-                Collections.sort(roleList, (o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName()));
+                roleList.sort((o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName()));
                 this.roles = roleList.toArray(new Role[roleList.size()]);
                 adminContent.enableRoles(true);
                 onComplete.run();

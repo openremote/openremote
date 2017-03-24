@@ -79,8 +79,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (!isRealmAccessibleByUser(asset.getTenantRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        if (isRestrictedUser() &&
-            !assetStorageService.findProtectedOfUserContains(getUserId(), assetId)) {
+        if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         List<AssetRulesDefinition> result = rulesStorageService.findAssetDefinitions(asset.getRealmId(), assetId);
@@ -211,8 +210,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (!isRealmAccessibleByUser(asset.getTenantRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        if (isRestrictedUser() &&
-            !assetStorageService.findProtectedOfUserContains(getUserId(), asset.getId())) {
+        if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         rulesStorageService.merge(rulesDefinition);
@@ -231,8 +229,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (!isRealmAccessibleByUser(asset.getTenantRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        if (isRestrictedUser() &&
-            !assetStorageService.findProtectedOfUserContains(getUserId(), asset.getId())) {
+        if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         return existingDefinition;
@@ -251,8 +248,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (!isRealmAccessibleByUser(asset.getTenantRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        if (isRestrictedUser() &&
-            !assetStorageService.findProtectedOfUserContains(getUserId(), asset.getId())) {
+        if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (!id.equals(rulesDefinition.getId())) {
@@ -277,8 +273,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (!isRealmAccessibleByUser(asset.getTenantRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        if (isRestrictedUser() &&
-            !assetStorageService.findProtectedOfUserContains(getUserId(), asset.getId())) {
+        if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         rulesStorageService.delete(AssetRulesDefinition.class, id);

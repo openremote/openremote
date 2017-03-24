@@ -71,7 +71,7 @@ public class TextUtil {
     }
 
     public static String[] fromCommaSeparated(String commaWords) {
-        if (commaWords == null)
+        if (commaWords == null || commaWords.length() == 0)
             return new String[0];
         return commaWords.split(",");
     }

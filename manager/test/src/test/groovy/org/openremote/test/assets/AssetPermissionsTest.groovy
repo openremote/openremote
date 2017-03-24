@@ -1,18 +1,17 @@
 package org.openremote.test.assets
 
-import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
+import org.openremote.container.util.IdentifierUtil
 import org.openremote.manager.server.setup.SetupService
+import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.shared.asset.AssetResource
+import org.openremote.model.AttributeType
 import org.openremote.model.Attributes
 import org.openremote.model.Meta
 import org.openremote.model.asset.Asset
-import org.openremote.model.asset.ProtectedAsset
-import org.openremote.model.AttributeType
 import org.openremote.model.asset.AssetMeta
+import org.openremote.model.asset.AssetType
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
-import org.openremote.model.asset.AssetType
-import org.openremote.container.util.IdentifierUtil
 
 import javax.ws.rs.WebApplicationException
 
@@ -452,7 +451,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "result should match"
         assets.length == 4
-        ProtectedAsset apartment1 = assets[0]
+        Asset apartment1 = assets[0]
         apartment1.id == managerDemoSetup.apartment1Id
         apartment1.name == "Apartment 1"
         apartment1.createdOn.getTime() < System.currentTimeMillis()
@@ -462,16 +461,16 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment1.coordinates[0] == 5.469751699216005d
         apartment1.coordinates[1] == 51.44760787406028d
 
-        ProtectedAsset apartment1Livingroom = assets[1]
+        Asset apartment1Livingroom = assets[1]
         apartment1Livingroom.id == managerDemoSetup.apartment1LivingroomId
         apartment1Livingroom.name == "Livingroom"
 
-        ProtectedAsset apartment1LivingroomThermostat = assets[2]
+        Asset apartment1LivingroomThermostat = assets[2]
         apartment1LivingroomThermostat.id == managerDemoSetup.apartment1LivingroomThermostatId
         apartment1LivingroomThermostat.name == "Livingroom Thermostat"
 
         Attributes protectedAttributes = new Attributes(apartment1LivingroomThermostat.attributes)
-        protectedAttributes.get().length == 1
+        protectedAttributes.size() == 1
         protectedAttributes.get("currentTemperature")
         protectedAttributes.get("currentTemperature").getType() == AttributeType.DECIMAL
         protectedAttributes.get("currentTemperature").getValueAsDecimal() == 19.2d
@@ -480,7 +479,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         protectedMeta.first(AssetMeta.LABEL).getValueAsString() == "Current Temp"
         protectedMeta.first(AssetMeta.READ_ONLY).getValueAsBoolean()
 
-        ProtectedAsset apartment2 = assets[3]
+        Asset apartment2 = assets[3]
         apartment2.id == managerDemoSetup.apartment2Id
         apartment2.name == "Apartment 2"
 

@@ -346,6 +346,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             .map(es ->
                 new Pair<>(assetStorageService.find(es.getKey(), true), es.getValue())
             )
+            .filter(assetAndRules -> assetAndRules.key != null)
             .collect(Collectors.groupingBy(assetAndRules -> assetAndRules.key.getRealmId()))
             .entrySet()
             .stream()

@@ -22,28 +22,24 @@ package org.openremote.manager.server.asset;
 import elemental.json.JsonType;
 import elemental.json.JsonValue;
 import org.hibernate.Session;
+import org.hibernate.jdbc.AbstractReturningWork;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.util.Pair;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.agent.AgentAttributes;
 import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.manager.server.security.RealmView;
 import org.openremote.model.*;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetType;
+import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.asset.ProtocolConfiguration;
 import org.openremote.model.asset.UserAsset;
 import org.postgresql.util.PGobject;
 
 import javax.persistence.EntityManager;
-import javax.persistence.NoResultException;
-import javax.persistence.criteria.*;
-import java.sql.Array;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.sql.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -64,7 +60,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
     final protected Function<AttributeRef, ProtocolConfiguration> agentLinkResolver = agentLink -> {
         // Resolve the agent and the protocol configuration
         // TODO This is very inefficient and requires Hibernate second-level caching
-        Asset agent = find(agentLink.getEntityId(), true);
+        Asset agent = find(agentLink.getEntityId(), true, false);
         if (agent != null && agent.getWellKnownType().equals(AGENT)) {
             AgentAttributes agentAttributes = new AgentAttributes(agent);
             return agentAttributes.getProtocolConfiguration(agentLink.getAttributeName());
@@ -96,165 +92,50 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
 
     }
 
+    @Override
+    public void accept(AssetUpdate assetUpdate) {
+        String assetId = assetUpdate.getAsset().getId();
+        String attributeName = assetUpdate.getAttribute().getName();
+        JsonValue value = assetUpdate.getAttribute().getValue();
+        // Some sanity checking, of course the timestamp should never be -1 if we store updated attribute state
+        long timestamp = assetUpdate.getAttribute().getValueTimestamp();
+        String valueTimestamp = Long.toString(
+            timestamp >= 0 ? timestamp : System.currentTimeMillis()
+        );
+        if (!storeAttributeValue(assetId, attributeName, value, valueTimestamp)) {
+            throw new RuntimeException("Database update failed, no rows updated");
+        }
+    }
+
     public Function<AttributeRef, ProtocolConfiguration> getAgentLinkResolver() {
         return agentLinkResolver;
     }
 
-    /**
-     * Find assets without a parent in a realm.
-     *
-     * @param realmId      The realm to search.
-     * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
-     * @return The root assets of the realm ordered ascending by creation date, or an empty array if there is no data.
-     */
-    public ServerAsset[] findRoot(String realmId, boolean loadComplete) {
-        if (realmId == null || realmId.length() == 0)
-            throw new IllegalArgumentException("Realm must be provided to query assets");
-        return persistenceService.doReturningTransaction(em -> {
-            List<ServerAsset> result = em.createQuery(buildAssetQuery(
-                em.getCriteriaBuilder(),
-                ServerAsset.class, null, null, realmId, null, null, true, loadComplete, null
-            )).getResultList();
-            return result.toArray(new ServerAsset[result.size()]);
-        });
+    public ServerAsset find(String assetId) {
+        return find(new AssetQuery().id(assetId));
     }
 
     /**
-     * Retrieve the children of an asset.
-     *
-     * @param parentId     The ID of the parent asset.
      * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
-     * @return The child assets ordered ascending by creation date, or an empty array if there is no data.
-     */
-    public ServerAsset[] findChildren(String parentId, boolean loadComplete) {
-        return persistenceService.doReturningTransaction(em -> {
-            List<ServerAsset> result = em.createQuery(buildAssetQuery(
-                em.getCriteriaBuilder(),
-                ServerAsset.class, null, parentId, null, null, null, false, loadComplete, null
-            )).getResultList();
-            return result.toArray(new ServerAsset[result.size()]);
-        });
-    }
-
-    /**
-     * Retrieve the children of an asset in a particular realm.
-     *
-     * @param parentId     The ID of the parent asset.
-     * @param realmId      The realm in which both parent asset and its children must be.
-     * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
-     * @return The child assets ordered ascending by creation date, or an empty array if there is no data.
-     */
-    public ServerAsset[] findChildrenInRealm(String parentId, String realmId, boolean loadComplete) {
-        return persistenceService.doReturningTransaction(em -> {
-            List<ServerAsset> result = em.createQuery(buildAssetQuery(
-                em.getCriteriaBuilder(),
-                ServerAsset.class, null, parentId, realmId, null, null, false, loadComplete, null
-            )).getResultList();
-            return result.toArray(new ServerAsset[result.size()]);
-        });
-    }
-
-    /**
-     * Find an asset by primary key and populate all transient details (path, tenant).
-     *
-     * @param assetId      The primary key identifier value of the asset.
-     * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
-     * @return The asset or <code>null</code> if the asset doesn't exist.
      */
     public ServerAsset find(String assetId, boolean loadComplete) {
-        return persistenceService.doReturningTransaction(em -> {
-            try {
-                return em.createQuery(buildAssetQuery(
-                    em.getCriteriaBuilder(),
-                    ServerAsset.class, assetId, null, null, null, null, false, loadComplete, null
-                )).getSingleResult();
-            } catch (NoResultException ex) {
-                return null;
-            }
-        });
+        return find(new AssetQuery().select(new AssetQuery.Select(loadComplete, false)).id(assetId));
     }
 
     /**
-     * Find assets by type in all realms.
-     *
-     * @param assetType    The type of the assets to find.
-     * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
-     * @return The found assets or an empty array
+     * @param loadComplete    If the whole asset data (including path and attributes) should be loaded.
+     * @param filterProtected If the asset attributes should be filtered and only protected details included.
      */
-    public ServerAsset[] findByType(String assetType, boolean loadComplete) {
-        return persistenceService.doReturningTransaction(em -> {
-            List<ServerAsset> result = em.createQuery(buildAssetQuery(
-                em.getCriteriaBuilder(),
-                ServerAsset.class, null, null, null, null, assetType, false, loadComplete, null
-            )).getResultList();
-            return result.toArray(new ServerAsset[result.size()]);
-        });
+    public ServerAsset find(String assetId, boolean loadComplete, boolean filterProtected) {
+        return find(new AssetQuery().select(new AssetQuery.Select(loadComplete, filterProtected)).id(assetId));
     }
 
-    /**
-     * Find children of the given asset by type.
-     *
-     * @param parentId     The ID of the parent asset.
-     * @param assetType    The well-known type of the assets to find.
-     * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
-     * @return The found assets or an empty array
-     */
-    public ServerAsset[] findChildrenByType(String parentId, AssetType assetType, boolean loadComplete) {
-        return persistenceService.doReturningTransaction(em -> {
-            List<ServerAsset> result = em.createQuery(buildAssetQuery(
-                em.getCriteriaBuilder(),
-                ServerAsset.class, null, parentId, null, null, assetType.getValue(), false, loadComplete, null
-            )).getResultList();
-            return result.toArray(new ServerAsset[result.size()]);
-        });
+    public ServerAsset find(AssetQuery query) {
+        return persistenceService.doReturningTransaction(em -> find(em, query));
     }
 
-
-    /**
-     * Find protected assets linked to a user.
-     *
-     * @param userId       The primary key identifier value of the user.
-     * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
-     * @return The found assets or an empty array.
-     */
-    public ProtectedServerAsset[] findProtectedOfUser(String userId, boolean loadComplete) {
-        return persistenceService.doReturningTransaction(em -> {
-            List<ProtectedServerAsset> result = em.createQuery(buildAssetQuery(
-                em.getCriteriaBuilder(),
-                ProtectedServerAsset.class, null, null, null, userId, null, false, loadComplete, null
-            )).getResultList();
-            return result.toArray(new ProtectedServerAsset[result.size()]);
-        });
-    }
-
-    /**
-     * Confirm if protected assets linked to a user contains given asset.
-     *
-     * @return The found assets or an empty array.
-     */
-    public boolean findProtectedOfUserContains(String userId, String assetId) {
-        return persistenceService.doReturningTransaction(em -> {
-            List result = em.createQuery(
-                "select ua.assetId from UserAsset ua where ua.userId = :userId and ua.assetId = :assetId"
-            ).setParameter("assetId", assetId).setParameter("userId", userId).getResultList();
-            return result.size() > 0;
-        });
-    }
-
-    public void storeProtected(String userId, String assetId) {
-        persistenceService.doTransaction(entityManager -> {
-            UserAsset userAsset = new UserAsset(userId, assetId);
-            entityManager.merge(userAsset);
-        });
-    }
-
-    public void deleteProtected(String userId, String assetId) {
-        persistenceService.doTransaction(entityManager -> {
-            UserAsset userAsset = entityManager.find(UserAsset.class, new UserAsset(userId, assetId));
-            if (userAsset != null) {
-                entityManager.remove(userAsset);
-            }
-        });
+    public List<ServerAsset> findAll(AssetQuery query) {
+        return persistenceService.doReturningTransaction(em -> findAll(em, query));
     }
 
     /**
@@ -270,7 +151,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
             // Validate parent
             if (asset.getParentId() != null) {
                 // If this is a not a root asset...
-                ServerAsset parent = loadAsset(em, asset.getParentId(), true);
+                ServerAsset parent = find(em, asset.getParentId(), true, false);
                 // .. the parent must exist
                 if (parent == null)
                     throw new IllegalStateException("Parent not found: " + asset.getParentId());
@@ -298,7 +179,10 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
         return persistenceService.doReturningTransaction(em -> {
             Asset asset = em.find(ServerAsset.class, assetId);
             if (asset != null) {
-                if (findChildren(asset.getId(), false).length > 0)
+                List<ServerAsset> children = findAll(em, new AssetQuery()
+                    .parent(new AssetQuery.Parent(asset.getId()))
+                );
+                if (children.size() > 0)
                     return false;
                 em.remove(asset);
             }
@@ -311,53 +195,231 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
         assetProcessingService.updateAttributeValue(attributeEvent);
     }
 
-    @Override
-    public void accept(AssetUpdate assetUpdate) {
-        String assetId = assetUpdate.getAsset().getId();
-        String attributeName = assetUpdate.getAttribute().getName();
-        JsonValue value = assetUpdate.getAttribute().getValue();
-        // Some sanity checking, of course the timestamp should never be -1 if we store updated attribute state
-        long timestamp = assetUpdate.getAttribute().getValueTimestamp();
-        String valueTimestamp = Long.toString(
-            timestamp >= 0 ? timestamp : System.currentTimeMillis()
-        );
-        if (!storeAttributeValue(assetId, attributeName, value, valueTimestamp)) {
-            throw new RuntimeException("Database update failed, no rows updated");
-        }
+    public boolean isUserAsset(String userId, String assetId) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            UserAsset userAsset = entityManager.find(UserAsset.class, new UserAsset(userId, assetId));
+            return userAsset != null;
+        });
     }
 
-    protected ServerAsset loadAsset(EntityManager em, String assetId, boolean loadDetails) {
-        ServerAsset asset = em.find(ServerAsset.class, assetId);
-        if (asset == null)
-            return null;
-        if (!loadDetails)
-            return asset;
+    public void storeUserAsset(String userId, String assetId) {
+        persistenceService.doTransaction(entityManager -> {
+            UserAsset userAsset = new UserAsset(userId, assetId);
+            entityManager.merge(userAsset);
+        });
+    }
 
-        asset.setTenantRealm(managerIdentityService.getActiveTenantRealm(asset.getRealmId()));
-        asset.setTenantDisplayName(managerIdentityService.getActiveTenantDisplayName(asset.getRealmId()));
+    /* ####################################################################################### */
 
-        asset.setPath(em.unwrap(Session.class).doReturningWork(connection -> {
-            String query =
-                "with recursive ASSET_TREE(ID, PARENT_ID, PATH) as (" +
-                    " select A1.ID, A1.PARENT_ID, array[text(A1.ID)] from ASSET A1 where A1.PARENT_ID is null" +
-                    " union all" +
-                    " select A2.ID, A2.PARENT_ID, array_append(AT.PATH, text(A2.ID)) from ASSET A2, ASSET_TREE AT where A2.PARENT_ID = AT.ID" +
-                    ") select PATH from ASSET_TREE where ID = ?";
-
-            ResultSet result = null;
-            try (PreparedStatement statement = connection.prepareStatement(query)) {
-                statement.setString(1, assetId);
-                result = statement.executeQuery();
-                if (result.next()) {
-                    return (String[]) result.getArray("PATH").getArray();
-                }
-                return null;
-            } finally {
-                if (result != null)
-                    result.close();
+    protected interface ParameterBinder extends Consumer<PreparedStatement> {
+        @Override
+        default void accept(PreparedStatement st) {
+            try {
+                acceptStatement(st);
+            } catch (SQLException ex) {
+                throw new RuntimeException(ex);
             }
-        }));
-        return asset;
+        }
+
+        void acceptStatement(PreparedStatement st) throws SQLException;
+    }
+
+    protected ServerAsset find(EntityManager em, String assetId, boolean loadComplete, boolean filterProtected) {
+        return find(em, new AssetQuery().select(new AssetQuery.Select(loadComplete, filterProtected)).id(assetId));
+    }
+
+    public ServerAsset find(EntityManager em, AssetQuery query) {
+        List<ServerAsset> result = findAll(em, query);
+        if (result.size() == 0)
+            return null;
+        if (result.size() > 1) {
+            throw new IllegalArgumentException("Query returned more than one asset");
+        }
+        return result.get(0);
+
+    }
+
+    protected List<ServerAsset> findAll(EntityManager em, AssetQuery query) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(buildSelectString(query));
+        sb.append(buildFromString(query));
+        Pair<String, List<ParameterBinder>> whereClause = buildWhereClause(query);
+        sb.append(whereClause.key);
+        return em.unwrap(Session.class).doReturningWork(new AbstractReturningWork<List<ServerAsset>>() {
+            @Override
+            public List<ServerAsset> execute(Connection connection) throws SQLException {
+                LOG.fine("Preparing asset query: " + sb.toString());
+                PreparedStatement st = connection.prepareStatement(sb.toString());
+                LOG.fine("Query binders: " + whereClause.value.size());
+                for (ParameterBinder binder : whereClause.value) {
+                    binder.accept(st);
+                }
+                try (ResultSet rs = st.executeQuery()) {
+                    List<ServerAsset> result = new ArrayList<>();
+                    while (rs.next()) {
+                        result.add(mapResultTuple(query, rs));
+                    }
+                    return result;
+                }
+            }
+        });
+    }
+
+    protected String buildSelectString(AssetQuery query) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("select ");
+        sb.append("A.ID as ID, A.OBJ_VERSION as OBJ_VERSION, A.CREATED_ON as CREATED_ON, A.NAME as NAME, A.ASSET_TYPE as ASSET_TYPE, ");
+        sb.append("A.PARENT_ID as PARENT_ID, ");
+        sb.append(query.parent != null && query.parent.noParent
+            ? " NULL PARENT_NAME, NULL as PARENT_TYPE, "
+            : " P.NAME as PARENT_NAME, P.ASSET_TYPE as PARENT_TYPE, "
+        );
+        sb.append("A.REALM_ID as REALM_ID, R.NAME as TENANT_NAME, ");
+        sb.append("(select RA.VALUE from REALM_ATTRIBUTE RA where RA.REALM_ID = R.ID and RA.NAME = 'displayName') as TENANT_DISPLAY_NAME, ");
+        sb.append("A.LOCATION as LOCATION");
+
+        if (query.select != null && query.select.loadComplete) {
+            sb.append(", get_asset_tree_path(A.ID) as PATH ");
+            sb.append(", A.ATTRIBUTES as ATTRIBUTES");
+        } else {
+            sb.append(", NULL as PATH, NULL as ATTRIBUTES");
+        }
+
+        return sb.toString();
+    }
+
+    protected String buildFromString(AssetQuery query) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(" from ASSET A cross join (select * from REALM) as R ");
+
+
+        if (query.parent != null && !query.parent.noParent) {
+            sb.append(" cross join ASSET P ");
+        } else {
+            sb.append(" left outer join ASSET P on A.PARENT_ID = P.ID");
+        }
+
+        if (query.id != null) {
+            return sb.toString();
+        }
+
+        if (query.userId != null) {
+            sb.append(" cross join USER_ASSET ua ");
+        }
+
+        if (query.hasAttributeRestrictions()) {
+            sb.append(" cross join jsonb_each(A.ATTRIBUTES) as AX ");
+            sb.append(" cross join jsonb_array_elements(jsonb_extract_path(AX.VALUE, 'meta')) as AM ");
+        }
+
+        return sb.toString();
+    }
+
+    protected Pair<String, List<ParameterBinder>> buildWhereClause(AssetQuery query) {
+        StringBuilder sb = new StringBuilder();
+        List<ParameterBinder> binders = new ArrayList<>();
+
+        sb.append(" where r.ID = a.REALM_ID ");
+
+        if (query.id != null) {
+            sb.append(" and A.ID = ? ");
+            final int pos = binders.size() + 1;
+            binders.add(st -> st.setString(pos, query.id));
+            return new Pair<>(sb.toString(), binders);
+        }
+
+        if (query.name != null) {
+            sb.append(query.name.caseSensitive ? " and A.NAME " : " and upper(A.NAME) ");
+            sb.append(query.name.match == AssetQuery.Match.EXACT ? " = ? " : " like ? ");
+            final int pos = binders.size() + 1;
+            binders.add(st -> st.setString(pos, query.name.prepareValue()));
+        }
+
+        if (query.parent != null) {
+            if (query.parent.id != null) {
+                sb.append(" and p.ID = a.PARENT_ID ");
+                sb.append(" and A.PARENT_ID = ? ");
+                final int pos = binders.size() + 1;
+                binders.add(st -> st.setString(pos, query.parent.id));
+            } else if (query.parent.type != null) {
+                sb.append(" and p.ID = a.PARENT_ID ");
+                sb.append(" and P.ASSET_TYPE = ? ");
+                final int pos = binders.size() + 1;
+                binders.add(st -> st.setString(pos, query.parent.type));
+            } else if (query.parent.noParent) {
+                sb.append(" and A.PARENT_ID is null ");
+            } else {
+            }
+        }
+
+        if (query.realm != null && query.realm.id != null) {
+            sb.append(" and R.ID = ? ");
+            final int pos = binders.size() + 1;
+            binders.add(st -> st.setString(pos, query.realm.id));
+        } else if (query.realm != null && query.realm.name != null) {
+            sb.append(" and R.NAME = ? ");
+            final int pos = binders.size() + 1;
+            binders.add(st -> st.setString(pos, query.realm.id));
+        }
+
+        if (query.userId != null) {
+            sb.append(" and ua.ASSET_ID = a.ID and ua.USER_ID = ? ");
+            final int pos = binders.size() + 1;
+            binders.add(st -> st.setString(pos, query.userId));
+        }
+
+        if (query.type != null) {
+            sb.append(query.type.caseSensitive ? " and A.ASSET_TYPE" : " and upper(A.ASSET_TYPE) ");
+            sb.append(query.type.match == AssetQuery.Match.EXACT ? " = ? " : " like ? ");
+            final int pos = binders.size() + 1;
+            binders.add(st -> st.setString(pos, query.type.prepareValue()));
+        }
+
+        if (query.attributeMeta != null) {
+            if (query.attributeMeta.itemNameSearch != null) {
+                sb.append(query.attributeMeta.itemNameSearch.caseSensitive
+                    ? " and jsonb_extract_path_text(AM.VALUE, 'name') "
+                    : " and upper(jsonb_extract_path_text(AM.VALUE, 'name')) "
+                );
+                sb.append(query.attributeMeta.itemNameSearch.match == AssetQuery.Match.EXACT ? " = ? " : " like ? ");
+                final int pos = binders.size() + 1;
+                binders.add(st -> st.setString(pos, query.attributeMeta.itemNameSearch.prepareValue()));
+            }
+            if (query.attributeMeta.itemValueSearch != null) {
+                if (query.attributeMeta.itemValueSearch instanceof AssetQuery.StringSearch) {
+                    AssetQuery.StringSearch stringSearch = (AssetQuery.StringSearch) query.attributeMeta.itemValueSearch;
+                    sb.append(stringSearch.caseSensitive
+                        ? " and jsonb_extract_path(AM.VALUE, 'value') "
+                        : " and upper(jsonb_extract_path(AM.VALUE, 'value')) "
+                    );
+                    sb.append(stringSearch.match == AssetQuery.Match.EXACT ? " = ? " : " like ? ");
+                    final int pos = binders.size() + 1;
+                    binders.add(st -> st.setString(pos, stringSearch.prepareValue()));
+                } else if (query.attributeMeta.itemValueSearch instanceof AssetQuery.BooleanSearch) {
+                    AssetQuery.BooleanSearch booleanSearch = (AssetQuery.BooleanSearch) query.attributeMeta.itemValueSearch;
+                    sb.append(" and jsonb_extract_path(AM.VALUE, 'value') = to_jsonb(")
+                        .append(booleanSearch.predicate)
+                        .append(") ");
+                }
+            }
+            // TODO Implement AssetQuery.DecimalSearch
+        }
+
+        return new Pair<>(sb.toString(), binders);
+    }
+
+    protected ServerAsset mapResultTuple(AssetQuery query, ResultSet rs) throws SQLException {
+        LOG.fine("Mapping asset query result tuple: " + rs.getString("ID"));
+
+        return new ServerAsset(
+            query.select != null && query.select.filterProtected,
+            rs.getString("ID"), rs.getLong("OBJ_VERSION"), rs.getTimestamp("CREATED_ON"), rs.getString("NAME"), rs.getString("ASSET_TYPE"),
+            rs.getString("PARENT_ID"), rs.getString("PARENT_NAME"), rs.getString("PARENT_TYPE"),
+            rs.getString("REALM_ID"), rs.getString("TENANT_NAME"), rs.getString("TENANT_DISPLAY_NAME"),
+            rs.getObject("LOCATION"), rs.getArray("PATH"), rs.getString("ATTRIBUTES")
+        );
     }
 
     protected boolean storeAttributeValue(String assetId, String attributeName, JsonValue value, String timestamp) {
@@ -410,73 +472,6 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
                     return updatedRows == 1;
                 }
             })
-        );
-    }
-
-    protected <T extends Asset> CriteriaQuery<T> buildAssetQuery(CriteriaBuilder cb,
-                                                                 Class<T> resultClass,
-                                                                 String assetId,
-                                                                 String parentAssetId,
-                                                                 String realmId,
-                                                                 String userId,
-                                                                 String type,
-                                                                 boolean withoutParent,
-                                                                 boolean loadComplete,
-                                                                 String orderBy) {
-        CriteriaQuery<T> criteria = cb.createQuery(resultClass);
-        Root<ServerAsset> assetRoot = criteria.from(ServerAsset.class);
-        Root<ServerAsset> assetParentRoot = criteria.from(ServerAsset.class);
-        Root<RealmView> realmViewRoot = criteria.from(RealmView.class);
-        Root<UserAsset> userAssetRoot = userId != null ? criteria.from(UserAsset.class) : null;
-        List<Predicate> predicates = new ArrayList<Predicate>() {{
-            add(cb.equal(assetRoot.get("id"), assetParentRoot.get("id")));
-            add(cb.equal(assetRoot.get("realmId"), realmViewRoot.get("id")));
-            if (assetId != null) {
-                add(cb.equal(assetRoot.get("id"), assetId));
-            }
-            if (!withoutParent && parentAssetId != null) {
-                add(cb.equal(assetRoot.get("parentId"), parentAssetId));
-            } else if (withoutParent) {
-                add(cb.isNull(assetRoot.get("parentId")));
-            }
-            if (realmId != null) {
-                add(cb.equal(assetRoot.get("realmId"), realmId));
-            }
-            if (type != null) {
-                add(cb.equal(assetRoot.get("type"), type));
-            }
-            if (userId != null) {
-                add(cb.equal(userAssetRoot.get("userId"), userId));
-                add(cb.equal(assetRoot.get("id"), userAssetRoot.get("assetId")));
-            }
-        }};
-        criteria.where(predicates.toArray(new Predicate[predicates.size()]));
-        if (assetId == null) {
-            criteria.orderBy(cb.asc(assetRoot.get(orderBy != null ? orderBy : "createdOn")));
-        }
-        List<Selection> projectionArgs = new ArrayList<Selection>() {{
-            add(assetRoot.get("id"));
-            add(assetRoot.get("version"));
-            add(assetRoot.get("createdOn"));
-            add(assetRoot.get("name"));
-            add(assetRoot.get("type"));
-            add(assetRoot.get("parentId"));
-            add(assetParentRoot.get("name"));
-            add(assetParentRoot.get("type"));
-            if (loadComplete)
-                add(assetRoot.get("path"));
-            add(assetRoot.get("realmId"));
-            add(realmViewRoot.get("name"));
-            add(realmViewRoot.get("displayName"));
-            add(assetRoot.get("location"));
-            if (loadComplete)
-                add(assetRoot.get("attributes"));
-        }};
-        return criteria.select(
-            cb.construct(
-                resultClass,
-                projectionArgs.toArray(new Selection[projectionArgs.size()])
-            )
         );
     }
 
