@@ -20,7 +20,6 @@ import org.openremote.model.AttributeEvent
 import org.openremote.model.AttributeRef
 import org.openremote.model.AttributeState
 import org.openremote.test.ManagerContainerTrait
-import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -209,7 +208,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         when: "the enabled rule definition for customer B is disabled"
         conditions = new PollingConditions(timeout: 10)
-        // TODO: If we don't do this then test will fail
+        // TODO: Stop instances of rule definitions being passed around as rules deployment nulls the rules property
         rulesDefinition = rulesStorageService.findById(TenantRulesDefinition.class, managerDemoSetup.customerBRulesDefinitionId)
         rulesDefinition.setEnabled(false)
         rulesStorageService.merge(rulesDefinition)
@@ -380,8 +379,6 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         stopContainer(container)
     }
 
-    // TODO: Add RULES_FACT meta to demo data
-    @Ignore
     def "Check firing of rules LHS"() {
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10)
@@ -433,7 +430,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         attachRuleExecutionLogger(apartment1Engine, apartment1EngineFiredRules)
         attachRuleExecutionLogger(apartment3Engine, apartment3EngineFiredRules)
 
-        and: "an attribute event is pushed into the system"
+        and: "an attribute event is pushed into the system for an attribute with RULES_FACT meta set to true"
         def apartment1LivingRoomDemoBooleanChange = new AttributeEvent(
                 new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoBoolean"), Json.create(false)), getClass()
         )
@@ -454,12 +451,44 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
             assert apartment3EngineFiredRules.size() == 0
         }
 
+        when: "an attribute event is pushed into the system for an attribute with RULES_FACT meta set to false"
+        def apartment1LivingRoomDemoStringChange = new AttributeEvent(
+                new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoString"), Json.create("demo2")), getClass()
+        )
+        assetProcessingService.updateAttributeValue(apartment1LivingRoomDemoStringChange)
+
+        then: "no rule engines should have fired after a few seconds"
+        new PollingConditions(delay: 3, timeout: 5).eventually {
+            assert globalEngineFiredRules.size() == 2
+            assert masterEngineFiredRules.size() == 0
+            assert customerAEngineFiredRules.size() == 2
+            assert smartHomeEngineFiredRules.size() == 2
+            assert apartment1EngineFiredRules.size() == 2
+            assert apartment3EngineFiredRules.size() == 0
+        }
+
+        when: "an attribute event is pushed into the system for an attribute with no RULES_FACT meta"
+        def apartment1LivingRoomDemoIntegerChange = new AttributeEvent(
+                new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoInteger"), Json.create(1)), getClass()
+        )
+        assetProcessingService.updateAttributeValue(apartment1LivingRoomDemoIntegerChange)
+
+        then: "no rule engines should have fired after a few seconds"
+        new PollingConditions(delay: 3, timeout: 5).eventually {
+            assert globalEngineFiredRules.size() == 2
+            assert masterEngineFiredRules.size() == 0
+            assert customerAEngineFiredRules.size() == 2
+            assert smartHomeEngineFiredRules.size() == 2
+            assert apartment1EngineFiredRules.size() == 2
+            assert apartment3EngineFiredRules.size() == 0
+        }
+
         when: "an old (stale) attribute event is pushed into the system"
         conditions = new PollingConditions(timeout: 10, initialDelay: 5)
         assetProcessingService.updateAttributeValue(apartment1LivingRoomDemoBooleanChange)
 
-        then: "after a few seconds no rules should have fired on any engines"
-        conditions.eventually {
+        then: "no rule engines should have fired after a few seconds"
+        new PollingConditions(delay: 3, timeout: 5).eventually {
             assert globalEngineFiredRules.size() == 2
             assert masterEngineFiredRules.size() == 0
             assert customerAEngineFiredRules.size() == 2
@@ -547,10 +576,10 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         }
 
         when: "an apartment 1 living room attribute event occurs"
-        def apartment1LivingRoomDemoStringChange = new AttributeEvent(
+        def apartment1LivingRoomDemoDecimalChange = new AttributeEvent(
                 new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoDecimal"), Json.create(22.5)), getClass()
         )
-        assetProcessingService.updateAttributeValue(apartment1LivingRoomDemoStringChange)
+        assetProcessingService.updateAttributeValue(apartment1LivingRoomDemoDecimalChange)
 
         then: "the apartment 1 rule engine should have fired the 'All', 'All changed' and 'Living Room All' rules but apartment 3 shouldn't have fired any"
         conditions.eventually {
