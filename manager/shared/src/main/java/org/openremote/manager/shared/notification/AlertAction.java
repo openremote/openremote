@@ -1,29 +1,52 @@
 package org.openremote.manager.shared.notification;
 
-import javax.persistence.*;
-import javax.validation.constraints.NotNull;
+import elemental.json.Json;
+import elemental.json.JsonObject;
+import elemental.json.JsonValue;
 
-import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
-
-@Entity
-@Table(name = "ALERT_ACTION")
 public class AlertAction {
 
-    @Id
-    @Column(name = "ID")
-    @GeneratedValue(generator = PERSISTENCE_SEQUENCE_ID_GENERATOR)
-    Long id;
+    private JsonObject jsonObject ;
 
-    @NotNull
-    @Column(name = "TYPE", nullable = false)
-    String type;
+    public AlertAction() {
+        jsonObject = Json.createObject();
 
-    @NotNull
-    @Column(name = "NAME", nullable = false)
-    String name;
+    }
 
-    /*
-    * action (button) name	◦	type & parameters
-    * */
+    public String getTitle() {
+        if (jsonObject.hasKey("title")) {
+            return jsonObject.getString("title");
+        } else {
+            return null;
+        }
+    }
+
+    public void setTitle(String title) {
+        if (title != null) {
+            jsonObject.put("title", Json.create(title));
+        } else if (jsonObject.hasKey("title")) {
+            jsonObject.remove("title");
+        }
+    }
+
+    public ActionType getType() {
+        if (jsonObject.hasKey("type")) {
+            return ActionType.valueOf(jsonObject.getString("type"));
+        } else {
+            return null;
+        }
+    }
+
+    public void setType(ActionType type) {
+        if (type != null) {
+            jsonObject.put("type", Json.create(type.name()));
+        } else if (jsonObject.hasKey("type")) {
+            jsonObject.remove("type");
+        }
+    }
+
+    public JsonObject getValue() {
+        return jsonObject;
+    }
 }

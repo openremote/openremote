@@ -8,6 +8,7 @@ import android.util.Log;
 import org.openremote.android.R;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import retrofit2.Call;
@@ -139,5 +140,20 @@ public class TokenService {
             }
         });
 
+    }
+
+    public void getAlerts(final Callback<List<AlertNotification>> callback) {
+
+        getAuthorization(new TokenCallback() {
+            @Override
+            public void onToken(String accessToken) {
+                notificationService.getAlertNotification(realm, accessToken).enqueue(callback);
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                callback.onFailure(null,t);
+            }
+        });
     }
 }

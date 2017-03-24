@@ -1,10 +1,19 @@
 package org.openremote.manager.shared.notification;
 
+import elemental.json.Json;
+import elemental.json.JsonArray;
+import elemental.json.JsonObject;
+import elemental.json.impl.JreJsonArray;
+
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
+import static org.openremote.model.Constants.PERSISTENCE_JSON_ARRAY_TYPE;
+import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 @Entity
@@ -24,9 +33,9 @@ public class AlertNotification {
     @Column(name = "MESSAGE", nullable = false)
     private String message;
 
-    @OneToMany(cascade = CascadeType.ALL,fetch = FetchType.EAGER)
-    @JoinColumn(name="ALERT_ID")
-    private Set<AlertAction> actions;
+    @Column(name = "ACTIONS", columnDefinition = "jsonb")
+    @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_ARRAY_TYPE)
+    private JsonArray actions = Json.createArray();
 
     @NotNull
     @Column(name = "APP_URL", nullable = false)
@@ -41,9 +50,7 @@ public class AlertNotification {
     @Enumerated(EnumType.STRING)
     private DeliveryStatus deliveryStatus;
 
-    /*
-        Actuator
-     */
+    /*  Actuator  */
 
     public Long getId() {
         return id;
@@ -69,12 +76,26 @@ public class AlertNotification {
         this.message = message;
     }
 
-    public Set<AlertAction> getActions() {
+    public void setActions(JsonArray  actions) {
+        this.actions = actions;
+    }
+
+    public JsonArray getActions() {
         return actions;
     }
 
-    public void setActions(Set<AlertAction> actions) {
-        this.actions = actions;
+    public List<AlertAction> getActionsAsList() {
+        List actions = new ArrayList<>(this.actions.length());
+        for (int i = 0; i < actions.size(); i++) {
+            actions.add(this.actions.get(i).toNative());
+
+        }
+
+        return actions;
+    }
+
+    public void addAction(AlertAction action) {
+        this.actions.set(this.actions.length(), action.getValue());
     }
 
     public String getAppUrl() {

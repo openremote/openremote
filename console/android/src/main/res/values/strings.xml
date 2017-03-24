@@ -10,4 +10,5 @@
     <string name="SHARED_PREF_DEVICE_ID">FCM_DEVICE_ID_KEY</string>
     <string name="reload">reload</string>
     <string name="noConnectivity">No connectivity Detected</string>
+    <string name="SHARED_PREF_OPENED_ALERT">OPENED_ALERT</string>
 </resources>

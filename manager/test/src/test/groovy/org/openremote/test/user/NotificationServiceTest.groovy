@@ -3,6 +3,7 @@ package org.openremote.test.user
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.notification.NotificationService
+import org.openremote.manager.shared.notification.ActionType
 import org.openremote.manager.shared.notification.AlertAction
 import org.openremote.manager.shared.notification.AlertNotification
 import org.openremote.manager.shared.notification.NotificationResource
@@ -34,14 +35,15 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
 
         def notificationAlert = new AlertNotification(
                 title: "The Title",
-                actions: [new AlertAction(
-                        name: "TEST_ACTION",
-                        type: "TEST"
-                )],
                 appUrl: '#test',
                 message: "Message",
-
         )
+
+        def alertAction = new AlertAction();
+
+        alertAction.setTitle("TEST_ACTION")
+        alertAction.setType(ActionType.ACTION_TYPE1)
+        notificationAlert.addAction(alertAction)
 
         and: "the notification resource"
         def client = createClient(container).build()
@@ -73,7 +75,7 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
         when: "the alert Notification is acknowledge"
         notificationResource.removeAlertNotification(alerts.get(0).id)
 
-        then: "it should be no allert"
+        then: "it should be no alert"
         notificationResource.getAlertNotification().size() == 0
 
         cleanup: "the server should be stopped"
