@@ -38,7 +38,7 @@ import org.kie.api.runtime.conf.TimedRuleExectionOption;
 import org.kie.api.runtime.rule.FactHandle;
 import org.kie.api.time.SessionClock;
 import org.openremote.container.util.Util;
-import org.openremote.manager.server.asset.AssetUpdate;
+import org.openremote.model.asset.AssetUpdate;
 import org.openremote.manager.shared.rules.RulesDefinition;
 
 import java.util.*;

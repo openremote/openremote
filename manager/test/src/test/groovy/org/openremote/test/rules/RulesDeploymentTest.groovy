@@ -92,14 +92,11 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
             assert customerAEngine.allRulesDefinitions[0].deploymentStatus == DeploymentStatus.DEPLOYED
         }
 
-        and: "three asset rules engines should have been created and be running"
+        and: "two asset rules engines should have been created and be running"
         conditions.eventually {
-            assert rulesService.assetDeployments.size() == 3
-            def smartHomeEngine = rulesService.assetDeployments.get(managerDemoSetup.smartHomeId)
+            assert rulesService.assetDeployments.size() == 2
             def apartment1Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment1Id)
             def apartment3Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment3Id)
-            assert smartHomeEngine != null
-            assert smartHomeEngine.isRunning()
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
             assert apartment3Engine != null
@@ -108,13 +105,8 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         and: "each asset rules engine should have the demo asset rules definition"
         conditions.eventually {
-            def smartHomeEngine = rulesService.assetDeployments.get(managerDemoSetup.smartHomeId)
             def apartment1Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment1Id)
             def apartment3Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment3Id)
-            assert smartHomeEngine.allRulesDefinitions.length == 1
-            assert smartHomeEngine.allRulesDefinitions[0].enabled
-            assert smartHomeEngine.allRulesDefinitions[0].name == "Some smart home demo rules"
-            assert smartHomeEngine.allRulesDefinitions[0].deploymentStatus == DeploymentStatus.DEPLOYED
             assert apartment1Engine.allRulesDefinitions.length == 1
             assert apartment1Engine.allRulesDefinitions[0].enabled
             assert apartment1Engine.allRulesDefinitions[0].name == "Some apartment 1 demo rules"
@@ -230,12 +222,9 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         then: "the apartment rules engine should be removed"
         conditions.eventually {
-            assert rulesService.assetDeployments.size() == 2
-            def smartHomeEngine = rulesService.assetDeployments.get(managerDemoSetup.smartHomeId)
+            assert rulesService.assetDeployments.size() == 1
             def apartment1Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment1Id)
             def apartment3Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment3Id)
-            assert smartHomeEngine != null
-            assert smartHomeEngine.isRunning()
             assert apartment1Engine == null
             assert apartment3Engine != null
             assert apartment3Engine.isRunning()
@@ -284,7 +273,6 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         when: "a tenant is disabled"
         conditions = new PollingConditions(timeout: 10)
         def customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
-        def smartHomeEngine = rulesService.assetDeployments.get(managerDemoSetup.smartHomeId)
         def apartment3Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment3Id)
         def customerATenant = keycloakDemoSetup.customerATenant
         customerATenant.setEnabled(false)
@@ -295,9 +283,6 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
             assert customerAEngine.isRunning() == false
             assert customerAEngine.allRulesDefinitions.length == 0
             assert rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id) == null
-            assert smartHomeEngine.isRunning() == false
-            assert smartHomeEngine.allRulesDefinitions.length == 0
-            assert rulesService.assetDeployments.get(managerDemoSetup.smartHomeId) == null
             assert apartment3Engine.isRunning() == false
             assert apartment3Engine.allRulesDefinitions.length == 0
             assert rulesService.assetDeployments.get(managerDemoSetup.apartment3Id) == null
@@ -323,10 +308,9 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         then: "the tenants rule engine should start and all asset rule engines from this realm should also start"
         conditions.eventually {
             customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
-            smartHomeEngine = rulesService.assetDeployments.get(managerDemoSetup.smartHomeId)
             apartment3Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment3Id)
             assert rulesService.tenantDeployments.size() == 3
-            assert rulesService.assetDeployments.size() == 2
+            assert rulesService.assetDeployments.size() == 1
             assert customerAEngine != null
             assert customerAEngine.isRunning()
             assert customerAEngine.allRulesDefinitions.length == 2
@@ -336,10 +320,6 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
             assert customerAEngine.allRulesDefinitions[1].enabled
             assert customerAEngine.allRulesDefinitions[1].name == "Some more customerA tenant rules"
             assert customerAEngine.allRulesDefinitions[1].deploymentStatus == DeploymentStatus.DEPLOYED
-            assert smartHomeEngine.allRulesDefinitions.length == 1
-            assert smartHomeEngine.allRulesDefinitions[0].enabled
-            assert smartHomeEngine.allRulesDefinitions[0].name == "Some smart home demo rules"
-            assert smartHomeEngine.allRulesDefinitions[0].deploymentStatus == DeploymentStatus.DEPLOYED
             assert apartment3Engine.allRulesDefinitions.length == 1
             assert apartment3Engine.allRulesDefinitions[0].enabled
             assert apartment3Engine.allRulesDefinitions[0].name == "Some apartment 3 demo rules"
@@ -379,10 +359,11 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         stopContainer(container)
     }
 
-    def "Check firing of rules LHS"() {
+    def "Check firing of rules"() {
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10)
 
+        //region and: "the demo assets and rule definitions are deployed"
         and: "the demo assets and rule definitions are deployed"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
@@ -399,7 +380,9 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         List<String> smartHomeEngineFiredRules = []
         List<String> apartment1EngineFiredRules = []
         List<String> apartment3EngineFiredRules = []
+        //endregion
 
+        //region expect: "the rule engines to become available and be running"
         expect: "the rule engines to become available and be running"
         conditions.eventually {
             globalEngine = rulesService.globalDeployment
@@ -412,8 +395,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
             assert customerAEngine != null
             assert customerAEngine.isRunning()
             smartHomeEngine = rulesService.assetDeployments.get(managerDemoSetup.smartHomeId)
-            assert smartHomeEngine != null
-            assert smartHomeEngine.isRunning()
+            assert smartHomeEngine == null
             apartment1Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment1Id)
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
@@ -421,21 +403,26 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
             assert apartment3Engine != null
             assert apartment3Engine.isRunning()
         }
+        //endregion
 
+        //region when: "rule execution loggers are attached to the engines"
         when: "rule execution loggers are attached to the engines"
         attachRuleExecutionLogger(globalEngine, globalEngineFiredRules)
         attachRuleExecutionLogger(masterEngine, masterEngineFiredRules)
         attachRuleExecutionLogger(customerAEngine, customerAEngineFiredRules)
-        attachRuleExecutionLogger(smartHomeEngine, smartHomeEngineFiredRules)
         attachRuleExecutionLogger(apartment1Engine, apartment1EngineFiredRules)
         attachRuleExecutionLogger(apartment3Engine, apartment3EngineFiredRules)
+        //endregion
 
+        //region and: "an attribute event is pushed into the system for an attribute with RULES_FACT meta set to true"
         and: "an attribute event is pushed into the system for an attribute with RULES_FACT meta set to true"
         def apartment1LivingRoomDemoBooleanChange = new AttributeEvent(
                 new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoBoolean"), Json.create(false)), getClass()
         )
         assetProcessingService.updateAttributeValue(apartment1LivingRoomDemoBooleanChange)
+        //endregion
 
+        //region then: "the rule engines in scope should fire the 'All' and 'All changed' rules"
         then: "the rule engines in scope should fire the 'All' and 'All changed' rules"
         conditions.eventually {
             def expectedFiredRules = ["All", "All changed"]
@@ -444,71 +431,88 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
             assert masterEngineFiredRules.size() == 0
             assert customerAEngineFiredRules.size() == 2
             assert customerAEngineFiredRules.containsAll(expectedFiredRules)
-            assert smartHomeEngineFiredRules.size() == 2
-            assert smartHomeEngineFiredRules.containsAll(expectedFiredRules)
+            assert smartHomeEngineFiredRules.size() == 0
             assert apartment1EngineFiredRules.size() == 2
             assert apartment1EngineFiredRules.containsAll(expectedFiredRules)
             assert apartment3EngineFiredRules.size() == 0
         }
+        //endregion
 
+        //region when: "an attribute event is pushed into the system for an attribute with RULES_FACT meta set to false"
         when: "an attribute event is pushed into the system for an attribute with RULES_FACT meta set to false"
         def apartment1LivingRoomDemoStringChange = new AttributeEvent(
                 new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoString"), Json.create("demo2")), getClass()
         )
         assetProcessingService.updateAttributeValue(apartment1LivingRoomDemoStringChange)
+        //endregion
 
+        //region then: "no rule engines should have fired after a few seconds"
         then: "no rule engines should have fired after a few seconds"
         new PollingConditions(delay: 3, timeout: 5).eventually {
             assert globalEngineFiredRules.size() == 2
             assert masterEngineFiredRules.size() == 0
             assert customerAEngineFiredRules.size() == 2
-            assert smartHomeEngineFiredRules.size() == 2
+            assert smartHomeEngineFiredRules.size() == 0
             assert apartment1EngineFiredRules.size() == 2
             assert apartment3EngineFiredRules.size() == 0
         }
+        //endregion
 
+        //region when: "an attribute event is pushed into the system for an attribute with no RULES_FACT meta"
         when: "an attribute event is pushed into the system for an attribute with no RULES_FACT meta"
         def apartment1LivingRoomDemoIntegerChange = new AttributeEvent(
                 new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoInteger"), Json.create(1)), getClass()
         )
         assetProcessingService.updateAttributeValue(apartment1LivingRoomDemoIntegerChange)
+        //endregion
 
+        //region then: "no rule engines should have fired after a few seconds"
         then: "no rule engines should have fired after a few seconds"
         new PollingConditions(delay: 3, timeout: 5).eventually {
             assert globalEngineFiredRules.size() == 2
             assert masterEngineFiredRules.size() == 0
             assert customerAEngineFiredRules.size() == 2
-            assert smartHomeEngineFiredRules.size() == 2
+            assert smartHomeEngineFiredRules.size() == 0
             assert apartment1EngineFiredRules.size() == 2
             assert apartment3EngineFiredRules.size() == 0
         }
+        //endregion
 
+        //region when: "an old (stale) attribute event is pushed into the system"
         when: "an old (stale) attribute event is pushed into the system"
         conditions = new PollingConditions(timeout: 10, initialDelay: 5)
         assetProcessingService.updateAttributeValue(apartment1LivingRoomDemoBooleanChange)
+        //endregion
 
+        //region then: "no rule engines should have fired after a few seconds"
         then: "no rule engines should have fired after a few seconds"
         new PollingConditions(delay: 3, timeout: 5).eventually {
             assert globalEngineFiredRules.size() == 2
             assert masterEngineFiredRules.size() == 0
             assert customerAEngineFiredRules.size() == 2
-            assert smartHomeEngineFiredRules.size() == 2
+            assert smartHomeEngineFiredRules.size() == 0
             assert apartment1EngineFiredRules.size() == 2
             assert apartment3EngineFiredRules.size() == 0
         }
+        //endregion
 
+        //region when: "the engine counters are reset"
         when: "the engine counters are reset"
         globalEngineFiredRules.clear();
         customerAEngineFiredRules.clear();
         smartHomeEngineFiredRules.clear();
         apartment1EngineFiredRules.clear();
+        //endregion
 
+        //region and: "an attribute event with the same value as current value is pushed into the system"
         and: "an attribute event with the same value as current value is pushed into the system"
         apartment1LivingRoomDemoBooleanChange = new AttributeEvent(
                 new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoBoolean"), Json.create(false)), getClass()
         )
         assetProcessingService.updateAttributeValue(apartment1LivingRoomDemoBooleanChange)
+        //endregion
 
+        //region then: "the rule engines in scope should fire the 'All' rule but not the 'All changed' rule"
         then: "the rule engines in scope should fire the 'All' rule but not the 'All changed' rule"
         conditions.eventually {
             assert globalEngineFiredRules.size() == 1
@@ -516,78 +520,185 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
             assert masterEngineFiredRules.size() == 0
             assert customerAEngineFiredRules.size() == 1
             assert customerAEngineFiredRules[0] == "All"
-            assert smartHomeEngineFiredRules.size() == 1
-            assert smartHomeEngineFiredRules[0] == "All"
+            assert smartHomeEngineFiredRules.size() == 0
             assert apartment1EngineFiredRules.size() == 1
             assert apartment1EngineFiredRules[0] == "All"
             assert apartment3EngineFiredRules.size() == 0
         }
+        //endregion
 
-        when: "a living room specific rule definition is loaded into apartment 1 and 3"
-        def inputStream = getClass().getResourceAsStream("/org/openremote/test/rules/Livingroom.drl")
+        //region when: "a LHS filtering test rule definition is loaded into the smart home asset"
+        when: "a LHS filtering test rule definition is loaded into the smart home asset"
+        def inputStream = getClass().getResourceAsStream("/org/openremote/test/rules/TestLHSRules.drl")
         def rules = IOUtils.toString(inputStream, "UTF-8")
-        def apartment1RulesDefinition = new AssetRulesDefinition("Some apartment 1 lounge asset rules", managerDemoSetup.apartment1Id, rules)
-        def apartment3RulesDefinition = new AssetRulesDefinition("Some apartment 3 lounge asset rules", managerDemoSetup.apartment3Id, rules)
-        rulesStorageService.merge(apartment1RulesDefinition)
-        rulesStorageService.merge(apartment3RulesDefinition)
+        def smartHomeRulesDefinition = new AssetRulesDefinition("Some smart home asset rules", managerDemoSetup.smartHomeId, rules)
+        rulesStorageService.merge(smartHomeRulesDefinition)
+        //endregion
 
-        then: "apartments 1 and 3 rule engines should have loaded the new rule definition and restarted"
+        //region then: "the smart home rule engine should have been created, loaded the new rule definition and started"
+        then: "the smart home rule engine should have ben created, loaded the new rule definition and started"
         conditions.eventually {
-            assert apartment1Engine != null
-            assert apartment1Engine.isRunning()
-            assert apartment3Engine != null
-            assert apartment3Engine.isRunning()
-            assert apartment1Engine.allRulesDefinitions.length == 2
-            assert apartment1Engine.allRulesDefinitions[0].enabled
-            assert apartment1Engine.allRulesDefinitions[0].name == "Some apartment 1 demo rules"
-            assert apartment1Engine.allRulesDefinitions[0].deploymentStatus == DeploymentStatus.DEPLOYED
-            assert apartment1Engine.allRulesDefinitions[1].enabled
-            assert apartment1Engine.allRulesDefinitions[1].name == "Some apartment 1 lounge asset rules"
-            assert apartment1Engine.allRulesDefinitions[1].deploymentStatus == DeploymentStatus.DEPLOYED
-            assert apartment3Engine.allRulesDefinitions.length == 2
-            assert apartment3Engine.allRulesDefinitions[0].enabled
-            assert apartment3Engine.allRulesDefinitions[0].name == "Some apartment 3 demo rules"
-            assert apartment3Engine.allRulesDefinitions[0].deploymentStatus == DeploymentStatus.DEPLOYED
-            assert apartment3Engine.allRulesDefinitions[1].enabled
-            assert apartment3Engine.allRulesDefinitions[1].name == "Some apartment 3 lounge asset rules"
-            assert apartment3Engine.allRulesDefinitions[1].deploymentStatus == DeploymentStatus.DEPLOYED
+            smartHomeEngine = rulesService.assetDeployments.get(managerDemoSetup.smartHomeId)
+            assert smartHomeEngine != null
+            assert smartHomeEngine.isRunning()
+            assert smartHomeEngine.allRulesDefinitions.length == 1
+            assert smartHomeEngine.allRulesDefinitions[0].enabled
+            assert smartHomeEngine.allRulesDefinitions[0].name == "Some smart home asset rules"
+            assert smartHomeEngine.allRulesDefinitions[0].deploymentStatus == DeploymentStatus.DEPLOYED
         }
+        //endregion
 
-        when: "the engine counters are reset and engine loggers are re-attached"
+        //region when: "the engine counters are reset and the smart home engine logger is attached"
+        when: "the engine counters are reset and the smart home engine logger is attached"
         globalEngineFiredRules.clear();
         customerAEngineFiredRules.clear();
         smartHomeEngineFiredRules.clear();
         apartment1EngineFiredRules.clear();
-        attachRuleExecutionLogger(apartment1Engine, apartment1EngineFiredRules)
-        attachRuleExecutionLogger(apartment3Engine, apartment3EngineFiredRules)
+        attachRuleExecutionLogger(smartHomeEngine, smartHomeEngineFiredRules)
+        //endregion
 
+        //region and: "an apartment 3 living room attribute event occurs"
         and: "an apartment 3 living room attribute event occurs"
         def apartment3LivingRoomDemoStringChange = new AttributeEvent(
                 new AttributeState(new AttributeRef(managerDemoSetup.apartment3LivingroomId, "demoString"), Json.create("demo2")), getClass()
         )
         assetProcessingService.updateAttributeValue(apartment3LivingRoomDemoStringChange)
+        //endregion
 
-        then: "the apartment 3 rule engine should have fired the 'All', 'All changed' and 'Living Room All' rules but apartment 1 shouldn't have fired any"
+        //region then: "the engines in scope should have fired the matched rules"
+        then: "the engines in scope should have fired the matched rules"
         conditions.eventually {
-            def expectedFiredRules = ["All", "All changed", "Living Room All"]
-            assert apartment3EngineFiredRules.size() == 3
-            assert apartment3EngineFiredRules.containsAll(expectedFiredRules)
+            assert globalEngineFiredRules.size() == 2
+            assert globalEngineFiredRules.containsAll(["All", "All changed"])
+            assert customerAEngineFiredRules.size() == 2
+            assert customerAEngineFiredRules.containsAll(["All", "All changed"])
+            assert smartHomeEngineFiredRules.size() == 5
+            assert smartHomeEngineFiredRules.containsAll(["Living Room All", "Current Asset Update", "Parent Type Residence", "Asset Type Room", "String Attributes"])
+            assert apartment3EngineFiredRules.size() == 2
+            assert apartment3EngineFiredRules.containsAll(["All", "All changed"])
             assert apartment1EngineFiredRules.size() == 0
         }
+        //endregion
 
-        when: "an apartment 1 living room attribute event occurs"
-        def apartment1LivingRoomDemoDecimalChange = new AttributeEvent(
-                new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoDecimal"), Json.create(22.5)), getClass()
+        //region when: "the rule counters are reset"
+        when: "the rule counters are reset"
+        globalEngineFiredRules.clear();
+        customerAEngineFiredRules.clear();
+        smartHomeEngineFiredRules.clear();
+        apartment1EngineFiredRules.clear();
+        apartment3EngineFiredRules.clear();
+        //endregion
+
+        //region and: "an apartment 1 living room thermostat attribute event occurs"
+        and: "an apartment 1 living room thermostat attribute event occurs"
+        def apartment1LivingRoomTargetTempChange = new AttributeEvent(
+                new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomThermostatId, "targetTemperature"), Json.create(22.5)), getClass()
         )
-        assetProcessingService.updateAttributeValue(apartment1LivingRoomDemoDecimalChange)
+        assetProcessingService.updateAttributeValue(apartment1LivingRoomTargetTempChange)
+        //endregion
 
-        then: "the apartment 1 rule engine should have fired the 'All', 'All changed' and 'Living Room All' rules but apartment 3 shouldn't have fired any"
+        //region then: "the engines in scope should have fired the matched rules"
+        then: "the engines in scope should have fired the matched rules"
         conditions.eventually {
-            def expectedFiredRules = ["All", "All changed", "Living Room All"]
-            assert apartment1EngineFiredRules.size() == 3
-            assert apartment1EngineFiredRules.containsAll(expectedFiredRules)
-            assert apartment3EngineFiredRules.size() == 3
+            assert globalEngineFiredRules.size() == 2
+            assert globalEngineFiredRules.containsAll(["All", "All changed"])
+            assert customerAEngineFiredRules.size() == 2
+            assert customerAEngineFiredRules.containsAll(["All", "All changed"])
+            assert smartHomeEngineFiredRules.size() == 5
+            assert smartHomeEngineFiredRules.containsAll(
+                    [
+                            "Living Room Thermostat",
+                            "Living Room Target Temp",
+                            "Living Room as Parent",
+                            "JSON Number value types",
+                            "Current Asset Update"
+                    ])
+            assert apartment1EngineFiredRules.size() == 2
+            assert apartment1EngineFiredRules.containsAll(["All", "All changed"])
+            assert apartment3EngineFiredRules.size() == 0
         }
+        //endregion
+
+        //region when: "a RHS filtering test rule definition is loaded into the global rule engine"
+        when: "a RHS filtering test rule definition is loaded into the global rule engine"
+        inputStream = getClass().getResourceAsStream("/org/openremote/test/rules/TestRHSRules.drl")
+        rules = IOUtils.toString(inputStream, "UTF-8")
+        def globalRuleDefinition = new GlobalRulesDefinition("Some global test rules", rules)
+        rulesStorageService.merge(globalRuleDefinition)
+        //endregion
+
+        //region then: "the global rule engine should have loaded the new rule definition and restarted"
+        then: "the global rule engine should have loaded the new rule definition and restarted"
+        conditions.eventually {
+            globalEngine = rulesService.globalDeployment
+            assert globalEngine != null
+            assert globalEngine.isRunning()
+            assert globalEngine.allRulesDefinitions.length == 2
+            assert globalEngine.allRulesDefinitions[1].enabled
+            assert globalEngine.allRulesDefinitions[1].name == "Some global test rules"
+            assert globalEngine.allRulesDefinitions[1].deploymentStatus == DeploymentStatus.DEPLOYED
+        }
+        //endregion
+
+        //region when: "the engine counters are reset and the global engine logger is reattached"
+        when: "the engine counters are reset and the global engine logger is reattached"
+        globalEngineFiredRules.clear();
+        customerAEngineFiredRules.clear();
+        smartHomeEngineFiredRules.clear();
+        apartment1EngineFiredRules.clear();
+        attachRuleExecutionLogger(globalEngine, globalEngineFiredRules)
+        //endregion
+
+        //region and: "an apartment 1 living room thermostat attribute event occurs"
+        and: "an apartment 1 living room thermostat attribute event occurs"
+        apartment1LivingRoomTargetTempChange = new AttributeEvent(
+                new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomThermostatId, "targetTemperature"), Json.create(22.5)), getClass()
+        )
+        assetProcessingService.updateAttributeValue(apartment1LivingRoomTargetTempChange)
+        //endregion
+
+        //region then: "only the global engine should have fired the Prevent Livingroom Thermostat Change rule"
+        then: "after a few seconds only the global engine should have fired the All, All changed and Prevent Livingroom Thermostat Change rules"
+        new PollingConditions(initialDelay: 5, timeout: 10).eventually {
+            assert globalEngineFiredRules.size() == 3
+            assert globalEngineFiredRules.containsAll(["All", "All changed", "Prevent Livingroom Thermostat Change"])
+            assert customerAEngineFiredRules.size() == 0
+            assert smartHomeEngineFiredRules.size() == 0
+            assert apartment1EngineFiredRules.size() == 0
+            assert apartment3EngineFiredRules.size() == 0
+        }
+        //endregion
+
+        //region when: "the engine counters are reset"
+        when: "the engine counters are reset and the global engine logger is reattached"
+        globalEngineFiredRules.clear();
+        customerAEngineFiredRules.clear();
+        smartHomeEngineFiredRules.clear();
+        apartment1EngineFiredRules.clear();
+        //endregion
+
+        //region and: "an apartment 3 living room attribute event occurs"
+        and: "an apartment 3 living room attribute event occurs"
+        apartment3LivingRoomDemoStringChange = new AttributeEvent(
+                new AttributeState(new AttributeRef(managerDemoSetup.apartment3LivingroomId, "demoString"), Json.create("demo3")), getClass()
+        )
+        assetProcessingService.updateAttributeValue(apartment3LivingRoomDemoStringChange)
+        //endregion
+
+        //region then: "all the engines in scope should have fired the matched rules"
+        then: "all the engines in scope should have fired the matched rules"
+        conditions.eventually {
+            assert globalEngineFiredRules.size() == 2
+            assert globalEngineFiredRules.containsAll(["All", "All changed"])
+            assert customerAEngineFiredRules.size() == 2
+            assert customerAEngineFiredRules.containsAll(["All", "All changed"])
+            assert smartHomeEngineFiredRules.size() == 5
+            assert smartHomeEngineFiredRules.containsAll(["Living Room All", "Current Asset Update", "Parent Type Residence", "Asset Type Room", "String Attributes"])
+            assert apartment3EngineFiredRules.size() == 2
+            assert apartment3EngineFiredRules.containsAll(["All", "All changed"])
+            assert apartment1EngineFiredRules.size() == 0
+        }
+        //endregion
     }
 
     def attachRuleExecutionLogger(RulesDeployment ruleEngine, List<String> executedRules) {

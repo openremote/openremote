@@ -28,7 +28,7 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.server.asset.AssetStorageService;
-import org.openremote.manager.server.asset.AssetUpdate;
+import org.openremote.model.asset.AssetUpdate;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
 import org.openremote.model.AttributeRef;
@@ -215,7 +215,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     @Override
     public void accept(AssetUpdate assetUpdate) {
         // Check that asset is a THING
-        if (!assetUpdate.getAssetType().equals(THING.getValue())) {
+        if (assetUpdate.getAssetType() != THING) {
             LOG.fine("Ignoring asset update as asset is not a THING:" + assetUpdate);
             return;
         }
@@ -234,6 +234,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
             if (protocolConfiguration == null) {
                 LOG.warning("Cannot process asset update as agent link is invalid:" + assetUpdate);
+                assetUpdate.setError(new RuntimeException("Attribute has an invalid agent link:" + assetUpdate.getAttribute()));
                 assetUpdate.setStatus(AssetUpdate.Status.ERROR);
                 return;
             }

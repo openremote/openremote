@@ -17,12 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.server.asset;
+package org.openremote.model.asset;
 
 import elemental.json.JsonValue;
 import org.openremote.model.Attribute;
 import org.openremote.model.AttributeType;
-import org.openremote.model.asset.Asset;
 
 import java.util.Date;
 
@@ -130,7 +129,11 @@ public class AssetUpdate {
         return assetName;
     }
 
-    public String getAssetType() {
+    public AssetType getAssetType() {
+        return AssetType.getByValue(assetType);
+    }
+
+    public String getAssetTypeString() {
         return assetType;
     }
 
@@ -146,7 +149,11 @@ public class AssetUpdate {
         return assetParentName;
     }
 
-    public String getAssetParentType() {
+    public AssetType getAssetParentType() {
+        return AssetType.getByValue(assetParentType);
+    }
+
+    public String getAssetParentTypeString() {
         return assetParentType;
     }
 
@@ -265,12 +272,12 @@ public class AssetUpdate {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "assetId=" + getAssetName() +
-            "attributeName=" + getAttributeName() +
-            "value=" + getValue().toJson() +
-            "valueTimestamp=" + getValueTimestamp() +
-            "oldValue=" + getOldValue().toJson() +
-            "oldValueTimestamp=" + getOldValueTimestamp() +
+            " assetId=" + getAssetName() +
+            " attributeName=" + getAttributeName() +
+            " value=" + getValue().toJson() +
+            " valueTimestamp=" + getValueTimestamp() +
+            " oldValue=" + getOldValue().toJson() +
+            " oldValueTimestamp=" + getOldValueTimestamp() +
             '}';
     }
 }

@@ -33,6 +33,7 @@ import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeState;
 import org.openremote.model.Attributes;
 import org.openremote.model.asset.AssetType;
+import org.openremote.model.asset.AssetUpdate;
 import org.openremote.model.asset.ThingAttribute;
 
 import java.util.ArrayList;
@@ -289,6 +290,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     }
 
     protected void processUpdate(AssetUpdate assetUpdate) {
+        processorLoop:
         for (Consumer<AssetUpdate> processor : processors) {
             try {
                 LOG.fine("Processor " + processor + " accepts: " + assetUpdate);
@@ -302,7 +304,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             switch (assetUpdate.getStatus()) {
                 case HANDLED:
                     LOG.fine("Processor " + processor + " finally handled: " + assetUpdate);
-                    return;
+                    break processorLoop;
                 case ERROR:
                     // TODO Better error handling, not sure we need rewind?
                     LOG.severe("Asset update status is '" + assetUpdate.getStatus() + "' cannot continue processing");
@@ -310,6 +312,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     throw new RuntimeException("Processor " + processor + " error: " + assetUpdate, assetUpdate.getError());
             }
         }
+        assetUpdate.setStatus(AssetUpdate.Status.COMPLETED);
     }
 
     @Override

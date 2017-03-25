@@ -1,0 +1,70 @@
+package org.openremote.test.rules;
+
+import org.openremote.model.*;
+import org.openremote.model.asset.*;
+import elemental.json.*;
+
+global java.util.logging.Logger LOG;
+
+rule "Living Room All"
+when
+  $e: AssetUpdate(assetName == "Livingroom")
+then
+  return;
+end
+
+rule "Living Room Thermostat"
+when
+  $e: AssetUpdate(assetName == "Livingroom Thermostat")
+then
+  return;
+end
+
+rule "Living Room Target Temp"
+when
+  $e: AssetUpdate(assetName == "Livingroom Thermostat", attributeName == "targetTemperature")
+then
+  return;
+end
+
+rule "Living Room as Parent"
+when
+    AssetUpdate(assetParentName == "Livingroom")
+then
+    return;
+end
+
+rule "String Attributes"
+when
+    AssetUpdate(attributeType == AttributeType.STRING)
+then
+  return;
+end
+
+rule "JSON Number value types"
+when
+    AssetUpdate(value.type == JsonType.NUMBER)
+then
+    return;
+end
+
+rule "Current Asset Update"
+when
+    AssetUpdate(status != AssetUpdate.Status.COMPLETED)
+then
+    return;
+end
+
+rule "Parent Type Residence"
+when
+    AssetUpdate(assetParentType == AssetType.RESIDENCE)
+then
+    return;
+end
+
+rule "Asset Type Room"
+when
+    AssetUpdate(assetType == AssetType.ROOM)
+then
+    return;
+end

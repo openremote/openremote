@@ -29,7 +29,7 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.util.Pair;
 import org.openremote.container.util.Util;
 import org.openremote.manager.server.asset.AssetStorageService;
-import org.openremote.manager.server.asset.AssetUpdate;
+import org.openremote.model.asset.AssetUpdate;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.rules.AssetRulesDefinition;

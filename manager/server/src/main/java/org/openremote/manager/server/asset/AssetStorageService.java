@@ -28,13 +28,9 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.util.Pair;
 import org.openremote.container.web.WebService;
-import org.openremote.manager.server.agent.AgentAttributes;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.model.*;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetQuery;
-import org.openremote.model.asset.ProtocolConfiguration;
-import org.openremote.model.asset.UserAsset;
+import org.openremote.model.asset.*;
 import org.postgresql.util.PGobject;
 
 import javax.persistence.EntityManager;
@@ -44,8 +40,6 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-
-import static org.openremote.model.asset.AssetType.AGENT;
 
 public class AssetStorageService implements ContainerService, Consumer<AssetUpdate> {
 

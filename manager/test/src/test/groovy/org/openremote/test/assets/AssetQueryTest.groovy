@@ -177,9 +177,11 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).id == managerDemoSetup.apartment1Id
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
         assets.get(2).id == managerDemoSetup.apartment1LivingroomThermostatId
-        new Attributes(assets.get(2).attributes).size() == 1
-        new Attributes(assets.get(2).attributes).get("currentTemperature").valueAsDecimal == 19.2d
-        new Attributes(assets.get(2).attributes).get("currentTemperature").meta.size() == 2
+        new Attributes(assets.get(2).attributes).size() == 2
+        new Attributes(assets.get(2).attributes).get("currentTemperature").valueAsDecimal == null
+        new Attributes(assets.get(2).attributes).get("currentTemperature").meta.size() == 3
+        new Attributes(assets.get(2).attributes).get("targetTemperature").valueAsDecimal == null
+        new Attributes(assets.get(2).attributes).get("targetTemperature").meta.size() == 2
         assets.get(3).id == managerDemoSetup.apartment2Id
 
         when: "a query is executed"

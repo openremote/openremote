@@ -3,7 +3,7 @@ package org.openremote.manager.server.datapoint;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
-import org.openremote.manager.server.asset.AssetUpdate;
+import org.openremote.model.asset.AssetUpdate;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.datapoint.AssetDatapoint;
 

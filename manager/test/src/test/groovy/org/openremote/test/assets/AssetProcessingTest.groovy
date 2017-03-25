@@ -1,11 +1,10 @@
 package org.openremote.test.assets
 
 import elemental.json.Json
-import org.openremote.agent3.protocol.simulator.SimulatorProtocol
 import org.openremote.agent3.protocol.AbstractProtocol
 import org.openremote.manager.server.agent.AgentAttributes
 import org.openremote.manager.server.agent.ThingAttributes
-import org.openremote.manager.server.asset.AssetUpdate
+import org.openremote.model.asset.AssetUpdate
 import org.openremote.manager.server.asset.ServerAsset
 import org.openremote.model.Attribute
 import org.openremote.model.AttributeEvent
@@ -34,11 +33,14 @@ import java.util.logging.Logger
 class AssetProcessingTest extends Specification implements ManagerContainerTrait {
     Logger LOG = Logger.getLogger(AssetStorageService.class.getName());
 
-    def "Check processing of attribute events"() {
+    def "Check processing of asset updates"() {
 
+        //region given: "expected conditions"
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 1)
+        //endregion
 
+        //region and: "a mock protocol"
         // TODO: Update this to use Simulator Protocol
         and: "a mock protocol"
         def mockProtocolName =  Constants.PROTOCOL_NAMESPACE + ":mockProtocol"
@@ -79,7 +81,9 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
                 return mockProtocolName
             }
         }
+        //endregion
 
+        //region and: "a mock attribute event consumer"
         and: "a mock attribute event consumer"
         List<AssetUpdate> updatesPassedStartOfProcessingChain = []
         List<AssetUpdate> updatesReachedEndOfProcessingChain = []
@@ -91,8 +95,10 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         Consumer<AssetUpdate> mockStartConsumer = {assetUpdate ->
             updatesPassedStartOfProcessingChain.add(assetUpdate)
         }
+        //endregion
 
-        and: "the container is started with the mock consumer and mock protocol"
+        //region and: "the container is started with the mock consumers and mock protocol"
+        and: "the container is started with the mock consumers and mock protocol"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices(mockProtocol))
         def assetStorageService = container.getService(AssetStorageService.class)
@@ -101,7 +107,9 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         assetProcessingService.processors.add(0, mockStartConsumer)
         assetProcessingService.processors.add(mockEndConsumer)
+        //endregion
 
+        //region and: "a mock agent that uses the mock protocol is created"
         and: "a mock agent that uses the mock protocol is created"
         def mockAgent = new ServerAsset();
         mockAgent.setName("Mock Agent");
@@ -113,8 +121,10 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         mockAgent.setAttributes(agentAttributes.getJsonObject());
         mockAgent.setRealmId(keycloakDemoSetup.masterTenant.id)
         mockAgent = assetStorageService.merge(mockAgent);
+        //endregion
 
-        and: "a mock thing asset is created with a valid protocol attribute, a invalid protocol attribute and a plain attribute"
+        //region and: "a mock thing asset is created with a valid protocol attribute, an invalid protocol attribute and a plain attribute"
+        and: "a mock thing asset is created with a valid protocol attribute, an invalid protocol attribute and a plain attribute"
         def mockThing = new ServerAsset(mockAgent)
         mockThing.setName("Mock Thing Asset")
         mockThing.setType(AssetType.THING)
@@ -146,7 +156,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
                 )
                 )
                 ),
-                new Attribute("plainAttribute", AttributeType.STRING, Json.create("Demo"))
+                new Attribute("plainAttribute", AttributeType.STRING, Json.create("demo"))
                         .setMeta(new Meta()
                         .add(new MetaItem(
                         AssetMeta.DESCRIPTION,
@@ -156,6 +166,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         )
         mockThing.setAttributes(mockThingAttributes.getJsonObject());
         mockThing = assetStorageService.merge(mockThing);
+        //endregion
 
         expect: "the mock thing to be deployed to the protocol"
         conditions.eventually {
@@ -168,7 +179,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         )
         assetProcessingService.updateAttributeValue(light1toggleOn)
 
-        then: "the attribute event should pass the start of the processing chain, reach the mock protocol and but not reach the end of the processing chain and update status should be HANDLED"
+        then: "the attribute event should pass the start of the processing chain, reach the mock protocol and but not reach the end of the processing chain"
         conditions.eventually {
             assert updatesPassedStartOfProcessingChain.size() == 1
             assert updatesReachedEndOfProcessingChain.size() == 0
@@ -176,13 +187,14 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert sendToActuatorEvents[0].entityId == mockThing.id
             assert sendToActuatorEvents[0].attributeName == "light1Toggle"
             assert sendToActuatorEvents[0].attributeState.value.asBoolean() == true
-            assert updatesPassedStartOfProcessingChain[0].status == AssetUpdate.Status.HANDLED
+            assert updatesPassedStartOfProcessingChain[0].status == AssetUpdate.Status.COMPLETED
         }
 
         when: "the protocol gets a response from the server"
         mockProtocol.responseReceived()
 
-        then: "the protocol should have sent a new attribute event for the sensor change which should pass the start of the processing chain skip the protocol but still reach the end of the processing chain and update status should be CONTINUE"
+        //region then: "the protocol should have sent a new attribute event for the sensor change which should pass the start of the processing chain skip the protocol but still reach the end of the processing chain
+        then: "the protocol should have sent a new attribute event for the sensor change which should pass the start of the processing chain skip the protocol but still reach the end of the processing chain"
         conditions.eventually {
             assert updatesPassedStartOfProcessingChain.size() == 2
             assert sendToActuatorEvents.size() == 1
@@ -191,8 +203,9 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert updatesReachedEndOfProcessingChain[0].attributeName == "light1Toggle"
             assert updatesReachedEndOfProcessingChain[0].oldValue.asBoolean() == false
             assert updatesReachedEndOfProcessingChain[0].value.asBoolean() == true
-            assert updatesReachedEndOfProcessingChain[0].status == AssetUpdate.Status.CONTINUE
+            assert updatesReachedEndOfProcessingChain[0].status == AssetUpdate.Status.COMPLETED
         }
+        //endregion
 
         when: "an attribute event occurs for the invalid protocol attribute"
         updatesPassedStartOfProcessingChain.clear()
@@ -203,7 +216,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         )
         assetProcessingService.updateAttributeValue(light2toggleOn)
 
-        then: "the attribute event should pass the start of the processing chain, but not reach the mock protocol or the end of the processing chain and update status should be ERROR"
+        then: "the attribute event should pass the start of the processing chain, but not reach the mock protocol or the end of the processing chain and error should be populated"
         thrown(RuntimeException)
         conditions.eventually {
             assert updatesPassedStartOfProcessingChain.size() == 1
@@ -211,7 +224,31 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert sendToActuatorEvents.size() == 0
             assert updatesPassedStartOfProcessingChain[0].assetId == mockThing.id
             assert updatesPassedStartOfProcessingChain[0].attributeName == "light2Toggle"
+            assert updatesPassedStartOfProcessingChain[0].error != null
+            assert updatesPassedStartOfProcessingChain[0].error instanceof RuntimeException
             assert updatesPassedStartOfProcessingChain[0].status == AssetUpdate.Status.COMPLETED
+        }
+
+        when: "an attribute event occurs for the plain attribute"
+        updatesPassedStartOfProcessingChain.clear()
+        updatesReachedEndOfProcessingChain.clear()
+        sendToActuatorEvents.clear()
+        def plainAttributeTest = new AttributeEvent(
+                new AttributeState(new AttributeRef(mockThing.getId(), "plainAttribute"), Json.create("test")), getClass()
+        )
+        assetProcessingService.updateAttributeValue(plainAttributeTest)
+
+        then: "the attribute event should pass the start of the processing chain and reach the end of the processing chain"
+        conditions.eventually {
+            assert updatesPassedStartOfProcessingChain.size() == 1
+            assert sendToActuatorEvents.size() == 0
+            assert updatesReachedEndOfProcessingChain.size() == 1
+            assert updatesReachedEndOfProcessingChain[0].assetName == "Mock Thing Asset"
+            assert updatesReachedEndOfProcessingChain[0].attributeName == "plainAttribute"
+            assert updatesReachedEndOfProcessingChain[0].oldValue.asString() == "demo"
+            assert updatesReachedEndOfProcessingChain[0].value.asString() == "test"
+            assert updatesReachedEndOfProcessingChain[0].error == null
+            assert updatesReachedEndOfProcessingChain[0].status == AssetUpdate.Status.COMPLETED
         }
     }
 }

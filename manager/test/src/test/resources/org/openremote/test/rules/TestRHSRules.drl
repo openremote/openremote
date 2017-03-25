@@ -1,0 +1,14 @@
+package org.openremote.test.rules;
+
+import org.openremote.model.*;
+import org.openremote.model.asset.*;
+import elemental.json.*;
+
+global java.util.logging.Logger LOG;
+
+rule "Prevent Livingroom Thermostat Change"
+when
+  $e: AssetUpdate(assetName == "Livingroom Thermostat", !completed)
+then
+    $e.setStatus(AssetUpdate.Status.HANDLED);
+end

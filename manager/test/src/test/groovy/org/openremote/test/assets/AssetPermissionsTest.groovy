@@ -1,5 +1,6 @@
 package org.openremote.test.assets
 
+import elemental.json.Json
 import org.openremote.container.util.IdentifierUtil
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
@@ -461,14 +462,15 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment1LivingroomThermostat.name == "Livingroom Thermostat"
 
         Attributes protectedAttributes = new Attributes(apartment1LivingroomThermostat.attributes)
-        protectedAttributes.size() == 1
+        protectedAttributes.size() == 2
         protectedAttributes.get("currentTemperature")
         protectedAttributes.get("currentTemperature").getType() == AttributeType.DECIMAL
-        protectedAttributes.get("currentTemperature").getValueAsDecimal() == 19.2d
+        protectedAttributes.get("currentTemperature").getValueAsDecimal() == null
         Meta protectedMeta = protectedAttributes.get("currentTemperature").getMeta()
-        protectedMeta.all().length == 2
+        protectedMeta.all().length == 3
         protectedMeta.first(AssetMeta.LABEL).getValueAsString() == "Current Temp"
         protectedMeta.first(AssetMeta.READ_ONLY).getValueAsBoolean()
+        protectedMeta.first(AssetMeta.RULES_FACT).getValueAsBoolean()
 
         Asset apartment2 = assets[3]
         apartment2.id == managerDemoSetup.apartment2Id

@@ -162,7 +162,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                 )
                                 .add(new MetaItem(
                                         AssetMeta.AGENT_LINK,
-                                        new AttributeRef(agent.getId(), "simulator123").asJsonValue()
+                                        new AttributeRef(agent.getId(), demoAgentProtocolConfigName).asJsonValue()
                                 ))
                                 .add(new MetaItem(
                                         SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(SwitchSimulatorElement.ELEMENT_NAME)
@@ -184,7 +184,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                 )
                                 .add(new MetaItem(
                                         AssetMeta.AGENT_LINK,
-                                        new AttributeRef(agent.getId(), "simulator123").asJsonValue()
+                                        new AttributeRef(agent.getId(), demoAgentProtocolConfigName).asJsonValue()
                                 ))
                                 .add(new MetaItem(
                                         SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(IntegerSimulatorElement.ELEMENT_NAME_RANGE)
@@ -205,7 +205,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                 )
                                 .add(new MetaItem(
                                         AssetMeta.AGENT_LINK,
-                                        new AttributeRef(agent.getId(), "simulator123").asJsonValue()
+                                        new AttributeRef(agent.getId(), demoAgentProtocolConfigName).asJsonValue()
                                 ))
                                 .add(new MetaItem(
                                         SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(ColorSimulatorElement.ELEMENT_NAME)
@@ -231,7 +231,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                 )
                                 .add(new MetaItem(
                                         AssetMeta.AGENT_LINK,
-                                        new AttributeRef(agent.getId(), "simulator123").asJsonValue()
+                                        new AttributeRef(agent.getId(), demoAgentProtocolConfigName).asJsonValue()
                                 ))
                                 .add(new MetaItem(
                                         SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(DecimalSimulatorElement.ELEMENT_NAME)
@@ -311,8 +311,16 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 new Attribute("demoString", STRING, Json.create("demo")),
                 new Attribute("demoInteger", INTEGER, Json.create(0)),
                 new Attribute("demoDecimal", DECIMAL, Json.create(0d)),
-                new Attribute("currentTemperature", DECIMAL, Json.create(19.2))
+                new Attribute("currentTemperature", DECIMAL, Json.createNull())
                         .setMeta(new Meta()
+                                .add(new MetaItem(
+                                        AssetMeta.AGENT_LINK,
+                                        new AttributeRef(demoAgentId, demoAgentProtocolConfigName).asJsonValue()
+                                ))
+                                .add(new MetaItem(
+                                        AssetMeta.RULES_FACT,
+                                        Json.create(true)
+                                ))
                                 .add(new MetaItem(
                                         AssetMeta.LABEL,
                                         Json.create("Current Temp"))
@@ -330,6 +338,38 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                 ))
                                 .add(new MetaItem(
                                         "urn:thirdparty:bar", Json.create("BAR")
+                                ))
+                                .add(new MetaItem(
+                                        SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(DecimalSimulatorElement.ELEMENT_NAME)
+                                ))
+
+                        ),
+                new Attribute("targetTemperature", DECIMAL, Json.createNull())
+                        .setMeta(new Meta()
+                                .add(new MetaItem(
+                                        AssetMeta.AGENT_LINK,
+                                        new AttributeRef(demoAgentId, demoAgentProtocolConfigName).asJsonValue()
+                                ))
+                                .add(new MetaItem(
+                                        AssetMeta.RULES_FACT,
+                                        Json.create(true)
+                                ))
+                                .add(new MetaItem(
+                                        AssetMeta.LABEL,
+                                        Json.create("Target Temp"))
+                                )
+                                .add(new MetaItem(
+                                        AssetMeta.PROTECTED,
+                                        Json.create(true))
+                                )
+                                .add(new MetaItem(
+                                        Constants.NAMESPACE + ":foo:bar", Json.create("FOO")
+                                ))
+                                .add(new MetaItem(
+                                        "urn:thirdparty:bar", Json.create("BAR")
+                                ))
+                                .add(new MetaItem(
+                                        SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(DecimalSimulatorElement.ELEMENT_NAME)
                                 ))
                         )
         );
@@ -444,13 +484,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             rulesDefinition.setEnabled(false);
             rulesDefinition = rulesStorageService.merge(rulesDefinition);
             customerBRulesDefinitionId = rulesDefinition.getId();
-        }
-
-        try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeAssetDemoRules.drl")) {
-            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
-            RulesDefinition rulesDefinition = new AssetRulesDefinition("Some smart home demo rules", smartHomeId, rules);
-            rulesDefinition = rulesStorageService.merge(rulesDefinition);
-            smartHomeRulesDefinitionId = rulesDefinition.getId();
         }
 
         try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeAssetDemoRules.drl")) {
