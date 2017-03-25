@@ -224,6 +224,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
         sb.append(buildFromString(query));
         Pair<String, List<ParameterBinder>> whereClause = buildWhereClause(query);
         sb.append(whereClause.key);
+        sb.append(buildOrderByString(query));
         return em.unwrap(Session.class).doReturningWork(new AbstractReturningWork<List<ServerAsset>>() {
             @Override
             public List<ServerAsset> execute(Connection connection) throws SQLException {
@@ -290,6 +291,39 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
         return sb.toString();
     }
 
+    protected String buildOrderByString(AssetQuery query) {
+        StringBuilder sb = new StringBuilder();
+
+        if (query.id != null) {
+            return sb.toString();
+        }
+
+        if (query.orderBy != null && query.orderBy.property != null) {
+            sb.append(" order by " ) ;
+
+            switch (query.orderBy.property) {
+                case CREATED_ON:
+                    sb.append(" A.CREATED_ON ");
+                    break;
+                case ASSET_TYPE:
+                    sb.append(" A.ASSET_TYPE ");
+                    break;
+                case NAME:
+                    sb.append(" A.NAME ");
+                    break;
+                case PARENT_ID:
+                    sb.append(" A.PARENT_ID ");
+                    break;
+                case REALM_ID:
+                    sb.append(" A.REALM_ID");
+                    break;
+            }
+            sb.append(query.orderBy.descending ? " desc" : " asc ");
+        }
+
+        return sb.toString();
+    }
+
     protected Pair<String, List<ParameterBinder>> buildWhereClause(AssetQuery query) {
         StringBuilder sb = new StringBuilder();
         List<ParameterBinder> binders = new ArrayList<>();
@@ -324,6 +358,12 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
             } else if (query.parentPredicate.noParent) {
                 sb.append(" and A.PARENT_ID is null ");
             }
+        }
+
+        if (query.pathPredicate != null && query.pathPredicate.hasPath()) {
+            sb.append(" and ? <@ get_asset_tree_path(A.ID)");
+            final int pos = binders.size() + 1;
+            binders.add(st -> st.setArray(pos, st.getConnection().createArrayOf("text", query.pathPredicate.path)));
         }
 
         if (query.tenantPredicate != null && query.tenantPredicate.realmId != null) {
@@ -390,7 +430,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
             }
 
             if (attributeMetaBuilder.length() > 0) {
-                sb.append(" and A.ID in (select distinct A.ID from ");
+                sb.append(" and A.ID in (select A.ID from ");
                 sb.append(" jsonb_each(A.ATTRIBUTES) as AX, ");
                 sb.append(" jsonb_array_elements(AX.VALUE #> '{meta}') as AM ");
                 sb.append(" where true ");

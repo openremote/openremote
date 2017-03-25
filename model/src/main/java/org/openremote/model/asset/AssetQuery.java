@@ -193,6 +193,26 @@ public class AssetQuery {
         }
     }
 
+    static public class PathPredicate {
+        public String[] path;
+
+        public PathPredicate() {
+        }
+
+        public PathPredicate(String[] path) {
+            this.path = path;
+        }
+
+        public PathPredicate path(String[] path) {
+            this.path = path;
+            return this;
+        }
+
+        public boolean hasPath() {
+            return path != null && path.length > 0;
+        }
+    }
+
     static public class TenantPredicate {
         public String realmId;
         public String realm;
@@ -270,18 +290,18 @@ public class AssetQuery {
         public AttributeRefPredicate(String entityId, String attributeName) {
             super(
                 new StringArrayPredicate(
-                new StringPredicate(entityId),
-                new StringPredicate(attributeName)
-            ));
+                    new StringPredicate(entityId),
+                    new StringPredicate(attributeName)
+                ));
         }
 
         public AttributeRefPredicate(String name, String entityId, String attributeName) {
             super(
                 new StringPredicate(name),
                 new StringArrayPredicate(
-                new StringPredicate(entityId),
-                new StringPredicate(attributeName)
-            ));
+                    new StringPredicate(entityId),
+                    new StringPredicate(attributeName)
+                ));
         }
 
         public AttributeRefPredicate(AssetMeta assetMeta, String entityId, String attributeName) {
@@ -292,9 +312,9 @@ public class AssetQuery {
             super(
                 name,
                 new StringArrayPredicate(
-                new StringPredicate(attributeRef.getEntityId()),
-                new StringPredicate(attributeRef.getAttributeName())
-            ));
+                    new StringPredicate(attributeRef.getEntityId()),
+                    new StringPredicate(attributeRef.getAttributeName())
+                ));
         }
 
         public AttributeRefPredicate(AssetMeta assetMeta, AttributeRef attributeRef) {
@@ -303,22 +323,31 @@ public class AssetQuery {
     }
 
     static public class OrderBy {
-        public String property;
+
+        public enum Property {
+            CREATED_ON,
+            NAME,
+            ASSET_TYPE,
+            PARENT_ID,
+            REALM_ID
+        }
+
+        public Property property;
         public boolean descending;
 
         public OrderBy() {
         }
 
-        public OrderBy(String property) {
+        public OrderBy(Property property) {
             this.property = property;
         }
 
-        public OrderBy(String property, boolean descending) {
+        public OrderBy(Property property, boolean descending) {
             this.property = property;
             this.descending = descending;
         }
 
-        public OrderBy property(String property) {
+        public OrderBy property(Property property) {
             this.property = property;
             return this;
         }
@@ -336,14 +365,14 @@ public class AssetQuery {
     public String id;
     public StringPredicate name;
     public ParentPredicate parentPredicate;
-    // TODO Implement descendants restriction
+    public PathPredicate pathPredicate;
     public TenantPredicate tenantPredicate;
     public String userId;
     public StringPredicate type;
     public AttributeMetaPredicate attributeMetaPredicate;
 
     // Ordering
-    public OrderBy orderBy = new OrderBy("createdOn");
+    public OrderBy orderBy = new OrderBy(OrderBy.Property.CREATED_ON);
 
     public AssetQuery() {
     }
@@ -368,6 +397,11 @@ public class AssetQuery {
 
     public AssetQuery parent(ParentPredicate parentPredicate) {
         this.parentPredicate = parentPredicate;
+        return this;
+    }
+
+    public AssetQuery path(PathPredicate pathPredicate) {
+        this.pathPredicate = pathPredicate;
         return this;
     }
 

@@ -13,6 +13,7 @@ import org.openremote.model.asset.AssetType
 
 import static org.openremote.model.asset.AssetType.THING
 import static org.openremote.model.asset.AssetQuery.*
+import static org.openremote.model.asset.AssetQuery.OrderBy.Property.*
 
 class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
@@ -162,11 +163,48 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets = assetStorageService.findAll(
                 new AssetQuery()
                         .parent(new ParentPredicate(managerDemoSetup.smartHomeId))
+                        .tenant(new TenantPredicate(keycloakDemoSetup.customerATenant.id))
+                        .orderBy(new OrderBy(NAME, true))
+        )
+
+        then: "result should match"
+        assets.size() == 3
+        assets.get(0).id == managerDemoSetup.apartment3Id
+        assets.get(1).id == managerDemoSetup.apartment2Id
+        assets.get(2).id == managerDemoSetup.apartment1Id
+
+        when: "a query is executed"
+        assets = assetStorageService.findAll(
+                new AssetQuery()
+                        .parent(new ParentPredicate(managerDemoSetup.smartHomeId))
                         .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
         )
 
         then: "result should match"
         assets.size() == 0
+
+        when: "a query is executed"
+        assets = assetStorageService.findAll(
+                new AssetQuery()
+                        .path(new PathPredicate(assetStorageService.find(managerDemoSetup.apartment1Id, true).getPath()))
+        )
+
+        then: "result should match"
+        assets.size() == 3
+        assets.get(0).id == managerDemoSetup.apartment1Id
+        assets.get(1).id == managerDemoSetup.apartment1LivingroomId
+        assets.get(2).id == managerDemoSetup.apartment1LivingroomThermostatId
+
+        when: "a query is executed"
+        assets = assetStorageService.findAll(
+                new AssetQuery()
+                        .path(new PathPredicate(assetStorageService.find(managerDemoSetup.apartment1Id, true).getPath()))
+                        .type(AssetType.ROOM)
+        )
+
+        then: "result should match"
+        assets.size() == 1
+        assets.get(0).id == managerDemoSetup.apartment1LivingroomId
 
         when: "a query is executed"
         assets = assetStorageService.findAll(

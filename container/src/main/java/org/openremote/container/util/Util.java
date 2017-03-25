@@ -5,6 +5,9 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+/**
+ * TODO Old functions for old rules, can be deleted?
+ */
 public class Util {
     public static <T> T[] reverseArray(T[] array, Class<T> clazz) {
         if (array == null) {
