@@ -119,7 +119,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                 List<ServerAsset> things = assetStorageService.findAll(new AssetQuery()
                     .select(new AssetQuery.Select(true, false))
                     .type(THING)
-                    .parent(new AssetQuery.Parent(agent.getId()))
+                    .parent(new AssetQuery.ParentPredicate(agent.getId()))
                 );
                 for (Asset thing : things) {
                     deployThing(thing, PersistenceEvent.Cause.UPDATE);

@@ -159,7 +159,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
             Asset asset = em.find(ServerAsset.class, assetId);
             if (asset != null) {
                 List<ServerAsset> children = findAll(em, new AssetQuery()
-                    .parent(new AssetQuery.Parent(asset.getId()))
+                    .parent(new AssetQuery.ParentPredicate(asset.getId()))
                 );
                 if (children.size() > 0)
                     return false;
@@ -229,7 +229,6 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
             public List<ServerAsset> execute(Connection connection) throws SQLException {
                 LOG.fine("Preparing asset query: " + sb.toString());
                 PreparedStatement st = connection.prepareStatement(sb.toString());
-                LOG.fine("Query binders: " + whereClause.value.size());
                 for (ParameterBinder binder : whereClause.value) {
                     binder.accept(st);
                 }
@@ -250,12 +249,11 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
         sb.append("select ");
         sb.append("A.ID as ID, A.OBJ_VERSION as OBJ_VERSION, A.CREATED_ON as CREATED_ON, A.NAME as NAME, A.ASSET_TYPE as ASSET_TYPE, ");
         sb.append("A.PARENT_ID as PARENT_ID, ");
-        sb.append(query.parent != null && query.parent.noParent
+        sb.append(query.parentPredicate != null && query.parentPredicate.noParent
             ? " NULL PARENT_NAME, NULL as PARENT_TYPE, "
             : " P.NAME as PARENT_NAME, P.ASSET_TYPE as PARENT_TYPE, "
         );
-        sb.append("A.REALM_ID as REALM_ID, R.NAME as TENANT_NAME, ");
-        sb.append("(select RA.VALUE from REALM_ATTRIBUTE RA where RA.REALM_ID = R.ID and RA.NAME = 'displayName') as TENANT_DISPLAY_NAME, ");
+        sb.append("A.REALM_ID as REALM_ID, R.NAME as TENANT_NAME, RA.VALUE as TENANT_DISPLAY_NAME, ");
         sb.append("A.LOCATION as LOCATION");
 
         if (query.select != null && query.select.loadComplete) {
@@ -271,9 +269,11 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
     protected String buildFromString(AssetQuery query) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append(" from ASSET A cross join (select * from REALM) as R ");
+        sb.append(" from ASSET A ");
+        sb.append(" join REALM R on R.ID = A.REALM_ID ");
+        sb.append(" join REALM_ATTRIBUTE RA on RA.REALM_ID = R.ID and RA.NAME = 'displayName'");
 
-        if (query.parent != null && !query.parent.noParent) {
+        if (query.parentPredicate != null && !query.parentPredicate.noParent) {
             sb.append(" cross join ASSET P ");
         } else {
             sb.append(" left outer join ASSET P on A.PARENT_ID = P.ID ");
@@ -287,11 +287,6 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
             sb.append(" cross join USER_ASSET ua ");
         }
 
-        if (query.hasAttributeRestrictions()) {
-            sb.append(" cross join jsonb_each(A.ATTRIBUTES) as AX ");
-            sb.append(" cross join jsonb_array_elements(jsonb_extract_path(AX.VALUE, 'meta')) as AM ");
-        }
-
         return sb.toString();
     }
 
@@ -299,7 +294,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
         StringBuilder sb = new StringBuilder();
         List<ParameterBinder> binders = new ArrayList<>();
 
-        sb.append(" where r.ID = a.REALM_ID ");
+        sb.append(" where true ");
 
         if (query.id != null) {
             sb.append(" and A.ID = ? ");
@@ -315,31 +310,30 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
             binders.add(st -> st.setString(pos, query.name.prepareValue()));
         }
 
-        if (query.parent != null) {
-            if (query.parent.id != null) {
+        if (query.parentPredicate != null) {
+            if (query.parentPredicate.id != null) {
                 sb.append(" and p.ID = a.PARENT_ID ");
                 sb.append(" and A.PARENT_ID = ? ");
                 final int pos = binders.size() + 1;
-                binders.add(st -> st.setString(pos, query.parent.id));
-            } else if (query.parent.type != null) {
+                binders.add(st -> st.setString(pos, query.parentPredicate.id));
+            } else if (query.parentPredicate.type != null) {
                 sb.append(" and p.ID = a.PARENT_ID ");
                 sb.append(" and P.ASSET_TYPE = ? ");
                 final int pos = binders.size() + 1;
-                binders.add(st -> st.setString(pos, query.parent.type));
-            } else if (query.parent.noParent) {
+                binders.add(st -> st.setString(pos, query.parentPredicate.type));
+            } else if (query.parentPredicate.noParent) {
                 sb.append(" and A.PARENT_ID is null ");
-            } else {
             }
         }
 
-        if (query.realm != null && query.realm.id != null) {
+        if (query.tenantPredicate != null && query.tenantPredicate.realmId != null) {
             sb.append(" and R.ID = ? ");
             final int pos = binders.size() + 1;
-            binders.add(st -> st.setString(pos, query.realm.id));
-        } else if (query.realm != null && query.realm.name != null) {
+            binders.add(st -> st.setString(pos, query.tenantPredicate.realmId));
+        } else if (query.tenantPredicate != null && query.tenantPredicate.realm != null) {
             sb.append(" and R.NAME = ? ");
             final int pos = binders.size() + 1;
-            binders.add(st -> st.setString(pos, query.realm.id));
+            binders.add(st -> st.setString(pos, query.tenantPredicate.realm));
         }
 
         if (query.userId != null) {
@@ -355,34 +349,54 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
             binders.add(st -> st.setString(pos, query.type.prepareValue()));
         }
 
-        if (query.attributeMeta != null) {
-            if (query.attributeMeta.itemNameSearch != null) {
-                sb.append(query.attributeMeta.itemNameSearch.caseSensitive
-                    ? " and jsonb_extract_path_text(AM.VALUE, 'name') "
-                    : " and upper(jsonb_extract_path_text(AM.VALUE, 'name')) "
+        if (query.attributeMetaPredicate != null) {
+            StringBuilder attributeMetaBuilder = new StringBuilder();
+
+            if (query.attributeMetaPredicate.itemNamePredicate != null) {
+                attributeMetaBuilder.append(query.attributeMetaPredicate.itemNamePredicate.caseSensitive
+                    ? " and AM.VALUE #>> '{name}' "
+                    : " and upper(AM.VALUE #>> '{name}') "
                 );
-                sb.append(query.attributeMeta.itemNameSearch.match == AssetQuery.Match.EXACT ? " = ? " : " like ? ");
+                attributeMetaBuilder.append(query.attributeMetaPredicate.itemNamePredicate.match == AssetQuery.Match.EXACT ? " = ? " : " like ? ");
                 final int pos = binders.size() + 1;
-                binders.add(st -> st.setString(pos, query.attributeMeta.itemNameSearch.prepareValue()));
+                binders.add(st -> st.setString(pos, query.attributeMetaPredicate.itemNamePredicate.prepareValue()));
             }
-            if (query.attributeMeta.itemValueSearch != null) {
-                if (query.attributeMeta.itemValueSearch instanceof AssetQuery.StringSearch) {
-                    AssetQuery.StringSearch stringSearch = (AssetQuery.StringSearch) query.attributeMeta.itemValueSearch;
-                    sb.append(stringSearch.caseSensitive
-                        ? " and jsonb_extract_path(AM.VALUE, 'value') "
-                        : " and upper(jsonb_extract_path(AM.VALUE, 'value')) "
+            if (query.attributeMetaPredicate.itemValuePredicate != null) {
+                if (query.attributeMetaPredicate.itemValuePredicate instanceof AssetQuery.StringPredicate) {
+                    AssetQuery.StringPredicate stringPredicate = (AssetQuery.StringPredicate) query.attributeMetaPredicate.itemValuePredicate;
+                    attributeMetaBuilder.append(stringPredicate.caseSensitive
+                        ? " and AM.VALUE #>> '{value}' "
+                        : " and upper(AM.VALUE #>> '{value}') "
                     );
-                    sb.append(stringSearch.match == AssetQuery.Match.EXACT ? " = ? " : " like ? ");
+                    attributeMetaBuilder.append(stringPredicate.match == AssetQuery.Match.EXACT ? " = ? " : " like ? ");
                     final int pos = binders.size() + 1;
-                    binders.add(st -> st.setString(pos, stringSearch.prepareValue()));
-                } else if (query.attributeMeta.itemValueSearch instanceof AssetQuery.BooleanSearch) {
-                    AssetQuery.BooleanSearch booleanSearch = (AssetQuery.BooleanSearch) query.attributeMeta.itemValueSearch;
-                    sb.append(" and jsonb_extract_path(AM.VALUE, 'value') = to_jsonb(")
-                        .append(booleanSearch.predicate)
-                        .append(") ");
+                    binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
+                } else if (query.attributeMetaPredicate.itemValuePredicate instanceof AssetQuery.BooleanPredicate) {
+                    AssetQuery.BooleanPredicate booleanPredicate = (AssetQuery.BooleanPredicate) query.attributeMetaPredicate.itemValuePredicate;
+                    attributeMetaBuilder.append(" and AM.VALUE #> '{value}' = to_jsonb(").append(booleanPredicate.predicate).append(") ");
+                } else if (query.attributeMetaPredicate.itemValuePredicate instanceof AssetQuery.StringArrayPredicate) {
+                    AssetQuery.StringArrayPredicate stringArrayPredicate = (AssetQuery.StringArrayPredicate) query.attributeMetaPredicate.itemValuePredicate;
+                    for (int i = 0; i < stringArrayPredicate.predicates.length; i++) {
+                        AssetQuery.StringPredicate stringPredicate = stringArrayPredicate.predicates[i];
+                        attributeMetaBuilder.append(stringPredicate.caseSensitive
+                            ? " and AM.VALUE #> '{value}' ->> " + i
+                            : " and upper(AM.VALUE #> '{value}' ->> " + i + ") "
+                        );
+                        attributeMetaBuilder.append(stringPredicate.match == AssetQuery.Match.EXACT ? " = ? " : " like ? ");
+                        final int pos = binders.size() + 1;
+                        binders.add(st -> st.setString(pos, stringPredicate.prepareValue()));
+                    }
                 }
             }
-            // TODO Implement AssetQuery.AttributeRef
+
+            if (attributeMetaBuilder.length() > 0) {
+                sb.append(" and A.ID in (select distinct A.ID from ");
+                sb.append(" jsonb_each(A.ATTRIBUTES) as AX, ");
+                sb.append(" jsonb_array_elements(AX.VALUE #> '{meta}') as AM ");
+                sb.append(" where true ");
+                sb.append(attributeMetaBuilder);
+                sb.append(")");
+            }
         }
 
         return new Pair<>(sb.toString(), binders);

@@ -12,6 +12,7 @@ import spock.lang.Specification
 import org.openremote.model.asset.AssetType
 
 import static org.openremote.model.asset.AssetType.THING
+import static org.openremote.model.asset.AssetQuery.*
 
 class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
@@ -48,7 +49,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         asset = assetStorageService.find(
                 new AssetQuery()
-                        .select(new AssetQuery.Select(true, false))
+                        .select(new Select(true, false))
                         .id(managerDemoSetup.smartOfficeId)
         )
 
@@ -72,8 +73,8 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         def assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .parent(new AssetQuery.Parent(true))
-                        .realm(new AssetQuery.Realm(keycloakDemoSetup.masterTenant.id))
+                        .parent(new ParentPredicate(true))
+                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
         )
 
         then: "result should match"
@@ -96,9 +97,9 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .select(new AssetQuery.Select(true, false))
-                        .parent(new AssetQuery.Parent(true))
-                        .realm(new AssetQuery.Realm(keycloakDemoSetup.masterTenant.id))
+                        .select(new Select(true, false))
+                        .parent(new ParentPredicate(true))
+                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
         )
 
         then: "result should match"
@@ -122,7 +123,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .parent(new AssetQuery.Parent(managerDemoSetup.smartHomeId))
+                        .parent(new ParentPredicate(managerDemoSetup.smartHomeId))
         )
 
         then: "result should match"
@@ -147,8 +148,8 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .parent(new AssetQuery.Parent(managerDemoSetup.smartHomeId))
-                        .realm(new AssetQuery.Realm(keycloakDemoSetup.customerATenant.id))
+                        .parent(new ParentPredicate(managerDemoSetup.smartHomeId))
+                        .tenant(new TenantPredicate(keycloakDemoSetup.customerATenant.id))
         )
 
         then: "result should match"
@@ -160,8 +161,8 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .parent(new AssetQuery.Parent(managerDemoSetup.smartHomeId))
-                        .realm(new AssetQuery.Realm(keycloakDemoSetup.masterTenant.id))
+                        .parent(new ParentPredicate(managerDemoSetup.smartHomeId))
+                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
         )
 
         then: "result should match"
@@ -169,7 +170,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
-                new AssetQuery().select(new AssetQuery.Select(true, true)).userId(keycloakDemoSetup.testuser3Id)
+                new AssetQuery().select(new Select(true, true)).userId(keycloakDemoSetup.testuser3Id)
         )
 
         then: "result should match"
@@ -186,7 +187,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
-                new AssetQuery().select(new AssetQuery.Select(true, true)).userId(keycloakDemoSetup.testuser2Id)
+                new AssetQuery().select(new Select(true, true)).userId(keycloakDemoSetup.testuser2Id)
         )
 
         then: "result should match"
@@ -212,7 +213,17 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         assets = assetStorageService.findAll(new AssetQuery()
                 .type(THING)
-                .parent(new AssetQuery.Parent(managerDemoSetup.demoAgentId))
+                .parent(new ParentPredicate(managerDemoSetup.demoAgentId))
+        )
+
+        then: "result should match"
+        assets.size() == 1
+        assets.get(0).id == managerDemoSetup.thingId
+
+        when: "a query is executed"
+        assets = assetStorageService.findAll(new AssetQuery()
+                .type(THING)
+                .parent(new ParentPredicate().type(AssetType.AGENT))
         )
 
         then: "result should match"
@@ -223,13 +234,100 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         when: "a query is executed"
         assets = assetStorageService.findAll(
                 new AssetQuery()
-                        .realm(new AssetQuery.Realm(keycloakDemoSetup.masterTenant.id))
-                        .attributeMeta(new AssetQuery.AttributeMeta(AssetMeta.STORE_DATA_POINTS, new AssetQuery.BooleanSearch(true)))
+                        .tenant(new TenantPredicate(keycloakDemoSetup.masterTenant.id))
+                        .attributeMeta(new AttributeMetaPredicate(AssetMeta.STORE_DATA_POINTS, new BooleanPredicate(true)))
         )
 
         then: "result should match"
         assets.size() == 1
         assets.get(0).id == managerDemoSetup.thingId
+
+        when: "a query is executed"
+        assets = assetStorageService.findAll(
+                new AssetQuery()
+                        .attributeMeta(new AttributeMetaPredicate().itemValue(new StringPredicate(Match.END, "kWh")))
+        )
+
+        then: "result should match"
+        assets.size() == 1
+        assets.get(0).id == managerDemoSetup.thingId
+
+        when: "a query is executed"
+        assets = assetStorageService.findAll(
+                new AssetQuery().attributeMeta(
+                        new AttributeRefPredicate(
+                                AssetMeta.AGENT_LINK,
+                                managerDemoSetup.demoAgentId,
+                                managerDemoSetup.demoAgentProtocolConfigName
+                        )
+                )
+        )
+
+        then: "result should match"
+        assets.size() == 2
+        assets.get(0).id == managerDemoSetup.thingId
+        assets.get(1).id == managerDemoSetup.apartment1LivingroomThermostatId
+
+        when: "a query is executed"
+        assets = assetStorageService.findAll(
+                new AssetQuery().attributeMeta(
+                        new AttributeRefPredicate(
+                                AssetMeta.AGENT_LINK,
+                                managerDemoSetup.demoAgentId,
+                                managerDemoSetup.demoAgentProtocolConfigName
+                        )
+                )
+        )
+
+        then: "result should match"
+        assets.size() == 2
+        assets.get(0).id == managerDemoSetup.thingId
+        assets.get(1).id == managerDemoSetup.apartment1LivingroomThermostatId
+
+        when: "a query is executed"
+        assets = assetStorageService.findAll(
+                new AssetQuery().attributeMeta(
+                        new AttributeRefPredicate(
+                                AssetMeta.AGENT_LINK,
+                                managerDemoSetup.demoAgentId,
+                                managerDemoSetup.demoAgentProtocolConfigName
+                        )
+                ).name(new StringPredicate(Match.CONTAINS, false, "thing"))
+        )
+
+        then: "result should match"
+        assets.size() == 1
+        assets.get(0).id == managerDemoSetup.thingId
+
+        when: "a query is executed"
+        assets = assetStorageService.findAll(
+                new AssetQuery().attributeMeta(
+                        new AttributeRefPredicate(
+                                AssetMeta.AGENT_LINK,
+                                managerDemoSetup.demoAgentId,
+                                managerDemoSetup.demoAgentProtocolConfigName
+                        )
+                ).parent(new ParentPredicate(managerDemoSetup.apartment1LivingroomId))
+        )
+
+        then: "result should match"
+        assets.size() == 1
+        assets.get(0).id == managerDemoSetup.apartment1LivingroomThermostatId
+
+        when: "a query is executed"
+        assets = assetStorageService.findAll(
+                new AssetQuery().attributeMeta(
+                        new AttributeRefPredicate(
+                                AssetMeta.AGENT_LINK,
+                                managerDemoSetup.demoAgentId,
+                                managerDemoSetup.demoAgentProtocolConfigName
+                        )
+                ).tenant(new TenantPredicate().realm(keycloakDemoSetup.customerATenant.realm))
+        )
+
+        then: "result should match"
+        assets.size() == 1
+        assets.get(0).id == managerDemoSetup.apartment1LivingroomThermostatId
 
         cleanup: "the server should be stopped"
         stopContainer(container)

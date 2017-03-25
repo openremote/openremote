@@ -106,8 +106,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             List<ServerAsset> result = assetStorageService.findAll(
                 new AssetQuery()
-                    .parent(new AssetQuery.Parent(true))
-                    .realm(new AssetQuery.Realm(tenant.getId()))
+                    .parent(new AssetQuery.ParentPredicate(true))
+                    .tenant(new AssetQuery.TenantPredicate(tenant.getId()))
             );
             return result.toArray(new Asset[result.size()]);
 
@@ -125,7 +125,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             if (isSuperUser()) {
                 List<ServerAsset> result = assetStorageService.findAll(
                     new AssetQuery()
-                        .parent(new AssetQuery.Parent(parentId))
+                        .parent(new AssetQuery.ParentPredicate(parentId))
                 );
                 return result.toArray(new Asset[result.size()]);
             } else {
@@ -135,8 +135,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 }
                 List<ServerAsset> result = assetStorageService.findAll(
                     new AssetQuery()
-                        .parent(new AssetQuery.Parent(parentId))
-                        .realm(new AssetQuery.Realm(tenant.getId()))
+                        .parent(new AssetQuery.ParentPredicate(parentId))
+                        .tenant(new AssetQuery.TenantPredicate(tenant.getId()))
                 );
                 return result.toArray(new Asset[result.size()]);
             }

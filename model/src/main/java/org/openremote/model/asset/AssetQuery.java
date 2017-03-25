@@ -19,14 +19,41 @@
  */
 package org.openremote.model.asset;
 
+import org.openremote.model.AttributeRef;
+
 import java.util.Locale;
 
 /**
- * Encapsulate asset query details. A query returns a collection of
- * {@link Asset} instances, unless if the {@link #id} is set, then only
- * a single instance can be found.
+ * Encapsulate asset query restriction, project, and ordering of results.
+ * <p>
+ * A query returns a collection of {@link Asset} instances, or when the
+ * {@link #id} predicate is set, a single instance.
  */
 public class AssetQuery {
+
+    static public class Select {
+        public boolean loadComplete;
+        // TODO: Filtering attributes can be moved into database functions
+        public boolean filterProtected;
+
+        public Select() {
+        }
+
+        public Select(boolean loadComplete, boolean filterProtected) {
+            this.loadComplete = loadComplete;
+            this.filterProtected = filterProtected;
+        }
+
+        public Select loadComplete(boolean loadComplete) {
+            this.loadComplete = loadComplete;
+            return this;
+        }
+
+        public Select filterProtected(boolean filterProtected) {
+            this.filterProtected = filterProtected;
+            return this;
+        }
+    }
 
     public enum Match {
         EXACT,
@@ -49,45 +76,44 @@ public class AssetQuery {
         }
     }
 
-    public interface Search {
-
+    public interface ValuePredicate {
     }
 
-    static public class StringSearch  {
+    static public class StringPredicate implements ValuePredicate {
         public Match match = Match.EXACT;
         public boolean caseSensitive = true;
         public String value;
 
-        public StringSearch() {
+        public StringPredicate() {
         }
 
-        public StringSearch(String value) {
+        public StringPredicate(String value) {
             this.value = value;
         }
 
-        public StringSearch(Match match, String value) {
+        public StringPredicate(Match match, String value) {
             this.match = match;
             this.value = value;
         }
 
-        public StringSearch(Match match, boolean caseSensitive, String value) {
+        public StringPredicate(Match match, boolean caseSensitive, String value) {
             this.match = match;
             this.caseSensitive = caseSensitive;
             this.value = value;
         }
 
-        public StringSearch match(Match match) {
+        public StringPredicate match(Match match) {
             this.match = match;
             return this;
         }
 
-        public StringSearch caseSensitive(boolean caseSensitive) {
+        public StringPredicate caseSensitive(boolean caseSensitive) {
             this.caseSensitive = caseSensitive;
             return this;
         }
 
-        public StringSearch search(String search) {
-            this.value = search;
+        public StringPredicate value(String value) {
+            this.value = value;
             return this;
         }
 
@@ -99,167 +125,180 @@ public class AssetQuery {
         }
     }
 
-    static public class BooleanSearch implements Search {
-
+    static public class BooleanPredicate implements ValuePredicate {
         public boolean predicate;
 
-        public BooleanSearch() {
+        public BooleanPredicate() {
         }
 
-        public BooleanSearch(boolean predicate) {
+        public BooleanPredicate(boolean predicate) {
             this.predicate = predicate;
         }
 
-        public BooleanSearch predicate(boolean predicate) {
+        public BooleanPredicate predicate(boolean predicate) {
             this.predicate = predicate;
             return this;
         }
     }
 
-    static public class Parent {
+    static public class StringArrayPredicate implements ValuePredicate {
+        public StringPredicate[] predicates = new StringPredicate[0];
+
+        public StringArrayPredicate() {
+        }
+
+        public StringArrayPredicate(StringPredicate... predicates) {
+            this.predicates = predicates;
+        }
+
+        public StringArrayPredicate predicates(StringPredicate... predicates) {
+            this.predicates = predicates;
+            return this;
+        }
+    }
+
+    static public class ParentPredicate {
         public String id;
         public String type;
         public boolean noParent;
 
-        public Parent() {
+        public ParentPredicate() {
         }
 
-        public Parent(String id) {
+        public ParentPredicate(String id) {
             this.id = id;
         }
 
-        public Parent(boolean noParent) {
+        public ParentPredicate(boolean noParent) {
             this.noParent = noParent;
         }
 
-        public Parent id(String id) {
+        public ParentPredicate id(String id) {
             this.id = id;
             return this;
         }
 
-        public Parent type(String type) {
+        public ParentPredicate type(String type) {
             this.type = type;
             return this;
         }
 
-        public Parent noParent(boolean noParent) {
+        public ParentPredicate type(AssetType type) {
+            return type(type.getValue());
+        }
+
+        public ParentPredicate noParent(boolean noParent) {
             this.noParent = noParent;
             return this;
         }
     }
 
-    static public class Realm {
-        public String id;
-        public String name;
+    static public class TenantPredicate {
+        public String realmId;
+        public String realm;
 
-        public Realm() {
+        public TenantPredicate() {
         }
 
-        public Realm(String id) {
-            this.id = id;
+        public TenantPredicate(String realmId) {
+            this.realmId = realmId;
         }
 
-        public Realm id(String id) {
-            this.id = id;
+        public TenantPredicate realmId(String id) {
+            this.realmId = id;
             return this;
         }
 
-        public Realm name(String name) {
-            this.name = name;
-            return this;
-        }
-    }
-
-    static public class AttributeRef {
-        public String entityId;
-        public String attributeName;
-
-        public AttributeRef() {
-        }
-
-        public AttributeRef(String entityId) {
-            this.entityId = entityId;
-        }
-
-        public AttributeRef(String entityId, String attributeName) {
-            this.entityId = entityId;
-            this.attributeName = attributeName;
-        }
-
-        public AttributeRef entityId(String entityId) {
-            this.entityId = entityId;
-            return this;
-        }
-
-        public AttributeRef attributeName(String attributeName) {
-            this.attributeName = attributeName;
+        public TenantPredicate realm(String name) {
+            this.realm = name;
             return this;
         }
     }
 
-    static public class AttributeMeta {
-        public StringSearch itemNameSearch;
-        public Search itemValueSearch;
+    static public class AttributeMetaPredicate {
+        public StringPredicate itemNamePredicate;
+        public ValuePredicate itemValuePredicate;
 
-        public AttributeMeta() {
+        public AttributeMetaPredicate() {
         }
 
-        public AttributeMeta(StringSearch itemNameSearch) {
-            this.itemNameSearch = itemNameSearch;
+        public AttributeMetaPredicate(StringPredicate itemNamePredicate) {
+            this.itemNamePredicate = itemNamePredicate;
         }
 
-        public AttributeMeta(AssetMeta assetMeta) {
-            this.itemNameSearch = new StringSearch(assetMeta.getName());
+        public AttributeMetaPredicate(AssetMeta assetMeta) {
+            this.itemNamePredicate = new StringPredicate(assetMeta.getName());
         }
 
-        public AttributeMeta(Search itemValueSearch) {
-            this.itemValueSearch = itemValueSearch;
+        public AttributeMetaPredicate(ValuePredicate itemValuePredicate) {
+            this.itemValuePredicate = itemValuePredicate;
         }
 
-        public AttributeMeta(StringSearch itemNameSearch, Search itemValueSearch) {
-            this.itemNameSearch = itemNameSearch;
-            this.itemValueSearch = itemValueSearch;
+        public AttributeMetaPredicate(StringPredicate itemNamePredicate, ValuePredicate itemValuePredicate) {
+            this.itemNamePredicate = itemNamePredicate;
+            this.itemValuePredicate = itemValuePredicate;
         }
 
-        public AttributeMeta(AssetMeta assetMeta, Search itemValueSearch) {
-            this(new StringSearch(assetMeta.getName()), itemValueSearch);
+        public AttributeMetaPredicate(AssetMeta assetMeta, ValuePredicate itemValuePredicate) {
+            this(new StringPredicate(assetMeta.getName()), itemValuePredicate);
         }
 
-        public AttributeMeta itemNameSearch(StringSearch itemNameSearch) {
-            this.itemNameSearch = itemNameSearch;
+        public AttributeMetaPredicate itemName(StringPredicate itemNamePredicate) {
+            this.itemNamePredicate = itemNamePredicate;
             return this;
         }
 
-        public AttributeMeta itemNameSearch(AssetMeta assetMeta) {
-            return itemNameSearch(new StringSearch(assetMeta.getName()));
+        public AttributeMetaPredicate itemName(AssetMeta assetMeta) {
+            return itemName(new StringPredicate(assetMeta.getName()));
         }
 
-        public AttributeMeta itemValueSearch(Search itemValueSearch) {
-            this.itemValueSearch = itemValueSearch;
+        public AttributeMetaPredicate itemValue(ValuePredicate itemValuePredicate) {
+            this.itemValuePredicate = itemValuePredicate;
             return this;
         }
     }
 
-    static public class Select {
-        public boolean loadComplete;
-        public boolean filterProtected;
+    static public class AttributeRefPredicate extends AttributeMetaPredicate {
 
-        public Select() {
+        public AttributeRefPredicate() {
         }
 
-        public Select(boolean loadComplete, boolean filterProtected) {
-            this.loadComplete = loadComplete;
-            this.filterProtected = filterProtected;
+        public AttributeRefPredicate(AttributeRef attributeRef) {
+            this(attributeRef.getEntityId(), attributeRef.getAttributeName());
         }
 
-        public Select loadComplete(boolean loadComplete) {
-            this.loadComplete = loadComplete;
-            return this;
+        public AttributeRefPredicate(String entityId, String attributeName) {
+            super(
+                new StringArrayPredicate(
+                new StringPredicate(entityId),
+                new StringPredicate(attributeName)
+            ));
         }
 
-        public Select filterProtected(boolean filterProtected) {
-            this.filterProtected = filterProtected;
-            return this;
+        public AttributeRefPredicate(String name, String entityId, String attributeName) {
+            super(
+                new StringPredicate(name),
+                new StringArrayPredicate(
+                new StringPredicate(entityId),
+                new StringPredicate(attributeName)
+            ));
+        }
+
+        public AttributeRefPredicate(AssetMeta assetMeta, String entityId, String attributeName) {
+            this(assetMeta.getName(), entityId, attributeName);
+        }
+
+        public AttributeRefPredicate(StringPredicate name, AttributeRef attributeRef) {
+            super(
+                name,
+                new StringArrayPredicate(
+                new StringPredicate(attributeRef.getEntityId()),
+                new StringPredicate(attributeRef.getAttributeName())
+            ));
+        }
+
+        public AttributeRefPredicate(AssetMeta assetMeta, AttributeRef attributeRef) {
+            this(new StringPredicate(assetMeta.getName()), attributeRef);
         }
     }
 
@@ -290,21 +329,20 @@ public class AssetQuery {
         }
     }
 
+    // Projection
     public Select select = new Select(false, false);
 
-    /**
-     * If this value is set, no other restrictions will be applied and only a single result should be returned.
-     */
+    // Restriction predicates
     public String id;
-
-    public StringSearch name;
-    public Parent parent;
+    public StringPredicate name;
+    public ParentPredicate parentPredicate;
     // TODO Implement descendants restriction
-    public Realm realm;
+    public TenantPredicate tenantPredicate;
     public String userId;
-    public StringSearch type;
-    public AttributeRef attributeRef;
-    public AttributeMeta attributeMeta;
+    public StringPredicate type;
+    public AttributeMetaPredicate attributeMetaPredicate;
+
+    // Ordering
     public OrderBy orderBy = new OrderBy("createdOn");
 
     public AssetQuery() {
@@ -315,23 +353,26 @@ public class AssetQuery {
         return this;
     }
 
-    public AssetQuery name(StringSearch name) {
-        this.name = name;
-        return this;
-    }
-
+    /**
+     * If this value is set, no other restrictions will be applied and only a single result should be returned.
+     */
     public AssetQuery id(String id) {
         this.id = id;
         return this;
     }
 
-    public AssetQuery parent(Parent parent) {
-        this.parent = parent;
+    public AssetQuery name(StringPredicate name) {
+        this.name = name;
         return this;
     }
 
-    public AssetQuery realm(Realm realm) {
-        this.realm = realm;
+    public AssetQuery parent(ParentPredicate parentPredicate) {
+        this.parentPredicate = parentPredicate;
+        return this;
+    }
+
+    public AssetQuery tenant(TenantPredicate tenantPredicate) {
+        this.tenantPredicate = tenantPredicate;
         return this;
     }
 
@@ -340,31 +381,22 @@ public class AssetQuery {
         return this;
     }
 
-    public AssetQuery type(StringSearch type) {
+    public AssetQuery type(StringPredicate type) {
         this.type = type;
         return this;
     }
 
     public AssetQuery type(AssetType assetType) {
-        return type(new StringSearch(assetType.getValue()));
+        return type(new StringPredicate(assetType.getValue()));
     }
 
-    public AssetQuery attributeRef(AttributeRef attributeRef) {
-        this.attributeRef = attributeRef;
-        return this;
-    }
-
-    public AssetQuery attributeMeta(AttributeMeta attributeMeta) {
-        this.attributeMeta = attributeMeta;
+    public AssetQuery attributeMeta(AttributeMetaPredicate attributeMetaPredicate) {
+        this.attributeMetaPredicate = attributeMetaPredicate;
         return this;
     }
 
     public AssetQuery orderBy(OrderBy orderBy) {
         this.orderBy = orderBy;
         return this;
-    }
-
-    public boolean hasAttributeRestrictions() {
-        return attributeMeta != null;
     }
 }
