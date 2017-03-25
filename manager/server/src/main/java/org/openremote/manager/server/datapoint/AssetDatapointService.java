@@ -36,7 +36,7 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetUp
     @Override
     public void accept(AssetUpdate assetUpdate) {
         if (assetUpdate.getAttribute().isStoreDatapoints()) {
-            AssetDatapoint assetDatapoint = new AssetDatapoint(assetUpdate.getNewState());
+            AssetDatapoint assetDatapoint = new AssetDatapoint(assetUpdate.getAttribute().getStateEvent(assetUpdate.getAssetId()));
             persistenceService.doTransaction(entityManager -> {
                 entityManager.persist(assetDatapoint);
             });

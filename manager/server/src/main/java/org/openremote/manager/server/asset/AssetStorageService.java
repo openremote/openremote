@@ -57,17 +57,6 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
     protected ManagerIdentityService managerIdentityService;
     protected AssetProcessingService assetProcessingService;
 
-    final protected Function<AttributeRef, ProtocolConfiguration> agentLinkResolver = agentLink -> {
-        // Resolve the agent and the protocol configuration
-        // TODO This is very inefficient and requires Hibernate second-level caching
-        Asset agent = find(agentLink.getEntityId(), true, false);
-        if (agent != null && agent.getWellKnownType().equals(AGENT)) {
-            AgentAttributes agentAttributes = new AgentAttributes(agent);
-            return agentAttributes.getProtocolConfiguration(agentLink.getAttributeName());
-        }
-        return null;
-    };
-
     @Override
     public void init(Container container) throws Exception {
         persistenceService = container.getService(PersistenceService.class);
@@ -94,7 +83,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
 
     @Override
     public void accept(AssetUpdate assetUpdate) {
-        String assetId = assetUpdate.getAsset().getId();
+        String assetId = assetUpdate.getAssetId();
         String attributeName = assetUpdate.getAttribute().getName();
         JsonValue value = assetUpdate.getAttribute().getValue();
         // Some sanity checking, of course the timestamp should never be -1 if we store updated attribute state
@@ -105,10 +94,6 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
         if (!storeAttributeValue(assetId, attributeName, value, valueTimestamp)) {
             throw new RuntimeException("Database update failed, no rows updated");
         }
-    }
-
-    public Function<AttributeRef, ProtocolConfiguration> getAgentLinkResolver() {
-        return agentLinkResolver;
     }
 
     public ServerAsset find(String assetId) {

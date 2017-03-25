@@ -45,6 +45,7 @@ import org.openremote.agent.context.AgentContext;
 import org.openremote.agent.sensor.SensorState;
 import org.openremote.agent.sensor.SensorStateUpdate;
 import org.openremote.container.Container;
+import org.openremote.container.util.Util;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -65,7 +66,7 @@ public class RuleEngine {
     private LevelFacade levelFacade;
     private RangeFacade rangeFacade;
     private RulePersistence rulePersistence;
-    private RuleUtil ruleUtil;
+    private Util ruleUtil;
 
     public void start(AgentContext agentContext) {
 
@@ -101,7 +102,7 @@ public class RuleEngine {
         rangeFacade = new RangeFacade();
         levelFacade = new LevelFacade();
         rulePersistence = new RulePersistence();
-        ruleUtil = new RuleUtil();
+        ruleUtil = new Util();
 
         setGlobal("commands", agentContext.getDeployment().getCommands());
         setGlobal("switches", switchFacade);

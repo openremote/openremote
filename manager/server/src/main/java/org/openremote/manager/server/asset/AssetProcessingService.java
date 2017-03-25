@@ -228,7 +228,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     protected void processSensorUpdate(AttributeEvent attributeEvent) {
         // Must reference a thing asset
         ServerAsset thing = assetStorageService.find(attributeEvent.getEntityId(), true);
-        if (thing.getWellKnownType() != THING) {
+        if (thing == null || thing.getWellKnownType() != THING) {
             LOG.fine("Ignoring " + attributeEvent + ", not a thing: " + thing);
             return;
         }
@@ -241,7 +241,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         // for a day)
         ThingAttributes thingAttributes = new ThingAttributes(thing);
         ThingAttribute thingAttribute = thingAttributes.getLinkedAttribute(
-            assetStorageService.getAgentLinkResolver(), attributeEvent.getAttributeName()
+            agentService.getAgentLinkResolver(), attributeEvent.getAttributeName()
         );
 
         if (thingAttribute == null) {
@@ -285,7 +285,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             return;
         }
 
-        processUpdate(new AssetUpdate(asset, attribute, attributeEvent, lastStateEvent));
+        processUpdate(new AssetUpdate(asset, attribute, lastStateEvent.getValue(), lastStateEvent.getTimestamp(), attributeEvent.getSender()));
     }
 
     protected void processUpdate(AssetUpdate assetUpdate) {

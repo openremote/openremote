@@ -20,7 +20,6 @@
 package org.openremote.manager.server.rules;
 
 import elemental.json.Json;
-import org.drools.core.factmodel.Fact;
 import org.kie.api.KieServices;
 import org.kie.api.builder.KieBuilder;
 import org.kie.api.builder.KieFileSystem;
@@ -38,12 +37,10 @@ import org.kie.api.runtime.conf.ClockTypeOption;
 import org.kie.api.runtime.conf.TimedRuleExectionOption;
 import org.kie.api.runtime.rule.FactHandle;
 import org.kie.api.time.SessionClock;
+import org.openremote.container.util.Util;
 import org.openremote.manager.server.asset.AssetUpdate;
 import org.openremote.manager.shared.rules.RulesDefinition;
-import org.openremote.model.AttributeRef;
-import org.openremote.model.asset.Asset;
 
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -58,7 +55,7 @@ public class RulesDeployment<T extends RulesDefinition> {
     protected static ClockTypeOption DefaultClockType;
     private static final int AUTO_START_DELAY_SECONDS = 2;
     private static Long counter = 1L;
-    static final protected RuleUtil ruleUtil = new RuleUtil();
+    static final protected Util UTIL = new Util();
     protected final Map<Long, T> ruleDefinitions = new LinkedHashMap<>();
     protected final RuleExecutionLogger ruleExecutionLogger = new RuleExecutionLogger();
     protected KieSession knowledgeSession;
@@ -87,7 +84,7 @@ public class RulesDeployment<T extends RulesDefinition> {
 
     @SuppressWarnings("unchecked")
     public synchronized T[] getAllRulesDefinitions() {
-        T[] arr = (T[]) Array.newInstance(clazz, 0);
+        T[]arr = Util.createArray(ruleDefinitions.size(), clazz);
         return ruleDefinitions.values().toArray(arr);
     }
 
@@ -324,7 +321,7 @@ public class RulesDeployment<T extends RulesDefinition> {
         try {
             knowledgeSession = kieContainer.newKieSession(kieSessionConfiguration);
 
-            setGlobal("util", ruleUtil);
+            setGlobal("util", UTIL);
             setGlobal("JSON", Json.instance());
             setGlobal("LOG", LOG);
 
@@ -372,29 +369,24 @@ public class RulesDeployment<T extends RulesDefinition> {
     }
 
     protected synchronized void retractFact(AssetUpdate assetUpdate) {
-        AttributeRef attributeRef = assetUpdate.getNewState().getAttributeRef();
 
         // If there already is a fact in working memory for this attribute then delete it
         AssetUpdate update = facts.keySet()
                 .stream()
-                .filter(au -> au.getAttribute().getAttributeRef(au.getEntityId()).equals(attributeRef))
+                .filter(au -> au.getAssetId().equals(assetUpdate.getAssetId()) && au.getAttributeName().equals(assetUpdate.getAttributeName()))
                 .findFirst()
                 .orElse(null);
 
         FactHandle factHandle = update != null ? facts.get(update) : null;
 
-        if (factHandle != null && knowledgeSession != null) {
-            try {
-                // ... retract it from working memory ...
-                LOG.finest("Removed stale attribute fact: " + attributeRef);
-                knowledgeSession.delete(factHandle);
-            } finally {
-                // ... and make sure we don't keep a reference to the stale fact
-                facts.remove(update);
-            }
+        if (factHandle != null && knowledgeSession != null) try {
+            // ... retract it from working memory ...
+            LOG.finest("Removed stale attribute fact: " + update);
+            knowledgeSession.delete(factHandle);
+        } finally {
+            // ... and make sure we don't keep a reference to the stale fact
+            facts.remove(update);
         }
-
-        return;
     }
 
     protected FactHandle insertFactIntoSession(AssetUpdate assetUpdate) {

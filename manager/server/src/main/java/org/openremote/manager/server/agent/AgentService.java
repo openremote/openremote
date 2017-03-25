@@ -31,10 +31,9 @@ import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.AssetUpdate;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetQuery;
-import org.openremote.model.asset.AssetType;
-import org.openremote.model.asset.ThingAttribute;
+import org.openremote.model.AttributeRef;
+import org.openremote.model.Function;
+import org.openremote.model.asset.*;
 
 import java.util.Collection;
 import java.util.List;
@@ -56,6 +55,17 @@ import static org.openremote.model.asset.AssetType.THING;
 public class AgentService extends RouteBuilder implements ContainerService, Consumer<AssetUpdate> {
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
+
+    final protected Function<AttributeRef, ProtocolConfiguration> agentLinkResolver = agentLink -> {
+        // Resolve the agent and the protocol configuration
+        // TODO This is very inefficient and requires Hibernate second-level caching
+        Asset agent = find(agentLink.getEntityId());
+        if (agent != null && agent.getWellKnownType().equals(AGENT)) {
+            AgentAttributes agentAttributes = new AgentAttributes(agent);
+            return agentAttributes.getProtocolConfiguration(agentLink.getAttributeName());
+        }
+        return null;
+    };
 
     protected Container container;
     protected AssetStorageService assetStorageService;
@@ -128,7 +138,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         // Attributes grouped by protocol name
         Map<String, List<ThingAttribute>> linkedAttributes = thingAttributes.getLinkedAttributes(
             // Linked attributes have a reference to an agent, and a protocol configuration attribute of that agent
-            assetStorageService.getAgentLinkResolver()
+            getAgentLinkResolver()
         );
 
         LOG.fine("Thing has attribute links to " + linkedAttributes.size() + " protocol(s): " + thing);
@@ -184,6 +194,14 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         }
     }
 
+    protected Asset find(String id) {
+        return assetStorageService.find(id, true, false);
+    }
+
+    public Function<AttributeRef, ProtocolConfiguration> getAgentLinkResolver() {
+        return agentLinkResolver;
+    }
+
     /**
      * If this update is not for an asset of type THING or it has been initiated by
      * a protocol then we ignore it.
@@ -197,7 +215,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     @Override
     public void accept(AssetUpdate assetUpdate) {
         // Check that asset is a THING
-        if (assetUpdate.getAsset().getWellKnownType() != THING) {
+        if (!assetUpdate.getAssetType().equals(THING.getValue())) {
             LOG.fine("Ignoring asset update as asset is not a THING:" + assetUpdate);
             return;
         }
@@ -208,16 +226,13 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             return;
         }
 
-        boolean hasAgentLink = ThingAttribute.getAgentLink(assetUpdate.getAttribute()) != null;
+        AttributeRef agentLink = ThingAttribute.getAgentLink(assetUpdate.getAttribute());
 
-        if (hasAgentLink) {
+        if (agentLink != null) {
             // Check attribute is linked to an actual agent
-            ThingAttributes thingAttributes = new ThingAttributes(assetUpdate.getAsset());
-            ThingAttribute thingAttribute = thingAttributes.getLinkedAttribute(
-                assetStorageService.getAgentLinkResolver(), assetUpdate.getAttribute().getName()
-            );
+            ProtocolConfiguration protocolConfiguration = getAgentLinkResolver().apply(agentLink);
 
-            if (thingAttribute == null) {
+            if (protocolConfiguration == null) {
                 LOG.warning("Cannot process asset update as agent link is invalid:" + assetUpdate);
                 assetUpdate.setStatus(AssetUpdate.Status.ERROR);
                 return;
@@ -230,7 +245,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
         // Its' a send to actuator - push the update to the protocol
         LOG.fine("Processing asset update: " + assetUpdate);
-        messageBrokerService.getProducerTemplate().sendBody(ACTUATOR_TOPIC, assetUpdate.getNewState());
+        messageBrokerService.getProducerTemplate().sendBody(ACTUATOR_TOPIC, assetUpdate.getAttribute().getState(assetUpdate.getAssetId()));
         assetUpdate.setStatus(AssetUpdate.Status.HANDLED);
     }
 

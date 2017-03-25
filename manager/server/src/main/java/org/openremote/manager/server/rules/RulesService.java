@@ -27,6 +27,7 @@ import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.util.Pair;
+import org.openremote.container.util.Util;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.AssetUpdate;
 import org.openremote.manager.server.asset.ServerAsset;
@@ -119,7 +120,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                                         return rulesFact != null && rulesFact.getValueAsBoolean();
                                     })
                                     .forEach(attribute -> {
-                                        AssetUpdate update = new AssetUpdate(serverAsset, attribute, attribute.getStateEvent(asset.getId()), null);
+                                        AssetUpdate update = new AssetUpdate(serverAsset, attribute);
                                         // Set the status to completed already so rules cannot interfere with this initial insert
                                         update.setStatus(AssetUpdate.Status.COMPLETED);
                                         insertFact(update, true);
@@ -155,7 +156,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                                                 .stream()
                                                 .noneMatch(newLink -> oldLink.getJsonObject().jsEquals(newLink.getJsonObject())))
                                         .forEach(obsoleteLink -> {
-                                            AssetUpdate update = new AssetUpdate(serverAsset, obsoleteLink, obsoleteLink.getStateEvent(asset.getId()), null);
+                                            AssetUpdate update = new AssetUpdate(serverAsset, obsoleteLink);
                                             retractFact(update);
                                         });
 
@@ -166,7 +167,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                                                 .stream()
                                                 .noneMatch(oldFact -> newFact.getJsonObject().jsEquals(newFact.getJsonObject())))
                                         .forEach(newLinkedAttribute -> {
-                                            AssetUpdate update = new AssetUpdate(serverAsset, newLinkedAttribute, newLinkedAttribute.getStateEvent(asset.getId()), null);
+                                            AssetUpdate update = new AssetUpdate(serverAsset, newLinkedAttribute);
                                             // Set the status to completed already so rules cannot interfere with this initial insert
                                             insertFact(update, true);
                                         });
@@ -181,7 +182,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                                         return rulesFact != null && rulesFact.getValueAsBoolean();
                                     })
                                     .forEach(attribute -> {
-                                        AssetUpdate update = new AssetUpdate(serverAsset, attribute, attribute.getStateEvent(asset.getId()), null);
+                                        AssetUpdate update = new AssetUpdate(serverAsset, attribute);
                                         retractFact(update);
                                     });
                             break;
@@ -393,8 +394,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         // TODO: implement rules processing error state handling
 
         // Get the chain of rule engines that we need to pass through
-        ServerAsset asset = assetUpdate.getAsset();
-        List<RulesDeployment> rulesDeployments = getEnginesInScope(asset.getRealmId(), asset.getReversePath());
+        List<RulesDeployment> rulesDeployments = getEnginesInScope(assetUpdate.getAssetRealmId(), assetUpdate.getAssetPath());
 
         // Pass through each engine and try and insert the fact
         for (RulesDeployment deployment : rulesDeployments) {
@@ -416,8 +416,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
     protected void retractFact(AssetUpdate assetUpdate) {
         // Get the chain of rule engines that we need to pass through
-        ServerAsset asset = assetUpdate.getAsset();
-        List<RulesDeployment> rulesDeployments = getEnginesInScope(asset.getRealmId(), asset.getReversePath());
+        List<RulesDeployment> rulesDeployments = getEnginesInScope(assetUpdate.getAssetRealmId(), assetUpdate.getAssetPath());
 
         // Pass through each engine and retract this fact
         for (RulesDeployment deployment : rulesDeployments) {
@@ -426,6 +425,9 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     }
 
     protected List<RulesDeployment> getEnginesInScope(String assetRealmId, String[] assetPath) {
+        // We need to reverse the asset path to start from the top down
+        assetPath = Util.reverseArray(assetPath, String.class);
+
         List<RulesDeployment> rulesDeployments = new ArrayList<>();
 
         // Add global engine (if it exists)

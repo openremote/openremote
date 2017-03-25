@@ -482,9 +482,14 @@ public class Asset implements IdentifiableEntity {
     public String[] getReversePath() {
         if (path == null)
             return null;
-        List<String> list = Arrays.asList(getPath());
-        Collections.reverse(list);
-        return list.toArray(new String[list.size()]);
+
+        String[] newArray = new String[path.length];
+        int j = 0;
+        for (int i=path.length; i>0; i--) {
+            newArray[j] = path[i-1];
+            j++;
+        }
+        return newArray;
     }
 
     public boolean pathContains(String assetId) {

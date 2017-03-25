@@ -19,8 +19,12 @@
  */
 package org.openremote.manager.server.asset;
 
+import elemental.json.JsonValue;
 import org.openremote.model.Attribute;
-import org.openremote.model.AttributeEvent;
+import org.openremote.model.AttributeType;
+import org.openremote.model.asset.Asset;
+
+import java.util.Date;
 
 /**
  * An asset attribute value change that can be handled by a sequence of processors.
@@ -42,7 +46,7 @@ public class AssetUpdate {
         HANDLED,
 
         /**
-         * Don't process event in any more rules but continue through rest of processing chain.
+         * Don't process event in any more rule engines but continue through rest of processing chain.
          */
         RULES_HANDLED,
 
@@ -53,72 +57,145 @@ public class AssetUpdate {
 
         /**
          * Indicates that this update has been through the entire processing chain; the object can no longer be
-         * mutated at this stage
+         * mutated at this stage.
          */
         COMPLETED
     }
 
-    final protected ServerAsset asset;
     final protected Attribute attribute;
-    final protected AttributeEvent newState;
-    final protected AttributeEvent oldState;
+
+    final protected Date assetCreatedOn;
+
+    final protected String assetId;
+
+    final protected String assetName;
+
+    final protected String assetType;
+
+    final protected String[] assetPath;
+
+    final protected String assetParentId;
+
+    final protected String assetParentName;
+
+    final protected String assetParentType;
+
+    final protected String assetRealmId;
+
+    final protected String assetRealmName;
+
+    final protected double[] coordinates;
+
+    final protected JsonValue oldValue;
+
+    final protected long oldValueTimestamp;
 
     protected Status status = Status.CONTINUE;
+
     protected Throwable error;
 
-    /**
-     * @throws IllegalArgumentException If the asset, attribute, newState, and oldState don't reference the same asset ID and attribute name.
-     */
-    public AssetUpdate(ServerAsset asset, Attribute attribute, AttributeEvent newState, AttributeEvent oldState) throws IllegalArgumentException {
-        this.asset = asset;
+    final protected Class<?> sender;
+
+    public AssetUpdate(Asset asset, Attribute attribute) {
+        this(asset, attribute, null, 0, null);
+    }
+
+    public AssetUpdate(Asset asset, Attribute attribute, JsonValue oldValue, long oldValueTimestamp, Class<?> sender) {
         this.attribute = attribute;
-        this.newState = newState;
-        this.oldState = oldState;
-
-        // Resolve attribute references after some sanity checks
-        if (!newState.getAttributeRef().getEntityId().equals(asset.getId())) {
-            throw new IllegalArgumentException("New state entity ID must match: " + asset);
-        }
-        if (!newState.getAttributeRef().getAttributeName().equals(attribute.getName())) {
-            throw new IllegalArgumentException("New state attribute name must match: " + attribute);
-        }
-
-        if (oldState != null) {
-            if (!oldState.getAttributeRef().getEntityId().equals(asset.getId())) {
-                throw new IllegalArgumentException("Old state entity ID must match: " + asset);
-            }
-            if (!oldState.getAttributeRef().getAttributeName().equals(attribute.getName())) {
-                throw new IllegalArgumentException("Old state attribute name must match: " + attribute);
-            }
-
-            oldState.getAttributeRef().setEntityName(asset.getName());
-        }
-
-        newState.getAttributeRef().setEntityName(asset.getName());
+        this.assetId = asset.getId();
+        this.assetName = asset.getName();
+        this.assetPath = asset.getPath();
+        this.assetType = asset.getType();
+        this.assetCreatedOn = asset.getCreatedOn();
+        this.assetParentId = asset.getParentId();
+        this.assetParentName = asset.getParentName();
+        this.assetParentType = asset.getParentType();
+        this.assetRealmId = asset.getRealmId();
+        this.assetRealmName = asset.getTenantRealm();
+        this.coordinates = asset.getCoordinates();
+        this.oldValue = oldValue;
+        this.oldValueTimestamp = oldValueTimestamp;
+        this.sender = sender;
     }
 
-    public ServerAsset getAsset() {
-        return asset;
+    public Date getAssetCreatedOn() {
+        return assetCreatedOn;
     }
 
-    public Attribute getAttribute() {
-        return attribute;
+    public String getAssetId() {
+        return assetId;
     }
 
-    public AttributeEvent getNewState() {
-        return newState;
+    public String getAssetName() {
+        return assetName;
     }
 
-    public Class<?> getSender() {
-        return newState.getSender();
+    public String getAssetType() {
+        return assetType;
     }
 
-    public AttributeEvent getOldState() {
-        return oldState;
+    public String[] getAssetPath() {
+        return assetPath;
+    }
+
+    public String getAssetParentId() {
+        return assetParentId;
+    }
+
+    public String getAssetParentName() {
+        return assetParentName;
+    }
+
+    public String getAssetParentType() {
+        return assetParentType;
+    }
+
+    public String getAssetRealmId() {
+        return assetRealmId;
+    }
+
+    public String getAssetRealmName() {
+        return assetRealmName;
+    }
+
+    public double[] getCoordinates() {
+        return coordinates;
+    }
+
+    public JsonValue getOldValue() {
+        return oldValue;
+    }
+
+    public long getOldValueTimestamp() {
+        return oldValueTimestamp;
     }
 
     public Status getStatus() {
         return status;
+    }
+
+    public Throwable getError() {
+        return error;
+    }
+
+    public Class<?> getSender() {
+        return sender;
+    }
+
+    public JsonValue getValue() {
+        return attribute.getValue();
+    }
+
+    public String getAttributeName() {
+        return attribute.getName();
+    }
+
+    public long getValueTimestamp() {
+        return attribute.getValueTimestamp();
+    }
+
+    public AttributeType getAttributeType() {
+        return attribute.getType();
     }
 
     public boolean isCompleted() {
@@ -126,27 +203,43 @@ public class AssetUpdate {
     }
 
     public boolean isValueChanged() {
-        return !newState.getAttributeState().getValue().jsEquals(oldState.getAttributeState().getValue());
+        return !attribute.getValue().jsEquals(oldValue);
     }
 
-    public String getEntityName() {
-        return newState.getEntityName();
+    /////////////////////////////////////////////////////////////////
+    // GETTERS AND SETTERS BELOW CAN ONLY BE USED WHEN STATUS IS NOT COMPLETED
+    /////////////////////////////////////////////////////////////////
+
+    public Attribute getAttribute() {
+        if (!isCompleted()) {
+            return attribute;
+        }
+
+        return null;
     }
 
-    public String getEntityId() {
-        return newState.getEntityId();
+    public void setValue(JsonValue value) {
+        if (!isCompleted()) {
+            attribute.setValue(value);
+        }
+    }
+
+    public void setValueUnchecked(JsonValue value) {
+        if (!isCompleted()) {
+            attribute.setValueUnchecked(value);
+        }
     }
 
     public void setStatus(Status status) {
-        this.status = status;
-    }
-
-    public Throwable getError() {
-        return error;
+        if (!isCompleted()) {
+            this.status = status;
+        }
     }
 
     public void setError(Throwable error) {
-        this.error = error;
+        if (!isCompleted()) {
+            this.error = error;
+        }
     }
 
     @Override
@@ -156,21 +249,28 @@ public class AssetUpdate {
 
         AssetUpdate that = (AssetUpdate) o;
 
-        return ((oldState == null && that.oldState == null) || (oldState != null && that.oldState != null && oldState.equals(that.oldState)))
-                && ((newState == null && that.newState == null) || (newState != null && that.newState != null && newState.equals(that.newState)));
+        return assetId.equals(that.assetId) &&
+                getAttributeName().equalsIgnoreCase(that.getAttributeName()) &&
+                getValue().jsEquals(that.getValue()) &&
+                getValueTimestamp() == that.getValueTimestamp() &&
+                ((oldValue == null && that.oldValue == null) || (oldValue != null && oldValue.jsEquals(that.oldValue))) &&
+                oldValueTimestamp == that.oldValueTimestamp;
     }
 
     @Override
     public int hashCode() {
-        return oldState.hashCode() + newState.hashCode();
+        return assetId.hashCode() + getAttributeName().hashCode() + getValue().hashCode() + Long.hashCode(getValueTimestamp()) + (oldValue != null ? oldValue.hashCode() : 0) + Long.hashCode(oldValueTimestamp);
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "newState=" + newState +
-            ", oldState=" + oldState +
-            ", status=" + status +
+            "assetId=" + getAssetName() +
+            "attributeName=" + getAttributeName() +
+            "value=" + getValue() +
+            "valueTimestamp=" + getValueTimestamp() +
+            "oldValue=" + getOldValue() +
+            "oldValueTimestamp=" + getOldValueTimestamp() +
             '}';
     }
 }
