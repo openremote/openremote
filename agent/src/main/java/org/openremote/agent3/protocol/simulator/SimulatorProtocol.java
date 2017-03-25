@@ -91,7 +91,7 @@ public class SimulatorProtocol extends AbstractProtocol {
 
     @Override
     protected void sendToActuator(AttributeEvent event) {
-        putState(event.getAttributeState(), false);
+        putState(event.getAttributeState(), true);
     }
 
     /**
