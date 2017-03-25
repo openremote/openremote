@@ -44,15 +44,11 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         def rulesService = container.getService(RulesService.class)
         def identityService = container.getService(ManagerIdentityService.class)
         def rulesStorageService = container.getService(RulesStorageService.class)
-        def customerARealmId = identityService.getActiveTenantRealmId("customerA")
-        def customerBRealmId = identityService.getActiveTenantRealmId("customerB")
 
         and: "an authenticated user"
-        def authRealm = MASTER_REALM
-        def masterRealmId = getActiveTenantRealmId(container, MASTER_REALM)
         def accessToken = authenticate(
                 container,
-                authRealm,
+                MASTER_REALM,
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
@@ -75,8 +71,8 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         and: "two tenant rules engines should have been created and be running"
         conditions.eventually {
             assert rulesService.tenantDeployments.size() == 2
-            def masterEngine = rulesService.tenantDeployments.get(masterRealmId)
-            def customerAEngine = rulesService.tenantDeployments.get(customerARealmId)
+            def masterEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.masterTenant.id)
+            def customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
             assert masterEngine != null
             assert masterEngine.isRunning()
             assert customerAEngine != null
@@ -85,8 +81,8 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         and: "the tenant rules engines should have the demo tenant rules definition"
         conditions.eventually {
-            def masterEngine = rulesService.tenantDeployments.get(masterRealmId)
-            def customerAEngine = rulesService.tenantDeployments.get(customerARealmId)
+            def masterEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.masterTenant.id)
+            def customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
             assert masterEngine.allRulesDefinitions.length == 1
             assert masterEngine.allRulesDefinitions[0].enabled
             assert masterEngine.allRulesDefinitions[0].name == "Some master tenant demo rules"
@@ -154,12 +150,12 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         conditions = new PollingConditions(timeout: 10)
         inputStream = getClass().getResourceAsStream("/org/openremote/test/rules/TenantRules.drl")
         rules = IOUtils.toString(inputStream, "UTF-8")
-        rulesDefinition = new TenantRulesDefinition("Some more customerA tenant rules", customerARealmId, rules)
+        rulesDefinition = new TenantRulesDefinition("Some more customerA tenant rules", keycloakDemoSetup.customerATenant.id, rules)
         rulesStorageService.merge(rulesDefinition)
 
         then: "customer A rules engine should load this definition and restart successfully"
         conditions.eventually {
-            def customerAEngine = rulesService.tenantDeployments.get(customerARealmId)
+            def customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
             assert customerAEngine != null
             assert customerAEngine.isRunning()
             assert customerAEngine.allRulesDefinitions.length == 2
@@ -175,12 +171,12 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         conditions = new PollingConditions(timeout: 10)
         inputStream = getClass().getResourceAsStream("/org/openremote/test/rules/TenantRules.drl")
         rules = IOUtils.toString(inputStream, "UTF-8")
-        rulesDefinition = new TenantRulesDefinition("Some more customerB tenant rules", customerBRealmId, rules)
+        rulesDefinition = new TenantRulesDefinition("Some more customerB tenant rules", keycloakDemoSetup.customerBTenant.id, rules)
         rulesStorageService.merge(rulesDefinition)
 
         then: "a tenant rules engine should be created for customer B and load this definition and start successfully"
         conditions.eventually {
-            def customerBEngine = rulesService.tenantDeployments.get(customerBRealmId)
+            def customerBEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerBTenant.id)
             assert rulesService.tenantDeployments.size() == 3
             assert customerBEngine != null
             assert customerBEngine.isRunning()
@@ -194,11 +190,11 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         conditions = new PollingConditions(timeout: 10)
         rulesDefinition = rulesStorageService.findById(TenantRulesDefinition.class, managerDemoSetup.customerBRulesDefinitionId)
         rulesDefinition.setEnabled(true)
-        rulesDefinition = rulesStorageService.merge(rulesDefinition)
+        rulesStorageService.merge(rulesDefinition)
 
         then: "customer B rule engine should load this definition and restart successfully"
         conditions.eventually {
-            def customerBEngine = rulesService.tenantDeployments.get(customerBRealmId)
+            def customerBEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerBTenant.id)
             assert rulesService.tenantDeployments.size() == 3
             assert customerBEngine != null
             assert customerBEngine.isRunning()
@@ -220,7 +216,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         then: "customer B rule engine should should remove it again"
         conditions.eventually {
-            def customerBEngine = rulesService.tenantDeployments.get(customerBRealmId)
+            def customerBEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerBTenant.id)
             assert customerBEngine != null
             assert customerBEngine.isRunning()
             assert customerBEngine.allRulesDefinitions.length == 1
@@ -288,7 +284,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         when: "a tenant is disabled"
         conditions = new PollingConditions(timeout: 10)
-        def customerAEngine = rulesService.tenantDeployments.get(customerARealmId)
+        def customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
         def smartHomeEngine = rulesService.assetDeployments.get(managerDemoSetup.smartHomeId)
         def apartment3Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment3Id)
         def customerATenant = keycloakDemoSetup.customerATenant
@@ -299,7 +295,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         conditions.eventually {
             assert customerAEngine.isRunning() == false
             assert customerAEngine.allRulesDefinitions.length == 0
-            assert rulesService.tenantDeployments.get(customerARealmId) == null
+            assert rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id) == null
             assert smartHomeEngine.isRunning() == false
             assert smartHomeEngine.allRulesDefinitions.length == 0
             assert rulesService.assetDeployments.get(managerDemoSetup.smartHomeId) == null
@@ -312,8 +308,8 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         conditions.eventually {
             assert rulesService.tenantDeployments.size() == 2
             assert rulesService.assetDeployments.size() == 0
-            def masterEngine = rulesService.tenantDeployments.get(masterRealmId)
-            def customerBEngine = rulesService.tenantDeployments.get(customerBRealmId)
+            def masterEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.masterTenant.id)
+            def customerBEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerBTenant.id)
             assert masterEngine != null
             assert masterEngine.isRunning()
             assert customerBEngine != null
@@ -327,7 +323,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         then: "the tenants rule engine should start and all asset rule engines from this realm should also start"
         conditions.eventually {
-            customerAEngine = rulesService.tenantDeployments.get(customerARealmId)
+            customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
             smartHomeEngine = rulesService.assetDeployments.get(managerDemoSetup.smartHomeId)
             apartment3Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment3Id)
             assert rulesService.tenantDeployments.size() == 3
@@ -359,7 +355,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 //        conditions.eventually {
 //            assert customerAEngine.isRunning() == false
 //            assert customerAEngine.allRulesDefinitions.length == 0
-//            assert rulesService.tenantDeployments.get(customerARealmId) == null
+//            assert rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id) == null
 //            assert smartHomeEngine.isRunning() == false
 //            assert smartHomeEngine.allRulesDefinitions.length == 0
 //            assert rulesService.assetDeployments.get(managerDemoSetup.smartHomeId) == null
@@ -373,7 +369,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 //            assert rulesService.tenantDeployments.size() == 2
 //            assert rulesService.assetDeployments.size() == 0
 //            def masterEngine = rulesService.tenantDeployments.get(Constants.MASTER_REALM)
-//            def customerBEngine = rulesService.tenantDeployments.get(customerBRealmId)
+//            def customerBEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerBTenant.id)
 //            assert masterEngine != null
 //            assert masterEngine.isRunning()
 //            assert customerBEngine != null
@@ -394,12 +390,11 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def identityService = container.getService(ManagerIdentityService.class)
         def rulesStorageService = container.getService(RulesStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
-        def masterRealmId = getActiveTenantRealmId(container, MASTER_REALM)
-        def customerARealmId = identityService.getActiveTenantRealmId("customerA")
         RulesDeployment globalEngine, masterEngine, customerAEngine, smartHomeEngine, apartment1Engine, apartment3Engine
         List<String> globalEngineFiredRules = []
         List<String> masterEngineFiredRules = []
@@ -413,10 +408,10 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
             globalEngine = rulesService.globalDeployment
             assert globalEngine != null
             assert globalEngine.isRunning()
-            masterEngine = rulesService.tenantDeployments.get(masterRealmId)
+            masterEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.masterTenant.id)
             assert masterEngine != null
             assert masterEngine.isRunning()
-            customerAEngine = rulesService.tenantDeployments.get(customerARealmId)
+            customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
             assert customerAEngine != null
             assert customerAEngine.isRunning()
             smartHomeEngine = rulesService.assetDeployments.get(managerDemoSetup.smartHomeId)

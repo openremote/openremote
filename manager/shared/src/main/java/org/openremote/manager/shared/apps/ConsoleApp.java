@@ -19,29 +19,31 @@
  */
 package org.openremote.manager.shared.apps;
 
+import org.openremote.manager.shared.security.Tenant;
+
 /**
  * An installed console app.
  */
 public class ConsoleApp {
 
-    protected String name;
+    protected Tenant tenant;
     protected String url;
 
     public ConsoleApp() {
 
     }
 
-    public ConsoleApp(String name, String url) {
-        this.name = name;
+    public ConsoleApp(Tenant tenant, String url) {
+        this.tenant = tenant;
         this.url = url;
     }
 
-    public String getName() {
-        return name;
+    public Tenant getTenant() {
+        return tenant;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setTenant(Tenant tenant) {
+        this.tenant = tenant;
     }
 
     public String getUrl() {
@@ -55,7 +57,7 @@ public class ConsoleApp {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "name='" + name + '\'' +
+            "tenant='" + tenant + '\'' +
             ", url='" + url + '\'' +
             '}';
     }

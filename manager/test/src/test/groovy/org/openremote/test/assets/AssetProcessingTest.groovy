@@ -22,6 +22,7 @@ import org.openremote.test.ManagerContainerTrait
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.asset.AssetProcessingService
+import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.AssetType
 import spock.lang.Specification
@@ -97,6 +98,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         assetProcessingService.processors.add(0, mockStartConsumer)
         assetProcessingService.processors.add(mockEndConsumer)
 
@@ -109,7 +111,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         ProtocolConfiguration mockProtocolConfig = new ProtocolConfiguration("mock123", mockProtocolName);
         agentAttributes.put(mockProtocolConfig);
         mockAgent.setAttributes(agentAttributes.getJsonObject());
-        mockAgent.setRealmId(managerDemoSetup.masterRealmId)
+        mockAgent.setRealmId(keycloakDemoSetup.masterTenant.id)
         mockAgent = assetStorageService.merge(mockAgent);
 
         and: "a mock thing asset is created with a valid protocol attribute, a invalid protocol attribute and a plain attribute"

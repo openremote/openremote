@@ -47,7 +47,7 @@ public interface TenantResource {
     Tenant[] getAll(@BeanParam RequestParams requestParams);
 
     /**
-     * Regular users can call this, but only to obtain details about their currently authenticated realm.
+     * Regular users can call this, but only to obtain details about their currently authenticated and active realm.
      */
     @GET
     @Path("{realm}")
@@ -56,7 +56,7 @@ public interface TenantResource {
     Tenant get(@BeanParam RequestParams requestParams, @PathParam("realm") String realm);
 
     /**
-     * Regular users can call this, but only to obtain details about their currently authenticated realm.
+     * Regular users can call this, but only to obtain details about their currently authenticated and active realm.
      */
     @GET
     @Path("for/{realmId}")

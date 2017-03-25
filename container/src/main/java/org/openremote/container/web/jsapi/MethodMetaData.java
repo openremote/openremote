@@ -51,7 +51,7 @@ public class MethodMetaData {
     private Collection<String> httpMethods;
     private ServiceRegistry registry;
     private String functionPrefix;
-    private boolean wantsForm;
+    private boolean mustConsumeFormEncodedMIMEType;
 
     public MethodMetaData(ServiceRegistry serviceRegistry, ResourceMethodInvoker invoker) throws Exception {
         this.registry = serviceRegistry;
@@ -83,7 +83,7 @@ public class MethodMetaData {
         httpMethods = invoker.getHttpMethods();
 
         // we need to add all parameters from parent resource locators until the root
-        List<Method> methodsUntilRoot = new ArrayList<Method>();
+        List<Method> methodsUntilRoot = new ArrayList<>();
         methodsUntilRoot.add(method);
         serviceRegistry.collectResourceMethodsUntilRoot(methodsUntilRoot);
         for (Method method : methodsUntilRoot) {
@@ -94,10 +94,10 @@ public class MethodMetaData {
                 processMetaData(parameters[i].getName(), parameterTypes[i], allAnnotations[i], true);
             }
         }
-        // this must be after we scan the params in case of @Form
+        // this must be after we scan the params in case of @FormParam
         this.consumesMIMEType = getConsumes(consumes);
-        if (wantsForm && !"application/x-www-form-urlencoded".equals(consumesMIMEType)) {
-            LOG.warning("Overriding media type with application/x-www-form-urlencoded: " + consumesMIMEType);
+        if (mustConsumeFormEncodedMIMEType && !"application/x-www-form-urlencoded".equals(consumesMIMEType)) {
+            LOG.warning("Overriding media type '" + consumesMIMEType + "' with application/x-www-form-urlencoded on: " + method);
             this.consumesMIMEType = "application/x-www-form-urlencoded";
         }
     }
@@ -144,17 +144,15 @@ public class MethodMetaData {
                 matrix.value());
         } else if ((formParam = FindAnnotation.findAnnotation(annotations, FormParam.class)) != null) {
             addParameter(type, annotations, MethodParamMetaData.MethodParamType.FORM_PARAMETER, formParam.value());
-            this.wantsForm = true;
+            this.mustConsumeFormEncodedMIMEType = true;
         } else if ((form = FindAnnotation.findAnnotation(annotations, Form.class)) != null) {
             if (type == Map.class || type == List.class) {
                 addParameter(type, annotations, MethodParamMetaData.MethodParamType.FORM, form.prefix());
-                this.wantsForm = true;
             } else
                 walkForm(type);
         } else if ((beanParam = FindAnnotation.findAnnotation(annotations, BeanParam.class)) != null) {
             if (type == Map.class || type == List.class) {
                 addParameter(type, annotations, MethodParamMetaData.MethodParamType.FORM, "");
-                this.wantsForm = true;
             } else
                 walkForm(type);
         } else if ((FindAnnotation.findAnnotation(annotations, Context.class)) != null) {

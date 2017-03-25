@@ -25,12 +25,13 @@ import org.openremote.container.web.WebService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebService;
 import org.openremote.manager.shared.apps.ConsoleApp;
+import org.openremote.manager.shared.security.Tenant;
 
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.openremote.model.Constants.MASTER_REALM_DISPLAY_NAME;
+import static org.openremote.model.Constants.MASTER_REALM;
 
 public class ConsoleAppService implements ContainerService {
 
@@ -60,24 +61,23 @@ public class ConsoleAppService implements ContainerService {
         List<ConsoleApp> result = new ArrayList<>();
         Files.list(managerWebService.getConsoleDocRoot()).forEach(path -> {
             String directoryName = path.getFileName().toString();
-            String tenantRealm = identityService.getActiveTenantRealmId(directoryName);
-            String tenantDisplayName = identityService.getActiveTenantDisplayName(tenantRealm);
-            if (tenantDisplayName != null) {
+            Tenant tenant = identityService.getTenantForRealm(directoryName);
+            if (tenant.isActive() && tenant.getDisplayName() != null) {
                 String appUrl = managerWebService.getConsoleUrl(
                     identityService.getExternalServerUri(),
                     directoryName
                 );
-                ConsoleApp consoleApp = new ConsoleApp(tenantDisplayName, appUrl);
+                ConsoleApp consoleApp = new ConsoleApp(tenant, appUrl);
                 result.add(consoleApp);
             }
         });
 
         result.sort((o1, o2) -> {
-            if (o1.getName().equals(MASTER_REALM_DISPLAY_NAME))
+            if (o1.getTenant().getRealm().equals(MASTER_REALM))
                 return -1;
-            if (o2.getName().equals(MASTER_REALM_DISPLAY_NAME))
+            if (o2.getTenant().getRealm().equals(MASTER_REALM))
                 return 1;
-            return o1.getName().compareTo(o2.getName());
+            return o1.getTenant().getDisplayName().compareTo(o2.getTenant().getDisplayName());
         });
 
         return result.toArray(new ConsoleApp[result.size()]);

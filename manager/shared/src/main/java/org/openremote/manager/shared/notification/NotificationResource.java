@@ -25,6 +25,7 @@ import org.openremote.manager.shared.http.SuccessStatusCode;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
 
 import java.util.List;
 
@@ -37,6 +38,7 @@ public interface NotificationResource {
     @PUT
     @Path("token")
     @SuccessStatusCode(204)
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @RolesAllowed({"write:user"})
     void storeDeviceToken(@BeanParam RequestParams requestParams,
                           @FormParam("device_id") String deviceId,

@@ -1,6 +1,7 @@
 package org.openremote.test.rules
 
 import org.openremote.manager.server.setup.SetupService
+import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.shared.rules.AssetRulesDefinition
 import org.openremote.manager.shared.rules.GlobalRulesDefinition
@@ -23,14 +24,12 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
         and: "an authenticated admin user"
-        def authRealm = MASTER_REALM
-        def masterRealmId = getActiveTenantRealmId(container, MASTER_REALM)
-        def customerARealmId = getActiveTenantRealmId(container, "customerA")
         def accessToken = authenticate(
                 container,
-                authRealm,
+                MASTER_REALM,
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
@@ -39,7 +38,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         and: "the rules resource"
         def client = createClient(container).build()
         def serverUri = serverUri(serverPort)
-        def rulesResource = getClientTarget(client, serverUri, authRealm, accessToken).proxy(RulesResource.class)
+        def rulesResource = getClientTarget(client, serverUri, MASTER_REALM, accessToken).proxy(RulesResource.class)
 
         /* ############################################## READ ####################################### */
 
@@ -52,14 +51,14 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ruleDefinitions[0].rules == null // Don't retrieve the (large) rules data when getting a list of rule definitions
 
         when: "some tenant rules are retrieved"
-        ruleDefinitions = rulesResource.getTenantDefinitions(null, masterRealmId)
+        ruleDefinitions = rulesResource.getTenantDefinitions(null, keycloakDemoSetup.masterTenant.id)
 
         then: "result should match"
         ruleDefinitions.length == 1
         ruleDefinitions[0].name == "Some master tenant demo rules"
 
         when: "some tenant rules in a non-authenticated realm are retrieved"
-        ruleDefinitions = rulesResource.getTenantDefinitions(null, customerARealmId)
+        ruleDefinitions = rulesResource.getTenantDefinitions(null, keycloakDemoSetup.customerATenant.id)
 
         then: "result should match"
         ruleDefinitions.length == 1
@@ -120,9 +119,9 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 404
 
         when: "a tenant rules definition is created in the authenticated realm"
-        def tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", masterRealmId, "ThisShouldBeDRL")
+        def tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", keycloakDemoSetup.masterTenant.id, "ThisShouldBeDRL")
         rulesResource.createTenantDefinition(null, tenantRulesDefinition)
-        rulesDefinitionId = rulesResource.getTenantDefinitions(null, masterRealmId)[1].id
+        rulesDefinitionId = rulesResource.getTenantDefinitions(null, keycloakDemoSetup.masterTenant.id)[1].id
         tenantRulesDefinition = rulesResource.getTenantDefinition(null, rulesDefinitionId)
         lastModified = tenantRulesDefinition.lastModified
 
@@ -133,7 +132,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         lastModified.time < System.currentTimeMillis()
         tenantRulesDefinition.name == "Test tenant definition"
         tenantRulesDefinition.rules == "ThisShouldBeDRL"
-        tenantRulesDefinition.realmId == masterRealmId
+        tenantRulesDefinition.realmId == keycloakDemoSetup.masterTenant.id
 
         when: "a tenant rules definition is updated"
         tenantRulesDefinition.name = "Renamed test tenant definition"
@@ -148,7 +147,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         lastModified.time < System.currentTimeMillis()
         tenantRulesDefinition.name == "Renamed test tenant definition"
         tenantRulesDefinition.rules == "ThisShouldBeDRLAsWell"
-        tenantRulesDefinition.realmId == masterRealmId
+        tenantRulesDefinition.realmId == keycloakDemoSetup.masterTenant.id
 
         when: "a tenant rules definition is updated with an invalid realm"
         tenantRulesDefinition.realmId = "thisdoesnotexist"
@@ -159,7 +158,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 400
 
         when: "a tenant rules definition is updated with an invalid id"
-        tenantRulesDefinition.realmId = masterRealmId
+        tenantRulesDefinition.realmId = keycloakDemoSetup.masterTenant.id
         tenantRulesDefinition.id = 1234567890l
         rulesResource.updateTenantDefinition(null, rulesDefinitionId, tenantRulesDefinition)
 
@@ -176,16 +175,16 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "a tenant rules definition is deleted"
         rulesResource.deleteTenantDefinition(null, rulesDefinitionId)
-        tenantRulesDefinition = rulesResource.getTenantDefinition(null, rulesDefinitionId)
+        rulesResource.getTenantDefinition(null, rulesDefinitionId)
 
         then: "the result should be not found"
         ex = thrown()
         ex.response.status == 404
 
         when: "a tenant rules definition is created in a non-authenticated realm"
-        tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", customerARealmId, "ThisShouldBeDRL")
+        tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", keycloakDemoSetup.customerATenant.id, "ThisShouldBeDRL")
         rulesResource.createTenantDefinition(null, tenantRulesDefinition)
-        rulesDefinitionId = rulesResource.getTenantDefinitions(null, customerARealmId)[1].id
+        rulesDefinitionId = rulesResource.getTenantDefinitions(null, keycloakDemoSetup.customerATenant.id)[1].id
         tenantRulesDefinition = rulesResource.getTenantDefinition(null, rulesDefinitionId)
         lastModified = tenantRulesDefinition.lastModified
 
@@ -196,7 +195,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         lastModified.time < System.currentTimeMillis()
         tenantRulesDefinition.name == "Test tenant definition"
         tenantRulesDefinition.rules == "ThisShouldBeDRL"
-        tenantRulesDefinition.realmId == customerARealmId
+        tenantRulesDefinition.realmId == keycloakDemoSetup.customerATenant.id
 
         when: "an asset rules definition is created in the authenticated realm"
         def assetRulesDefinition = new AssetRulesDefinition("Test asset definition", managerDemoSetup.smartOfficeId, "ThisShouldBeDRL")
@@ -255,7 +254,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "an asset rules definition is deleted"
         rulesResource.deleteAssetDefinition(null, rulesDefinitionId)
-        assetRulesDefinition = rulesResource.getAssetDefinition(null, rulesDefinitionId)
+        rulesResource.getAssetDefinition(null, rulesDefinitionId)
 
         then: "the result should be not found"
         ex = thrown()
@@ -287,14 +286,12 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
         and: "an authenticated test user"
-        def authRealm = MASTER_REALM
-        def masterRealmId = getActiveTenantRealmId(container, MASTER_REALM)
-        def customerARealmId = getActiveTenantRealmId(container, "customerA")
         def accessToken = authenticate(
                 container,
-                authRealm,
+                MASTER_REALM,
                 KEYCLOAK_CLIENT_ID,
                 "testuser1",
                 "testuser1"
@@ -303,33 +300,33 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         and: "the asset resource"
         def client = createClient(container).build()
         def serverUri = serverUri(serverPort)
-        def rulesResource = getClientTarget(client, serverUri, authRealm, accessToken).proxy(RulesResource.class)
+        def rulesResource = getClientTarget(client, serverUri, MASTER_REALM, accessToken).proxy(RulesResource.class)
 
         /* ############################################## READ ####################################### */
 
         when: "the global rules are retrieved"
-        def ruleDefinitions = rulesResource.getGlobalDefinitions(null)
+        rulesResource.getGlobalDefinitions(null)
 
         then: "access should be forbidden"
         WebApplicationException ex = thrown()
         ex.response.status == 403
 
         when: "some tenant rules are retrieved"
-        ruleDefinitions = rulesResource.getTenantDefinitions(null, masterRealmId)
+        def ruleDefinitions = rulesResource.getTenantDefinitions(null, keycloakDemoSetup.masterTenant.id)
 
         then: "result should match"
         ruleDefinitions.length == 1
         ruleDefinitions[0].name == "Some master tenant demo rules"
 
         when: "some tenant rules in a non-authenticated realm are retrieved"
-        ruleDefinitions = rulesResource.getTenantDefinitions(null, customerARealmId)
+        rulesResource.getTenantDefinitions(null, keycloakDemoSetup.customerATenant.id)
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "some asset rules in a non-authenticated realm are retrieved"
-        ruleDefinitions = rulesResource.getAssetDefinitions(null, managerDemoSetup.apartment1Id)
+        rulesResource.getAssetDefinitions(null, managerDemoSetup.apartment1Id)
 
         then: "access should be forbidden"
         ex = thrown()
@@ -360,9 +357,9 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "a tenant rules definition is created in the authenticated realm"
-        def tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", masterRealmId, "ThisShouldBeDRL")
+        def tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", keycloakDemoSetup.masterTenant.id, "ThisShouldBeDRL")
         rulesResource.createTenantDefinition(null, tenantRulesDefinition)
-        def rulesDefinitionId = rulesResource.getTenantDefinitions(null, masterRealmId)[1].id
+        def rulesDefinitionId = rulesResource.getTenantDefinitions(null, keycloakDemoSetup.masterTenant.id)[1].id
         tenantRulesDefinition = rulesResource.getTenantDefinition(null, rulesDefinitionId)
         def lastModified = tenantRulesDefinition.lastModified
 
@@ -373,7 +370,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         lastModified.time < System.currentTimeMillis()
         tenantRulesDefinition.name == "Test tenant definition"
         tenantRulesDefinition.rules == "ThisShouldBeDRL"
-        tenantRulesDefinition.realmId == masterRealmId
+        tenantRulesDefinition.realmId == keycloakDemoSetup.masterTenant.id
 
         when: "a tenant rules definition is updated"
         tenantRulesDefinition.name = "Renamed test tenant definition"
@@ -388,7 +385,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         lastModified.time < System.currentTimeMillis()
         tenantRulesDefinition.name == "Renamed test tenant definition"
         tenantRulesDefinition.rules == "ThisShouldBeDRLAsWell"
-        tenantRulesDefinition.realmId == masterRealmId
+        tenantRulesDefinition.realmId == keycloakDemoSetup.masterTenant.id
 
         when: "a tenant rules definition is updated with an invalid realm"
         tenantRulesDefinition.realmId = "thisdoesnotexist"
@@ -399,7 +396,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 400
 
         when: "a tenant rules definition is updated with an invalid id"
-        tenantRulesDefinition.realmId = masterRealmId
+        tenantRulesDefinition.realmId = keycloakDemoSetup.masterTenant.id
         tenantRulesDefinition.id = 1234567890l
         rulesResource.updateTenantDefinition(null, rulesDefinitionId, tenantRulesDefinition)
 
@@ -416,14 +413,14 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "a tenant rules definition is deleted"
         rulesResource.deleteTenantDefinition(null, rulesDefinitionId)
-        tenantRulesDefinition = rulesResource.getTenantDefinition(null, rulesDefinitionId)
+        rulesResource.getTenantDefinition(null, rulesDefinitionId)
 
         then: "the result should be not found"
         ex = thrown()
         ex.response.status == 404
 
         when: "a tenant rules definition is created in a non-authenticated realm"
-        tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", customerARealmId, "ThisShouldBeDRL")
+        tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", keycloakDemoSetup.customerATenant.id, "ThisShouldBeDRL")
         rulesResource.createTenantDefinition(null, tenantRulesDefinition)
 
         then: "access should be forbidden"
@@ -487,7 +484,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "an asset rules definition is deleted"
         rulesResource.deleteAssetDefinition(null, rulesDefinitionId)
-        assetRulesDefinition = rulesResource.getAssetDefinition(null, rulesDefinitionId)
+        rulesResource.getAssetDefinition(null, rulesDefinitionId)
 
         then: "the result should be not found"
         ex = thrown()
@@ -511,15 +508,12 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
         and: "an authenticated test user"
-        def authRealm = "customerA"
-        def masterRealmId = getActiveTenantRealmId(container, MASTER_REALM)
-        def customerARealmId = getActiveTenantRealmId(container, "customerA")
-        def customerBRealmId = getActiveTenantRealmId(container, "customerB")
         def accessToken = authenticate(
                 container,
-                authRealm,
+                keycloakDemoSetup.customerATenant.realm,
                 KEYCLOAK_CLIENT_ID,
                 "testuser2",
                 "testuser2"
@@ -528,33 +522,33 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         and: "the asset resource"
         def client = createClient(container).build()
         def serverUri = serverUri(serverPort)
-        def rulesResource = getClientTarget(client, serverUri, authRealm, accessToken).proxy(RulesResource.class)
+        def rulesResource = getClientTarget(client, serverUri, keycloakDemoSetup.customerATenant.realm, accessToken).proxy(RulesResource.class)
 
         /* ############################################## READ ####################################### */
 
         when: "the global rules are retrieved"
-        def ruleDefinitions = rulesResource.getGlobalDefinitions(null)
+        rulesResource.getGlobalDefinitions(null)
 
         then: "access should be forbidden"
         WebApplicationException ex = thrown()
         ex.response.status == 403
 
         when: "some tenant rules in a non-authenticated realm are retrieved"
-        ruleDefinitions = rulesResource.getTenantDefinitions(null, masterRealmId)
+        rulesResource.getTenantDefinitions(null, keycloakDemoSetup.masterTenant.id)
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "some tenant rules in the authenticated realm are retrieved"
-        ruleDefinitions = rulesResource.getTenantDefinitions(null, customerARealmId)
+        rulesResource.getTenantDefinitions(null, keycloakDemoSetup.customerATenant.id)
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "some asset rules in the authenticated realm are retrieved"
-        ruleDefinitions = rulesResource.getAssetDefinitions(null, managerDemoSetup.apartment1Id)
+        rulesResource.getAssetDefinitions(null, managerDemoSetup.apartment1Id)
 
         then: "access should be forbidden"
         ex = thrown()
@@ -585,7 +579,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "a tenant rules definition is created in the authenticated realm"
-        def tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", customerARealmId, "ThisShouldBeDRL")
+        def tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", keycloakDemoSetup.customerATenant.id, "ThisShouldBeDRL")
         rulesResource.createTenantDefinition(null, tenantRulesDefinition)
 
         then: "access should be forbidden"
@@ -607,7 +601,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "a tenant rules definition is created in a non-authenticated realm"
-        tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", customerBRealmId, "ThisShouldBeDRL")
+        tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", keycloakDemoSetup.customerBTenant.id, "ThisShouldBeDRL")
         rulesResource.createTenantDefinition(null, tenantRulesDefinition)
 
         then: "access should be forbidden"
@@ -615,7 +609,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "a tenant rules definition is created in the authenticated realm"
-        def assetRulesDefinition = new AssetRulesDefinition("Test asset definition", customerARealmId, "ThisShouldBeDRL")
+        def assetRulesDefinition = new AssetRulesDefinition("Test asset definition", keycloakDemoSetup.customerATenant.id, "ThisShouldBeDRL")
         rulesResource.createAssetDefinition(null, assetRulesDefinition)
 
         then: "access should be forbidden"
@@ -637,7 +631,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "a tenant rules definition is created in a non-authenticated realm"
-        assetRulesDefinition = new AssetRulesDefinition("Test asset definition", customerBRealmId, "ThisShouldBeDRL")
+        assetRulesDefinition = new AssetRulesDefinition("Test asset definition", keycloakDemoSetup.customerBTenant.id, "ThisShouldBeDRL")
         rulesResource.createAssetDefinition(null, assetRulesDefinition)
 
         then: "access should be forbidden"
@@ -654,15 +648,12 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
         and: "an authenticated test user"
-        def authRealm = "customerA"
-        def masterRealmId = getActiveTenantRealmId(container, MASTER_REALM)
-        def customerARealmId = getActiveTenantRealmId(container, "customerA")
-        def customerBRealmId = getActiveTenantRealmId(container, "customerB")
         def accessToken = authenticate(
                 container,
-                authRealm,
+                keycloakDemoSetup.customerATenant.realm,
                 KEYCLOAK_CLIENT_ID,
                 "testuser3",
                 "testuser3"
@@ -671,33 +662,33 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         and: "the asset resource"
         def client = createClient(container).build()
         def serverUri = serverUri(serverPort)
-        def rulesResource = getClientTarget(client, serverUri, authRealm, accessToken).proxy(RulesResource.class)
+        def rulesResource = getClientTarget(client, serverUri, keycloakDemoSetup.customerATenant.realm, accessToken).proxy(RulesResource.class)
 
         /* ############################################## READ ####################################### */
 
         when: "the global rules are retrieved"
-        def ruleDefinitions = rulesResource.getGlobalDefinitions(null)
+        rulesResource.getGlobalDefinitions(null)
 
         then: "access should be forbidden"
         WebApplicationException ex = thrown()
         ex.response.status == 403
 
         when: "some tenant rules in a non-authenticated realm are retrieved"
-        ruleDefinitions = rulesResource.getTenantDefinitions(null, masterRealmId)
+        rulesResource.getTenantDefinitions(null, keycloakDemoSetup.masterTenant.id)
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "some tenant rules in the authenticated realm are retrieved"
-        ruleDefinitions = rulesResource.getTenantDefinitions(null, customerARealmId)
+        rulesResource.getTenantDefinitions(null, keycloakDemoSetup.customerATenant.id)
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "some asset rules of a protected assigned asset are retrieved"
-        ruleDefinitions = rulesResource.getAssetDefinitions(null, managerDemoSetup.apartment1Id)
+        def ruleDefinitions = rulesResource.getAssetDefinitions(null, managerDemoSetup.apartment1Id)
 
         then: "result should match"
         ruleDefinitions.length == 1
@@ -711,7 +702,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ruleDefinitions[0].name == "Some apartment 2 demo rules"
 
         when: "some asset rules of a protected but not assigned asset are retrieved"
-        ruleDefinitions = rulesResource.getAssetDefinitions(null, managerDemoSetup.apartment3Id)
+        rulesResource.getAssetDefinitions(null, managerDemoSetup.apartment3Id)
 
         then: "access should be forbidden"
         ex = thrown()
@@ -742,7 +733,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "a tenant rules definition is created in the authenticated realm"
-        def tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", customerARealmId, "ThisShouldBeDRL")
+        def tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", keycloakDemoSetup.customerATenant.id, "ThisShouldBeDRL")
         rulesResource.createTenantDefinition(null, tenantRulesDefinition)
 
         then: "access should be forbidden"
@@ -758,14 +749,14 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "a tenant rules definition is deleted"
         rulesResource.deleteTenantDefinition(null, 1234567890l)
-        tenantRulesDefinition = rulesResource.getTenantDefinition(null, 1234567890l)
+        rulesResource.getTenantDefinition(null, 1234567890l)
 
         then: "the result should be not found"
         ex = thrown()
         ex.response.status == 404
 
         when: "a tenant rules definition is created in a non-authenticated realm"
-        tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", customerBRealmId, "ThisShouldBeDRL")
+        tenantRulesDefinition = new TenantRulesDefinition("Test tenant definition", keycloakDemoSetup.customerBTenant.id, "ThisShouldBeDRL")
         rulesResource.createTenantDefinition(null, tenantRulesDefinition)
 
         then: "access should be forbidden"
@@ -837,7 +828,7 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "an asset rules definition is deleted"
         rulesResource.deleteAssetDefinition(null, rulesDefinitionId)
-        assetRulesDefinition = rulesResource.getAssetDefinition(null, rulesDefinitionId)
+        rulesResource.getAssetDefinition(null, rulesDefinitionId)
 
         then: "the result should be not found"
         ex = thrown()

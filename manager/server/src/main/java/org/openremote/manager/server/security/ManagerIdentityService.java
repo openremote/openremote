@@ -40,7 +40,6 @@ import org.openremote.model.Constants;
 
 import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -125,65 +124,32 @@ public class ManagerIdentityService extends IdentityService {
         return tenants.toArray(new Tenant[tenants.size()]);
     }
 
-    public Tenant getTenant(String realm) {
-        return persistenceService.doReturningTransaction(entityManager -> {
-            @SuppressWarnings("unchecked")
-            List<Object[]> result = entityManager.createNativeQuery(
-                "select R.ID, R.NAME, RA.VALUE, R.ENABLED from REALM R join REALM_ATTRIBUTE RA " +
-                    "on R.ID = RA.REALM_ID and RA.NAME = 'displayName' " +
-                    "and R.NAME = :realm"
-            ).setParameter("realm", realm).getResultList();
-            return result.size() > 0
-                ? new Tenant((String) result.get(0)[0], (String) result.get(0)[1], (String) result.get(0)[2], (Boolean) result.get(0)[3])
-                : null;
-        });
-    }
-
-    public boolean isActiveTenantRealmId(String realmId) {
-        return Arrays.asList(getActiveTenantRealmIds()).contains(realmId);
-    }
-
-    public String getActiveTenantDisplayName(String realmId) {
-        return persistenceService.doReturningTransaction(entityManager -> {
-            @SuppressWarnings("unchecked")
-            List<String> result = entityManager.createNativeQuery(
-                "select RA.VALUE from REALM R join REALM_ATTRIBUTE RA " +
-                    "on R.ID = RA.REALM_ID and RA.NAME = 'displayName' " +
-                    "and (R.ENABLED = true and (R.NOT_BEFORE is null or R.NOT_BEFORE = 0 or R.NOT_BEFORE <= extract(epoch from now()))) " +
-                    "and R.ID = :realmId"
-            ).setParameter("realmId", realmId).getResultList();
+    public Tenant getTenantForRealm(String realm) {
+        return persistenceService.doReturningTransaction(em -> {
+            List<Tenant> result =
+                em.createQuery("select t from Tenant t where t.realm = :realm", Tenant.class)
+                    .setParameter("realm", realm).getResultList();
             return result.size() > 0 ? result.get(0) : null;
         });
     }
 
-    public String getActiveTenantRealmId(String realm) {
-        return persistenceService.doReturningTransaction(entityManager -> {
-            @SuppressWarnings("unchecked")
-            List<String> result = entityManager.createNativeQuery(
-                "select R.ID from REALM R where R.NAME  = :realm " +
-                    "and (R.ENABLED = true and (R.NOT_BEFORE is null or R.NOT_BEFORE = 0 or R.NOT_BEFORE <= extract(epoch from now()))) "
-            ).setParameter("realm", realm).getResultList();
-            return result.size() > 0 ? result.get(0) : null;
+    public Tenant getTenant(String realmId) {
+        return persistenceService.doReturningTransaction(em -> em.find(Tenant.class, realmId));
+    }
+
+    public boolean isActiveTenant(String realmId) {
+        return persistenceService.doReturningTransaction(em -> {
+            Tenant tenant = em.find(Tenant.class, realmId);
+            return tenant != null && tenant.isActive();
         });
     }
 
-    public String getActiveTenantRealm(String realmId) {
+    public String[] getActiveTenantIds() {
         return persistenceService.doReturningTransaction(entityManager -> {
             @SuppressWarnings("unchecked")
-            List<String> result = entityManager.createNativeQuery(
-                "select R.NAME from REALM R where R.ID = :realmId " +
-                    "and (R.ENABLED = true and (R.NOT_BEFORE is null or R.NOT_BEFORE = 0 or R.NOT_BEFORE <= extract(epoch from now())))"
-            ).setParameter("realmId", realmId).getResultList();
-            return result.size() > 0 ? result.get(0) : null;
-        });
-    }
-
-    public String[] getActiveTenantRealmIds() {
-        return persistenceService.doReturningTransaction(entityManager -> {
-            @SuppressWarnings("unchecked")
-            List<String> results = entityManager.createNativeQuery(
-                "select R.ID from REALM R where " +
-                    "(R.ENABLED = true and (R.NOT_BEFORE is null or R.NOT_BEFORE = 0 or R.NOT_BEFORE <= extract(epoch from now()))) "
+            List<String> results = entityManager.createQuery(
+                "select t.id from Tenant t where " +
+                    "(t.enabled = true and (t.notBefore is null or t.notBefore = 0 or to_timestamp(t.notBefore) <= now())) "
             ).getResultList();
             return results.toArray(new String[results.size()]);
         });
@@ -223,7 +189,7 @@ public class ManagerIdentityService extends IdentityService {
     }
 
     public void deleteTenant(String bearerAuth, String realm) throws Exception {
-        Tenant tenant = getTenant(realm);
+        Tenant tenant = getTenantForRealm(realm);
         LOG.fine("Delete tenant: " + realm);
         getRealms(bearerAuth).realm(realm).remove();
         sendTenantModifiedMessage(PersistenceEvent.Cause.DELETE, tenant);

@@ -19,16 +19,37 @@
  */
 package org.openremote.manager.shared.security;
 
+import org.hibernate.annotations.Formula;
+import org.hibernate.annotations.Subselect;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
+/**
+ * This can be used (among other things) to query the Keycloak REALM table in JPA queries.
+ */
+@Entity
+@Subselect("select * from REALM") // Map this immutable to an SQL view, don't use/create table
 public class Tenant {
 
+    @Id
     protected String id;
+
+    @Column(name = "NAME")
     protected String realm;
+
+    @Formula("(select ra.VALUE from REALM_ATTRIBUTE ra where ra.REALM_ID = ID and ra.name = 'displayName')")
     protected String displayName;
+
+    @Column(name = "ENABLED")
     protected Boolean enabled;
+
+    @Column(name = "NOT_BEFORE")
+    protected Integer notBefore; // This will explode in 2038
 
     public Tenant() {
     }
@@ -77,6 +98,19 @@ public class Tenant {
         this.enabled = enabled;
     }
 
+    public Integer getNotBefore() {
+        return notBefore;
+    }
+
+    public void setNotBefore(Integer notBefore) {
+        this.notBefore = notBefore;
+    }
+
+    public boolean isActive() {
+        return enabled != null && enabled
+            && (notBefore == null || notBefore == 0 || notBefore <= (System.currentTimeMillis()/1000));
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
@@ -84,6 +118,7 @@ public class Tenant {
             ", realm='" + realm + '\'' +
             ", displayName='" + displayName + '\'' +
             ", enabled=" + enabled +
+            ", notBefore=" + notBefore +
             '}';
     }
 }

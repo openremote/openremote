@@ -4,6 +4,7 @@ import elemental.json.Json
 import org.openremote.container.util.IdentifierUtil
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
+import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.shared.asset.AssetResource
 import org.openremote.model.Attribute
 import org.openremote.model.Attributes
@@ -27,13 +28,12 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
         and: "an authenticated admin user"
-        def realm = MASTER_REALM
-        def realmId = getActiveTenantRealmId(container, realm)
         def accessToken = authenticate(
                 container,
-                realm,
+                MASTER_REALM,
                 KEYCLOAK_CLIENT_ID,
                 MASTER_REALM_ADMIN_USER,
                 getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
@@ -42,10 +42,10 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         and: "the asset resource"
         def client = createClient(container).build()
         def serverUri = serverUri(serverPort)
-        def assetResource = getClientTarget(client, serverUri, realm, accessToken).proxy(AssetResource.class)
+        def assetResource = getClientTarget(client, serverUri, MASTER_REALM, accessToken).proxy(AssetResource.class)
 
         when: "an asset is created in the authenticated realm"
-        def testAsset = new Asset(realmId, "Test Room", AssetType.ROOM)
+        def testAsset = new Asset(keycloakDemoSetup.masterTenant.id, "Test Room", AssetType.ROOM)
         testAsset.setId(IdentifierUtil.generateGlobalUniqueId())
         assetResource.create(null, testAsset)
         testAsset = assetResource.get(null, testAsset.getId())
@@ -53,7 +53,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         then: "the asset should exist"
         testAsset.name == "Test Room"
         testAsset.wellKnownType == AssetType.ROOM
-        testAsset.realmId == realmId
+        testAsset.realmId == keycloakDemoSetup.masterTenant.id
         testAsset.parentId == null
 
         when: "an asset is stored with an illegal attribute name"

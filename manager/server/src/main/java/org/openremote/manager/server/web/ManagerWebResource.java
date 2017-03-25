@@ -21,6 +21,8 @@ package org.openremote.manager.server.web;
 
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.server.security.ManagerIdentityService;
+import org.openremote.manager.shared.security.Tenant;
+import org.openremote.model.asset.Asset;
 
 public class ManagerWebResource extends WebResource {
 
@@ -33,4 +35,21 @@ public class ManagerWebResource extends WebResource {
     public boolean isRestrictedUser() {
         return identityService.isRestrictedUser(getUserId());
     }
+
+    public Tenant getAuthenticatedTenant() {
+        return identityService.getTenantForRealm(getAuthenticatedRealm());
+    }
+
+    public boolean isTenantActiveAndAccessible(Asset asset) {
+        return isTenantActiveAndAccessible(identityService.getTenant(asset.getRealmId()));
+    }
+
+    /**
+     * @return <code>true</code> if the user is the superuser (admin) or if the user is authenticated
+     * in the same realm as the tenant and the tenant is active.
+     */
+    public boolean isTenantActiveAndAccessible(Tenant tenant) {
+        return tenant != null && (isSuperUser() || (tenant.isActive() && super.isRealmAccessibleByUser(tenant.getRealm())));
+    }
+
 }

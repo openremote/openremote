@@ -19,33 +19,33 @@
  */
 package org.openremote.manager.server.security;
 
-import org.openremote.container.web.WebResource;
 import org.openremote.manager.server.i18n.I18NService;
+import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.manager.shared.validation.ConstraintViolation;
 import org.openremote.manager.shared.validation.ConstraintViolationReport;
 
-import javax.ws.rs.BeanParam;
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.openremote.manager.shared.validation.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
 import static org.openremote.model.Constants.MASTER_REALM;
 
-public class TenantResourceImpl extends WebResource implements TenantResource {
+public class TenantResourceImpl extends ManagerWebResource implements TenantResource {
 
-    protected final ManagerIdentityService identityService;
+    private static final Logger LOG = Logger.getLogger(TenantResourceImpl.class.getName());
 
     public TenantResourceImpl(ManagerIdentityService identityService) {
-        this.identityService = identityService;
+        super(identityService);
     }
 
     @Override
@@ -64,22 +64,26 @@ public class TenantResourceImpl extends WebResource implements TenantResource {
 
     @Override
     public Tenant get(RequestParams requestParams, String realm) {
-        if (!isSuperUser() && !getAuthenticatedRealm().equals(realm)) {
+        Tenant tenant = identityService.getTenantForRealm(realm);
+        if (tenant == null)
+            throw new WebApplicationException(NOT_FOUND);
+        if (!isTenantActiveAndAccessible(tenant)) {
+            LOG.fine("Forbidden access for user '" + getUsername() + "': " + tenant);
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        Tenant result = identityService.getTenant(realm);
-        if (result == null)
-            throw new WebApplicationException(NOT_FOUND);
-        return result;
+        return tenant;
     }
 
     @Override
     public Tenant getForRealmId(RequestParams requestParams, String realmId) {
-        String realm = identityService.getActiveTenantRealm(realmId);
-        if (realm == null) {
+        Tenant tenant = identityService.getTenant(realmId);
+        if (tenant == null)
             throw new WebApplicationException(NOT_FOUND);
+        if (!isTenantActiveAndAccessible(tenant)) {
+            LOG.fine("Forbidden access for user '" + getUsername() + "': " + tenant);
+            throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        return get(requestParams, realm);
+        return tenant;
     }
 
     @Override

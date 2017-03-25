@@ -145,7 +145,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
     public ServerAsset merge(ServerAsset asset) {
         return persistenceService.doReturningTransaction(em -> {
             // Validate realm
-            if (!managerIdentityService.isActiveTenantRealmId(asset.getRealmId())) {
+            if (!managerIdentityService.isActiveTenant(asset.getRealmId())) {
                 throw new IllegalStateException("Realm not found/active: " + asset.getRealmId());
             }
             // Validate parent

@@ -36,6 +36,7 @@ import org.openremote.manager.shared.rules.AssetRulesDefinition;
 import org.openremote.manager.shared.rules.GlobalRulesDefinition;
 import org.openremote.manager.shared.rules.RulesDefinition;
 import org.openremote.manager.shared.rules.TenantRulesDefinition;
+import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.*;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.AssetType;
@@ -47,13 +48,11 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 
 import static org.openremote.model.AttributeType.*;
-import static org.openremote.model.Constants.MASTER_REALM;
 import static org.openremote.model.asset.AssetMeta.*;
 import static org.openremote.model.asset.AssetType.*;
 
 public class ManagerDemoSetup extends AbstractManagerSetup {
 
-    public String masterRealmId;
     public String smartOfficeId;
     public String groundFloorId;
     public String lobbyId;
@@ -83,12 +82,16 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     @Override
     public void execute() throws Exception {
 
+        KeycloakDemoSetup keycloakDemoSetup = setupService.getTaskOfType(KeycloakDemoSetup.class);
+        Tenant masterTenant = keycloakDemoSetup.masterTenant;
+        Tenant customerATenant = keycloakDemoSetup.customerATenant;
+        Tenant customerBTenant = keycloakDemoSetup.customerBTenant;
+
         // ################################ Demo assets for 'master' realm ###################################
 
-        masterRealmId = identityService.getActiveTenantRealmId(MASTER_REALM);
 
         ServerAsset smartOffice = new ServerAsset();
-        smartOffice.setRealmId(masterRealmId);
+        smartOffice.setRealmId(masterTenant.getId());
         smartOffice.setName("Smart Office");
         smartOffice.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         smartOffice.setType(BUILDING);
@@ -244,20 +247,17 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         // ################################ Demo assets for 'customerA' realm ###################################
 
-        String customerARealmId = identityService.getActiveTenantRealmId("customerA");
-        String customerBRealmId = identityService.getActiveTenantRealmId("customerB");
-
         ServerAsset smartHome = new ServerAsset();
-        smartHome.setRealmId(customerARealmId);
+        smartHome.setRealmId(customerATenant.getId());
         smartHome.setName("Smart Home");
         smartHome.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
         smartHome.setType(BUILDING);
         Attributes smartHomeAttributes = new Attributes();
         smartHomeAttributes.put(
-                new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
-                new Attribute("demoString", STRING, Json.create("demo")),
-                new Attribute("demoInteger", INTEGER, Json.create(0)),
-                new Attribute("demoDecimal", DECIMAL, Json.create(0d))
+            new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
+            new Attribute("demoString", STRING, Json.create("demo")),
+            new Attribute("demoInteger", INTEGER, Json.create(0)),
+            new Attribute("demoDecimal", DECIMAL, Json.create(0d))
         );
         smartHome.setAttributes(smartHomeAttributes.getJsonObject());
         smartHome = assetStorageService.merge(smartHome);
@@ -269,10 +269,10 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1.setType(RESIDENCE);
         Attributes apartment1Attributes = new Attributes();
         apartment1Attributes.put(
-                new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
-                new Attribute("demoString", STRING, Json.create("demo")),
-                new Attribute("demoInteger", INTEGER, Json.create(0)),
-                new Attribute("demoDecimal", DECIMAL, Json.create(0d))
+            new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
+            new Attribute("demoString", STRING, Json.create("demo")),
+            new Attribute("demoInteger", INTEGER, Json.create(0)),
+            new Attribute("demoDecimal", DECIMAL, Json.create(0d))
         );
         apartment1.setAttributes(apartment1Attributes.getJsonObject());
         apartment1 = assetStorageService.merge(apartment1);
@@ -284,10 +284,10 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1Livingroom.setType(ROOM);
         Attributes apartment1LivingroomAttributes = new Attributes();
         apartment1LivingroomAttributes.put(
-                new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
-                new Attribute("demoString", STRING, Json.create("demo")),
-                new Attribute("demoInteger", INTEGER, Json.create(0)),
-                new Attribute("demoDecimal", DECIMAL, Json.create(0d))
+            new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
+            new Attribute("demoString", STRING, Json.create("demo")),
+            new Attribute("demoInteger", INTEGER, Json.create(0)),
+            new Attribute("demoDecimal", DECIMAL, Json.create(0d))
         );
         apartment1Livingroom.setAttributes(apartment1LivingroomAttributes.getJsonObject());
         apartment1Livingroom = assetStorageService.merge(apartment1Livingroom);
@@ -335,10 +335,10 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment2.setType(RESIDENCE);
         Attributes apartment2Attributes = new Attributes();
         apartment2Attributes.put(
-                new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
-                new Attribute("demoString", STRING, Json.create("demo")),
-                new Attribute("demoInteger", INTEGER, Json.create(0)),
-                new Attribute("demoDecimal", DECIMAL, Json.create(0d))
+            new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
+            new Attribute("demoString", STRING, Json.create("demo")),
+            new Attribute("demoInteger", INTEGER, Json.create(0)),
+            new Attribute("demoDecimal", DECIMAL, Json.create(0d))
         );
         apartment2.setAttributes(apartment2Attributes.getJsonObject());
         apartment2 = assetStorageService.merge(apartment2);
@@ -350,10 +350,10 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment2Livingroom.setType(ROOM);
         Attributes apartment2LivingroomAttributes = new Attributes();
         apartment2LivingroomAttributes.put(
-                new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
-                new Attribute("demoString", STRING, Json.create("demo")),
-                new Attribute("demoInteger", INTEGER, Json.create(0)),
-                new Attribute("demoDecimal", DECIMAL, Json.create(0d))
+            new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
+            new Attribute("demoString", STRING, Json.create("demo")),
+            new Attribute("demoInteger", INTEGER, Json.create(0)),
+            new Attribute("demoDecimal", DECIMAL, Json.create(0d))
         );
         apartment2Livingroom.setAttributes(apartment2LivingroomAttributes.getJsonObject());
         apartment2Livingroom = assetStorageService.merge(apartment2Livingroom);
@@ -365,10 +365,10 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment3.setType(RESIDENCE);
         Attributes apartment3Attributes = new Attributes();
         apartment3Attributes.put(
-                new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
-                new Attribute("demoString", STRING, Json.create("demo")),
-                new Attribute("demoInteger", INTEGER, Json.create(0)),
-                new Attribute("demoDecimal", DECIMAL, Json.create(0d))
+            new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
+            new Attribute("demoString", STRING, Json.create("demo")),
+            new Attribute("demoInteger", INTEGER, Json.create(0)),
+            new Attribute("demoDecimal", DECIMAL, Json.create(0d))
         );
         apartment3.setAttributes(apartment3Attributes.getJsonObject());
         apartment3 = assetStorageService.merge(apartment3);
@@ -380,10 +380,10 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment3Livingroom.setType(ROOM);
         Attributes apartment3LivingroomAttributes = new Attributes();
         apartment3LivingroomAttributes.put(
-                new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
-                new Attribute("demoString", STRING, Json.create("demo")),
-                new Attribute("demoInteger", INTEGER, Json.create(0)),
-                new Attribute("demoDecimal", DECIMAL, Json.create(0d))
+            new Attribute("demoBoolean", BOOLEAN, Json.create(true)),
+            new Attribute("demoString", STRING, Json.create("demo")),
+            new Attribute("demoInteger", INTEGER, Json.create(0)),
+            new Attribute("demoDecimal", DECIMAL, Json.create(0d))
         );
         apartment3Livingroom.setAttributes(apartment3LivingroomAttributes.getJsonObject());
         apartment3Livingroom = assetStorageService.merge(apartment3Livingroom);
@@ -391,7 +391,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         // ################################ Link demo users and assets ###################################
 
-        KeycloakDemoSetup keycloakDemoSetup = setupService.getTaskOfType(KeycloakDemoSetup.class);
         identityService.setRestrictedUser(keycloakDemoSetup.testuser3Id, true);
         assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment1Id);
         assetStorageService.storeUserAsset(keycloakDemoSetup.testuser3Id, apartment1LivingroomId);
@@ -422,14 +421,14 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeTenantDemoRules.drl")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
-            RulesDefinition rulesDefinition = new TenantRulesDefinition("Some customerA tenant demo rules", customerARealmId, rules);
+            RulesDefinition rulesDefinition = new TenantRulesDefinition("Some customerA tenant demo rules", customerATenant.getId(), rules);
             rulesDefinition = rulesStorageService.merge(rulesDefinition);
             customerARulesDefinitionId = rulesDefinition.getId();
         }
 
         try (InputStream inputStream = ManagerDemoSetup.class.getResourceAsStream("/demo/rules/SomeTenantDemoRules.drl")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
-            RulesDefinition rulesDefinition = new TenantRulesDefinition("Some customerB tenant demo rules", customerBRealmId, rules);
+            RulesDefinition rulesDefinition = new TenantRulesDefinition("Some customerB tenant demo rules", customerBTenant.getId(), rules);
             rulesDefinition.setEnabled(false);
             rulesDefinition = rulesStorageService.merge(rulesDefinition);
             customerBRulesDefinitionId = rulesDefinition.getId();

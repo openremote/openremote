@@ -20,8 +20,6 @@
 package org.openremote.model.asset;
 
 import elemental.json.JsonObject;
-import org.hibernate.annotations.Formula;
-import org.hibernate.annotations.Type;
 import org.openremote.model.*;
 
 import javax.persistence.*;
@@ -32,9 +30,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import static org.openremote.model.Constants.NAMESPACE;
-import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
-import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
+import static org.openremote.model.Constants.*;
 
 // @formatter:off
 /**
@@ -110,7 +106,7 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
   "parentName": "Smart Home",
   "parentType": "urn:openremote:asset:building",
   "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
-  "tenant": "customerA",
+  "tenantRealm": "customerA",
   "tenantDisplayName": "Customer A",
   "path": [
     "B0x8ZOqZQHGjq_l0RxAJBA",
@@ -133,7 +129,7 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
   "parentName": "Apartment 1",
   "parentType": "urn:openremote:asset:residence",
   "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
-  "tenant": "customerA",
+  "tenantRealm": "customerA",
   "tenantDisplayName": "Customer A",
   "path": [
     "bzlRiJmSSMCl8HIUt9-lMg",
@@ -157,7 +153,7 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
   "parentName": "Livingroom",
   "parentType": "urn:openremote:asset:room",
   "realmId": "c38a3fdf-9d74-4dac-940c-50d3dce1d248",
-  "tenant": "customerA",
+  "tenantRealm": "customerA",
   "tenantDisplayName": "Customer A",
   "path": [
     "W7GV_lFeQVyHLlgHgE3dEQ",
@@ -403,6 +399,9 @@ public class Asset implements IdentifiableEntity {
         this.parentId = parentId;
     }
 
+    /**
+     * NOTE: This is a transient and optional property, set only in database query results.
+     */
     public String getParentName() {
         return parentName;
     }
@@ -411,6 +410,9 @@ public class Asset implements IdentifiableEntity {
         this.parentName = parentName;
     }
 
+    /**
+     * NOTE: This is a transient and optional property, set only in database query results.
+     */
     public String getParentType() {
         return parentType;
     }
@@ -427,6 +429,9 @@ public class Asset implements IdentifiableEntity {
         this.realmId = realmId;
     }
 
+    /**
+     * NOTE: This is a transient and optional property, set only in database query results.
+     */
     public String getTenantRealm() {
         return tenantRealm;
     }
@@ -435,6 +440,9 @@ public class Asset implements IdentifiableEntity {
         this.tenantRealm = tenantRealm;
     }
 
+    /**
+     * NOTE: This is a transient and optional property, set only in database query results.
+     */
     public String getTenantDisplayName() {
         return tenantDisplayName;
     }
@@ -456,6 +464,8 @@ public class Asset implements IdentifiableEntity {
     }
 
     /**
+     * NOTE: This is a transient and optional property, set only in database query results.
+     * <p>
      * The identifiers of all parents representing the path in the tree. The first element
      * is the identifier of this instance, the last is the root asset without a parent.
      */
@@ -464,6 +474,8 @@ public class Asset implements IdentifiableEntity {
     }
 
     /**
+     * NOTE: This is a transient and optional property, set only in database query results.
+     * <p>
      * The identifiers of all parents representing the path in the tree. The first element
      * is the root asset without a parent, the last is the identifier of this instance.
      */

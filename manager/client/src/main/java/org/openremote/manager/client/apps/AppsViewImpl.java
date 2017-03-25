@@ -103,7 +103,7 @@ public class AppsViewImpl extends Composite implements AppsView {
             item.setIcon("connectdevelop");
             item.addStyleName(style.appsListItem());
             item.addStyleName(widgetStyle.SecondaryNavItem());
-            item.setText(app.getName());
+            item.setText(app.getTenant().getDisplayName());
             item.setSimpleClickHandler(() -> presenter.onAppSelected(app));
             appsListPanel.add(item);
         }

@@ -70,7 +70,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     protected RulesDeployment<GlobalRulesDefinition> globalDeployment;
     protected final Map<String, RulesDeployment<TenantRulesDefinition>> tenantDeployments = new HashMap<>();
     protected final Map<String, RulesDeployment<AssetRulesDefinition>> assetDeployments = new HashMap<>();
-    protected String[] activeTenantRealmIds;
+    protected String[] activeTenantIds;
 
     @Override
     public void init(Container container) throws Exception {
@@ -195,12 +195,12 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         rulesStorageService.findEnabledGlobalDefinitions().forEach(this::deployGlobalRulesDefinition);
 
         // Deploy tenant rules
-        activeTenantRealmIds = identityService.getActiveTenantRealmIds();
+        activeTenantIds = identityService.getActiveTenantIds();
         rulesStorageService.findEnabledTenantDefinitions()
             .stream()
             .filter(rd ->
-                Arrays.stream(activeTenantRealmIds)
-                    .anyMatch(activeTenantRealmId -> rd.getRealmId().equals(activeTenantRealmId))
+                Arrays.stream(activeTenantIds)
+                    .anyMatch(tenantId -> rd.getRealmId().equals(tenantId))
             ).forEach(this::deployTenantRulesDefinition);
 
         // Deploy asset rules - group by asset ID then tenant and check tenant is enabled
@@ -239,9 +239,9 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
     public synchronized void processTenantChange(Tenant tenant, PersistenceEvent.Cause cause) {
         // Check if enabled status has changed
-        boolean wasEnabled = Arrays.asList(activeTenantRealmIds).contains(tenant.getId());
+        boolean wasEnabled = Arrays.asList(activeTenantIds).contains(tenant.getId());
         boolean isEnabled = tenant.getEnabled() && cause != PersistenceEvent.Cause.DELETE;
-        activeTenantRealmIds = identityService.getActiveTenantRealmIds();
+        activeTenantIds = identityService.getActiveTenantIds();
 
         if (wasEnabled == isEnabled) {
             // Nothing to do here
@@ -351,7 +351,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             .entrySet()
             .stream()
             .filter(es -> Arrays
-                .stream(activeTenantRealmIds)
+                .stream(activeTenantIds)
                 .anyMatch(at -> es.getKey().equals(at)))
             .forEach(es -> {
                 List<Pair<ServerAsset, List<AssetRulesDefinition>>> tenantAssetAndRules = es.getValue();

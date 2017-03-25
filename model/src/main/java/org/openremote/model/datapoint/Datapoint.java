@@ -125,6 +125,28 @@ public abstract class Datapoint implements Serializable {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Datapoint datapoint = (Datapoint) o;
+
+        return timestamp == datapoint.timestamp
+            && entityId.equals(datapoint.entityId)
+            && attributeName.equals(datapoint.attributeName)
+            && value.equals(datapoint.value);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = entityId.hashCode();
+        result = 31 * result + attributeName.hashCode();
+        result = 31 * result + (int) (timestamp ^ (timestamp >>> 32));
+        result = 31 * result + value.hashCode();
+        return result;
+    }
+
+    @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "entityId='" + entityId + '\'' +

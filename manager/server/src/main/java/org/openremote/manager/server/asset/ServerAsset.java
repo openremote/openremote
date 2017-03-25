@@ -59,7 +59,6 @@ public class ServerAsset extends Asset {
                                   String overrideType,
                                   Double[] overrideLocation) {
         serverAsset.setVersion(asset.getVersion());
-        serverAsset.setRealmId(asset.getRealmId());
         serverAsset.setName(asset.getName());
         if (overrideType != null) {
             serverAsset.setType(overrideType);
@@ -68,6 +67,12 @@ public class ServerAsset extends Asset {
         }
 
         serverAsset.setParentId(overrideParentId != null ? overrideParentId : asset.getParentId());
+        serverAsset.setParentName(null);
+        serverAsset.setParentType(null);
+
+        serverAsset.setRealmId(asset.getRealmId());
+        serverAsset.setTenantRealm(null);
+        serverAsset.setTenantDisplayName(null);
 
         GeometryFactory geometryFactory = new GeometryFactory();
 
@@ -84,7 +89,9 @@ public class ServerAsset extends Asset {
         } else {
             serverAsset.setLocation(null);
         }
+
         serverAsset.setAttributes(asset.getAttributes());
+
         return serverAsset;
     }
 

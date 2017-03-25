@@ -27,17 +27,21 @@ import org.openremote.manager.shared.rules.AssetRulesDefinition;
 import org.openremote.manager.shared.rules.GlobalRulesDefinition;
 import org.openremote.manager.shared.rules.RulesResource;
 import org.openremote.manager.shared.rules.TenantRulesDefinition;
+import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.asset.Asset;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.util.List;
+import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
 public class RulesResourceImpl extends ManagerWebResource implements RulesResource {
+
+    private static final Logger LOG = Logger.getLogger(RulesResourceImpl.class.getName());
 
     final protected RulesStorageService rulesStorageService;
     final protected AssetStorageService assetStorageService;
@@ -131,11 +135,12 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
     @Override
     public void createTenantDefinition(@BeanParam RequestParams requestParams, TenantRulesDefinition rulesDefinition) {
-        String realm = identityService.getActiveTenantRealm(rulesDefinition.getRealmId());
-        if (realm == null) {
+        Tenant tenant = identityService.getTenant(rulesDefinition.getRealmId());
+        if (tenant == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
-        if (!isRealmAccessibleByUser(realm) || isRestrictedUser()) {
+        if (!isTenantActiveAndAccessible(tenant) || isRestrictedUser()) {
+            LOG.fine("Forbidden access for user '" + getUsername() + "': " + tenant);
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         rulesStorageService.merge(rulesDefinition);
@@ -143,18 +148,19 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
     @Override
     public TenantRulesDefinition getTenantDefinition(@BeanParam RequestParams requestParams, Long id) {
-        TenantRulesDefinition existingDefinition = rulesStorageService.findById(TenantRulesDefinition.class, id);
-        if (existingDefinition == null) {
+        TenantRulesDefinition rulesDefinition = rulesStorageService.findById(TenantRulesDefinition.class, id);
+        if (rulesDefinition == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        String realm = identityService.getActiveTenantRealm(existingDefinition.getRealmId());
-        if (realm == null) {
+        Tenant tenant = identityService.getTenant(rulesDefinition.getRealmId());
+        if (tenant == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
-        if (!isRealmAccessibleByUser(realm) || isRestrictedUser()) {
+        if (!isTenantActiveAndAccessible(tenant) || isRestrictedUser()) {
+            LOG.fine("Forbidden access for user '" + getUsername() + "': " + tenant);
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        return existingDefinition;
+        return rulesDefinition;
     }
 
     @Override
@@ -163,11 +169,12 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (existingDefinition == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        String realm = identityService.getActiveTenantRealm(existingDefinition.getRealmId());
-        if (realm == null) {
+        Tenant tenant = identityService.getTenant(existingDefinition.getRealmId());
+        if (tenant == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
-        if (!isRealmAccessibleByUser(realm) || isRestrictedUser()) {
+        if (!isTenantActiveAndAccessible(tenant) || isRestrictedUser()) {
+            LOG.fine("Forbidden access for user '" + getUsername() + "': " + tenant);
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         if (!id.equals(rulesDefinition.getId())) {
@@ -181,15 +188,15 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
 
     @Override
     public void deleteTenantDefinition(@BeanParam RequestParams requestParams, Long id) {
-        TenantRulesDefinition existingDefinition = rulesStorageService.findById(TenantRulesDefinition.class, id);
-        if (existingDefinition == null) {
+        TenantRulesDefinition rulesDefinition = rulesStorageService.findById(TenantRulesDefinition.class, id);
+        if (rulesDefinition == null) {
             return;
         }
-        String realm = identityService.getActiveTenantRealm(existingDefinition.getRealmId());
-        if (realm == null) {
+        Tenant tenant = identityService.getTenant(rulesDefinition.getRealmId());
+        if (tenant == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
-        if (!isRealmAccessibleByUser(realm) || isRestrictedUser()) {
+        if (!isTenantActiveAndAccessible(tenant) || isRestrictedUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         rulesStorageService.delete(TenantRulesDefinition.class, id);
