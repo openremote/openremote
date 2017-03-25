@@ -267,9 +267,9 @@ public class AssetUpdate {
         return getClass().getSimpleName() + "{" +
             "assetId=" + getAssetName() +
             "attributeName=" + getAttributeName() +
-            "value=" + getValue() +
+            "value=" + getValue().toJson() +
             "valueTimestamp=" + getValueTimestamp() +
-            "oldValue=" + getOldValue() +
+            "oldValue=" + getOldValue().toJson() +
             "oldValueTimestamp=" + getOldValueTimestamp() +
             '}';
     }

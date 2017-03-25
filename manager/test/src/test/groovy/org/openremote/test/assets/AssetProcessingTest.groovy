@@ -187,11 +187,10 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert updatesPassedStartOfProcessingChain.size() == 2
             assert sendToActuatorEvents.size() == 1
             assert updatesReachedEndOfProcessingChain.size() == 1
-            assert updatesReachedEndOfProcessingChain[0].getEntityName() == "Mock Thing Asset"
-            assert updatesReachedEndOfProcessingChain[0].getOldState().getAttributeName() == "light1Toggle"
-            assert updatesReachedEndOfProcessingChain[0].getOldState().getValue().asBoolean() == false
-            assert updatesReachedEndOfProcessingChain[0].getNewState().getAttributeName() == "light1Toggle"
-            assert updatesReachedEndOfProcessingChain[0].getNewState().getValue().asBoolean() == true
+            assert updatesReachedEndOfProcessingChain[0].assetName == "Mock Thing Asset"
+            assert updatesReachedEndOfProcessingChain[0].attributeName == "light1Toggle"
+            assert updatesReachedEndOfProcessingChain[0].oldValue.asBoolean() == false
+            assert updatesReachedEndOfProcessingChain[0].value.asBoolean() == true
             assert updatesReachedEndOfProcessingChain[0].status == AssetUpdate.Status.CONTINUE
         }
 
@@ -210,8 +209,8 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert updatesPassedStartOfProcessingChain.size() == 1
             assert updatesReachedEndOfProcessingChain.size() == 0
             assert sendToActuatorEvents.size() == 0
-            assert updatesPassedStartOfProcessingChain[0].entityId == mockThing.id
-            assert updatesPassedStartOfProcessingChain[0].attribute.name == "light2Toggle"
+            assert updatesPassedStartOfProcessingChain[0].assetId == mockThing.id
+            assert updatesPassedStartOfProcessingChain[0].attributeName == "light2Toggle"
             assert updatesPassedStartOfProcessingChain[0].status == AssetUpdate.Status.COMPLETED
         }
     }

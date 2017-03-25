@@ -245,7 +245,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
         // Its' a send to actuator - push the update to the protocol
         LOG.fine("Processing asset update: " + assetUpdate);
-        messageBrokerService.getProducerTemplate().sendBody(ACTUATOR_TOPIC, assetUpdate.getAttribute().getState(assetUpdate.getAssetId()));
+        messageBrokerService.getProducerTemplate().sendBody(ACTUATOR_TOPIC, assetUpdate.getAttribute().getStateEvent(assetUpdate.getAssetId()));
         assetUpdate.setStatus(AssetUpdate.Status.HANDLED);
     }
 

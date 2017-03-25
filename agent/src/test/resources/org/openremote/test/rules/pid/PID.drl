@@ -8,9 +8,6 @@ import org.openremote.agent.sensor.*;
 
 global org.openremote.agent.command.Commands commands;
 global org.openremote.agent.rules.RulePersistence persistence;
-global org.openremote.agent.rules.RuleUtil util;
-global com.fasterxml.jackson.databind.ObjectMapper JSON;
-global java.util.logging.Logger LOG;
 
 declare SensorState
   @role(event)

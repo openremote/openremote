@@ -7,14 +7,14 @@ global java.util.logging.Logger LOG;
 
 rule "Living Room All"
 when
-  $e: AssetUpdate(entityName == "Livingroom")
+  $e: AssetUpdate(assetName == "Livingroom")
 then
   return;
 end
 
 rule "Living Room Thermostat"
 when
-  $e: AssetUpdate(entityName == "Livingroom Thermostat")
+  $e: AssetUpdate(assetName == "Livingroom Thermostat")
 then
   return;
 end
