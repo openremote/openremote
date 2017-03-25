@@ -23,8 +23,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreType;
 import elemental.json.JsonValue;
 
 /**
- * A timestamped {@link AttributeState}. Two attribute events
- * are equal if their timestamps and attribute states are equal.
+ * A timestamped {@link AttributeState}.
  */
 @JsonIgnoreType
 public class AttributeEvent extends Event {
@@ -65,34 +64,12 @@ public class AttributeEvent extends Event {
         return getAttributeRef().getEntityId();
     }
 
-    public String getEntityName() {
-        return getAttributeRef().getEntityName();
-    }
-
     public String getAttributeName() {
         return getAttributeRef().getAttributeName();
     }
 
     public JsonValue getValue() {
         return getAttributeState().getValue();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        AttributeEvent that = (AttributeEvent) o;
-
-        return this.timestamp == that.timestamp &&
-            attributeState.equals(that.attributeState);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = new Long(timestamp).intValue();
-        result = 31 * result + attributeState.hashCode();
-        return result;
     }
 
     @Override

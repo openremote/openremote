@@ -48,6 +48,7 @@ import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
  * debug logging is enabled. We never want to send a stacktrace or some crappy HTML to a
  * client in production.
  * <p>
+ * TODO: Fine-grained logging for exception, filter which should be logged at INFO or WARN in production
  * TODO: Websocket session errors
  */
 public class WebServiceExceptions {

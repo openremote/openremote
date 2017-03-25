@@ -81,7 +81,7 @@ public class AssetUpdate {
 
     final protected String assetRealmId;
 
-    final protected String assetRealmName;
+    final protected String assetTenantRealm;
 
     final protected double[] coordinates;
 
@@ -110,7 +110,7 @@ public class AssetUpdate {
         this.assetParentName = asset.getParentName();
         this.assetParentType = asset.getParentType();
         this.assetRealmId = asset.getRealmId();
-        this.assetRealmName = asset.getTenantRealm();
+        this.assetTenantRealm = asset.getTenantRealm();
         this.coordinates = asset.getCoordinates();
         this.oldValue = oldValue;
         this.oldValueTimestamp = oldValueTimestamp;
@@ -161,8 +161,8 @@ public class AssetUpdate {
         return assetRealmId;
     }
 
-    public String getAssetRealmName() {
-        return assetRealmName;
+    public String getAssetTenantRealm() {
+        return assetTenantRealm;
     }
 
     public double[] getCoordinates() {
@@ -221,31 +221,38 @@ public class AssetUpdate {
         if (!isCompleted()) {
             return attribute;
         }
-
-        return null;
+        throw new IllegalStateException("Instance is immutable, status '" + getStatus() + "': " + this);
     }
 
     public void setValue(JsonValue value) {
         if (!isCompleted()) {
             attribute.setValue(value);
+        } else {
+            throw new IllegalStateException("Instance is immutable, status '" + getStatus() + "': " + this);
         }
     }
 
     public void setValueUnchecked(JsonValue value) {
         if (!isCompleted()) {
             attribute.setValueUnchecked(value);
+        } else {
+            throw new IllegalStateException("Instance is immutable, status '" + getStatus() + "': " + this);
         }
     }
 
     public void setStatus(Status status) {
         if (!isCompleted()) {
             this.status = status;
+        } else {
+            throw new IllegalStateException("Instance is immutable, status '" + getStatus() + "': " + this);
         }
     }
 
     public void setError(Throwable error) {
         if (!isCompleted()) {
             this.error = error;
+        } else {
+            throw new IllegalStateException("Instance is immutable, status '" + getStatus() + "': " + this);
         }
     }
 
@@ -255,6 +262,8 @@ public class AssetUpdate {
         if (o == null || getClass() != o.getClass()) return false;
 
         AssetUpdate that = (AssetUpdate) o;
+
+        // TODO Don't use jsEquals(), write own comparison by value
 
         return assetId.equals(that.assetId) &&
                 getAttributeName().equalsIgnoreCase(that.getAttributeName()) &&
@@ -266,7 +275,9 @@ public class AssetUpdate {
 
     @Override
     public int hashCode() {
-        return assetId.hashCode() + getAttributeName().hashCode() + getValue().hashCode() + Long.hashCode(getValueTimestamp()) + (oldValue != null ? oldValue.hashCode() : 0) + Long.hashCode(oldValueTimestamp);
+        return assetId.hashCode() + getAttributeName().hashCode() + getValue().hashCode()
+            + Long.hashCode(getValueTimestamp())
+            + (oldValue != null ? oldValue.hashCode() : 0) + Long.hashCode(oldValueTimestamp);
     }
 
     @Override

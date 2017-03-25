@@ -134,40 +134,35 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                                 Attributes oldAttributes = new Attributes((JsonObject)persistenceEvent.getPreviousState()[attributesIndex]);
                                 Attributes newAttributes = new Attributes((JsonObject)persistenceEvent.getCurrentState()[attributesIndex]);
 
-                                List<Attribute> oldLinkedAttributes = Arrays.stream(oldAttributes.get())
-                                        .filter(attribute ->  {
-                                            MetaItem rulesFact = attribute.firstMetaItem(AssetMeta.RULES_FACT);
-                                            return rulesFact != null && rulesFact.getValueAsBoolean();
-                                        })
+                                List<Attribute> oldFactAttributes = Arrays.stream(oldAttributes.get())
+                                        .filter(Attribute::isRulesFact)
                                         .collect(Collectors.toList());
 
-                                List<Attribute> newLinkedAttributes = Arrays.stream(newAttributes.get())
-                                        .filter(attribute -> {
-                                            MetaItem rulesFact = attribute.firstMetaItem(AssetMeta.RULES_FACT);
-                                            return rulesFact != null && rulesFact.getValueAsBoolean();
-                                        })
+                                List<Attribute> newFactAttributes = Arrays.stream(newAttributes.get())
+                                        .filter(Attribute::isRulesFact)
                                         .collect(Collectors.toList());
 
+                                // TODO Compare using our own Json equality routine, jsEquals() is broken
                                 // Compare attributes using JsonObject.jsEquals()
-                                // Retract facts for attributes that are in oldLinkedAttributes but not in newLinkedAttributes
-                                oldLinkedAttributes
+                                // Retract facts for attributes that are in oldFactAttributes but not in newFactAttributes
+                                oldFactAttributes
                                         .stream()
-                                        .filter(oldLink -> newLinkedAttributes
+                                        .filter(oldFactAttribute -> newFactAttributes
                                                 .stream()
-                                                .noneMatch(newLink -> oldLink.getJsonObject().jsEquals(newLink.getJsonObject())))
-                                        .forEach(obsoleteLink -> {
-                                            AssetUpdate update = new AssetUpdate(serverAsset, obsoleteLink);
+                                                .noneMatch(newFactAttribute -> oldFactAttribute.getJsonObject().jsEquals(newFactAttribute.getJsonObject())))
+                                        .forEach(obsoleteFactAttribute -> {
+                                            AssetUpdate update = new AssetUpdate(serverAsset, obsoleteFactAttribute);
                                             retractFact(update);
                                         });
 
-                                // Insert facts for attributes that are in newLinkedAttributes but not in oldLinkedAttributes
-                                newLinkedAttributes
+                                // Insert facts for attributes that are in newFactAttributes but not in oldFactAttributes
+                                newFactAttributes
                                         .stream()
-                                        .filter(newFact -> oldLinkedAttributes
+                                        .filter(newFactAttribute -> oldFactAttributes
                                                 .stream()
-                                                .noneMatch(oldFact -> newFact.getJsonObject().jsEquals(newFact.getJsonObject())))
-                                        .forEach(newLinkedAttribute -> {
-                                            AssetUpdate update = new AssetUpdate(serverAsset, newLinkedAttribute);
+                                                .noneMatch(oldFactAttribute -> newFactAttribute.getJsonObject().jsEquals(newFactAttribute.getJsonObject())))
+                                        .forEach(newFactAttribute -> {
+                                            AssetUpdate update = new AssetUpdate(serverAsset, newFactAttribute);
                                             // Set the status to completed already so rules cannot interfere with this initial insert
                                             insertFact(update, true);
                                         });

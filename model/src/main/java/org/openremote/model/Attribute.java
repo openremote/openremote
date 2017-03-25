@@ -26,9 +26,7 @@ import org.openremote.model.asset.AssetMeta;
 
 import java.util.NoSuchElementException;
 
-import static org.openremote.model.asset.AssetMeta.PROTECTED;
-import static org.openremote.model.asset.AssetMeta.READ_ONLY;
-import static org.openremote.model.asset.AssetMeta.STORE_DATA_POINTS;
+import static org.openremote.model.asset.AssetMeta.*;
 
 /**
  * Convenience overlay API for {@link JsonObject}.
@@ -182,6 +180,7 @@ public class Attribute extends AbstractValueTimestampHolder<Attribute> {
     /* ############################################################################### */
 
     // The following methods are only applicable to attributes of assets, but they are very convenient here...
+    // TODO Introduce AssetAttribute class
 
     public boolean hasMetaItem(AssetMeta assetMeta) {
         return hasMetaItem(assetMeta.getName());
@@ -201,6 +200,10 @@ public class Attribute extends AbstractValueTimestampHolder<Attribute> {
 
     public boolean isStoreDatapoints() {
         return hasMetaItem(STORE_DATA_POINTS) && firstMetaItem(STORE_DATA_POINTS).isValueTrue();
+    }
+
+    public boolean isRulesFact() {
+        return hasMetaItem(RULES_FACT) && firstMetaItem(RULES_FACT).isValueTrue();
     }
 
     /* ############################################################################### */

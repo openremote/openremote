@@ -273,11 +273,10 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
 
         sb.append(" from ASSET A cross join (select * from REALM) as R ");
 
-
         if (query.parent != null && !query.parent.noParent) {
             sb.append(" cross join ASSET P ");
         } else {
-            sb.append(" left outer join ASSET P on A.PARENT_ID = P.ID");
+            sb.append(" left outer join ASSET P on A.PARENT_ID = P.ID ");
         }
 
         if (query.id != null) {
@@ -383,7 +382,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
                         .append(") ");
                 }
             }
-            // TODO Implement AssetQuery.DecimalSearch
+            // TODO Implement AssetQuery.AttributeRef
         }
 
         return new Pair<>(sb.toString(), binders);

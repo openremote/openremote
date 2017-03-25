@@ -23,8 +23,7 @@ import elemental.json.Json;
 import elemental.json.JsonValue;
 
 /**
- * The desired or current or past state of an {@link AttributeRef}. Two attribute
- * states are equal if their attribute references and values are equal.
+ * The desired or current or past state of an {@link AttributeRef}.
  */
 public class AttributeState {
 
@@ -45,24 +44,6 @@ public class AttributeState {
 
     public JsonValue getValue() {
         return value;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        AttributeState that = (AttributeState) o;
-
-        return getAttributeRef().equals(that.getAttributeRef()) &&
-            getValue().jsEquals(that.getValue()); // Note the jsEquals() operation!
-    }
-
-    @Override
-    public int hashCode() {
-        int result = getAttributeRef().hashCode();
-        result = 31 * result + getValue().hashCode();
-        return result;
     }
 
     @Override

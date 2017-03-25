@@ -26,16 +26,15 @@ import elemental.json.JsonArray;
  * A reference to an entity and an {@link Attribute}.
  * <p>
  * The {@link #entityId} and {@link #attributeName} are required to identify
- * an entity's attribute. The {@link #entityName} can be <code>null</code> if the
- * reference has not been resolved.
+ * an entity's attribute.
+ *
+ * Two attribute references are {@link #equals} if they reference the same entity
+ * and attribute.
  */
 public class AttributeRef {
 
     protected String entityId;
     protected String attributeName;
-
-    // Optional, can be null if reference has not been resolved
-    protected String entityName;
 
     public AttributeRef() {
     }
@@ -55,14 +54,6 @@ public class AttributeRef {
 
     public String getAttributeName() {
         return attributeName;
-    }
-
-    public String getEntityName() {
-        return entityName;
-    }
-
-    public void setEntityName(String entityName) {
-        this.entityName = entityName;
     }
 
     public JsonArray asJsonValue() {
@@ -91,7 +82,6 @@ public class AttributeRef {
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "entityId='" + entityId + '\'' +
-            ", entityName='" + entityName + '\'' +
             ", attributeName='" + attributeName + '\'' +
             '}';
     }

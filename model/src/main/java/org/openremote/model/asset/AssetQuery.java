@@ -170,6 +170,33 @@ public class AssetQuery {
         }
     }
 
+    static public class AttributeRef {
+        public String entityId;
+        public String attributeName;
+
+        public AttributeRef() {
+        }
+
+        public AttributeRef(String entityId) {
+            this.entityId = entityId;
+        }
+
+        public AttributeRef(String entityId, String attributeName) {
+            this.entityId = entityId;
+            this.attributeName = attributeName;
+        }
+
+        public AttributeRef entityId(String entityId) {
+            this.entityId = entityId;
+            return this;
+        }
+
+        public AttributeRef attributeName(String attributeName) {
+            this.attributeName = attributeName;
+            return this;
+        }
+    }
+
     static public class AttributeMeta {
         public StringSearch itemNameSearch;
         public Search itemValueSearch;
@@ -272,9 +299,11 @@ public class AssetQuery {
 
     public StringSearch name;
     public Parent parent;
+    // TODO Implement descendants restriction
     public Realm realm;
     public String userId;
     public StringSearch type;
+    public AttributeRef attributeRef;
     public AttributeMeta attributeMeta;
     public OrderBy orderBy = new OrderBy("createdOn");
 
@@ -318,6 +347,11 @@ public class AssetQuery {
 
     public AssetQuery type(AssetType assetType) {
         return type(new StringSearch(assetType.getValue()));
+    }
+
+    public AssetQuery attributeRef(AttributeRef attributeRef) {
+        this.attributeRef = attributeRef;
+        return this;
     }
 
     public AssetQuery attributeMeta(AttributeMeta attributeMeta) {
