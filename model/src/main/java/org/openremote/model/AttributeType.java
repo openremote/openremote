@@ -60,7 +60,8 @@ public enum AttributeType {
     }
 
     public boolean isValid(JsonValue value) {
-        return value != null && value.getType().equals(getJsonType());
+        // NULL type is allowed for any value type in JSON - Don't allow literal nulls
+        return value != null && (value.getType().equals(JsonType.NULL) || value.getType().equals(getJsonType()));
     }
 
     public static AttributeType fromValue(String value) {

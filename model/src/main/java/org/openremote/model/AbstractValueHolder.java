@@ -146,7 +146,7 @@ public abstract class AbstractValueHolder<T extends AbstractValueHolder> {
      * Override to implement constraints.
      */
     protected boolean isValidValue(JsonValue value) {
-        return true;
+        return value != null; // Don't allow literal nulls
     }
 
     @Override
