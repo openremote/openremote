@@ -25,7 +25,7 @@ public class ColorSimulatorElement extends SimulatorElement {
 
     public static final String ELEMENT_NAME = "color";
 
-    public ColorSimulatorElement(boolean reflectActuatorWrites) {
-        super(AttributeType.INTEGER_ARRAY, reflectActuatorWrites);
+    public ColorSimulatorElement() {
+        super(AttributeType.INTEGER_ARRAY);
     }
 }

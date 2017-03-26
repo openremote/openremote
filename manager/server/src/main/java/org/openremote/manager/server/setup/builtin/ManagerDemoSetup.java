@@ -143,6 +143,17 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         AgentAttributes agentAttributes = new AgentAttributes();
         agentAttributes.setEnabled(false);
         ProtocolConfiguration protocolConfigSimulator123 = new ProtocolConfiguration(demoAgentProtocolConfigName, SimulatorProtocol.PROTOCOL_NAME);
+        protocolConfigSimulator123.setMeta(new Meta()
+                .add(new MetaItem(
+                                SimulatorProtocol.CONFIG_MODE,
+                                Json.create(SimulatorProtocol.Mode.WRITE_THROUGH_DELAYED.toString())
+                        )
+                )
+                .add(new MetaItem(
+                            SimulatorProtocol.CONFIG_WRITE_DELAY_MILLISECONDS,
+                            Json.create(500)
+                        )
+                ));
         agentAttributes.put(protocolConfigSimulator123);
         agent.setAttributes(agentAttributes.getJsonObject());
         agent = assetStorageService.merge(agent);
@@ -190,7 +201,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                                         SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(IntegerSimulatorElement.ELEMENT_NAME_RANGE)
                                 ))
                                 .add(new MetaItem(
-                                        SimulatorProtocol.SIMULATOR_REFLECT_ACTUATOR_WRITES, Json.create(true)
+                                        SimulatorProtocol.CONFIG_MODE, Json.create(true)
                                 ))
                         ),
                 new Attribute("light1Color", INTEGER_ARRAY, new ColorRGB(88, 123, 88).asJsonValue())

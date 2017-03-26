@@ -30,12 +30,12 @@ public class IntegerSimulatorElement extends SimulatorElement {
     final protected Double min;
     final protected Double max;
 
-    public IntegerSimulatorElement(boolean reflectActuatorWrites) {
-        this(reflectActuatorWrites, null, null);
+    public IntegerSimulatorElement() {
+        this(null, null);
     }
 
-    public IntegerSimulatorElement(boolean reflectActuatorWrites, Double min, Double max) {
-        super(AttributeType.INTEGER, reflectActuatorWrites);
+    public IntegerSimulatorElement(Double min, Double max) {
+        super(AttributeType.INTEGER);
         this.min = min;
         this.max = max;
     }

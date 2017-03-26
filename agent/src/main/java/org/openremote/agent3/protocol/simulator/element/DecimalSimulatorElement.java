@@ -25,7 +25,7 @@ public class DecimalSimulatorElement extends SimulatorElement {
 
     public static final String ELEMENT_NAME = "decimal";
 
-    public DecimalSimulatorElement(boolean reflectActuatorWrites) {
-        super(AttributeType.DECIMAL, reflectActuatorWrites);
+    public DecimalSimulatorElement() {
+        super(AttributeType.DECIMAL);
     }
 }

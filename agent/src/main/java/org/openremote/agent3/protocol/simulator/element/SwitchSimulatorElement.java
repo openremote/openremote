@@ -25,7 +25,7 @@ public class SwitchSimulatorElement extends SimulatorElement {
 
     public static final String ELEMENT_NAME = "switch";
 
-    public SwitchSimulatorElement(boolean reflectActuatorWrites) {
-        super(AttributeType.BOOLEAN, reflectActuatorWrites);
+    public SwitchSimulatorElement() {
+        super(AttributeType.BOOLEAN);
     }
 }
