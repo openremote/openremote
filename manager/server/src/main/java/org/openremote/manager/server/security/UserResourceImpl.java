@@ -45,7 +45,7 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static org.openremote.container.json.JsonUtil.convert;
+import static org.openremote.model.util.JsonUtil.convert;
 import static org.openremote.manager.shared.validation.ConstraintViolationReport.VIOLATION_EXCEPTION_HEADER;
 import static org.openremote.model.Constants.*;
 

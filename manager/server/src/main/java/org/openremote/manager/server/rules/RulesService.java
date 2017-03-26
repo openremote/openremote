@@ -42,6 +42,7 @@ import org.openremote.model.Attributes;
 import org.openremote.model.MetaItem;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.util.JsonUtil;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -142,14 +143,16 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                                         .filter(Attribute::isRulesFact)
                                         .collect(Collectors.toList());
 
-                                // TODO Compare using our own Json equality routine, jsEquals() is broken
-                                // Compare attributes using JsonObject.jsEquals()
+                                // Compare attributes by JSON value
                                 // Retract facts for attributes that are in oldFactAttributes but not in newFactAttributes
                                 oldFactAttributes
                                         .stream()
                                         .filter(oldFactAttribute -> newFactAttributes
                                                 .stream()
-                                                .noneMatch(newFactAttribute -> oldFactAttribute.getJsonObject().jsEquals(newFactAttribute.getJsonObject())))
+                                                .noneMatch(newFactAttribute ->
+                                                    JsonUtil.equals(oldFactAttribute.getJsonObject(), newFactAttribute.getJsonObject())
+                                                )
+                                        )
                                         .forEach(obsoleteFactAttribute -> {
                                             AssetUpdate update = new AssetUpdate(serverAsset, obsoleteFactAttribute);
                                             retractFact(update);
@@ -160,7 +163,10 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                                         .stream()
                                         .filter(newFactAttribute -> oldFactAttributes
                                                 .stream()
-                                                .noneMatch(oldFactAttribute -> newFactAttribute.getJsonObject().jsEquals(newFactAttribute.getJsonObject())))
+                                                .noneMatch(oldFactAttribute ->
+                                                    JsonUtil.equals(newFactAttribute.getJsonObject(), newFactAttribute.getJsonObject())
+                                                )
+                                        )
                                         .forEach(newFactAttribute -> {
                                             AssetUpdate update = new AssetUpdate(serverAsset, newFactAttribute);
                                             // Set the status to completed already so rules cannot interfere with this initial insert

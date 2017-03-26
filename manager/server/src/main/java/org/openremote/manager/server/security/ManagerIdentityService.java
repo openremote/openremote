@@ -43,7 +43,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-import static org.openremote.container.json.JsonUtil.convert;
+import static org.openremote.model.util.JsonUtil.convert;
 import static org.openremote.model.Constants.*;
 
 public class ManagerIdentityService extends IdentityService {

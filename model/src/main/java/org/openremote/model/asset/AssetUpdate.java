@@ -22,6 +22,7 @@ package org.openremote.model.asset;
 import elemental.json.JsonValue;
 import org.openremote.model.Attribute;
 import org.openremote.model.AttributeType;
+import org.openremote.model.util.JsonUtil;
 
 import java.util.Date;
 
@@ -210,7 +211,7 @@ public class AssetUpdate {
     }
 
     public boolean isValueChanged() {
-        return !attribute.getValue().jsEquals(oldValue);
+        return !JsonUtil.equals(attribute.getValue(), oldValue);
     }
 
     /////////////////////////////////////////////////////////////////
@@ -266,18 +267,18 @@ public class AssetUpdate {
         // TODO Don't use jsEquals(), write own comparison by value
 
         return assetId.equals(that.assetId) &&
-                getAttributeName().equalsIgnoreCase(that.getAttributeName()) &&
-                getValue().jsEquals(that.getValue()) &&
-                getValueTimestamp() == that.getValueTimestamp() &&
-                ((oldValue == null && that.oldValue == null) || (oldValue != null && oldValue.jsEquals(that.oldValue))) &&
-                oldValueTimestamp == that.oldValueTimestamp;
+            getAttributeName().equalsIgnoreCase(that.getAttributeName()) &&
+            JsonUtil.equals(getValue(), that.getValue()) &&
+            getValueTimestamp() == that.getValueTimestamp() &&
+            ((oldValue == null && that.oldValue == null) || (oldValue != null && JsonUtil.equals(oldValue, that.oldValue))) &&
+            oldValueTimestamp == that.oldValueTimestamp;
     }
 
     @Override
     public int hashCode() {
-        return assetId.hashCode() + getAttributeName().hashCode() + getValue().hashCode()
+        return assetId.hashCode() + getAttributeName().hashCode() + JsonUtil.hashCode(getValue())
             + Long.hashCode(getValueTimestamp())
-            + (oldValue != null ? oldValue.hashCode() : 0) + Long.hashCode(oldValueTimestamp);
+            + (oldValue != null ? JsonUtil.hashCode(oldValue) : 0) + Long.hashCode(oldValueTimestamp);
     }
 
     @Override
