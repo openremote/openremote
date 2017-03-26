@@ -15,66 +15,7 @@ import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KE
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 
-class RulesResourceTest extends Specification implements ManagerContainerTrait {
-
-    def importTestRulesets(RulesStorageService rulesStorageService, KeycloakDemoSetup keycloakDemoSetup, ManagerDemoSetup managerDemoSetup) {
-        RulesDefinition rulesDefinition = new GlobalRulesDefinition(
-                "Some global demo rules",
-                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
-        )
-        rulesStorageService.merge(rulesDefinition)
-
-        rulesDefinition = new GlobalRulesDefinition(
-                "Other global demo rules with a long name that should fill up space in UI",
-                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
-        )
-        rulesDefinition.setEnabled(false)
-        rulesStorageService.merge(rulesDefinition)
-
-        rulesDefinition = new TenantRulesDefinition(
-                "Some master tenant demo rules",
-                keycloakDemoSetup.masterTenant.id,
-                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
-        )
-        rulesStorageService.merge(rulesDefinition)
-
-        rulesDefinition = new TenantRulesDefinition(
-                "Some customerA tenant demo rules",
-                keycloakDemoSetup.customerATenant.id,
-                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
-        )
-        rulesStorageService.merge(rulesDefinition)
-
-        rulesDefinition = new TenantRulesDefinition(
-                "Some customerB tenant demo rules",
-                keycloakDemoSetup.customerBTenant.id,
-                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
-        )
-        rulesDefinition.setEnabled(false)
-        rulesStorageService.merge(rulesDefinition)
-
-        rulesDefinition = new AssetRulesDefinition(
-                "Some apartment 1 demo rules",
-                managerDemoSetup.apartment1Id,
-                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
-        )
-        rulesStorageService.merge(rulesDefinition)
-
-        rulesDefinition = new AssetRulesDefinition(
-                "Some apartment 2 demo rules",
-                managerDemoSetup.apartment2Id,
-                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
-        )
-        rulesDefinition.setEnabled(false)
-        rulesStorageService.merge(rulesDefinition)
-
-        rulesDefinition = new AssetRulesDefinition(
-                "Some apartment 3 demo rules",
-                managerDemoSetup.apartment3Id,
-                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
-        )
-        rulesStorageService.merge(rulesDefinition)
-    }
+class BasicRulesResourceTest extends Specification implements ManagerContainerTrait {
 
     def "Access rules as superuser"() {
         given: "the server container is started"
@@ -85,7 +26,7 @@ class RulesResourceTest extends Specification implements ManagerContainerTrait {
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "some test rulesets have been imported"
-        importTestRulesets(rulesStorageService, keycloakDemoSetup, managerDemoSetup)
+        new BasicRulesImport(rulesStorageService, keycloakDemoSetup, managerDemoSetup)
 
         and: "an authenticated admin user"
         def accessToken = authenticate(
@@ -351,7 +292,7 @@ class RulesResourceTest extends Specification implements ManagerContainerTrait {
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "some imported rulesets"
-        importTestRulesets(rulesStorageService, keycloakDemoSetup, managerDemoSetup)
+        new BasicRulesImport(rulesStorageService, keycloakDemoSetup, managerDemoSetup)
 
         and: "an authenticated test user"
         def accessToken = authenticate(
@@ -577,7 +518,7 @@ class RulesResourceTest extends Specification implements ManagerContainerTrait {
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "some imported rulesets"
-        importTestRulesets(rulesStorageService, keycloakDemoSetup, managerDemoSetup)
+        new BasicRulesImport(rulesStorageService, keycloakDemoSetup, managerDemoSetup)
 
         and: "an authenticated test user"
         def accessToken = authenticate(
@@ -721,7 +662,7 @@ class RulesResourceTest extends Specification implements ManagerContainerTrait {
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "some imported rulesets"
-        importTestRulesets(rulesStorageService, keycloakDemoSetup, managerDemoSetup)
+        new BasicRulesImport(rulesStorageService, keycloakDemoSetup, managerDemoSetup)
 
         and: "an authenticated test user"
         def accessToken = authenticate(

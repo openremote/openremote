@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -37,6 +37,10 @@ public class AssetQuery {
         public boolean filterProtected;
 
         public Select() {
+        }
+
+        public Select(boolean loadComplete) {
+            this.loadComplete = loadComplete;
         }
 
         public Select(boolean loadComplete, boolean filterProtected) {
