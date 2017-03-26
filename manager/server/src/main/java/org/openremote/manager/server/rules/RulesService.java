@@ -29,7 +29,6 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.util.Pair;
 import org.openremote.container.util.Util;
 import org.openremote.manager.server.asset.AssetStorageService;
-import org.openremote.model.asset.AssetUpdate;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.rules.AssetRulesDefinition;
@@ -37,11 +36,13 @@ import org.openremote.manager.shared.rules.GlobalRulesDefinition;
 import org.openremote.manager.shared.rules.RulesDefinition;
 import org.openremote.manager.shared.rules.TenantRulesDefinition;
 import org.openremote.manager.shared.security.Tenant;
+import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.Attribute;
 import org.openremote.model.Attributes;
-import org.openremote.model.MetaItem;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.AssetQuery;
+import org.openremote.model.asset.AssetUpdate;
 import org.openremote.model.util.JsonUtil;
 
 import java.util.*;
@@ -110,79 +111,86 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                 PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
                 ServerAsset asset = (ServerAsset) persistenceEvent.getEntity();
 
-                // If there are any
+                switch (persistenceEvent.getCause()) {
+                    case INSERT:
+                        // TODO: Need to populate asset path rather than refetch the entire asset
+                        ServerAsset insertedAsset = assetStorageService.find(asset.getId(), true, false);
 
-                    switch (persistenceEvent.getCause()) {
-                        case INSERT:
-                            // New asset has been created so get attributes that have RULES_FACT meta
-                            Attributes addedAttributes = new Attributes(asset.getAttributes());
-                            Arrays.stream(addedAttributes.get())
+                        // New asset has been created so get attributes that have RULES_FACT meta
+                        Attributes addedAttributes = new Attributes(asset.getAttributes());
+
+                        Arrays.stream(addedAttributes.get())
+                                .filter(Attribute::isRulesFact)
+                                .forEach(attribute -> {
+                                    AssetUpdate update = new AssetUpdate(insertedAsset, attribute);
+                                    // Set the status to completed already so rules cannot interfere with this initial insert
+                                    update.setStatus(AssetUpdate.Status.COMPLETED);
+                                    insertFact(update, true);
+                                });
+                        break;
+                    case UPDATE:
+                        // TODO: Need to populate asset path rather than refetch the entire asset
+                        ServerAsset updatedAsset = assetStorageService.find(asset.getId(), true, false);
+
+                        int attributesIndex = Arrays.asList(persistenceEvent.getPropertyNames()).indexOf("attributes");
+                        if (attributesIndex >= 0) {
+                            // Attributes have possibly changed so need to compare old and new state to determine
+                            // which facts to retract and which to insert
+                            Attributes oldAttributes = new Attributes((JsonObject)persistenceEvent.getPreviousState()[attributesIndex]);
+                            Attributes newAttributes = new Attributes((JsonObject)persistenceEvent.getCurrentState()[attributesIndex]);
+
+                            List<Attribute> oldFactAttributes = Arrays.stream(oldAttributes.get())
                                     .filter(Attribute::isRulesFact)
-                                    .forEach(attribute -> {
-                                        AssetUpdate update = new AssetUpdate(asset, attribute);
+                                    .collect(Collectors.toList());
+
+                            List<Attribute> newFactAttributes = Arrays.stream(newAttributes.get())
+                                    .filter(Attribute::isRulesFact)
+                                    .collect(Collectors.toList());
+
+                            // Compare attributes by JSON value
+                            // Retract facts for attributes that are in oldFactAttributes but not in newFactAttributes
+
+                            oldFactAttributes
+                                    .stream()
+                                    .filter(oldFactAttribute -> newFactAttributes
+                                            .stream()
+                                            .noneMatch(newFactAttribute ->
+                                                JsonUtil.equals(oldFactAttribute.getJsonObject(), newFactAttribute.getJsonObject(), Collections.singletonList(AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME))
+                                            )
+                                    )
+                                    .forEach(obsoleteFactAttribute -> {
+                                        AssetUpdate update = new AssetUpdate(updatedAsset, obsoleteFactAttribute);
+                                        retractFact(update);
+                                    });
+
+                            // Insert facts for attributes that are in newFactAttributes but not in oldFactAttributes
+                            newFactAttributes
+                                    .stream()
+                                    .filter(newFactAttribute -> oldFactAttributes
+                                            .stream()
+                                            .noneMatch(oldFactAttribute ->
+                                                JsonUtil.equals(oldFactAttribute.getJsonObject(), newFactAttribute.getJsonObject(), Collections.singletonList(AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME))
+                                            )
+                                    )
+                                    .forEach(newFactAttribute -> {
+                                        AssetUpdate update = new AssetUpdate(updatedAsset, newFactAttribute);
                                         // Set the status to completed already so rules cannot interfere with this initial insert
                                         update.setStatus(AssetUpdate.Status.COMPLETED);
                                         insertFact(update, true);
                                     });
-                            break;
-                        case UPDATE:
-                            int attributesIndex = Arrays.asList(persistenceEvent.getPropertyNames()).indexOf("attributes");
-                            if (attributesIndex >= 0) {
-                                // Attributes have possibly changed so need to compare old and new state to determine
-                                // which facts to retract and which to insert
-                                Attributes oldAttributes = new Attributes((JsonObject)persistenceEvent.getPreviousState()[attributesIndex]);
-                                Attributes newAttributes = new Attributes((JsonObject)persistenceEvent.getCurrentState()[attributesIndex]);
-
-                                List<Attribute> oldFactAttributes = Arrays.stream(oldAttributes.get())
-                                        .filter(Attribute::isRulesFact)
-                                        .collect(Collectors.toList());
-
-                                List<Attribute> newFactAttributes = Arrays.stream(newAttributes.get())
-                                        .filter(Attribute::isRulesFact)
-                                        .collect(Collectors.toList());
-
-                                // Compare attributes by JSON value
-                                // Retract facts for attributes that are in oldFactAttributes but not in newFactAttributes
-                                oldFactAttributes
-                                        .stream()
-                                        .filter(oldFactAttribute -> newFactAttributes
-                                                .stream()
-                                                .noneMatch(newFactAttribute ->
-                                                    JsonUtil.equals(oldFactAttribute.getJsonObject(), newFactAttribute.getJsonObject())
-                                                )
-                                        )
-                                        .forEach(obsoleteFactAttribute -> {
-                                            AssetUpdate update = new AssetUpdate(asset, obsoleteFactAttribute);
-                                            retractFact(update);
-                                        });
-
-                                // Insert facts for attributes that are in newFactAttributes but not in oldFactAttributes
-                                newFactAttributes
-                                        .stream()
-                                        .filter(newFactAttribute -> oldFactAttributes
-                                                .stream()
-                                                .noneMatch(oldFactAttribute ->
-                                                    JsonUtil.equals(newFactAttribute.getJsonObject(), newFactAttribute.getJsonObject())
-                                                )
-                                        )
-                                        .forEach(newFactAttribute -> {
-                                            AssetUpdate update = new AssetUpdate(asset, newFactAttribute);
-                                            // Set the status to completed already so rules cannot interfere with this initial insert
-                                            insertFact(update, true);
-                                        });
-                            }
-                            break;
-                        case DELETE:
-                            // Retract any facts that were associated with this asset
-                            Attributes removedAttributes = new Attributes(asset.getAttributes());
-                            Arrays.stream(removedAttributes.get())
-                                    .filter(Attribute::isRulesFact)
-                                    .forEach(attribute -> {
-                                        AssetUpdate update = new AssetUpdate(asset, attribute);
-                                        retractFact(update);
-                                    });
-                            break;
-                    }
+                        }
+                        break;
+                    case DELETE:
+                        // Retract any facts that were associated with this asset
+                        Attributes removedAttributes = new Attributes(asset.getAttributes());
+                        Arrays.stream(removedAttributes.get())
+                                .filter(Attribute::isRulesFact)
+                                .forEach(attribute -> {
+                                    AssetUpdate update = new AssetUpdate(asset, attribute);
+                                    retractFact(update);
+                                });
+                        break;
+                }
             });
     }
 
@@ -203,8 +211,28 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         // Deploy asset rules - group by asset ID then tenant and check tenant is enabled
         deployAssetRulesDefinitions(rulesStorageService.findEnabledAssetDefinitions());
 
-        // TODO: Look for attributes that contain RULES_FACT meta and push Attribute Events for them
+        // Get all attributes that contain RULES_FACT = true meta and push Attribute Events for them
         // into the rule engines.
+        List<ServerAsset> assets = assetStorageService.findAll(
+                new AssetQuery()
+                        .attributeMeta(
+                                new AssetQuery.AttributeMetaPredicate(
+                                        AssetMeta.RULES_FACT,
+                                        new AssetQuery.BooleanPredicate(true))
+                        ));
+
+        assets.forEach(asset -> {
+            Attributes attributes = new Attributes(asset.getAttributes());
+            Arrays
+                    .stream(attributes.get())
+                    .filter(Attribute::isRulesFact)
+                    .forEach(attribute -> {
+                        AssetUpdate update = new AssetUpdate(asset, attribute);
+                        // Set the status to completed already so rules cannot interfere with this initial insert
+                        update.setStatus(AssetUpdate.Status.COMPLETED);
+                        insertFact(update, true);
+                    });
+        });
     }
 
     @Override

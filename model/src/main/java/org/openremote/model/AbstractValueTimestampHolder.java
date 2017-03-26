@@ -29,7 +29,7 @@ import elemental.json.*;
  */
 public abstract class AbstractValueTimestampHolder<T extends AbstractValueTimestampHolder> extends AbstractValueHolder<T> {
 
-    protected static final String VALUE_TIMESTAMP_FIELD_NAME = "valueTimestamp";
+    public static final String VALUE_TIMESTAMP_FIELD_NAME = "valueTimestamp";
 
     public AbstractValueTimestampHolder(JsonObject jsonObject) {
         super(jsonObject);

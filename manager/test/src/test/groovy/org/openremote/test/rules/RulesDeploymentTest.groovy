@@ -4,9 +4,18 @@ import elemental.json.Json
 import org.kie.api.event.rule.AfterMatchFiredEvent
 import org.kie.api.event.rule.DefaultAgendaEventListener
 import org.openremote.manager.server.asset.AssetProcessingService
+import org.openremote.manager.server.asset.ServerAsset
 import org.openremote.manager.server.rules.RulesDeployment
 import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.rules.RulesStorageService
+import org.openremote.manager.server.asset.AssetStorageService
+import org.openremote.model.Attribute
+import org.openremote.model.Attributes
+import org.openremote.model.AttributeType
+import org.openremote.model.Meta
+import org.openremote.model.MetaItem
+import org.openremote.model.asset.AssetType
+import org.openremote.model.asset.AssetMeta
 import org.openremote.manager.server.security.ManagerIdentityService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
@@ -28,6 +37,7 @@ import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KE
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 
+// TODO: Add start/end processing flag to Rules Service that can be used here rather than using pollingConditions initialDelay for testing rules not fired
 class RulesDeploymentTest extends Specification implements ManagerContainerTrait {
 
     def customerBRulesDefinitionId
@@ -308,7 +318,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         )
         rulesDefinition = rulesStorageService.merge(rulesDefinition)
 
-        then: "the global rules engine should not run and the rule deployment status status should indicate the issue"
+        then: "the global rules engine should not run and the rule deployment status should indicate the issue"
         conditions.eventually {
             assert rulesService.globalDeployment.allRulesDefinitions.length == 3
             assert rulesService.globalDeployment.running == false
@@ -397,6 +407,8 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
             assert apartment3Engine.allRulesDefinitions[0].deploymentStatus == DeploymentStatus.DEPLOYED
         }
 
+        then: "a new fact should be inserted into the engines in scope for the new RULES_FACT attribute which will cause the rules to fire"
+
 //TODO: Reinstate the tenant delete test once tenant delete mechanism is finalised
 //        when: "a tenant is deleted"
 //        identityService.deleteTenant(accessToken, customerATenant.getRealm())
@@ -442,6 +454,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         def rulesService = container.getService(RulesService.class)
         def rulesStorageService = container.getService(RulesStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
         RulesDeployment globalEngine, masterEngine, customerAEngine, smartHomeEngine, apartment1Engine, apartment3Engine
         List<String> globalEngineFiredRules = []
         List<String> masterEngineFiredRules = []
@@ -475,6 +488,11 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
             assert apartment3Engine.isRunning()
         }
         //endregion
+
+        and: "the demo attributes marked with RULES_FACT = true meta should be inserted into the engines"
+        conditions.eventually {
+            globalEngine.facts.size() == 6
+        }
 
         //region when: "rule execution loggers are attached to the engines"
         when: "rule execution loggers are attached to the engines"
@@ -573,6 +591,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         customerAEngineFiredRules.clear();
         smartHomeEngineFiredRules.clear();
         apartment1EngineFiredRules.clear();
+        apartment3EngineFiredRules.clear();
         //endregion
 
         //region and: "an attribute event with the same value as current value is pushed into the system"
@@ -627,6 +646,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         customerAEngineFiredRules.clear();
         smartHomeEngineFiredRules.clear();
         apartment1EngineFiredRules.clear();
+        apartment3EngineFiredRules.clear();
         attachRuleExecutionLogger(smartHomeEngine, smartHomeEngineFiredRules)
         //endregion
 
@@ -720,6 +740,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         customerAEngineFiredRules.clear();
         smartHomeEngineFiredRules.clear();
         apartment1EngineFiredRules.clear();
+        apartment3EngineFiredRules.clear();
         attachRuleExecutionLogger(globalEngine, globalEngineFiredRules)
         //endregion
 
@@ -749,6 +770,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         customerAEngineFiredRules.clear();
         smartHomeEngineFiredRules.clear();
         apartment1EngineFiredRules.clear();
+        apartment3EngineFiredRules.clear();
         //endregion
 
         //region and: "an apartment 3 living room attribute event occurs"
@@ -773,6 +795,143 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
             assert apartment1EngineFiredRules.size() == 0
         }
         //endregion
+
+        //region when: "the engine counters are reset"
+        when: "the engine counters are reset"
+        globalEngineFiredRules.clear();
+        customerAEngineFiredRules.clear();
+        smartHomeEngineFiredRules.clear();
+        apartment1EngineFiredRules.clear();
+        apartment3EngineFiredRules.clear();
+        //endregion
+
+        and: "a Kitchen room asset is inserted into apartment 1 that contains a RULES_FACT = true meta flag"
+        def apartment1 = assetStorageService.find(managerDemoSetup.apartment1Id)
+        def asset = new ServerAsset(apartment1)
+        asset.setRealmId(keycloakDemoSetup.customerATenant.getId())
+        asset.setType(AssetType.ROOM)
+        asset.setName("Kitchen")
+        Attributes attributes = new Attributes()
+        attributes.put(
+                new Attribute("testString", AttributeType.STRING, Json.create("test"))
+                        .setMeta(
+                        new Meta()
+                                .add(new MetaItem(AssetMeta.RULES_FACT, Json.create(true)))
+                )
+        )
+        asset.setAttributes(attributes.getJsonObject())
+        asset = assetStorageService.merge(asset)
+
+        then: "the engines in scope should have fired the matched rules (Kitchen All should fire)"
+        conditions.eventually {
+            assert globalEngineFiredRules.size() == 2
+            assert globalEngineFiredRules.containsAll(["All", "All changed"])
+            assert customerAEngineFiredRules.size() == 2
+            assert customerAEngineFiredRules.containsAll(["All", "All changed"])
+            assert smartHomeEngineFiredRules.size() == 4
+            assert smartHomeEngineFiredRules.containsAll(["Kitchen All", "Parent Type Residence", "Asset Type Room", "String Attributes"])
+            assert apartment1EngineFiredRules.size() == 2
+            assert apartment1EngineFiredRules.containsAll(["All", "All changed"])
+            assert apartment3EngineFiredRules.size() == 0
+        }
+
+        //region when: "the engine counters are reset"
+        when: "the engine counters are reset"
+        globalEngineFiredRules.clear();
+        customerAEngineFiredRules.clear();
+        smartHomeEngineFiredRules.clear();
+        apartment1EngineFiredRules.clear();
+        apartment3EngineFiredRules.clear();
+        //endregion
+
+        and: "the Kitchen room asset is modified to add a new attribute but RULES_FACT = true meta is not changed"
+        attributes = new Attributes()
+        attributes.put(
+                new Attribute("testString", AttributeType.STRING, Json.create("test"))
+                        .setMeta(
+                        new Meta()
+                                .add(new MetaItem(AssetMeta.RULES_FACT, Json.create(true)))
+                ),
+                new Attribute("testInteger", AttributeType.INTEGER, Json.create(0))
+                );
+        asset.setAttributes(attributes.getJsonObject())
+        def factCount = smartHomeEngine.facts.size()
+        asset = assetStorageService.merge(asset)
+
+        then: "after a few seconds the fact count shouldn't change"
+        new PollingConditions(initialDelay: 3, timeout: 5).eventually {
+            assert smartHomeEngine.facts.size() == factCount
+        }
+
+        when: "the Kitchen room asset is modified to set the RULES_FACT to false"
+        attributes = new Attributes()
+        attributes.put(
+                new Attribute("testString", AttributeType.STRING, Json.create("test"))
+                        .setMeta(
+                        new Meta()
+                                .add(new MetaItem(AssetMeta.RULES_FACT, Json.create(false)))
+                ),
+                new Attribute("testInteger", AttributeType.INTEGER, Json.create(0))
+        );
+        asset.setAttributes(attributes.getJsonObject())
+        factCount = smartHomeEngine.facts.size()
+        asset = assetStorageService.merge(asset)
+
+        then: "after a few seconds the facts should be removed from the rule engines"
+        conditions.eventually {
+            assert smartHomeEngine.facts.size() == factCount - 1
+        }
+
+        when: "the Kitchen room asset is modified to set all attributes to RULES_FACT = true"
+        attributes = new Attributes()
+        attributes.put(
+                new Attribute("testString", AttributeType.STRING, Json.create("test"))
+                        .setMeta(
+                        new Meta()
+                                .add(new MetaItem(AssetMeta.RULES_FACT, Json.create(true)))
+                ),
+                new Attribute("testInteger", AttributeType.INTEGER, Json.create(0))
+                        .setMeta(
+                        new Meta()
+                                .add(new MetaItem(AssetMeta.RULES_FACT, Json.create(true)))
+                )
+        );
+        asset.setAttributes(attributes.getJsonObject())
+        asset = assetStorageService.merge(asset)
+
+        then: "the engines in scope should have fired the matched rules twice (Kitchen All should fire twice Kitchen Integer should have fired once)"
+        conditions.eventually {
+            assert globalEngineFiredRules.size() == 4
+            assert globalEngineFiredRules.containsAll(["All", "All changed"])
+            assert customerAEngineFiredRules.size() == 4
+            assert customerAEngineFiredRules.containsAll(["All", "All changed"])
+            assert smartHomeEngineFiredRules.size() == 9
+            assert smartHomeEngineFiredRules.containsAll(["Kitchen All", "Parent Type Residence", "Asset Type Room", "String Attributes", "Kitchen Integer Attributes"])
+            assert apartment1EngineFiredRules.size() == 4
+            assert apartment1EngineFiredRules.containsAll(["All", "All changed"])
+            assert apartment3EngineFiredRules.size() == 0
+        }
+
+        //region when: "the engine counters are reset"
+        when: "the engine counters are reset"
+        globalEngineFiredRules.clear();
+        customerAEngineFiredRules.clear();
+        smartHomeEngineFiredRules.clear();
+        apartment1EngineFiredRules.clear();
+        apartment3EngineFiredRules.clear();
+        //endregion
+
+        and: "the Kitchen room asset is deleted"
+        factCount = smartHomeEngine.facts.size()
+        asset = assetStorageService.delete(asset.getId())
+
+        then: "after a few seconds the facts should be removed from the rule engines"
+        conditions.eventually {
+            assert smartHomeEngine.facts.size() == factCount - 2
+        }
+
+        cleanup: "the server should be stopped"
+        stopContainer(container)
     }
 
     def attachRuleExecutionLogger(RulesDeployment ruleEngine, List<String> executedRules) {

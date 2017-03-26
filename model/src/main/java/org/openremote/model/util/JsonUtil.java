@@ -23,7 +23,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import elemental.json.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class JsonUtil {
 
@@ -31,6 +33,44 @@ public class JsonUtil {
     public static <T> T convert(ObjectMapper objectMapper, Class<T> targetType, Object object) {
         Map<String, Object> props = objectMapper.convertValue(object, Map.class);
         return objectMapper.convertValue(props, targetType);
+    }
+
+    /**
+     * Compare two {@link JsonObject} instances and optionally exclude certain keys (if object A contains an ignoredKey
+     * but object B doesn't (or vice versa) then the objects can still be considered equal if all non-ignored keys are
+     * present and the values of the non ignored keys are considered equal)
+     */
+    public static boolean equals(JsonObject a, JsonObject b, List<String> ignoreKeys) {
+        if (ignoreKeys == null || ignoreKeys.size() == 0) {
+            return equals(a, b);
+        }
+
+        Map<String, JsonValue> mapA = asMap(a);
+        Map<String, JsonValue> mapB = asMap(b);
+        List<String> mapAKeys = mapA.keySet().stream().filter(k -> !ignoreKeys.contains(k)).collect(Collectors.toList());
+        List<String> mapBKeys = mapB.keySet().stream().filter(k -> !ignoreKeys.contains(k)).collect(Collectors.toList());
+
+        if (mapAKeys.size() != mapBKeys.size()) {
+            return false;
+        }
+
+        if (!mapAKeys.containsAll(mapBKeys)) {
+            return false;
+        }
+
+        for (Map.Entry<String, JsonValue> entry : mapA.entrySet()) {
+            if (ignoreKeys.contains(entry.getKey())) {
+                continue;
+            }
+
+            JsonValue mapAValue = entry.getValue();
+            JsonValue mapBValue = mapB.get(entry.getKey());
+            if (!equals(mapAValue, mapBValue)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -45,10 +85,11 @@ public class JsonUtil {
         if (b == null)
             return false;
         if (a instanceof JsonObject && b instanceof JsonObject) {
-            Map<String, JsonValue> mapA = asMap((JsonObject) a);
-            Map<String, JsonValue> mapB = asMap((JsonObject) b);
+            Map<String, JsonValue> mapA = asMap((JsonObject)a);
+            Map<String, JsonValue> mapB = asMap((JsonObject)b);
             if (!mapA.keySet().equals(mapB.keySet()))
                 return false;
+
             for (Map.Entry<String, JsonValue> entry : mapA.entrySet()) {
                 JsonValue mapAValue = entry.getValue();
                 JsonValue mapBValue = mapB.get(entry.getKey());

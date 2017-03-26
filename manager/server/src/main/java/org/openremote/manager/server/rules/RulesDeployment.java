@@ -379,13 +379,19 @@ public class RulesDeployment<T extends RulesDefinition> {
 
         FactHandle factHandle = update != null ? facts.get(update) : null;
 
-        if (factHandle != null && knowledgeSession != null) try {
-            // ... retract it from working memory ...
-            LOG.finest("Removed stale attribute fact: " + update);
-            knowledgeSession.delete(factHandle);
-        } finally {
-            // ... and make sure we don't keep a reference to the stale fact
+        if (factHandle != null) {
             facts.remove(update);
+
+            if (knowledgeSession != null) {
+                try {
+                    // ... retract it from working memory ...
+                    LOG.finest("Removed stale attribute fact: " + update);
+                    knowledgeSession.delete(factHandle);
+                    int fireCount = knowledgeSession.fireAllRules();
+                } catch (Exception e) {
+                    LOG.fine("Failed to retract fact:" + update);
+                }
+            }
         }
     }
 

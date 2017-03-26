@@ -105,7 +105,7 @@ public class AssetUpdate {
         this.assetId = asset.getId();
         this.assetName = asset.getName();
         if (asset.getPath() == null) {
-            throw new IllegalArgumentException("Asset no loaded completely, empty path: " + asset);
+            throw new IllegalArgumentException("Asset not loaded completely, empty path: " + asset);
         }
         this.assetPath = asset.getPath();
         this.assetType = asset.getType();
@@ -291,7 +291,7 @@ public class AssetUpdate {
             ", attributeName=" + getAttributeName() +
             ", value=" + getValue().toJson() +
             ", valueTimestamp=" + getValueTimestamp() +
-            ", oldValue=" + getOldValue().toJson() +
+            ", oldValue=" + (oldValue != null ? oldValue.toJson() : "null") +
             ", oldValueTimestamp=" + getOldValueTimestamp() +
             '}';
     }

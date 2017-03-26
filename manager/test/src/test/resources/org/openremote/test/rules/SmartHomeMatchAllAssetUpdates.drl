@@ -13,6 +13,20 @@ then
   return;
 end
 
+rule "Kitchen All"
+when
+  $e: AssetUpdate(assetName == "Kitchen")
+then
+  return;
+end
+
+rule "Kitchen Integer Attributes"
+when
+  $e: AssetUpdate(assetName == "Kitchen", attributeType == AttributeType.INTEGER)
+then
+  return;
+end
+
 rule "Living Room Thermostat"
 when
   $e: AssetUpdate(assetName == "Livingroom Thermostat")
