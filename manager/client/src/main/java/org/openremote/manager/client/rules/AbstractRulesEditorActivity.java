@@ -38,12 +38,15 @@ import org.openremote.model.Consumer;
 
 import javax.inject.Inject;
 import java.util.Collection;
+import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
 public abstract class AbstractRulesEditorActivity<T extends RulesDefinition, PLACE extends RulesEditorPlace>
     extends AssetBrowsingActivity<PLACE>
     implements RulesEditor.Presenter {
+
+    private static final Logger LOG = Logger.getLogger(AbstractRulesEditorActivity.class.getName());
 
     final protected RulesEditor view;
     final protected RulesResource rulesResource;
@@ -93,6 +96,7 @@ public abstract class AbstractRulesEditorActivity<T extends RulesDefinition, PLA
         view.clearFormMessages();
         clearViewFieldErrors();
 
+        view.setFormBusy(true);
         if (definitionId != null) {
             environment.getRequestService().execute(
                 getEntityReader(),

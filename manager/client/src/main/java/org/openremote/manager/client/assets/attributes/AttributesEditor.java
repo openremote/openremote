@@ -33,8 +33,12 @@ import org.openremote.manager.client.widget.*;
 import org.openremote.model.*;
 import org.openremote.model.asset.AssetMeta;
 
+import java.util.logging.Logger;
+
 public class AttributesEditor
     extends AttributesView<AttributesEditor.Container, AttributesEditor.Style> {
+
+    private static final Logger LOG = Logger.getLogger(AttributesEditor.class.getName());
 
     protected final RegExp attributeNameRegExp = RegExp.compile(Attribute.ATTRIBUTE_NAME_PATTERN);
 
@@ -399,7 +403,7 @@ public class AttributesEditor
                 ? AssetMeta.EditableType.valueOf(typeListBox.getSelectedValue()).valueType
                 : JsonType.STRING;
             if (valueType == JsonType.BOOLEAN) {
-                item.setValueAsBoolean(false); // Special case boolean editor, has an "initial" state, there is always a value
+                item.setValueUnchecked(Json.create(false)); // Special case boolean editor, has an "initial" state, there is always a value
             }
             IsWidget editor = createEditor(item, valueType, true, formGroup);
             formField.add(editor);

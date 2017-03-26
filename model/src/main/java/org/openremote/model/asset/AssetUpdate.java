@@ -104,6 +104,9 @@ public class AssetUpdate {
         this.attribute = attribute;
         this.assetId = asset.getId();
         this.assetName = asset.getName();
+        if (asset.getPath() == null) {
+            throw new IllegalArgumentException("Asset no loaded completely, empty path: " + asset);
+        }
         this.assetPath = asset.getPath();
         this.assetType = asset.getType();
         this.assetCreatedOn = asset.getCreatedOn();
@@ -284,12 +287,12 @@ public class AssetUpdate {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            " assetId=" + getAssetName() +
-            " attributeName=" + getAttributeName() +
-            " value=" + getValue().toJson() +
-            " valueTimestamp=" + getValueTimestamp() +
-            " oldValue=" + getOldValue().toJson() +
-            " oldValueTimestamp=" + getOldValueTimestamp() +
+            "assetId=" + getAssetName() +
+            ", attributeName=" + getAttributeName() +
+            ", value=" + getValue().toJson() +
+            ", valueTimestamp=" + getValueTimestamp() +
+            ", oldValue=" + getOldValue().toJson() +
+            ", oldValueTimestamp=" + getOldValueTimestamp() +
             '}';
     }
 }

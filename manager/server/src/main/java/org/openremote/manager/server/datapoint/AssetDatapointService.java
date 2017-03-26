@@ -36,25 +36,24 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetUp
     @Override
     public void accept(AssetUpdate assetUpdate) {
         if (assetUpdate.getAttribute().isStoreDatapoints()) {
+            LOG.finest("Storing asset update data point: " + assetUpdate);
             AssetDatapoint assetDatapoint = new AssetDatapoint(assetUpdate.getAttribute().getStateEvent(assetUpdate.getAssetId()));
-            persistenceService.doTransaction(entityManager -> {
-                entityManager.persist(assetDatapoint);
-            });
+            persistenceService.doTransaction(entityManager -> entityManager.persist(assetDatapoint));
+        } else {
+            LOG.finest("Ignoring asset update as attribute is not a data point: " + assetUpdate);
         }
     }
 
     public List<AssetDatapoint> getDatapoints(AttributeRef attributeRef) {
-        return persistenceService.doReturningTransaction(entityManager -> {
-            return entityManager.createQuery(
-                "select dp from AssetDatapoint dp " +
-                    "where dp.entityId = :assetId " +
-                    "and dp.attributeName = :attributeName " +
-                    "order by dp.timestamp asc",
-                AssetDatapoint.class)
-                .setParameter("assetId", attributeRef.getEntityId())
-                .setParameter("attributeName", attributeRef.getAttributeName())
-                .getResultList();
-        });
+        return persistenceService.doReturningTransaction(entityManager -> entityManager.createQuery(
+            "select dp from AssetDatapoint dp " +
+                "where dp.entityId = :assetId " +
+                "and dp.attributeName = :attributeName " +
+                "order by dp.timestamp asc",
+            AssetDatapoint.class)
+            .setParameter("assetId", attributeRef.getEntityId())
+            .setParameter("attributeName", attributeRef.getAttributeName())
+            .getResultList());
     }
 
     @Override

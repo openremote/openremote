@@ -56,6 +56,7 @@ public class GlobalRulesEditorActivity
         super.start(container, eventBus, registrations);
 
         view.setHeadline(environment.getMessages().editGlobalRules());
+        view.setFormBusy(false);
     }
 
     @Override

@@ -1,12 +1,10 @@
 package org.openremote.test.rules
 
+import org.openremote.manager.server.rules.RulesStorageService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
-import org.openremote.manager.shared.rules.AssetRulesDefinition
-import org.openremote.manager.shared.rules.GlobalRulesDefinition
-import org.openremote.manager.shared.rules.RulesResource
-import org.openremote.manager.shared.rules.TenantRulesDefinition
+import org.openremote.manager.shared.rules.*
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 
@@ -17,14 +15,77 @@ import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KE
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
 
-class RulesPermissionsTest extends Specification implements ManagerContainerTrait {
+class RulesResourceTest extends Specification implements ManagerContainerTrait {
+
+    def importTestRulesets(RulesStorageService rulesStorageService, KeycloakDemoSetup keycloakDemoSetup, ManagerDemoSetup managerDemoSetup) {
+        RulesDefinition rulesDefinition = new GlobalRulesDefinition(
+                "Some global demo rules",
+                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
+        )
+        rulesStorageService.merge(rulesDefinition)
+
+        rulesDefinition = new GlobalRulesDefinition(
+                "Other global demo rules with a long name that should fill up space in UI",
+                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
+        )
+        rulesDefinition.setEnabled(false)
+        rulesStorageService.merge(rulesDefinition)
+
+        rulesDefinition = new TenantRulesDefinition(
+                "Some master tenant demo rules",
+                keycloakDemoSetup.masterTenant.id,
+                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
+        )
+        rulesStorageService.merge(rulesDefinition)
+
+        rulesDefinition = new TenantRulesDefinition(
+                "Some customerA tenant demo rules",
+                keycloakDemoSetup.customerATenant.id,
+                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
+        )
+        rulesStorageService.merge(rulesDefinition)
+
+        rulesDefinition = new TenantRulesDefinition(
+                "Some customerB tenant demo rules",
+                keycloakDemoSetup.customerBTenant.id,
+                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
+        )
+        rulesDefinition.setEnabled(false)
+        rulesStorageService.merge(rulesDefinition)
+
+        rulesDefinition = new AssetRulesDefinition(
+                "Some apartment 1 demo rules",
+                managerDemoSetup.apartment1Id,
+                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
+        )
+        rulesStorageService.merge(rulesDefinition)
+
+        rulesDefinition = new AssetRulesDefinition(
+                "Some apartment 2 demo rules",
+                managerDemoSetup.apartment2Id,
+                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
+        )
+        rulesDefinition.setEnabled(false)
+        rulesStorageService.merge(rulesDefinition)
+
+        rulesDefinition = new AssetRulesDefinition(
+                "Some apartment 3 demo rules",
+                managerDemoSetup.apartment3Id,
+                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
+        )
+        rulesStorageService.merge(rulesDefinition)
+    }
 
     def "Access rules as superuser"() {
         given: "the server container is started"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def rulesStorageService = container.getService(RulesStorageService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+
+        and: "some test rulesets have been imported"
+        importTestRulesets(rulesStorageService, keycloakDemoSetup, managerDemoSetup)
 
         and: "an authenticated admin user"
         def accessToken = authenticate(
@@ -285,8 +346,12 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         given: "the server container is started"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def rulesStorageService = container.getService(RulesStorageService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+
+        and: "some imported rulesets"
+        importTestRulesets(rulesStorageService, keycloakDemoSetup, managerDemoSetup)
 
         and: "an authenticated test user"
         def accessToken = authenticate(
@@ -507,8 +572,12 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         given: "the server container is started"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def rulesStorageService = container.getService(RulesStorageService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+
+        and: "some imported rulesets"
+        importTestRulesets(rulesStorageService, keycloakDemoSetup, managerDemoSetup)
 
         and: "an authenticated test user"
         def accessToken = authenticate(
@@ -647,8 +716,12 @@ class RulesPermissionsTest extends Specification implements ManagerContainerTrai
         given: "the server container is started"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def rulesStorageService = container.getService(RulesStorageService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+
+        and: "some imported rulesets"
+        importTestRulesets(rulesStorageService, keycloakDemoSetup, managerDemoSetup)
 
         and: "an authenticated test user"
         def accessToken = authenticate(

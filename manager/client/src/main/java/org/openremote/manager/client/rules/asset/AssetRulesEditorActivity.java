@@ -78,7 +78,10 @@ public class AssetRulesEditorActivity
             assetMapper,
             params -> assetResource.get(params, assetId),
             200,
-            asset -> view.setHeadline(environment.getMessages().editAssetRuleset(asset.getName())),
+            asset -> {
+                view.setHeadline(environment.getMessages().editAssetRuleset(asset.getName()));
+                view.setFormBusy(false);
+            },
             ex -> handleRequestException(ex, environment)
         );
     }

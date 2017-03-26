@@ -20,6 +20,7 @@
 package org.openremote.model.asset;
 
 import elemental.json.JsonObject;
+import org.hibernate.annotations.Formula;
 import org.openremote.model.*;
 
 import javax.persistence.*;
@@ -290,7 +291,8 @@ public class Asset implements IdentifiableEntity {
 
     // The following are expensive to query, so if they are null, they might not have been loaded
 
-    @Transient
+    @Formula("get_asset_tree_path(ID)")
+    @org.hibernate.annotations.Type(type = "org.openremote.container.persistence.ArrayUserType")
     protected String[] path;
 
     @Column(name = "ATTRIBUTES", columnDefinition = "jsonb")
@@ -494,10 +496,6 @@ public class Asset implements IdentifiableEntity {
 
     public boolean pathContains(String assetId) {
         return path != null && Arrays.asList(getPath()).contains(assetId);
-    }
-
-    public void setPath(String[] path) {
-        this.path = path;
     }
 
     public JsonObject getAttributes() {

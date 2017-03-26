@@ -108,20 +108,18 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             .filter(isPersistenceEventForEntityType(Asset.class))
             .process(exchange -> {
                 PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
-                Asset asset = (Asset) persistenceEvent.getEntity();
-                ServerAsset serverAsset = ServerAsset.map(asset, new ServerAsset());
+                ServerAsset asset = (ServerAsset) persistenceEvent.getEntity();
+
+                // If there are any
 
                     switch (persistenceEvent.getCause()) {
                         case INSERT:
                             // New asset has been created so get attributes that have RULES_FACT meta
                             Attributes addedAttributes = new Attributes(asset.getAttributes());
                             Arrays.stream(addedAttributes.get())
-                                    .filter(attribute -> {
-                                        MetaItem rulesFact = attribute.firstMetaItem(AssetMeta.RULES_FACT);
-                                        return rulesFact != null && rulesFact.getValueAsBoolean();
-                                    })
+                                    .filter(Attribute::isRulesFact)
                                     .forEach(attribute -> {
-                                        AssetUpdate update = new AssetUpdate(serverAsset, attribute);
+                                        AssetUpdate update = new AssetUpdate(asset, attribute);
                                         // Set the status to completed already so rules cannot interfere with this initial insert
                                         update.setStatus(AssetUpdate.Status.COMPLETED);
                                         insertFact(update, true);
@@ -154,7 +152,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                                                 )
                                         )
                                         .forEach(obsoleteFactAttribute -> {
-                                            AssetUpdate update = new AssetUpdate(serverAsset, obsoleteFactAttribute);
+                                            AssetUpdate update = new AssetUpdate(asset, obsoleteFactAttribute);
                                             retractFact(update);
                                         });
 
@@ -168,7 +166,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                                                 )
                                         )
                                         .forEach(newFactAttribute -> {
-                                            AssetUpdate update = new AssetUpdate(serverAsset, newFactAttribute);
+                                            AssetUpdate update = new AssetUpdate(asset, newFactAttribute);
                                             // Set the status to completed already so rules cannot interfere with this initial insert
                                             insertFact(update, true);
                                         });
@@ -178,12 +176,9 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                             // Retract any facts that were associated with this asset
                             Attributes removedAttributes = new Attributes(asset.getAttributes());
                             Arrays.stream(removedAttributes.get())
-                                    .filter(attribute -> {
-                                        MetaItem rulesFact = attribute.firstMetaItem(AssetMeta.RULES_FACT);
-                                        return rulesFact != null && rulesFact.getValueAsBoolean();
-                                    })
+                                    .filter(Attribute::isRulesFact)
                                     .forEach(attribute -> {
-                                        AssetUpdate update = new AssetUpdate(serverAsset, attribute);
+                                        AssetUpdate update = new AssetUpdate(asset, attribute);
                                         retractFact(update);
                                     });
                             break;
@@ -224,18 +219,18 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             tenantDeployments.clear();
         }
 
-        globalDeployment.stop();
-        globalDeployment = null;
+        if (globalDeployment != null) {
+            globalDeployment.stop();
+            globalDeployment = null;
+        }
     }
 
     @Override
     public void accept(AssetUpdate assetUpdate) {
-        // Check attribute has RULES_FACT meta set to true
-        Attribute attribute = assetUpdate.getAttribute();
-
-        MetaItem rulesFact = attribute.firstMetaItem(AssetMeta.RULES_FACT);
-        if (rulesFact != null && rulesFact.getValueAsBoolean()) {
+        if (assetUpdate.getAttribute().isRulesFact()) {
             insertFact(assetUpdate, false);
+        } else {
+            LOG.finest("Ignoring update as attribute is not a rules fact: " + assetUpdate);
         }
     }
 
@@ -290,7 +285,9 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             } else if (rulesDefinition instanceof TenantRulesDefinition) {
                 deployTenantRulesDefinition((TenantRulesDefinition) rulesDefinition);
             } else if (rulesDefinition instanceof AssetRulesDefinition) {
-                deployAssetRulesDefinition((AssetRulesDefinition) rulesDefinition);
+                // Must reload from the database, the definition might not be completely hydrated on INSERT or UPDATE
+                AssetRulesDefinition assetRulesDefinition = rulesStorageService.findEnabledAssetDefinition(rulesDefinition.getId());
+                deployAssetRulesDefinition(assetRulesDefinition);
             }
         }
     }

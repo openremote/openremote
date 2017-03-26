@@ -1,7 +1,6 @@
 package org.openremote.test.rules
 
 import elemental.json.Json
-import org.apache.commons.io.IOUtils
 import org.kie.api.event.rule.AfterMatchFiredEvent
 import org.kie.api.event.rule.DefaultAgendaEventListener
 import org.openremote.manager.server.asset.AssetProcessingService
@@ -14,6 +13,7 @@ import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.shared.rules.AssetRulesDefinition
 import org.openremote.manager.shared.rules.GlobalRulesDefinition
+import org.openremote.manager.shared.rules.RulesDefinition
 import org.openremote.manager.shared.rules.RulesDefinition.DeploymentStatus
 import org.openremote.manager.shared.rules.TenantRulesDefinition
 import org.openremote.model.AttributeEvent
@@ -30,12 +30,74 @@ import static org.openremote.model.Constants.*
 
 class RulesDeploymentTest extends Specification implements ManagerContainerTrait {
 
+    def customerBRulesDefinitionId
+    def apartment1RulesDefinitionId
+
+    def importTestRulesets(RulesStorageService rulesStorageService, KeycloakDemoSetup keycloakDemoSetup, ManagerDemoSetup managerDemoSetup) {
+        RulesDefinition rulesDefinition = new GlobalRulesDefinition(
+                "Some global demo rules",
+                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
+        )
+        rulesStorageService.merge(rulesDefinition)
+
+        rulesDefinition = new GlobalRulesDefinition(
+                "Other global demo rules with a long name that should fill up space in UI",
+                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
+        )
+        rulesDefinition.setEnabled(false)
+        rulesStorageService.merge(rulesDefinition)
+
+        rulesDefinition = new TenantRulesDefinition(
+                "Some master tenant demo rules",
+                keycloakDemoSetup.masterTenant.id,
+                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
+        )
+        rulesStorageService.merge(rulesDefinition)
+
+        rulesDefinition = new TenantRulesDefinition(
+                "Some customerA tenant demo rules",
+                keycloakDemoSetup.customerATenant.id,
+                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
+        )
+        rulesStorageService.merge(rulesDefinition)
+
+        rulesDefinition = new TenantRulesDefinition(
+                "Some customerB tenant demo rules",
+                keycloakDemoSetup.customerBTenant.id,
+                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
+        )
+        rulesDefinition.setEnabled(false)
+        customerBRulesDefinitionId = rulesStorageService.merge(rulesDefinition).id
+
+        rulesDefinition = new AssetRulesDefinition(
+                "Some apartment 1 demo rules",
+                managerDemoSetup.apartment1Id,
+                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
+        )
+        apartment1RulesDefinitionId = rulesStorageService.merge(rulesDefinition).id
+
+        rulesDefinition = new AssetRulesDefinition(
+                "Some apartment 2 demo rules",
+                managerDemoSetup.apartment2Id,
+                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
+        )
+        rulesDefinition.setEnabled(false)
+        rulesStorageService.merge(rulesDefinition)
+
+        rulesDefinition = new AssetRulesDefinition(
+                "Some apartment 3 demo rules",
+                managerDemoSetup.apartment3Id,
+                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates.drl").text
+        )
+        rulesStorageService.merge(rulesDefinition)
+    }
+
     def "Check basic rules engine deployment"() {
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10)
 
-        and: "the demo assets and rule definitions are deployed"
+        and: "the container is started"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
@@ -43,6 +105,9 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         def rulesService = container.getService(RulesService.class)
         def identityService = container.getService(ManagerIdentityService.class)
         def rulesStorageService = container.getService(RulesStorageService.class)
+
+        and: "some test rulesets have been imported"
+        importTestRulesets(rulesStorageService, keycloakDemoSetup, managerDemoSetup)
 
         and: "an authenticated user"
         def accessToken = authenticate(
@@ -119,10 +184,11 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         when: "a new global rule definition is added"
         conditions = new PollingConditions(timeout: 10)
-        def inputStream = getClass().getResourceAsStream("/org/openremote/test/rules/GlobalRules.drl")
-        String rules = IOUtils.toString(inputStream, "UTF-8")
-        def rulesDefinition = new GlobalRulesDefinition("Some more global rules", rules)
-        rulesStorageService.merge(rulesDefinition)
+        def rulesDefinition = new GlobalRulesDefinition(
+                "Some more global rules",
+                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates2.drl").text
+        )
+        rulesDefinition = rulesStorageService.merge(rulesDefinition)
 
         then: "the global rules engine should load this definition and restart successfully"
         conditions.eventually {
@@ -139,10 +205,12 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         when: "a new tenant rule definition is added to customer A"
         conditions = new PollingConditions(timeout: 10)
-        inputStream = getClass().getResourceAsStream("/org/openremote/test/rules/TenantRules.drl")
-        rules = IOUtils.toString(inputStream, "UTF-8")
-        rulesDefinition = new TenantRulesDefinition("Some more customerA tenant rules", keycloakDemoSetup.customerATenant.id, rules)
-        rulesStorageService.merge(rulesDefinition)
+        rulesDefinition = new TenantRulesDefinition(
+                "Some more customerA tenant rules",
+                keycloakDemoSetup.customerATenant.id,
+                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates2.drl").text
+        )
+        rulesDefinition = rulesStorageService.merge(rulesDefinition)
 
         then: "customer A rules engine should load this definition and restart successfully"
         conditions.eventually {
@@ -160,10 +228,12 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         when: "a new tenant rule definition is added to customer B"
         conditions = new PollingConditions(timeout: 10)
-        inputStream = getClass().getResourceAsStream("/org/openremote/test/rules/TenantRules.drl")
-        rules = IOUtils.toString(inputStream, "UTF-8")
-        rulesDefinition = new TenantRulesDefinition("Some more customerB tenant rules", keycloakDemoSetup.customerBTenant.id, rules)
-        rulesStorageService.merge(rulesDefinition)
+        rulesDefinition = new TenantRulesDefinition(
+                "Some more customerB tenant rules",
+                keycloakDemoSetup.customerBTenant.id,
+                getClass().getResource("/org/openremote/test/rules/MatchAllAssetUpdates2.drl").text
+        )
+        rulesDefinition = rulesStorageService.merge(rulesDefinition)
 
         then: "a tenant rules engine should be created for customer B and load this definition and start successfully"
         conditions.eventually {
@@ -179,9 +249,9 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         when: "the disabled rule definition for customer B is enabled"
         conditions = new PollingConditions(timeout: 10)
-        rulesDefinition = rulesStorageService.findById(TenantRulesDefinition.class, managerDemoSetup.customerBRulesDefinitionId)
+        rulesDefinition = rulesStorageService.findById(TenantRulesDefinition.class, customerBRulesDefinitionId)
         rulesDefinition.setEnabled(true)
-        rulesStorageService.merge(rulesDefinition)
+        rulesDefinition = rulesStorageService.merge(rulesDefinition)
 
         then: "customer B rule engine should load this definition and restart successfully"
         conditions.eventually {
@@ -201,11 +271,11 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         when: "the enabled rule definition for customer B is disabled"
         conditions = new PollingConditions(timeout: 10)
         // TODO: Stop instances of rule definitions being passed around as rules deployment nulls the rules property
-        rulesDefinition = rulesStorageService.findById(TenantRulesDefinition.class, managerDemoSetup.customerBRulesDefinitionId)
+        rulesDefinition = rulesStorageService.findById(TenantRulesDefinition.class, customerBRulesDefinitionId)
         rulesDefinition.setEnabled(false)
-        rulesStorageService.merge(rulesDefinition)
+        rulesDefinition = rulesStorageService.merge(rulesDefinition)
 
-        then: "customer B rule engine should should remove it again"
+        then: "customer B rule engine should remove it again"
         conditions.eventually {
             def customerBEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerBTenant.id)
             assert customerBEngine != null
@@ -218,7 +288,7 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         when: "the asset rule definition for apartment 1 is deleted"
         conditions = new PollingConditions(timeout: 10)
-        rulesStorageService.delete(AssetRulesDefinition.class, managerDemoSetup.apartment1RulesDefinitionId)
+        rulesStorageService.delete(AssetRulesDefinition.class, apartment1RulesDefinitionId)
 
         then: "the apartment rules engine should be removed"
         conditions.eventually {
@@ -232,9 +302,10 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         when: "a broken rule definition is added to the global rules engine"
         conditions = new PollingConditions(timeout: 10)
-        inputStream = getClass().getResourceAsStream("/org/openremote/test/rules/BrokenRules.drl")
-        rules = IOUtils.toString(inputStream, "UTF-8")
-        rulesDefinition = new GlobalRulesDefinition("Some broken global rules", rules)
+        rulesDefinition = new GlobalRulesDefinition(
+                "Some broken global rules",
+                getClass().getResource("/org/openremote/test/rules/BrokenRules.drl").text
+        )
         rulesDefinition = rulesStorageService.merge(rulesDefinition)
 
         then: "the global rules engine should not run and the rule deployment status status should indicate the issue"
@@ -363,14 +434,12 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10)
 
-        //region and: "the demo assets and rule definitions are deployed"
-        and: "the demo assets and rule definitions are deployed"
+        and: "the container is started"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
-        def identityService = container.getService(ManagerIdentityService.class)
         def rulesStorageService = container.getService(RulesStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         RulesDeployment globalEngine, masterEngine, customerAEngine, smartHomeEngine, apartment1Engine, apartment3Engine
@@ -380,7 +449,9 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
         List<String> smartHomeEngineFiredRules = []
         List<String> apartment1EngineFiredRules = []
         List<String> apartment3EngineFiredRules = []
-        //endregion
+
+        and: "some test rulesets have been imported"
+        importTestRulesets(rulesStorageService, keycloakDemoSetup, managerDemoSetup)
 
         //region expect: "the rule engines to become available and be running"
         expect: "the rule engines to become available and be running"
@@ -529,10 +600,12 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         //region when: "a LHS filtering test rule definition is loaded into the smart home asset"
         when: "a LHS filtering test rule definition is loaded into the smart home asset"
-        def inputStream = getClass().getResourceAsStream("/org/openremote/test/rules/TestLHSRules.drl")
-        def rules = IOUtils.toString(inputStream, "UTF-8")
-        def smartHomeRulesDefinition = new AssetRulesDefinition("Some smart home asset rules", managerDemoSetup.smartHomeId, rules)
-        rulesStorageService.merge(smartHomeRulesDefinition)
+        def rulesDefinition = new AssetRulesDefinition(
+                "Some smart home asset rules",
+                managerDemoSetup.smartHomeId,
+                getClass().getResource("/org/openremote/test/rules/SmartHomeMatchAllAssetUpdates.drl").text
+        )
+        rulesDefinition = rulesStorageService.merge(rulesDefinition)
         //endregion
 
         //region then: "the smart home rule engine should have been created, loaded the new rule definition and started"
@@ -621,10 +694,11 @@ class RulesDeploymentTest extends Specification implements ManagerContainerTrait
 
         //region when: "a RHS filtering test rule definition is loaded into the global rule engine"
         when: "a RHS filtering test rule definition is loaded into the global rule engine"
-        inputStream = getClass().getResourceAsStream("/org/openremote/test/rules/TestRHSRules.drl")
-        rules = IOUtils.toString(inputStream, "UTF-8")
-        def globalRuleDefinition = new GlobalRulesDefinition("Some global test rules", rules)
-        rulesStorageService.merge(globalRuleDefinition)
+        rulesDefinition = new GlobalRulesDefinition(
+                "Some global test rules",
+                getClass().getResource("/org/openremote/test/rules/SmartHomePreventAssetUpdate.drl").text
+        )
+        rulesDefinition = rulesStorageService.merge(rulesDefinition)
         //endregion
 
         //region then: "the global rule engine should have loaded the new rule definition and restarted"

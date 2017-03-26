@@ -1,19 +1,24 @@
 package org.openremote.test.assets
 
+import org.openremote.container.persistence.PersistenceService
 import org.openremote.manager.server.asset.AssetStorageService
+import org.openremote.manager.server.asset.ServerAsset
 import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
+import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.model.Attributes
-import org.openremote.model.asset.AssetQuery
 import org.openremote.model.asset.AssetMeta
+import org.openremote.model.asset.AssetQuery
+import org.openremote.model.asset.AssetType
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
-import org.openremote.model.asset.AssetType
 
-import static org.openremote.model.asset.AssetType.THING
+import javax.persistence.EntityManager
+import java.util.function.Function
+
 import static org.openremote.model.asset.AssetQuery.*
-import static org.openremote.model.asset.AssetQuery.OrderBy.Property.*
+import static org.openremote.model.asset.AssetQuery.OrderBy.Property.NAME
+import static org.openremote.model.asset.AssetType.THING
 
 class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
@@ -24,9 +29,36 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def assetStorageService = container.getService(AssetStorageService.class)
+        def persistenceService = container.getService(PersistenceService.class)
+
+        when: "an asset is loaded by identifier through JPA"
+        def asset = persistenceService.doReturningTransaction(new Function<EntityManager, ServerAsset>() {
+            @Override
+            ServerAsset apply(EntityManager em) {
+                em.find(ServerAsset.class, managerDemoSetup.apartment1Id)
+            }
+        })
+
+        then: "result should match (and some values should be empty because we need an AssetQuery to get them)"
+        asset.id == managerDemoSetup.apartment1Id
+        asset.version == 0
+        asset.createdOn.time < System.currentTimeMillis()
+        asset.name == "Apartment 1"
+        asset.wellKnownType == AssetType.RESIDENCE
+        asset.parentId == managerDemoSetup.smartHomeId
+        asset.parentName == null
+        asset.parentType == null
+        asset.realmId == keycloakDemoSetup.customerATenant.id
+        asset.tenantRealm == null
+        asset.tenantDisplayName == null
+        asset.coordinates.length == 2
+        asset.path.length == 2
+        asset.path[0] == managerDemoSetup.apartment1Id
+        asset.path[1] == managerDemoSetup.smartHomeId
+        asset.attributes.keys().length > 0
 
         when: "a query is executed"
-        def asset = assetStorageService.find(
+        asset = assetStorageService.find(
                 new AssetQuery()
                         .id(managerDemoSetup.smartOfficeId)
         )

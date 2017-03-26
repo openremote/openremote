@@ -216,7 +216,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     public void accept(AssetUpdate assetUpdate) {
         // Check that asset is a THING
         if (assetUpdate.getAssetType() != THING) {
-            LOG.fine("Ignoring asset update as asset is not a THING:" + assetUpdate);
+            LOG.fine("Ignoring asset update as asset is not a THING: " + assetUpdate);
             return;
         }
 
