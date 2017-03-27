@@ -20,7 +20,6 @@
 package org.openremote.model.asset;
 
 import elemental.json.JsonValue;
-import org.openremote.model.Attribute;
 import org.openremote.model.AttributeType;
 import org.openremote.model.util.JsonUtil;
 
@@ -62,7 +61,7 @@ public class AssetUpdate {
         COMPLETED
     }
 
-    final protected Attribute attribute;
+    final protected AbstractAssetAttribute attribute;
 
     final protected Date assetCreatedOn;
 
@@ -96,11 +95,11 @@ public class AssetUpdate {
 
     final protected Class<?> sender;
 
-    public AssetUpdate(Asset asset, Attribute attribute) {
+    public AssetUpdate(Asset asset, AbstractAssetAttribute attribute) {
         this(asset, attribute, null, 0, null);
     }
 
-    public AssetUpdate(Asset asset, Attribute attribute, JsonValue oldValue, long oldValueTimestamp, Class<?> sender) {
+    public AssetUpdate(Asset asset, AbstractAssetAttribute attribute, JsonValue oldValue, long oldValueTimestamp, Class<?> sender) {
         this.attribute = attribute;
         this.assetId = asset.getId();
         this.assetName = asset.getName();
@@ -221,7 +220,7 @@ public class AssetUpdate {
     // GETTERS AND SETTERS BELOW CAN ONLY BE USED WHEN STATUS IS NOT COMPLETED
     /////////////////////////////////////////////////////////////////
 
-    public Attribute getAttribute() {
+    public AbstractAssetAttribute getAttribute() {
         if (!isCompleted()) {
             return attribute;
         }

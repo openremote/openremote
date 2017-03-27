@@ -50,7 +50,16 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class RulesDeployment<T extends RulesDefinition> {
+
     public static final Logger LOG = Logger.getLogger(RulesDeployment.class.getName());
+
+    static {
+    /* TODO needed for RHS lambda support?
+        System.setProperty("drools.dialect.java.lngLevel", "1.8");
+        System.setPRoperty("drools.dialect.java.compiler.lnglevel", "1.8");
+    */
+    }
+
     // This is here so Clock Type can be set to pseudo from tests
     protected static ClockTypeOption DefaultClockType;
     private static final int AUTO_START_DELAY_SECONDS = 2;
@@ -385,13 +394,15 @@ public class RulesDeployment<T extends RulesDefinition> {
             if (knowledgeSession != null) {
                 try {
                     // ... retract it from working memory ...
-                    LOG.finest("Removed stale attribute fact: " + update);
+                    LOG.finest("Removed stale fact '" + update + "' in: " + this);
                     knowledgeSession.delete(factHandle);
                     int fireCount = knowledgeSession.fireAllRules();
                 } catch (Exception e) {
-                    LOG.fine("Failed to retract fact:" + update);
+                    LOG.warning("Failed to retract fact '" + update + "' in: " + this);
                 }
             }
+        } else {
+            LOG.fine("No fact handle for '" + assetUpdate + "' in: " + this);
         }
     }
 
@@ -402,7 +413,7 @@ public class RulesDeployment<T extends RulesDefinition> {
             long newFactCount;
             factHandle = knowledgeSession.insert(assetUpdate);
             facts.put(assetUpdate, factHandle);
-            LOG.finest("Inserted fact into session");
+            LOG.finest("Inserting fact '" + assetUpdate+ "' in: " + this);
 
             LOG.finest("On " + this + ", firing all rules");
             int fireCount = knowledgeSession.fireAllRules();

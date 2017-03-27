@@ -8,6 +8,7 @@ import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.model.AttributeRef
 import org.openremote.model.Attributes
+import org.openremote.model.asset.AssetAttributes
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -44,7 +45,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         then: "the thing attribute value should be updated and the datapoints stored"
         conditions.eventually {
             def thing = assetStorageService.find(managerDemoSetup.thingId, true)
-            def attributes = new Attributes(thing.getAttributes())
+            def attributes = new AssetAttributes(thing.getAttributes())
             assert attributes.get("light1PowerConsumption").getValueAsDecimal() == 15.5d
             def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerDemoSetup.thingId, "light1PowerConsumption"))
             datapoints.size() == 3

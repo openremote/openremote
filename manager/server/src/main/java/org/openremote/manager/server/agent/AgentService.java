@@ -34,6 +34,10 @@ import org.openremote.manager.server.datapoint.AssetDatapointService;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.Function;
 import org.openremote.model.asset.*;
+import org.openremote.model.asset.agent.AgentAttributes;
+import org.openremote.model.asset.agent.ProtocolConfiguration;
+import org.openremote.model.asset.thing.ThingAttribute;
+import org.openremote.model.asset.thing.ThingAttributes;
 
 import java.util.Collection;
 import java.util.List;
@@ -64,6 +68,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             AgentAttributes agentAttributes = new AgentAttributes(agent);
             return agentAttributes.getProtocolConfiguration(agentLink.getAttributeName());
         }
+        LOG.info("No agent/protocol configuration found for thing attribute: " + agentLink);
         return null;
     };
 
@@ -226,7 +231,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             return;
         }
 
-        AttributeRef agentLink = ThingAttribute.getAgentLink(assetUpdate.getAttribute());
+        AttributeRef agentLink = ThingAttribute.getAgentLink(new ThingAttribute(assetUpdate.getAttribute()));
 
         if (agentLink != null) {
             // Check attribute is linked to an actual agent
@@ -246,7 +251,10 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
         // Its' a send to actuator - push the update to the protocol
         LOG.fine("Processing asset update: " + assetUpdate);
-        messageBrokerService.getProducerTemplate().sendBody(ACTUATOR_TOPIC, assetUpdate.getAttribute().getStateEvent(assetUpdate.getAssetId()));
+        messageBrokerService.getProducerTemplate().sendBody(
+            ACTUATOR_TOPIC,
+            assetUpdate.getAttribute().getStateEvent()
+        );
         assetUpdate.setStatus(AssetUpdate.Status.HANDLED);
     }
 

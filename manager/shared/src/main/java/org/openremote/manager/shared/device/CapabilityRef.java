@@ -6,7 +6,8 @@ import org.openremote.model.AttributeType;
 import org.openremote.model.Attributes;
 
 // TODO Not used
-public class CapabilityRef extends Attribute {
+public class CapabilityRef {/*
+extends Attribute {
 
     protected Attributes resources;
 
@@ -37,4 +38,5 @@ public class CapabilityRef extends Attribute {
     public void setResourceRefs(Attributes resourceRefs) {
         jsonObject.put("resourceRefs", resourceRefs.getJsonObject());
     }
+    */
 }

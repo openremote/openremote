@@ -9,6 +9,8 @@ import org.openremote.manager.shared.asset.AssetResource
 import org.openremote.model.Attribute
 import org.openremote.model.Attributes
 import org.openremote.model.asset.Asset
+import org.openremote.model.asset.AssetAttribute
+import org.openremote.model.asset.AssetAttributes
 import org.openremote.model.asset.AssetType
 import org.openremote.model.AttributeType
 import org.openremote.test.ManagerContainerTrait
@@ -57,8 +59,8 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         testAsset.parentId == null
 
         when: "an asset is stored with an illegal attribute name"
-        def attributes = new Attributes(testAsset.getAttributes())
-        attributes.put(new Attribute("illegal- Attribute:name&&&"))
+        def attributes = new AssetAttributes(testAsset.getAttributes())
+        attributes.put(new AssetAttribute(testAsset.id, "illegal- Attribute:name&&&"))
         testAsset.setAttributes(attributes.getJsonObject())
         assetResource.update(null, testAsset.id, testAsset)
 
@@ -69,20 +71,20 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         when: "an asset is stored with a non-empty attribute value"
         testAsset = assetResource.get(null, testAsset.getId())
         testAsset.setAttributes(
-                new Attributes().put(new Attribute("foo", AttributeType.STRING, Json.create("bar"))).getJsonObject()
+                new AssetAttributes().put(new AssetAttribute("foo", AttributeType.STRING, Json.create("bar"))).getJsonObject()
         )
         assetResource.update(null, testAsset.id, testAsset)
         testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the attribute should exist"
-        new Attributes(testAsset.getAttributes()).get("foo").getValueAsString() == "bar"
+        new AssetAttributes(testAsset.getAttributes()).get("foo").getValueAsString() == "bar"
 
         when: "an asset attribute value is written directly"
         assetResource.writeAttributeValue(null, testAsset.getId(), "foo", "\"bar2\"")
         testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the attribute value should match"
-        new Attributes(testAsset.getAttributes()).get("foo").getValueAsString() == "bar2"
+        new AssetAttributes(testAsset.getAttributes()).get("foo").getValueAsString() == "bar2"
         assetResource.readAttributeValue(null, testAsset.getId(), "foo") == "\"bar2\""
 
         when: "an asset attribute value null is written directly"
@@ -90,7 +92,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the attribute value should match"
-        !new Attributes(testAsset.getAttributes()).get("foo").hasValue()
+        !new AssetAttributes(testAsset.getAttributes()).get("foo").hasValue()
         assetResource.readAttributeValue(null, testAsset.getId(), "foo") == "null"
 
         when: "an asset is updated with a different type"

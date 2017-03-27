@@ -30,13 +30,22 @@ import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.util.CollectionsUtil;
 import org.openremote.manager.client.util.TextUtil;
 import org.openremote.manager.client.widget.*;
-import org.openremote.model.*;
+import org.openremote.model.AttributeType;
+import org.openremote.model.Consumer;
+import org.openremote.model.MetaItem;
+import org.openremote.model.asset.AbstractAssetAttribute;
+import org.openremote.model.asset.AbstractAssetAttributes;
 import org.openremote.model.asset.AssetMeta;
 
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 
-public abstract class AttributesView<C extends AttributesView.Container<S>, S extends AttributesView.Style> {
+public abstract class AttributesView<
+    C extends AttributesView.Container<S>,
+    S extends AttributesView.Style,
+    ATTRIBUTES extends AbstractAssetAttributes<?, A>,
+    A extends AbstractAssetAttribute
+    > {
 
     public interface Container<S extends AttributesView.Style> {
         S getStyle();
@@ -59,16 +68,16 @@ public abstract class AttributesView<C extends AttributesView.Container<S>, S ex
 
     final protected Environment environment;
     final protected C container;
-    final protected Attributes attributes;
-    final protected LinkedHashMap<Attribute, FormGroup> attributeGroups = new LinkedHashMap<>();
+    final protected ATTRIBUTES attributes;
+    final protected LinkedHashMap<A, FormGroup> attributeGroups = new LinkedHashMap<>();
 
-    public AttributesView(Environment environment, C container, Attributes attributes) {
+    public AttributesView(Environment environment, C container, ATTRIBUTES attributes) {
         this.environment = environment;
         this.container = container;
         this.attributes = attributes;
     }
 
-    public Attributes getAttributes() {
+    public ATTRIBUTES getAttributes() {
         return attributes;
     }
 
@@ -78,6 +87,7 @@ public abstract class AttributesView<C extends AttributesView.Container<S>, S ex
         }
         attributeGroups.clear();
     }
+
     public void build() {
         clear();
         createAttributeGroups();
@@ -95,19 +105,21 @@ public abstract class AttributesView<C extends AttributesView.Container<S>, S ex
 
     /* ####################################################################### */
 
-    protected void addAttributeActions(Attribute attribute,
+    protected void addAttributeActions(A attribute,
                                        FormGroup formGroup,
                                        FormField formField,
                                        FormGroupActions formGroupActions,
-                                       IsWidget editor) {}
+                                       IsWidget editor) {
+    }
 
-    protected void addAttributeExtensions(Attribute attribute,
-                                          FormGroup formGroup) {}
+    protected void addAttributeExtensions(A attribute,
+                                          FormGroup formGroup) {
+    }
 
     /* ####################################################################### */
 
     protected void createAttributeGroups() {
-        for (Attribute attribute : attributes.get()) {
+        for (A attribute : attributes.get()) {
             FormGroup formGroup = createAttributeGroup(attribute);
             if (formGroup != null) {
                 attributeGroups.put(attribute, formGroup);
@@ -121,14 +133,14 @@ public abstract class AttributesView<C extends AttributesView.Container<S>, S ex
         }
     }
 
-    protected FormGroup createAttributeGroup(Attribute attribute) {
+    protected FormGroup createAttributeGroup(A attribute) {
 
         FormGroup formGroup = new FormGroup();
 
         FormLabel formLabel = createAttributeLabel(attribute);
         formGroup.addFormLabel(formLabel);
 
-        MetaItem description = AssetMeta.getFirst(attribute, AssetMeta.DESCRIPTION);
+        MetaItem description = attribute.firstMetaItem(AssetMeta.DESCRIPTION);
         if (description != null) {
             formGroup.addInfolabel(new Label(description.getValueAsString()));
         }
@@ -153,9 +165,9 @@ public abstract class AttributesView<C extends AttributesView.Container<S>, S ex
         return formGroup;
     }
 
-    protected FormLabel createAttributeLabel(Attribute attribute) {
+    protected FormLabel createAttributeLabel(A attribute) {
         String label = attribute.getName();
-        MetaItem labelItem = AssetMeta.getFirst(attribute, AssetMeta.LABEL);
+        MetaItem labelItem = attribute.firstMetaItem(AssetMeta.LABEL);
         if (labelItem != null) {
             label = labelItem.getValueAsString();
         }
@@ -165,10 +177,10 @@ public abstract class AttributesView<C extends AttributesView.Container<S>, S ex
         return formLabel;
     }
 
-    protected IsWidget createEditor(Attribute attribute, FormGroup formGroup) {
+    protected IsWidget createEditor(A attribute, FormGroup formGroup) {
         IsWidget editor;
         S style = container.getStyle();
-        MetaItem defaultValueItem = AssetMeta.getFirst(attribute, AssetMeta.DEFAULT);
+        MetaItem defaultValueItem = attribute.firstMetaItem(AssetMeta.DEFAULT);
         Consumer<String> errorConsumer = msg -> {
             formGroup.setError(true);
             showValidationError(msg);
@@ -212,7 +224,7 @@ public abstract class AttributesView<C extends AttributesView.Container<S>, S ex
         return editor;
     }
 
-    protected IsWidget createUnsupportedEditor(Attribute attribute) {
+    protected IsWidget createUnsupportedEditor(A attribute) {
         FormField unsupportedField = new FormField();
         unsupportedField.add(new FormOutputText(
             environment.getMessages().unsupportedAttributeType(attribute.getType().getValue())
@@ -234,13 +246,11 @@ public abstract class AttributesView<C extends AttributesView.Container<S>, S ex
 
         if (updateConsumer != null) {
             input.addValueChangeHandler(
-                event -> {
-                    updateConsumer.accept(
-                        event.getValue() != null && event.getValue().length() > 0
-                            ? event.getValue()
-                            : null
-                    );
-                }
+                event -> updateConsumer.accept(
+                    event.getValue() != null && event.getValue().length() > 0
+                        ? event.getValue()
+                        : null
+                )
             );
         } else {
             input.setReadOnly(true);
@@ -351,11 +361,11 @@ public abstract class AttributesView<C extends AttributesView.Container<S>, S ex
         return input;
     }
 
-    protected boolean isDefaultReadOnly(Attribute attribute) {
+    protected boolean isDefaultReadOnly(A attribute) {
         return false;
     }
 
-    protected void removeAttribute(Attribute attribute) {
+    protected void removeAttribute(A attribute) {
         attributes.remove(attribute.getName());
         int attributeGroupIndex = container.getPanel().getWidgetIndex(attributeGroups.get(attribute));
         container.getPanel().remove(attributeGroupIndex);

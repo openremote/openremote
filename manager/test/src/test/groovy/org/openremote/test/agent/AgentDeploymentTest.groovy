@@ -8,7 +8,7 @@ import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.model.AttributeEvent
-import org.openremote.model.Attributes
+import org.openremote.model.asset.AssetAttributes
 import org.openremote.model.units.ColorRGB
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -31,7 +31,8 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         then: "the simulator elements should have the initial state"
         conditions.eventually {
             assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Toggle").asBoolean()
-            assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Dimmer").getType() == JsonType.NULL // No initial value!
+            assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Dimmer").getType() == JsonType.NULL
+            // No initial value!
             assert new ColorRGB(simulatorProtocol.getState(managerDemoSetup.thingId, "light1Color") as JsonArray) == new ColorRGB(88, 123, 88)
             assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1PowerConsumption").asNumber() == 12.345d
         }
@@ -47,7 +48,7 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         conditions.eventually {
             assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Dimmer").asNumber() == 66
             def thing = assetStorageService.find(managerDemoSetup.thingId, true)
-            def attributes = new Attributes(thing.getAttributes())
+            def attributes = new AssetAttributes(thing.getAttributes())
             assert attributes.get("light1Dimmer").getValue().getType() == JsonType.NUMBER
             assert attributes.get("light1Dimmer").getValueAsInteger() == 66
         }
@@ -59,7 +60,7 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         then: "the thing attribute value should be updated"
         conditions.eventually {
             def thing = assetStorageService.find(managerDemoSetup.thingId, true)
-            def attributes = new Attributes(thing.getAttributes())
+            def attributes = new AssetAttributes(thing.getAttributes())
             assert attributes.get("light1Dimmer").getValue().getType() == JsonType.NUMBER
             assert attributes.get("light1Dimmer").getValueAsInteger() == 77
         }

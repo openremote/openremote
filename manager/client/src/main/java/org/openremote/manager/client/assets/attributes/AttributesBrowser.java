@@ -24,11 +24,12 @@ import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.Widget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.widget.*;
-import org.openremote.model.Attribute;
-import org.openremote.model.Attributes;
 import org.openremote.model.Runnable;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetAttributes;
 
-public abstract class AttributesBrowser extends AttributesView<AttributesBrowser.Container, AttributesBrowser.Style> {
+public abstract class AttributesBrowser
+    extends AttributesView<AttributesBrowser.Container, AttributesBrowser.Style, AssetAttributes, AssetAttribute> {
 
     public interface Container extends AttributesView.Container<AttributesBrowser.Style> {
 
@@ -40,7 +41,7 @@ public abstract class AttributesBrowser extends AttributesView<AttributesBrowser
 
     protected FormGroup liveUpdatesGroup;
 
-    public AttributesBrowser(Environment environment, Container container, Attributes attributes) {
+    public AttributesBrowser(Environment environment, Container container, AssetAttributes attributes) {
         super(environment, container, attributes);
     }
 
@@ -58,7 +59,7 @@ public abstract class AttributesBrowser extends AttributesView<AttributesBrowser
     }
 
     @Override
-    protected void addAttributeActions(Attribute attribute,
+    protected void addAttributeActions(AssetAttribute attribute,
                                        FormGroup formGroup,
                                        FormField formField,
                                        FormGroupActions formGroupActions,
@@ -92,7 +93,7 @@ public abstract class AttributesBrowser extends AttributesView<AttributesBrowser
     }
 
     @Override
-    protected void addAttributeExtensions(Attribute attribute,
+    protected void addAttributeExtensions(AssetAttribute attribute,
                                           FormGroup formGroup) {
         formGroup.addExtension(createDatapointBrowser(attribute));
     }
@@ -126,15 +127,15 @@ public abstract class AttributesBrowser extends AttributesView<AttributesBrowser
         return formGroup;
     }
 
-    protected Widget createDatapointBrowser(Attribute attribute) {
+    protected Widget createDatapointBrowser(AssetAttribute attribute) {
         // TODO
         return new Image("/static/img/Example%20Chart%20Big.png");
     }
 
     /* ####################################################################### */
 
-    abstract protected void readAttributeValue(Attribute attribute, Runnable onSuccess);
+    abstract protected void readAttributeValue(AssetAttribute attribute, Runnable onSuccess);
 
-    abstract protected void writeAttributeValue(Attribute attribute);
+    abstract protected void writeAttributeValue(AssetAttribute attribute);
 
 }

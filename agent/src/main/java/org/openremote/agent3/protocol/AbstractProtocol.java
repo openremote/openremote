@@ -25,7 +25,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeState;
-import org.openremote.model.asset.ThingAttribute;
+import org.openremote.model.asset.thing.ThingAttribute;
 import org.openremote.container.Container;
 import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.model.AttributeRef;

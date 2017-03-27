@@ -23,8 +23,8 @@ import elemental.json.JsonValue;
 import org.openremote.agent3.protocol.AbstractProtocol;
 import org.openremote.agent3.protocol.simulator.element.*;
 import org.openremote.model.*;
-import org.openremote.model.asset.ProtocolConfiguration;
-import org.openremote.model.asset.ThingAttribute;
+import org.openremote.model.asset.agent.ProtocolConfiguration;
+import org.openremote.model.asset.thing.ThingAttribute;
 
 import java.util.HashMap;
 import java.util.Locale;

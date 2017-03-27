@@ -22,18 +22,15 @@ package org.openremote.model;
 import elemental.json.Json;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
-import org.openremote.model.asset.AssetMeta;
 
 import java.util.NoSuchElementException;
-
-import static org.openremote.model.asset.AssetMeta.*;
 
 /**
  * Convenience overlay API for {@link JsonObject}.
  * <p>
  * Modifies the given or an empty object.
  */
-public class Attribute extends AbstractValueTimestampHolder<Attribute> {
+public abstract class Attribute<CHILD extends Attribute<CHILD>> extends AbstractValueTimestampHolder<CHILD> {
 
     /**
      * Attribute names should be very simple, as we use them in SQL path expressions, etc. and must manually escape.
@@ -66,6 +63,10 @@ public class Attribute extends AbstractValueTimestampHolder<Attribute> {
         setValue(value);
     }
 
+    public Attribute(CHILD attribute) {
+        this(attribute.getName(), attribute.getJsonObject());
+    }
+
     @Override
     protected boolean isValidValue(JsonValue value) {
         return getType() != null
@@ -90,13 +91,14 @@ public class Attribute extends AbstractValueTimestampHolder<Attribute> {
         return typeName != null ? AttributeType.fromValue(typeName) : null;
     }
 
-    public Attribute setType(AttributeType type) {
+    @SuppressWarnings("unchecked")
+    public CHILD setType(AttributeType type) {
         if (type != null) {
             jsonObject.put("type", Json.create(type.getValue()));
         } else if (jsonObject.hasKey("type")) {
             jsonObject.remove("type");
         }
-        return this;
+        return (CHILD)this;
     }
 
     public boolean hasMeta() {
@@ -107,13 +109,14 @@ public class Attribute extends AbstractValueTimestampHolder<Attribute> {
         return hasMeta() ? new Meta(jsonObject.getArray("meta")) : null;
     }
 
-    public Attribute setMeta(Meta meta) {
+    @SuppressWarnings("unchecked")
+    public CHILD setMeta(Meta meta) {
         if (meta != null) {
             jsonObject.put("meta", meta.getJsonArray());
         } else if (jsonObject.hasKey("meta")) {
             jsonObject.remove("meta");
         }
-        return this;
+        return (CHILD) this;
     }
 
     public boolean hasMetaItem(String name) {
@@ -130,82 +133,9 @@ public class Attribute extends AbstractValueTimestampHolder<Attribute> {
         return firstMetaItem(name);
     }
 
-    public Attribute copy() {
-        return new Attribute(getName(), Json.parse(getJsonObject().toJson()));
-    }
-
     public boolean isValid() {
         return getName() != null && getName().length() > 0 && getType() != null;
     }
 
-    // TODO: This needs to go into AssetAttribute - bit weird here
-    public AttributeRef getAttributeRef(String entityId) {
-        return new AttributeRef(entityId, getName());
-    }
-
-    /**
-     * @return The current value.
-     */
-    public AttributeState getState(String assetId) {
-        return new AttributeState(
-            getAttributeRef(assetId),
-            getValue()
-        );
-    }
-
-    /**
-     * @return The current value and its timestamp represented as an attribute event.
-     */
-    public AttributeEvent getStateEvent(String assetId) {
-        return new AttributeEvent(
-            getAttributeRef(assetId),
-            getValue(),
-            null,
-            getValueTimestamp()
-        );
-    }
-
-    /**
-     * Set the attributes' value and updates the value timestamp to event time.
-     *
-     * @throws IllegalArgumentException If a constraint is violated.
-     */
-    public Attribute applyStateEvent(AttributeEvent attributeEvent) throws IllegalArgumentException {
-        if (!attributeEvent.getAttributeState().getAttributeRef().getAttributeName().equals(getName())) {
-            throw new IllegalArgumentException("Attribute name mismatch, expected: " + getName());
-        }
-        return setValue(attributeEvent.getAttributeState().getValue(), attributeEvent.getTimestamp());
-    }
-
-    /* ############################################################################### */
-
-    // The following methods are only applicable to attributes of assets, but they are very convenient here...
-    // TODO Introduce AssetAttribute class
-
-    public boolean hasMetaItem(AssetMeta assetMeta) {
-        return hasMetaItem(assetMeta.getName());
-    }
-
-    public MetaItem firstMetaItem(AssetMeta assetMeta) {
-        return firstMetaItem(assetMeta.getName());
-    }
-
-    public boolean isProtected() {
-        return hasMetaItem(PROTECTED) && firstMetaItem(PROTECTED).isValueTrue();
-    }
-
-    public boolean isReadOnly() {
-        return hasMetaItem(READ_ONLY) && firstMetaItem(READ_ONLY).isValueTrue();
-    }
-
-    public boolean isStoreDatapoints() {
-        return hasMetaItem(STORE_DATA_POINTS) && firstMetaItem(STORE_DATA_POINTS).isValueTrue();
-    }
-
-    public boolean isRulesFact() {
-        return hasMetaItem(RULES_FACT) && firstMetaItem(RULES_FACT).isValueTrue();
-    }
-
-    /* ############################################################################### */
-
+    public abstract CHILD copy();
 }

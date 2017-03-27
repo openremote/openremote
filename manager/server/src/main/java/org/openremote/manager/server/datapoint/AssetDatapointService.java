@@ -37,7 +37,7 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetUp
     public void accept(AssetUpdate assetUpdate) {
         if (assetUpdate.getAttribute().isStoreDatapoints()) {
             LOG.finest("Storing asset update data point: " + assetUpdate);
-            AssetDatapoint assetDatapoint = new AssetDatapoint(assetUpdate.getAttribute().getStateEvent(assetUpdate.getAssetId()));
+            AssetDatapoint assetDatapoint = new AssetDatapoint(assetUpdate.getAttribute().getStateEvent());
             persistenceService.doTransaction(entityManager -> entityManager.persist(assetDatapoint));
         } else {
             LOG.finest("Ignoring asset update as attribute is not a data point: " + assetUpdate);

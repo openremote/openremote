@@ -29,8 +29,8 @@ import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.Attribute;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeRef;
-import org.openremote.model.Attributes;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetAttributes;
 import org.openremote.model.asset.AssetQuery;
 
 import javax.ws.rs.WebApplicationException;
@@ -208,7 +208,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 throw new WebApplicationException(NOT_FOUND);
 
             // Check attribute exists
-            Attributes attributes = new Attributes(asset.getAttributes());
+            AssetAttributes attributes = new AssetAttributes(asset.getAttributes());
             if (!attributes.hasAttribute(attributeName))
                 throw new WebApplicationException(NOT_FOUND);
 
@@ -227,7 +227,9 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             // Process update
             try {
                 JsonValue value = Json.instance().parse(rawJson);
-                assetProcessingService.updateAttributeValue(new AttributeEvent(new AttributeRef(assetId, attributeName), value, this.getClass()));
+                assetProcessingService.updateAttributeValue(
+                    new AttributeEvent(new AttributeRef(assetId, attributeName), value, this.getClass())
+                );
             } catch (RuntimeException ex) {
                 throw new IllegalStateException("Error updating attribute: " + attributeName, ex);
             }
@@ -256,7 +258,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
-            Attributes attributes = new Attributes(asset.getAttributes());
+            AssetAttributes attributes = new AssetAttributes(asset.getAttributes());
             Attribute attribute = attributes.get(attributeName);
             if (attribute == null) {
                 throw new WebApplicationException(NOT_FOUND);

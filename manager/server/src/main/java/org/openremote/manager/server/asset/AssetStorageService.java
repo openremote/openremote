@@ -29,7 +29,8 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.util.Pair;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.model.*;
+import org.openremote.model.Attribute;
+import org.openremote.model.AttributeEvent;
 import org.openremote.model.asset.*;
 import org.postgresql.util.PGobject;
 
@@ -139,7 +140,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
                     throw new IllegalStateException("Invalid parent");
             }
             // Validate attribute names
-            Attributes attributes = new Attributes(asset.getAttributes());
+            AssetAttributes attributes = new AssetAttributes(asset);
             for (Attribute attribute : attributes.get()) {
                 if (!attributeNamePattern.matcher(attribute.getName()).matches()) {
                     throw new IllegalStateException(
@@ -299,7 +300,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
         }
 
         if (query.orderBy != null && query.orderBy.property != null) {
-            sb.append(" order by " ) ;
+            sb.append(" order by ");
 
             switch (query.orderBy.property) {
                 case CREATED_ON:

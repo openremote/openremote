@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.asset;
+package org.openremote.model.asset.agent;
 
 import elemental.json.Json;
 import elemental.json.JsonObject;
-import org.openremote.model.Attribute;
+import elemental.json.JsonValue;
 import org.openremote.model.AttributeType;
 import org.openremote.model.Meta;
+import org.openremote.model.asset.AbstractAssetAttribute;
 
 import java.util.Locale;
 
@@ -32,27 +33,64 @@ import java.util.Locale;
  * <p>
  * Configuration details are managed as {@link Meta} of the attribute.
  */
-public class ProtocolConfiguration extends Attribute {
+public class ProtocolConfiguration extends AgentAttribute<ProtocolConfiguration> {
 
     /**
      * A protocol configuration attribute value must be a URN string representation starting with "urn:".
      */
-    public static boolean isProtocolConfiguration(Attribute attribute) {
+    public static boolean isProtocolConfiguration(AgentAttribute attribute) {
         return attribute.getType() == AttributeType.STRING
             && attribute.hasValue()
             && attribute.getValueAsString().toLowerCase(Locale.ROOT).startsWith("urn:");
     }
 
-    public ProtocolConfiguration(Attribute attribute) {
-        this(attribute.getName(), attribute.getJsonObject());
+    public ProtocolConfiguration() {
+    }
+
+    public ProtocolConfiguration(String assetId) {
+        super(assetId);
+    }
+
+    public ProtocolConfiguration(String name, AttributeType type) {
+        super(name, type);
     }
 
     public ProtocolConfiguration(String name, JsonObject jsonObject) {
         super(name, jsonObject);
     }
 
+    public ProtocolConfiguration(String name, AttributeType type, JsonValue value) {
+        super(name, type, value);
+    }
+
     public ProtocolConfiguration(String name, String protocol) {
         super(name, AttributeType.STRING, Json.create(protocol));
+    }
+
+    public ProtocolConfiguration(String assetId, String name, AttributeType type) {
+        super(assetId, name, type);
+    }
+
+    public ProtocolConfiguration(String assetId, String name, JsonObject jsonObject) {
+        super(assetId, name, jsonObject);
+    }
+
+    public ProtocolConfiguration(String assetId, String name, AttributeType type, JsonValue value) {
+        super(assetId, name, type, value);
+    }
+
+    public ProtocolConfiguration(ProtocolConfiguration attribute) {
+        super(attribute);
+    }
+
+    public ProtocolConfiguration(AbstractAssetAttribute attribute) {
+        super(attribute);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public ProtocolConfiguration copy() {
+        return new ProtocolConfiguration(getName(), Json.parse(getJsonObject().toJson()));
     }
 
     public String getProtocolName() {

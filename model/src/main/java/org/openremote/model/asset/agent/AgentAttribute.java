@@ -1,0 +1,75 @@
+/*
+ * Copyright 2017, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.openremote.model.asset.agent;
+
+import elemental.json.Json;
+import elemental.json.JsonObject;
+import elemental.json.JsonValue;
+import org.openremote.model.AttributeType;
+import org.openremote.model.asset.AbstractAssetAttribute;
+
+public class AgentAttribute<CHILD extends AgentAttribute<CHILD>> extends AbstractAssetAttribute<CHILD> {
+
+    public AgentAttribute() {
+    }
+
+    public AgentAttribute(String assetId) {
+        super(assetId);
+    }
+
+    public AgentAttribute(String name, AttributeType type) {
+        super(name, type);
+    }
+
+    public AgentAttribute(String name, JsonObject jsonObject) {
+        super(name, jsonObject);
+    }
+
+    public AgentAttribute(String name, AttributeType type, JsonValue value) {
+        super(name, type, value);
+    }
+
+    public AgentAttribute(String assetId, String name) {
+        super(assetId, name);
+    }
+
+    public AgentAttribute(String assetId, String name, AttributeType type) {
+        super(assetId, name, type);
+    }
+
+    public AgentAttribute(String assetId, String name, JsonObject jsonObject) {
+        super(assetId, name, jsonObject);
+    }
+
+    public AgentAttribute(String assetId, String name, AttributeType type, JsonValue value) {
+        super(assetId, name, type, value);
+    }
+
+    public AgentAttribute(AbstractAssetAttribute attribute) {
+        super(attribute);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public CHILD copy() {
+        return (CHILD) new AgentAttribute<CHILD>(getName(), Json.parse(getJsonObject().toJson()));
+    }
+
+}

@@ -20,10 +20,7 @@
 package org.openremote.model.asset;
 
 import elemental.json.Json;
-import elemental.json.JsonObject;
-import org.openremote.model.Attribute;
 import org.openremote.model.AttributeType;
-import org.openremote.model.Attributes;
 import org.openremote.model.Meta;
 
 import java.util.ArrayList;
@@ -46,34 +43,34 @@ public enum AssetType {
 
     CUSTOM(null, true, null),
 
-    BUILDING(ASSET_NAMESPACE + ":building", true, new Attributes().put(
-        new Attribute("area", INTEGER)
+    BUILDING(ASSET_NAMESPACE + ":building", true, new AssetAttributes().put(
+        new AssetAttribute("area", INTEGER)
             .setMeta(new Meta()
                 .add(createMetaItem(LABEL, Json.create("Surface area")))
                 .add(createMetaItem(DESCRIPTION, Json.create("Floor area of building measured in m²")))
                 .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/area")))
             ),
-        new Attribute("geoStreet", STRING)
+        new AssetAttribute("geoStreet", STRING)
             .setMeta(new Meta()
                 .add(createMetaItem(LABEL, Json.create("Street")))
                 .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoStreet")))
             ),
-        new Attribute("geoPostalCode", AttributeType.INTEGER)
+        new AssetAttribute("geoPostalCode", AttributeType.INTEGER)
             .setMeta(new Meta()
                 .add(createMetaItem(LABEL, Json.create("Postal Code")))
                 .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoPostalCode")))
             ),
-        new Attribute("geoCity", STRING)
+        new AssetAttribute("geoCity", STRING)
             .setMeta(new Meta()
                 .add(createMetaItem(LABEL, Json.create("City")))
                 .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCity")))
             ),
-        new Attribute("geoCountry", STRING)
+        new AssetAttribute("geoCountry", STRING)
             .setMeta(new Meta()
                 .add(createMetaItem(LABEL, Json.create("Country")))
                 .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCountry")))
             )
-    ).getJsonObject()),
+    )),
 
     FLOOR(ASSET_NAMESPACE + ":floor", true, null),
 
@@ -84,24 +81,24 @@ public enum AssetType {
     AGENT(ASSET_NAMESPACE + ":agent", true, null),
 
     /**
-     *  When a Thing asset is modified (created, updated, deleted), its attributes are examined
-     *  and linked to and unlinked from the configured Protocol.
+     * When a Thing asset is modified (created, updated, deleted), its attributes are examined
+     * and linked to and unlinked from the configured Protocol.
      */
     THING(ASSET_NAMESPACE + ":thing", true, null);
 
     final protected String value;
-    final protected JsonObject defaultAttributes;
+    final protected AssetAttributes defaultAttributes;
 
-    AssetType(String value, boolean editable, JsonObject defaultAttributes) {
+    AssetType(String value, boolean editable, AssetAttributes defaultAttributes) {
         this.value = value;
-        this.defaultAttributes = defaultAttributes;
+        this.defaultAttributes = defaultAttributes != null ? defaultAttributes : new AssetAttributes();
     }
 
     public String getValue() {
         return value;
     }
 
-    public JsonObject getDefaultAttributes() {
+    public AssetAttributes getDefaultAttributes() {
         return defaultAttributes;
     }
 

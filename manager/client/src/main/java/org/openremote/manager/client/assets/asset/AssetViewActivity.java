@@ -40,9 +40,9 @@ import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
-import org.openremote.model.Attribute;
-import org.openremote.model.Attributes;
 import org.openremote.model.Runnable;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetAttributes;
 import org.openremote.model.asset.AssetType;
 
 import javax.inject.Inject;
@@ -180,10 +180,10 @@ public class AssetViewActivity
         attributesBrowser = new AttributesBrowser(
             environment,
             view.getAttributesBrowserContainer(),
-            new Attributes(asset.getAttributes())
+            new AssetAttributes(asset.getAttributes())
         ) {
             @Override
-            protected void readAttributeValue(Attribute attribute, Runnable onSuccess) {
+            protected void readAttributeValue(AssetAttribute attribute, Runnable onSuccess) {
                 environment.getRequestService().execute(
                     value -> value,
                     requestParams -> assetResource.readAttributeValue(requestParams, assetId, attribute.getName()),
@@ -200,7 +200,7 @@ public class AssetViewActivity
             }
 
             @Override
-            protected void writeAttributeValue(Attribute attribute) {
+            protected void writeAttributeValue(AssetAttribute attribute) {
                 environment.getRequestService().execute(
                     (EntityWriter<String>) value -> value,
                     requestParams -> assetResource.writeAttributeValue(

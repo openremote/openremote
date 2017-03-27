@@ -37,12 +37,7 @@ import org.openremote.manager.shared.rules.RulesDefinition;
 import org.openremote.manager.shared.rules.TenantRulesDefinition;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.AbstractValueTimestampHolder;
-import org.openremote.model.Attribute;
-import org.openremote.model.Attributes;
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetMeta;
-import org.openremote.model.asset.AssetQuery;
-import org.openremote.model.asset.AssetUpdate;
+import org.openremote.model.asset.*;
 import org.openremote.model.util.JsonUtil;
 
 import java.util.*;
@@ -114,26 +109,31 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
                 // We must load the asset from database (only when required), as the
                 // persistence event might not contain a completely loaded asset
-                Function<Attribute, AssetUpdate> buildUpdateFunction = new Function<Attribute, AssetUpdate>() {
+                Function<AssetAttribute, AssetUpdate> buildUpdateFunction = new Function<AssetAttribute, AssetUpdate>() {
                     final Asset loadedAsset = assetStorageService.find(eventAsset.getId(), true);
 
                     @Override
-                    public AssetUpdate apply(Attribute attribute) {
-                        return new AssetUpdate(loadedAsset, attribute);
+                    public AssetUpdate apply(AssetAttribute attribute) {
+                        return new AssetUpdate(loadedAsset,
+                            new AssetAttribute(loadedAsset.getId(),
+                                attribute.getName(),
+                                attribute.getJsonObject())
+                        );
                     }
                 };
 
                 switch (persistenceEvent.getCause()) {
                     case INSERT:
                         // New asset has been created so get attributes that have RULES_FACT meta
-                        Attributes addedAttributes = new Attributes(eventAsset.getAttributes());
+                        AssetAttributes addedAttributes = new AssetAttributes(eventAsset);
 
-                        Arrays.stream(addedAttributes.get())
-                            .filter(Attribute::isRulesFact)
+                        addedAttributes.get().stream()
+                            .filter(AssetAttribute::isRulesFact)
                             .forEach(attribute -> {
                                 AssetUpdate update = buildUpdateFunction.apply(attribute);
                                 // Set the status to completed already so rules cannot interfere with this initial insert
                                 update.setStatus(AssetUpdate.Status.COMPLETED);
+                                LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + update);
                                 insertFact(update, true);
                             });
                         break;
@@ -143,15 +143,15 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                         if (attributesIndex >= 0) {
                             // Attributes have possibly changed so need to compare old and new state to determine
                             // which facts to retract and which to insert
-                            Attributes oldAttributes = new Attributes((JsonObject) persistenceEvent.getPreviousState()[attributesIndex]);
-                            Attributes newAttributes = new Attributes((JsonObject) persistenceEvent.getCurrentState()[attributesIndex]);
+                            AssetAttributes oldAttributes = new AssetAttributes((JsonObject) persistenceEvent.getPreviousState()[attributesIndex]);
+                            AssetAttributes newAttributes = new AssetAttributes((JsonObject) persistenceEvent.getCurrentState()[attributesIndex]);
 
-                            List<Attribute> oldFactAttributes = Arrays.stream(oldAttributes.get())
-                                .filter(Attribute::isRulesFact)
+                            List<AssetAttribute> oldFactAttributes = oldAttributes.get().stream()
+                                .filter(AssetAttribute::isRulesFact)
                                 .collect(Collectors.toList());
 
-                            List<Attribute> newFactAttributes = Arrays.stream(newAttributes.get())
-                                .filter(Attribute::isRulesFact)
+                            List<AssetAttribute> newFactAttributes = newAttributes.get().stream()
+                                .filter(AssetAttribute::isRulesFact)
                                 .collect(Collectors.toList());
 
                             // Compare attributes by JSON value
@@ -169,6 +169,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                                 )
                                 .forEach(obsoleteFactAttribute -> {
                                     AssetUpdate update = buildUpdateFunction.apply(obsoleteFactAttribute);
+                                    LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + update);
                                     retractFact(update);
                                 });
 
@@ -189,19 +190,21 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                                     AssetUpdate update = buildUpdateFunction.apply(newFactAttribute);
                                     // Set the status to completed already so rules cannot interfere with this initial insert
                                     update.setStatus(AssetUpdate.Status.COMPLETED);
+                                    LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + update);
                                     insertFact(update, true);
                                 });
                         }
                         break;
                     case DELETE:
                         // Retract any facts that were associated with this asset
-                        Attributes removedAttributes = new Attributes(eventAsset.getAttributes());
-                        Arrays.stream(removedAttributes.get())
-                            .filter(Attribute::isRulesFact)
+                        AssetAttributes removedAttributes = new AssetAttributes(eventAsset);
+                        removedAttributes.get().stream()
+                            .filter(AssetAttribute::isRulesFact)
                             .forEach(attribute -> {
                                 // We can't load the asset again (it was deleted), so don't use buildUpdateFunction() and
                                 // hope that the path of the event asset has been loaded before deletion
                                 AssetUpdate update = new AssetUpdate(eventAsset, attribute);
+                                LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + update);
                                 retractFact(update);
                             });
                         break;
@@ -238,10 +241,9 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                 ));
 
         assets.forEach(asset -> {
-            Attributes attributes = new Attributes(asset.getAttributes());
-            Arrays
-                .stream(attributes.get())
-                .filter(Attribute::isRulesFact)
+            AssetAttributes attributes = new AssetAttributes(asset);
+            attributes.get().stream()
+                .filter(AssetAttribute::isRulesFact)
                 .forEach(attribute -> {
                     AssetUpdate update = new AssetUpdate(asset, attribute);
                     // Set the status to completed already so rules cannot interfere with this initial insert
@@ -438,6 +440,10 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         // Get the chain of rule engines that we need to pass through
         List<RulesDeployment> rulesDeployments = getEnginesInScope(assetUpdate.getAssetRealmId(), assetUpdate.getAssetPath());
 
+        if (rulesDeployments.size() == 0) {
+            LOG.fine("Ignoring asset update as there are no matching rules deployments: " + assetUpdate);
+        }
+
         // Pass through each engine and try and insert the fact
         for (RulesDeployment deployment : rulesDeployments) {
             deployment.insertFact(assetUpdate);
@@ -459,6 +465,10 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     protected void retractFact(AssetUpdate assetUpdate) {
         // Get the chain of rule engines that we need to pass through
         List<RulesDeployment> rulesDeployments = getEnginesInScope(assetUpdate.getAssetRealmId(), assetUpdate.getAssetPath());
+
+        if (rulesDeployments.size() == 0) {
+            LOG.fine("Ignoring asset update as there are no matching rules deployments: " + assetUpdate);
+        }
 
         // Pass through each engine and retract this fact
         for (RulesDeployment deployment : rulesDeployments) {

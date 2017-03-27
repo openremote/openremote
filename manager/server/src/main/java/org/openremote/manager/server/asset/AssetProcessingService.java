@@ -25,16 +25,13 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.manager.server.agent.AgentService;
-import org.openremote.manager.server.agent.ThingAttributes;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
 import org.openremote.manager.server.rules.RulesService;
-import org.openremote.model.Attribute;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeState;
-import org.openremote.model.Attributes;
-import org.openremote.model.asset.AssetType;
-import org.openremote.model.asset.AssetUpdate;
-import org.openremote.model.asset.ThingAttribute;
+import org.openremote.model.asset.*;
+import org.openremote.model.asset.thing.ThingAttribute;
+import org.openremote.model.asset.thing.ThingAttributes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -204,8 +201,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
         // Pass attribute event through the processing chain
         LOG.fine("Processing client " + attributeEvent + " for: " + asset);
-        Attributes attributes = new Attributes(asset.getAttributes());
-        Attribute attribute = attributes.get(attributeEvent.getAttributeName());
+        AssetAttributes attributes = new AssetAttributes(asset);
+        AssetAttribute attribute = attributes.get(attributeEvent.getAttributeName());
 
         if (attribute == null) {
             LOG.warning("Ignoring " + attributeEvent + ", attribute doesn't exist on asset: " + asset);
@@ -257,7 +254,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     }
 
     protected void processUpdate(ServerAsset asset,
-                                 Attribute attribute,
+                                 AbstractAssetAttribute attribute,
                                  AttributeEvent attributeEvent) {
         // Ensure timestamp of event is not in the future as that would essentially block access to
         // the attribute until after that time (maybe that is desirable behaviour)
@@ -269,7 +266,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         }
 
         // Hold on to existing attribute state so we can use it during processing
-        AttributeEvent lastStateEvent = attribute.getStateEvent(asset.getId());
+        AttributeEvent lastStateEvent = attribute.getStateEvent();
 
         // Check the last update timestamp of the attribute, ignoring any event that is older than last update
         // TODO: This means we drop out-of-sequence events, we might need better at-least-once handling
@@ -280,7 +277,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
         // Set new value and event timestamp on attribute, thus validating any attribute constraints
         try {
-            attribute.applyStateEvent(attributeEvent);
+            attribute.setValue(attributeEvent.getAttributeState().getValue(), attributeEvent.getTimestamp());
         } catch (IllegalArgumentException ex) {
             LOG.log(Level.WARNING, "Ignoring " + attributeEvent + ", attribute constraint violation in: " + asset, ex);
             return;

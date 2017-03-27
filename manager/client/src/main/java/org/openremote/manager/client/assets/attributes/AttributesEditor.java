@@ -31,12 +31,14 @@ import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.util.JsUtil;
 import org.openremote.manager.client.widget.*;
 import org.openremote.model.*;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetAttributes;
 import org.openremote.model.asset.AssetMeta;
 
 import java.util.logging.Logger;
 
 public class AttributesEditor
-    extends AttributesView<AttributesEditor.Container, AttributesEditor.Style> {
+    extends AttributesView<AttributesEditor.Container, AttributesEditor.Style, AssetAttributes, AssetAttribute> {
 
     private static final Logger LOG = Logger.getLogger(AttributesEditor.class.getName());
 
@@ -53,7 +55,7 @@ public class AttributesEditor
     final protected boolean isCreate;
     protected FormGroup newAttributeGroup;
 
-    public AttributesEditor(Environment environment, Container container, Attributes attributes, boolean isCreate) {
+    public AttributesEditor(Environment environment, Container container, AssetAttributes attributes, boolean isCreate) {
         super(environment, container, attributes);
         this.isCreate = isCreate;
     }
@@ -72,7 +74,7 @@ public class AttributesEditor
     }
 
     @Override
-    protected void addAttributeActions(Attribute attribute,
+    protected void addAttributeActions(AssetAttribute attribute,
                                        FormGroup formGroup,
                                        FormField formField,
                                        FormGroupActions formGroupActions,
@@ -89,14 +91,14 @@ public class AttributesEditor
     }
 
     @Override
-    protected void addAttributeExtensions(Attribute attribute, FormGroup formGroup) {
+    protected void addAttributeExtensions(AssetAttribute attribute, FormGroup formGroup) {
         formGroup.addExtension(new MetaEditor(attribute));
     }
 
     /* ####################################################################### */
 
     protected FormGroup createNewAttributeEditor() {
-        Attribute attribute = new Attribute();
+        AssetAttribute attribute = new AssetAttribute();
 
         FormGroup formGroup = createAttributeNameEditor(attribute);
 
@@ -108,7 +110,8 @@ public class AttributesEditor
             if (attribute.isValid()) {
                 formGroup.setError(false);
                 // TODO This is necessary because JSON elemental behavior is weird
-                Attribute storedAttribute = new Attribute(attribute.getName(), Json.parse(attribute.getJsonObject().toJson()));
+                AssetAttribute storedAttribute =
+                    new AssetAttribute(attribute.getName(), Json.parse(attribute.getJsonObject().toJson()));
                 attributes.put(storedAttribute);
                 showInfo(environment.getMessages().attributeAdded(attribute.getName()));
                 build();

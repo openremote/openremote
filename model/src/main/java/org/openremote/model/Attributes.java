@@ -19,18 +19,20 @@
  */
 package org.openremote.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import elemental.json.Json;
 import elemental.json.JsonObject;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Convenience overlay API for {@link JsonObject}.
  *
  * Modifies the given or an empty object.
  */
-public class Attributes {
+public abstract class Attributes<CHILD extends Attributes<CHILD, A>, A extends Attribute> {
 
     final protected JsonObject jsonObject;
 
@@ -38,9 +40,13 @@ public class Attributes {
         this(Json.createObject());
     }
 
-    @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
+    // TODO @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public Attributes(JsonObject jsonObject) {
         this.jsonObject = jsonObject != null ? jsonObject : Json.createObject();
+    }
+
+    public Attributes(CHILD attributes) {
+        this.jsonObject = attributes != null && attributes.getJsonObject() != null ? attributes.getJsonObject() : Json.createObject();
     }
 
     public JsonObject getJsonObject() {
@@ -51,59 +57,59 @@ public class Attributes {
         return jsonObject.hasKey(name);
     }
 
-    public String[] names() {
-        return jsonObject.keys();
+    public List<String> names() {
+        return Collections.unmodifiableList(Arrays.asList(jsonObject.keys()));
     }
 
     public int size() {
-        return get().length;
+        return jsonObject.keys().length;
     }
 
-    public Attribute[] get() {
-        Set<Attribute> attributes = new LinkedHashSet<>();
+    public List<A> get() {
+        List<A> attributes = new ArrayList<>();
         String[] keys = jsonObject.keys();
         for (String key : keys) {
-            if (hasAttribute(key)) {
-                Attribute attribute = new Attribute(key, jsonObject.getObject(key));
-                attributes.add(attribute);
-            }
+            attributes.add(createAttribute(key, jsonObject.getObject(key)));
         }
-        return attributes.toArray(new Attribute[attributes.size()]);
+        return Collections.unmodifiableList(attributes);
     }
 
-    public Attribute get(String name) {
-        return hasAttribute(name) ? new Attribute(name, jsonObject.getObject(name)) : null;
+    public A get(String name) {
+        return hasAttribute(name) ? createAttribute(name, jsonObject.getObject(name)) : null;
     }
 
-    public Attributes put(Attribute... attributes) {
+    @SuppressWarnings("unchecked")
+    public CHILD put(A... attributes) {
         if (attributes != null)
-            for (Attribute attribute : attributes) {
+            for (A attribute : attributes) {
                 jsonObject.put(attribute.getName(), attribute.getJsonObject());
             }
-        return this;
+        return (CHILD) this;
     }
 
-    public Attributes remove(String name) {
+    @SuppressWarnings("unchecked")
+    public CHILD remove(String name) {
         if (hasAttribute(name)) {
             jsonObject.remove(name);
         }
-        return this;
+        return (CHILD) this;
     }
 
-    public Attributes clear(String... excludeAttributes) {
+    @SuppressWarnings("unchecked")
+    public CHILD clear(String... excludeAttributes) {
         List<String> excluded =
             excludeAttributes != null ? Arrays.asList(excludeAttributes) : new ArrayList<>();
-        for (Attribute attribute : get()) {
+        for (A attribute : get()) {
             if (!excluded.contains(attribute.getName())) {
                 remove(attribute.getName());
             }
         }
-        return this;
+        return (CHILD) this;
     }
 
-    public Attributes copy() {
-        return new Attributes(Json.parse(getJsonObject().toJson()));
-    }
+    abstract public CHILD copy();
+
+    abstract protected A createAttribute(String name, JsonObject jsonObject);
 
     @Override
     public String toString() {

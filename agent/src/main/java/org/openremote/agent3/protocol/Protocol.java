@@ -22,7 +22,7 @@ package org.openremote.agent3.protocol;
 import org.openremote.container.ContainerService;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.Constants;
-import org.openremote.model.asset.ThingAttribute;
+import org.openremote.model.asset.thing.ThingAttribute;
 
 import java.util.Collection;
 

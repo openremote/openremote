@@ -2,28 +2,18 @@ package org.openremote.test.assets
 
 import elemental.json.Json
 import org.openremote.agent3.protocol.AbstractProtocol
-import org.openremote.manager.server.agent.AgentAttributes
-import org.openremote.manager.server.agent.ThingAttributes
-import org.openremote.model.asset.AssetUpdate
-import org.openremote.manager.server.asset.ServerAsset
-import org.openremote.model.Attribute
-import org.openremote.model.AttributeEvent
-import org.openremote.model.AttributeRef
-import org.openremote.model.AttributeState
-import org.openremote.model.Meta
-import org.openremote.model.Constants
-import org.openremote.model.MetaItem
-import org.openremote.model.asset.ProtocolConfiguration
-import org.openremote.model.asset.ThingAttribute
-import org.openremote.model.asset.AssetMeta
-import org.openremote.model.AttributeType
-import org.openremote.test.ManagerContainerTrait
-import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.asset.AssetProcessingService
+import org.openremote.manager.server.asset.AssetStorageService
+import org.openremote.manager.server.asset.ServerAsset
+import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
-import org.openremote.model.asset.AssetType
+import org.openremote.model.*
+import org.openremote.model.asset.*
+import org.openremote.model.asset.agent.AgentAttributes
+import org.openremote.model.asset.agent.ProtocolConfiguration
+import org.openremote.model.asset.thing.ThingAttribute
+import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -43,7 +33,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         //region and: "a mock protocol"
         // TODO: Update this to use Simulator Protocol
         and: "a mock protocol"
-        def mockProtocolName =  Constants.PROTOCOL_NAMESPACE + ":mockProtocol"
+        def mockProtocolName = Constants.PROTOCOL_NAMESPACE + ":mockProtocol"
         def protocolDeployed = false
         List<AttributeEvent> sendToActuatorEvents = []
         def mockProtocol = new AbstractProtocol() {
@@ -88,11 +78,11 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         List<AssetUpdate> updatesPassedStartOfProcessingChain = []
         List<AssetUpdate> updatesReachedEndOfProcessingChain = []
 
-        Consumer<AssetUpdate> mockEndConsumer = {assetUpdate ->
+        Consumer<AssetUpdate> mockEndConsumer = { assetUpdate ->
             updatesReachedEndOfProcessingChain.add(assetUpdate)
         }
 
-        Consumer<AssetUpdate> mockStartConsumer = {assetUpdate ->
+        Consumer<AssetUpdate> mockStartConsumer = { assetUpdate ->
             updatesPassedStartOfProcessingChain.add(assetUpdate)
         }
         //endregion
@@ -115,7 +105,6 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         mockAgent.setName("Mock Agent");
         mockAgent.setType(AssetType.AGENT);
         AgentAttributes agentAttributes = new AgentAttributes();
-        agentAttributes.setEnabled(false);
         ProtocolConfiguration mockProtocolConfig = new ProtocolConfiguration("mock123", mockProtocolName);
         agentAttributes.put(mockProtocolConfig);
         mockAgent.setAttributes(agentAttributes.getJsonObject());
@@ -128,9 +117,9 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def mockThing = new ServerAsset(mockAgent)
         mockThing.setName("Mock Thing Asset")
         mockThing.setType(AssetType.THING)
-        def mockThingAttributes = new ThingAttributes(mockThing);
+        def mockThingAttributes = new AssetAttributes(mockThing);
         mockThingAttributes.put(
-                new Attribute("light1Toggle", AttributeType.BOOLEAN, Json.create(false))
+                new AssetAttribute("light1Toggle", AttributeType.BOOLEAN, Json.create(false))
                         .setMeta(new Meta()
                         .add(new MetaItem(
                         AssetMeta.DESCRIPTION,
@@ -139,11 +128,11 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
                         .add(new MetaItem(
                         AssetMeta.AGENT_LINK,
-                        new AttributeRef(mockAgent.getId(),"mock123").asJsonValue()
+                        new AttributeRef(mockAgent.getId(), "mock123").asJsonValue()
                 )
                 )
                 ),
-                new Attribute("light2Toggle", AttributeType.BOOLEAN, Json.create(false))
+                new AssetAttribute("light2Toggle", AttributeType.BOOLEAN, Json.create(false))
                         .setMeta(new Meta()
                         .add(new MetaItem(
                         AssetMeta.DESCRIPTION,
@@ -156,7 +145,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
                 )
                 )
                 ),
-                new Attribute("plainAttribute", AttributeType.STRING, Json.create("demo"))
+                new AssetAttribute("plainAttribute", AttributeType.STRING, Json.create("demo"))
                         .setMeta(new Meta()
                         .add(new MetaItem(
                         AssetMeta.DESCRIPTION,

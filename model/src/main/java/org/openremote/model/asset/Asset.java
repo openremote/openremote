@@ -21,17 +21,16 @@ package org.openremote.model.asset;
 
 import elemental.json.JsonObject;
 import org.hibernate.annotations.Formula;
-import org.openremote.model.*;
+import org.openremote.model.IdentifiableEntity;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
-import java.util.List;
 
-import static org.openremote.model.Constants.*;
+import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
+import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 
 // @formatter:off
 /**
@@ -207,42 +206,6 @@ import static org.openremote.model.Constants.*;
 @MappedSuperclass
 public class Asset implements IdentifiableEntity {
 
-    static JsonObject filterProtectedAttributes(JsonObject originalAttributes) {
-        if (originalAttributes == null)
-            return null;
-        Attributes filteredAttributes = new Attributes();
-        for (Attribute originalAttribute : new Attributes(originalAttributes).get()) {
-
-            // An attribute must be protected to be included
-            if (!originalAttribute.isProtected()) {
-                continue;
-            }
-
-            Attribute protectedAttribute = originalAttribute.copy();
-            filteredAttributes.put(protectedAttribute);
-
-            if (!protectedAttribute.hasMeta())
-                continue;
-
-            // Any meta item of the attribute, if it's in our namespace, must be protected READ to be included
-            Meta protectedMeta = new Meta();
-            for (MetaItem metaItem : protectedAttribute.getMeta().all()) {
-                if (!metaItem.getName().startsWith(NAMESPACE))
-                    continue;
-
-                AssetMeta wellKnownMeta = AssetMeta.byName(metaItem.getName());
-                if (wellKnownMeta != null && wellKnownMeta.getAccess().protectedRead) {
-                    protectedMeta.add(
-                        new MetaItem(metaItem.getName(), metaItem.getValue())
-                    );
-                }
-            }
-            if (protectedMeta.size() > 0)
-                protectedAttribute.setMeta(protectedMeta);
-
-        }
-        return filteredAttributes.getJsonObject();
-    }
 
     @Id
     @Column(name = "ID", length = 27)
@@ -333,7 +296,14 @@ public class Asset implements IdentifiableEntity {
         this.tenantRealm = tenantRealm;
         this.tenantDisplayName = tenantDisplayName;
         this.path = path;
-        this.attributes = filterProtectedAttributes ? filterProtectedAttributes(attributes) : attributes;
+
+        if (filterProtectedAttributes) {
+            AbstractAssetAttributes assetAttributes = new AssetAttributes(this.id, attributes);
+            assetAttributes.filterProtected();
+            this.attributes = assetAttributes.size() > 0 ? assetAttributes.getJsonObject() : null;
+        } else {
+            this.attributes = attributes;
+        }
     }
 
     public Asset(Asset parent) {
@@ -487,8 +457,8 @@ public class Asset implements IdentifiableEntity {
 
         String[] newArray = new String[path.length];
         int j = 0;
-        for (int i=path.length; i>0; i--) {
-            newArray[j] = path[i-1];
+        for (int i = path.length; i > 0; i--) {
+            newArray[j] = path[i - 1];
             j++;
         }
         return newArray;

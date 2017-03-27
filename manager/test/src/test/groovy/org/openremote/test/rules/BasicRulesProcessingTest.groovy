@@ -16,6 +16,8 @@ import org.openremote.manager.shared.rules.AssetRulesDefinition
 import org.openremote.manager.shared.rules.GlobalRulesDefinition
 import org.openremote.manager.shared.rules.RulesDefinition.DeploymentStatus
 import org.openremote.model.*
+import org.openremote.model.asset.AssetAttribute
+import org.openremote.model.asset.AssetAttributes
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetType
 import org.openremote.test.ManagerContainerTrait
@@ -317,9 +319,9 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         asset.setRealmId(keycloakDemoSetup.customerATenant.getId())
         asset.setType(AssetType.ROOM)
         asset.setName("Kitchen")
-        Attributes attributes = new Attributes()
+        AssetAttributes attributes = new AssetAttributes()
         attributes.put(
-                new Attribute("testString", AttributeType.STRING, Json.create("test"))
+                new AssetAttribute("testString", AttributeType.STRING, Json.create("test"))
                         .setMeta(
                         new Meta()
                                 .add(new MetaItem(AssetMeta.RULES_FACT, Json.create(true)))
@@ -343,14 +345,14 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         when: "the Kitchen room asset is modified to add a new attribute but RULES_FACT = true meta is not changed"
         resetRuleExecutionLoggers()
-        attributes = new Attributes()
+        attributes = new AssetAttributes()
         attributes.put(
-                new Attribute("testString", AttributeType.STRING, Json.create("test"))
+                new AssetAttribute("testString", AttributeType.STRING, Json.create("test"))
                         .setMeta(
                         new Meta()
                                 .add(new MetaItem(AssetMeta.RULES_FACT, Json.create(true)))
                 ),
-                new Attribute("testInteger", AttributeType.INTEGER, Json.create(0))
+                new AssetAttribute("testInteger", AttributeType.INTEGER, Json.create(0))
         )
         asset.setAttributes(attributes.getJsonObject())
         def factCount = smartHomeEngine.facts.size()
@@ -362,14 +364,14 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         }
 
         when: "the Kitchen room asset is modified to set the RULES_FACT to false"
-        attributes = new Attributes()
+        attributes = new AssetAttributes()
         attributes.put(
-                new Attribute("testString", AttributeType.STRING, Json.create("test"))
+                new AssetAttribute("testString", AttributeType.STRING, Json.create("test"))
                         .setMeta(
                         new Meta()
                                 .add(new MetaItem(AssetMeta.RULES_FACT, Json.create(false)))
                 ),
-                new Attribute("testInteger", AttributeType.INTEGER, Json.create(0))
+                new AssetAttribute("testInteger", AttributeType.INTEGER, Json.create(0))
         )
         asset.setAttributes(attributes.getJsonObject())
         factCount = smartHomeEngine.facts.size()
@@ -382,14 +384,14 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         when: "the Kitchen room asset is modified to set all attributes to RULES_FACT = true"
         resetRuleExecutionLoggers()
-        attributes = new Attributes()
+        attributes = new AssetAttributes()
         attributes.put(
-                new Attribute("testString", AttributeType.STRING, Json.create("test"))
+                new AssetAttribute("testString", AttributeType.STRING, Json.create("test"))
                         .setMeta(
                         new Meta()
                                 .add(new MetaItem(AssetMeta.RULES_FACT, Json.create(true)))
                 ),
-                new Attribute("testInteger", AttributeType.INTEGER, Json.create(0))
+                new AssetAttribute("testInteger", AttributeType.INTEGER, Json.create(0))
                         .setMeta(
                         new Meta()
                                 .add(new MetaItem(AssetMeta.RULES_FACT, Json.create(true)))

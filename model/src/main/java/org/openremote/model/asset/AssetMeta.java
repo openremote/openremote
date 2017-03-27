@@ -21,7 +21,6 @@ package org.openremote.model.asset;
 
 import elemental.json.JsonType;
 import elemental.json.JsonValue;
-import org.openremote.model.Attribute;
 import org.openremote.model.MetaItem;
 import org.openremote.model.units.AttributeUnits;
 
@@ -167,12 +166,6 @@ public enum AssetMeta {
 
     public static MetaItem createMetaItem(AssetMeta name, JsonValue value) {
         return new MetaItem(name.getName(), value);
-    }
-
-    public static MetaItem getFirst(Attribute attribute, AssetMeta meta) {
-        return attribute.hasMetaItem(meta.getName())
-            ? attribute.getMeta().first(meta.getName())
-            : null;
     }
 
     /**

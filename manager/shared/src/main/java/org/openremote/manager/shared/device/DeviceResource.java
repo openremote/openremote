@@ -38,7 +38,8 @@ import org.openremote.model.Constants;
  *     <li>if the resource value is a constant and can be cached forever</li>
  * </ul>
  */
-public class DeviceResource extends Attribute {
+public class DeviceResource { /* NOT USED
+extends Attribute {
 
     public static final String DEVICE_RESOURCE = "deviceResource";
     public static final String DEVICE_RESOURCE_TYPE = Constants.NAMESPACE + ":device:resource:type";
@@ -56,13 +57,11 @@ public class DeviceResource extends Attribute {
     public static boolean isDeviceResource(Attribute attribute) {
         // The given attribute must satisfy the API of this class
         return false;
-/*
         return attribute.hasMetadataElement(DEVICE_RESOURCE)
             && attribute.getMetadata().getElement(DEVICE_RESOURCE).getName().equals(DEVICE_RESOURCE_TYPE)
             && AttributeType.isValid(attribute.getMetadata().getElement(DEVICE_RESOURCE).getValue().asString())
             && attribute.hasMetadataElement(ACCESS)
             && attribute.getMetadata().getElement(ACCESS).getName().equals(ACCESS_TYPE);
-*/
     }
 
     public DeviceResource(Attribute attribute) {
@@ -84,37 +83,30 @@ public class DeviceResource extends Attribute {
                 new MetadataElement(ACCESS, ACCESS_TYPE, Json.create(access.name()))
             )
         );
-        */
     }
 
     public AttributeType getResourceType() {
         return null;
-/*
+
         return getMetadata().hasElement(DEVICE_RESOURCE)
             && AttributeType.isValid(getMetadata().getElement(DEVICE_RESOURCE).getValue().asString())
             ? AttributeType.fromValue(getMetadata().getElement(DEVICE_RESOURCE).getValue().asString())
             : null;
-*/
     }
 
     public Access getAccess() {
         return null;
-/*
         return getMetadata().hasElement(ACCESS)
             ? Access.valueOf(getMetadata().getElement(ACCESS).getValue().asString())
             : null;
-*/
     }
 
     public boolean isPassive() {
         return false;
-/*
         return getMetadata().hasElement(PASSIVE) && getMetadata().getElement(PASSIVE).getValue().asBoolean();
-*/
     }
 
     public DeviceResource setPassive(boolean passive) {
-/*
         if (passive) {
             getMetadata().putElement(
                 new MetadataElement(PASSIVE, AttributeType.BOOLEAN.getValue(), Json.create(true))
@@ -122,19 +114,15 @@ public class DeviceResource extends Attribute {
         } else {
             getMetadata().removeElement(PASSIVE);
         }
-*/
         return this;
     }
 
     public boolean isConstant() {
         return false;
-/*
         return getMetadata().hasElement(CONSTANT) && getMetadata().getElement(CONSTANT).getValue().asBoolean();
-*/
     }
 
     public DeviceResource setConstant(boolean constant) {
-/*
         if (constant) {
             getMetadata().putElement(
                 new MetadataElement(CONSTANT, AttributeType.BOOLEAN.getValue(), Json.create(true))
@@ -142,8 +130,7 @@ public class DeviceResource extends Attribute {
         } else {
             getMetadata().removeElement(CONSTANT);
         }
-*/
         return this;
     }
-
+*/
 }

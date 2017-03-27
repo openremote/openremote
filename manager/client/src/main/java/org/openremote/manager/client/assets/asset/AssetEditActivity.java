@@ -38,13 +38,12 @@ import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.manager.shared.validation.ConstraintViolation;
-import org.openremote.model.Attributes;
 import org.openremote.model.Consumer;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetAttributes;
 import org.openremote.model.asset.AssetType;
 
 import javax.inject.Inject;
-import java.util.Arrays;
 import java.util.Collection;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
@@ -349,11 +348,9 @@ public class AssetEditActivity
         attributesEditor = new AttributesEditor(
             environment,
             view.getAttributesEditorContainer(),
-            new Attributes(
-                assetId == null
-                    ? asset.getWellKnownType().getDefaultAttributes()
-                    : asset.getAttributes()
-            ),
+            assetId == null
+                ? asset.getWellKnownType().getDefaultAttributes()
+                : new AssetAttributes(asset.getAttributes()),
             assetId == null
         );
         view.setAttributesEditor(attributesEditor);

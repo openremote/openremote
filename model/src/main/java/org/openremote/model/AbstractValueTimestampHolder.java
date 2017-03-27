@@ -27,7 +27,7 @@ import elemental.json.*;
  * {@link JsonValue} and a <code>valueTimestamp</code> timestamp field, in
  * milliseconds since the Unix epoch, of the most recent value change.
  */
-public abstract class AbstractValueTimestampHolder<T extends AbstractValueTimestampHolder> extends AbstractValueHolder<T> {
+public abstract class AbstractValueTimestampHolder<CHILD extends AbstractValueTimestampHolder> extends AbstractValueHolder<CHILD> {
 
     public static final String VALUE_TIMESTAMP_FIELD_NAME = "valueTimestamp";
 
@@ -49,7 +49,7 @@ public abstract class AbstractValueTimestampHolder<T extends AbstractValueTimest
     /**
      * Sets the value timestamp to current system time.
      */
-    public T setValueTimestamp() {
+    public CHILD setValueTimestamp() {
         return setValueTimestamp(System.currentTimeMillis());
     }
 
@@ -57,9 +57,9 @@ public abstract class AbstractValueTimestampHolder<T extends AbstractValueTimest
      * Sets the value timestamp to given time.
      */
     @SuppressWarnings("unchecked")
-    public T setValueTimestamp(long timestamp) {
+    public CHILD setValueTimestamp(long timestamp) {
         jsonObject.put(VALUE_TIMESTAMP_FIELD_NAME, Json.create(timestamp));
-        return (T) this;
+        return (CHILD) this;
     }
 
     /**
@@ -74,8 +74,8 @@ public abstract class AbstractValueTimestampHolder<T extends AbstractValueTimest
     /**
      * Sets the value and the timestamp to given time.
      */
-    public T setValue(JsonValue value, long timestamp) throws IllegalArgumentException {
-        T result = setValue(value);
+    public CHILD setValue(JsonValue value, long timestamp) throws IllegalArgumentException {
+        CHILD result = setValue(value);
         setValueTimestamp(timestamp);
         return result;
     }
@@ -84,8 +84,8 @@ public abstract class AbstractValueTimestampHolder<T extends AbstractValueTimest
      * Sets the value and the timestamp to current system time.
      */
     @Override
-    public T setValue(JsonValue value) throws IllegalArgumentException {
-        T result = super.setValue(value);
+    public CHILD setValue(JsonValue value) throws IllegalArgumentException {
+        CHILD result = super.setValue(value);
         setValueTimestamp();
         return result;
     }

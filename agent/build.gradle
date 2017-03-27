@@ -5,8 +5,8 @@ dependencies {
 
     compile resolveProject(":container")
 
-    compile "org.drools:drools-compiler:6.5.0.Final"
-    compile "org.drools:drools-decisiontables:6.5.0.Final"
+    compile "org.drools:drools-compiler:$droolsVersion"
+    compile "org.drools:drools-decisiontables:$droolsVersion"
 
     compile "com.luckycatlabs:SunriseSunsetCalculator:$sunriseSunsetCalculatorVersion"
 
