@@ -94,7 +94,6 @@ public class ThingAttribute extends AbstractAssetAttribute<ThingAttribute> {
         this.protocolConfiguration = protocolConfiguration;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public ThingAttribute copy() {
         return new ThingAttribute(assetId, protocolConfiguration, getName(), Json.parse(getJsonObject().toJson()));

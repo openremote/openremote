@@ -19,14 +19,13 @@
  */
 package org.openremote.model.asset;
 
-import elemental.json.Json;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 import org.openremote.model.*;
 
 import static org.openremote.model.asset.AssetMeta.*;
 
-public class AbstractAssetAttribute<CHILD extends AbstractAssetAttribute<CHILD>> extends Attribute<CHILD> {
+public abstract class AbstractAssetAttribute<CHILD extends AbstractAssetAttribute<CHILD>> extends Attribute<CHILD> {
 
     final public String assetId;
 
@@ -75,12 +74,6 @@ public class AbstractAssetAttribute<CHILD extends AbstractAssetAttribute<CHILD>>
 
     public AbstractAssetAttribute(AbstractAssetAttribute attribute) {
         this(attribute.assetId, attribute.getName(), attribute.getJsonObject());
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public CHILD copy() {
-        return (CHILD) new AbstractAssetAttribute<CHILD>(getName(), Json.parse(getJsonObject().toJson()));
     }
 
     public String getAssetId() {

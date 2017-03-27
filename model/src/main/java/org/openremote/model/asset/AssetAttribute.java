@@ -19,6 +19,7 @@
  */
 package org.openremote.model.asset;
 
+import elemental.json.Json;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 import org.openremote.model.AttributeType;
@@ -63,4 +64,10 @@ public class AssetAttribute extends AbstractAssetAttribute<AssetAttribute> {
     public AssetAttribute(AbstractAssetAttribute attribute) {
         super(attribute);
     }
+
+    @Override
+    public AssetAttribute copy() {
+        return new AssetAttribute(assetId, getName(), Json.parse(getJsonObject().toJson()));
+    }
+
 }

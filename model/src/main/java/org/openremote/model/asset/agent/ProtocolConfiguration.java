@@ -87,7 +87,6 @@ public class ProtocolConfiguration extends AgentAttribute<ProtocolConfiguration>
         super(attribute);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public ProtocolConfiguration copy() {
         return new ProtocolConfiguration(getName(), Json.parse(getJsonObject().toJson()));
