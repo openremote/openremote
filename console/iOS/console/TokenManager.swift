@@ -25,11 +25,13 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         viewController = TokenManagerViewController()
         let webCfg:WKWebViewConfiguration = WKWebViewConfiguration()
         myWebView = WKWebView(frame: viewController.view.frame, configuration: webCfg)
-        if let token = UserDefaults.standard.value(forKey: DefaultsKey.offlineToken) {
+        let defaults = UserDefaults(suiteName: AppGroup.entitlement)
+        defaults?.synchronize()
+        if let token = defaults?.value(forKey: DefaultsKey.offlineToken) {
             hasToken = true
             offlineToken = token as? String
-            refreshToken = UserDefaults.standard.value(forKey: DefaultsKey.refreshToken) as? String
-            idToken = UserDefaults.standard.value(forKey: DefaultsKey.idToken) as? String
+            refreshToken = defaults?.value(forKey: DefaultsKey.refreshToken) as? String
+            idToken = defaults?.value(forKey: DefaultsKey.idToken) as? String
         } else {
             offlineToken = nil
             refreshToken = nil
@@ -41,7 +43,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     
     func authenticate() {
         print("authenticate")
-        let defaults = UserDefaults.standard
+        let defaults = UserDefaults(suiteName: AppGroup.entitlement)
         let webCfg:WKWebViewConfiguration = WKWebViewConfiguration()
         
         let userController:WKUserContentController = WKUserContentController()
@@ -51,10 +53,10 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         userController.add(self, name: DefaultsKey.idToken)
         
         var exec_template = "var iOSToken"
-        if let offlineToken = defaults.object(forKey: DefaultsKey.offlineToken) {
+        if let offlineToken = defaults?.object(forKey: DefaultsKey.offlineToken) {
             print("offlinetoken exists")
-            let refreshToken = defaults.object(forKey: DefaultsKey.refreshToken)
-            let idToken = defaults.object(forKey: DefaultsKey.idToken)
+            let refreshToken = defaults?.object(forKey: DefaultsKey.refreshToken)
+            let idToken = defaults?.object(forKey: DefaultsKey.idToken)
             exec_template = String(format: "var iOSToken = \"%@\"; var iOSRefreshToken = \"%@\"; var iOSTokenId = \"%@\";", offlineToken as! String, refreshToken as! String, idToken as! String)
         }
         
@@ -77,16 +79,16 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         offlineToken = nil
         refreshToken = nil
         idToken = nil
-        let defaults = UserDefaults.standard
-        defaults.removeObject(forKey: DefaultsKey.offlineToken)
-        defaults.removeObject(forKey: DefaultsKey.refreshToken)
-        defaults.removeObject(forKey: DefaultsKey.idToken)
+        let defaults = UserDefaults(suiteName: AppGroup.entitlement)
+        defaults?.removeObject(forKey: DefaultsKey.offlineToken)
+        defaults?.removeObject(forKey: DefaultsKey.refreshToken)
+        defaults?.removeObject(forKey: DefaultsKey.idToken)
         authenticate()
     }
     
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        let defaults = UserDefaults.standard
-        defaults.set(message.body, forKey: message.name)
+        let defaults = UserDefaults(suiteName: AppGroup.entitlement)
+        defaults?.set(message.body, forKey: message.name)
         switch message.name {
         case DefaultsKey.offlineToken:
             offlineToken = message.body as? String

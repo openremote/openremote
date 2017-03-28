@@ -49,8 +49,9 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     }
     
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        let defaults = UserDefaults.standard
-        defaults.set(message.body, forKey: message.name)
+        let defaults = UserDefaults(suiteName: AppGroup.entitlement)
+        defaults?.set(message.body, forKey: message.name)
+        defaults?.synchronize()
         
     }
     

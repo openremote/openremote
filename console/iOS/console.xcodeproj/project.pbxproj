@@ -15,6 +15,7 @@
 		FA1D73EC1E53374E00F6240A /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FA1D73EA1E53374E00F6240A /* LaunchScreen.storyboard */; };
 		FA1D73F61E53392F00F6240A /* ORViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1D73F51E53392F00F6240A /* ORViewController.swift */; };
 		FA2D48311E560B7500C95665 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA2D48301E560B7500C95665 /* Constants.swift */; };
+		FA3297AB1E8A4FC6008B77D3 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA3297AA1E8A4FC6008B77D3 /* Constants.swift */; };
 		FAA226B81E71563F009A8FEC /* TokenManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAA226B71E71563F009A8FEC /* TokenManager.swift */; };
 		FAA226BA1E715ED6009A8FEC /* TokenManagerView.xib in Resources */ = {isa = PBXBuildFile; fileRef = FAA226B91E715ED6009A8FEC /* TokenManagerView.xib */; };
 		FAA226BC1E7163D9009A8FEC /* TokenManagerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAA226BB1E7163D9009A8FEC /* TokenManagerViewController.swift */; };
@@ -59,6 +60,8 @@
 		FA1D73ED1E53374E00F6240A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		FA1D73F51E53392F00F6240A /* ORViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORViewController.swift; sourceTree = "<group>"; };
 		FA2D48301E560B7500C95665 /* Constants.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
+		FA3297A91E8A4AE5008B77D3 /* NotificationExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotificationExtension.entitlements; sourceTree = "<group>"; };
+		FA3297AA1E8A4FC6008B77D3 /* Constants.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		FAA226B71E71563F009A8FEC /* TokenManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TokenManager.swift; sourceTree = "<group>"; };
 		FAA226B91E715ED6009A8FEC /* TokenManagerView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = TokenManagerView.xib; sourceTree = "<group>"; };
 		FAA226BB1E7163D9009A8FEC /* TokenManagerViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TokenManagerViewController.swift; sourceTree = "<group>"; };
@@ -158,8 +161,10 @@
 		FAFF2E2B1E7A95120076BDE3 /* NotificationExtension */ = {
 			isa = PBXGroup;
 			children = (
+				FA3297A91E8A4AE5008B77D3 /* NotificationExtension.entitlements */,
 				FAFF2E2C1E7A95120076BDE3 /* NotificationService.swift */,
 				FAFF2E2E1E7A95120076BDE3 /* Info.plist */,
+				FA3297AA1E8A4FC6008B77D3 /* Constants.swift */,
 			);
 			path = NotificationExtension;
 			sourceTree = "<group>";
@@ -221,6 +226,9 @@
 						LastSwiftMigration = 0820;
 						ProvisioningStyle = Automatic;
 						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
 							com.apple.BackgroundModes = {
 								enabled = 1;
 							};
@@ -232,6 +240,11 @@
 					FAFF2E291E7A95120076BDE3 = {
 						CreatedOnToolsVersion = 8.2.1;
 						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
@@ -342,6 +355,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FAFF2E2D1E7A95120076BDE3 /* NotificationService.swift in Sources */,
+				FA3297AB1E8A4FC6008B77D3 /* Constants.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -505,6 +519,7 @@
 		FAFF2E331E7A95120076BDE3 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = NotificationExtension/NotificationExtension.entitlements;
 				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = NotificationExtension/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
@@ -518,6 +533,7 @@
 		FAFF2E341E7A95120076BDE3 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = NotificationExtension/NotificationExtension.entitlements;
 				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = NotificationExtension/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
@@ -556,6 +572,7 @@
 				FAFF2E341E7A95120076BDE3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

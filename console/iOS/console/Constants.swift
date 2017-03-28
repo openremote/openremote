@@ -29,3 +29,7 @@ struct DefaultsKey {
 struct NotificationsNames {
     static let isAuthenticated = "isAuthenticated"
 }
+
+struct AppGroup {
+    static let entitlement = "group.org.openremote.console"
+}
