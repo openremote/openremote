@@ -8,7 +8,7 @@
 
 import Foundation
 
-struct Server {
+enum Server {
     static let hostURL = "192.168.99.100"
     static let port = "8080"
     static let initialPath = String(format:"console/%@/index.html",Server.realm)
@@ -16,20 +16,27 @@ struct Server {
     static let apiTestResource = String(format:"http://%@:%@/%@/asset",Server.hostURL,Server.port,Server.realm)
 }
 
-struct Client {
+enum Client {
     static let clientId = "openremote"
 }
 
-struct DefaultsKey {
+enum DefaultsKey {
     static let offlineToken = "offlineToken"
     static let refreshToken = "refreshToken"
     static let idToken = "idToken"
 }
 
-struct NotificationsNames {
+enum NotificationsNames {
     static let isAuthenticated = "isAuthenticated"
 }
 
-struct AppGroup {
+enum AppGroup {
     static let entitlement = "group.org.openremote.console"
+}
+
+enum Notifications {
+    static let needsReachabilityCheck = Notification.Name("NeedsReachabilityCheck")
+    static let fullScreenShown = Notification.Name("fullScreenShown")
+    static let fullScreenHidden = Notification.Name("fullScreenHidden")
+    static let idleTimerFired = Notification.Name("idleTimerFired")
 }

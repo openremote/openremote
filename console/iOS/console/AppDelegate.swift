@@ -11,13 +11,17 @@ import AppAuth
 import UserNotifications
 import Firebase
 
+
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     
     var window: UIWindow?
     var currentAuthorizationFlow : OIDAuthorizationFlowSession?
     let gcmMessageIDKey = "gcm.message_id"
-    var isGrantedNotificationAccess:Bool = false
+    var reachabilityAlert : UIAlertController?
+    var reachabilityAlertShown = false
+    let internetReachability = Reachability.forInternetConnection()
+
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         setActions()
@@ -34,31 +38,43 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         application.registerForRemoteNotifications()
         NotificationCenter.default.addObserver(self, selector: #selector(self.tokenRefreshNotification), name: NSNotification.Name.firInstanceIDTokenRefresh, object: nil)
         
-
+        NotificationCenter.default.addObserver(self,
+                                                         selector: #selector(self.reachabilityChanged(note:)),
+                                                         name: NSNotification.Name.reachabilityChanged,
+                                                         object: internetReachability)
+        internetReachability?.startNotifier()
+        self.updateReachabilityStatus(reachability: internetReachability!)
         return true
     }
     
     func applicationWillResignActive(_ application: UIApplication) {
         // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
         // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks. Games should use this method to pause the game.
+        internetReachability?.stopNotifier()
     }
     
     func applicationDidEnterBackground(_ application: UIApplication) {
         // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
         // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
+        internetReachability?.stopNotifier()
     }
     
     func applicationWillEnterForeground(_ application: UIApplication) {
         // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
+       internetReachability?.startNotifier()
+       self.updateReachabilityStatus(reachability: internetReachability!)
     }
     
     func applicationDidBecomeActive(_ application: UIApplication) {
         // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
         connectToFcm()
+        internetReachability?.startNotifier()
+        self.updateReachabilityStatus(reachability: internetReachability!)
     }
     
     func applicationWillTerminate(_ application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+        internetReachability?.stopNotifier()
     }
     
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
@@ -126,6 +142,44 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         connectToFcm()
     }
     
+    func reachabilityChanged(note: NSNotification) {
+        if let reachability = note.object as? Reachability {
+            updateReachabilityStatus(reachability: reachability)
+        }
+    }
+    
+    private func updateReachabilityStatus(reachability: Reachability) {
+        if reachability.currentReachabilityStatus() == NetworkStatus.NotReachable {
+            if (!reachabilityAlertShown) {
+                let topWindow = UIWindow(frame: UIScreen.main.bounds)
+                topWindow.rootViewController = UIViewController()
+                topWindow.windowLevel = UIWindowLevelAlert + 1
+                
+                reachabilityAlert = UIAlertController(title: "Network Error", message: "Your device seems to be offline", preferredStyle: .alert)
+                let reachabilityRetryAction = UIAlertAction(title: "Retry", style: .default, handler: { (action) in
+                    self.reachabilityAlertShown = false
+                    self.updateReachabilityStatus(reachability: self.internetReachability!)
+                    topWindow.isHidden = true
+                })
+                let reachabilityCancelAction = UIAlertAction(title: "Cancel", style: .cancel, handler: { (action) in
+                    self.reachabilityAlertShown = false
+                    self.reachabilityAlert?.dismiss(animated: true, completion: nil)
+                    topWindow.isHidden = true
+                })
+                reachabilityAlert?.addAction(reachabilityRetryAction)
+                reachabilityAlert?.addAction(reachabilityCancelAction)
+                topWindow.makeKeyAndVisible()
+                topWindow.rootViewController?.present(reachabilityAlert!, animated: true, completion: nil)
+                reachabilityAlertShown = true
+            }
+        } else {
+            if (reachabilityAlertShown) {
+                reachabilityAlert?.dismiss(animated: true, completion: nil)
+                reachabilityAlertShown = false
+            }
+        }
+        
+    }
     
 }
 
@@ -148,6 +202,7 @@ func setActions() {
     
     UNUserNotificationCenter.current().setNotificationCategories([category])
 }
+
 
 
 extension AppDelegate : FIRMessagingDelegate {

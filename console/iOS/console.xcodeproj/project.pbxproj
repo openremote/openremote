@@ -19,6 +19,7 @@
 		FAA226B81E71563F009A8FEC /* TokenManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAA226B71E71563F009A8FEC /* TokenManager.swift */; };
 		FAA226BA1E715ED6009A8FEC /* TokenManagerView.xib in Resources */ = {isa = PBXBuildFile; fileRef = FAA226B91E715ED6009A8FEC /* TokenManagerView.xib */; };
 		FAA226BC1E7163D9009A8FEC /* TokenManagerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAA226BB1E7163D9009A8FEC /* TokenManagerViewController.swift */; };
+		FABC54E81E7AEBD300B7B718 /* Reachability.m in Sources */ = {isa = PBXBuildFile; fileRef = FABC54E71E7AEBD300B7B718 /* Reachability.m */; };
 		FAFF2E2D1E7A95120076BDE3 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAFF2E2C1E7A95120076BDE3 /* NotificationService.swift */; };
 		FAFF2E311E7A95120076BDE3 /* NotificationExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = FAFF2E2A1E7A95120076BDE3 /* NotificationExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
@@ -66,6 +67,9 @@
 		FAA226B91E715ED6009A8FEC /* TokenManagerView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = TokenManagerView.xib; sourceTree = "<group>"; };
 		FAA226BB1E7163D9009A8FEC /* TokenManagerViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TokenManagerViewController.swift; sourceTree = "<group>"; };
 		FAAFD0B41E77EB6E00F01155 /* console.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = console.entitlements; sourceTree = "<group>"; };
+		FABC54E51E7AEBD200B7B718 /* console-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "console-Bridging-Header.h"; sourceTree = "<group>"; };
+		FABC54E61E7AEBD300B7B718 /* Reachability.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Reachability.h; sourceTree = "<group>"; };
+		FABC54E71E7AEBD300B7B718 /* Reachability.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Reachability.m; sourceTree = "<group>"; };
 		FAFF2E2A1E7A95120076BDE3 /* NotificationExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NotificationExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		FAFF2E2C1E7A95120076BDE3 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		FAFF2E2E1E7A95120076BDE3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -151,9 +155,12 @@
 		FA2D48291E55D9F600C95665 /* utils */ = {
 			isa = PBXGroup;
 			children = (
+				FABC54E61E7AEBD300B7B718 /* Reachability.h */,
+				FABC54E71E7AEBD300B7B718 /* Reachability.m */,
 				FAA226B71E71563F009A8FEC /* TokenManager.swift */,
 				FAA226B91E715ED6009A8FEC /* TokenManagerView.xib */,
 				FAA226BB1E7163D9009A8FEC /* TokenManagerViewController.swift */,
+				FABC54E51E7AEBD200B7B718 /* console-Bridging-Header.h */,
 			);
 			name = utils;
 			sourceTree = "<group>";
@@ -344,6 +351,7 @@
 				FAA226BC1E7163D9009A8FEC /* TokenManagerViewController.swift in Sources */,
 				FA2D48311E560B7500C95665 /* Constants.swift in Sources */,
 				FA1D73E41E53374E00F6240A /* ViewController.swift in Sources */,
+				FABC54E81E7AEBD300B7B718 /* Reachability.m in Sources */,
 				FAA226B81E71563F009A8FEC /* TokenManager.swift in Sources */,
 				FA1D73F61E53392F00F6240A /* ORViewController.swift in Sources */,
 				FA1D73E21E53374E00F6240A /* AppDelegate.swift in Sources */,
@@ -488,6 +496,7 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = console/console.entitlements;
 				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = console/Info.plist;
@@ -495,6 +504,8 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = org.openremote.console;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "console/console-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 3.0;
 			};
 			name = Debug;
@@ -505,6 +516,7 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = console/console.entitlements;
 				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = console/Info.plist;
@@ -512,6 +524,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = org.openremote.console;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "console/console-Bridging-Header.h";
 				SWIFT_VERSION = 3.0;
 			};
 			name = Release;

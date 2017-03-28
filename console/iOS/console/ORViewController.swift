@@ -42,9 +42,9 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         myWebView?.navigationDelegate = self;
         view.addSubview(myWebView!)
         
-        self.apiCall()
+        //self.apiCall()
         
-        //self.login()
+        self.login()
         
     }
     
