@@ -78,7 +78,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
 
     @Override
     public void accept(AssetUpdate assetUpdate) {
-        String assetId = assetUpdate.getAssetId();
+        String assetId = assetUpdate.getId();
         String attributeName = assetUpdate.getAttribute().getName();
         JsonValue value = assetUpdate.getAttribute().getValue();
         // Some sanity checking, of course the timestamp should never be -1 if we store updated attribute state

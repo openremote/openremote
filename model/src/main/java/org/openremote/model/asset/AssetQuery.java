@@ -29,7 +29,7 @@ import java.util.Locale;
  * A query returns a collection of {@link Asset} instances, or when the
  * {@link #id} predicate is set, a single instance.
  */
-public class AssetQuery {
+public class AssetQuery<CHILD extends AssetQuery<CHILD>> {
 
     static public class Select {
         public boolean loadComplete;
@@ -381,60 +381,72 @@ public class AssetQuery {
     public AssetQuery() {
     }
 
-    public AssetQuery select(Select select) {
+    public CHILD select(Select select) {
         this.select = select;
-        return this;
+        return (CHILD) this;
     }
 
     /**
      * If this value is set, no other restrictions will be applied and only a single result should be returned.
      */
-    public AssetQuery id(String id) {
+    public CHILD id(String id) {
         this.id = id;
-        return this;
+        return (CHILD) this;
     }
 
-    public AssetQuery name(StringPredicate name) {
+    public CHILD name(String name) {
+        return name(new StringPredicate(name));
+    }
+
+    public CHILD name(StringPredicate name) {
         this.name = name;
-        return this;
+        return (CHILD) this;
     }
 
-    public AssetQuery parent(ParentPredicate parentPredicate) {
+    public CHILD parent(String id) {
+        return parent(new ParentPredicate(id));
+    }
+
+    public CHILD parent(AssetType assetType) {
+        return parent(new ParentPredicate().type(assetType));
+    }
+
+    public CHILD parent(ParentPredicate parentPredicate) {
         this.parentPredicate = parentPredicate;
-        return this;
+        return (CHILD) this;
     }
 
-    public AssetQuery path(PathPredicate pathPredicate) {
+    public CHILD path(PathPredicate pathPredicate) {
         this.pathPredicate = pathPredicate;
-        return this;
+        return (CHILD) this;
     }
 
-    public AssetQuery tenant(TenantPredicate tenantPredicate) {
+    public CHILD tenant(TenantPredicate tenantPredicate) {
         this.tenantPredicate = tenantPredicate;
-        return this;
+        return (CHILD) this;
     }
 
-    public AssetQuery userId(String userId) {
+    public CHILD userId(String userId) {
         this.userId = userId;
-        return this;
+        return (CHILD) this;
     }
 
-    public AssetQuery type(StringPredicate type) {
+    public CHILD type(StringPredicate type) {
         this.type = type;
-        return this;
+        return (CHILD) this;
     }
 
-    public AssetQuery type(AssetType assetType) {
+    public CHILD type(AssetType assetType) {
         return type(new StringPredicate(assetType.getValue()));
     }
 
-    public AssetQuery attributeMeta(AttributeMetaPredicate attributeMetaPredicate) {
+    public CHILD attributeMeta(AttributeMetaPredicate attributeMetaPredicate) {
         this.attributeMetaPredicate = attributeMetaPredicate;
-        return this;
+        return (CHILD) this;
     }
 
-    public AssetQuery orderBy(OrderBy orderBy) {
+    public CHILD orderBy(OrderBy orderBy) {
         this.orderBy = orderBy;
-        return this;
+        return (CHILD) this;
     }
 }

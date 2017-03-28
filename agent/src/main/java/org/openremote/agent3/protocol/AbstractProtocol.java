@@ -130,7 +130,7 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     protected void onSensorUpdate(AttributeState state, long timestamp) {
-        producerTemplate.sendBody(SENSOR_TOPIC, new AttributeEvent(state, this.getClass(), timestamp));
+        producerTemplate.sendBody(SENSOR_TOPIC, new AttributeEvent(state, timestamp));
     }
 
     protected void onSensorUpdate(AttributeState state) {

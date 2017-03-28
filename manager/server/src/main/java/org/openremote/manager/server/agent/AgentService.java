@@ -20,7 +20,6 @@
 package org.openremote.manager.server.agent;
 
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.agent3.protocol.AbstractProtocol;
 import org.openremote.agent3.protocol.Protocol;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
@@ -63,6 +62,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     final protected Function<AttributeRef, ProtocolConfiguration> agentLinkResolver = agentLink -> {
         // Resolve the agent and the protocol configuration
         // TODO This is very inefficient and requires Hibernate second-level caching
+        // TODO: Check the realm, the thing must be in the same realm as its agent!
         Asset agent = find(agentLink.getEntityId());
         if (agent != null && agent.getWellKnownType().equals(AGENT)) {
             AgentAttributes agentAttributes = new AgentAttributes(agent);
@@ -120,7 +120,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         LOG.fine("Deploy agent: " + agent);
         switch (cause) {
             case UPDATE:
-                // TODO: Find everything with this agent ID in the asset tree not just children
+                // TODO: Find everything with this agent ID in the asset tree (only within the same tenant/realm!) not just children
                 List<ServerAsset> things = assetStorageService.findAll(new AssetQuery()
                     .select(new AssetQuery.Select(true, false))
                     .type(THING)
@@ -220,13 +220,13 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     @Override
     public void accept(AssetUpdate assetUpdate) {
         // Check that asset is a THING
-        if (assetUpdate.getAssetType() != THING) {
+        if (assetUpdate.getType() != THING) {
             LOG.fine("Ignoring asset update as asset is not a THING: " + assetUpdate);
             return;
         }
 
         // If update was initiated by a protocol ignore it
-        if (AbstractProtocol.class.isAssignableFrom(assetUpdate.getSender())) {
+        if (assetUpdate.isNorthbound()) {
             LOG.fine("Ignoring asset update as it came from a protocol:" + assetUpdate);
             return;
         }

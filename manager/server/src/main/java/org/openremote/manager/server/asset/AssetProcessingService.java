@@ -190,13 +190,15 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         ServerAsset asset = assetStorageService.find(attributeEvent.getEntityId(), true);
 
         if (asset == null) {
-            LOG.warning("Processing client update failed asset not found: " + attributeEvent);
+            LOG.warning("Processing client update failed, asset not found: " + attributeEvent);
             return;
         }
 
         // Prevent editing of individual agent attributes
         if (asset.getWellKnownType() == AssetType.AGENT) {
-            throw new RuntimeException("Agent attributes can not be updated individually, update the whole asset instead");
+            throw new IllegalArgumentException(
+                "Agent attributes can not be updated individually, update the whole asset instead: " + asset
+            );
         }
 
         // Pass attribute event through the processing chain
@@ -215,7 +217,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             return;
         }
 
-        processUpdate(asset, attribute, attributeEvent);
+        processUpdate(asset, attribute, attributeEvent, false);
     }
 
     /**
@@ -250,12 +252,13 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         // Protocols can write to readonly attributes (i.e. sensor attributes)
         // So no need to check readonly flag
 
-        processUpdate(thing, thingAttribute, attributeEvent);
+        processUpdate(thing, thingAttribute, attributeEvent, true);
     }
 
     protected void processUpdate(ServerAsset asset,
                                  AbstractAssetAttribute attribute,
-                                 AttributeEvent attributeEvent) {
+                                 AttributeEvent attributeEvent,
+                                 boolean northbound) {
         // Ensure timestamp of event is not in the future as that would essentially block access to
         // the attribute until after that time (maybe that is desirable behaviour)
         // Allow a leniency of 1s
@@ -283,7 +286,14 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             return;
         }
 
-        processUpdate(new AssetUpdate(asset, attribute, lastStateEvent.getValue(), lastStateEvent.getTimestamp(), attributeEvent.getSender()));
+        processUpdate(
+            new AssetUpdate(
+                asset,
+                attribute,
+                lastStateEvent.getValue(),
+                lastStateEvent.getTimestamp(),
+                northbound)
+        );
     }
 
     protected void processUpdate(AssetUpdate assetUpdate) {

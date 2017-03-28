@@ -49,8 +49,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String smartOfficeId;
     public String groundFloorId;
     public String lobbyId;
-    public String demoAgentId;
-    public final String demoAgentProtocolConfigName = "simulator123";
+    public String agentId;
+    public final String agentProtocolConfigName = "simulator123";
     public String thingId;
     public String smartHomeId;
     public String apartment1Id;
@@ -127,7 +127,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         agent.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         agent.setType(AssetType.AGENT);
         AgentAttributes agentAttributes = new AgentAttributes();
-        ProtocolConfiguration protocolConfigSimulator123 = new ProtocolConfiguration(demoAgentProtocolConfigName, SimulatorProtocol.PROTOCOL_NAME);
+        ProtocolConfiguration protocolConfigSimulator123 = new ProtocolConfiguration(agentProtocolConfigName, SimulatorProtocol.PROTOCOL_NAME);
         protocolConfigSimulator123.setMeta(new Meta()
             .add(new MetaItem(
                     SimulatorProtocol.CONFIG_MODE,
@@ -142,7 +142,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         agentAttributes.put(protocolConfigSimulator123);
         agent.setAttributes(agentAttributes.getJsonObject());
         agent = assetStorageService.merge(agent);
-        demoAgentId = agent.getId();
+        agentId = agent.getId();
 
         ServerAsset thing = new ServerAsset(agent);
         thing.setName("Demo Thing");
@@ -158,7 +158,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
                     .add(new MetaItem(
                         AssetMeta.AGENT_LINK,
-                        new AttributeRef(agent.getId(), demoAgentProtocolConfigName).asJsonValue()
+                        new AttributeRef(agent.getId(), agentProtocolConfigName).asJsonValue()
                     ))
                     .add(new MetaItem(
                         SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(SwitchSimulatorElement.ELEMENT_NAME)
@@ -180,7 +180,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
                     .add(new MetaItem(
                         AssetMeta.AGENT_LINK,
-                        new AttributeRef(agent.getId(), demoAgentProtocolConfigName).asJsonValue()
+                        new AttributeRef(agent.getId(), agentProtocolConfigName).asJsonValue()
                     ))
                     .add(new MetaItem(
                         SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(IntegerSimulatorElement.ELEMENT_NAME_RANGE)
@@ -201,7 +201,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
                     .add(new MetaItem(
                         AssetMeta.AGENT_LINK,
-                        new AttributeRef(agent.getId(), demoAgentProtocolConfigName).asJsonValue()
+                        new AttributeRef(agent.getId(), agentProtocolConfigName).asJsonValue()
                     ))
                     .add(new MetaItem(
                         SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(ColorSimulatorElement.ELEMENT_NAME)
@@ -227,7 +227,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
                     .add(new MetaItem(
                         AssetMeta.AGENT_LINK,
-                        new AttributeRef(agent.getId(), demoAgentProtocolConfigName).asJsonValue()
+                        new AttributeRef(agent.getId(), agentProtocolConfigName).asJsonValue()
                     ))
                     .add(new MetaItem(
                         SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(DecimalSimulatorElement.ELEMENT_NAME)
@@ -246,14 +246,30 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         ServerAsset smartHome = new ServerAsset();
         smartHome.setRealmId(customerATenant.getId());
         smartHome.setName("Smart Home");
-        smartHome.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
+        smartHome.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         smartHome.setType(BUILDING);
         AssetAttributes smartHomeAttributes = new AssetAttributes();
         smartHomeAttributes.put(
-            new AssetAttribute("demoBoolean", BOOLEAN, Json.create(true)),
-            new AssetAttribute("demoString", STRING, Json.create("demo")),
-            new AssetAttribute("demoInteger", INTEGER, Json.create(0)),
-            new AssetAttribute("demoDecimal", DECIMAL, Json.create(0d))
+            new AssetAttribute("geoStreet", STRING, Json.create("Wilhelminaplein 21C"))
+                .setMeta(new Meta()
+                    .add(createMetaItem(LABEL, Json.create("Street")))
+                    .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoStreet")))
+                ),
+            new AssetAttribute("geoPostalCode", AttributeType.INTEGER, Json.create(5611))
+                .setMeta(new Meta()
+                    .add(createMetaItem(LABEL, Json.create("Postal Code")))
+                    .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoPostalCode")))
+                ),
+            new AssetAttribute("geoCity", STRING, Json.create("Eindhoven"))
+                .setMeta(new Meta()
+                    .add(createMetaItem(LABEL, Json.create("City")))
+                    .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCity")))
+                ),
+            new AssetAttribute("geoCountry", STRING, Json.create("Netherlands"))
+                .setMeta(new Meta()
+                    .add(createMetaItem(LABEL, Json.create("Country")))
+                    .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCountry")))
+                )
         );
         smartHome.setAttributes(smartHomeAttributes.getJsonObject());
         smartHome = assetStorageService.merge(smartHome);
@@ -261,14 +277,20 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         ServerAsset apartment1 = new ServerAsset(smartHome);
         apartment1.setName("Apartment 1");
-        apartment1.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
+        apartment1.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment1.setType(RESIDENCE);
         AssetAttributes apartment1Attributes = new AssetAttributes();
         apartment1Attributes.put(
-            new AssetAttribute("demoBoolean", BOOLEAN, Json.create(true)),
-            new AssetAttribute("demoString", STRING, Json.create("demo")),
-            new AssetAttribute("demoInteger", INTEGER, Json.create(0)),
-            new AssetAttribute("demoDecimal", DECIMAL, Json.create(0d))
+            new AssetAttribute("allLightsOffSwitch", AttributeType.BOOLEAN, Json.create(false))
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("All Lights Off Switch"))
+                    ).add(
+                        new MetaItem(AssetMeta.DESCRIPTION, Json.create("When triggered, turns all lights in the apartment off"))
+                    ).add(
+                        new MetaItem(AssetMeta.RULES_FACT, Json.create(true))
+                    )
+                )
         );
         apartment1.setAttributes(apartment1Attributes.getJsonObject());
         apartment1 = assetStorageService.merge(apartment1);
@@ -276,23 +298,40 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         ServerAsset apartment1Livingroom = new ServerAsset(apartment1);
         apartment1Livingroom.setName("Livingroom");
-        apartment1Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
+        apartment1Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment1Livingroom.setType(ROOM);
         AssetAttributes apartment1LivingroomAttributes = new AssetAttributes();
         apartment1LivingroomAttributes.put(
-            new AssetAttribute("demoBoolean", BOOLEAN, Json.create(true))
-                .setMeta(new Meta().add(
-                    new MetaItem(AssetMeta.RULES_FACT, Json.create(true))
-                )),
-            new AssetAttribute("demoString", STRING, Json.create("demo"))
-                .setMeta(new Meta().add(
-                    new MetaItem(AssetMeta.RULES_FACT, Json.create(false))
-                )),
-            new AssetAttribute("demoInteger", INTEGER, Json.create(0)),
-            new AssetAttribute("demoDecimal", DECIMAL, Json.create(0d))
-                .setMeta(new Meta().add(
-                    new MetaItem(AssetMeta.RULES_FACT, Json.create(true))
-                ))
+            new AssetAttribute("presenceDetected", AttributeType.BOOLEAN, Json.create(false))
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Detected"))
+                    ).add(
+                        new MetaItem(AssetMeta.RULES_FACT, Json.create(true))
+                    )
+                ),
+            new AssetAttribute("presenceCount15m", AttributeType.INTEGER, Json.create(0))
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Count 15m"))
+                    ).add(
+                        new MetaItem(AssetMeta.READ_ONLY, Json.create(true))
+                    )
+                ),
+            new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Json.create(false))
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("Light Switch"))
+                    ).add(
+                        new MetaItem(AssetMeta.RULES_FACT, Json.create(false))
+                    )
+                ),
+            new AssetAttribute("windowOpen", AttributeType.BOOLEAN, Json.create(false))
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("Window Open"))
+                    )
+                )
         );
         apartment1Livingroom.setAttributes(apartment1LivingroomAttributes.getJsonObject());
         apartment1Livingroom = assetStorageService.merge(apartment1Livingroom);
@@ -303,24 +342,16 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1LivingroomThermostat.setType(AssetType.THING);
         AssetAttributes apartment1LivingroomThermostatAttributes = new AssetAttributes(apartment1LivingroomThermostat);
         apartment1LivingroomThermostatAttributes.put(
-            new AssetAttribute("demoBoolean", BOOLEAN, Json.create(true)),
-            new AssetAttribute("demoString", STRING, Json.create("demo")),
-            new AssetAttribute("demoInteger", INTEGER, Json.create(0)),
-            new AssetAttribute("demoDecimal", DECIMAL, Json.create(0d)),
             new AssetAttribute("currentTemperature", DECIMAL, Json.createNull())
                 .setMeta(new Meta()
                     .add(new MetaItem(
-                        AssetMeta.AGENT_LINK,
-                        new AttributeRef(demoAgentId, demoAgentProtocolConfigName).asJsonValue()
-                    ))
+                        AssetMeta.LABEL,
+                        Json.create("Current Temperature"))
+                    )
                     .add(new MetaItem(
                         AssetMeta.RULES_FACT,
                         Json.create(true)
                     ))
-                    .add(new MetaItem(
-                        AssetMeta.LABEL,
-                        Json.create("Current Temp"))
-                    )
                     .add(new MetaItem(
                         AssetMeta.PROTECTED,
                         Json.create(true))
@@ -335,25 +366,17 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     .add(new MetaItem(
                         "urn:thirdparty:bar", Json.create("BAR")
                     ))
-                    .add(new MetaItem(
-                        SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(DecimalSimulatorElement.ELEMENT_NAME)
-                    ))
-
                 ),
-            new AssetAttribute("targetTemperature", DECIMAL, Json.createNull())
+            new AssetAttribute("comfortTemperature", DECIMAL, Json.createNull())
                 .setMeta(new Meta()
                     .add(new MetaItem(
-                        AssetMeta.AGENT_LINK,
-                        new AttributeRef(demoAgentId, demoAgentProtocolConfigName).asJsonValue()
-                    ))
+                        AssetMeta.LABEL,
+                        Json.create("Comfort Temperature"))
+                    )
                     .add(new MetaItem(
                         AssetMeta.RULES_FACT,
                         Json.create(true)
                     ))
-                    .add(new MetaItem(
-                        AssetMeta.LABEL,
-                        Json.create("Target Temp"))
-                    )
                     .add(new MetaItem(
                         AssetMeta.PROTECTED,
                         Json.create(true))
@@ -376,14 +399,20 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         ServerAsset apartment2 = new ServerAsset(smartHome);
         apartment2.setName("Apartment 2");
-        apartment2.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
+        apartment2.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment2.setType(RESIDENCE);
         AssetAttributes apartment2Attributes = new AssetAttributes();
         apartment2Attributes.put(
-            new AssetAttribute("demoBoolean", BOOLEAN, Json.create(true)),
-            new AssetAttribute("demoString", STRING, Json.create("demo")),
-            new AssetAttribute("demoInteger", INTEGER, Json.create(0)),
-            new AssetAttribute("demoDecimal", DECIMAL, Json.create(0d))
+            new AssetAttribute("allLightsOffSwitch", AttributeType.BOOLEAN, Json.create(false))
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("All Lights Off Switch"))
+                    ).add(
+                        new MetaItem(AssetMeta.DESCRIPTION, Json.create("When triggered, turns all lights in the apartment off"))
+                    ).add(
+                        new MetaItem(AssetMeta.RULES_FACT, Json.create(true))
+                    )
+                )
         );
         apartment2.setAttributes(apartment2Attributes.getJsonObject());
         apartment2 = assetStorageService.merge(apartment2);
@@ -391,14 +420,40 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         ServerAsset apartment2Livingroom = new ServerAsset(apartment2);
         apartment2Livingroom.setName("Livingroom");
-        apartment2Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
+        apartment2Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment2Livingroom.setType(ROOM);
         AssetAttributes apartment2LivingroomAttributes = new AssetAttributes();
         apartment2LivingroomAttributes.put(
-            new AssetAttribute("demoBoolean", BOOLEAN, Json.create(true)),
-            new AssetAttribute("demoString", STRING, Json.create("demo")),
-            new AssetAttribute("demoInteger", INTEGER, Json.create(0)),
-            new AssetAttribute("demoDecimal", DECIMAL, Json.create(0d))
+            new AssetAttribute("presenceDetected", AttributeType.BOOLEAN, Json.create(false))
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Detected"))
+                    ).add(
+                        new MetaItem(AssetMeta.RULES_FACT, Json.create(true))
+                    )
+                ),
+            new AssetAttribute("presenceCount15m", AttributeType.INTEGER, Json.create(0))
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Count 15m"))
+                    ).add(
+                        new MetaItem(AssetMeta.READ_ONLY, Json.create(true))
+                    )
+                ),
+            new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Json.create(false))
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("Light Switch"))
+                    ).add(
+                        new MetaItem(AssetMeta.RULES_FACT, Json.create(false))
+                    )
+                ),
+            new AssetAttribute("windowOpen", AttributeType.BOOLEAN, Json.create(false))
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("Window Open"))
+                    )
+                )
         );
         apartment2Livingroom.setAttributes(apartment2LivingroomAttributes.getJsonObject());
         apartment2Livingroom = assetStorageService.merge(apartment2Livingroom);
@@ -406,14 +461,20 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         ServerAsset apartment3 = new ServerAsset(smartHome);
         apartment3.setName("Apartment 3");
-        apartment3.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
+        apartment3.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment3.setType(RESIDENCE);
         AssetAttributes apartment3Attributes = new AssetAttributes();
         apartment3Attributes.put(
-            new AssetAttribute("demoBoolean", BOOLEAN, Json.create(true)),
-            new AssetAttribute("demoString", STRING, Json.create("demo")),
-            new AssetAttribute("demoInteger", INTEGER, Json.create(0)),
-            new AssetAttribute("demoDecimal", DECIMAL, Json.create(0d))
+            new AssetAttribute("allLightsOffSwitch", AttributeType.BOOLEAN, Json.create(false))
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("All Lights Off Switch"))
+                    ).add(
+                        new MetaItem(AssetMeta.DESCRIPTION, Json.create("When triggered, turns all lights in the apartment off"))
+                    ).add(
+                        new MetaItem(AssetMeta.RULES_FACT, Json.create(true))
+                    )
+                )
         );
         apartment3.setAttributes(apartment3Attributes.getJsonObject());
         apartment3 = assetStorageService.merge(apartment3);
@@ -421,17 +482,40 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         ServerAsset apartment3Livingroom = new ServerAsset(apartment3);
         apartment3Livingroom.setName("Livingroom");
-        apartment3Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.469751699216005, 51.44760787406028)));
+        apartment3Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment3Livingroom.setType(ROOM);
         AssetAttributes apartment3LivingroomAttributes = new AssetAttributes();
         apartment3LivingroomAttributes.put(
-            new AssetAttribute("demoBoolean", BOOLEAN, Json.create(true)),
-            new AssetAttribute("demoString", STRING, Json.create("demo"))
-                .setMeta(new Meta().add(
-                    new MetaItem(AssetMeta.RULES_FACT, Json.create(true))
-                )),
-            new AssetAttribute("demoInteger", INTEGER, Json.create(0)),
-            new AssetAttribute("demoDecimal", DECIMAL, Json.create(0d))
+            new AssetAttribute("presenceDetected", AttributeType.BOOLEAN, Json.create(false))
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Detected"))
+                    ).add(
+                        new MetaItem(AssetMeta.RULES_FACT, Json.create(true))
+                    )
+                ),
+            new AssetAttribute("presenceCount15m", AttributeType.INTEGER, Json.create(0))
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Count 15m"))
+                    ).add(
+                        new MetaItem(AssetMeta.READ_ONLY, Json.create(true))
+                    )
+                ),
+            new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Json.create(false))
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("Light Switch"))
+                    ).add(
+                        new MetaItem(AssetMeta.RULES_FACT, Json.create(false))
+                    )
+                ),
+            new AssetAttribute("windowOpen", AttributeType.BOOLEAN, Json.create(false))
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("Window Open"))
+                    )
+                )
         );
         apartment3Livingroom.setAttributes(apartment3LivingroomAttributes.getJsonObject());
         apartment3Livingroom = assetStorageService.merge(apartment3Livingroom);

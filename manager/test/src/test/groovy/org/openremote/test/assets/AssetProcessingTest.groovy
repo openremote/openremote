@@ -21,7 +21,7 @@ import java.util.function.Consumer
 import java.util.logging.Logger
 
 class AssetProcessingTest extends Specification implements ManagerContainerTrait {
-    Logger LOG = Logger.getLogger(AssetStorageService.class.getName());
+    Logger LOG = Logger.getLogger(AssetStorageService.class.getName())
 
     def "Check processing of asset updates"() {
 
@@ -101,15 +101,15 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
         //region and: "a mock agent that uses the mock protocol is created"
         and: "a mock agent that uses the mock protocol is created"
-        def mockAgent = new ServerAsset();
-        mockAgent.setName("Mock Agent");
-        mockAgent.setType(AssetType.AGENT);
-        AgentAttributes agentAttributes = new AgentAttributes();
-        ProtocolConfiguration mockProtocolConfig = new ProtocolConfiguration("mock123", mockProtocolName);
-        agentAttributes.put(mockProtocolConfig);
-        mockAgent.setAttributes(agentAttributes.getJsonObject());
+        def mockAgent = new ServerAsset()
+        mockAgent.setName("Mock Agent")
+        mockAgent.setType(AssetType.AGENT)
+        AgentAttributes agentAttributes = new AgentAttributes()
+        ProtocolConfiguration mockProtocolConfig = new ProtocolConfiguration("mock123", mockProtocolName)
+        agentAttributes.put(mockProtocolConfig)
+        mockAgent.setAttributes(agentAttributes.getJsonObject())
         mockAgent.setRealmId(keycloakDemoSetup.masterTenant.id)
-        mockAgent = assetStorageService.merge(mockAgent);
+        mockAgent = assetStorageService.merge(mockAgent)
         //endregion
 
         //region and: "a mock thing asset is created with a valid protocol attribute, an invalid protocol attribute and a plain attribute"
@@ -117,7 +117,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def mockThing = new ServerAsset(mockAgent)
         mockThing.setName("Mock Thing Asset")
         mockThing.setType(AssetType.THING)
-        def mockThingAttributes = new AssetAttributes(mockThing);
+        def mockThingAttributes = new AssetAttributes(mockThing)
         mockThingAttributes.put(
                 new AssetAttribute("light1Toggle", AttributeType.BOOLEAN, Json.create(false))
                         .setMeta(new Meta()
@@ -141,7 +141,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
                         .add(new MetaItem(
                         AssetMeta.AGENT_LINK,
-                        new AttributeRef("INVALID AGENT ID", managerDemoSetup.demoAgentProtocolConfigName).asJsonValue()
+                        new AttributeRef("INVALID AGENT ID", managerDemoSetup.agentProtocolConfigName).asJsonValue()
                 )
                 )
                 ),
@@ -153,8 +153,8 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
                 )
                 )
         )
-        mockThing.setAttributes(mockThingAttributes.getJsonObject());
-        mockThing = assetStorageService.merge(mockThing);
+        mockThing.setAttributes(mockThingAttributes.getJsonObject())
+        mockThing = assetStorageService.merge(mockThing)
         //endregion
 
         expect: "the mock thing to be deployed to the protocol"
@@ -164,7 +164,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
         when: "an attribute event occurs for the valid protocol attribute"
         def light1toggleOn = new AttributeEvent(
-                new AttributeState(new AttributeRef(mockThing.getId(), "light1Toggle"), Json.create(true)), getClass()
+                new AttributeState(new AttributeRef(mockThing.getId(), "light1Toggle"), Json.create(true))
         )
         assetProcessingService.updateAttributeValue(light1toggleOn)
 
@@ -188,7 +188,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert updatesPassedStartOfProcessingChain.size() == 2
             assert sendToActuatorEvents.size() == 1
             assert updatesReachedEndOfProcessingChain.size() == 1
-            assert updatesReachedEndOfProcessingChain[0].assetName == "Mock Thing Asset"
+            assert updatesReachedEndOfProcessingChain[0].name == "Mock Thing Asset"
             assert updatesReachedEndOfProcessingChain[0].attributeName == "light1Toggle"
             assert updatesReachedEndOfProcessingChain[0].oldValue.asBoolean() == false
             assert updatesReachedEndOfProcessingChain[0].value.asBoolean() == true
@@ -201,7 +201,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         updatesReachedEndOfProcessingChain.clear()
         sendToActuatorEvents.clear()
         def light2toggleOn = new AttributeEvent(
-                new AttributeState(new AttributeRef(mockThing.getId(), "light2Toggle"), Json.create(true)), getClass()
+                new AttributeState(new AttributeRef(mockThing.getId(), "light2Toggle"), Json.create(true))
         )
         assetProcessingService.updateAttributeValue(light2toggleOn)
 
@@ -211,7 +211,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert updatesPassedStartOfProcessingChain.size() == 1
             assert updatesReachedEndOfProcessingChain.size() == 0
             assert sendToActuatorEvents.size() == 0
-            assert updatesPassedStartOfProcessingChain[0].assetId == mockThing.id
+            assert updatesPassedStartOfProcessingChain[0].id == mockThing.id
             assert updatesPassedStartOfProcessingChain[0].attributeName == "light2Toggle"
             assert updatesPassedStartOfProcessingChain[0].error != null
             assert updatesPassedStartOfProcessingChain[0].error instanceof RuntimeException
@@ -223,7 +223,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         updatesReachedEndOfProcessingChain.clear()
         sendToActuatorEvents.clear()
         def plainAttributeTest = new AttributeEvent(
-                new AttributeState(new AttributeRef(mockThing.getId(), "plainAttribute"), Json.create("test")), getClass()
+                new AttributeState(new AttributeRef(mockThing.getId(), "plainAttribute"), Json.create("test"))
         )
         assetProcessingService.updateAttributeValue(plainAttributeTest)
 
@@ -232,7 +232,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert updatesPassedStartOfProcessingChain.size() == 1
             assert sendToActuatorEvents.size() == 0
             assert updatesReachedEndOfProcessingChain.size() == 1
-            assert updatesReachedEndOfProcessingChain[0].assetName == "Mock Thing Asset"
+            assert updatesReachedEndOfProcessingChain[0].name == "Mock Thing Asset"
             assert updatesReachedEndOfProcessingChain[0].attributeName == "plainAttribute"
             assert updatesReachedEndOfProcessingChain[0].oldValue.asString() == "demo"
             assert updatesReachedEndOfProcessingChain[0].value.asString() == "test"

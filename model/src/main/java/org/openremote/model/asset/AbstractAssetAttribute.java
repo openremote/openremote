@@ -103,7 +103,6 @@ public abstract class AbstractAssetAttribute<CHILD extends AbstractAssetAttribut
     public AttributeEvent getStateEvent() {
         return new AttributeEvent(
             getState(),
-            null,
             getValueTimestamp()
         );
     }

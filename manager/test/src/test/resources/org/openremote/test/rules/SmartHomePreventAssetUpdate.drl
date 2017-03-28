@@ -8,7 +8,7 @@ global java.util.logging.Logger LOG;
 
 rule "Prevent Livingroom Thermostat Change"
 when
-  $e: AssetUpdate(assetName == "Livingroom Thermostat", !completed)
+  $e: AssetUpdate(name == "Livingroom Thermostat", !completed)
 then
     $e.setStatus(AssetUpdate.Status.HANDLED);
 end

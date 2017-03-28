@@ -438,7 +438,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         // TODO: implement rules processing error state handling
 
         // Get the chain of rule engines that we need to pass through
-        List<RulesDeployment> rulesDeployments = getEnginesInScope(assetUpdate.getAssetRealmId(), assetUpdate.getAssetPath());
+        List<RulesDeployment> rulesDeployments = getEnginesInScope(assetUpdate.getRealmId(), assetUpdate.getPath());
 
         if (rulesDeployments.size() == 0) {
             LOG.fine("Ignoring asset update as there are no matching rules deployments: " + assetUpdate);
@@ -464,7 +464,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
     protected void retractFact(AssetUpdate assetUpdate) {
         // Get the chain of rule engines that we need to pass through
-        List<RulesDeployment> rulesDeployments = getEnginesInScope(assetUpdate.getAssetRealmId(), assetUpdate.getAssetPath());
+        List<RulesDeployment> rulesDeployments = getEnginesInScope(assetUpdate.getRealmId(), assetUpdate.getPath());
 
         if (rulesDeployments.size() == 0) {
             LOG.fine("Ignoring asset update as there are no matching rules deployments: " + assetUpdate);

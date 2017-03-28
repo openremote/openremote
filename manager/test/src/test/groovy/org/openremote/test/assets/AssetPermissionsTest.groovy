@@ -449,8 +449,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment1.realmId == keycloakDemoSetup.customerATenant.id
         apartment1.type == AssetType.RESIDENCE.value
         apartment1.parentId == managerDemoSetup.smartHomeId
-        apartment1.coordinates[0] == 5.469751699216005d
-        apartment1.coordinates[1] == 51.44760787406028d
+        apartment1.coordinates[0] == 5.470945d
+        apartment1.coordinates[1] == 51.438d
 
         Asset apartment1Livingroom = assets[1]
         apartment1Livingroom.id == managerDemoSetup.apartment1LivingroomId
@@ -467,7 +467,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         protectedAttributes.get("currentTemperature").getValueAsDecimal() == null
         Meta protectedMeta = protectedAttributes.get("currentTemperature").getMeta()
         protectedMeta.all().length == 3
-        protectedMeta.first(AssetMeta.LABEL).getValueAsString() == "Current Temp"
+        protectedMeta.first(AssetMeta.LABEL).getValueAsString() == "Current Temperature"
         protectedMeta.first(AssetMeta.READ_ONLY).getValueAsBoolean()
         protectedMeta.first(AssetMeta.RULES_FACT).getValueAsBoolean()
 

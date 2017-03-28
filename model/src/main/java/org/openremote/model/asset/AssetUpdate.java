@@ -63,25 +63,29 @@ public class AssetUpdate {
 
     final protected AbstractAssetAttribute attribute;
 
-    final protected Date assetCreatedOn;
+    final protected Date createdOn;
 
-    final protected String assetId;
+    final protected String id;
 
-    final protected String assetName;
+    final protected String name;
 
-    final protected String assetType;
+    final protected String typeString;
 
-    final protected String[] assetPath;
+    final protected AssetType type;
 
-    final protected String assetParentId;
+    final protected String[] path;
 
-    final protected String assetParentName;
+    final protected String parentId;
 
-    final protected String assetParentType;
+    final protected String parentName;
 
-    final protected String assetRealmId;
+    final protected String parentTypeString;
 
-    final protected String assetTenantRealm;
+    final protected AssetType parentType;
+
+    final protected String realmId;
+
+    final protected String tenantRealm;
 
     final protected double[] coordinates;
 
@@ -93,79 +97,83 @@ public class AssetUpdate {
 
     protected Throwable error;
 
-    final protected Class<?> sender;
+    // True if the update was initiated by a protocol and is being processed northbound
+    protected boolean northbound;
 
     public AssetUpdate(Asset asset, AbstractAssetAttribute attribute) {
-        this(asset, attribute, null, 0, null);
+        this(asset, attribute, null, 0, false);
     }
 
-    public AssetUpdate(Asset asset, AbstractAssetAttribute attribute, JsonValue oldValue, long oldValueTimestamp, Class<?> sender) {
+    public AssetUpdate(Asset asset, AbstractAssetAttribute attribute, JsonValue oldValue, long oldValueTimestamp, boolean northbound) {
         this.attribute = attribute;
-        this.assetId = asset.getId();
-        this.assetName = asset.getName();
+        this.id = asset.getId();
+        this.name = asset.getName();
         if (asset.getPath() == null) {
             throw new IllegalArgumentException("Asset not loaded completely, empty path: " + asset);
         }
-        this.assetPath = asset.getPath();
-        this.assetType = asset.getType();
-        this.assetCreatedOn = asset.getCreatedOn();
-        this.assetParentId = asset.getParentId();
-        this.assetParentName = asset.getParentName();
-        this.assetParentType = asset.getParentType();
-        this.assetRealmId = asset.getRealmId();
-        this.assetTenantRealm = asset.getTenantRealm();
+        this.path = asset.getPath();
+        this.typeString = asset.getType();
+        this.type = asset.getWellKnownType();
+        this.createdOn = asset.getCreatedOn();
+        this.parentId = asset.getParentId();
+        this.parentName = asset.getParentName();
+        this.parentTypeString = asset.getParentType();
+        this.parentType = asset.getParentType() != null ? AssetType.getByValue(asset.getParentType()) : null;
+        this.realmId = asset.getRealmId();
+        this.tenantRealm = asset.getTenantRealm();
         this.coordinates = asset.getCoordinates();
         this.oldValue = oldValue;
         this.oldValueTimestamp = oldValueTimestamp;
-        this.sender = sender;
+        this.northbound = northbound;
     }
 
-    public Date getAssetCreatedOn() {
-        return assetCreatedOn;
+    public Date getCreatedOn() {
+        return createdOn;
     }
 
-    public String getAssetId() {
-        return assetId;
+    public String getId() {
+        return id;
     }
 
-    public String getAssetName() {
-        return assetName;
+    public String getName() {
+        return name;
     }
 
-    public AssetType getAssetType() {
-        return AssetType.getByValue(assetType);
+    public String getTypeString() {
+        return typeString;
     }
 
-    public String getAssetTypeString() {
-        return assetType;
+    public AssetType getType() {
+        return type;
     }
 
-    public String[] getAssetPath() {
-        return assetPath;
+
+    public String[] getPath() {
+        return path;
     }
 
-    public String getAssetParentId() {
-        return assetParentId;
+    public String getParentId() {
+        return parentId;
     }
 
-    public String getAssetParentName() {
-        return assetParentName;
+    public String getParentName() {
+        return parentName;
     }
 
-    public AssetType getAssetParentType() {
-        return AssetType.getByValue(assetParentType);
+    public String getParentTypeString() {
+        return parentTypeString;
     }
 
-    public String getAssetParentTypeString() {
-        return assetParentType;
+    public AssetType getParentType() {
+        return parentType;
     }
 
-    public String getAssetRealmId() {
-        return assetRealmId;
+    public String getRealmId() {
+        return realmId;
     }
 
-    public String getAssetTenantRealm() {
-        return assetTenantRealm;
+    public String getTenantRealm() {
+        return tenantRealm;
     }
 
     public double[] getCoordinates() {
@@ -188,8 +196,8 @@ public class AssetUpdate {
         return error;
     }
 
-    public Class<?> getSender() {
-        return sender;
+    public boolean isNorthbound() {
+        return northbound;
     }
 
     public JsonValue getValue() {
@@ -268,7 +276,7 @@ public class AssetUpdate {
 
         // TODO Don't use jsEquals(), write own comparison by value
 
-        return assetId.equals(that.assetId) &&
+        return id.equals(that.id) &&
             getAttributeName().equalsIgnoreCase(that.getAttributeName()) &&
             JsonUtil.equals(getValue(), that.getValue()) &&
             getValueTimestamp() == that.getValueTimestamp() &&
@@ -278,7 +286,7 @@ public class AssetUpdate {
 
     @Override
     public int hashCode() {
-        return assetId.hashCode() + getAttributeName().hashCode() + JsonUtil.hashCode(getValue())
+        return id.hashCode() + getAttributeName().hashCode() + JsonUtil.hashCode(getValue())
             + Long.hashCode(getValueTimestamp())
             + (oldValue != null ? JsonUtil.hashCode(oldValue) : 0) + Long.hashCode(oldValueTimestamp);
     }
@@ -286,7 +294,7 @@ public class AssetUpdate {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "assetId=" + getAssetName() +
+            "assetId=" + getName() +
             ", attributeName=" + getAttributeName() +
             ", value=" + getValue().toJson() +
             ", valueTimestamp=" + getValueTimestamp() +

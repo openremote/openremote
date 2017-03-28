@@ -37,25 +37,19 @@ import java.util.Locale;
 */
 // TODO Any subclass that is not @JsonIgnoreType will be made serializable (and must be compilable in GWT!)
 // TODO This needs more work when we know how to do client/server pub/sub message bus
-// TODO Should sender be compulsory?
 /**
- * A timestamped event with optional sender.
+ * A timestamped event.
  */
 public abstract class Event {
-    protected Class<?> sender;
+
     protected long timestamp;
 
-    protected Event(long timestamp, Class<?> sender) {
+    protected Event(long timestamp) {
         this.timestamp = timestamp;
-        this.sender = sender;
     }
 
     protected Event() {
-        this(System.currentTimeMillis(), null);
-    }
-
-    protected Event(Class<?> sender) {
-        this(System.currentTimeMillis(), sender);
+        this(System.currentTimeMillis());
     }
 
     /**
@@ -112,11 +106,6 @@ public abstract class Event {
     @JsonIgnore
     public long getTimestamp() {
         return timestamp;
-    }
-
-    @JsonIgnore
-    public Class<?> getSender() {
-        return sender;
     }
 
     @Override

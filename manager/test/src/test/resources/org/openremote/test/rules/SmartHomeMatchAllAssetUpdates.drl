@@ -8,44 +8,51 @@ global java.util.logging.Logger LOG;
 
 rule "Living Room All"
 when
-  $e: AssetUpdate(assetName == "Livingroom")
+  $e: AssetUpdate(name == "Livingroom")
 then
   return;
 end
 
 rule "Kitchen All"
 when
-  $e: AssetUpdate(assetName == "Kitchen")
+  $e: AssetUpdate(name == "Kitchen")
 then
   return;
 end
 
 rule "Kitchen Integer Attributes"
 when
-  $e: AssetUpdate(assetName == "Kitchen", attributeType == AttributeType.INTEGER)
+  $e: AssetUpdate(name == "Kitchen", attributeType == AttributeType.INTEGER)
 then
   return;
 end
 
 rule "Living Room Thermostat"
 when
-  $e: AssetUpdate(assetName == "Livingroom Thermostat")
+  $e: AssetUpdate(name == "Livingroom Thermostat")
 then
   return;
 end
 
-rule "Living Room Target Temp"
+rule "Living Room Comfort Temperature"
 when
-  $e: AssetUpdate(assetName == "Livingroom Thermostat", attributeName == "targetTemperature")
+  $e: AssetUpdate(name == "Livingroom Thermostat", attributeName == "comfortTemperature")
 then
   return;
 end
 
 rule "Living Room as Parent"
 when
-    AssetUpdate(assetParentName == "Livingroom")
+    AssetUpdate(parentName == "Livingroom")
 then
     return;
+end
+
+rule "Boolean Attributes"
+when
+    AssetUpdate(attributeType == AttributeType.BOOLEAN)
+then
+  return;
 end
 
 rule "String Attributes"
@@ -71,14 +78,14 @@ end
 
 rule "Parent Type Residence"
 when
-    AssetUpdate(assetParentType == AssetType.RESIDENCE)
+    AssetUpdate(parentType == AssetType.RESIDENCE)
 then
     return;
 end
 
 rule "Asset Type Room"
 when
-    AssetUpdate(assetType == AssetType.ROOM)
+    AssetUpdate(type == AssetType.ROOM)
 then
     return;
 end

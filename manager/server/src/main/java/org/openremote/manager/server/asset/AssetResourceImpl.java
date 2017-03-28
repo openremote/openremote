@@ -228,7 +228,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             try {
                 JsonValue value = Json.instance().parse(rawJson);
                 assetProcessingService.updateAttributeValue(
-                    new AttributeEvent(new AttributeRef(assetId, attributeName), value, this.getClass())
+                    new AttributeEvent(new AttributeRef(assetId, attributeName), value)
                 );
             } catch (RuntimeException ex) {
                 throw new IllegalStateException("Error updating attribute: " + attributeName, ex);

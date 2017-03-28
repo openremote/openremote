@@ -382,7 +382,7 @@ public class RulesDeployment<T extends RulesDefinition> {
         // If there already is a fact in working memory for this attribute then delete it
         AssetUpdate update = facts.keySet()
                 .stream()
-                .filter(au -> au.getAssetId().equals(assetUpdate.getAssetId()) && au.getAttributeName().equals(assetUpdate.getAttributeName()))
+                .filter(au -> au.getId().equals(assetUpdate.getId()) && au.getAttributeName().equals(assetUpdate.getAttributeName()))
                 .findFirst()
                 .orElse(null);
 

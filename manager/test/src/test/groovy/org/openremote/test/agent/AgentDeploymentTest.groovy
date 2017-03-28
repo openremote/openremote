@@ -40,7 +40,7 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         when: "a client wants to change a thing attributes' value, triggering an actuator"
         conditions = new PollingConditions(timeout: 3, initialDelay: 2)
         def light1DimmerChange = new AttributeEvent(
-                managerDemoSetup.thingId, "light1Dimmer", Json.create(66), getClass()
+                managerDemoSetup.thingId, "light1Dimmer", Json.create(66)
         )
         assetStorageService.updateAttributeValue(light1DimmerChange)
 

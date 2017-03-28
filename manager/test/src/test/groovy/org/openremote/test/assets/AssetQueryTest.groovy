@@ -251,8 +251,8 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         new AssetAttributes(assets.get(2).attributes).size() == 2
         new AssetAttributes(assets.get(2).attributes).get("currentTemperature").valueAsDecimal == null
         new AssetAttributes(assets.get(2).attributes).get("currentTemperature").meta.size() == 3
-        new AssetAttributes(assets.get(2).attributes).get("targetTemperature").valueAsDecimal == null
-        new AssetAttributes(assets.get(2).attributes).get("targetTemperature").meta.size() == 2
+        new AssetAttributes(assets.get(2).attributes).get("comfortTemperature").valueAsDecimal == null
+        new AssetAttributes(assets.get(2).attributes).get("comfortTemperature").meta.size() == 2
         assets.get(3).id == managerDemoSetup.apartment2Id
 
         when: "a query is executed"
@@ -278,12 +278,12 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
         then: "result should match"
         assets.size() == 1
-        assets.get(0).id == managerDemoSetup.demoAgentId
+        assets.get(0).id == managerDemoSetup.agentId
 
         when: "a query is executed"
         assets = assetStorageService.findAll(new AssetQuery()
                 .type(THING)
-                .parent(new ParentPredicate(managerDemoSetup.demoAgentId))
+                .parent(new ParentPredicate(managerDemoSetup.agentId))
         )
 
         then: "result should match"
@@ -327,40 +327,23 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 new AssetQuery().attributeMeta(
                         new AttributeRefPredicate(
                                 AssetMeta.AGENT_LINK,
-                                managerDemoSetup.demoAgentId,
-                                managerDemoSetup.demoAgentProtocolConfigName
+                                managerDemoSetup.agentId,
+                                managerDemoSetup.agentProtocolConfigName
                         )
                 )
         )
 
         then: "result should match"
-        assets.size() == 2
+        assets.size() == 1
         assets.get(0).id == managerDemoSetup.thingId
-        assets.get(1).id == managerDemoSetup.apartment1LivingroomThermostatId
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
                 new AssetQuery().attributeMeta(
                         new AttributeRefPredicate(
                                 AssetMeta.AGENT_LINK,
-                                managerDemoSetup.demoAgentId,
-                                managerDemoSetup.demoAgentProtocolConfigName
-                        )
-                )
-        )
-
-        then: "result should match"
-        assets.size() == 2
-        assets.get(0).id == managerDemoSetup.thingId
-        assets.get(1).id == managerDemoSetup.apartment1LivingroomThermostatId
-
-        when: "a query is executed"
-        assets = assetStorageService.findAll(
-                new AssetQuery().attributeMeta(
-                        new AttributeRefPredicate(
-                                AssetMeta.AGENT_LINK,
-                                managerDemoSetup.demoAgentId,
-                                managerDemoSetup.demoAgentProtocolConfigName
+                                managerDemoSetup.agentId,
+                                managerDemoSetup.agentProtocolConfigName
                         )
                 ).name(new StringPredicate(Match.CONTAINS, false, "thing"))
         )
@@ -374,30 +357,57 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
                 new AssetQuery().attributeMeta(
                         new AttributeRefPredicate(
                                 AssetMeta.AGENT_LINK,
-                                managerDemoSetup.demoAgentId,
-                                managerDemoSetup.demoAgentProtocolConfigName
+                                managerDemoSetup.agentId,
+                                managerDemoSetup.agentProtocolConfigName
                         )
-                ).parent(new ParentPredicate(managerDemoSetup.apartment1LivingroomId))
+                ).name(new StringPredicate(Match.CONTAINS, true, "thing"))
         )
 
         then: "result should match"
-        assets.size() == 1
-        assets.get(0).id == managerDemoSetup.apartment1LivingroomThermostatId
+        assets.size() == 0
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
                 new AssetQuery().attributeMeta(
                         new AttributeRefPredicate(
                                 AssetMeta.AGENT_LINK,
-                                managerDemoSetup.demoAgentId,
-                                managerDemoSetup.demoAgentProtocolConfigName
+                                managerDemoSetup.agentId,
+                                managerDemoSetup.agentProtocolConfigName
                         )
-                ).tenant(new TenantPredicate().realm(keycloakDemoSetup.customerATenant.realm))
+                ).parent(new ParentPredicate(managerDemoSetup.agentId))
         )
 
         then: "result should match"
         assets.size() == 1
-        assets.get(0).id == managerDemoSetup.apartment1LivingroomThermostatId
+        assets.get(0).id == managerDemoSetup.thingId
+
+        when: "a query is executed"
+        assets = assetStorageService.findAll(
+                new AssetQuery().attributeMeta(
+                        new AttributeRefPredicate(
+                                AssetMeta.AGENT_LINK,
+                                managerDemoSetup.agentId,
+                                managerDemoSetup.agentProtocolConfigName
+                        )
+                ).parent(new ParentPredicate(managerDemoSetup.apartment1LivingroomId))
+        )
+
+        then: "result should match"
+        assets.size() == 0
+
+        when: "a query is executed"
+        assets = assetStorageService.findAll(
+                new AssetQuery().attributeMeta(
+                        new AttributeRefPredicate(
+                                managerDemoSetup.agentId,
+                                managerDemoSetup.agentProtocolConfigName
+                        )
+                ).tenant(new TenantPredicate().realm(keycloakDemoSetup.masterTenant.realm))
+        )
+
+        then: "result should match"
+        assets.size() == 1
+        assets.get(0).id == managerDemoSetup.thingId
 
         cleanup: "the server should be stopped"
         stopContainer(container)

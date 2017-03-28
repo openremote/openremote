@@ -118,10 +118,10 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         attachRuleExecutionLogger(apartment3Engine, apartment3EngineFiredRules)
 
         and: "an attribute event is pushed into the system for an attribute with RULES_FACT meta set to true"
-        def apartment1LivingRoomDemoBooleanChange = new AttributeEvent(
-                new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoBoolean"), Json.create(false)), getClass()
+        def apartment1LivingRoomPresenceDetectedChange = new AttributeEvent(
+                managerDemoSetup.apartment1LivingroomId, "presenceDetected", Json.create(true)
         )
-        assetProcessingService.updateAttributeValue(apartment1LivingRoomDemoBooleanChange)
+        assetProcessingService.updateAttributeValue(apartment1LivingRoomPresenceDetectedChange)
 
         then: "the rule engines in scope should fire the 'All' and 'All changed' rules"
         conditions.eventually {
@@ -139,37 +139,37 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         when: "an attribute event is pushed into the system for an attribute with RULES_FACT meta set to false"
         resetRuleExecutionLoggers()
-        def apartment1LivingRoomDemoStringChange = new AttributeEvent(
-                new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoString"), Json.create("demo2")), getClass()
+        def apartment1LivingRoomLightSwitchChange = new AttributeEvent(
+                managerDemoSetup.apartment1LivingroomId, "lightSwitch", Json.create(true)
         )
-        assetProcessingService.updateAttributeValue(apartment1LivingRoomDemoStringChange)
+        assetProcessingService.updateAttributeValue(apartment1LivingRoomLightSwitchChange)
 
         then: "no rule engines should have fired after a few seconds"
         new PollingConditions(initialDelay: 3).eventually assertNoRulesFired
 
         when: "an attribute event is pushed into the system for an attribute with no RULES_FACT meta"
         resetRuleExecutionLoggers()
-        def apartment1LivingRoomDemoIntegerChange = new AttributeEvent(
-                new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoInteger"), Json.create(1)), getClass()
+        def apartment1LivingRoomWindowOpenChange = new AttributeEvent(
+                managerDemoSetup.apartment1LivingroomId, "windowOpen", Json.create(true)
         )
-        assetProcessingService.updateAttributeValue(apartment1LivingRoomDemoIntegerChange)
+        assetProcessingService.updateAttributeValue(apartment1LivingRoomWindowOpenChange)
 
         then: "no rule engines should have fired after a few seconds"
         new PollingConditions(initialDelay: 3).eventually assertNoRulesFired
 
         when: "an old (stale) attribute event is pushed into the system"
         resetRuleExecutionLoggers()
-        assetProcessingService.updateAttributeValue(apartment1LivingRoomDemoBooleanChange)
+        assetProcessingService.updateAttributeValue(apartment1LivingRoomPresenceDetectedChange)
 
         then: "no rule engines should have fired after a few seconds"
         new PollingConditions(initialDelay: 3).eventually assertNoRulesFired
 
         when: "an attribute event with the same value as current value is pushed into the system"
         resetRuleExecutionLoggers()
-        apartment1LivingRoomDemoBooleanChange = new AttributeEvent(
-                new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomId, "demoBoolean"), Json.create(false)), getClass()
+        apartment1LivingRoomPresenceDetectedChange = new AttributeEvent(
+                managerDemoSetup.apartment1LivingroomId, "presenceDetected", Json.create(true)
         )
-        assetProcessingService.updateAttributeValue(apartment1LivingRoomDemoBooleanChange)
+        assetProcessingService.updateAttributeValue(apartment1LivingRoomPresenceDetectedChange)
 
         then: "the rule engines in scope should fire the 'All' rule but not the 'All changed' rule"
         conditions.eventually {
@@ -209,10 +209,10 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         attachRuleExecutionLogger(smartHomeEngine, smartHomeEngineFiredRules)
 
         and: "an apartment 3 living room attribute event occurs"
-        def apartment3LivingRoomDemoStringChange = new AttributeEvent(
-                new AttributeState(new AttributeRef(managerDemoSetup.apartment3LivingroomId, "demoString"), Json.create("demo2")), getClass()
+        def apartment3LivingRoomPresenceDetectedChange = new AttributeEvent(
+                managerDemoSetup.apartment3LivingroomId, "presenceDetected", Json.create(true)
         )
-        assetProcessingService.updateAttributeValue(apartment3LivingRoomDemoStringChange)
+        assetProcessingService.updateAttributeValue(apartment3LivingRoomPresenceDetectedChange)
 
         then: "the engines in scope should have fired the matched rules"
         conditions.eventually {
@@ -221,7 +221,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert customerAEngineFiredRules.size() == 2
             assert customerAEngineFiredRules.containsAll(["All", "All changed"])
             assert smartHomeEngineFiredRules.size() == 5
-            assert smartHomeEngineFiredRules.containsAll(["Living Room All", "Current Asset Update", "Parent Type Residence", "Asset Type Room", "String Attributes"])
+            assert smartHomeEngineFiredRules.containsAll(["Living Room All", "Current Asset Update", "Parent Type Residence", "Asset Type Room", "Boolean Attributes"])
             assert apartment3EngineFiredRules.size() == 2
             assert apartment3EngineFiredRules.containsAll(["All", "All changed"])
             assert apartment1EngineFiredRules.size() == 0
@@ -229,10 +229,10 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         when: "an apartment 1 living room thermostat attribute event occurs"
         resetRuleExecutionLoggers()
-        def apartment1LivingRoomTargetTempChange = new AttributeEvent(
-                new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomThermostatId, "targetTemperature"), Json.create(22.5)), getClass()
+        def apartment1LivingRoomComfortTemperatureChange = new AttributeEvent(
+                managerDemoSetup.apartment1LivingroomThermostatId, "comfortTemperature", Json.create(22.5)
         )
-        assetProcessingService.updateAttributeValue(apartment1LivingRoomTargetTempChange)
+        assetProcessingService.updateAttributeValue(apartment1LivingRoomComfortTemperatureChange)
 
         then: "the engines in scope should have fired the matched rules"
         conditions.eventually {
@@ -244,7 +244,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert smartHomeEngineFiredRules.containsAll(
                     [
                             "Living Room Thermostat",
-                            "Living Room Target Temp",
+                            "Living Room Comfort Temperature",
                             "Living Room as Parent",
                             "JSON Number value types",
                             "Current Asset Update"
@@ -277,10 +277,10 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         attachRuleExecutionLogger(globalEngine, globalEngineFiredRules)
 
         and: "an apartment 1 living room thermostat attribute event occurs"
-        apartment1LivingRoomTargetTempChange = new AttributeEvent(
-                new AttributeState(new AttributeRef(managerDemoSetup.apartment1LivingroomThermostatId, "targetTemperature"), Json.create(22.5)), getClass()
+        apartment1LivingRoomComfortTemperatureChange = new AttributeEvent(
+                managerDemoSetup.apartment1LivingroomThermostatId, "comfortTemperature", Json.create(20.3)
         )
-        assetProcessingService.updateAttributeValue(apartment1LivingRoomTargetTempChange)
+        assetProcessingService.updateAttributeValue(apartment1LivingRoomComfortTemperatureChange)
 
         then: "after a few seconds only the global engine should have fired the All, All changed and Prevent Livingroom Thermostat Change rules"
         conditions.eventually {
@@ -294,10 +294,10 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         when: "an apartment 3 living room attribute event occurs"
         resetRuleExecutionLoggers()
-        apartment3LivingRoomDemoStringChange = new AttributeEvent(
-                new AttributeState(new AttributeRef(managerDemoSetup.apartment3LivingroomId, "demoString"), Json.create("demo3")), getClass()
+        apartment3LivingRoomPresenceDetectedChange = new AttributeEvent(
+                managerDemoSetup.apartment3LivingroomId, "presenceDetected", Json.create(false)
         )
-        assetProcessingService.updateAttributeValue(apartment3LivingRoomDemoStringChange)
+        assetProcessingService.updateAttributeValue(apartment3LivingRoomPresenceDetectedChange)
 
         then: "all the engines in scope should have fired the matched rules"
         conditions.eventually {
@@ -306,7 +306,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert customerAEngineFiredRules.size() == 2
             assert customerAEngineFiredRules.containsAll(["All", "All changed"])
             assert smartHomeEngineFiredRules.size() == 5
-            assert smartHomeEngineFiredRules.containsAll(["Living Room All", "Current Asset Update", "Parent Type Residence", "Asset Type Room", "String Attributes"])
+            assert smartHomeEngineFiredRules.containsAll(["Living Room All", "Current Asset Update", "Parent Type Residence", "Asset Type Room", "Boolean Attributes"])
             assert apartment3EngineFiredRules.size() == 2
             assert apartment3EngineFiredRules.containsAll(["All", "All changed"])
             assert apartment1EngineFiredRules.size() == 0

@@ -30,25 +30,20 @@ public class AttributeEvent extends Event {
 
     final protected AttributeState attributeState;
 
-    public AttributeEvent(String entityId, String attributeName, JsonValue value, Class<?> sender) {
-        this(new AttributeState(new AttributeRef(entityId, attributeName), value), sender);
+    public AttributeEvent(String entityId, String attributeName, JsonValue value) {
+        this(new AttributeState(new AttributeRef(entityId, attributeName), value));
     }
 
-    public AttributeEvent(AttributeRef attributeRef, JsonValue value, Class<?> sender) {
-        this(new AttributeState(attributeRef, value), sender);
+    public AttributeEvent(AttributeRef attributeRef, JsonValue value) {
+        this(new AttributeState(attributeRef, value));
     }
 
-    public AttributeEvent(AttributeState attributeState, Class<?> sender) {
-        super(sender);
+    public AttributeEvent(AttributeState attributeState) {
         this.attributeState = attributeState;
     }
 
-    public AttributeEvent(AttributeRef attributeRef, JsonValue value, Class<?> sender, long timestamp) {
-        this(new AttributeState(attributeRef, value), sender, timestamp);
-    }
-
-    public AttributeEvent(AttributeState attributeState, Class<?> sender, long timestamp) {
-        super(timestamp, sender);
+    public AttributeEvent(AttributeState attributeState, long timestamp) {
+        super(timestamp);
         this.attributeState = attributeState;
     }
 
