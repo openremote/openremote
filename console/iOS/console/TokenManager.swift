@@ -119,17 +119,25 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         alertView.addAction(alertAction)
         viewController.present(alertView, animated: true, completion: nil)
     }
+    
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        showError(error: error)
+        NSLog("error %@", error.localizedDescription)
+        showError(error: NSError(domain: "networkError", code: 0, userInfo:[
+            NSLocalizedDescriptionKey :  NSLocalizedString("FailedLoadingPage", value: "Could not load page", comment: "")
+            ]))
     }
+    
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         print("navigation failed %@",error)
         let errorCode = (error as NSError).code
         if errorCode != NSURLErrorCancelled {
-            showError(error: error)
-            
+            NSLog("error %@", error.localizedDescription)
+            showError(error: NSError(domain: "navigationError", code: 0, userInfo:[
+                NSLocalizedDescriptionKey :  NSLocalizedString("navigationError", value: "Could not navigate to page", comment: "")
+                ]))            
         }
     }
+    
     func showError(error : Error) {
         print("showing error %@",error)
         let alertVC = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)

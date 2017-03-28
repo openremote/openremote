@@ -56,7 +56,11 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     }
     
     func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
-        let alertView = UIAlertController(title: "debug", message: message, preferredStyle: .alert)
+        NSLog("error %@", message)
+        let error = NSError(domain: "", code: 0, userInfo:  [
+            NSLocalizedDescriptionKey :  NSLocalizedString("ErrorGettingLoginScreen", value: "Could not login, your access token probably expired", comment: "")
+            ])
+        let alertView = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
         let alertAction = UIAlertAction(title: "Done", style: .cancel) { (action) in
             completionHandler()
         }
@@ -105,7 +109,11 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
                         let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
                             DispatchQueue.main.async {
                                 if (error != nil) {
-                                    self.showError(error: error!)
+                                    NSLog("error %@", (error as! NSError).localizedDescription)
+                                    let error = NSError(domain: "", code: 0, userInfo:  [
+                                        NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
+                                        ])
+                                    self.showError(error: error)
                                 } else {
                                     _ = self.myWebView?.load(data!, mimeType: "text/html", characterEncodingName: "utf8", baseURL: URL(string:Server.apiTestResource)!)
                                 }
@@ -114,19 +122,33 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
                         reqDataTask.resume()
                     } else {
                         if let httpResponse = response as? HTTPURLResponse {
-                            let error = NSError(domain: "", code: httpResponse.statusCode, userInfo: jsonDictionnary)
+                            NSLog("error %@", (error as! NSError).localizedDescription as String)
+                            let error = NSError(domain: "", code: httpResponse.statusCode, userInfo:  [
+                                NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
+                                ])
                             self.showError(error: error)
                         } else {
-                            let error = NSError(domain: "", code: 0, userInfo: jsonDictionnary)
+                            NSLog("error %@", (error as! NSError).localizedDescription as String)
+                            let error = NSError(domain: "", code: 0, userInfo:  [
+                                NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
+                                ])
                             self.showError(error: error)
                         }
                     }
                 }
                 catch let error as NSError {
+                    NSLog("error %@", error.localizedDescription)
+                    let error = NSError(domain: "", code: 0, userInfo:  [
+                        NSLocalizedDescriptionKey :  NSLocalizedString("ErrorDeserializingJSON", value: "Could not convert received data", comment: "")
+                        ])
                     self.showError(error: error)
                 }
             } else {
-                self.showError(error: error!)
+                NSLog("error %@", (error as! NSError).localizedDescription)
+                let error = NSError(domain: "", code: 0, userInfo:  [
+                    NSLocalizedDescriptionKey :  NSLocalizedString("NoDataReceived", value: "Did not receive any data", comment: "")
+                    ])
+                self.showError(error: error)
             }
         })
         req.resume()
@@ -138,7 +160,10 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     }
     
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        self.showError(error: error)
+        NSLog("error %@", error.localizedDescription)
+        showError(error: NSError(domain: "networkError", code: 0, userInfo:[
+            NSLocalizedDescriptionKey :  NSLocalizedString("FailedLoadingPage", value: "Could not load page", comment: "")
+            ]))
     }
     
 }

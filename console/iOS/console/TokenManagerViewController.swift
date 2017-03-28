@@ -11,4 +11,7 @@ import UIKit
 
 class TokenManagerViewController: UIViewController {
     
+    override func viewDidLoad() {
+        self.view.frame = UIScreen.main.bounds
+    }
 }
