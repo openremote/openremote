@@ -16,7 +16,7 @@ class NotificationService: UNNotificationServiceExtension {
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         self.contentHandler = contentHandler
         bestAttemptContent = (request.content.mutableCopy() as? UNMutableNotificationContent)
-        print("NotifExtension Change content ",bestAttemptContent?.userInfo ?? "")
+        NSLog("NotifExtension Change content : %@ ", bestAttemptContent?.userInfo ?? "")
         if let bestAttemptContent = bestAttemptContent {
             // Call backend to get payload and adapt title, body and actions
             let defaults = UserDefaults(suiteName: AppGroup.entitlement)
@@ -81,7 +81,7 @@ class NotificationService: UNNotificationServiceExtension {
     override func serviceExtensionTimeWillExpire() {
         // Called just before the extension will be terminated by the system.
         // Use this as an opportunity to deliver your "best attempt" at modified content, otherwise the original push payload will be used.
-        print("NotifExtension Time has expired")
+        NSLog("NotifExtension Time has expired")
         if let contentHandler = contentHandler, let bestAttemptContent =  bestAttemptContent {
             bestAttemptContent.title = "You received an alarm from blok61 :"
             bestAttemptContent.body = "Please open application to check what's happening"

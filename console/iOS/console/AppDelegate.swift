@@ -31,7 +31,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             options: authOptions,
             completionHandler: {_, _ in })
         
-        FIRMessaging.messaging().remoteMessageDelegate = self
+        //FIRMessaging.messaging().remoteMessageDelegate = self
         
         FIRApp.configure()
         
@@ -95,12 +95,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any]) {
         // Print full message.
-        print(userInfo)
     }
     
     func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         //self.scheduleLocalNotification()
-        print(userInfo)
         completionHandler(UIBackgroundFetchResult.noData)
     }
     
@@ -111,7 +109,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     }
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-        print("Action asked : ",response.actionIdentifier)
+        NSLog("Action asked : %@",response.actionIdentifier)
     }
 
     
@@ -129,14 +127,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         FIRMessaging.messaging().connect { (error) in
             if (error != nil)
             {
-                print("Unable to connect with FCM. \(error)")
+                NSLog("Unable to connect with FCM. \(error)")
             }
             else
             {
                 if let token = FIRInstanceID.instanceID().token() {
-                    print("Connected to FCM. Token is ",token as String)
+                    NSLog("Connected to FCM. Token is ",token as String)
                 } else {
-                    print("Connected to FCM. Token is currently nil")
+                    NSLog("Connected to FCM. Token is currently nil")
                 }
             }
         }
@@ -144,10 +142,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     
     func tokenRefreshNotification(notification: NSNotification)
     {
-        if let refreshedToken = FIRInstanceID.instanceID().token()
-        {
-            print("InstanceID token: \(refreshedToken)")
-        }
         // Connect to FCM since connection may have failed when attempted before having a token.
         connectToFcm()
     }
@@ -213,12 +207,4 @@ func setActions() {
     UNUserNotificationCenter.current().setNotificationCategories([category])
 }
 
-
-
-extension AppDelegate : FIRMessagingDelegate {
-    // Receive data message on iOS 10 devices while app is in the foreground.
-    func applicationReceivedRemoteMessage(_ remoteMessage: FIRMessagingRemoteMessage) {
-        print(remoteMessage.appData)
-    }
-}
 

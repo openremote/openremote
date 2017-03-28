@@ -42,7 +42,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     }
     
     func authenticate() {
-        print("authenticate")
+        NSLog("authenticate")
         let defaults = UserDefaults(suiteName: AppGroup.entitlement)
         let webCfg:WKWebViewConfiguration = WKWebViewConfiguration()
         
@@ -54,7 +54,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         
         var exec_template = "var iOSToken"
         if let offlineToken = defaults?.object(forKey: DefaultsKey.offlineToken) {
-            print("offlinetoken exists")
+            NSLog("offlinetoken exists")
             let refreshToken = defaults?.object(forKey: DefaultsKey.refreshToken)
             let idToken = defaults?.object(forKey: DefaultsKey.idToken)
             exec_template = String(format: "var iOSToken = \"%@\"; var iOSRefreshToken = \"%@\"; var iOSTokenId = \"%@\";", offlineToken as! String, refreshToken as! String, idToken as! String)
@@ -115,7 +115,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         let alertAction = UIAlertAction(title: "Done", style: .cancel) { (action) in
             completionHandler()
         }
-        print("javascript message %@",message)
+        NSLog("javascript message %@",message)
         alertView.addAction(alertAction)
         viewController.present(alertView, animated: true, completion: nil)
     }
@@ -128,7 +128,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     }
     
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        print("navigation failed %@",error)
+        NSLog("navigation failed %@",error as NSError)
         let errorCode = (error as NSError).code
         if errorCode != NSURLErrorCancelled {
             NSLog("error %@", error.localizedDescription)
@@ -139,7 +139,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     }
     
     func showError(error : Error) {
-        print("showing error %@",error)
+        NSLog("showing error %@",error as NSError)
         let alertVC = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
         let alertAction = UIAlertAction(title: "Done", style: .cancel) { (action) in
             self.viewController.dismiss(animated: true, completion: nil)
