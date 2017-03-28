@@ -31,21 +31,21 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("rules")
 @JsType(isNative = true)
-public interface RulesResource {
+public interface RulesetResource {
 
     /**
      * Retrieve global rules. Only the superuser can perform this operation, a 403 status is
-     * returned if a regular user tries to access global rule definitions.
+     * returned if a regular user tries to access global ruleset.
      */
     @GET
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:rules"})
-    GlobalRulesDefinition[] getGlobalDefinitions(@BeanParam RequestParams requestParams);
+    GlobalRuleset[] getGlobalRulesets(@BeanParam RequestParams requestParams);
 
     /**
      * Retrieve rules of a tenant. The superuser can retrieve rules of all realms, a 403 status
-     * is returned if a regular user tries to access rule definitions outside of its authenticated realm.
+     * is returned if a regular user tries to access ruleset outside of its authenticated realm.
      * An empty result will be returned if the realm can not be found.
      */
     @GET
@@ -53,11 +53,11 @@ public interface RulesResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:rules"})
-    TenantRulesDefinition[] getTenantDefinitions(@BeanParam RequestParams requestParams, @PathParam("realmId") String realmId);
+    TenantRuleset[] getTenantRulesets(@BeanParam RequestParams requestParams, @PathParam("realmId") String realmId);
 
     /**
      * Retrieve rules of an asset. The superuser can retrieve rules of all realms and assets, a 403 status
-     * is returned if a regular user tries to access rule definitions outside of its authenticated realm, or
+     * is returned if a regular user tries to access ruleset outside of its authenticated realm, or
      * if the user is restricted and the asset is not one of its linked assets. An empty result will be returned
      * if the asset can not be found.
      */
@@ -66,59 +66,59 @@ public interface RulesResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:rules"})
-    AssetRulesDefinition[] getAssetDefinitions(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
+    AssetRuleset[] getAssetRulesets(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId);
 
     /* ################################################################################################# */
 
     /**
-     * Create a global rules definition. Only the superuser can perform this operation, a 403 status is
-     * returned if a regular user tries to access global rule definitions.
+     * Create a global ruleset. Only the superuser can perform this operation, a 403 status is
+     * returned if a regular user tries to access global ruleset.
      */
     @POST
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
-    void createGlobalDefinition(@BeanParam RequestParams requestParams, @Valid GlobalRulesDefinition rulesDefinition);
+    void createGlobalRuleset(@BeanParam RequestParams requestParams, @Valid GlobalRuleset ruleset);
 
     /**
-     * Retrieve a global rules definition. Only the superuser can perform this operation, a 403 status is
-     * returned if a regular user tries to access global rule definitions.
+     * Retrieve a global ruleset. Only the superuser can perform this operation, a 403 status is
+     * returned if a regular user tries to access global ruleset.
      */
     @GET
     @Path("{id}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:rules"})
-    GlobalRulesDefinition getGlobalDefinition(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
+    GlobalRuleset getGlobalRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
     /**
-     * Update a global rules definition. Only the superuser can perform this operation, a 403 status is
-     * returned if a regular user tries to access global rule definitions.
+     * Update a global rules ruleset. Only the superuser can perform this operation, a 403 status is
+     * returned if a regular user tries to access global ruleset.
      */
     @PUT
     @Path("{id}")
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
-    void updateGlobalDefinition(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid GlobalRulesDefinition rulesDefinition);
+    void updateGlobalRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid GlobalRuleset ruleset);
 
     /**
-     * Deletes a global rules definition. Only the superuser can perform this operation, a 403 status is
-     * returned if a regular user tries to access global rule definitions.
+     * Deletes a global ruleset. Only the superuser can perform this operation, a 403 status is
+     * returned if a regular user tries to access global ruleset.
      */
     @DELETE
     @Path("{id}")
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
-    void deleteGlobalDefinition(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
+    void deleteGlobalRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
     /* ################################################################################################# */
 
     /**
-     * Create a tenant rules definition. The superuser can create rules in all realms, a 403 status
-     * is returned if a regular user tries to access rule definitions outside of its authenticated realm,
+     * Create a tenant ruleset. The superuser can create rules in all realms, a 403 status
+     * is returned if a regular user tries to access ruleset outside of its authenticated realm,
      * or if the user is restricted.
      */
     @POST
@@ -127,11 +127,11 @@ public interface RulesResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
-    void createTenantDefinition(@BeanParam RequestParams requestParams, @Valid TenantRulesDefinition rulesDefinition);
+    void createTenantRuleset(@BeanParam RequestParams requestParams, @Valid TenantRuleset ruleset);
 
     /**
-     * Retrieve a tenant rules definition. The superuser can retrieve rules of all realms, a 403 status
-     * is returned if a regular user tries to access rule definitions outside of its authenticated realm, or
+     * Retrieve a tenant ruleset. The superuser can retrieve rules of all realms, a 403 status
+     * is returned if a regular user tries to access ruleset outside of its authenticated realm, or
      * if the user is restricted.
      */
     @GET
@@ -139,11 +139,11 @@ public interface RulesResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:rules"})
-    TenantRulesDefinition getTenantDefinition(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
+    TenantRuleset getTenantRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
     /**
-     * Update a tenant rules definition. The superuser can update rules of all realms, a 403 status
-     * is returned if a regular user tries to access rule definitions outside of its authenticated realm,
+     * Update a tenant ruleset. The superuser can update rules of all realms, a 403 status
+     * is returned if a regular user tries to access rulesets outside of its authenticated realm,
      * or if the user is restricted.
      */
     @PUT
@@ -151,11 +151,11 @@ public interface RulesResource {
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
-    void updateTenantDefinition(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid TenantRulesDefinition rulesDefinition);
+    void updateTenantRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid TenantRuleset ruleset);
 
     /**
-     * Delete a tenant rules definition. The superuser can delete rules of all realms, a 403 status
-     * is returned if a regular user tries to access rule definitions outside of its authenticated realm,
+     * Delete a tenant ruleset. The superuser can delete rules of all realms, a 403 status
+     * is returned if a regular user tries to access rulesets outside of its authenticated realm,
      * or if the user is restricted.
      */
     @DELETE
@@ -163,13 +163,13 @@ public interface RulesResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
-    void deleteTenantDefinition(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
+    void updateTenantRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
     /* ################################################################################################# */
 
     /**
-     * Create an asset rules definition. The superuser can create rules for all assets, a 403 status
-     * is returned if a regular user tries to access rule definitions outside of its authenticated realm,
+     * Create an asset ruleset. The superuser can create rules for all assets, a 403 status
+     * is returned if a regular user tries to access ruleset outside of its authenticated realm,
      * or if the user is restricted and does not have access to the asset.
      */
     @POST
@@ -178,11 +178,11 @@ public interface RulesResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
-    void createAssetDefinition(@BeanParam RequestParams requestParams, @Valid AssetRulesDefinition rulesDefinition);
+    void createAssetRuleset(@BeanParam RequestParams requestParams, @Valid AssetRuleset ruleset);
 
     /**
-     * Retrieve an asset rules definition. The superuser can retrieve rules of all assets, a 403 status
-     * is returned if a regular user tries to access rule definitions outside of its authenticated realm, or
+     * Retrieve an asset ruleset. The superuser can retrieve rules of all assets, a 403 status
+     * is returned if a regular user tries to access ruleset outside of its authenticated realm, or
      * if the user is restricted and does not have access to the asset.
      */
     @GET
@@ -190,11 +190,11 @@ public interface RulesResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"write:rules"})
-    AssetRulesDefinition getAssetDefinition(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
+    AssetRuleset getAssetRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
     /**
-     * Update an asset rules definition. The superuser can update rules of all assets, a 403 status
-     * is returned if a regular user tries to access rule definitions outside of its authenticated realm,
+     * Update an asset ruleset. The superuser can update rules of all assets, a 403 status
+     * is returned if a regular user tries to access ruleset outside of its authenticated realm,
      * or if the user is restricted and does not have access to the asset.
      */
     @PUT
@@ -202,11 +202,11 @@ public interface RulesResource {
     @Consumes(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
-    void updateAssetDefinition(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid AssetRulesDefinition rulesDefinition);
+    void updateAssetRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id, @Valid AssetRuleset ruleset);
 
     /**
-     * Delete an asset rules definition. The superuser can delete rules of all assets, a 403 status
-     * is returned if a regular user tries to access rule definitions outside of its authenticated realm,
+     * Delete an asset ruleset. The superuser can delete rules of all assets, a 403 status
+     * is returned if a regular user tries to access ruleset outside of its authenticated realm,
      * or if the user is restricted and does not have access to the asset.
      */
     @DELETE
@@ -214,6 +214,6 @@ public interface RulesResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(204)
     @RolesAllowed({"write:rules"})
-    void deleteAssetDefinition(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
+    void deletAssetRuleset(@BeanParam RequestParams requestParams, @PathParam("id") Long id);
 
 }

@@ -32,13 +32,13 @@ public class TenantRulesEditorPlace extends RulesEditorPlace {
         this.realmId = realmId;
     }
 
-    public TenantRulesEditorPlace(String realmId, String definitionId) {
-        super(definitionId);
+    public TenantRulesEditorPlace(String realmId, String rulesetId) {
+        super(rulesetId);
         this.realmId = realmId;
     }
 
-    public TenantRulesEditorPlace(String realmId, Long definitionId) {
-        super(definitionId);
+    public TenantRulesEditorPlace(String realmId, Long rulesetId) {
+        super(rulesetId);
         this.realmId = realmId;
     }
 
@@ -69,7 +69,7 @@ public class TenantRulesEditorPlace extends RulesEditorPlace {
             if (place.getRealmId() == null) {
                 return "";
             }
-            return place.getRealmId() + ":" + (place.getDefinitionId() != null ? place.getDefinitionId() : "");
+            return place.getRealmId() + ":" + (place.getRulesetId() != null ? place.getRulesetId() : "");
         }
     }
 }

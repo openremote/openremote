@@ -19,13 +19,13 @@
  */
 package org.openremote.manager.client.rules;
 
-import org.openremote.manager.shared.rules.RulesDefinition;
+import org.openremote.manager.shared.rules.Ruleset;
 
-public interface RulesList<P extends RulesList.Presenter<R>, R extends RulesDefinition> extends RulesView {
+public interface RulesList<P extends RulesList.Presenter<R>, R extends Ruleset> extends RulesView {
 
-    interface Presenter<R extends RulesDefinition>  {
+    interface Presenter<R extends Ruleset>  {
 
-        void onRulesDefinitionSelected(R definition);
+        void onRulesetSelected(R ruleset);
 
         void createRule();
 
@@ -33,6 +33,6 @@ public interface RulesList<P extends RulesList.Presenter<R>, R extends RulesDefi
 
     void setPresenter(P presenter);
 
-    void setRulesDefinitions(R[] definitions);
+    void setRulesets(R[] rulesets);
 
 }

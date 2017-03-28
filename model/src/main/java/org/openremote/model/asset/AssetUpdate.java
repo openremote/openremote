@@ -294,11 +294,14 @@ public class AssetUpdate {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "assetId=" + getName() +
-            ", attributeName=" + getAttributeName() +
-            ", value=" + getValue().toJson() +
+            "id='" + getId() + '\'' +
+            ", name='" + getName()+ '\'' +
+            ", typeString='" + getType()+ '\'' +
+            ", attributeName='" + getAttributeName() + '\'' +
+            ", attributeType=" + getAttributeType() +
+            ", value='" + getValue().toJson() + '\'' +
             ", valueTimestamp=" + getValueTimestamp() +
-            ", oldValue=" + (oldValue != null ? oldValue.toJson() : "null") +
+            ", oldValue='" + (getOldValue() != null ? getOldValue().toJson() : "null") + '\'' +
             ", oldValueTimestamp=" + getOldValueTimestamp() +
             '}';
     }

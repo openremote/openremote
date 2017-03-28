@@ -15,7 +15,7 @@
         }
     </ui:style>
 
-    <ui:style field="tableStyle" type="org.openremote.manager.client.rules.RulesDefinitionTable.Style">
+    <ui:style field="tableStyle" type="org.openremote.manager.client.rules.RulesetTable.Style">
         .nameColumn {
             width: 100%;
         }

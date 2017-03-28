@@ -39,7 +39,7 @@ import org.kie.api.runtime.rule.FactHandle;
 import org.kie.api.time.SessionClock;
 import org.openremote.container.util.Util;
 import org.openremote.model.asset.AssetUpdate;
-import org.openremote.manager.shared.rules.RulesDefinition;
+import org.openremote.manager.shared.rules.Ruleset;
 
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -49,7 +49,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class RulesDeployment<T extends RulesDefinition> {
+public class RulesDeployment<T extends Ruleset> {
 
     public static final Logger LOG = Logger.getLogger(RulesDeployment.class.getName());
 
@@ -65,7 +65,7 @@ public class RulesDeployment<T extends RulesDefinition> {
     private static final int AUTO_START_DELAY_SECONDS = 2;
     private static Long counter = 1L;
     static final protected Util UTIL = new Util();
-    protected final Map<Long, T> ruleDefinitions = new LinkedHashMap<>();
+    protected final Map<Long, T> rulesets = new LinkedHashMap<>();
     protected final RuleExecutionLogger ruleExecutionLogger = new RuleExecutionLogger();
     protected KieSession knowledgeSession;
     protected KieServices kieServices;
@@ -92,9 +92,9 @@ public class RulesDeployment<T extends RulesDefinition> {
     }
 
     @SuppressWarnings("unchecked")
-    public synchronized T[] getAllRulesDefinitions() {
-        T[]arr = Util.createArray(ruleDefinitions.size(), clazz);
-        return ruleDefinitions.values().toArray(arr);
+    public synchronized T[] getAllRulesets() {
+        T[]arr = Util.createArray(rulesets.size(), clazz);
+        return rulesets.values().toArray(arr);
     }
 
     public String getId() {
@@ -123,7 +123,7 @@ public class RulesDeployment<T extends RulesDefinition> {
     }
 
     public synchronized boolean isEmpty() {
-        return ruleDefinitions.isEmpty();
+        return rulesets.isEmpty();
     }
 
     protected void setGlobal(String identifier, Object object) {
@@ -135,19 +135,19 @@ public class RulesDeployment<T extends RulesDefinition> {
     }
 
     /**
-     * Adds the rules definition to the engine by first stopping the engine and
+     * Adds the ruleset to the engine by first stopping the engine and
      * then deploying new rules and then restarting the engine (after
      * {@link #AUTO_START_DELAY_SECONDS}) to prevent excessive engine stop/start.
      * <p>
-     * If engine is in an error state (one of the rules definitions failed to deploy
+     * If engine is in an error state (one of the rulesets failed to deploy
      * then the engine will not restart).
      *
-     * @return Whether or not the rules definition deployed successfully
+     * @return Whether or not the ruleset deployed successfully
      */
-    public synchronized boolean insertRulesDefinition(T rulesDefinition) {
-        if (rulesDefinition == null || rulesDefinition.getRules() == null || rulesDefinition.getRules().isEmpty()) {
-            // Assume it's a success if deploying an empty rules definition
-            LOG.finest("Rules definition is empty so no rules to deploy");
+    public synchronized boolean insertRuleset(T ruleset) {
+        if (ruleset == null || ruleset.getRules() == null || ruleset.getRules().isEmpty()) {
+            // Assume it's a success if deploying an empty ruleset
+            LOG.finest("Ruleset is empty so no rules to deploy");
             return true;
         }
 
@@ -155,10 +155,10 @@ public class RulesDeployment<T extends RulesDefinition> {
             initialiseEngine();
         }
 
-        T existingDefinition = ruleDefinitions.get(rulesDefinition.getId());
+        T existingRuleset = rulesets.get(ruleset.getId());
 
-        if (existingDefinition != null && existingDefinition.getVersion() == rulesDefinition.getVersion()) {
-            LOG.fine("Rules definition version already deployed so ignoring");
+        if (existingRuleset != null && existingRuleset.getVersion() == ruleset.getVersion()) {
+            LOG.fine("Ruleset version already deployed so ignoring");
             return true;
         }
 
@@ -172,72 +172,72 @@ public class RulesDeployment<T extends RulesDefinition> {
             startTimer.cancel(false);
         }
 
-        // Check if rules definition is already deployed (maybe an older version)
-        if (existingDefinition != null) {
+        // Check if ruleset is already deployed (maybe an older version)
+        if (existingRuleset != null) {
             // Remove this old rules file
-            kfs.delete("src/main/resources/" + rulesDefinition.getId());
+            kfs.delete("src/main/resources/" + ruleset.getId());
             //noinspection SuspiciousMethodCalls
-            ruleDefinitions.remove(existingDefinition);
+            rulesets.remove(existingRuleset);
         }
 
-        LOG.info("Adding rule definition: " + rulesDefinition);
+        LOG.info("Adding ruleset: " + ruleset);
 
         boolean addSuccessful = false;
 
         try {
-            // ID will be unique within the scope of a rules deployment as rules definition will all be of same type
-            kfs.write("src/main/resources/" + rulesDefinition.getId() + ".drl", rulesDefinition.getRules());
-            // Unload the rules string from the definition we don't need it anymore and don't want it using memory
-            rulesDefinition.setRules(null);
+            // ID will be unique within the scope of a rules deployment as ruleset will all be of same type
+            kfs.write("src/main/resources/" + ruleset.getId() + ".drl", ruleset.getRules());
+            // Unload the rules string from the ruleset we don't need it anymore and don't want it using memory
+            ruleset.setRules(null);
             KieBuilder kieBuilder = kieServices.newKieBuilder(kfs).buildAll();
 
             if (kieBuilder.getResults().hasMessages(Message.Level.ERROR)) {
                 Collection<Message> errors = kieBuilder.getResults().getMessages(Message.Level.ERROR);
-                LOG.severe("Error in rule definition: " + rulesDefinition);
+                LOG.severe("Error in ruleset: " + ruleset);
                 for (Message error : errors) {
                     LOG.severe(error.getText());
                 }
                 // If compilation failed, remove rules from FileSystem so it won't fail on next pass here if any
-                kfs.delete("src/main/resources/" + rulesDefinition.getId());
+                kfs.delete("src/main/resources/" + ruleset.getId());
             } else {
-                LOG.info("Added rule definition: " + rulesDefinition);
+                LOG.info("Added ruleset: " + ruleset);
                 addSuccessful = true;
             }
         } catch (Throwable t) {
-            LOG.log(Level.SEVERE, "Error in rule definition: " + rulesDefinition, t);
+            LOG.log(Level.SEVERE, "Error in ruleset: " + ruleset, t);
             // If compilation failed, remove rules from FileSystem so it won't fail on next pass here if any
-            kfs.delete("src/main/resources/" + rulesDefinition.getId());
+            kfs.delete("src/main/resources/" + ruleset.getId());
         }
 
         if (!addSuccessful) {
             // Prevent knowledge session from running again
             error = true;
 
-            // Update status of each rules definition
-            ruleDefinitions.forEach((id, rd) -> {
-                if (rd.getDeploymentStatus() == RulesDefinition.DeploymentStatus.DEPLOYED) {
-                    rd.setDeploymentStatus(RulesDefinition.DeploymentStatus.READY);
+            // Update status of each ruleset
+            rulesets.forEach((id, rd) -> {
+                if (rd.getDeploymentStatus() == Ruleset.DeploymentStatus.DEPLOYED) {
+                    rd.setDeploymentStatus(Ruleset.DeploymentStatus.READY);
                 }
             });
         } else {
             startTimer = executorService.schedule(this::start, AUTO_START_DELAY_SECONDS, TimeUnit.SECONDS);
         }
 
-        // Add new rules definition
-        rulesDefinition.setDeploymentStatus(addSuccessful ? RulesDefinition.DeploymentStatus.DEPLOYED : RulesDefinition.DeploymentStatus.FAILED);
-        ruleDefinitions.put(rulesDefinition.getId(), rulesDefinition);
+        // Add new ruleset
+        ruleset.setDeploymentStatus(addSuccessful ? Ruleset.DeploymentStatus.DEPLOYED : Ruleset.DeploymentStatus.FAILED);
+        rulesets.put(ruleset.getId(), ruleset);
 
         return addSuccessful;
     }
 
-    protected synchronized void retractRulesDefinition(RulesDefinition rulesDefinition) {
+    protected synchronized void retractRuleset(Ruleset ruleset) {
         if (kfs == null) {
             return;
         }
 
-        T matchedDefinition = ruleDefinitions.get(rulesDefinition.getId());
-        if (matchedDefinition == null) {
-            LOG.finer("Rules definition cannot be retracted as it was never deployed: " + rulesDefinition);
+        T matchedRuleset = rulesets.get(ruleset.getId());
+        if (matchedRuleset == null) {
+            LOG.finer("Ruleset cannot be retracted as it was never deployed: " + ruleset);
             return;
         }
 
@@ -251,21 +251,21 @@ public class RulesDeployment<T extends RulesDefinition> {
         }
 
         // Remove this old rules file
-        kfs.delete("src/main/resources/" + rulesDefinition.getId());
-        ruleDefinitions.remove(rulesDefinition.getId());
+        kfs.delete("src/main/resources/" + ruleset.getId());
+        rulesets.remove(ruleset.getId());
 
-        // Update status of each rules definition
-        boolean anyFailed = ruleDefinitions
+        // Update status of each ruleset
+        boolean anyFailed = rulesets
             .values()
             .stream()
-            .anyMatch(rd -> rd.getDeploymentStatus() == RulesDefinition.DeploymentStatus.FAILED);
+            .anyMatch(rd -> rd.getDeploymentStatus() == Ruleset.DeploymentStatus.FAILED);
 
         error = anyFailed;
 
         if (!anyFailed) {
-            ruleDefinitions.forEach((id, rd) -> {
-                if (rd.getDeploymentStatus() == RulesDefinition.DeploymentStatus.READY) {
-                    rd.setDeploymentStatus(RulesDefinition.DeploymentStatus.DEPLOYED);
+            rulesets.forEach((id, rd) -> {
+                if (rd.getDeploymentStatus() == Ruleset.DeploymentStatus.READY) {
+                    rd.setDeploymentStatus(Ruleset.DeploymentStatus.DEPLOYED);
                 }
             });
         }
@@ -313,7 +313,7 @@ public class RulesDeployment<T extends RulesDefinition> {
         }
 
         if (isEmpty()) {
-            LOG.finest("No rule definitions loaded so nothing to start");
+            LOG.finest("No rulesets loaded so nothing to start");
             return;
         }
 
@@ -431,9 +431,21 @@ public class RulesDeployment<T extends RulesDefinition> {
             }
 
             currentFactCount = newFactCount;
+        } else {
+            LOG.fine("Engine is in error state or not running (" + toString() + "), ignoring: " + assetUpdate);
         }
 
         return factHandle;
+    }
+
+    protected String getRulesetDebug() {
+        return Arrays.toString(rulesets.values().stream().map(rd ->
+            rd.getClass().getSimpleName()
+                + " - "
+                + rd.getName()
+                + ": "
+                + rd.getDeploymentStatus()).toArray(String[]::new)
+        );
     }
 
     @Override
@@ -442,7 +454,7 @@ public class RulesDeployment<T extends RulesDefinition> {
             "id='" + id + '\'' +
             ", running='" + running + '\'' +
             ", error='" + error + '\'' +
-            ", definitions='" + Arrays.toString(ruleDefinitions.values().stream().map(rd -> rd.getName() + ": " + rd.getDeploymentStatus()).toArray(String[]::new)) + '\'' +
+            ", rulesets='" + getRulesetDebug() + '\'' +
             '}';
     }
 }

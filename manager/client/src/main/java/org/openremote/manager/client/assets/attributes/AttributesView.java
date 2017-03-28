@@ -140,9 +140,9 @@ public abstract class AttributesView<
         FormLabel formLabel = createAttributeLabel(attribute);
         formGroup.addFormLabel(formLabel);
 
-        MetaItem description = attribute.firstMetaItem(AssetMeta.DESCRIPTION);
+        String description = getAttributeDescription(attribute);
         if (description != null) {
-            formGroup.addInfolabel(new Label(description.getValueAsString()));
+            formGroup.addInfolabel(new Label(description));
         }
 
         FormGroupActions formGroupActions = new FormGroupActions();
@@ -166,15 +166,27 @@ public abstract class AttributesView<
     }
 
     protected FormLabel createAttributeLabel(A attribute) {
+        String label = getAttributeLabel(attribute);
+        FormLabel formLabel = new FormLabel(TextUtil.ellipsize(label, 30));
+        formLabel.addStyleName("larger");
+        return formLabel;
+    }
+
+    protected String getAttributeLabel(A attribute) {
         String label = attribute.getName();
         MetaItem labelItem = attribute.firstMetaItem(AssetMeta.LABEL);
         if (labelItem != null) {
             label = labelItem.getValueAsString();
         }
-        FormLabel formLabel = new FormLabel(TextUtil.ellipsize(label, 30));
-        formLabel.addStyleName("larger");
+        return label;
+    }
 
-        return formLabel;
+    protected String getAttributeDescription(A attribute) {
+        MetaItem description = attribute.firstMetaItem(AssetMeta.DESCRIPTION);
+        if (description != null) {
+            return description.getValueAsString();
+        }
+        return null;
     }
 
     protected IsWidget createEditor(A attribute, FormGroup formGroup) {

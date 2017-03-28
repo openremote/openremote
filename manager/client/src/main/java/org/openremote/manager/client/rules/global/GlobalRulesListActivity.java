@@ -28,8 +28,8 @@ import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.rules.RulesModule;
-import org.openremote.manager.shared.rules.GlobalRulesDefinition;
-import org.openremote.manager.shared.rules.RulesResource;
+import org.openremote.manager.shared.rules.GlobalRuleset;
+import org.openremote.manager.shared.rules.RulesetResource;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -41,19 +41,19 @@ public class GlobalRulesListActivity
     implements GlobalRulesList.Presenter {
 
     final GlobalRulesList view;
-    final GlobalRulesDefinitionArrayMapper globalRulesDefinitionArrayMapper;
-    final RulesResource rulesResource;
+    final GlobalRulesetArrayMapper globalRulesetArrayMapper;
+    final RulesetResource rulesetResource;
 
     @Inject
     public GlobalRulesListActivity(Environment environment,
                                    AssetBrowser.Presenter assetBrowserPresenter,
                                    GlobalRulesList view,
-                                   GlobalRulesDefinitionArrayMapper globalRulesDefinitionArrayMapper,
-                                   RulesResource rulesResource) {
+                                   GlobalRulesetArrayMapper globalRulesetArrayMapper,
+                                   RulesetResource rulesetResource) {
         super(environment, assetBrowserPresenter);
         this.view = view;
-        this.globalRulesDefinitionArrayMapper = globalRulesDefinitionArrayMapper;
-        this.rulesResource = rulesResource;
+        this.globalRulesetArrayMapper = globalRulesetArrayMapper;
+        this.rulesetResource = rulesetResource;
     }
 
     @Override
@@ -72,10 +72,10 @@ public class GlobalRulesListActivity
         ));
 
         environment.getRequestService().execute(
-            globalRulesDefinitionArrayMapper,
-            rulesResource::getGlobalDefinitions,
+            globalRulesetArrayMapper,
+            rulesetResource::getGlobalRulesets,
             200,
-            view::setRulesDefinitions,
+            view::setRulesets,
             ex -> handleRequestException(ex, environment)
         );
 
@@ -89,8 +89,8 @@ public class GlobalRulesListActivity
     }
 
     @Override
-    public void onRulesDefinitionSelected(GlobalRulesDefinition definition) {
-        environment.getPlaceController().goTo(new GlobalRulesEditorPlace(definition.getId()));
+    public void onRulesetSelected(GlobalRuleset ruleset) {
+        environment.getPlaceController().goTo(new GlobalRulesEditorPlace(ruleset.getId()));
     }
 
     @Override

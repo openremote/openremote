@@ -20,11 +20,11 @@
 package org.openremote.manager.client.rules.tenant;
 
 import org.openremote.manager.client.rules.RulesList;
-import org.openremote.manager.shared.rules.TenantRulesDefinition;
+import org.openremote.manager.shared.rules.TenantRuleset;
 
-public interface TenantRulesList extends RulesList<TenantRulesList.Presenter, TenantRulesDefinition> {
+public interface TenantRulesList extends RulesList<TenantRulesList.Presenter, TenantRuleset> {
 
-    interface Presenter extends RulesList.Presenter<TenantRulesDefinition> {
+    interface Presenter extends RulesList.Presenter<TenantRuleset> {
     }
 
     void setRealmLabel(String label);

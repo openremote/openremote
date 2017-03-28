@@ -46,6 +46,9 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
     public static final String SETUP_IMPORT_DEMO_DATA = "SETUP_IMPORT_DEMO_DATA";
     public static final boolean SETUP_IMPORT_DEMO_DATA_DEFAULT = false;
 
+    public static final String SETUP_IMPORT_DEMO_RULES = "SETUP_IMPORT_DEMO_RULES";
+    public static final boolean SETUP_IMPORT_DEMO_RULES_DEFAULT = true;
+
     @Override
     public List<Setup> createTasks(Container container) {
 
@@ -73,6 +76,17 @@ public class BuiltinSetupTasks extends AbstractSetupTasks {
                 addTask(new ManagerDemoSetup(container));
             }
 
+        }
+
+        // We want to import demo rules when either
+        //
+        // - dev mode is on and demo rules import is not disabled (some tests need other rules)
+        // - production mode is on and both demo data import and demo rules import is enabled
+        //
+        if (container.isDevMode() && getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_RULES, SETUP_IMPORT_DEMO_RULES_DEFAULT)
+            || (getBoolean(container.getConfig(), SETUP_INIT_CLEAN_DATABASE, SETUP_INIT_CLEAN_DATABASE_DEFAULT) &&
+            getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_RULES, SETUP_IMPORT_DEMO_RULES_DEFAULT))) {
+            addTask(new RulesDemoSetup(container));
         }
 
         return getTasks();

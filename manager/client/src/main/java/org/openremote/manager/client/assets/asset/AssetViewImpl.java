@@ -183,6 +183,10 @@ public class AssetViewImpl extends Composite implements AssetView {
     public void setFormBusy(boolean busy) {
         form.setBusy(busy);
         attributesForm.setBusy(busy);
+        mapWidget.setVisible(!busy);
+        if (!busy)
+            mapWidget.resize();
+        editButton.setVisible(!busy);
     }
 
     /* ############################################################################ */

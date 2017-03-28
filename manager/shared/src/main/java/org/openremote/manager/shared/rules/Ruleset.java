@@ -31,21 +31,21 @@ import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
  * Rules can be defined in three scopes: global, for a realm, for an asset sub-tree.
  */
 @MappedSuperclass
-public abstract class RulesDefinition {
+public abstract class Ruleset {
 
     public enum DeploymentStatus {
         /**
-         * Rule definition compiled successfully but is not running, due to failure of other definitions in same scope.
+         * Ruleset compiled successfully but is not running, due to failure of other rulesets in same scope.
          */
         READY,
 
         /**
-         * Rule definition has been compiled and is running.
+         * Ruleset has been compiled and is running.
          */
         DEPLOYED,
 
         /**
-         * Rule definition did not compile successfully.
+         * Ruleset did not compile successfully.
          */
         FAILED
     }
@@ -68,9 +68,9 @@ public abstract class RulesDefinition {
     @Column(name = "LAST_MODIFIED", nullable = false)
     protected Date lastModified;
 
-    @NotNull(message = "{RulesDefinition.name.NotNull}")
+    @NotNull(message = "{Ruleset.name.NotNull}")
     @Column(name = "NAME", nullable = false)
-    @Size(min = 3, max = 255, message = "{RulesDefinition.name.Size}")
+    @Size(min = 3, max = 255, message = "{Ruleset.name.Size}")
     protected String name;
 
     @Column(name = "ENABLED", nullable = false)
@@ -83,14 +83,14 @@ public abstract class RulesDefinition {
     @Transient
     protected DeploymentStatus deploymentStatus;
 
-    public RulesDefinition() {
+    public Ruleset() {
     }
 
-    public RulesDefinition(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled) {
+    public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled) {
         this(id, version, createdOn, lastModified, name, enabled, null);
     }
 
-    public RulesDefinition(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules) {
+    public Ruleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules) {
         this.id = id;
         this.version = version;
         this.createdOn = createdOn;
@@ -100,7 +100,7 @@ public abstract class RulesDefinition {
         this.rules = rules;
     }
 
-    public RulesDefinition(String name, String rules) {
+    public Ruleset(String name, String rules) {
         this.name = name;
         this.rules = rules;
     }

@@ -29,8 +29,8 @@ import org.openremote.manager.client.event.bus.EventBus;
 import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.rules.RulesModule;
-import org.openremote.manager.shared.rules.RulesResource;
-import org.openremote.manager.shared.rules.TenantRulesDefinition;
+import org.openremote.manager.shared.rules.RulesetResource;
+import org.openremote.manager.shared.rules.TenantRuleset;
 import org.openremote.manager.shared.security.TenantResource;
 
 import javax.inject.Inject;
@@ -45,8 +45,8 @@ public class TenantRulesListActivity
     final TenantRulesList view;
     final TenantMapper tenantMapper;
     final TenantResource tenantResource;
-    final TenantRulesDefinitionArrayMapper tenantRulesDefinitionArrayMapper;
-    final RulesResource rulesResource;
+    final TenantRulesetArrayMapper tenantRulesetArrayMapper;
+    final RulesetResource rulesetResource;
 
     String realmId;
 
@@ -56,14 +56,14 @@ public class TenantRulesListActivity
                                    TenantRulesList view,
                                    TenantMapper tenantMapper,
                                    TenantResource tenantResource,
-                                   TenantRulesDefinitionArrayMapper tenantRulesDefinitionArrayMapper,
-                                   RulesResource rulesResource) {
+                                   TenantRulesetArrayMapper tenantRulesetArrayMapper,
+                                   RulesetResource rulesetResource) {
         super(environment, assetBrowserPresenter);
         this.view = view;
         this.tenantMapper = tenantMapper;
         this.tenantResource = tenantResource;
-        this.tenantRulesDefinitionArrayMapper = tenantRulesDefinitionArrayMapper;
-        this.rulesResource = rulesResource;
+        this.tenantRulesetArrayMapper = tenantRulesetArrayMapper;
+        this.rulesetResource = rulesetResource;
     }
 
     @Override
@@ -96,10 +96,10 @@ public class TenantRulesListActivity
             );
 
             environment.getRequestService().execute(
-                tenantRulesDefinitionArrayMapper,
-                params -> rulesResource.getTenantDefinitions(params, realmId),
+                tenantRulesetArrayMapper,
+                params -> rulesetResource.getTenantRulesets(params, realmId),
                 200,
-                view::setRulesDefinitions,
+                view::setRulesets,
                 ex -> handleRequestException(ex, environment)
             );
         }
@@ -112,8 +112,8 @@ public class TenantRulesListActivity
     }
 
     @Override
-    public void onRulesDefinitionSelected(TenantRulesDefinition definition) {
-        environment.getPlaceController().goTo(new TenantRulesEditorPlace(realmId, definition.getId()));
+    public void onRulesetSelected(TenantRuleset ruleset) {
+        environment.getPlaceController().goTo(new TenantRulesEditorPlace(realmId, ruleset.getId()));
     }
 
     @Override

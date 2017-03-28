@@ -32,8 +32,8 @@ import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.http.EntityReader;
 import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.manager.shared.http.RequestParams;
-import org.openremote.manager.shared.rules.AssetRulesDefinition;
-import org.openremote.manager.shared.rules.RulesResource;
+import org.openremote.manager.shared.rules.AssetRuleset;
+import org.openremote.manager.shared.rules.RulesetResource;
 import org.openremote.model.Consumer;
 
 import javax.inject.Inject;
@@ -42,11 +42,11 @@ import java.util.Collection;
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
 public class AssetRulesEditorActivity
-    extends AbstractRulesEditorActivity<AssetRulesDefinition, AssetRulesEditorPlace> {
+    extends AbstractRulesEditorActivity<AssetRuleset, AssetRulesEditorPlace> {
 
     final AssetMapper assetMapper;
     final AssetResource assetResource;
-    final AssetRulesDefinitionMapper assetRulesDefinitionMapper;
+    final AssetRulesetMapper assetRulesetMapper;
 
     String assetId;
 
@@ -54,14 +54,14 @@ public class AssetRulesEditorActivity
     public AssetRulesEditorActivity(Environment environment,
                                     AssetBrowser.Presenter assetBrowserPresenter,
                                     RulesEditor view,
-                                    RulesResource rulesResource,
+                                    RulesetResource rulesetResource,
                                     AssetMapper assetMapper,
                                     AssetResource assetResource,
-                                    AssetRulesDefinitionMapper assetRulesDefinitionMapper) {
-        super(environment, assetBrowserPresenter, view, rulesResource);
+                                    AssetRulesetMapper assetRulesetMapper) {
+        super(environment, assetBrowserPresenter, view, rulesetResource);
         this.assetMapper = assetMapper;
         this.assetResource = assetResource;
-        this.assetRulesDefinitionMapper = assetRulesDefinitionMapper;
+        this.assetRulesetMapper = assetRulesetMapper;
     }
 
     @Override
@@ -87,28 +87,28 @@ public class AssetRulesEditorActivity
     }
 
     @Override
-    protected AssetRulesDefinition newDefinition() {
-        return new AssetRulesDefinition(assetId);
+    protected AssetRuleset newRuleset() {
+        return new AssetRuleset(assetId);
     }
 
     @Override
-    protected EntityReader<AssetRulesDefinition> getEntityReader() {
-        return assetRulesDefinitionMapper;
+    protected EntityReader<AssetRuleset> getEntityReader() {
+        return assetRulesetMapper;
     }
 
     @Override
-    protected Consumer<RequestParams<AssetRulesDefinition>> loadRequestConsumer() {
-        return params -> rulesResource.getAssetDefinition(params, definitionId);
+    protected Consumer<RequestParams<AssetRuleset>> loadRequestConsumer() {
+        return params -> rulesetResource.getAssetRuleset(params, rulesetId);
     }
 
     @Override
-    protected EntityWriter<AssetRulesDefinition> getEntityWriter() {
-        return assetRulesDefinitionMapper;
+    protected EntityWriter<AssetRuleset> getEntityWriter() {
+        return assetRulesetMapper;
     }
 
     @Override
     protected Consumer<RequestParams<Void>> createRequestConsumer() {
-        return params -> rulesResource.createAssetDefinition(params, rulesDefinition);
+        return params -> rulesetResource.createAssetRuleset(params, ruleset);
     }
 
     @Override
@@ -118,17 +118,17 @@ public class AssetRulesEditorActivity
 
     @Override
     protected Consumer<RequestParams<Void>> updateRequestConsumer() {
-        return params -> rulesResource.updateAssetDefinition(params, definitionId, rulesDefinition);
+        return params -> rulesetResource.updateAssetRuleset(params, rulesetId, ruleset);
     }
 
     @Override
     protected void afterUpdate() {
-        environment.getPlaceController().goTo(new AssetRulesEditorPlace(assetId, definitionId));
+        environment.getPlaceController().goTo(new AssetRulesEditorPlace(assetId, rulesetId));
     }
 
     @Override
     protected Consumer<RequestParams<Void>> deleteRequestConsumer() {
-        return params -> rulesResource.deleteAssetDefinition(params, definitionId);
+        return params -> rulesetResource.deletAssetRuleset(params, rulesetId);
     }
 
     @Override

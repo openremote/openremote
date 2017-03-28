@@ -25,12 +25,12 @@ import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.rules.AbstractRulesList;
 import org.openremote.manager.client.style.FormTableStyle;
 import org.openremote.manager.client.widget.FlexSplitPanel;
-import org.openremote.manager.shared.rules.GlobalRulesDefinition;
+import org.openremote.manager.shared.rules.GlobalRuleset;
 
 import javax.inject.Inject;
 
 public class GlobalRulesListImpl
-    extends AbstractRulesList<GlobalRulesList.Presenter, GlobalRulesDefinition>
+    extends AbstractRulesList<GlobalRulesList.Presenter, GlobalRuleset>
     implements GlobalRulesList {
 
     interface UI extends UiBinder<FlexSplitPanel, GlobalRulesListImpl> {

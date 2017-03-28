@@ -29,26 +29,26 @@ import org.openremote.manager.client.rules.RulesEditor;
 import org.openremote.manager.shared.http.EntityReader;
 import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.manager.shared.http.RequestParams;
-import org.openremote.manager.shared.rules.GlobalRulesDefinition;
-import org.openremote.manager.shared.rules.RulesResource;
+import org.openremote.manager.shared.rules.GlobalRuleset;
+import org.openremote.manager.shared.rules.RulesetResource;
 import org.openremote.model.Consumer;
 
 import javax.inject.Inject;
 import java.util.Collection;
 
 public class GlobalRulesEditorActivity
-    extends AbstractRulesEditorActivity<GlobalRulesDefinition, GlobalRulesEditorPlace> {
+    extends AbstractRulesEditorActivity<GlobalRuleset, GlobalRulesEditorPlace> {
 
-    final GlobalRulesDefinitionMapper globalRulesDefinitionMapper;
+    final GlobalRulesetMapper globalRulesetMapper;
 
     @Inject
     public GlobalRulesEditorActivity(Environment environment,
                                      AssetBrowser.Presenter assetBrowserPresenter,
                                      RulesEditor view,
-                                     RulesResource rulesResource,
-                                     GlobalRulesDefinitionMapper globalRulesDefinitionMapper) {
-        super(environment, assetBrowserPresenter, view, rulesResource);
-        this.globalRulesDefinitionMapper = globalRulesDefinitionMapper;
+                                     RulesetResource rulesetResource,
+                                     GlobalRulesetMapper globalRulesetMapper) {
+        super(environment, assetBrowserPresenter, view, rulesetResource);
+        this.globalRulesetMapper = globalRulesetMapper;
     }
 
     @Override
@@ -60,28 +60,28 @@ public class GlobalRulesEditorActivity
     }
 
     @Override
-    protected GlobalRulesDefinition newDefinition() {
-        return new GlobalRulesDefinition();
+    protected GlobalRuleset newRuleset() {
+        return new GlobalRuleset();
     }
 
     @Override
-    protected EntityReader<GlobalRulesDefinition> getEntityReader() {
-        return globalRulesDefinitionMapper;
+    protected EntityReader<GlobalRuleset> getEntityReader() {
+        return globalRulesetMapper;
     }
 
     @Override
-    protected Consumer<RequestParams<GlobalRulesDefinition>> loadRequestConsumer() {
-        return params -> rulesResource.getGlobalDefinition(params, definitionId);
+    protected Consumer<RequestParams<GlobalRuleset>> loadRequestConsumer() {
+        return params -> rulesetResource.getGlobalRuleset(params, rulesetId);
     }
 
     @Override
-    protected EntityWriter<GlobalRulesDefinition> getEntityWriter() {
-        return globalRulesDefinitionMapper;
+    protected EntityWriter<GlobalRuleset> getEntityWriter() {
+        return globalRulesetMapper;
     }
 
     @Override
     protected Consumer<RequestParams<Void>> createRequestConsumer() {
-        return params -> rulesResource.createGlobalDefinition(params, rulesDefinition);
+        return params -> rulesetResource.createGlobalRuleset(params, ruleset);
     }
 
     @Override
@@ -91,17 +91,17 @@ public class GlobalRulesEditorActivity
 
     @Override
     protected Consumer<RequestParams<Void>> updateRequestConsumer() {
-        return params -> rulesResource.updateGlobalDefinition(params, definitionId, rulesDefinition);
+        return params -> rulesetResource.updateGlobalRuleset(params, rulesetId, ruleset);
     }
 
     @Override
     protected void afterUpdate() {
-        environment.getPlaceController().goTo(new GlobalRulesEditorPlace(definitionId));
+        environment.getPlaceController().goTo(new GlobalRulesEditorPlace(rulesetId));
     }
 
     @Override
     protected Consumer<RequestParams<Void>> deleteRequestConsumer() {
-        return params -> rulesResource.deleteGlobalDefinition(params, definitionId);
+        return params -> rulesetResource.deleteGlobalRuleset(params, rulesetId);
     }
 
     @Override

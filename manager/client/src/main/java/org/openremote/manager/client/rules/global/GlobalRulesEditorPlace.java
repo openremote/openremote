@@ -28,12 +28,12 @@ public class GlobalRulesEditorPlace extends RulesEditorPlace {
     public GlobalRulesEditorPlace() {
     }
 
-    public GlobalRulesEditorPlace(String definitionId) {
-        super(definitionId);
+    public GlobalRulesEditorPlace(String rulesetId) {
+        super(rulesetId);
     }
 
-    public GlobalRulesEditorPlace(Long definitionId) {
-        super(definitionId);
+    public GlobalRulesEditorPlace(Long rulesetId) {
+        super(rulesetId);
     }
 
     @Prefix("globalRulesEditor")
@@ -46,7 +46,7 @@ public class GlobalRulesEditorPlace extends RulesEditorPlace {
 
         @Override
         public String getToken(GlobalRulesEditorPlace place) {
-            return place.getDefinitionId() != null ? String.valueOf(place.getDefinitionId()) : "";
+            return place.getRulesetId() != null ? String.valueOf(place.getRulesetId()) : "";
         }
     }
 }

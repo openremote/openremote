@@ -20,11 +20,11 @@
 package org.openremote.manager.client.rules.asset;
 
 import org.openremote.manager.client.rules.RulesList;
-import org.openremote.manager.shared.rules.AssetRulesDefinition;
+import org.openremote.manager.shared.rules.AssetRuleset;
 
-public interface AssetRulesList extends RulesList<AssetRulesList.Presenter, AssetRulesDefinition> {
+public interface AssetRulesList extends RulesList<AssetRulesList.Presenter, AssetRuleset> {
 
-    interface Presenter extends RulesList.Presenter<AssetRulesDefinition> {
+    interface Presenter extends RulesList.Presenter<AssetRuleset> {
     }
 
     void setAssetLabel(String label);

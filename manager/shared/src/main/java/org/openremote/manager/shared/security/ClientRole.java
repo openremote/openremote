@@ -32,13 +32,13 @@ public enum ClientRole {
     READ_ADMIN("read:admin", "Read system settings, tenants, and users"),
     READ_MAP("read:map", "View map"),
     READ_ASSETS("read:assets", "Read asset data"),
-    READ_RULES("read:rules", "Read rule definitions"),
+    READ_RULES("read:rules", "Read rulesets"),
     READ_CONSOLES("read:consoles", "Read installed console applications"),
 
     WRITE_USER("write:user", "Write data of the authenticated user"),
     WRITE_ADMIN("write:admin", "Write system settings, tenants, and users"),
     WRITE_ASSETS("write:assets", "Write asset data"),
-    WRITE_RULES("write:rules", "Write rule definitions"),
+    WRITE_RULES("write:rules", "Write rulesets (NOTE: effectively super-user access!)"),
 
     READ("read", "Read all data", new ClientRole[]{
         READ_ADMIN,

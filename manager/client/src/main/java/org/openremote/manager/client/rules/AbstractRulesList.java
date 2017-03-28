@@ -29,12 +29,12 @@ import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTableStyle;
 import org.openremote.manager.client.widget.FormButton;
-import org.openremote.manager.shared.rules.RulesDefinition;
+import org.openremote.manager.shared.rules.Ruleset;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public abstract class AbstractRulesList<P extends RulesList.Presenter<R>, R extends RulesDefinition>
+public abstract class AbstractRulesList<P extends RulesList.Presenter<R>, R extends Ruleset>
     extends Composite
     implements RulesList<P, R> {
 
@@ -45,7 +45,7 @@ public abstract class AbstractRulesList<P extends RulesList.Presenter<R>, R exte
     public HTMLPanel sidebarContainer;
 
     @UiField
-    public RulesDefinitionTable.Style tableStyle;
+    public RulesetTable.Style tableStyle;
 
     @UiField
     public FormButton createButton;
@@ -53,7 +53,7 @@ public abstract class AbstractRulesList<P extends RulesList.Presenter<R>, R exte
     @UiField
     public SimplePanel tableContainer;
 
-    final protected RulesDefinitionTable<R> table;
+    final protected RulesetTable<R> table;
     final AssetBrowser assetBrowser;
     P presenter;
 
@@ -62,12 +62,12 @@ public abstract class AbstractRulesList<P extends RulesList.Presenter<R>, R exte
 
         initComposite();
 
-        table = new RulesDefinitionTable<>(managerMessages, tableStyle, formTableStyle);
+        table = new RulesetTable<>(managerMessages, tableStyle, formTableStyle);
         table.getSelectionModel().addSelectionChangeHandler(event -> {
                 R selected;
                 if ((selected = table.getSelectedObject()) != null
                     && presenter != null) {
-                    presenter.onRulesDefinitionSelected(selected);
+                    presenter.onRulesetSelected(selected);
                 }
             }
         );
@@ -94,9 +94,9 @@ public abstract class AbstractRulesList<P extends RulesList.Presenter<R>, R exte
     }
 
     @Override
-    public void setRulesDefinitions(R[] definitions) {
-        tableContainer.setVisible(definitions.length > 0);
-        table.setRowData(Arrays.asList(definitions));
+    public void setRulesets(R[] rulesets) {
+        tableContainer.setVisible(rulesets.length > 0);
+        table.setRowData(Arrays.asList(rulesets));
         table.flush();
     }
 

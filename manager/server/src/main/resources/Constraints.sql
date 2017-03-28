@@ -7,10 +7,10 @@ alter table ASSET
 alter table ASSET_DATAPOINT
   add foreign key (ENTITY_ID) references ASSET (ID) on delete cascade;
 
-alter table TENANT_RULES
+alter table TENANT_RULESET
   add foreign key (REALM_ID) references REALM (ID);
 
-alter table ASSET_RULES
+alter table ASSET_RULESET
   add foreign key (ASSET_ID) references ASSET (ID) on delete cascade;
 
 alter table DEVICE_NOTIFICATION_TOKEN

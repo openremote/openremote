@@ -23,12 +23,10 @@ import com.github.nmorel.gwtjackson.client.ObjectMapper;
 import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
 import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
 import org.openremote.manager.shared.http.EntityReader;
-import org.openremote.manager.shared.http.EntityWriter;
-import org.openremote.manager.shared.rules.GlobalRulesDefinition;
+import org.openremote.manager.shared.rules.GlobalRuleset;
 
-@JsonMixIns({@JsonMixIns.JsonMixIn(target = GlobalRulesDefinition.class, mixIn = DefaultJsonMixin.class)})
-public interface GlobalRulesDefinitionMapper
-    extends ObjectMapper<GlobalRulesDefinition>,
-    EntityReader<GlobalRulesDefinition>,
-    EntityWriter<GlobalRulesDefinition> {
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = GlobalRuleset.class, mixIn = DefaultJsonMixin.class)})
+public interface GlobalRulesetArrayMapper
+    extends ObjectMapper<GlobalRuleset[]>,
+    EntityReader<GlobalRuleset[]> {
 }

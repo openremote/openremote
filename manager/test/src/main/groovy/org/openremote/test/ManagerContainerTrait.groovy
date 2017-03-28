@@ -16,7 +16,7 @@ import org.openremote.manager.server.i18n.I18NService
 import org.openremote.manager.server.map.MapService
 import org.openremote.manager.server.notification.NotificationService
 import org.openremote.manager.server.rules.RulesService
-import org.openremote.manager.server.rules.RulesStorageService
+import org.openremote.manager.server.rules.RulesetStorageService
 import org.openremote.manager.server.security.ManagerIdentityService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.web.ManagerWebService
@@ -31,7 +31,7 @@ trait ManagerContainerTrait extends ContainerTrait {
                 new ManagerIdentityService(),
                 new SetupService(),
                 new EventService(),
-                new RulesStorageService(),
+                new RulesetStorageService(),
                 new RulesService(),
                 new AssetStorageService(),
                 new AssetDatapointService(),

@@ -30,8 +30,8 @@ import org.openremote.manager.client.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.rules.RulesModule;
 import org.openremote.manager.shared.asset.AssetResource;
-import org.openremote.manager.shared.rules.AssetRulesDefinition;
-import org.openremote.manager.shared.rules.RulesResource;
+import org.openremote.manager.shared.rules.AssetRuleset;
+import org.openremote.manager.shared.rules.RulesetResource;
 import org.openremote.model.asset.Asset;
 
 import javax.inject.Inject;
@@ -46,8 +46,8 @@ public class AssetRulesListActivity
     final AssetRulesList view;
     final AssetResource assetResource;
     final AssetMapper assetMapper;
-    final AssetRulesDefinitionArrayMapper assetRulesDefinitionArrayMapper;
-    final RulesResource rulesResource;
+    final AssetRulesetArrayMapper assetRulesetArrayMapper;
+    final RulesetResource rulesetResource;
 
     String assetId;
     Asset asset;
@@ -58,14 +58,14 @@ public class AssetRulesListActivity
                                   AssetRulesList view,
                                   AssetResource assetResource,
                                   AssetMapper assetMapper,
-                                  AssetRulesDefinitionArrayMapper assetRulesDefinitionArrayMapper,
-                                  RulesResource rulesResource) {
+                                  AssetRulesetArrayMapper assetRulesetArrayMapper,
+                                  RulesetResource rulesetResource) {
         super(environment, assetBrowserPresenter);
         this.view = view;
         this.assetResource = assetResource;
         this.assetMapper = assetMapper;
-        this.assetRulesDefinitionArrayMapper = assetRulesDefinitionArrayMapper;
-        this.rulesResource = rulesResource;
+        this.assetRulesetArrayMapper = assetRulesetArrayMapper;
+        this.rulesetResource = rulesetResource;
     }
 
     @Override
@@ -95,10 +95,10 @@ public class AssetRulesListActivity
             });
 
             environment.getRequestService().execute(
-                assetRulesDefinitionArrayMapper,
-                params -> rulesResource.getAssetDefinitions(params, assetId),
+                assetRulesetArrayMapper,
+                params -> rulesetResource.getAssetRulesets(params, assetId),
                 200,
-                view::setRulesDefinitions,
+                view::setRulesets,
                 ex -> handleRequestException(ex, environment)
             );
         }
@@ -111,8 +111,8 @@ public class AssetRulesListActivity
     }
 
     @Override
-    public void onRulesDefinitionSelected(AssetRulesDefinition definition) {
-        environment.getPlaceController().goTo(new AssetRulesEditorPlace(assetId, definition.getId()));
+    public void onRulesetSelected(AssetRuleset ruleset) {
+        environment.getPlaceController().goTo(new AssetRulesEditorPlace(assetId, ruleset.getId()));
     }
 
     @Override

@@ -29,11 +29,10 @@ import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTableStyle;
 import org.openremote.manager.client.widget.FormTable;
 import org.openremote.manager.client.widget.IconCell;
-import org.openremote.manager.shared.rules.RulesDefinition;
-import org.openremote.manager.shared.rules.TenantRulesDefinition;
+import org.openremote.manager.shared.rules.Ruleset;
 import org.openremote.model.Constants;
 
-public class RulesDefinitionTable<R extends RulesDefinition> extends FormTable<R> {
+public class RulesetTable<R extends Ruleset> extends FormTable<R> {
 
     static protected DateTimeFormat dateTimeFormat = DateTimeFormat.getFormat(Constants.DEFAULT_DATETIME_FORMAT);
 
@@ -53,35 +52,35 @@ public class RulesDefinitionTable<R extends RulesDefinition> extends FormTable<R
 
     final protected TextColumn<R> nameColumn = new TextColumn<R>() {
         @Override
-        public String getValue(R definition) {
-            return definition.getName();
+        public String getValue(R ruleset) {
+            return ruleset.getName();
         }
     };
 
     final protected TextColumn<R> createOnColumn = new TextColumn<R>() {
         @Override
-        public String getValue(R definition) {
-            return definition.getCreatedOn() != null ? dateTimeFormat.format(definition.getCreatedOn()) : "-";
+        public String getValue(R ruleset) {
+            return ruleset.getCreatedOn() != null ? dateTimeFormat.format(ruleset.getCreatedOn()) : "-";
         }
     };
 
     final protected TextColumn<R> lastModifiedColumn = new TextColumn<R>() {
         @Override
-        public String getValue(R definition) {
-            return definition.getLastModified() != null ? dateTimeFormat.format(definition.getLastModified()) : "-";
+        public String getValue(R ruleset) {
+            return ruleset.getLastModified() != null ? dateTimeFormat.format(ruleset.getLastModified()) : "-";
         }
     };
 
     final protected Column<R, String> enabledColumn = new Column<R, String>(new IconCell()) {
         @Override
-        public String getValue(R def) {
-            return def.isEnabled() ? "check-circle" : "circle-thin";
+        public String getValue(R ruleset) {
+            return ruleset.isEnabled() ? "check-circle" : "circle-thin";
         }
     };
 
-    public RulesDefinitionTable(ManagerMessages managerMessages,
-                                Style style,
-                                FormTableStyle formTableStyle) {
+    public RulesetTable(ManagerMessages managerMessages,
+                        Style style,
+                        FormTableStyle formTableStyle) {
         super(Integer.MAX_VALUE, formTableStyle);
 
         this.style = style;

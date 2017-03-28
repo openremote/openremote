@@ -68,6 +68,16 @@ public class AttributesEditor
     }
 
     @Override
+    protected String getAttributeLabel(AssetAttribute attribute) {
+        return attribute.getName();
+    }
+
+    @Override
+    protected String getAttributeDescription(AssetAttribute attribute) {
+        return null;
+    }
+
+    @Override
     public void setOpaque(boolean opaque) {
         super.setOpaque(opaque);
         newAttributeGroup.setOpaque(opaque);

@@ -27,12 +27,12 @@ import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.rules.AbstractRulesList;
 import org.openremote.manager.client.style.FormTableStyle;
 import org.openremote.manager.client.widget.FlexSplitPanel;
-import org.openremote.manager.shared.rules.AssetRulesDefinition;
+import org.openremote.manager.shared.rules.AssetRuleset;
 
 import javax.inject.Inject;
 
 public class AssetRulesListImpl
-    extends AbstractRulesList<AssetRulesList.Presenter, AssetRulesDefinition>
+    extends AbstractRulesList<AssetRulesList.Presenter, AssetRuleset>
     implements AssetRulesList {
 
     @UiField

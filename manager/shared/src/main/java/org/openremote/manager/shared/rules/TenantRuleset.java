@@ -22,51 +22,40 @@ package org.openremote.manager.shared.rules;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
-import javax.persistence.Transient;
 import java.util.Date;
 
 /**
  * Rules that can only be triggered by asset modifications in a particular
- * asset subtree, and can only modify asset data in a particular asset subtree.
+ * realm, and can only modify asset data in a particular realm.
  */
 @Entity
-@Table(name = "ASSET_RULES")
-public class AssetRulesDefinition extends RulesDefinition {
+@Table(name = "TENANT_RULESET")
+public class TenantRuleset extends Ruleset {
 
-    @Column(name = "ASSET_ID", nullable = false)
-    protected String assetId;
-
-    @Transient
+    @Column(name = "REALM_ID", nullable = false)
     protected String realmId;
 
-    public AssetRulesDefinition() {
+    public TenantRuleset() {
     }
 
-    public AssetRulesDefinition(String assetId) {
-        this.assetId = assetId;
-    }
-
-    public AssetRulesDefinition(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String assetId) {
-        this(id, version, createdOn, lastModified, name, enabled, null, null, assetId);
-    }
-
-    public AssetRulesDefinition(String name, String assetId, String rules) {
-        super(name, rules);
-        this.assetId = assetId;
-    }
-
-    public AssetRulesDefinition(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, String assetId, String realmId) {
-        super(id, version, createdOn, lastModified, name, enabled, rules);
-        this.assetId = assetId;
+    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String realmId) {
+        super(id, version, createdOn, lastModified, name, enabled);
         this.realmId = realmId;
     }
 
-    public String getAssetId() {
-        return assetId;
+    public TenantRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules, String realmId) {
+        super(id, version, createdOn, lastModified, name, enabled, rules);
+        this.realmId = realmId;
     }
 
-    public void setAssetId(String assetId) {
-        this.assetId = assetId;
+    public TenantRuleset(String realmId) {
+        this(null, realmId, null);
+
+    }
+
+    public TenantRuleset(String name, String realmId, String rules) {
+        super(name, rules);
+        this.realmId = realmId;
     }
 
     public String getRealmId() {
@@ -80,13 +69,13 @@ public class AssetRulesDefinition extends RulesDefinition {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-                "id='" + id + '\'' +
-                ", version='" + version + '\'' +
-                ", name='" + name + '\'' +
-                ", createdOn='" + createdOn + '\'' +
-                ", lastModified='" + lastModified + '\'' +
-                ", enabled='" + enabled + '\'' +
-                ", assetId='" + assetId + '\'' +
-                '}';
+            "id='" + id + '\'' +
+            ", version='" + version + '\'' +
+            ", name='" + name + '\'' +
+            ", createdOn='" + createdOn + '\'' +
+            ", lastModified='" + lastModified + '\'' +
+            ", enabled='" + enabled + '\'' +
+            ", realmId='" + realmId + '\'' +
+            '}';
     }
 }

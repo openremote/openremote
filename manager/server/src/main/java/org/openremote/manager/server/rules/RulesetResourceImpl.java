@@ -23,10 +23,10 @@ import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.http.RequestParams;
-import org.openremote.manager.shared.rules.AssetRulesDefinition;
-import org.openremote.manager.shared.rules.GlobalRulesDefinition;
-import org.openremote.manager.shared.rules.RulesResource;
-import org.openremote.manager.shared.rules.TenantRulesDefinition;
+import org.openremote.manager.shared.rules.AssetRuleset;
+import org.openremote.manager.shared.rules.GlobalRuleset;
+import org.openremote.manager.shared.rules.RulesetResource;
+import org.openremote.manager.shared.rules.TenantRuleset;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.asset.Asset;
 
@@ -39,46 +39,46 @@ import java.util.logging.Logger;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 
-public class RulesResourceImpl extends ManagerWebResource implements RulesResource {
+public class RulesetResourceImpl extends ManagerWebResource implements RulesetResource {
 
-    private static final Logger LOG = Logger.getLogger(RulesResourceImpl.class.getName());
+    private static final Logger LOG = Logger.getLogger(RulesetResourceImpl.class.getName());
 
-    final protected RulesStorageService rulesStorageService;
+    final protected RulesetStorageService rulesetStorageService;
     final protected AssetStorageService assetStorageService;
 
-    public RulesResourceImpl(ManagerIdentityService identityService,
-                             RulesStorageService rulesStorageService,
-                             AssetStorageService assetStorageService) {
+    public RulesetResourceImpl(ManagerIdentityService identityService,
+                               RulesetStorageService rulesetStorageService,
+                               AssetStorageService assetStorageService) {
         super(identityService);
-        this.rulesStorageService = rulesStorageService;
+        this.rulesetStorageService = rulesetStorageService;
         this.assetStorageService = assetStorageService;
     }
 
     /* ################################################################################################# */
 
     @Override
-    public GlobalRulesDefinition[] getGlobalDefinitions(@BeanParam RequestParams requestParams) {
+    public GlobalRuleset[] getGlobalRulesets(@BeanParam RequestParams requestParams) {
         if (!isSuperUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        List<GlobalRulesDefinition> result = rulesStorageService.findGlobalDefinitions();
-        return result.toArray(new GlobalRulesDefinition[result.size()]);
+        List<GlobalRuleset> result = rulesetStorageService.findGlobalRulesets();
+        return result.toArray(new GlobalRuleset[result.size()]);
     }
 
     @Override
-    public TenantRulesDefinition[] getTenantDefinitions(@BeanParam RequestParams requestParams, String realmId) {
+    public TenantRuleset[] getTenantRulesets(@BeanParam RequestParams requestParams, String realmId) {
         if (!isRealmAccessibleByUser(realmId) || isRestrictedUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        List<TenantRulesDefinition> result = rulesStorageService.findTenantDefinitions(realmId);
-        return result.toArray(new TenantRulesDefinition[result.size()]);
+        List<TenantRuleset> result = rulesetStorageService.findTenantRulesets(realmId);
+        return result.toArray(new TenantRuleset[result.size()]);
     }
 
     @Override
-    public AssetRulesDefinition[] getAssetDefinitions(@BeanParam RequestParams requestParams, String assetId) {
+    public AssetRuleset[] getAssetRulesets(@BeanParam RequestParams requestParams, String assetId) {
         Asset asset = assetStorageService.find(assetId, false);
         if (asset == null)
-            return new AssetRulesDefinition[0];
+            return new AssetRuleset[0];
 
         if (!isRealmAccessibleByUser(asset.getTenantRealm())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
@@ -86,56 +86,56 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), assetId)) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        List<AssetRulesDefinition> result = rulesStorageService.findAssetDefinitions(asset.getRealmId(), assetId);
-        return result.toArray(new AssetRulesDefinition[result.size()]);
+        List<AssetRuleset> result = rulesetStorageService.findAssetRulesets(asset.getRealmId(), assetId);
+        return result.toArray(new AssetRuleset[result.size()]);
     }
 
     /* ################################################################################################# */
 
     @Override
-    public void createGlobalDefinition(@BeanParam RequestParams requestParams, GlobalRulesDefinition rulesDefinition) {
+    public void createGlobalRuleset(@BeanParam RequestParams requestParams, GlobalRuleset ruleset) {
         if (!isSuperUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        rulesStorageService.merge(rulesDefinition);
+        rulesetStorageService.merge(ruleset);
     }
 
     @Override
-    public GlobalRulesDefinition getGlobalDefinition(@BeanParam RequestParams requestParams, Long id) {
+    public GlobalRuleset getGlobalRuleset(@BeanParam RequestParams requestParams, Long id) {
         if (!isSuperUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        GlobalRulesDefinition existingDefinition = rulesStorageService.findById(GlobalRulesDefinition.class, id);
-        if (existingDefinition == null) {
+        GlobalRuleset ruleset = rulesetStorageService.findById(GlobalRuleset.class, id);
+        if (ruleset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        return existingDefinition;
+        return ruleset;
     }
 
     @Override
-    public void updateGlobalDefinition(@BeanParam RequestParams requestParams, Long id, GlobalRulesDefinition rulesDefinition) {
+    public void updateGlobalRuleset(@BeanParam RequestParams requestParams, Long id, GlobalRuleset ruleset) {
         if (!isSuperUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        GlobalRulesDefinition existingDefinition = rulesStorageService.findById(GlobalRulesDefinition.class, id);
-        if (existingDefinition == null)
+        GlobalRuleset existingRuleset = rulesetStorageService.findById(GlobalRuleset.class, id);
+        if (existingRuleset == null)
             throw new WebApplicationException(NOT_FOUND);
-        rulesStorageService.merge(rulesDefinition);
+        rulesetStorageService.merge(ruleset);
     }
 
     @Override
-    public void deleteGlobalDefinition(@BeanParam RequestParams requestParams, Long id) {
+    public void deleteGlobalRuleset(@BeanParam RequestParams requestParams, Long id) {
         if (!isSuperUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        rulesStorageService.delete(GlobalRulesDefinition.class, id);
+        rulesetStorageService.delete(GlobalRuleset.class, id);
     }
 
     /* ################################################################################################# */
 
     @Override
-    public void createTenantDefinition(@BeanParam RequestParams requestParams, TenantRulesDefinition rulesDefinition) {
-        Tenant tenant = identityService.getTenant(rulesDefinition.getRealmId());
+    public void createTenantRuleset(@BeanParam RequestParams requestParams, TenantRuleset ruleset) {
+        Tenant tenant = identityService.getTenant(ruleset.getRealmId());
         if (tenant == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
@@ -143,16 +143,16 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
             LOG.fine("Forbidden access for user '" + getUsername() + "': " + tenant);
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        rulesStorageService.merge(rulesDefinition);
+        rulesetStorageService.merge(ruleset);
     }
 
     @Override
-    public TenantRulesDefinition getTenantDefinition(@BeanParam RequestParams requestParams, Long id) {
-        TenantRulesDefinition rulesDefinition = rulesStorageService.findById(TenantRulesDefinition.class, id);
-        if (rulesDefinition == null) {
+    public TenantRuleset getTenantRuleset(@BeanParam RequestParams requestParams, Long id) {
+        TenantRuleset ruleset = rulesetStorageService.findById(TenantRuleset.class, id);
+        if (ruleset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        Tenant tenant = identityService.getTenant(rulesDefinition.getRealmId());
+        Tenant tenant = identityService.getTenant(ruleset.getRealmId());
         if (tenant == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
@@ -160,16 +160,16 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
             LOG.fine("Forbidden access for user '" + getUsername() + "': " + tenant);
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        return rulesDefinition;
+        return ruleset;
     }
 
     @Override
-    public void updateTenantDefinition(@BeanParam RequestParams requestParams, Long id, TenantRulesDefinition rulesDefinition) {
-        TenantRulesDefinition existingDefinition = rulesStorageService.findById(TenantRulesDefinition.class, id);
-        if (existingDefinition == null) {
+    public void updateTenantRuleset(@BeanParam RequestParams requestParams, Long id, TenantRuleset ruleset) {
+        TenantRuleset existingRuleset = rulesetStorageService.findById(TenantRuleset.class, id);
+        if (existingRuleset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        Tenant tenant = identityService.getTenant(existingDefinition.getRealmId());
+        Tenant tenant = identityService.getTenant(existingRuleset.getRealmId());
         if (tenant == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
@@ -177,36 +177,36 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
             LOG.fine("Forbidden access for user '" + getUsername() + "': " + tenant);
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        if (!id.equals(rulesDefinition.getId())) {
-            throw new WebApplicationException("Requested ID and definition ID don't match", BAD_REQUEST);
+        if (!id.equals(ruleset.getId())) {
+            throw new WebApplicationException("Requested ID and ruleset ID don't match", BAD_REQUEST);
         }
-        if (!existingDefinition.getRealmId().equals(rulesDefinition.getRealmId())) {
-            throw new WebApplicationException("Requested realm and existing definition realm must match", BAD_REQUEST);
+        if (!existingRuleset.getRealmId().equals(ruleset.getRealmId())) {
+            throw new WebApplicationException("Requested realm and existing ruleset realm must match", BAD_REQUEST);
         }
-        rulesStorageService.merge(rulesDefinition);
+        rulesetStorageService.merge(ruleset);
     }
 
     @Override
-    public void deleteTenantDefinition(@BeanParam RequestParams requestParams, Long id) {
-        TenantRulesDefinition rulesDefinition = rulesStorageService.findById(TenantRulesDefinition.class, id);
-        if (rulesDefinition == null) {
+    public void updateTenantRuleset(@BeanParam RequestParams requestParams, Long id) {
+        TenantRuleset ruleset = rulesetStorageService.findById(TenantRuleset.class, id);
+        if (ruleset == null) {
             return;
         }
-        Tenant tenant = identityService.getTenant(rulesDefinition.getRealmId());
+        Tenant tenant = identityService.getTenant(ruleset.getRealmId());
         if (tenant == null) {
             throw new WebApplicationException(BAD_REQUEST);
         }
         if (!isTenantActiveAndAccessible(tenant) || isRestrictedUser()) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        rulesStorageService.delete(TenantRulesDefinition.class, id);
+        rulesetStorageService.delete(TenantRuleset.class, id);
     }
 
     /* ################################################################################################# */
 
     @Override
-    public void createAssetDefinition(@BeanParam RequestParams requestParams, AssetRulesDefinition rulesDefinition) {
-        String assetId = rulesDefinition.getAssetId();
+    public void createAssetRuleset(@BeanParam RequestParams requestParams, AssetRuleset ruleset) {
+        String assetId = ruleset.getAssetId();
         if (assetId == null || assetId.length() == 0) {
             throw new WebApplicationException("Missing asset identifier value", BAD_REQUEST);
         }
@@ -220,16 +220,16 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        rulesStorageService.merge(rulesDefinition);
+        rulesetStorageService.merge(ruleset);
     }
 
     @Override
-    public AssetRulesDefinition getAssetDefinition(@BeanParam RequestParams requestParams, Long id) {
-        AssetRulesDefinition existingDefinition = rulesStorageService.findById(AssetRulesDefinition.class, id);
-        if (existingDefinition == null) {
+    public AssetRuleset getAssetRuleset(@BeanParam RequestParams requestParams, Long id) {
+        AssetRuleset ruleset = rulesetStorageService.findById(AssetRuleset.class, id);
+        if (ruleset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        Asset asset = assetStorageService.find(existingDefinition.getAssetId(), false);
+        Asset asset = assetStorageService.find(ruleset.getAssetId(), false);
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
@@ -239,16 +239,16 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        return existingDefinition;
+        return ruleset;
     }
 
     @Override
-    public void updateAssetDefinition(@BeanParam RequestParams requestParams, Long id, AssetRulesDefinition rulesDefinition) {
-        AssetRulesDefinition existingDefinition = rulesStorageService.findById(AssetRulesDefinition.class, id);
-        if (existingDefinition == null) {
+    public void updateAssetRuleset(@BeanParam RequestParams requestParams, Long id, AssetRuleset ruleset) {
+        AssetRuleset existingRuleset = rulesetStorageService.findById(AssetRuleset.class, id);
+        if (existingRuleset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
-        Asset asset = assetStorageService.find(existingDefinition.getAssetId(), false);
+        Asset asset = assetStorageService.find(existingRuleset.getAssetId(), false);
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
@@ -258,22 +258,22 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        if (!id.equals(rulesDefinition.getId())) {
-            throw new WebApplicationException("Requested ID and definition ID don't match", BAD_REQUEST);
+        if (!id.equals(ruleset.getId())) {
+            throw new WebApplicationException("Requested ID and ruleset ID don't match", BAD_REQUEST);
         }
-        if (!existingDefinition.getAssetId().equals(rulesDefinition.getAssetId())) {
-            throw new WebApplicationException("Can't update asset ID, delete and create the definition to reassign", BAD_REQUEST);
+        if (!existingRuleset.getAssetId().equals(ruleset.getAssetId())) {
+            throw new WebApplicationException("Can't update asset ID, delete and create the ruleset to reassign", BAD_REQUEST);
         }
-        rulesStorageService.merge(rulesDefinition);
+        rulesetStorageService.merge(ruleset);
     }
 
     @Override
-    public void deleteAssetDefinition(@BeanParam RequestParams requestParams, Long id) {
-        AssetRulesDefinition existingDefinition = rulesStorageService.findById(AssetRulesDefinition.class, id);
-        if (existingDefinition == null) {
+    public void deletAssetRuleset(@BeanParam RequestParams requestParams, Long id) {
+        AssetRuleset ruleset = rulesetStorageService.findById(AssetRuleset.class, id);
+        if (ruleset == null) {
             return;
         }
-        Asset asset = assetStorageService.find(existingDefinition.getAssetId(), false);
+        Asset asset = assetStorageService.find(ruleset.getAssetId(), false);
         if (asset == null) {
             throw new WebApplicationException(NOT_FOUND);
         }
@@ -283,7 +283,7 @@ public class RulesResourceImpl extends ManagerWebResource implements RulesResour
         if (isRestrictedUser() && !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
-        rulesStorageService.delete(AssetRulesDefinition.class, id);
+        rulesetStorageService.delete(AssetRuleset.class, id);
     }
 
 }

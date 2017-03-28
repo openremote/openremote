@@ -23,7 +23,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import org.openremote.container.Container;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.manager.server.asset.AssetStorageService;
-import org.openremote.manager.server.rules.RulesStorageService;
+import org.openremote.manager.server.rules.RulesetStorageService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 
 public abstract class AbstractManagerSetup implements Setup {
@@ -31,7 +31,7 @@ public abstract class AbstractManagerSetup implements Setup {
     final protected PersistenceService persistenceService;
     final protected ManagerIdentityService identityService;
     final protected AssetStorageService assetStorageService;
-    final protected RulesStorageService rulesStorageService;
+    final protected RulesetStorageService rulesetStorageService;
     final protected GeometryFactory geometryFactory = new GeometryFactory();
     final protected SetupService setupService;
 
@@ -39,7 +39,7 @@ public abstract class AbstractManagerSetup implements Setup {
         this.persistenceService = container.getService(PersistenceService.class);
         this.identityService = container.getService(ManagerIdentityService.class);
         this.assetStorageService = container.getService(AssetStorageService.class);
-        this.rulesStorageService = container.getService(RulesStorageService.class);
+        this.rulesetStorageService = container.getService(RulesetStorageService.class);
         this.setupService = container.getService(SetupService.class);
     }
 

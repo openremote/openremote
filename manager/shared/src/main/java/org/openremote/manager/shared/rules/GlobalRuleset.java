@@ -27,21 +27,21 @@ import java.util.Date;
  * Rules that apply to all realms and assets, for the whole system.
  */
 @Entity
-@Table(name = "GLOBAL_RULES")
-public class GlobalRulesDefinition extends RulesDefinition {
+@Table(name = "GLOBAL_RULESET")
+public class GlobalRuleset extends Ruleset {
 
-    public GlobalRulesDefinition() {
+    public GlobalRuleset() {
     }
 
-    public GlobalRulesDefinition(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled) {
+    public GlobalRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled) {
         super(id, version, createdOn, lastModified, name, enabled);
     }
 
-    public GlobalRulesDefinition(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules) {
+    public GlobalRuleset(long id, long version, Date createdOn, Date lastModified, String name, boolean enabled, String rules) {
         super(id, version, createdOn, lastModified, name, enabled, rules);
     }
 
-    public GlobalRulesDefinition(String name, String rules) {
+    public GlobalRuleset(String name, String rules) {
         super(name, rules);
     }
 

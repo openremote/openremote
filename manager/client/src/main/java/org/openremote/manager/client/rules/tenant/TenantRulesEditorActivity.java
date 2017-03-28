@@ -31,8 +31,8 @@ import org.openremote.manager.client.rules.RulesEditor;
 import org.openremote.manager.shared.http.EntityReader;
 import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.manager.shared.http.RequestParams;
-import org.openremote.manager.shared.rules.RulesResource;
-import org.openremote.manager.shared.rules.TenantRulesDefinition;
+import org.openremote.manager.shared.rules.RulesetResource;
+import org.openremote.manager.shared.rules.TenantRuleset;
 import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.model.Consumer;
 
@@ -42,11 +42,11 @@ import java.util.Collection;
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
 public class TenantRulesEditorActivity
-    extends AbstractRulesEditorActivity<TenantRulesDefinition, TenantRulesEditorPlace> {
+    extends AbstractRulesEditorActivity<TenantRuleset, TenantRulesEditorPlace> {
 
     final TenantMapper tenantMapper;
     final TenantResource tenantResource;
-    final TenantRulesDefinitionMapper tenantRulesDefinitionMapper;
+    final TenantRulesetMapper tenantRulesetMapper;
 
     String realmId;
 
@@ -54,14 +54,14 @@ public class TenantRulesEditorActivity
     public TenantRulesEditorActivity(Environment environment,
                                      AssetBrowser.Presenter assetBrowserPresenter,
                                      RulesEditor view,
-                                     RulesResource rulesResource,
+                                     RulesetResource rulesetResource,
                                      TenantMapper tenantMapper,
                                      TenantResource tenantResource,
-                                     TenantRulesDefinitionMapper tenantRulesDefinitionMapper) {
-        super(environment, assetBrowserPresenter, view, rulesResource);
+                                     TenantRulesetMapper tenantRulesetMapper) {
+        super(environment, assetBrowserPresenter, view, rulesetResource);
         this.tenantMapper = tenantMapper;
         this.tenantResource = tenantResource;
-        this.tenantRulesDefinitionMapper = tenantRulesDefinitionMapper;
+        this.tenantRulesetMapper = tenantRulesetMapper;
     }
 
     @Override
@@ -87,28 +87,28 @@ public class TenantRulesEditorActivity
     }
 
     @Override
-    protected TenantRulesDefinition newDefinition() {
-        return new TenantRulesDefinition(realmId);
+    protected TenantRuleset newRuleset() {
+        return new TenantRuleset(realmId);
     }
 
     @Override
-    protected EntityReader<TenantRulesDefinition> getEntityReader() {
-        return tenantRulesDefinitionMapper;
+    protected EntityReader<TenantRuleset> getEntityReader() {
+        return tenantRulesetMapper;
     }
 
     @Override
-    protected Consumer<RequestParams<TenantRulesDefinition>> loadRequestConsumer() {
-        return params -> rulesResource.getTenantDefinition(params, definitionId);
+    protected Consumer<RequestParams<TenantRuleset>> loadRequestConsumer() {
+        return params -> rulesetResource.getTenantRuleset(params, rulesetId);
     }
 
     @Override
-    protected EntityWriter<TenantRulesDefinition> getEntityWriter() {
-        return tenantRulesDefinitionMapper;
+    protected EntityWriter<TenantRuleset> getEntityWriter() {
+        return tenantRulesetMapper;
     }
 
     @Override
     protected Consumer<RequestParams<Void>> createRequestConsumer() {
-        return params -> rulesResource.createTenantDefinition(params, rulesDefinition);
+        return params -> rulesetResource.createTenantRuleset(params, ruleset);
     }
 
     @Override
@@ -118,17 +118,17 @@ public class TenantRulesEditorActivity
 
     @Override
     protected Consumer<RequestParams<Void>> updateRequestConsumer() {
-        return params -> rulesResource.updateTenantDefinition(params, definitionId, rulesDefinition);
+        return params -> rulesetResource.updateTenantRuleset(params, rulesetId, ruleset);
     }
 
     @Override
     protected void afterUpdate() {
-        environment.getPlaceController().goTo(new TenantRulesEditorPlace(realmId, definitionId));
+        environment.getPlaceController().goTo(new TenantRulesEditorPlace(realmId, rulesetId));
     }
 
     @Override
     protected Consumer<RequestParams<Void>> deleteRequestConsumer() {
-        return params -> rulesResource.deleteTenantDefinition(params, definitionId);
+        return params -> rulesetResource.updateTenantRuleset(params, rulesetId);
     }
 
     @Override

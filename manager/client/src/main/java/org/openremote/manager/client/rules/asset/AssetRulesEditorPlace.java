@@ -32,13 +32,13 @@ public class AssetRulesEditorPlace extends RulesEditorPlace {
         this.assetId = assetId;
     }
 
-    public AssetRulesEditorPlace(String assetId, String definitionId) {
-        super(definitionId);
+    public AssetRulesEditorPlace(String assetId, String rulesetId) {
+        super(rulesetId);
         this.assetId = assetId;
     }
 
-    public AssetRulesEditorPlace(String assetId, Long definitionId) {
-        super(definitionId);
+    public AssetRulesEditorPlace(String assetId, Long rulesetId) {
+        super(rulesetId);
         this.assetId = assetId;
     }
 
@@ -69,7 +69,7 @@ public class AssetRulesEditorPlace extends RulesEditorPlace {
             if (place.getAssetId() == null) {
                 return "";
             }
-            return place.getAssetId() + ":" + (place.getDefinitionId() != null ? place.getDefinitionId() : "");
+            return place.getAssetId() + ":" + (place.getRulesetId() != null ? place.getRulesetId() : "");
         }
     }
 }

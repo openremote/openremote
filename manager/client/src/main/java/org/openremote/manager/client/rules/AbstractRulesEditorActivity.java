@@ -31,8 +31,8 @@ import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.http.EntityReader;
 import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.manager.shared.http.RequestParams;
-import org.openremote.manager.shared.rules.RulesDefinition;
-import org.openremote.manager.shared.rules.RulesResource;
+import org.openremote.manager.shared.rules.Ruleset;
+import org.openremote.manager.shared.rules.RulesetResource;
 import org.openremote.manager.shared.validation.ConstraintViolation;
 import org.openremote.model.Consumer;
 
@@ -42,27 +42,27 @@ import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
-public abstract class AbstractRulesEditorActivity<T extends RulesDefinition, PLACE extends RulesEditorPlace>
+public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE extends RulesEditorPlace>
     extends AssetBrowsingActivity<PLACE>
     implements RulesEditor.Presenter {
 
     private static final Logger LOG = Logger.getLogger(AbstractRulesEditorActivity.class.getName());
 
     final protected RulesEditor view;
-    final protected RulesResource rulesResource;
+    final protected RulesetResource rulesetResource;
     final protected Consumer<ConstraintViolation[]> validationErrorHandler;
 
-    protected Long definitionId;
-    protected T rulesDefinition;
+    protected Long rulesetId;
+    protected T ruleset;
 
     @Inject
     public AbstractRulesEditorActivity(Environment environment,
                                        AssetBrowser.Presenter assetBrowserPresenter,
                                        RulesEditor view,
-                                       RulesResource rulesResource) {
+                                       RulesetResource rulesetResource) {
         super(environment, assetBrowserPresenter);
         this.view = view;
-        this.rulesResource = rulesResource;
+        this.rulesetResource = rulesetResource;
 
         validationErrorHandler = violations -> {
             for (ConstraintViolation violation : violations) {
@@ -79,7 +79,7 @@ public abstract class AbstractRulesEditorActivity<T extends RulesDefinition, PLA
 
     @Override
     protected AppActivity<PLACE> init(PLACE place) {
-        definitionId = place.getDefinitionId();
+        rulesetId = place.getRulesetId();
         return this;
     }
 
@@ -97,19 +97,19 @@ public abstract class AbstractRulesEditorActivity<T extends RulesDefinition, PLA
         clearViewFieldErrors();
 
         view.setFormBusy(true);
-        if (definitionId != null) {
+        if (rulesetId != null) {
             environment.getRequestService().execute(
                 getEntityReader(),
                 loadRequestConsumer(),
                 200,
-                rulesDefinition -> {
-                    this.rulesDefinition = rulesDefinition;
+                result -> {
+                    this.ruleset = result;
                     writeToView();
                 },
                 ex -> handleRequestException(ex, environment)
             );
         } else {
-            rulesDefinition = newDefinition();
+            ruleset = newRuleset();
             writeToView();
         }
     }
@@ -154,7 +154,7 @@ public abstract class AbstractRulesEditorActivity<T extends RulesDefinition, PLA
     public void delete() {
         view.showConfirmation(
             environment.getMessages().confirmation(),
-            environment.getMessages().confirmationDelete(rulesDefinition.getName()),
+            environment.getMessages().confirmationDelete(ruleset.getName()),
             () -> {
                 view.setFormBusy(true);
                 view.clearFormMessages();
@@ -170,18 +170,18 @@ public abstract class AbstractRulesEditorActivity<T extends RulesDefinition, PLA
     }
 
     protected void writeToView() {
-        view.setName(rulesDefinition.getName());
-        view.setRulesetEnabled(rulesDefinition.isEnabled());
-        view.setRules(rulesDefinition.getRules());
-        view.enableCreate(definitionId == null);
-        view.enableUpdate(definitionId != null);
-        view.enableDelete(definitionId != null);
+        view.setName(ruleset.getName());
+        view.setRulesetEnabled(ruleset.isEnabled());
+        view.setRules(ruleset.getRules());
+        view.enableCreate(rulesetId == null);
+        view.enableUpdate(rulesetId != null);
+        view.enableDelete(rulesetId != null);
     }
 
     protected void readFromView() {
-        rulesDefinition.setName(view.getName());
-        rulesDefinition.setEnabled(view.getRulesetEnabled());
-        rulesDefinition.setRules(view.getRules());
+        ruleset.setName(view.getName());
+        ruleset.setEnabled(view.getRulesetEnabled());
+        ruleset.setRules(view.getRules());
     }
 
     protected void clearViewFieldErrors() {
@@ -192,7 +192,7 @@ public abstract class AbstractRulesEditorActivity<T extends RulesDefinition, PLA
         return () -> {
             view.setFormBusy(false);
             environment.getEventBus().dispatch(new ShowSuccessEvent(
-                environment.getMessages().rulesetCreated(rulesDefinition.getName())
+                environment.getMessages().rulesetCreated(ruleset.getName())
             ));
             afterCreate();
         };
@@ -202,7 +202,7 @@ public abstract class AbstractRulesEditorActivity<T extends RulesDefinition, PLA
         return () -> {
             view.setFormBusy(false);
             environment.getEventBus().dispatch(new ShowSuccessEvent(
-                environment.getMessages().rulesetUpdated(rulesDefinition.getName())
+                environment.getMessages().rulesetUpdated(ruleset.getName())
             ));
             afterUpdate();
         };
@@ -212,13 +212,13 @@ public abstract class AbstractRulesEditorActivity<T extends RulesDefinition, PLA
         return () -> {
             view.setFormBusy(false);
             environment.getEventBus().dispatch(new ShowSuccessEvent(
-                environment.getMessages().rulesetDeleted(rulesDefinition.getName())
+                environment.getMessages().rulesetDeleted(ruleset.getName())
             ));
             afterDelete();
         };
     }
 
-    abstract protected T newDefinition();
+    abstract protected T newRuleset();
 
     abstract protected EntityReader<T> getEntityReader();
 

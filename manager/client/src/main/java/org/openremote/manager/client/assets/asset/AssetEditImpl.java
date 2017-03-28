@@ -240,6 +240,10 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         super.setFormBusy(busy);
         attributesForm.setBusy(busy);
         submitForm.setBusy(busy);
+        mapWidget.setVisible(!busy);
+        if (!busy)
+            mapWidget.resize();
+        viewButton.setVisible(!busy);
     }
 
     @UiHandler("viewButton")

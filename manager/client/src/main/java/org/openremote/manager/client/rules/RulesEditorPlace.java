@@ -21,28 +21,28 @@ package org.openremote.manager.client.rules;
 
 public class RulesEditorPlace extends RulesPlace {
 
-    final protected Long definitionId;
+    final protected Long rulesetId;
 
     public RulesEditorPlace() {
-        this.definitionId = null;
+        this.rulesetId = null;
     }
 
-    public RulesEditorPlace(String definitionId) {
-        this(definitionId != null ? Long.valueOf(definitionId) : null);
+    public RulesEditorPlace(String rulesetId) {
+        this(rulesetId != null ? Long.valueOf(rulesetId) : null);
     }
 
-    public RulesEditorPlace(Long definitionId) {
-        this.definitionId = definitionId;
+    public RulesEditorPlace(Long rulesetId) {
+        this.rulesetId = rulesetId;
     }
 
-    public Long getDefinitionId() {
-        return definitionId;
+    public Long getRulesetId() {
+        return rulesetId;
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "definitionId=" + definitionId +
+            "rulesetId=" + rulesetId +
             '}';
     }
 }
