@@ -18,21 +18,26 @@ class ViewController: UIViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(isAuthenticated), name: notificationName, object: nil)
     }
     
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        showLoginPage()
+    }
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
     }
     
-    @IBAction func showLoginPage(_ sender: Any) {
+    func showLoginPage() {
         if (TokenManager.sharedInstance.hasToken) {
             let orVC = ORViewcontroller()
-            self.navigationController?.pushViewController(orVC, animated: true)
+            self.present(orVC, animated: true, completion: nil)
         } else {
             TokenManager.sharedInstance.authenticate()
         }
     }
     
     func isAuthenticated() {
-        showLoginPage(self)
+        showLoginPage()
     }
 }
 
