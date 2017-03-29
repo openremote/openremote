@@ -3,6 +3,7 @@ package org.openremote.test.rules
 import elemental.json.Json
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
+import org.openremote.manager.server.rules.RulesDeployment
 import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
@@ -29,21 +30,20 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         def rulesService = container.getService(RulesService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
+        RulesDeployment customerAEngine
 
         expect: "the rule engines to become available and be running"
         conditions.eventually {
-            def customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
+            customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
             assert customerAEngine != null
             assert customerAEngine.isRunning()
-            assert customerAEngine.allRulesets.find { it.id == rulesDemoSetup.apartmentActionsRulesetId } != null
         }
 
-        /* TODO This is broken, loading facts on startup is not done
         and: "the demo attributes marked with RULES_FACT = true meta should be inserted into the engines"
         conditions.eventually {
-            assert globalEngine.facts.size() == 11
+            assert rulesService.facts.size() == 8
+            assert customerAEngine.facts.size() == 8
         }
-        */
 
         and: "the room lights in an apartment to be on"
         def livingRoomAsset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)

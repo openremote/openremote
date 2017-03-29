@@ -73,7 +73,7 @@ public class AssetUpdate {
 
     final protected AssetType type;
 
-    final protected String[] path;
+    final protected String[] pathFromRoot;
 
     final protected String parentId;
 
@@ -111,7 +111,7 @@ public class AssetUpdate {
         if (asset.getPath() == null) {
             throw new IllegalArgumentException("Asset not loaded completely, empty path: " + asset);
         }
-        this.path = asset.getPath();
+        this.pathFromRoot = asset.getReversePath(); // This is proving more useful than forward path
         this.typeString = asset.getType();
         this.type = asset.getWellKnownType();
         this.createdOn = asset.getCreatedOn();
@@ -147,9 +147,8 @@ public class AssetUpdate {
         return type;
     }
 
-
-    public String[] getPath() {
-        return path;
+    public String[] getPathFromRoot() {
+        return pathFromRoot;
     }
 
     public String getParentId() {
@@ -282,6 +281,19 @@ public class AssetUpdate {
             getValueTimestamp() == that.getValueTimestamp() &&
             ((oldValue == null && that.oldValue == null) || (oldValue != null && JsonUtil.equals(oldValue, that.oldValue))) &&
             oldValueTimestamp == that.oldValueTimestamp;
+    }
+
+    /**
+     * This is here because {@link #getAttribute()} is not always publicly accessible
+     * @param assetUpdate
+     * @return
+     */
+    public boolean attributeRefsEqual(AssetUpdate assetUpdate) {
+        if (assetUpdate == null || assetUpdate.attribute == null) {
+            return false;
+        }
+
+        return assetUpdate.attribute.getAttributeRef().equals(attribute.getAttributeRef());
     }
 
     @Override

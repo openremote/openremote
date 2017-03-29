@@ -36,6 +36,7 @@ import org.kie.api.runtime.conf.ClockTypeOption;
 import org.kie.api.runtime.conf.TimedRuleExectionOption;
 import org.kie.api.runtime.rule.FactHandle;
 import org.kie.api.time.SessionClock;
+import org.kie.internal.command.CommandFactory;
 import org.openremote.container.util.Util;
 import org.openremote.manager.server.asset.AssetProcessingService;
 import org.openremote.manager.server.asset.AssetStorageService;
@@ -81,7 +82,7 @@ public class RulesDeployment<T extends Ruleset> {
     // We need to be able to reference the KieModule dynamically generated for this engine
     // from the singleton KieRepository to do this we need a pom.xml file with a release ID - crazy drools!!
     protected ReleaseId releaseId;
-    protected boolean error;
+    protected Throwable error;
     protected boolean running;
     protected long currentFactCount;
     final protected Map<AssetUpdate, FactHandle> facts = new HashMap<>();
@@ -115,6 +116,10 @@ public class RulesDeployment<T extends Ruleset> {
     }
 
     public boolean isError() {
+        return error != null;
+    }
+
+    public Throwable getError() {
         return error;
     }
 
@@ -212,15 +217,15 @@ public class RulesDeployment<T extends Ruleset> {
                 LOG.info("Added ruleset: " + ruleset);
                 addSuccessful = true;
             }
-        } catch (Throwable t) {
-            LOG.log(Level.SEVERE, "Error in ruleset: " + ruleset, t);
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Error in ruleset: " + ruleset, e);
+            error = e;
             // If compilation failed, remove rules from FileSystem so it won't fail on next pass here if any
             kfs.delete("src/main/resources/" + ruleset.getId());
         }
 
         if (!addSuccessful) {
-            // Prevent knowledge session from running again
-            error = true;
+            error = new RuntimeException("Ruleset contains an error: " + ruleset);
 
             // Update status of each ruleset
             rulesets.forEach((id, rd) -> {
@@ -269,9 +274,8 @@ public class RulesDeployment<T extends Ruleset> {
             .stream()
             .anyMatch(rd -> rd.getDeploymentStatus() == Ruleset.DeploymentStatus.FAILED);
 
-        error = anyFailed;
-
         if (!anyFailed) {
+            error = null;
             rulesets.forEach((id, rd) -> {
                 if (rd.getDeploymentStatus() == Ruleset.DeploymentStatus.READY) {
                     rd.setDeploymentStatus(Ruleset.DeploymentStatus.DEPLOYED);
@@ -335,9 +339,9 @@ public class RulesDeployment<T extends Ruleset> {
         // Use this option to ensure timer rules are fired even in passive mode (triggered by fireAllRules.
         // This ensures compatibility with the behaviour of previously used Drools 5.1
         kieSessionConfiguration.setOption(TimedRuleExectionOption.YES);
-
         try {
             knowledgeSession = kieContainer.newKieSession(kieSessionConfiguration);
+            running = true;
 
             setGlobal("assets", createAssetsFacade());
             setGlobal("LOG", LOG);
@@ -346,17 +350,17 @@ public class RulesDeployment<T extends Ruleset> {
             setGlobal("util", UTIL);
 
             knowledgeSession.addEventListener(ruleExecutionLogger);
-
-            // Insert all the facts into the session
-            Set<Map.Entry<AssetUpdate, FactHandle>> factEntries = facts.entrySet();
-            facts.clear();
-            factEntries.forEach(factEntry -> insertFactIntoSession(factEntry.getKey()));
-        } catch (Throwable t) {
-            error = true;
-            throw new RuntimeException(t);
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Failed to create the rules engine session", e);
+            error = e;
+            stop();
+            throw e;
         }
 
-        running = true;
+        // Insert all the facts into the session
+        List<AssetUpdate> factEntries = new ArrayList<>(facts.keySet());
+        factEntries.forEach(factEntry -> insertFactIntoSession(factEntry, true));
+
         LOG.info("Rule engine started");
         knowledgeSession.fireAllRules();
     }
@@ -374,17 +378,21 @@ public class RulesDeployment<T extends Ruleset> {
             LOG.fine("Knowledge session disposed");
         }
 
-        facts.clear();
         running = false;
     }
 
-    protected synchronized void insertFact(AssetUpdate assetUpdate) {
+    protected synchronized void insertFact(AssetUpdate assetUpdate, boolean silent) {
         // Check if fact already exists using equals()
         if (!facts.containsKey(assetUpdate)) {
             // Delete any existing fact for this attribute ref
             // Put the fact into working memory and store the handle
             retractFact(assetUpdate);
-            insertFactIntoSession(assetUpdate);
+
+            if (isRunning()) {
+                insertFactIntoSession(assetUpdate, silent);
+            } else {
+                facts.put(assetUpdate, null);
+            }
         }
     }
 
@@ -393,7 +401,7 @@ public class RulesDeployment<T extends Ruleset> {
         // If there already is a fact in working memory for this attribute then delete it
         AssetUpdate update = facts.keySet()
                 .stream()
-                .filter(au -> au.getId().equals(assetUpdate.getId()) && au.getAttributeName().equals(assetUpdate.getAttributeName()))
+                .filter(au -> au.attributeRefsEqual(assetUpdate))
                 .findFirst()
                 .orElse(null);
 
@@ -402,7 +410,7 @@ public class RulesDeployment<T extends Ruleset> {
         if (factHandle != null) {
             facts.remove(update);
 
-            if (knowledgeSession != null) {
+            if (isRunning()) {
                 try {
                     // ... retract it from working memory ...
                     LOG.finest("Removed stale fact '" + update + "' in: " + this);
@@ -417,31 +425,40 @@ public class RulesDeployment<T extends Ruleset> {
         }
     }
 
-    protected FactHandle insertFactIntoSession(AssetUpdate assetUpdate) {
+    protected FactHandle insertFactIntoSession(AssetUpdate assetUpdate, boolean silent) {
         FactHandle factHandle = null;
 
-        if (!isError() && isRunning()) {
-            long newFactCount;
-            factHandle = knowledgeSession.insert(assetUpdate);
-            facts.put(assetUpdate, factHandle);
-            LOG.finest("Inserting fact '" + assetUpdate+ "' in: " + this);
+        if (isRunning()) {
+            try {
+                long newFactCount;
+                factHandle = knowledgeSession.insert(assetUpdate);
+                facts.put(assetUpdate, factHandle);
+                LOG.finest("Inserting fact '" + assetUpdate + "' in: " + this);
+                LOG.finest("On " + this + ", firing all rules");
+//                int fireCount = knowledgeSession.fireAllRules();
+                FactHandle finalFactHandle = factHandle;
+                int fireCount = knowledgeSession.fireAllRules((match) -> !silent || !match.getFactHandles().contains(finalFactHandle));
+                LOG.finest("On " + this + ", fired rules count: " + fireCount);
 
-            LOG.finest("On " + this + ", firing all rules");
-            int fireCount = knowledgeSession.fireAllRules();
-            LOG.finest("On " + this + ", fired rules count: " + fireCount);
+                // TODO: Prevent run away fact creation (not sure how we can do this reliably as facts can be generated in rule RHS)
+                // MR: this is heuristic number which comes good for finding facts memory leak in the drl file.
+                // problem - when you are not careful then drl can insert new facts till memory exhaustion. As there
+                // are usually few 100 facts in drl's I'm working with, putting arbitrary number gives me early feedback
+                // that there is potential problem. Perhaps we should think about a better solution to this problem?
+                newFactCount = knowledgeSession.getFactCount();
+                LOG.finest("On " + this + ", new fact count: " + newFactCount);
+                if (newFactCount != currentFactCount) {
+                    LOG.finest("On " + this + ", fact count changed from " + currentFactCount + " to " + newFactCount + " after: " + assetUpdate);
+                }
 
-            // TODO: Prevent run away fact creation (not sure how we can do this reliably as facts can be generated in rule RHS)
-            // MR: this is heuristic number which comes good for finding facts memory leak in the drl file.
-            // problem - when you are not careful then drl can insert new facts till memory exhaustion. As there
-            // are usually few 100 facts in drl's I'm working with, putting arbitrary number gives me early feedback
-            // that there is potential problem. Perhaps we should think about a better solution to this problem?
-            newFactCount = knowledgeSession.getFactCount();
-            LOG.finest("On " + this + ", new fact count: " + newFactCount);
-            if (newFactCount != currentFactCount) {
-                LOG.finest("On " + this + ", fact count changed from " + currentFactCount + " to " + newFactCount + " after: " + assetUpdate);
+                currentFactCount = newFactCount;
+
+            } catch (Exception e) {
+                // We can end up here because of errors in rule RHS - bubble up the cause
+                error = e;
+                stop();
+                throw new RuntimeException(e);
             }
-
-            currentFactCount = newFactCount;
         } else {
             LOG.fine("Engine is in error state or not running (" + toString() + "), ignoring: " + assetUpdate);
         }
@@ -533,7 +550,7 @@ public class RulesDeployment<T extends Ruleset> {
         };
     }
 
-    protected String getRulesetDebug() {
+    protected synchronized String getRulesetDebug() {
         return Arrays.toString(rulesets.values().stream().map(rd ->
             rd.getClass().getSimpleName()
                 + " - "
@@ -544,7 +561,7 @@ public class RulesDeployment<T extends Ruleset> {
     }
 
     @Override
-    public synchronized String toString() {
+    public String toString() {
         return getClass().getSimpleName() + "{" +
             "id='" + id + '\'' +
             ", running='" + running + '\'' +

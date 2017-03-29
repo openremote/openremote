@@ -4,6 +4,7 @@ import elemental.json.Json
 import org.openremote.agent3.protocol.AbstractProtocol
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
+import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.asset.ServerAsset
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
@@ -93,11 +94,28 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def container = startContainer(defaultConfig(serverPort), defaultServices(mockProtocol))
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
+        def rulesService = container.getService(RulesService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         assetProcessingService.processors.add(0, mockStartConsumer)
         assetProcessingService.processors.add(mockEndConsumer)
         //endregion
+
+        // The conditions here depend on how we handle the initial insert of facts into the rule engines
+        //expect: "the demo rule engine should start and trigger the 'Switch room lights off when apartment ALL LIGHTS OFF switch is off' rule and cause attribute events to go through the system"
+        expect: "the demo rule engine should start and trigger the 'Switch room lights off when apartment ALL LIGHTS OFF switch is off' rule and cause attribute events to go through the system"
+        conditions.eventually {
+            def customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
+            assert customerAEngine != null
+            assert customerAEngine.isRunning()
+            assert customerAEngine.rulesets.size() == 1
+            assert updatesPassedStartOfProcessingChain.size() == 0
+            assert updatesReachedEndOfProcessingChain.size() == 0
+        }
+
+        when: "the processing chain counters are reset"
+        updatesPassedStartOfProcessingChain.clear()
+        updatesReachedEndOfProcessingChain.clear()
 
         //region and: "a mock agent that uses the mock protocol is created"
         and: "a mock agent that uses the mock protocol is created"
@@ -157,7 +175,8 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         mockThing = assetStorageService.merge(mockThing)
         //endregion
 
-        expect: "the mock thing to be deployed to the protocol"
+
+        then: "the mock thing to be deployed to the protocol"
         conditions.eventually {
             assert protocolDeployed
         }

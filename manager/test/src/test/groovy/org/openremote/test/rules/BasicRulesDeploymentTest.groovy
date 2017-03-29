@@ -25,7 +25,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
     def "Check basic rules engine deployment"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 5)
+        def conditions = new PollingConditions(timeout: 10)
 
         and: "the container is started"
         def serverPort = findEphemeralPort()
@@ -235,7 +235,8 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         conditions.eventually {
             assert rulesService.globalDeployment.allRulesets.length == 3
             assert rulesService.globalDeployment.running == false
-            assert rulesService.globalDeployment.error == true
+            assert rulesService.globalDeployment.isError()
+            assert rulesService.globalDeployment.error instanceof RuntimeException
             assert rulesService.globalDeployment.allRulesets[0].enabled
             assert rulesService.globalDeployment.allRulesets[0].name == "Some global demo rules"
             assert rulesService.globalDeployment.allRulesets[0].deploymentStatus == DeploymentStatus.READY
@@ -254,7 +255,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         conditions.eventually {
             assert rulesService.globalDeployment.allRulesets.length == 2
             assert rulesService.globalDeployment.running == true
-            assert rulesService.globalDeployment.error == false
+            assert rulesService.globalDeployment.isError() == false
             assert rulesService.globalDeployment.allRulesets[0].enabled
             assert rulesService.globalDeployment.allRulesets[0].name == "Some global demo rules"
             assert rulesService.globalDeployment.allRulesets[0].deploymentStatus == DeploymentStatus.DEPLOYED
