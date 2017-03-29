@@ -70,6 +70,7 @@ public abstract class AbstractProtocol implements Protocol {
                     from(ACTUATOR_TOPIC)
                         .routeId("Actuator-" + getProtocolName())
                         .process(exchange -> {
+                            // TODO Use read/write lock for link/unlink attributes synchronization and additional optional exclusive lock for single-threaded implementors
                             synchronized (linkedAttributes) {
                                 // TODO This could be optimized, we must avoid inspecting all messages (maybe tag with protocol name in header?)
                                 if (isAttributeStateForAny(linkedAttributes.keySet()).matches(exchange)) {
