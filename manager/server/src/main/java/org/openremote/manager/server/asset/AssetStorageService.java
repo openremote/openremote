@@ -118,6 +118,10 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
         return persistenceService.doReturningTransaction(em -> findAll(em, query));
     }
 
+    public List<String> findAllIds(AssetQuery query) {
+        return persistenceService.doReturningTransaction(em -> findAllIdentifiersOnly(em, query));
+    }
+
     /**
      * @return The current stored asset state.
      * @throws IllegalArgumentException if the realm or parent is illegal, or other asset constraint is violated.
@@ -221,7 +225,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
 
     protected List<ServerAsset> findAll(EntityManager em, AssetQuery query) {
         StringBuilder sb = new StringBuilder();
-        sb.append(buildSelectString(query));
+        sb.append(buildSelectString(query, false));
         sb.append(buildFromString(query));
         Pair<String, List<ParameterBinder>> whereClause = buildWhereClause(query);
         sb.append(whereClause.key);
@@ -245,10 +249,42 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
         });
     }
 
-    protected String buildSelectString(AssetQuery query) {
+    protected List<String> findAllIdentifiersOnly(EntityManager em, AssetQuery query) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(buildSelectString(query, true));
+        sb.append(buildFromString(query));
+        Pair<String, List<ParameterBinder>> whereClause = buildWhereClause(query);
+        sb.append(whereClause.key);
+        sb.append(buildOrderByString(query));
+        return em.unwrap(Session.class).doReturningWork(new AbstractReturningWork<List<String>>() {
+            @Override
+            public List<String> execute(Connection connection) throws SQLException {
+                LOG.fine("Preparing asset query (identifiers only projection): " + sb.toString());
+                PreparedStatement st = connection.prepareStatement(sb.toString());
+                for (ParameterBinder binder : whereClause.value) {
+                    binder.accept(st);
+                }
+                try (ResultSet rs = st.executeQuery()) {
+                    List<String> result = new ArrayList<>();
+                    while (rs.next()) {
+                        result.add(rs.getString("ID"));
+                    }
+                    return result;
+                }
+            }
+        });
+    }
+
+    protected String buildSelectString(AssetQuery query, boolean identifiersOnly) {
         StringBuilder sb = new StringBuilder();
 
         sb.append("select ");
+
+        if (identifiersOnly) {
+            sb.append(" A.ID as ID ");
+            return sb.toString();
+        }
+
         sb.append("A.ID as ID, A.OBJ_VERSION as OBJ_VERSION, A.CREATED_ON as CREATED_ON, A.NAME as NAME, A.ASSET_TYPE as ASSET_TYPE, ");
         sb.append("A.PARENT_ID as PARENT_ID, ");
         sb.append(query.parentPredicate != null && query.parentPredicate.noParent
@@ -335,7 +371,6 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
             sb.append(" and A.ID = ? ");
             final int pos = binders.size() + 1;
             binders.add(st -> st.setString(pos, query.id));
-            return new Pair<>(sb.toString(), binders);
         }
 
         if (query.name != null) {

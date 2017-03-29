@@ -25,9 +25,6 @@ import java.util.Locale;
 
 /**
  * Encapsulate asset query restriction, project, and ordering of results.
- * <p>
- * A query returns a collection of {@link Asset} instances, or when the
- * {@link #id} predicate is set, a single instance.
  */
 public class AssetQuery<CHILD extends AssetQuery<CHILD>> {
 
@@ -386,9 +383,6 @@ public class AssetQuery<CHILD extends AssetQuery<CHILD>> {
         return (CHILD) this;
     }
 
-    /**
-     * If this value is set, no other restrictions will be applied and only a single result should be returned.
-     */
     public CHILD id(String id) {
         this.id = id;
         return (CHILD) this;

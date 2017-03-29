@@ -29,27 +29,22 @@ import java.util.List;
  * Facade for writing rules RHS actions, supporting asset queries within the scope
  * of the rule engine.
  */
-public class Assets {
+public abstract class Assets {
 
-    public class RestrictedQuery extends AssetQuery<RestrictedQuery> {
+    public abstract class RestrictedQuery extends AssetQuery<RestrictedQuery> {
 
-        public void applyResult(Consumer<String> assetIdConsumer) {
-            throw new UnsupportedOperationException("TODO Not implemented");
-        }
+        abstract public String getResult();
 
-        public void applyResults(Consumer<List<String>> assetIdListConsumer) {
-            throw new UnsupportedOperationException("TODO Not implemented");
-        }
+        abstract public List<String> getResults();
 
-    }
+        abstract public void applyResult(Consumer<String> assetIdConsumer);
 
-    public RestrictedQuery query() {
-        return new RestrictedQuery();
+        abstract public void applyResults(Consumer<List<String>> assetIdListConsumer);
 
     }
 
-    public void dispatch(AttributeEvent event) {
-        throw new UnsupportedOperationException("TODO Not implemented");
-    }
+    abstract public RestrictedQuery query();
+
+    abstract public void dispatch(AttributeEvent event);
 
 }

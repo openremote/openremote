@@ -297,29 +297,34 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     }
 
     protected void processUpdate(AssetUpdate assetUpdate) {
-        processorLoop:
-        for (Consumer<AssetUpdate> processor : processors) {
-            try {
-                LOG.fine("Processor " + processor + " accepts: " + assetUpdate);
-                processor.accept(assetUpdate);
-            } catch (Throwable t) {
-                LOG.log(Level.SEVERE, "Asset update consumer '" + processor + "' threw an exception whilst consuming the update:" + assetUpdate, t);
-                assetUpdate.setStatus(AssetUpdate.Status.ERROR);
-                assetUpdate.setError(t);
-            }
+        try {
+            LOG.fine(">>> Processing start: " + assetUpdate);
+            processorLoop:
+            for (Consumer<AssetUpdate> processor : processors) {
+                try {
+                    LOG.fine("Processor " + processor + " accepts: " + assetUpdate);
+                    processor.accept(assetUpdate);
+                } catch (Throwable t) {
+                    LOG.log(Level.SEVERE, "Asset update consumer '" + processor + "' threw an exception whilst consuming the update:" + assetUpdate, t);
+                    assetUpdate.setStatus(AssetUpdate.Status.ERROR);
+                    assetUpdate.setError(t);
+                }
 
-            switch (assetUpdate.getStatus()) {
-                case HANDLED:
-                    LOG.fine("Processor " + processor + " finally handled: " + assetUpdate);
-                    break processorLoop;
-                case ERROR:
-                    // TODO Better error handling, not sure we need rewind?
-                    LOG.severe("Asset update status is '" + assetUpdate.getStatus() + "' cannot continue processing");
-                    assetUpdate.setStatus(AssetUpdate.Status.COMPLETED);
-                    throw new RuntimeException("Processor " + processor + " error: " + assetUpdate, assetUpdate.getError());
+                switch (assetUpdate.getStatus()) {
+                    case HANDLED:
+                        LOG.fine("Processor " + processor + " finally handled: " + assetUpdate);
+                        break processorLoop;
+                    case ERROR:
+                        // TODO Better error handling, not sure we need rewind?
+                        LOG.severe("Asset update status is '" + assetUpdate.getStatus() + "' cannot continue processing");
+                        assetUpdate.setStatus(AssetUpdate.Status.COMPLETED);
+                        throw new RuntimeException("Processor " + processor + " error: " + assetUpdate, assetUpdate.getError());
+                }
             }
+            assetUpdate.setStatus(AssetUpdate.Status.COMPLETED);
+        } finally {
+            LOG.fine("<<< Processing complete: " + assetUpdate);
         }
-        assetUpdate.setStatus(AssetUpdate.Status.COMPLETED);
     }
 
     @Override

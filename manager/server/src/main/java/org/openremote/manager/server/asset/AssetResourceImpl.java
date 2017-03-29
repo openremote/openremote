@@ -200,6 +200,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
     }
 
+    // TODO Add tests for this in AssetPermissionsTest
     @Override
     public void writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, String rawJson) {
         try {
@@ -239,6 +240,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
     }
 
+    // TODO Add tests for this in AssetPermissionsTest
     @Override
     public String readAttributeValue(RequestParams requestParams, String assetId, String attributeName) {
         try {

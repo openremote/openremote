@@ -318,7 +318,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.READ_ONLY, Json.create(true))
                     )
                 ),
-            new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Json.create(false))
+            new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Json.create(true))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Light Switch"))
@@ -440,7 +440,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.READ_ONLY, Json.create(true))
                     )
                 ),
-            new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Json.create(false))
+            new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Json.create(true))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Light Switch"))
@@ -502,7 +502,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.READ_ONLY, Json.create(true))
                     )
                 ),
-            new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Json.create(false))
+            new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Json.create(true))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Light Switch"))

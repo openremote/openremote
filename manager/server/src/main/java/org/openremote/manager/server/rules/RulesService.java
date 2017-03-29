@@ -28,6 +28,7 @@ import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.util.Pair;
 import org.openremote.container.util.Util;
+import org.openremote.manager.server.asset.AssetProcessingService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.security.ManagerIdentityService;
@@ -66,6 +67,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     protected RulesetStorageService rulesetStorageService;
     protected ManagerIdentityService identityService;
     protected AssetStorageService assetStorageService;
+    protected AssetProcessingService assetProcessingService;
     protected RulesDeployment<GlobalRuleset> globalDeployment;
     protected final Map<String, RulesDeployment<TenantRuleset>> tenantDeployments = new HashMap<>();
     protected final Map<String, RulesDeployment<AssetRuleset>> assetDeployments = new HashMap<>();
@@ -77,6 +79,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         rulesetStorageService = container.getService(RulesetStorageService.class);
         identityService = container.getService(ManagerIdentityService.class);
         assetStorageService = container.getService(AssetStorageService.class);
+        assetProcessingService = container.getService(AssetProcessingService.class);
         container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
     }
 
@@ -342,7 +345,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     protected synchronized void deployGlobalRuleset(GlobalRuleset ruleset) {
         // Global rules have access to everything in the system
         if (globalDeployment == null) {
-            globalDeployment = new RulesDeployment<>(GlobalRuleset.class, "GLOBAL");
+            globalDeployment = new RulesDeployment<>(assetStorageService, assetProcessingService, GlobalRuleset.class, "GLOBAL");
         }
 
         globalDeployment.insertRuleset(ruleset);
@@ -363,8 +366,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     protected synchronized void deployTenantRuleset(TenantRuleset ruleset) {
         // Look for existing deployment for this tenant
         RulesDeployment<TenantRuleset> deployment = tenantDeployments
-            .computeIfAbsent(ruleset.getRealmId(), (realm) ->
-                new RulesDeployment<>(TenantRuleset.class, ruleset.getRealmId())
+            .computeIfAbsent(ruleset.getRealmId(), (realmId) ->
+                new RulesDeployment<>(assetStorageService, assetProcessingService, TenantRuleset.class, realmId)
             );
 
         deployment.insertRuleset(ruleset);
@@ -414,8 +417,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     protected void deployAssetRuleset(AssetRuleset ruleset) {
         // Look for existing deployment for this asset
         RulesDeployment<AssetRuleset> deployment = assetDeployments
-            .computeIfAbsent(ruleset.getAssetId(), (id) ->
-                new RulesDeployment<>(AssetRuleset.class, id)
+            .computeIfAbsent(ruleset.getAssetId(), (assetId) ->
+                new RulesDeployment<>(assetStorageService, assetProcessingService, AssetRuleset.class, assetId)
             );
 
         deployment.insertRuleset(ruleset);

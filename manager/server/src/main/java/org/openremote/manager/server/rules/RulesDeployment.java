@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.server.rules;
 
-import elemental.json.Json;
 import org.kie.api.KieServices;
 import org.kie.api.builder.KieBuilder;
 import org.kie.api.builder.KieFileSystem;
@@ -38,8 +37,19 @@ import org.kie.api.runtime.conf.TimedRuleExectionOption;
 import org.kie.api.runtime.rule.FactHandle;
 import org.kie.api.time.SessionClock;
 import org.openremote.container.util.Util;
+import org.openremote.manager.server.asset.AssetProcessingService;
+import org.openremote.manager.server.asset.AssetStorageService;
+import org.openremote.manager.server.asset.ServerAsset;
+import org.openremote.manager.shared.rules.AssetRuleset;
+import org.openremote.manager.shared.rules.GlobalRuleset;
+import org.openremote.manager.shared.rules.TenantRuleset;
+import org.openremote.model.AttributeEvent;
+import org.openremote.model.Consumer;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.asset.AssetUpdate;
 import org.openremote.manager.shared.rules.Ruleset;
+import org.openremote.model.rules.Assets;
 
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -53,12 +63,10 @@ public class RulesDeployment<T extends Ruleset> {
 
     public static final Logger LOG = Logger.getLogger(RulesDeployment.class.getName());
 
-    static {
-    /* TODO needed for RHS lambda support?
-        System.setProperty("drools.dialect.java.lngLevel", "1.8");
-        System.setPRoperty("drools.dialect.java.compiler.lnglevel", "1.8");
-    */
-    }
+    final protected AssetStorageService assetStorageService;
+    final protected AssetProcessingService assetProcessingService;
+    final protected  Class<T> rulesetType;
+    final protected String id;
 
     // This is here so Clock Type can be set to pseudo from tests
     protected static ClockTypeOption DefaultClockType;
@@ -73,17 +81,18 @@ public class RulesDeployment<T extends Ruleset> {
     // We need to be able to reference the KieModule dynamically generated for this engine
     // from the singleton KieRepository to do this we need a pom.xml file with a release ID - crazy drools!!
     protected ReleaseId releaseId;
-    protected final String id;
     protected boolean error;
     protected boolean running;
     protected long currentFactCount;
-    protected final Class<T> clazz;
     final protected Map<AssetUpdate, FactHandle> facts = new HashMap<>();
     protected static final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     protected ScheduledFuture startTimer;
 
-    public RulesDeployment(Class<T> clazz, String id) {
-        this.clazz = clazz;
+    public RulesDeployment(AssetStorageService assetStorageService, AssetProcessingService assetProcessingService,
+                           Class<T> rulesetType, String id) {
+        this.assetStorageService = assetStorageService;
+        this.assetProcessingService = assetProcessingService;
+        this.rulesetType = rulesetType;
         this.id = id;
     }
 
@@ -93,7 +102,7 @@ public class RulesDeployment<T extends Ruleset> {
 
     @SuppressWarnings("unchecked")
     public synchronized T[] getAllRulesets() {
-        T[]arr = Util.createArray(rulesets.size(), clazz);
+        T[]arr = Util.createArray(rulesets.size(), rulesetType);
         return rulesets.values().toArray(arr);
     }
 
@@ -330,9 +339,11 @@ public class RulesDeployment<T extends Ruleset> {
         try {
             knowledgeSession = kieContainer.newKieSession(kieSessionConfiguration);
 
-            setGlobal("util", UTIL);
-            setGlobal("JSON", Json.instance());
+            setGlobal("assets", createAssetsFacade());
             setGlobal("LOG", LOG);
+
+            // TODO Still need this UTIL?
+            setGlobal("util", UTIL);
 
             knowledgeSession.addEventListener(ruleExecutionLogger);
 
@@ -436,6 +447,90 @@ public class RulesDeployment<T extends Ruleset> {
         }
 
         return factHandle;
+    }
+
+    protected Assets createAssetsFacade() {
+        return new Assets() {
+            @Override
+            public RestrictedQuery query() {
+                RestrictedQuery query = new RestrictedQuery() {
+
+                    @Override
+                    public RestrictedQuery select(Select select) {
+                        throw new IllegalArgumentException("Overriding query projection is not allowed in this rules scope");
+                    }
+
+                    @Override
+                    public RestrictedQuery id(String id) {
+                        throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
+                    }
+
+                    @Override
+                    public RestrictedQuery tenant(TenantPredicate tenantPredicate) {
+                        if (GlobalRuleset.class.isAssignableFrom(rulesetType))
+                            return super.tenant(tenantPredicate);
+                        throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
+                    }
+
+                    @Override
+                    public RestrictedQuery userId(String userId) {
+                        throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
+                    }
+
+                    @Override
+                    public RestrictedQuery orderBy(OrderBy orderBy) {
+                        throw new IllegalArgumentException("Overriding query result order is not allowed in this rules scope");
+                    }
+
+                    @Override
+                    public String getResult() {
+                        ServerAsset asset = assetStorageService.find(this);
+                        return asset != null ? asset.getId() : null;
+                    }
+
+                    @Override
+                    public List<String> getResults() {
+                        return assetStorageService.findAllIds(this);
+                    }
+
+                    @Override
+                    public void applyResult(Consumer<String> assetIdConsumer) {
+                        assetIdConsumer.accept(getResult());
+                    }
+
+                    @Override
+                    public void applyResults(Consumer<List<String>> assetIdListConsumer) {
+                        assetIdListConsumer.accept(getResults());
+                    }
+                };
+
+                if (TenantRuleset.class.isAssignableFrom(rulesetType)) {
+                    query.tenantPredicate = new AssetQuery.TenantPredicate(id);
+                }
+                if (AssetRuleset.class.isAssignableFrom(rulesetType)) {
+                    ServerAsset restrictedAsset = assetStorageService.find(id, true);
+                    if (restrictedAsset == null) {
+                        throw new IllegalStateException("Asset is no longer available for this deployment: " + id);
+                    }
+                    query.pathPredicate = new AssetQuery.PathPredicate(restrictedAsset.getPath());
+                }
+                return query;
+            }
+
+            @Override
+            public void dispatch(AttributeEvent event) {
+                // Check if the asset ID of the event can be found in the original query
+                AssetQuery checkQuery = query();
+                checkQuery.id = event.getEntityId();
+                if (assetStorageService.find(checkQuery) == null) {
+                    throw new IllegalArgumentException(
+                        "Access to asset not allowed for this rule engine scope: " + event
+                    );
+                }
+                LOG.fine("Dispatching on " + RulesDeployment.this + ": " + event);
+                assetProcessingService.updateAttributeValue(event);
+            }
+        };
     }
 
     protected String getRulesetDebug() {
