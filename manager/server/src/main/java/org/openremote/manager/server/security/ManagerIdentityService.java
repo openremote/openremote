@@ -150,7 +150,7 @@ public class ManagerIdentityService extends IdentityService {
             @SuppressWarnings("unchecked")
             List<String> results = entityManager.createQuery(
                 "select t.id from Tenant t where " +
-                    "(t.enabled = true and (t.notBefore is null or t.notBefore = 0 or to_timestamp(t.notBefore) <= now())) "
+                    "t.enabled = true and (t.notBefore is null or t.notBefore = 0 or to_timestamp(t.notBefore) <= now())"
             ).getResultList();
             return results.toArray(new String[results.size()]);
         });
@@ -168,7 +168,9 @@ public class ManagerIdentityService extends IdentityService {
     public void createTenant(String bearerAuth, Tenant tenant, TenantEmailConfig emailConfig) throws Exception {
         LOG.fine("Create tenant: " + tenant);
         RealmRepresentation realmRepresentation = convert(Container.JSON, RealmRepresentation.class, tenant);
-        realmRepresentation.setSmtpServer(emailConfig.asMap());
+        if (emailConfig != null) {
+            realmRepresentation.setSmtpServer(emailConfig.asMap());
+        }
         configureRealm(realmRepresentation);
         getRealms(bearerAuth).create(realmRepresentation);
         // TODO This is not atomic, write compensation actions
