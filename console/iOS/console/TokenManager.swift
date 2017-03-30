@@ -18,6 +18,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     var hasToken: Bool
     var viewController : TokenManagerViewController
     var myWebView : WKWebView
+    var didLogOut : Bool = false
     
     static let sharedInstance = TokenManager()
     
@@ -45,26 +46,43 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         NSLog("authenticate")
         let defaults = UserDefaults(suiteName: AppGroup.entitlement)
         let webCfg:WKWebViewConfiguration = WKWebViewConfiguration()
-        
-        let userController:WKUserContentController = WKUserContentController()
-        
-        userController.add(self, name: DefaultsKey.offlineToken)
-        userController.add(self, name: DefaultsKey.refreshToken)
-        userController.add(self, name: DefaultsKey.idToken)
-        
-        var exec_template = "var iOSToken"
-        if let offlineToken = defaults?.object(forKey: DefaultsKey.offlineToken) {
-            NSLog("offlinetoken exists")
-            let refreshToken = defaults?.object(forKey: DefaultsKey.refreshToken)
-            let idToken = defaults?.object(forKey: DefaultsKey.idToken)
-            exec_template = String(format: "var iOSToken = \"%@\"; var iOSRefreshToken = \"%@\"; var iOSTokenId = \"%@\";", offlineToken as! String, refreshToken as! String, idToken as! String)
+        if (!didLogOut) {
+            let userController:WKUserContentController = WKUserContentController()
+            
+            userController.add(self, name: DefaultsKey.offlineToken)
+            userController.add(self, name: DefaultsKey.refreshToken)
+            userController.add(self, name: DefaultsKey.idToken)
+            
+            var exec_template = "var iOSToken"
+            if let offlineToken = defaults?.object(forKey: DefaultsKey.offlineToken) {
+                NSLog("offlinetoken exists")
+                let refreshToken = defaults?.object(forKey: DefaultsKey.refreshToken)
+                let idToken = defaults?.object(forKey: DefaultsKey.idToken)
+                exec_template = String(format: "var iOSToken = \"%@\"; var iOSRefreshToken = \"%@\"; var iOSTokenId = \"%@\";", offlineToken as! String, refreshToken as! String, idToken as! String)
+            }
+            
+            let userScript:WKUserScript = WKUserScript(source: exec_template, injectionTime: .atDocumentStart, forMainFrameOnly: false)
+            userController.addUserScript(userScript)
+            
+            
+            webCfg.userContentController = userController;
+        } else {
+            let userController:WKUserContentController = WKUserContentController()
+            
+            userController.add(self, name: DefaultsKey.offlineToken)
+            userController.add(self, name: DefaultsKey.refreshToken)
+            userController.add(self, name: DefaultsKey.idToken)
+            
+            var exec_template = "var iOSToken"
+            exec_template = String(format: "var iOSToken = \"%@\"; var iOSRefreshToken = \"%@\"; var iOSTokenId = \"%@\";", "", "", "")
+            
+            let userScript:WKUserScript = WKUserScript(source: exec_template, injectionTime: .atDocumentStart, forMainFrameOnly: false)
+            userController.addUserScript(userScript)
+            
+            
+            webCfg.userContentController = userController;
         }
         
-        let userScript:WKUserScript = WKUserScript(source: exec_template, injectionTime: .atDocumentStart, forMainFrameOnly: false)
-        userController.addUserScript(userScript)
-        
-        
-        webCfg.userContentController = userController;
         myWebView = WKWebView(frame: viewController.view.frame, configuration: webCfg)
         myWebView.uiDelegate = self;
         myWebView.navigationDelegate = self;
@@ -137,6 +155,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
                 ]))            
         }
     }
+    
     
     func showError(error : Error) {
         NSLog("showing error %@",error as NSError)

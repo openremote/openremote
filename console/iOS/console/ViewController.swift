@@ -28,7 +28,7 @@ class ViewController: UIViewController {
     }
     
     func showLoginPage() {
-        if (TokenManager.sharedInstance.hasToken) {
+        if (TokenManager.sharedInstance.hasToken && !TokenManager.sharedInstance.didLogOut) {
             let orVC = ORViewcontroller()
             self.present(orVC, animated: true, completion: nil)
         } else {
@@ -37,6 +37,7 @@ class ViewController: UIViewController {
     }
     
     func isAuthenticated() {
+        TokenManager.sharedInstance.didLogOut = false
         showLoginPage()
     }
 }

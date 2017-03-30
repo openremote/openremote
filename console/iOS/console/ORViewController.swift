@@ -15,36 +15,12 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     var data : Data?
     var myWebView : WKWebView?
     var defaults : UserDefaults?
+    var webCfg : WKWebViewConfiguration?
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        let webCfg:WKWebViewConfiguration = WKWebViewConfiguration()
-        
-        let userController:WKUserContentController = WKUserContentController()
-        
-        userController.add(self, name: DefaultsKey.offlineToken)
-        userController.add(self, name: DefaultsKey.refreshToken)
-        userController.add(self, name: DefaultsKey.idToken)
-        
-        var exec_template = "var iOSToken"
-        if TokenManager.sharedInstance.hasToken {
-            exec_template = String(format: "var iOSToken = \"%@\"; var iOSRefreshToken = \"%@\"; var iOSTokenId = \"%@\";", TokenManager.sharedInstance.offlineToken!, TokenManager.sharedInstance.refreshToken!, TokenManager.sharedInstance.idToken!)
-        }
-        
-        let userScript:WKUserScript = WKUserScript(source: exec_template, injectionTime: .atDocumentStart, forMainFrameOnly: false)
-        userController.addUserScript(userScript)
-        
-        
-        webCfg.userContentController = userController;
-        myWebView = WKWebView(frame: view.frame, configuration: webCfg)
-        myWebView?.uiDelegate = self;
-        myWebView?.navigationDelegate = self;
-        view.addSubview(myWebView!)
-        
-        //self.apiCall()
-        
-        self.login()
+        view.backgroundColor = UIColor.white
+        self.configureAccess()
         
     }
     
@@ -73,6 +49,17 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         alertView.addAction(alertActionResetToken)
         self.present(alertView, animated: true, completion: nil)
     }
+    
+    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        if (navigationAction.request.url?.absoluteString.contains("logout"))! {
+            decisionHandler(.allow)
+            TokenManager.sharedInstance.didLogOut = true
+            self.dismiss(animated: true, completion: nil)
+        } else {
+            decisionHandler(.allow)
+        }
+    }
+    
     
     func showError(error : Error) {
         let alertVC = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
@@ -164,6 +151,34 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         showError(error: NSError(domain: "networkError", code: 0, userInfo:[
             NSLocalizedDescriptionKey :  NSLocalizedString("FailedLoadingPage", value: "Could not load page", comment: "")
             ]))
+    }
+    
+    func configureAccess() {
+        webCfg = WKWebViewConfiguration()
+        let userController:WKUserContentController = WKUserContentController()
+        
+        userController.add(self, name: DefaultsKey.offlineToken)
+        userController.add(self, name: DefaultsKey.refreshToken)
+        userController.add(self, name: DefaultsKey.idToken)
+        
+        var exec_template = "var iOSToken"
+        if TokenManager.sharedInstance.hasToken {
+            exec_template = String(format: "var iOSToken = \"%@\"; var iOSRefreshToken = \"%@\"; var iOSTokenId = \"%@\";", TokenManager.sharedInstance.offlineToken!, TokenManager.sharedInstance.refreshToken!, TokenManager.sharedInstance.idToken!)
+        }
+        
+        let userScript:WKUserScript = WKUserScript(source: exec_template, injectionTime: .atDocumentStart, forMainFrameOnly: false)
+        userController.addUserScript(userScript)
+        
+        webCfg?.userContentController = userController;
+        
+        myWebView = WKWebView(frame: view.frame, configuration: webCfg!)
+        myWebView?.uiDelegate = self;
+        myWebView?.navigationDelegate = self;
+        view.addSubview(myWebView!)
+        
+        //self.apiCall()
+        
+        self.login()
     }
     
 }
