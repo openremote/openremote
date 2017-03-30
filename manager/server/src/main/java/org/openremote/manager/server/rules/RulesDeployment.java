@@ -36,7 +36,6 @@ import org.kie.api.runtime.conf.ClockTypeOption;
 import org.kie.api.runtime.conf.TimedRuleExectionOption;
 import org.kie.api.runtime.rule.FactHandle;
 import org.kie.api.time.SessionClock;
-import org.kie.internal.command.CommandFactory;
 import org.openremote.container.util.Util;
 import org.openremote.manager.server.asset.AssetProcessingService;
 import org.openremote.manager.server.asset.AssetStorageService;
@@ -46,7 +45,6 @@ import org.openremote.manager.shared.rules.GlobalRuleset;
 import org.openremote.manager.shared.rules.TenantRuleset;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.Consumer;
-import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.asset.AssetUpdate;
 import org.openremote.manager.shared.rules.Ruleset;
@@ -71,6 +69,7 @@ public class RulesDeployment<T extends Ruleset> {
 
     // This is here so Clock Type can be set to pseudo from tests
     protected static ClockTypeOption DefaultClockType;
+
     private static final int AUTO_START_DELAY_SECONDS = 2;
     private static Long counter = 1L;
     static final protected Util UTIL = new Util();
@@ -297,7 +296,6 @@ public class RulesDeployment<T extends Ruleset> {
         String versionId = getNextCounter().toString();
         releaseId = kieServices.newReleaseId("org.openremote", "openremote-kiemodule", versionId);
         KieBaseModel kieBaseModel = kieModuleModel.newKieBaseModel("OpenRemoteKModule");
-        ClockTypeOption clockType = DefaultClockType != null ? DefaultClockType : ClockTypeOption.get("realtime");
 
         kieBaseModel
                 .setDefault(true)
@@ -305,8 +303,7 @@ public class RulesDeployment<T extends Ruleset> {
                 .setEventProcessingMode(EventProcessingOption.STREAM)
                 .newKieSessionModel("ksession1")
                 .setDefault(true)
-                .setType(KieSessionModel.KieSessionType.STATEFUL)
-                .setClockType(clockType);
+                .setType(KieSessionModel.KieSessionType.STATEFUL);
         kfs = kieServices.newKieFileSystem();
         kfs.generateAndWritePomXML(releaseId);
         kfs.writeKModuleXML(kieModuleModel.toXML());
@@ -335,10 +332,17 @@ public class RulesDeployment<T extends Ruleset> {
         // Note each rule engine has its' own KieModule which are stored in a singleton register by drools
         // we need to ensure we get the right module here otherwise we could be using the wrong rules
         KieContainer kieContainer = kieServices.newKieContainer(releaseId);
+
         KieSessionConfiguration kieSessionConfiguration = kieServices.newKieSessionConfiguration();
+
         // Use this option to ensure timer rules are fired even in passive mode (triggered by fireAllRules.
         // This ensures compatibility with the behaviour of previously used Drools 5.1
         kieSessionConfiguration.setOption(TimedRuleExectionOption.YES);
+
+        // Which clock to use ("pseudo" for testing, "realtime" otherwise)
+        ClockTypeOption clockType = DefaultClockType != null ? DefaultClockType : ClockTypeOption.get("realtime");
+        kieSessionConfiguration.setOption(clockType);
+
         try {
             knowledgeSession = kieContainer.newKieSession(kieSessionConfiguration);
             running = true;

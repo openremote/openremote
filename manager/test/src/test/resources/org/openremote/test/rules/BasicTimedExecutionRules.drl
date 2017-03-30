@@ -1,0 +1,9 @@
+package org.openremote.test.rules;
+
+global java.util.logging.Logger LOG;
+
+rule "Log something every 2 seconds"
+timer ( int: 0 2s)
+then
+    LOG.info("### TIMER RULE EXECUTED");
+end

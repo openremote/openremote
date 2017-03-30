@@ -197,12 +197,14 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             // Remove tenant deployment for this tenant if it exists
             RulesDeployment<TenantRuleset> tenantDeployment = tenantDeployments.get(tenant.getId());
             if (tenantDeployment != null) {
-                Arrays.stream(tenantDeployment.getAllRulesets())
+                // Use a copy of the list to avoid concurrent modification problems in retract
+                new ArrayList<>(Arrays.asList(tenantDeployment.getAllRulesets()))
                     .forEach(this::retractTenantRuleset);
             }
 
             // Remove any asset deployments for assets in this realm
-            assetDeployments.values().stream().flatMap(
+            // Use a copy of the list to avoid concurrent modification problems in retract
+            new ArrayList<>(assetDeployments.values()).stream().flatMap(
                 assetRulesDeployment -> Arrays.stream(assetRulesDeployment.getAllRulesets())
             ).filter(ruleset -> ruleset.getRealmId().equals(tenant.getId()))
                 .forEach(this::retractAssetRuleset);
