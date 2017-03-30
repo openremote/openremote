@@ -349,6 +349,7 @@ public abstract class IdentityService implements ContainerService {
         realmRepresentation.setAccessTokenLifespan(accessTokenLifespanSeconds);
         realmRepresentation.setLoginTheme("openremote");
         realmRepresentation.setAccountTheme("openremote");
+        realmRepresentation.setEmailTheme("openremote");
         realmRepresentation.setSsoSessionIdleTimeout(sessionTimeoutSeconds);
 
         // TODO: Make SSL setup configurable
