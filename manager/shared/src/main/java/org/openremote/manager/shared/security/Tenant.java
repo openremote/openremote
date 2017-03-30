@@ -25,6 +25,7 @@ import org.hibernate.annotations.Subselect;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
@@ -50,6 +51,13 @@ public class Tenant {
 
     @Column(name = "NOT_BEFORE")
     protected Integer notBefore; // This will explode in 2038
+
+    // We allow password reset by default
+    @Transient
+    protected Boolean resetPasswordAllowed = true;
+
+    @Transient
+    protected Boolean duplicateEmailsAllowed;
 
     public Tenant() {
     }
@@ -104,6 +112,22 @@ public class Tenant {
 
     public void setNotBefore(Integer notBefore) {
         this.notBefore = notBefore;
+    }
+
+    public Boolean getResetPasswordAllowed() {
+        return resetPasswordAllowed;
+    }
+
+    public void setResetPasswordAllowed(Boolean resetPasswordAllowed) {
+        this.resetPasswordAllowed = resetPasswordAllowed;
+    }
+
+    public Boolean getDuplicateEmailsAllowed() {
+        return duplicateEmailsAllowed;
+    }
+
+    public void setDuplicateEmailsAllowed(Boolean duplicateEmailsAllowed) {
+        this.duplicateEmailsAllowed = duplicateEmailsAllowed;
     }
 
     public boolean isActive() {

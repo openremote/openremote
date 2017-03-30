@@ -36,6 +36,7 @@ import org.openremote.container.security.KeycloakResource;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
+import org.openremote.manager.shared.security.TenantEmailConfig;
 import org.openremote.model.Constants;
 
 import javax.ws.rs.core.UriBuilder;
@@ -159,9 +160,15 @@ public class ManagerIdentityService extends IdentityService {
         configureRealm(realmRepresentation, ACCESS_TOKEN_LIFESPAN_SECONDS);
     }
 
+
     public void createTenant(String bearerAuth, Tenant tenant) throws Exception {
+        createTenant(bearerAuth, tenant, null);
+    }
+
+    public void createTenant(String bearerAuth, Tenant tenant, TenantEmailConfig emailConfig) throws Exception {
         LOG.fine("Create tenant: " + tenant);
         RealmRepresentation realmRepresentation = convert(Container.JSON, RealmRepresentation.class, tenant);
+        realmRepresentation.setSmtpServer(emailConfig.asMap());
         configureRealm(realmRepresentation);
         getRealms(bearerAuth).create(realmRepresentation);
         // TODO This is not atomic, write compensation actions
