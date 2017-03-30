@@ -132,7 +132,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             else
             {
                 if let token = FIRInstanceID.instanceID().token() {
-                    NSLog("Connected to FCM. Token is ",token as String)
+                    NSLog("Connected to FCM. Token is %@",token as String)
                 } else {
                     NSLog("Connected to FCM. Token is currently nil")
                 }

@@ -9,7 +9,7 @@
 import Foundation
 
 enum Server {
-    static let hostURL = "192.168.99.100"
+    static let hostURL = "192.168.0.138"
     static let port = "8080"
     static let initialPath = String(format:"console/%@/index.html",Server.realm)
     static let realm = "blok61"

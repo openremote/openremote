@@ -23,7 +23,8 @@ class NotificationService: UNNotificationServiceExtension {
             defaults?.synchronize()
             bestAttemptContent.title = "You received an alarm from blok61 :"
             bestAttemptContent.body = "payload received from backend..."
-            guard let tkurlRequest = URL(string: "http://192.168.99.100:8080/auth/realms/blok61/protocol/openid-connect/token") else { return }
+            guard let tkurlRequest = URL(string:String(format: "http://%@:%@/auth/realms/%@/protocol/openid-connect/token",Server.hostURL, Server.port,Server.realm))
+                else { return }
             let tkRequest = NSMutableURLRequest(url: tkurlRequest)
             tkRequest.addValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type");
             tkRequest.httpMethod = "POST"
@@ -36,7 +37,7 @@ class NotificationService: UNNotificationServiceExtension {
                     do {
                         let jsonDictionnary: Dictionary = try JSONSerialization.jsonObject(with: data!, options: []) as! [String:Any]
                         if ((jsonDictionnary["access_token"]) != nil) {
-                            guard let urlRequest = URL(string: "http://192.168.99.100:8080/blok61/asset") else { return }
+                            guard let urlRequest = URL(string: Server.apiTestResource) else { return }
                             let request = NSMutableURLRequest(url: urlRequest)
                             request.addValue(String(format:"Bearer %@", jsonDictionnary["access_token"] as! String), forHTTPHeaderField: "Authorization")
                             let sessionConfiguration = URLSessionConfiguration.default
