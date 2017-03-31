@@ -1,0 +1,29 @@
+package org.openremote.test.rules;
+
+import org.openremote.model.*;
+import org.openremote.model.asset.*
+import org.openremote.model.rules.*
+import elemental.json.Json;
+
+global java.util.logging.Logger LOG;
+global org.openremote.model.rules.Assets assets;
+
+rule "Set presence detected if sensor is triggered multiple times"
+when
+    // The presence sensor of a room is triggered
+    $pir : AssetEvent(type == AssetType.ROOM, attributeName == "presenceSensor", value.asBoolean)
+    // More than 2 times in the last 15 minutes
+    Number(intValue > 2) from accumulate(
+        $pir2 : AssetEvent(id == $pir.id, attributeName == "presenceSensor", type == AssetType.ROOM, value.asBoolean) over window:time(15m),
+        count($pir2)
+    )
+    // And the presence latch is not set already
+    AssetUpdate(id == $pir.getId(), attributeName == "presenceDetected", !value.asBoolean)
+
+then
+    LOG.info("### PRESENCE DETECTED IN ROOM: " + $pir);
+    // Set the presence latch of the room
+    assets.dispatch(
+            new AttributeEvent($pir.getId(), "presenceDetected", Json.create(true))
+    );
+end

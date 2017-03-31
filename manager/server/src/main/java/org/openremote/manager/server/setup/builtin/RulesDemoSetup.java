@@ -49,9 +49,14 @@ public class RulesDemoSetup extends AbstractManagerSetup {
 
         // ################################ Rules demo data ###################################
 
-        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoApartmentActions.drl")) {
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoApartmentAllLightsOff.drl")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
-            Ruleset ruleset = new TenantRuleset("Demo Apartment Actions", keycloakDemoSetup.customerATenant.getId(), rules);
+            Ruleset ruleset = new TenantRuleset("Demo Apartment - All Lights Off", keycloakDemoSetup.customerATenant.getId(), rules);
+            apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoApartmentPresenceDetection.drl")) {
+            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            Ruleset ruleset = new TenantRuleset("Demo Apartment - Presence Detection", keycloakDemoSetup.customerATenant.getId(), rules);
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
     }

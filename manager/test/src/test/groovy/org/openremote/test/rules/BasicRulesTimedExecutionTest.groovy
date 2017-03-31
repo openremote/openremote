@@ -1,5 +1,7 @@
 package org.openremote.test.rules
 
+import org.openremote.manager.server.asset.AssetProcessingService
+import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.rules.RulesDeployment
 import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.rules.RulesetStorageService
@@ -43,6 +45,8 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
 
         and: "some test rulesets have been imported"
         Ruleset ruleset = new GlobalRuleset(

@@ -302,20 +302,20 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1Livingroom.setType(ROOM);
         AssetAttributes apartment1LivingroomAttributes = new AssetAttributes();
         apartment1LivingroomAttributes.put(
+            new AssetAttribute("presenceSensor", AttributeType.BOOLEAN, Json.create(false))
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Sensor"))
+                    ).add(
+                        new MetaItem(AssetMeta.RULES_EVENT, Json.create(true))
+                    )
+                ),
             new AssetAttribute("presenceDetected", AttributeType.BOOLEAN, Json.create(false))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Presence Detected"))
                     ).add(
                         new MetaItem(AssetMeta.RULES_FACT, Json.create(true))
-                    )
-                ),
-            new AssetAttribute("presenceCount15m", AttributeType.INTEGER, Json.create(0))
-                .setMeta(
-                    new Meta().add(
-                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Count 15m"))
-                    ).add(
-                        new MetaItem(AssetMeta.READ_ONLY, Json.create(true))
                     )
                 ),
             new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Json.create(true))
@@ -424,20 +424,20 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment2Livingroom.setType(ROOM);
         AssetAttributes apartment2LivingroomAttributes = new AssetAttributes();
         apartment2LivingroomAttributes.put(
+            new AssetAttribute("presenceSensor", AttributeType.BOOLEAN, Json.create(false))
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Sensor"))
+                    ).add(
+                        new MetaItem(AssetMeta.RULES_EVENT, Json.create(true))
+                    )
+                ),
             new AssetAttribute("presenceDetected", AttributeType.BOOLEAN, Json.create(false))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Presence Detected"))
                     ).add(
                         new MetaItem(AssetMeta.RULES_FACT, Json.create(true))
-                    )
-                ),
-            new AssetAttribute("presenceCount15m", AttributeType.INTEGER, Json.create(0))
-                .setMeta(
-                    new Meta().add(
-                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Count 15m"))
-                    ).add(
-                        new MetaItem(AssetMeta.READ_ONLY, Json.create(true))
                     )
                 ),
             new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Json.create(true))
@@ -486,20 +486,20 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment3Livingroom.setType(ROOM);
         AssetAttributes apartment3LivingroomAttributes = new AssetAttributes();
         apartment3LivingroomAttributes.put(
+            new AssetAttribute("presenceSensor", AttributeType.BOOLEAN, Json.create(false))
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Sensor"))
+                    ).add(
+                        new MetaItem(AssetMeta.RULES_EVENT, Json.create(true))
+                    )
+                ),
             new AssetAttribute("presenceDetected", AttributeType.BOOLEAN, Json.create(false))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Presence Detected"))
                     ).add(
                         new MetaItem(AssetMeta.RULES_FACT, Json.create(true))
-                    )
-                ),
-            new AssetAttribute("presenceCount15m", AttributeType.INTEGER, Json.create(0))
-                .setMeta(
-                    new Meta().add(
-                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Count 15m"))
-                    ).add(
-                        new MetaItem(AssetMeta.READ_ONLY, Json.create(true))
                     )
                 ),
             new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Json.create(true))

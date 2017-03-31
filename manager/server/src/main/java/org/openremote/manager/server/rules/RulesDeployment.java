@@ -19,6 +19,14 @@
  */
 package org.openremote.manager.server.rules;
 
+import org.drools.core.common.InternalWorkingMemory;
+import org.drools.core.time.InternalSchedulerService;
+import org.drools.core.time.JobContext;
+import org.drools.core.time.JobHandle;
+import org.drools.core.time.impl.DefaultJobHandle;
+import org.drools.core.time.impl.DefaultTimerJobInstance;
+import org.drools.core.time.impl.PointInTimeTrigger;
+import org.drools.core.time.impl.TimerJobInstance;
 import org.kie.api.KieServices;
 import org.kie.api.builder.KieBuilder;
 import org.kie.api.builder.KieFileSystem;
@@ -29,6 +37,10 @@ import org.kie.api.builder.model.KieModuleModel;
 import org.kie.api.builder.model.KieSessionModel;
 import org.kie.api.conf.EqualityBehaviorOption;
 import org.kie.api.conf.EventProcessingOption;
+import org.kie.api.event.rule.ObjectDeletedEvent;
+import org.kie.api.event.rule.ObjectInsertedEvent;
+import org.kie.api.event.rule.ObjectUpdatedEvent;
+import org.kie.api.event.rule.RuleRuntimeEventListener;
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
 import org.kie.api.runtime.KieSessionConfiguration;
@@ -43,14 +55,18 @@ import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.notification.NotificationService;
 import org.openremote.manager.shared.rules.AssetRuleset;
 import org.openremote.manager.shared.rules.GlobalRuleset;
+import org.openremote.manager.shared.rules.Ruleset;
 import org.openremote.manager.shared.rules.TenantRuleset;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.Consumer;
+import org.openremote.model.asset.AbstractAssetUpdate;
 import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.asset.AssetUpdate;
 import org.openremote.manager.shared.rules.Ruleset;
 import org.openremote.model.notification.AlertNotification;
+import org.openremote.model.rules.AssetEvent;
 import org.openremote.model.rules.Assets;
+import org.openremote.model.rules.Users;
 import org.openremote.model.rules.Users;
 
 import java.util.*;
@@ -68,7 +84,7 @@ public class RulesDeployment<T extends Ruleset> {
     protected final NotificationService notificationService;
     final protected AssetStorageService assetStorageService;
     final protected AssetProcessingService assetProcessingService;
-    final protected  Class<T> rulesetType;
+    final protected Class<T> rulesetType;
     final protected String id;
 
     // This is here so Clock Type can be set to pseudo from tests
@@ -106,7 +122,7 @@ public class RulesDeployment<T extends Ruleset> {
 
     @SuppressWarnings("unchecked")
     public synchronized T[] getAllRulesets() {
-        T[]arr = Util.createArray(rulesets.size(), rulesetType);
+        T[] arr = Util.createArray(rulesets.size(), rulesetType);
         return rulesets.values().toArray(arr);
     }
 
@@ -161,7 +177,7 @@ public class RulesDeployment<T extends Ruleset> {
      *
      * @return Whether or not the ruleset deployed successfully
      */
-    public synchronized boolean insertRuleset(T ruleset) {
+    public synchronized boolean addRuleset(T ruleset) {
         if (ruleset == null || ruleset.getRules() == null || ruleset.getRules().isEmpty()) {
             // Assume it's a success if deploying an empty ruleset
             LOG.finest("Ruleset is empty so no rules to deploy");
@@ -247,7 +263,7 @@ public class RulesDeployment<T extends Ruleset> {
         return addSuccessful;
     }
 
-    protected synchronized void retractRuleset(Ruleset ruleset) {
+    protected synchronized void removeRuleset(Ruleset ruleset) {
         if (kfs == null) {
             return;
         }
@@ -302,12 +318,12 @@ public class RulesDeployment<T extends Ruleset> {
         KieBaseModel kieBaseModel = kieModuleModel.newKieBaseModel("OpenRemoteKModule");
 
         kieBaseModel
-                .setDefault(true)
-                .setEqualsBehavior(EqualityBehaviorOption.EQUALITY)
-                .setEventProcessingMode(EventProcessingOption.STREAM)
-                .newKieSessionModel("ksession1")
-                .setDefault(true)
-                .setType(KieSessionModel.KieSessionType.STATEFUL);
+            .setDefault(true)
+            .setEqualsBehavior(EqualityBehaviorOption.EQUALITY)
+            .setEventProcessingMode(EventProcessingOption.STREAM)
+            .newKieSessionModel("ksession1")
+            .setDefault(true)
+            .setType(KieSessionModel.KieSessionType.STATEFUL);
         kfs = kieServices.newKieFileSystem();
         kfs.generateAndWritePomXML(releaseId);
         kfs.writeKModuleXML(kieModuleModel.toXML());
@@ -359,6 +375,24 @@ public class RulesDeployment<T extends Ruleset> {
             setGlobal("util", UTIL);
 
             knowledgeSession.addEventListener(ruleExecutionLogger);
+
+            knowledgeSession.addEventListener(new RuleRuntimeEventListener() {
+                @Override
+                public void objectInserted(ObjectInsertedEvent event) {
+                    LOG.fine("+++ On " + RulesDeployment.this + ", object inserted: " + event.getObject());
+                }
+
+                @Override
+                public void objectUpdated(ObjectUpdatedEvent event) {
+                    LOG.fine("^^^ On " + RulesDeployment.this + ", object updated: " + event.getObject());
+                }
+
+                @Override
+                public void objectDeleted(ObjectDeletedEvent event) {
+                    LOG.fine("--- On " + RulesDeployment.this + ", object deleted: " + event.getOldObject());
+                }
+            });
+
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Failed to create the rules engine session", e);
             error = e;
@@ -368,7 +402,7 @@ public class RulesDeployment<T extends Ruleset> {
 
         // Insert all the facts into the session
         List<AssetUpdate> factEntries = new ArrayList<>(facts.keySet());
-        factEntries.forEach(factEntry -> insertFactIntoSession(factEntry, true));
+        factEntries.forEach(factEntry -> insertFact(factEntry, true));
 
         LOG.info("Rule engine started");
         knowledgeSession.fireAllRules();
@@ -390,7 +424,15 @@ public class RulesDeployment<T extends Ruleset> {
         running = false;
     }
 
-    protected synchronized void insertFact(AssetUpdate assetUpdate, boolean silent) {
+    protected synchronized FactHandle insertFact(AssetUpdate assetUpdate, boolean silent) {
+        return insertIntoSession(
+            assetUpdate,
+            silent,
+            factHandle -> facts.put(assetUpdate, factHandle)
+        );
+    }
+
+    protected synchronized void updateFact(AssetUpdate assetUpdate, boolean silent) {
         // Check if fact already exists using equals()
         if (!facts.containsKey(assetUpdate)) {
             // Delete any existing fact for this attribute ref
@@ -398,7 +440,7 @@ public class RulesDeployment<T extends Ruleset> {
             retractFact(assetUpdate);
 
             if (isRunning()) {
-                insertFactIntoSession(assetUpdate, silent);
+                insertFact(assetUpdate, silent);
             } else {
                 facts.put(assetUpdate, null);
             }
@@ -409,10 +451,10 @@ public class RulesDeployment<T extends Ruleset> {
 
         // If there already is a fact in working memory for this attribute then delete it
         AssetUpdate update = facts.keySet()
-                .stream()
-                .filter(au -> au.attributeRefsEqual(assetUpdate))
-                .findFirst()
-                .orElse(null);
+            .stream()
+            .filter(au -> au.attributeRefsEqual(assetUpdate))
+            .findFirst()
+            .orElse(null);
 
         FactHandle factHandle = update != null ? facts.get(update) : null;
 
@@ -422,7 +464,6 @@ public class RulesDeployment<T extends Ruleset> {
             if (isRunning()) {
                 try {
                     // ... retract it from working memory ...
-                    LOG.finest("Removed stale fact '" + update + "' in: " + this);
                     knowledgeSession.delete(factHandle);
                     int fireCount = knowledgeSession.fireAllRules();
                 } catch (Exception e) {
@@ -434,45 +475,47 @@ public class RulesDeployment<T extends Ruleset> {
         }
     }
 
-    protected FactHandle insertFactIntoSession(AssetUpdate assetUpdate, boolean silent) {
-        FactHandle factHandle = null;
+    protected synchronized FactHandle insertEvent(AssetEvent assetEvent, long expirationOffset) {
+        return insertIntoSession(
+            assetEvent,
+            false,
+            factHandle -> scheduleExpiration(assetEvent, factHandle, expirationOffset)
+        );
+    }
 
-        if (isRunning()) {
-            try {
-                long newFactCount;
-                factHandle = knowledgeSession.insert(assetUpdate);
-                facts.put(assetUpdate, factHandle);
-                LOG.finest("Inserting fact '" + assetUpdate + "' in: " + this);
-                LOG.finest("On " + this + ", firing all rules");
-//                int fireCount = knowledgeSession.fireAllRules();
-                FactHandle finalFactHandle = factHandle;
-                int fireCount = knowledgeSession.fireAllRules((match) -> !silent || !match.getFactHandles().contains(finalFactHandle));
-                LOG.finest("On " + this + ", fired rules count: " + fireCount);
-
-                // TODO: Prevent run away fact creation (not sure how we can do this reliably as facts can be generated in rule RHS)
-                // MR: this is heuristic number which comes good for finding facts memory leak in the drl file.
-                // problem - when you are not careful then drl can insert new facts till memory exhaustion. As there
-                // are usually few 100 facts in drl's I'm working with, putting arbitrary number gives me early feedback
-                // that there is potential problem. Perhaps we should think about a better solution to this problem?
-                newFactCount = knowledgeSession.getFactCount();
-                LOG.finest("On " + this + ", new fact count: " + newFactCount);
-                if (newFactCount != currentFactCount) {
-                    LOG.finest("On " + this + ", fact count changed from " + currentFactCount + " to " + newFactCount + " after: " + assetUpdate);
-                }
-
-                currentFactCount = newFactCount;
-
-            } catch (Exception e) {
-                // We can end up here because of errors in rule RHS - bubble up the cause
-                error = e;
-                stop();
-                throw new RuntimeException(e);
-            }
-        } else {
-            LOG.fine("Engine is in error state or not running (" + toString() + "), ignoring: " + assetUpdate);
+    protected synchronized FactHandle insertIntoSession(AbstractAssetUpdate abstractAssetUpdate,
+                                                        boolean silent,
+                                                        Consumer<FactHandle> afterInsert) {
+        if (!isRunning()) {
+            LOG.fine("Engine is in error state or not running (" + toString() + "), ignoring: " + abstractAssetUpdate);
+            return null;
         }
+        try {
+            long newFactCount;
+            FactHandle factHandle = knowledgeSession.insert(abstractAssetUpdate);
+            afterInsert.accept(factHandle);
+            LOG.finest("On " + this + ", firing all rules");
+            int fireCount = knowledgeSession.fireAllRules((match) -> !silent || !match.getFactHandles().contains(factHandle));
+            LOG.finest("On " + this + ", fired rules count: " + fireCount);
 
-        return factHandle;
+            newFactCount = knowledgeSession.getFactCount();
+            LOG.finest("On " + this + ", new fact count: " + newFactCount);
+            if (newFactCount != currentFactCount) {
+                LOG.finest("On " + this + ", fact count changed from "
+                    + currentFactCount
+                    + " to "
+                    + newFactCount
+                    + " after: "
+                    + abstractAssetUpdate);
+            }
+            currentFactCount = newFactCount;
+            return factHandle;
+        } catch (Exception e) {
+            // We can end up here because of errors in rule RHS - bubble up the cause
+            error = e;
+            stop();
+            throw new RuntimeException(e);
+        }
     }
 
     protected Assets createAssetsFacade() {
@@ -559,12 +602,11 @@ public class RulesDeployment<T extends Ruleset> {
         };
     }
 
-
     protected Users createUsersFacade() {
         return new Users() {
 
             @Override
-            public RestrictedQuery query() {
+            public Users.RestrictedQuery query() {
                 RestrictedQuery query = new RestrictedQuery() {
 
                     @Override
@@ -599,6 +641,47 @@ public class RulesDeployment<T extends Ruleset> {
 
 
         };
+    }
+
+    /**
+     * Use the internal scheduling of Drools to expire events, so we can coordinate with the internal clock.
+     * Yes, this is a hack.
+     */
+    protected void scheduleExpiration(AssetEvent assetEvent, FactHandle factHandle, long expirationOffset) {
+        InternalSchedulerService sessionScheduler = knowledgeSession.getSessionClock();
+        JobHandle jobHandle = new DefaultJobHandle(assetEvent.getId().hashCode());
+        class AssetEventExpireJobContext implements JobContext {
+            public JobHandle handle;
+
+            @Override
+            public void setJobHandle(JobHandle jobHandle) {
+                this.handle = jobHandle;
+            }
+
+            @Override
+            public JobHandle getJobHandle() {
+                return handle;
+            }
+
+            @Override
+            public InternalWorkingMemory getWorkingMemory() {
+                return null;
+            }
+        }
+        TimerJobInstance timerJobInstance = new DefaultTimerJobInstance(
+            ctx -> {
+                LOG.fine("On " + RulesDeployment.this + ", fact expired, deleting: " + assetEvent);
+                synchronized (RulesDeployment.this) {
+                    knowledgeSession.delete(factHandle);
+                }
+            },
+            new AssetEventExpireJobContext(),
+            new PointInTimeTrigger(knowledgeSession.getSessionClock().getCurrentTime() + expirationOffset, null, null),
+            jobHandle,
+            sessionScheduler
+        );
+        sessionScheduler.internalSchedule(timerJobInstance);
+
     }
 
     protected synchronized String getRulesetDebug() {

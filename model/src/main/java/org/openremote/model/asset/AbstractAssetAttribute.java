@@ -131,4 +131,12 @@ public abstract class AbstractAssetAttribute<CHILD extends AbstractAssetAttribut
         return hasMetaItem(RULES_FACT) && firstMetaItem(RULES_FACT).isValueTrue();
     }
 
+    public boolean isRulesEvent() {
+        return hasMetaItem(RULES_EVENT) && firstMetaItem(RULES_EVENT).isValueTrue();
+    }
+
+    public String getRulesEventExpires() {
+        return hasMetaItem(RULES_EVENT_EXPIRES) ? firstMetaItem(RULES_EVENT_EXPIRES).getValueAsString() : null;
+    }
+
 }

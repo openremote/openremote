@@ -110,9 +110,26 @@ public enum AssetMeta {
     STORE_DATA_POINTS(ASSET_META_NAMESPACE + ":storeDataPoints", new Access(true, false, true), JsonType.BOOLEAN),
 
     /**
-     * Should attribute writes be processed by the rules engines and inserted as facts into their knowledge sessions.
+     * Should attribute writes be processed by the rules engines as facts in knowledge sessions, with a lifecycle
+     * that reflects the state of the asset attribute (the {@link AssetUpdate} facts in the rules sessions are kept
+     * in sync with asset changes).
      */
-    RULES_FACT(ASSET_META_NAMESPACE + ":rulesFact", new Access(true, false, true), JsonType.BOOLEAN);
+    RULES_FACT(ASSET_META_NAMESPACE + ":rulesFact", new Access(true, false, true), JsonType.BOOLEAN),
+
+    /**
+     * Should attribute writes be processed by the rules engines as events in knowledge sessions with limited
+     * lifecycle that reflects how the event is processed (the {@link org.openremote.model.rules.AssetEvent} facts
+     * in the rules sessions are expired automatically after a certain time and/or if they can no longer be matched
+     * by time operations).
+     */
+    RULES_EVENT(ASSET_META_NAMESPACE + ":rulesEvent", new Access(true, false, true), JsonType.BOOLEAN),
+
+    /**
+     * Override rules event expiration, for example "1h30m". Remove {@link org.openremote.model.rules.AssetEvent}
+     * facts from the rules sessions if they are older than this value (using event source timestamp, not event
+     * processing time).
+     */
+    RULES_EVENT_EXPIRES(ASSET_META_NAMESPACE + ":rulesEventExpires", new Access(true, false, true), JsonType.NUMBER);
 
     final protected String name;
     final protected Access access;

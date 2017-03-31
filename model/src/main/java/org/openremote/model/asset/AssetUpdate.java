@@ -20,15 +20,12 @@
 package org.openremote.model.asset;
 
 import elemental.json.JsonValue;
-import org.openremote.model.AttributeType;
-import org.openremote.model.util.JsonUtil;
-
-import java.util.Date;
 
 /**
- * An asset attribute value change that can be handled by a sequence of processors.
+ * An asset attribute value change that can be handled by a sequence of processors
+ * with status and error handling.
  */
-public class AssetUpdate {
+public class AssetUpdate extends AbstractAssetUpdate {
 
     /**
      * Processors of updates can change the status to direct further processing.
@@ -61,130 +58,16 @@ public class AssetUpdate {
         COMPLETED
     }
 
-    final protected AbstractAssetAttribute attribute;
-
-    final protected Date createdOn;
-
-    final protected String id;
-
-    final protected String name;
-
-    final protected String typeString;
-
-    final protected AssetType type;
-
-    final protected String[] pathFromRoot;
-
-    final protected String parentId;
-
-    final protected String parentName;
-
-    final protected String parentTypeString;
-
-    final protected AssetType parentType;
-
-    final protected String realmId;
-
-    final protected String tenantRealm;
-
-    final protected double[] coordinates;
-
-    final protected JsonValue oldValue;
-
-    final protected long oldValueTimestamp;
-
     protected Status status = Status.CONTINUE;
 
     protected Throwable error;
 
-    // True if the update was initiated by a protocol and is being processed northbound
-    protected boolean northbound;
-
     public AssetUpdate(Asset asset, AbstractAssetAttribute attribute) {
-        this(asset, attribute, null, 0, false);
+        super(asset, attribute);
     }
 
     public AssetUpdate(Asset asset, AbstractAssetAttribute attribute, JsonValue oldValue, long oldValueTimestamp, boolean northbound) {
-        this.attribute = attribute;
-        this.id = asset.getId();
-        this.name = asset.getName();
-        if (asset.getPath() == null) {
-            throw new IllegalArgumentException("Asset not loaded completely, empty path: " + asset);
-        }
-        this.pathFromRoot = asset.getReversePath(); // This is proving more useful than forward path
-        this.typeString = asset.getType();
-        this.type = asset.getWellKnownType();
-        this.createdOn = asset.getCreatedOn();
-        this.parentId = asset.getParentId();
-        this.parentName = asset.getParentName();
-        this.parentTypeString = asset.getParentType();
-        this.parentType = asset.getParentType() != null ? AssetType.getByValue(asset.getParentType()) : null;
-        this.realmId = asset.getRealmId();
-        this.tenantRealm = asset.getTenantRealm();
-        this.coordinates = asset.getCoordinates();
-        this.oldValue = oldValue;
-        this.oldValueTimestamp = oldValueTimestamp;
-        this.northbound = northbound;
-    }
-
-    public Date getCreatedOn() {
-        return createdOn;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getTypeString() {
-        return typeString;
-    }
-
-    public AssetType getType() {
-        return type;
-    }
-
-    public String[] getPathFromRoot() {
-        return pathFromRoot;
-    }
-
-    public String getParentId() {
-        return parentId;
-    }
-
-    public String getParentName() {
-        return parentName;
-    }
-
-    public String getParentTypeString() {
-        return parentTypeString;
-    }
-
-    public AssetType getParentType() {
-        return parentType;
-    }
-
-    public String getRealmId() {
-        return realmId;
-    }
-
-    public String getTenantRealm() {
-        return tenantRealm;
-    }
-
-    public double[] getCoordinates() {
-        return coordinates;
-    }
-
-    public JsonValue getOldValue() {
-        return oldValue;
-    }
-
-    public long getOldValueTimestamp() {
-        return oldValueTimestamp;
+        super(asset, attribute, oldValue, oldValueTimestamp, northbound);
     }
 
     public Status getStatus() {
@@ -195,32 +78,8 @@ public class AssetUpdate {
         return error;
     }
 
-    public boolean isNorthbound() {
-        return northbound;
-    }
-
-    public JsonValue getValue() {
-        return attribute.getValue();
-    }
-
-    public String getAttributeName() {
-        return attribute.getName();
-    }
-
-    public long getValueTimestamp() {
-        return attribute.getValueTimestamp();
-    }
-
-    public AttributeType getAttributeType() {
-        return attribute.getType();
-    }
-
     public boolean isCompleted() {
         return getStatus() == Status.COMPLETED;
-    }
-
-    public boolean isValueChanged() {
-        return !JsonUtil.equals(attribute.getValue(), oldValue);
     }
 
     /////////////////////////////////////////////////////////////////
@@ -264,57 +123,5 @@ public class AssetUpdate {
         } else {
             throw new IllegalStateException("Instance is immutable, status '" + getStatus() + "': " + this);
         }
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        AssetUpdate that = (AssetUpdate) o;
-
-        // TODO Don't use jsEquals(), write own comparison by value
-
-        return id.equals(that.id) &&
-            getAttributeName().equalsIgnoreCase(that.getAttributeName()) &&
-            JsonUtil.equals(getValue(), that.getValue()) &&
-            getValueTimestamp() == that.getValueTimestamp() &&
-            ((oldValue == null && that.oldValue == null) || (oldValue != null && JsonUtil.equals(oldValue, that.oldValue))) &&
-            oldValueTimestamp == that.oldValueTimestamp;
-    }
-
-    /**
-     * This is here because {@link #getAttribute()} is not always publicly accessible
-     * @param assetUpdate
-     * @return
-     */
-    public boolean attributeRefsEqual(AssetUpdate assetUpdate) {
-        if (assetUpdate == null || assetUpdate.attribute == null) {
-            return false;
-        }
-
-        return assetUpdate.attribute.getAttributeRef().equals(attribute.getAttributeRef());
-    }
-
-    @Override
-    public int hashCode() {
-        return id.hashCode() + getAttributeName().hashCode() + JsonUtil.hashCode(getValue())
-            + Long.hashCode(getValueTimestamp())
-            + (oldValue != null ? JsonUtil.hashCode(oldValue) : 0) + Long.hashCode(oldValueTimestamp);
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-            "id='" + getId() + '\'' +
-            ", name='" + getName()+ '\'' +
-            ", typeString='" + getType()+ '\'' +
-            ", attributeName='" + getAttributeName() + '\'' +
-            ", attributeType=" + getAttributeType() +
-            ", value='" + getValue().toJson() + '\'' +
-            ", valueTimestamp=" + getValueTimestamp() +
-            ", oldValue='" + (getOldValue() != null ? getOldValue().toJson() : "null") + '\'' +
-            ", oldValueTimestamp=" + getOldValueTimestamp() +
-            '}';
     }
 }

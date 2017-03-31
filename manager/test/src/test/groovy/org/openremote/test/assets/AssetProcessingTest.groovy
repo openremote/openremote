@@ -108,7 +108,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             def customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
             assert customerAEngine != null
             assert customerAEngine.isRunning()
-            assert customerAEngine.rulesets.size() == 1
+            assert customerAEngine.rulesets.size() == 2
             assert updatesPassedStartOfProcessingChain.size() == 0
             assert updatesReachedEndOfProcessingChain.size() == 0
         }
