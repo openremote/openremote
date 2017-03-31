@@ -40,6 +40,7 @@ import org.openremote.container.util.Util;
 import org.openremote.manager.server.asset.AssetProcessingService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
+import org.openremote.manager.server.notification.NotificationService;
 import org.openremote.manager.shared.rules.AssetRuleset;
 import org.openremote.manager.shared.rules.GlobalRuleset;
 import org.openremote.manager.shared.rules.TenantRuleset;
@@ -48,7 +49,9 @@ import org.openremote.model.Consumer;
 import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.asset.AssetUpdate;
 import org.openremote.manager.shared.rules.Ruleset;
+import org.openremote.model.notification.AlertNotification;
 import org.openremote.model.rules.Assets;
+import org.openremote.model.rules.Users;
 
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -62,6 +65,7 @@ public class RulesDeployment<T extends Ruleset> {
 
     public static final Logger LOG = Logger.getLogger(RulesDeployment.class.getName());
 
+    protected final NotificationService notificationService;
     final protected AssetStorageService assetStorageService;
     final protected AssetProcessingService assetProcessingService;
     final protected  Class<T> rulesetType;
@@ -69,7 +73,6 @@ public class RulesDeployment<T extends Ruleset> {
 
     // This is here so Clock Type can be set to pseudo from tests
     protected static ClockTypeOption DefaultClockType;
-
     private static final int AUTO_START_DELAY_SECONDS = 2;
     private static Long counter = 1L;
     static final protected Util UTIL = new Util();
@@ -88,9 +91,10 @@ public class RulesDeployment<T extends Ruleset> {
     protected static final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     protected ScheduledFuture startTimer;
 
-    public RulesDeployment(AssetStorageService assetStorageService, AssetProcessingService assetProcessingService,
+    public RulesDeployment(AssetStorageService assetStorageService, NotificationService notificationService, AssetProcessingService assetProcessingService,
                            Class<T> rulesetType, String id) {
         this.assetStorageService = assetStorageService;
+        this.notificationService = notificationService; // shouldBeUser service or Identity Service ?
         this.assetProcessingService = assetProcessingService;
         this.rulesetType = rulesetType;
         this.id = id;
@@ -348,6 +352,7 @@ public class RulesDeployment<T extends Ruleset> {
             running = true;
 
             setGlobal("assets", createAssetsFacade());
+            setGlobal("users", createUsersFacade());
             setGlobal("LOG", LOG);
 
             // TODO Still need this UTIL?
@@ -551,6 +556,48 @@ public class RulesDeployment<T extends Ruleset> {
                 LOG.fine("Dispatching on " + RulesDeployment.this + ": " + event);
                 assetProcessingService.updateAttributeValue(event);
             }
+        };
+    }
+
+
+    protected Users createUsersFacade() {
+        return new Users() {
+
+            @Override
+            public RestrictedQuery query() {
+                RestrictedQuery query = new RestrictedQuery() {
+
+                    @Override
+                    public List<String> getResults() {
+                        return notificationService.findAllUsersWithToken();
+                    }
+
+                    @Override
+                    public void applyResults(Consumer<List<String>> usersIdListConsumer) {
+                        usersIdListConsumer.accept(getResults());
+                    }
+                };
+
+                if (TenantRuleset.class.isAssignableFrom(rulesetType)) {
+                    //TODO: restrict users of tenant
+                }
+                if (AssetRuleset.class.isAssignableFrom(rulesetType)) {
+                    ServerAsset restrictedAsset = assetStorageService.find(id, true);
+                    if (restrictedAsset == null) {
+                        throw new IllegalStateException("Asset is no longer available for this deployment: " + id);
+                    }
+                    //TODO: restrict users of assets
+                }
+                return query;
+
+            }
+
+            @Override
+            public void storeAndNotify(String userId, AlertNotification alert) {
+                notificationService.storeAndNotify(userId,alert);
+            }
+
+
         };
     }
 

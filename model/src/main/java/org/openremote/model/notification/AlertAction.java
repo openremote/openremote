@@ -1,8 +1,7 @@
-package org.openremote.manager.shared.notification;
+package org.openremote.model.notification;
 
 import elemental.json.Json;
 import elemental.json.JsonObject;
-import elemental.json.JsonValue;
 
 
 public class AlertAction {

@@ -11,8 +11,8 @@
 
         <class>org.openremote.manager.server.asset.ServerAsset</class>
         <class>org.openremote.manager.server.notification.DeviceNotificationToken</class>
-        <class>org.openremote.manager.shared.notification.AlertNotification</class>
-        <class>org.openremote.manager.shared.notification.AlertAction</class>
+        <class>org.openremote.model.notification.AlertNotification</class>
+        <class>org.openremote.model.notification.AlertAction</class>
         <class>org.openremote.manager.server.security.UserConfiguration</class>
         <class>org.openremote.model.datapoint.AssetDatapoint</class>
         <class>org.openremote.model.asset.UserAsset</class>

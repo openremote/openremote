@@ -1,19 +1,15 @@
-package org.openremote.manager.shared.notification;
+package org.openremote.model.notification;
 
 import elemental.json.Json;
 import elemental.json.JsonArray;
-import elemental.json.JsonObject;
-import elemental.json.impl.JreJsonArray;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import static org.openremote.model.Constants.PERSISTENCE_JSON_ARRAY_TYPE;
-import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
 
 @Entity

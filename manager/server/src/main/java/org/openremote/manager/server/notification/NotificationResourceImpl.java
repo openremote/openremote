@@ -2,7 +2,7 @@ package org.openremote.manager.server.notification;
 
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.shared.http.RequestParams;
-import org.openremote.manager.shared.notification.AlertNotification;
+import org.openremote.model.notification.AlertNotification;
 import org.openremote.manager.shared.notification.NotificationResource;
 
 import javax.ws.rs.WebApplicationException;
@@ -32,7 +32,7 @@ public class NotificationResourceImpl extends WebResource implements Notificatio
         if (alertNotification == null) {
             throw new WebApplicationException("Missing alertNotification", BAD_REQUEST);
         }
-        notificationService.storeAndNotifyAlertNotification(getUserId(), alertNotification);
+        notificationService.storeAndNotify(getUserId(), alertNotification);
     }
 
     @Override

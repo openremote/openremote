@@ -16,6 +16,7 @@ import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -39,8 +40,7 @@ public class MainActivity extends Activity {
         webView = (WebView) findViewById(R.id.webview);
         if (savedInstanceState != null) {
             webView.restoreState(savedInstanceState);
-        }
-        else {
+        } else {
             loadIndex();
         }
         errorView = findViewById(R.id.errorView);
@@ -75,7 +75,7 @@ public class MainActivity extends Activity {
 
     private void loadIndex() {
 
-        webView.addJavascriptInterface(new WebAppInterface(this),"MobileInterface");
+        webView.addJavascriptInterface(new WebAppInterface(this), "MobileInterface");
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setAppCacheEnabled(true);
@@ -88,7 +88,15 @@ public class MainActivity extends Activity {
             }
         });
         webView.setLongClickable(false);
+
         webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
+                Log.e("WEBVIEW", "request url :" + request.getUrl().toString());
+                Log.e("WEBVIEW", "error :" + errorResponse.getStatusCode());
+                handleError(request);
+            }
+
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
 
@@ -97,20 +105,26 @@ public class MainActivity extends Activity {
                     Log.e("WEBVIEW", "error :" + error.getErrorCode());
                     Log.e("WEBVIEW", "error :" + error.getDescription());
                 }
-                if (request.getUrl().toString().equals(getString(R.string.OR_BASE_SERVER)+getString(R.string.OR_CONSOLE_URL))) {
-                    webView.loadUrl("about:blank");
-                    errorView.setVisibility(View.VISIBLE);
-                }
+                handleError(request);
             }
         });
         webView.setWebChromeClient(new WebChromeClient());
-        webView.loadUrl(getString(R.string.OR_BASE_SERVER)+getString(R.string.OR_CONSOLE_URL));
+        webView.loadUrl(getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL));
 
+    }
+
+    private void handleError(WebResourceRequest request) {
+        if (request.getUrl().toString().startsWith(getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL)) ||
+                request.getUrl().toString().startsWith(getString(R.string.OR_BASE_SERVER) + getString(R.string.AUTH_URL))
+                ) {
+            webView.loadUrl("about:blank");
+            errorView.setVisibility(View.VISIBLE);
+        }
     }
 
     public void reloadPage(View view) {
         errorView.setVisibility(View.GONE);
-        webView.loadUrl(getString(R.string.OR_BASE_SERVER)+getString(R.string.OR_CONSOLE_URL));
+        webView.loadUrl(getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL));
     }
 
 
@@ -126,22 +140,21 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public String getMobileToken() {
             return tokenService.getJsonToken();
-       }
+        }
 
         @JavascriptInterface
-        public void setMobileToken(String token, String  refreshToken, String idToken) {
-            tokenService.saveToken(token,refreshToken,idToken);
+        public void setMobileToken(String token, String refreshToken, String idToken) {
+            tokenService.saveToken(token, refreshToken, idToken);
         }
     }
 
 
-
     private void onConnectivityChanged(boolean connectivity) {
-           if (connectivity) {
-               noConnectivityView.setVisibility(View.GONE);
-           } else {
-               noConnectivityView.setVisibility(View.VISIBLE);
-           }
+        if (connectivity) {
+            noConnectivityView.setVisibility(View.GONE);
+        } else {
+            noConnectivityView.setVisibility(View.VISIBLE);
+        }
     }
 
     private class ConnectivityChangeReceiver extends BroadcastReceiver {

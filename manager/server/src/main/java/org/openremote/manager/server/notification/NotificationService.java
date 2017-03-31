@@ -26,8 +26,8 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
-import org.openremote.manager.shared.notification.AlertNotification;
-import org.openremote.manager.shared.notification.DeliveryStatus;
+import org.openremote.model.notification.AlertNotification;
+import org.openremote.model.notification.DeliveryStatus;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
@@ -97,7 +97,7 @@ public class NotificationService implements ContainerService {
     }
 
 
-    public void storeAndNotifyAlertNotification(String userId, AlertNotification alertNotification) {
+    public void storeAndNotify(String userId, AlertNotification alertNotification) {
         alertNotification.setUserId(userId);
         alertNotification.setDeliveryStatus(DeliveryStatus.PENDING);
         persistenceService.doTransaction((EntityManager entityManager) -> {
@@ -135,5 +135,12 @@ public class NotificationService implements ContainerService {
             query.setParameter("status",DeliveryStatus.DELIVERED);
             query.executeUpdate();
             });
+    }
+
+    public List<String> findAllUsersWithToken() {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            Query query = entityManager.createQuery("SELECT dnt.id.userId FROM DeviceNotificationToken dnt");
+            return query.getResultList();
+        });
     }
 }

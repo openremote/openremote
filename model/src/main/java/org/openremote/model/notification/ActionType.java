@@ -1,4 +1,4 @@
-package org.openremote.manager.shared.notification;
+package org.openremote.model.notification;
 
 
 public enum ActionType {
