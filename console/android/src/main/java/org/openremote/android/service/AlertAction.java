@@ -3,7 +3,7 @@ package org.openremote.android.service;
 
 public class AlertAction {
     private AlertNotification.ActionType type;
-    private String name;
+    private String title;
 
     public AlertAction() {
     }
@@ -16,19 +16,19 @@ public class AlertAction {
         this.type = type;
     }
 
-    public String getName() {
-        return name;
+    public String getTitle() {
+        return title;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     @Override
     public String toString() {
         return "AlertAction{" +
                 "type=" + type +
-                ", name='" + name + '\'' +
+                ", title='" + title + '\'' +
                 '}';
     }
 }

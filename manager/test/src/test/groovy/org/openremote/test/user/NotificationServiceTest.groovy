@@ -3,9 +3,9 @@ package org.openremote.test.user
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.notification.NotificationService
-import org.openremote.manager.shared.notification.ActionType
-import org.openremote.manager.shared.notification.AlertAction
-import org.openremote.manager.shared.notification.AlertNotification
+import org.openremote.model.notification.ActionType
+import org.openremote.model.notification.AlertAction
+import org.openremote.model.notification.AlertNotification
 import org.openremote.manager.shared.notification.NotificationResource
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification

@@ -8,7 +8,6 @@ import android.content.SharedPreferences;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.preference.PreferenceManager;
-import android.service.notification.StatusBarNotification;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
@@ -18,7 +17,6 @@ import org.openremote.android.service.AlertAction;
 import org.openremote.android.service.AlertNotification;
 import org.openremote.android.service.TokenService;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -121,7 +119,7 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
                 .setSound(defaultSoundUri);
 
         for (AlertAction alertAction : alertNotification.getActions()) {
-            notificationBuilder = notificationBuilder.addAction(new NotificationCompat.Action(-1, alertAction.getName(), pendingIntent));
+            notificationBuilder = notificationBuilder.addAction(new NotificationCompat.Action(-1, alertAction.getTitle(), pendingIntent));
         }
 
         NotificationManager notificationManager =
