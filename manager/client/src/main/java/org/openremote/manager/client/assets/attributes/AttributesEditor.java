@@ -108,7 +108,7 @@ public class AttributesEditor
     /* ####################################################################### */
 
     protected FormGroup createNewAttributeEditor() {
-        AssetAttribute attribute = new AssetAttribute();
+        AssetAttribute attribute = new AssetAttribute("NAME", AttributeType.STRING);
 
         FormGroup formGroup = createAttributeNameEditor(attribute);
 

@@ -23,7 +23,7 @@ public class RulePersistence {
 
     public String readData(String key, String defaultValue) {
         LOG.fine("Reading '" + key + "', default: " + defaultValue);
-        return data.containsKey(key) ? data.get(key) : defaultValue;
+        return data.getOrDefault(key, defaultValue);
     }
 
     public void deleteData(String key) {

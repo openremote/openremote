@@ -101,7 +101,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.coordinates.length == 2
         asset.path.length == 1
         asset.path[0] == managerDemoSetup.smartOfficeId
-        new AssetAttributes(asset.attributes).get("geoStreet").valueAsString == "Torenallee 20"
+        new AssetAttributes(asset).get("geoStreet").valueAsString == "Torenallee 20"
 
         when: "a query is executed"
         def assets = assetStorageService.findAll(
@@ -151,7 +151,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).coordinates.length == 2
         assets.get(0).path.length == 1
         assets.get(0).path[0] == managerDemoSetup.smartOfficeId
-        new AssetAttributes(assets.get(0).attributes).get("geoStreet").valueAsString == "Torenallee 20"
+        new AssetAttributes(assets.get(0)).get("geoStreet").valueAsString == "Torenallee 20"
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -248,11 +248,11 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).id == managerDemoSetup.apartment1Id
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
         assets.get(2).id == managerDemoSetup.apartment1LivingroomThermostatId
-        new AssetAttributes(assets.get(2).attributes).size() == 2
-        new AssetAttributes(assets.get(2).attributes).get("currentTemperature").valueAsDecimal == null
-        new AssetAttributes(assets.get(2).attributes).get("currentTemperature").meta.size() == 3
-        new AssetAttributes(assets.get(2).attributes).get("comfortTemperature").valueAsDecimal == null
-        new AssetAttributes(assets.get(2).attributes).get("comfortTemperature").meta.size() == 2
+        new AssetAttributes(assets.get(2)).size() == 2
+        new AssetAttributes(assets.get(2)).get("currentTemperature").valueAsDecimal == null
+        new AssetAttributes(assets.get(2)).get("currentTemperature").meta.size() == 3
+        new AssetAttributes(assets.get(2)).get("comfortTemperature").valueAsDecimal == null
+        new AssetAttributes(assets.get(2)).get("comfortTemperature").meta.size() == 2
         assets.get(3).id == managerDemoSetup.apartment2Id
 
         when: "a query is executed"

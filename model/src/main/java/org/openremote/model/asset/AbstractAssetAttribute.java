@@ -29,57 +29,28 @@ public abstract class AbstractAssetAttribute<CHILD extends AbstractAssetAttribut
 
     final public String assetId;
 
-    public AbstractAssetAttribute() {
-        this.assetId = null;
-    }
-
-    public AbstractAssetAttribute(String assetId) {
-        this.assetId = assetId;
-    }
-
-    public AbstractAssetAttribute(String name, AttributeType type) {
-        super(name, type);
-        this.assetId = null;
-    }
-
-    public AbstractAssetAttribute(String name, JsonObject jsonObject) {
-        super(name, jsonObject);
-        this.assetId = null;
-    }
-
-    public AbstractAssetAttribute(String name, AttributeType type, JsonValue value) {
-        super(name, type, value);
-        this.assetId = null;
-    }
-
-    public AbstractAssetAttribute(String assetId, String name) {
-        super(name);
-        this.assetId = assetId;
-    }
-
-    public AbstractAssetAttribute(String assetId, String name, AttributeType type) {
+    protected AbstractAssetAttribute(String assetId, String name, AttributeType type) {
         super(name, type);
         this.assetId = assetId;
     }
 
-    public AbstractAssetAttribute(String assetId, String name, JsonObject jsonObject) {
-        super(name, jsonObject);
-        this.assetId = assetId;
-    }
-
-    public AbstractAssetAttribute(String assetId, String name, AttributeType type, JsonValue value) {
+    protected AbstractAssetAttribute(String assetId, String name, AttributeType type, JsonValue value) {
         super(name, type, value);
         this.assetId = assetId;
     }
 
-    public AbstractAssetAttribute(AbstractAssetAttribute attribute) {
-        this(attribute.assetId, attribute.getName(), attribute.getJsonObject());
+    protected AbstractAssetAttribute(String assetId, String name, JsonObject jsonObject) {
+        super(name, jsonObject);
+        this.assetId = assetId;
+    }
+
+    // Bypass the valid check as asset attribute would have already been validated
+    protected AbstractAssetAttribute(AbstractAssetAttribute assetAttribute) {
+        super(assetAttribute.getName(), assetAttribute.getJsonObject());
+        this.assetId = assetAttribute.assetId;
     }
 
     public String getAssetId() {
-        if (assetId == null) {
-            throw new IllegalStateException("Asset identifier not set on: " + this);
-        }
         return assetId;
     }
 
@@ -92,8 +63,8 @@ public abstract class AbstractAssetAttribute<CHILD extends AbstractAssetAttribut
      */
     public AttributeState getState() {
         return new AttributeState(
-            getAttributeRef(),
-            getValue()
+                getAttributeRef(),
+                getValue()
         );
     }
 
@@ -102,8 +73,8 @@ public abstract class AbstractAssetAttribute<CHILD extends AbstractAssetAttribut
      */
     public AttributeEvent getStateEvent() {
         return new AttributeEvent(
-            getState(),
-            getValueTimestamp()
+                getState(),
+                getValueTimestamp()
         );
     }
 
@@ -139,4 +110,7 @@ public abstract class AbstractAssetAttribute<CHILD extends AbstractAssetAttribut
         return hasMetaItem(RULES_EVENT_EXPIRES) ? firstMetaItem(RULES_EVENT_EXPIRES).getValueAsString() : null;
     }
 
+    public boolean isAgentLinked() {
+        return hasMetaItem(AGENT_LINK);
+    }
 }

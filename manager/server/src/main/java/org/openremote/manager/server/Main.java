@@ -61,11 +61,11 @@ public class Main {
                     new RulesService(),
                     new AssetStorageService(),
                     new AssetDatapointService(),
-                    new AssetProcessingService(),
-                    new AgentService()
+                    new AssetProcessingService()
                 ));
                 ServiceLoader.load(Protocol.class).forEach(this::add);
                 addAll(Arrays.asList(
+                    new AgentService(),
                     new MapService(),
                     new NotificationService(),
                     new MessageBrokerService(),

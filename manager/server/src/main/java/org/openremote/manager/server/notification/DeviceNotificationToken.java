@@ -44,8 +44,7 @@ public class DeviceNotificationToken {
 
             Id id = (Id) o;
 
-            if (!deviceId.equals(id.deviceId)) return false;
-            return userId.equals(id.userId);
+            return deviceId.equals(id.deviceId) && userId.equals(id.userId);
         }
 
         @Override

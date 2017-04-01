@@ -240,87 +240,114 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
         // We must load the asset from database (only when required), as the
         // persistence event might not contain a completely loaded asset
-        BiFunction<String, AssetAttribute, AssetUpdate> buildUpdateFunction = (assetId, attribute) -> {
-            final Asset loadedAsset = assetStorageService.find(assetId, true);
-            return new AssetUpdate(loadedAsset,
+        BiFunction<Asset, AssetAttribute, AssetUpdate> buildUpdateFunction = (loadedAsset, attribute) ->
+            new AssetUpdate(loadedAsset,
                 new AssetAttribute(loadedAsset.getId(),
                     attribute.getName(),
                     attribute.getJsonObject()));
-        };
+        Asset loadedAsset = null;
 
         switch (persistenceEvent.getCause()) {
             case INSERT:
 
                 // New asset has been created so get attributes that have RULES_FACT meta
                 AssetAttributes addedAttributes = new AssetAttributes(asset);
+                List<AssetAttribute> ruleAttributes = addedAttributes.get()
+                        .stream()
+                        .filter(AssetAttribute::isRulesFact)
+                        .collect(Collectors.toList());
 
-                addedAttributes.get().stream()
-                    .filter(AssetAttribute::isRulesFact)
-                    .forEach(attribute -> {
-                        AssetUpdate update = buildUpdateFunction.apply(asset.getId(), attribute);
-                        // Set the status to completed already so rules cannot interfere with this initial insert
-                        update.setStatus(AssetUpdate.Status.COMPLETED);
-                        LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + update);
-                        updateFact(update, true);
-                    });
+                if (ruleAttributes.size() == 0) {
+                    return;
+                }
+
+                // Fully load the asset
+                loadedAsset = assetStorageService.find(asset.getId(), true);
+                Asset finalLoadedAsset = loadedAsset;
+
+                ruleAttributes.forEach(attribute -> {
+                            AssetUpdate update = buildUpdateFunction.apply(finalLoadedAsset, attribute);
+                            // Set the status to completed already so rules cannot interfere with this initial insert
+                        	update.setStatus(AssetUpdate.Status.COMPLETED);
+                        	LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + update);
+                        	updateFact(update, true);
+                        });
                 break;
 
             case UPDATE:
 
                 int attributesIndex = Arrays.asList(persistenceEvent.getPropertyNames()).indexOf("attributes");
-                if (attributesIndex >= 0) {
-                    // Attributes have possibly changed so need to compare old and new state to determine
-                    // which facts to retract and which to insert
-                    AssetAttributes oldAttributes = new AssetAttributes((JsonObject) persistenceEvent.getPreviousState()[attributesIndex]);
-                    AssetAttributes newAttributes = new AssetAttributes((JsonObject) persistenceEvent.getCurrentState()[attributesIndex]);
+                if (attributesIndex < 0) {
+                    return;
+                }
 
-                    List<AssetAttribute> oldFactAttributes = oldAttributes.get().stream()
+                // Attributes have possibly changed so need to compare old and new state to determine
+                // which facts to retract and which to insert
+                AssetAttributes oldAttributes = new AssetAttributes(asset.getId(), (JsonObject) persistenceEvent.getPreviousState()[attributesIndex]);
+                AssetAttributes newAttributes = new AssetAttributes(asset.getId(), (JsonObject) persistenceEvent.getCurrentState()[attributesIndex]);
+
+                List<AssetAttribute> oldFactAttributes = oldAttributes.get().stream()
                         .filter(AssetAttribute::isRulesFact)
                         .collect(Collectors.toList());
 
-                    List<AssetAttribute> newFactAttributes = newAttributes.get().stream()
+                List<AssetAttribute> newFactAttributes = newAttributes.get().stream()
                         .filter(AssetAttribute::isRulesFact)
                         .collect(Collectors.toList());
 
-                    // Compare attributes by JSON value
-                    // Retract facts for attributes that are in oldFactAttributes but not in newFactAttributes
-
-                    oldFactAttributes
+                // Compare attributes by JSON value
+                // Retract facts for attributes that are in oldFactAttributes but not in newFactAttributes
+                List<AssetAttribute> processAttributes = oldFactAttributes
                         .stream()
                         .filter(oldFactAttribute -> newFactAttributes
-                            .stream()
-                            .noneMatch(newFactAttribute -> JsonUtil.equals( // Ignore the timestamp in comparison
-                                oldFactAttribute.getJsonObject(),
-                                newFactAttribute.getJsonObject(),
-                                Collections.singletonList(AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME))
-                            )
+                                .stream()
+                                .noneMatch(newFactAttribute -> JsonUtil.equals( // Ignore the timestamp in comparison
+                                        oldFactAttribute.getJsonObject(),
+                                        newFactAttribute.getJsonObject(),
+                                        Collections.singletonList(AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME))
+                                )
                         )
-                        .forEach(obsoleteFactAttribute -> {
-                            AssetUpdate update = buildUpdateFunction.apply(asset.getId(), obsoleteFactAttribute);
-                            LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + update);
-                            retractFact(update);
-                        });
+                        .collect(Collectors.toList());
 
-                    // Insert facts for attributes that are in newFactAttributes but not in oldFactAttributes
-                    newFactAttributes
+                if (processAttributes.size() > 0) {
+                    // Fully load the asset
+                    loadedAsset = assetStorageService.find(asset.getId(), true);
+                    Asset finalLoadedAsset1 = loadedAsset;
+                    processAttributes.forEach(obsoleteFactAttribute -> {
+                        AssetUpdate update = buildUpdateFunction.apply(finalLoadedAsset1, obsoleteFactAttribute);
+                        LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), retracting fact: " + update);
+                        retractFact(update);
+                    });
+                }
+
+                // Insert facts for attributes that are in newFactAttributes but not in oldFactAttributes
+                processAttributes = newFactAttributes
                         .stream()
                         .filter(newFactAttribute -> oldFactAttributes
-                            .stream()
-                            .noneMatch(oldFactAttribute ->
-                                JsonUtil.equals( // Ignore the timestamp in comparison
-                                    oldFactAttribute.getJsonObject(),
-                                    newFactAttribute.getJsonObject(),
-                                    Collections.singletonList(AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME)
+                                .stream()
+                                .noneMatch(oldFactAttribute ->
+                                        JsonUtil.equals( // Ignore the timestamp in comparison
+                                                oldFactAttribute.getJsonObject(),
+                                                newFactAttribute.getJsonObject(),
+                                                Collections.singletonList(AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME)
+                                        )
                                 )
-                            )
                         )
-                        .forEach(newFactAttribute -> {
-                            AssetUpdate update = buildUpdateFunction.apply(asset.getId(), newFactAttribute);
-                            // Set the status to completed already so rules cannot interfere with this initial insert
-                            update.setStatus(AssetUpdate.Status.COMPLETED);
-                            LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + update);
-                            updateFact(update, true);
-                        });
+                        .collect(Collectors.toList());
+
+                if (processAttributes.size() > 0) {
+                    if (loadedAsset == null) {
+                        // Fully load the asset
+                        loadedAsset = assetStorageService.find(asset.getId(), true);
+                    }
+
+                    Asset finalLoadedAsset2 = loadedAsset;
+                    processAttributes.forEach(newFactAttribute -> {
+                        AssetUpdate update = buildUpdateFunction.apply(finalLoadedAsset2, newFactAttribute);
+                        // Set the status to completed already so rules cannot interfere with this initial insert
+                        update.setStatus(AssetUpdate.Status.COMPLETED);
+                        LOG.fine("Asset was persisted (" + persistenceEvent.getCause() + "), inserting fact: " + update);
+                        updateFact(update, true);
+                    });
                 }
                 break;
             case DELETE:
@@ -536,7 +563,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
         if (!skipStatusCheck) {
             // Check that all engines in the scope are not in ERROR state
-            if (rulesDeployments.stream().anyMatch(rd -> rd.isError())) {
+            if (rulesDeployments.stream().anyMatch(RulesDeployment::isError)) {
                 LOG.severe("At least one rule engine is in an error state so cannot process update:" + assetUpdate);
                 assetUpdate.setStatus(AssetUpdate.Status.ERROR);
                 return;

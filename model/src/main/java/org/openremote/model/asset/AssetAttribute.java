@@ -22,52 +22,35 @@ package org.openremote.model.asset;
 import elemental.json.Json;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
-import org.openremote.model.AttributeType;
+import org.openremote.model.*;
 
 public class AssetAttribute extends AbstractAssetAttribute<AssetAttribute> {
-
-    public AssetAttribute() {
-    }
-
-    public AssetAttribute(String assetId) {
-        super(assetId);
-    }
-
     public AssetAttribute(String name, AttributeType type) {
-        super(name, type);
-    }
-
-    public AssetAttribute(String name, JsonObject jsonObject) {
-        super(name, jsonObject);
+        super(null, name, type);
     }
 
     public AssetAttribute(String name, AttributeType type, JsonValue value) {
-        super(name, type, value);
+        super(null, name, type, value);
     }
 
-    public AssetAttribute(String assetId, String name) {
-        super(assetId, name);
+    public AssetAttribute(String name, JsonObject jsonObject) {
+        super(null, name, jsonObject);
     }
 
     public AssetAttribute(String assetId, String name, AttributeType type) {
         super(assetId, name, type);
     }
 
-    public AssetAttribute(String assetId, String name, JsonObject jsonObject) {
-        super(assetId, name, jsonObject);
-    }
-
     public AssetAttribute(String assetId, String name, AttributeType type, JsonValue value) {
         super(assetId, name, type, value);
     }
 
-    public AssetAttribute(AbstractAssetAttribute attribute) {
-        super(attribute);
+    public AssetAttribute(String assetId, String name, JsonObject jsonObject) {
+        super(assetId, name, jsonObject);
     }
 
     @Override
     public AssetAttribute copy() {
         return new AssetAttribute(assetId, getName(), Json.parse(getJsonObject().toJson()));
     }
-
 }

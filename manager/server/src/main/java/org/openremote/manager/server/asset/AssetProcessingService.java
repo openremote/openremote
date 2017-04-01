@@ -31,7 +31,6 @@ import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeState;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.thing.ThingAttribute;
-import org.openremote.model.asset.thing.ThingAttributes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +39,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.agent3.protocol.Protocol.SENSOR_TOPIC;
-import static org.openremote.model.asset.AssetType.THING;
 
 /**
  * Receives {@link AttributeEvent}s and processes them.
@@ -153,9 +151,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         // Sensor updates are processed first by rules, then stored in the asset and datapoint databases
         from(SENSOR_TOPIC)
             .filter(body().isInstanceOf(AttributeEvent.class))
-            .process(exchange -> {
-                processSensorUpdate(exchange.getIn().getBody(AttributeEvent.class));
-            });
+            .process(exchange -> processSensorUpdate(exchange.getIn().getBody(AttributeEvent.class)));
     }
 
     /**
@@ -219,12 +215,13 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
      * @param attributeEvent
      */
     protected void processSensorUpdate(AttributeEvent attributeEvent) {
-        // Must reference a thing asset
         ServerAsset thing = assetStorageService.find(attributeEvent.getEntityId(), true);
-        if (thing == null || thing.getWellKnownType() != THING) {
-            LOG.fine("Ignoring " + attributeEvent + ", not a thing: " + thing);
-            return;
-        }
+//        // Must reference a thing asset
+//
+//        if (thing == null || thing.getWellKnownType() != THING) {
+//            LOG.fine("Ignoring " + attributeEvent + ", not a thing: " + thing);
+//            return;
+//        }
 
         LOG.fine("Processing sensor " + attributeEvent + " for thing: " + thing);
 
@@ -232,10 +229,13 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         // event comes from a Protocol, we can not assume that the attribute is still linked,
         // consider a protocol that receives a batch of messages because a gateway was offline
         // for a day)
-        ThingAttributes thingAttributes = new ThingAttributes(thing);
-        ThingAttribute thingAttribute = thingAttributes.getLinkedAttribute(
-            agentService.getAgentLinkResolver(), attributeEvent.getAttributeName()
-        );
+        AssetAttributes attributes = new AssetAttributes(thing);
+
+        // Look for a matching thing attribute
+        AssetAttribute attribute = attributes.get(attributeEvent.getAttributeName());
+
+        // Convert this into a thing attribute
+        ThingAttribute thingAttribute = ThingAttribute.get(attribute, agentService.getProtocolConfigurationResolver());
 
         if (thingAttribute == null) {
             LOG.warning("Processing sensor update failed attribute not linked to an agent: " + attributeEvent);

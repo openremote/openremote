@@ -22,11 +22,16 @@ package org.openremote.model.asset.agent;
 import elemental.json.Json;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
-import org.openremote.model.AttributeType;
-import org.openremote.model.Meta;
+import org.openremote.model.*;
 import org.openremote.model.asset.AbstractAssetAttribute;
+import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.thing.ThingAttribute;
 
+import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 /**
  * Agent attributes can be named protocol configurations, the value is a protocol URN.
@@ -35,65 +40,80 @@ import java.util.Locale;
  */
 public class ProtocolConfiguration extends AgentAttribute<ProtocolConfiguration> {
 
-    /**
-     * A protocol configuration attribute value must be a URN string representation starting with "urn:".
-     */
-    public static boolean isProtocolConfiguration(AgentAttribute attribute) {
-        return attribute.getType() == AttributeType.STRING
-            && attribute.hasValue()
-            && attribute.getValueAsString().toLowerCase(Locale.ROOT).startsWith("urn:");
-    }
-
-    public ProtocolConfiguration() {
-    }
-
-    public ProtocolConfiguration(String assetId) {
-        super(assetId);
-    }
-
-    public ProtocolConfiguration(String name, AttributeType type) {
-        super(name, type);
-    }
-
-    public ProtocolConfiguration(String name, JsonObject jsonObject) {
-        super(name, jsonObject);
-    }
-
-    public ProtocolConfiguration(String name, AttributeType type, JsonValue value) {
-        super(name, type, value);
-    }
-
     public ProtocolConfiguration(String name, String protocol) {
-        super(name, AttributeType.STRING, Json.create(protocol));
+        super(null, name, AttributeType.STRING, Json.create(protocol));
     }
 
-    public ProtocolConfiguration(String assetId, String name, AttributeType type) {
-        super(assetId, name, type);
+    public ProtocolConfiguration(String assetId, String name, String protocol) {
+        super(assetId, name, AttributeType.STRING, Json.create(protocol));
     }
 
     public ProtocolConfiguration(String assetId, String name, JsonObject jsonObject) {
         super(assetId, name, jsonObject);
     }
 
-    public ProtocolConfiguration(String assetId, String name, AttributeType type, JsonValue value) {
-        super(assetId, name, type, value);
-    }
-
-    public ProtocolConfiguration(ProtocolConfiguration attribute) {
-        super(attribute);
-    }
-
     public ProtocolConfiguration(AbstractAssetAttribute attribute) {
-        super(attribute);
+        this(attribute.getAssetId(), attribute.getName(), attribute.getJsonObject());
+    }
+
+    public boolean isEnabled() {
+        MetaItem enabled = firstMetaItem(AssetMeta.ENABLED);
+        return enabled != null ? enabled.getValueAsBoolean() : true;
+    }
+
+    public void setEnabled(boolean enabled) {
+        Meta meta = getMeta();
+        meta.removeAll(AssetMeta.ENABLED.getName());
+        meta.add(new MetaItem(AssetMeta.ENABLED, Json.create(enabled)));
+        setMeta(meta);
     }
 
     @Override
-    public ProtocolConfiguration copy() {
-        return new ProtocolConfiguration(getName(), Json.parse(getJsonObject().toJson()));
+    public ProtocolConfiguration setValue(JsonValue value) throws IllegalArgumentException {
+        super.setValue(value);
+        if (!isValueValid()) {
+            throw new IllegalArgumentException("Protocol configuration value should contain a protocol URN");
+        }
+        return this;
     }
 
     public String getProtocolName() {
         return getValueAsString();
     }
 
+    public boolean isValueValid() {
+        return getType() == AttributeType.STRING && getValueAsString() != null && getValueAsString().startsWith(Constants.PROTOCOL_NAMESPACE);
+    }
+
+    @Override
+    public boolean isValid() {
+        return super.isValid() && isValueValid();
+    }
+
+    /**
+     * A protocol configuration attribute value must be a URN string representation starting with {@link Constants#PROTOCOL_NAMESPACE}.
+     */
+    public static boolean isProtocolConfiguration(AbstractAssetAttribute attribute) {
+        return attribute.getType() == AttributeType.STRING
+                && attribute.hasValue()
+                && attribute.getValueAsString().toLowerCase(Locale.ROOT).startsWith(Constants.PROTOCOL_NAMESPACE);
+    }
+
+    /**
+     * Get all protocol configuration attributes from the asset
+     */
+    public static List<ProtocolConfiguration> getAll(Asset agent) {
+        return getAll(new AgentAttributes(agent).get());
+    }
+
+    /**
+     * Get all protocol configuration attributes from the agent attributes
+     */
+    public static List<ProtocolConfiguration> getAll(List<AgentAttribute> attributes) {
+        return attributes
+                .stream()
+                .filter(ProtocolConfiguration::isProtocolConfiguration)
+                .map(ProtocolConfiguration::new)
+                .collect(Collectors.toList());
+    }
 }

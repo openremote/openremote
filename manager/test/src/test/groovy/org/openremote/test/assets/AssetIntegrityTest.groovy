@@ -6,6 +6,7 @@ import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.shared.asset.AssetResource
+import org.openremote.manager.shared.http.BadRequestException
 import org.openremote.model.Attribute
 import org.openremote.model.Attributes
 import org.openremote.model.asset.Asset
@@ -17,6 +18,7 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 
 import javax.ws.rs.WebApplicationException
+import javax.xml.ws.WebServiceException
 
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
@@ -58,15 +60,13 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         testAsset.realmId == keycloakDemoSetup.masterTenant.id
         testAsset.parentId == null
 
-        when: "an asset is stored with an illegal attribute name"
-        def attributes = new AssetAttributes(testAsset.getAttributes())
-        attributes.put(new AssetAttribute(testAsset.id, "illegal- Attribute:name&&&"))
+        when: "an asset is created with an illegal attribute name"
+        def attributes = new AssetAttributes(testAsset)
+        attributes.put(new AssetAttribute(testAsset.id, "illegal- Attribute:name&&&", AttributeType.STRING))
         testAsset.setAttributes(attributes.getJsonObject())
-        assetResource.update(null, testAsset.id, testAsset)
 
         then: "the request should be bad"
-        WebApplicationException ex = thrown()
-        ex.response.status == 400
+        thrown(IllegalArgumentException)
 
         when: "an asset is stored with a non-empty attribute value"
         testAsset = assetResource.get(null, testAsset.getId())
@@ -77,14 +77,14 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the attribute should exist"
-        new AssetAttributes(testAsset.getAttributes()).get("foo").getValueAsString() == "bar"
+        new AssetAttributes(testAsset).get("foo").getValueAsString() == "bar"
 
         when: "an asset attribute value is written directly"
         assetResource.writeAttributeValue(null, testAsset.getId(), "foo", "\"bar2\"")
         testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the attribute value should match"
-        new AssetAttributes(testAsset.getAttributes()).get("foo").getValueAsString() == "bar2"
+        new AssetAttributes(testAsset).get("foo").getValueAsString() == "bar2"
         assetResource.readAttributeValue(null, testAsset.getId(), "foo") == "\"bar2\""
 
         when: "an asset attribute value null is written directly"
@@ -92,7 +92,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the attribute value should match"
-        !new AssetAttributes(testAsset.getAttributes()).get("foo").hasValue()
+        !new AssetAttributes(testAsset).get("foo").hasValue()
         assetResource.readAttributeValue(null, testAsset.getId(), "foo") == "null"
 
         when: "an asset is updated with a different type"
@@ -109,7 +109,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         assetResource.update(null, testAsset.id, testAsset)
 
         then: "the request should be bad"
-        ex = thrown()
+        WebApplicationException ex = thrown()
         ex.response.status == 400
 
         when: "an asset is updated with a non-existent parent"

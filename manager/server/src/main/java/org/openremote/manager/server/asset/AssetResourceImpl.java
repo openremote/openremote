@@ -208,7 +208,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 throw new WebApplicationException(NOT_FOUND);
 
             // Check attribute exists
-            AssetAttributes attributes = new AssetAttributes(asset.getAttributes());
+            AssetAttributes attributes = new AssetAttributes(asset);
             if (!attributes.hasAttribute(attributeName))
                 throw new WebApplicationException(NOT_FOUND);
 
@@ -258,7 +258,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
-            AssetAttributes attributes = new AssetAttributes(asset.getAttributes());
+            AssetAttributes attributes = new AssetAttributes(asset);
             Attribute attribute = attributes.get(attributeName);
             if (attribute == null) {
                 throw new WebApplicationException(NOT_FOUND);

@@ -129,7 +129,12 @@ public enum AssetMeta {
      * facts from the rules sessions if they are older than this value (using event source timestamp, not event
      * processing time).
      */
-    RULES_EVENT_EXPIRES(ASSET_META_NAMESPACE + ":rulesEventExpires", new Access(true, false, true), JsonType.NUMBER);
+    RULES_EVENT_EXPIRES(ASSET_META_NAMESPACE + ":rulesEventExpires", new Access(true, false, true), JsonType.NUMBER),
+
+    /**
+     * Enable flag to be used by asset attributes that could require this functionality (e.g. ProtocolConfiguration)
+     */
+    ENABLED(ASSET_META_NAMESPACE + ":enabled", new Access(true, false, true), JsonType.BOOLEAN);
 
     final protected String name;
     final protected Access access;

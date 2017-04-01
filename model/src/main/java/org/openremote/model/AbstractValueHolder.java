@@ -149,6 +149,14 @@ public abstract class AbstractValueHolder<CHILD extends AbstractValueHolder> {
         return value != null; // Don't allow literal nulls
     }
 
+    /**
+     * Indicate that the jsonObject contains the mandatory data for this type of attribute
+     * override in attribute sub classes as required
+     */
+    public boolean isValid() {
+        return true;
+    }
+
     @Override
     public String toString() {
         return jsonObject.toJson();

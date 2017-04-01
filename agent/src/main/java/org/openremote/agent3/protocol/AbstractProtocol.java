@@ -22,17 +22,16 @@ package org.openremote.agent3.protocol;
 import org.apache.camel.Predicate;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.container.message.MessageBrokerSetupService;
-import org.openremote.model.AttributeEvent;
-import org.openremote.model.AttributeState;
-import org.openremote.model.asset.thing.ThingAttribute;
 import org.openremote.container.Container;
 import org.openremote.container.message.MessageBrokerContext;
+import org.openremote.container.message.MessageBrokerSetupService;
+import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeRef;
+import org.openremote.model.AttributeState;
+import org.openremote.model.asset.thing.ThingAttribute;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -110,17 +109,19 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     @Override
-    public void unlinkAttributes(String thingId) throws Exception {
+    public void unlinkAttributes(Collection<ThingAttribute> attributes) throws Exception {
         synchronized (linkedAttributes) {
-            Iterator<Map.Entry<AttributeRef, ThingAttribute>> entryIterator = linkedAttributes.entrySet().iterator();
-            while (entryIterator.hasNext()) {
-                Map.Entry<AttributeRef, ThingAttribute> entry = entryIterator.next();
-                if (entry.getKey().getEntityId().equals(thingId)) {
-                    LOG.fine("Attribute removed on '" + getProtocolName() + "': " + entry.getValue());
-                    onAttributeRemoved(entry.getValue());
-                    entryIterator.remove();
-                }
-            }
+            attributes
+                    .stream()
+                    .filter(thingAttribute -> linkedAttributes.values()
+                                    .stream()
+                                    .anyMatch(linkedAttribute -> linkedAttribute.getAttributeRef().equals(thingAttribute.getAttributeRef()))
+                    )
+                    .forEach(attributeToRemove -> {
+                        linkedAttributes.remove(attributeToRemove.getAttributeRef());
+                        LOG.fine("Attribute removed on '" + getProtocolName() + "': " + attributeToRemove);
+                        onAttributeRemoved(attributeToRemove);
+                    });
         }
     }
 

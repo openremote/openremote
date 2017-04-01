@@ -97,7 +97,7 @@ public class ManagerFileServlet extends FileServlet {
         }
 
         ManagerFileServlet fileServlet = new ManagerFileServlet(devMode, docRoot.toFile(), requiredRoles);
-        ServletInfo servletInfo = Servlets.servlet("Manager File Servlet", FileServlet.class, () -> new ImmediateInstanceHandle<Servlet>(fileServlet));
+        ServletInfo servletInfo = Servlets.servlet("Manager File Servlet", FileServlet.class, () -> new ImmediateInstanceHandle<>(fileServlet));
         servletInfo.addMapping("/*");
 
         Filter gzipFilter = new GzipResponseFilter(MIME_TYPES_TO_ZIP);

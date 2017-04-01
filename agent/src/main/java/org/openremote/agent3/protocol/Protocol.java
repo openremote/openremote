@@ -68,6 +68,6 @@ public interface Protocol extends ContainerService {
 
     void linkAttributes(Collection<ThingAttribute> attributes) throws Exception;
 
-    void unlinkAttributes(String thingId) throws Exception;
+    void unlinkAttributes(Collection<ThingAttribute> attributes) throws Exception;
 
 }

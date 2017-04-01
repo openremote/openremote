@@ -51,7 +51,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
 
         and: "the room lights in an apartment to be on"
         def livingRoomAsset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
-        assert new AssetAttributes(livingRoomAsset.getAttributes()).get("lightSwitch").valueAsBoolean
+        assert new AssetAttributes(livingRoomAsset).get("lightSwitch").valueAsBoolean
 
         when: "the ALL LIGHTS OFF switch is set to off for an apartment"
         def apartment1AllLightsOffChange = new AttributeEvent(
@@ -62,7 +62,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         then: "the room lights in the apartment should be off"
         conditions.eventually {
             livingRoomAsset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
-            assert !new AssetAttributes(livingRoomAsset.getAttributes()).get("lightSwitch").valueAsBoolean
+            assert !new AssetAttributes(livingRoomAsset).get("lightSwitch").valueAsBoolean
         }
 
         cleanup: "the server should be stopped"

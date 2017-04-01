@@ -23,86 +23,137 @@ import elemental.json.Json;
 import elemental.json.JsonArray;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
-import org.openremote.model.AttributeRef;
-import org.openremote.model.AttributeType;
-import org.openremote.model.asset.AbstractAssetAttribute;
-import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.*;
+import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ThingAttribute extends AbstractAssetAttribute<ThingAttribute> {
 
     protected ProtocolConfiguration protocolConfiguration;
 
-    public static boolean isLinkedAttribute(ThingAttribute attribute) {
-        return getAgentLink(attribute) != null;
+    public ThingAttribute(ProtocolConfiguration protocolConfiguration, AssetAttribute attribute) {
+        this(protocolConfiguration, attribute.getAssetId(), attribute.getName(), attribute.getJsonObject());
     }
 
-    static public AttributeRef getAgentLink(ThingAttribute attribute) {
-        JsonArray array = attribute.hasMetaItem(AssetMeta.AGENT_LINK)
-            ? attribute.firstMetaItem(AssetMeta.AGENT_LINK).getValueAsArray()
-            : null;
-        if (array == null || array.length() != 2)
-            return null;
-        return new AttributeRef(array);
-    }
-
-    public ThingAttribute() {
-    }
-
-    public ThingAttribute(String assetId) {
-        super(assetId);
-    }
-
-    public ThingAttribute(String name, AttributeType type) {
-        super(name, type);
-    }
-
-    public ThingAttribute(String name, JsonObject jsonObject) {
-        super(name, jsonObject);
-    }
-
-    public ThingAttribute(String name, AttributeType type, JsonValue value) {
-        super(name, type, value);
-    }
-
-    public ThingAttribute(String assetId, String name) {
-        super(assetId, name);
-    }
-
-    public ThingAttribute(String assetId, String name, AttributeType type) {
-        super(assetId, name, type);
-    }
-
-    public ThingAttribute(String assetId, String name, JsonObject jsonObject) {
-        super(assetId, name, jsonObject);
-    }
-
-    public ThingAttribute(String assetId, String name, AttributeType type, JsonValue value) {
+    public ThingAttribute(ProtocolConfiguration protocolConfiguration, AttributeRef protocolRef, String assetId, String name, AttributeType type, JsonValue value) {
         super(assetId, name, type, value);
+        setProtocolRef(protocolRef);
+        this.protocolConfiguration = protocolConfiguration;
     }
 
-    public ThingAttribute(AbstractAssetAttribute attribute) {
-        this(attribute, null);
-    }
-
-    public ThingAttribute(AbstractAssetAttribute attribute, ProtocolConfiguration protocolConfiguration) {
-        this(attribute.assetId, protocolConfiguration, attribute.getName(), attribute.getJsonObject());
-    }
-
-    public ThingAttribute(String assetId, ProtocolConfiguration protocolConfiguration, String name, JsonObject jsonObject) {
+    public ThingAttribute(ProtocolConfiguration protocolConfiguration, String assetId, String name, JsonObject jsonObject) {
         super(assetId, name, jsonObject);
         this.protocolConfiguration = protocolConfiguration;
+
+        // Verify jsonObject is valid
+        if (!isValid()) {
+            throw new IllegalArgumentException("Supplied JSON object is not valid for this type of attribute: " + jsonObject.toJson());
+        }
     }
 
     @Override
     public ThingAttribute copy() {
-        return new ThingAttribute(assetId, protocolConfiguration, getName(), Json.parse(getJsonObject().toJson()));
+        return new ThingAttribute(protocolConfiguration.copy(), assetId, getName(), Json.parse(getJsonObject().toJson()));
+    }
+
+    public ProtocolConfiguration getProtocolConfiguration() {
+        return protocolConfiguration;
     }
 
     /**
-     * Linked thing attributes have a protocol configuration of their agent after they are resolved.
+     * Get the referenced protocol configuration for this thing attribute; if it is not populated then use the supplied
+     * resolver to go and populate it before returning the value
      */
-    public ProtocolConfiguration getProtocolConfiguration() {
+    public ProtocolConfiguration getProtocolConfiguration(Function<AttributeRef, ProtocolConfiguration> protocolConfigurationResolver) {
+        if (protocolConfiguration == null && protocolConfigurationResolver != null) {
+            protocolConfiguration = protocolConfigurationResolver.apply(getProtocolRef(this));
+        }
         return protocolConfiguration;
+    }
+
+    public AttributeRef getProtocolRef() {
+        return getProtocolRef(this);
+    }
+
+    protected void setProtocolRef(AttributeRef attributeRef) {
+        if (attributeRef == null) {
+            throw new IllegalArgumentException("AttributeRef cannot be null");
+        }
+
+        Meta meta = hasMeta() ? getMeta() : new Meta();
+        meta.removeAll(AssetMeta.AGENT_LINK);
+        meta.add(new MetaItem(AssetMeta.AGENT_LINK, attributeRef.asJsonValue()));
+        setMeta(meta);
+        protocolConfiguration = null;
+    }
+
+    /**
+     * Does super class checks and also checks for valid Protocol Ref
+     */
+    @Override
+    public boolean isValid() {
+        return super.isValid() && getProtocolRef(this) != null;
+    }
+
+    public static AttributeRef getProtocolRef(AbstractAssetAttribute attribute) {
+        MetaItem metaItem = attribute.firstMetaItem(AssetMeta.AGENT_LINK);
+        JsonArray array = metaItem != null ? metaItem.getValueAsArray() : null;
+        return array != null && array.length() == 2 ? new AttributeRef(array) : null;
+    }
+
+    /**
+     * Gets all thing attributes from the asset and groups them by ProtocolRef
+     */
+    public static Map<AttributeRef, List<ThingAttribute>> getAllGroupedByProtocolRef(Asset asset, Function<AttributeRef, ProtocolConfiguration> protocolConfigurationResolver) {
+        return getAllGroupedByProtocolRef(new AssetAttributes(asset).get(), protocolConfigurationResolver);
+    }
+
+    /**
+     * Gets all thing attributes from the asset and groups them by ProtocolRef
+     */
+    public static Map<AttributeRef, List<ThingAttribute>> getAllGroupedByProtocolRef(List<AssetAttribute> attributes, Function<AttributeRef, ProtocolConfiguration> protocolConfigurationResolver) {
+        return attributes
+                .stream()
+                .filter(AssetAttribute::isAgentLinked)
+                .map(attribute -> get(attribute, protocolConfigurationResolver))
+                .filter(thingAttribute -> thingAttribute != null)
+                .collect(Collectors.groupingBy(thingAttribute -> thingAttribute.getProtocolRef()));
+    }
+
+    /**
+     * Gets all thing attributes from the asset
+     */
+    public static List<ThingAttribute> getAll(Asset asset, Function<AttributeRef, ProtocolConfiguration> protocolConfigurationResolver) {
+        return getAll(new AssetAttributes(asset).get(), protocolConfigurationResolver);
+    }
+
+    /**
+     * Gets all thing attributes from the asset
+     */
+    public static List<ThingAttribute> getAll(List<AssetAttribute> attributes, Function<AttributeRef, ProtocolConfiguration> protocolConfigurationResolver) {
+        return attributes
+                .stream()
+                .filter(AssetAttribute::isAgentLinked)
+                .filter(thingAttribute -> thingAttribute != null)
+                .map(attribute -> get(attribute, protocolConfigurationResolver))
+                .collect(Collectors.toList());
+    }
+
+    public static ThingAttribute get(AssetAttribute attribute, Function<AttributeRef, ProtocolConfiguration> protocolConfigurationResolver) {
+        AttributeRef protocolRef = getProtocolRef(attribute);
+        if (protocolRef == null) {
+            return null;
+        }
+        ProtocolConfiguration protocolConfiguration = protocolConfigurationResolver.apply(protocolRef);
+
+        if (protocolConfiguration == null) {
+            return null;
+        }
+
+        return new ThingAttribute(protocolConfiguration, attribute);
     }
 }

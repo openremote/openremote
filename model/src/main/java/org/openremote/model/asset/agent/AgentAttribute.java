@@ -24,52 +24,31 @@ import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 import org.openremote.model.AttributeType;
 import org.openremote.model.asset.AbstractAssetAttribute;
+import org.openremote.model.asset.AssetAttribute;
+
+import static org.openremote.model.asset.AssetMeta.RULES_FACT;
 
 public class AgentAttribute<CHILD extends AgentAttribute<CHILD>> extends AbstractAssetAttribute<CHILD> {
 
-    public AgentAttribute() {
-    }
-
-    public AgentAttribute(String assetId) {
-        super(assetId);
-    }
-
-    public AgentAttribute(String name, AttributeType type) {
-        super(name, type);
-    }
-
-    public AgentAttribute(String name, JsonObject jsonObject) {
-        super(name, jsonObject);
-    }
-
-    public AgentAttribute(String name, AttributeType type, JsonValue value) {
-        super(name, type, value);
-    }
-
-    public AgentAttribute(String assetId, String name) {
-        super(assetId, name);
-    }
-
     public AgentAttribute(String assetId, String name, AttributeType type) {
         super(assetId, name, type);
-    }
-
-    public AgentAttribute(String assetId, String name, JsonObject jsonObject) {
-        super(assetId, name, jsonObject);
     }
 
     public AgentAttribute(String assetId, String name, AttributeType type, JsonValue value) {
         super(assetId, name, type, value);
     }
 
-    public AgentAttribute(AbstractAssetAttribute attribute) {
-        super(attribute);
+    public AgentAttribute(String assetId, String name, JsonObject jsonObject) {
+        super(assetId, name, jsonObject);
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public CHILD copy() {
-        return (CHILD) new AgentAttribute<CHILD>(getName(), Json.parse(getJsonObject().toJson()));
+        return (CHILD) new AgentAttribute<CHILD>(assetId, getName(), Json.parse(getJsonObject().toJson()));
     }
 
+    public boolean isProtocolConfiguration() {
+        return ProtocolConfiguration.isProtocolConfiguration(this);
+    }
 }

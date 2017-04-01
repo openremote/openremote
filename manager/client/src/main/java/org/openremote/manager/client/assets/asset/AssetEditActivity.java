@@ -350,7 +350,7 @@ public class AssetEditActivity
             view.getAttributesEditorContainer(),
             assetId == null
                 ? asset.getWellKnownType().getDefaultAttributes()
-                : new AssetAttributes(asset.getAttributes()),
+                : new AssetAttributes(asset),
             assetId == null
         );
         view.setAttributesEditor(attributesEditor);

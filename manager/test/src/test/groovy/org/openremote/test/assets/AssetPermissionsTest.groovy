@@ -562,7 +562,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment1LivingroomThermostat.id == managerDemoSetup.apartment1LivingroomThermostatId
         apartment1LivingroomThermostat.name == "Livingroom Thermostat"
 
-        AssetAttributes protectedAttributes = new AssetAttributes(apartment1LivingroomThermostat.attributes)
+        AssetAttributes protectedAttributes = new AssetAttributes(apartment1LivingroomThermostat)
         protectedAttributes.size() == 2
         protectedAttributes.get("currentTemperature")
         protectedAttributes.get("currentTemperature").getType() == AttributeType.DECIMAL

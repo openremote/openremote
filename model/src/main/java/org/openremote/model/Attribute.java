@@ -19,6 +19,7 @@
  */
 package org.openremote.model;
 
+import com.google.gwt.regexp.shared.RegExp;
 import elemental.json.Json;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
@@ -32,39 +33,44 @@ import java.util.NoSuchElementException;
  */
 public abstract class Attribute<CHILD extends Attribute<CHILD>> extends AbstractValueTimestampHolder<CHILD> {
 
+    public static final String TYPE_FIELD_NAME = "type";
+    public static final String META_FIELD_NAME = "meta";
+
     /**
      * Attribute names should be very simple, as we use them in SQL path expressions, etc. and must manually escape.
      */
     public static final String ATTRIBUTE_NAME_PATTERN = "^\\w+$";
+    protected static final RegExp attributeNamePattern = RegExp.compile(Attribute.ATTRIBUTE_NAME_PATTERN);
 
     protected String name;
 
-    public Attribute() {
+    protected Attribute(String name) {
+        this(name, Json.createObject());
+    }
+
+    protected Attribute(String name, AttributeType type) {
         super(Json.createObject());
-    }
-
-    public Attribute(String name) {
-        this(name, Json.createObject());
-    }
-
-    public Attribute(String name, AttributeType type) {
-        this(name);
+        setName(name);
         setType(type);
     }
 
-    public Attribute(String name, JsonObject jsonObject) {
+    protected Attribute(String name, JsonObject jsonObject) {
         super(jsonObject);
-        this.name = name;
+        setName(name);
+
+        // Verify jsonObject is valid
+        if (!isValid()) {
+            throw new IllegalArgumentException("Supplied JSON object is not valid for this type of attribute: " + jsonObject.toJson());
+        }
     }
 
-    public Attribute(String name, AttributeType type, JsonValue value) {
-        this(name, Json.createObject());
-        setType(type);
+    protected Attribute(String name, AttributeType type, JsonValue value) {
+        this(name, type);
         setValue(value);
     }
 
-    public Attribute(CHILD attribute) {
-        this(attribute.getName(), attribute.getJsonObject());
+    protected Attribute(CHILD attribute) {
+        this(attribute.getName(), attribute.getType(), attribute.getJsonObject());
     }
 
     @Override
@@ -75,6 +81,11 @@ public abstract class Attribute<CHILD extends Attribute<CHILD>> extends Abstract
     }
 
     public void setName(String name) {
+        if (!Attribute.nameIsValid(name)) {
+            throw new IllegalArgumentException(
+                    "Invalid attribute name (must match '" + Attribute.ATTRIBUTE_NAME_PATTERN + "'): " + name
+            );
+        }
         this.name = name;
     }
 
@@ -87,34 +98,34 @@ public abstract class Attribute<CHILD extends Attribute<CHILD>> extends Abstract
     }
 
     public AttributeType getType() {
-        String typeName = jsonObject.hasKey("type") ? jsonObject.get("type").asString() : null;
+        String typeName = jsonObject.hasKey(TYPE_FIELD_NAME) ? jsonObject.get(TYPE_FIELD_NAME).asString() : null;
         return typeName != null ? AttributeType.fromValue(typeName) : null;
     }
 
     @SuppressWarnings("unchecked")
     public CHILD setType(AttributeType type) {
         if (type != null) {
-            jsonObject.put("type", Json.create(type.getValue()));
-        } else if (jsonObject.hasKey("type")) {
-            jsonObject.remove("type");
-        }
+            jsonObject.put(TYPE_FIELD_NAME, Json.create(type.getValue()));
+        }/* else if (jsonObject.hasKey(TYPE_FIELD_NAME)) {
+            jsonObject.remove(TYPE_FIELD_NAME);
+        }*/
         return (CHILD)this;
     }
 
     public boolean hasMeta() {
-        return jsonObject.hasKey("meta");
+        return jsonObject.hasKey(META_FIELD_NAME);
     }
 
     public Meta getMeta() {
-        return hasMeta() ? new Meta(jsonObject.getArray("meta")) : null;
+        return hasMeta() ? new Meta(jsonObject.getArray(META_FIELD_NAME)) : null;
     }
 
     @SuppressWarnings("unchecked")
     public CHILD setMeta(Meta meta) {
         if (meta != null) {
-            jsonObject.put("meta", meta.getJsonArray());
-        } else if (jsonObject.hasKey("meta")) {
-            jsonObject.remove("meta");
+            jsonObject.put(META_FIELD_NAME, meta.getJsonArray());
+        } else if (jsonObject.hasKey(META_FIELD_NAME)) {
+            jsonObject.remove(META_FIELD_NAME);
         }
         return (CHILD) this;
     }
@@ -133,8 +144,13 @@ public abstract class Attribute<CHILD extends Attribute<CHILD>> extends Abstract
         return firstMetaItem(name);
     }
 
+    public static boolean nameIsValid(String name) {
+        return name != null && name.length() > 0 && attributeNamePattern.test(name);
+    }
+
+    @Override
     public boolean isValid() {
-        return getName() != null && getName().length() > 0 && getType() != null;
+        return super.isValid() && nameIsValid(name) && getType() != null;
     }
 
     public abstract CHILD copy();

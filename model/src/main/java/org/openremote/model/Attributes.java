@@ -109,7 +109,7 @@ public abstract class Attributes<CHILD extends Attributes<CHILD, A>, A extends A
 
     abstract public CHILD copy();
 
-    abstract protected A createAttribute(String name, JsonObject jsonObject);
+    abstract protected A createAttribute(String name, JsonObject jsonObject) throws IllegalArgumentException;
 
     @Override
     public String toString() {

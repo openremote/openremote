@@ -40,14 +40,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 
 public class AssetStorageService implements ContainerService, Consumer<AssetUpdate> {
 
     private static final Logger LOG = Logger.getLogger(AssetStorageService.class.getName());
-
-    protected final Pattern attributeNamePattern = Pattern.compile(Attribute.ATTRIBUTE_NAME_PATTERN);
-
     protected PersistenceService persistenceService;
     protected ManagerIdentityService managerIdentityService;
     protected AssetProcessingService assetProcessingService;
@@ -145,13 +141,6 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
             }
             // Validate attribute names
             AssetAttributes attributes = new AssetAttributes(asset);
-            for (Attribute attribute : attributes.get()) {
-                if (!attributeNamePattern.matcher(attribute.getName()).matches()) {
-                    throw new IllegalStateException(
-                        "Invalid attribute name (must match '" + Attribute.ATTRIBUTE_NAME_PATTERN + "'): " + attribute.getName()
-                    );
-                }
-            }
             return em.merge(asset);
         });
     }
@@ -501,7 +490,7 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
                 try (PreparedStatement statement = connection.prepareStatement(update)) {
 
                     // Bind the value (and check we don't have a SQL injection hole in attribute name!)
-                    if (!attributeNamePattern.matcher(attributeName).matches()) {
+                    if (!Attribute.nameIsValid(attributeName)) {
                         LOG.fine(
                             "Invalid attribute name (must match '" + Attribute.ATTRIBUTE_NAME_PATTERN + "'): " + attributeName
                         );

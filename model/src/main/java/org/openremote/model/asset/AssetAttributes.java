@@ -59,7 +59,7 @@ public class AssetAttributes extends AbstractAssetAttributes<AssetAttributes, As
 
     @SuppressWarnings("unchecked")
     @Override
-    protected AssetAttribute createAttribute(String name, JsonObject jsonObject) {
+    protected AssetAttribute createAttribute(String name, JsonObject jsonObject) throws IllegalArgumentException {
         return new AssetAttribute(assetId, name, jsonObject);
     }
 }

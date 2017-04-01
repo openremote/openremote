@@ -180,7 +180,7 @@ public class AssetViewActivity
         attributesBrowser = new AttributesBrowser(
             environment,
             view.getAttributesBrowserContainer(),
-            new AssetAttributes(asset.getAttributes())
+            new AssetAttributes(asset)
         ) {
             @Override
             protected void readAttributeValue(AssetAttribute attribute, Runnable onSuccess) {

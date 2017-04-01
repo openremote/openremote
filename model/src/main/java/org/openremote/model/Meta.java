@@ -105,6 +105,10 @@ public class Meta {
         return this;
     }
 
+    public Meta removeAll(AssetMeta assetMeta) {
+        return removeAll(assetMeta.getName());
+    }
+
     public Meta removeAll(String name) {
         for (int i = 0; i < jsonArray.length(); i++) {
             JsonObject jsonObject = jsonArray.getObject(i);

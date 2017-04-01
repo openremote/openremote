@@ -33,10 +33,6 @@ import java.util.List;
 import java.util.Map;
 
 public class ThingAttributes extends AbstractAssetAttributes<ThingAttributes, ThingAttribute> {
-
-    public ThingAttributes() {
-    }
-
     public ThingAttributes(String assetId) {
         super(assetId);
     }
@@ -61,52 +57,7 @@ public class ThingAttributes extends AbstractAssetAttributes<ThingAttributes, Th
 
     @SuppressWarnings("unchecked")
     @Override
-    protected ThingAttribute createAttribute(String name, JsonObject jsonObject) {
-        return new ThingAttribute(assetId, null, name, jsonObject);
-    }
-
-    /**
-     * Get all attributes which are linked to an agent, grouped by protocol name.
-     */
-    public Map<String, List<ThingAttribute>> getLinkedAttributes(Function<AttributeRef, ProtocolConfiguration> linkResolver) {
-        List<ThingAttribute> attributes = super.get();
-
-        // Resolve all which are linked to an agent
-        List<ThingAttribute> linkedAttributes = new ArrayList<>();
-        for (ThingAttribute attribute : attributes) {
-            ThingAttribute linkedAttribute = getLinkedAttribute(linkResolver, attribute.getName());
-            if (linkedAttribute != null) {
-                linkedAttributes.add(linkedAttribute);
-            }
-        }
-
-        // Group by protocol name
-        Map<String, List<ThingAttribute>> result = new HashMap<>();
-        for (ThingAttribute linkedAttribute : linkedAttributes) {
-            String protocolName = linkedAttribute.getProtocolConfiguration().getProtocolName();
-            if (!result.containsKey(protocolName)) {
-                result.put(protocolName, new ArrayList<>());
-            }
-            result.get(protocolName).add(linkedAttribute);
-        }
-        return result;
-    }
-
-    public ThingAttribute getLinkedAttribute(Function<AttributeRef, ProtocolConfiguration> linkResolver,
-                                             String attributeName) {
-        ThingAttribute attribute = get(attributeName);
-        if (attribute == null || !ThingAttribute.isLinkedAttribute(attribute))
-            return null;
-
-        AttributeRef agentLink = ThingAttribute.getAgentLink(attribute);
-        if (agentLink == null)
-            return null;
-
-        ProtocolConfiguration protocolConfiguration = linkResolver.apply(agentLink);
-        if (protocolConfiguration == null) {
-            return null;
-        }
-
-        return new ThingAttribute(attribute, protocolConfiguration);
+    protected ThingAttribute createAttribute(String name, JsonObject jsonObject) throws IllegalArgumentException {
+        return new ThingAttribute(null, assetId, name, jsonObject);
     }
 }
