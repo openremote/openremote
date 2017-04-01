@@ -74,11 +74,11 @@ public class HeaderViewImpl extends Composite implements HeaderView {
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
 
-        mapButton.setEnabled(presenter.isUserInRole("read:map"));
-        assetsButton.setEnabled(presenter.isUserInRole("read:assets"));
-        rulesButton.setEnabled(presenter.isUserInRole("read:rules"));
-        appsButton.setEnabled(presenter.isUserInRole("read:admin"));
-        adminButton.setEnabled(presenter.isUserInRole("read:admin"));
+        mapButton.setEnabled(presenter.isMapEnabled());
+        assetsButton.setEnabled(presenter.isAssetsEnabled());
+        rulesButton.setEnabled(presenter.isRulesEnabled());
+        appsButton.setEnabled(presenter.isAppsEnabled());
+        adminButton.setEnabled(presenter.isAdminEnabled());
     }
 
     @Override

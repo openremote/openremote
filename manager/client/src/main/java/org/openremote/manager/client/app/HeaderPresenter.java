@@ -41,11 +41,7 @@ import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.user.UserControls;
 import org.openremote.model.Constants;
 
-import java.util.logging.Logger;
-
 public class HeaderPresenter implements HeaderView.Presenter {
-
-    private static final Logger LOG = Logger.getLogger(HeaderPresenter.class.getName());
 
     final protected HeaderView view;
     final protected UserControls.Presenter userControlsPresenter;
@@ -150,7 +146,27 @@ public class HeaderPresenter implements HeaderView.Presenter {
     }
 
     @Override
-    public boolean isUserInRole(String role) {
-        return securityService.hasResourceRoleOrIsSuperUser(role, Constants.KEYCLOAK_CLIENT_ID);
+    public boolean isMapEnabled() {
+        return securityService.hasResourceRoleOrIsSuperUser("read:map", Constants.KEYCLOAK_CLIENT_ID);
+    }
+
+    @Override
+    public boolean isAssetsEnabled() {
+        return securityService.hasResourceRoleOrIsSuperUser("read:assets", Constants.KEYCLOAK_CLIENT_ID);
+    }
+
+    @Override
+    public boolean isRulesEnabled() {
+        return securityService.hasResourceRoleOrIsSuperUser("read:rules", Constants.KEYCLOAK_CLIENT_ID);
+    }
+
+    @Override
+    public boolean isAppsEnabled() {
+        return securityService.hasResourceRoleOrIsSuperUser("read:consoles", Constants.KEYCLOAK_CLIENT_ID);
+    }
+
+    @Override
+    public boolean isAdminEnabled() {
+        return securityService.hasResourceRoleOrIsSuperUser("read:admin", Constants.KEYCLOAK_CLIENT_ID);
     }
 }

@@ -1,5 +1,6 @@
 package org.openremote.test.assets
 
+import elemental.json.Json
 import org.openremote.container.util.IdentifierUtil
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
@@ -102,6 +103,25 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "result should match"
         demoSmartHome.id == managerDemoSetup.smartHomeId
 
+        when: "an asset attribute is read in the authenticated realm"
+        def attributeValue = assetResource.readAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet")
+
+        then: "result should match"
+        attributeValue == Json.create("Torenallee 20").toJson()
+
+        when: "an non-existent attribute is read in the authenticated realm"
+        assetResource.readAttributeValue(null, managerDemoSetup.smartOfficeId, "doesnotexist")
+
+        then: "the attribute should be not found"
+        WebApplicationException ex = thrown()
+        ex.response.status == 404
+
+        when: "an asset attribute is read in a foreign realm"
+        attributeValue = assetResource.readAttributeValue(null, managerDemoSetup.smartHomeId, "geoStreet")
+
+        then: "result should match"
+        attributeValue == Json.create("Wilhelminaplein 21C").toJson()
+
         /* ############################################## WRITE ####################################### */
 
         when: "an asset is created in the authenticated realm"
@@ -148,7 +168,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assetResource.get(null, managerDemoSetup.thingId)
 
         then: "the asset should not be found"
-        WebApplicationException ex = thrown()
+        ex = thrown()
         ex.response.status == 404
 
         when: "an asset is deleted in a foreign realm"
@@ -158,6 +178,34 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "the asset should be not found"
         ex = thrown()
         ex.response.status == 404
+
+        when: "an asset attribute is written in the authenticated realm"
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet", Json.create("Teststreet 123").toJson())
+        attributeValue = assetResource.readAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet")
+
+        then: "result should match"
+        attributeValue == Json.create("Teststreet 123").toJson()
+
+        when: "an non-existent attribute is written in the authenticated realm"
+        assetResource.writeAttributeValue(null, "doesnotexist", "geoStreet", Json.create("Teststreet 123").toJson())
+
+        then: "the attribute should be not found"
+        ex = thrown()
+        ex.response.status == 404
+
+        when: "an non-existent attribute is written in the authenticated realm"
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "doesnotexist", Json.create("Teststreet 123").toJson())
+
+        then: "the attribute should be not found"
+        ex = thrown()
+        ex.response.status == 404
+
+        when: "an asset attribute is written in a foreign realm"
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartHomeId, "geoStreet", Json.create("Teststreet 456").toJson())
+        attributeValue = assetResource.readAttributeValue(null, managerDemoSetup.smartHomeId, "geoStreet")
+
+        then: "result should match"
+        attributeValue == Json.create("Teststreet 456").toJson()
 
         cleanup: "the server should be stopped"
         stopContainer(container)
@@ -240,6 +288,19 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         WebApplicationException ex = thrown()
         ex.response.status == 403
 
+        when: "an asset attribute is read in the authenticated realm"
+        def attributeValue = assetResource.readAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet")
+
+        then: "result should match"
+        attributeValue == Json.create("Torenallee 20").toJson()
+
+        when: "an asset attribute is read in a foreign realm"
+        assetResource.readAttributeValue(null, managerDemoSetup.smartHomeId, "geoStreet")
+
+        then: "access should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+
         /* ############################################## WRITE ####################################### */
 
         when: "an asset is created in the authenticated realm"
@@ -290,6 +351,20 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         when: "an asset is deleted in a foreign realm"
         assetResource.delete(null, managerDemoSetup.apartment1LivingroomThermostatId)
         assetResource.get(null, managerDemoSetup.apartment1LivingroomThermostatId)
+
+        then: "access should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+
+        when: "an asset attribute is written in the authenticated realm"
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet", Json.create("Teststreet 123").toJson())
+        attributeValue = assetResource.readAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet")
+
+        then: "result should match"
+        attributeValue == Json.create("Teststreet 123").toJson()
+
+        when: "an asset attribute is written in a foreign realm"
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartHomeId, "geoStreet", Json.create("Teststreet 456").toJson())
 
         then: "access should be forbidden"
         ex = thrown()
@@ -367,6 +442,19 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         WebApplicationException ex = thrown()
         ex.response.status == 403
 
+        when: "an asset attribute is read in the authenticated realm"
+        def attributeValue = assetResource.readAttributeValue(null, managerDemoSetup.smartHomeId, "geoStreet")
+
+        then: "result should match"
+        attributeValue == Json.create("Wilhelminaplein 21C").toJson()
+
+        when: "an asset attribute is read in a foreign realm"
+        assetResource.readAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet")
+
+        then: "access should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+
         /* ############################################## WRITE ####################################### */
 
         when: "an asset is created in a foreign realm"
@@ -410,6 +498,20 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex = thrown()
         ex.response.status == 403
 
+        when: "an asset attribute is written in the authenticated realm"
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartHomeId, "geoStreet", Json.create("Teststreet 123").toJson())
+
+        then: "access should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+
+        when: "an asset attribute is written in a foreign realm"
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet", Json.create("Teststreet 456").toJson())
+
+        then: "access should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+
         cleanup: "the server should be stopped"
         stopContainer(container)
     }
@@ -437,7 +539,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         /* ############################################## READ ####################################### */
 
-        when: "the home assets of the authenticated user are retrieved"
+        when: "the assets of the authenticated user are retrieved"
         def assets = assetResource.getCurrentUserAssets(null)
 
         then: "result should match"
@@ -525,6 +627,26 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex = thrown()
         ex.response.status == 403
 
+        when: "an asset attribute is read on a user asset"
+        def attributeValue = assetResource.readAttributeValue(null, managerDemoSetup.apartment1LivingroomId, "lightSwitch")
+
+        then: "result should match"
+        attributeValue == Json.create(true).toJson()
+
+        when: "an asset attribute is read in a foreign realm"
+        assetResource.readAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet")
+
+        then: "access should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+
+        when: "an asset attribute is read on a non-user asset"
+        assetResource.readAttributeValue(null, managerDemoSetup.apartment3LivingroomId, "lightSwitch")
+
+        then: "access should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+
         /* ############################################## WRITE ####################################### */
 
         when: "an asset is created in a foreign realm"
@@ -563,6 +685,41 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "an asset is deleted in a foreign realm"
         assetResource.delete(null, managerDemoSetup.thingId)
+
+        then: "access should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+
+        when: "an asset attribute is written on a user asset"
+        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomId, "lightSwitch", Json.create(false).toJson())
+        attributeValue = assetResource.readAttributeValue(null, managerDemoSetup.apartment1LivingroomId, "lightSwitch")
+
+        then: "result should match"
+        attributeValue == Json.create(false).toJson()
+
+        when: "an attribute is written on a non-existent user asset"
+        assetResource.writeAttributeValue(null, "doesnotexist", "lightSwitch", Json.create(false).toJson())
+
+        then: "the attribute should be not found"
+        ex = thrown()
+        ex.response.status == 404
+
+        when: "an non-existent attribute is written on a user asset"
+        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomId, "doesnotexist", Json.create("foo").toJson())
+
+        then: "the attribute should be not found"
+        ex = thrown()
+        ex.response.status == 404
+
+        when: "an asset attribute is written on a non-user asset"
+        assetResource.writeAttributeValue(null, managerDemoSetup.apartment3LivingroomId, "lightSwitch", Json.create(false).toJson())
+
+        then: "access should be forbidden"
+        ex = thrown()
+        ex.response.status == 403
+
+        when: "an asset attribute is written in a foreign realm"
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet", Json.create("Teststreet 123").toJson())
 
         then: "access should be forbidden"
         ex = thrown()

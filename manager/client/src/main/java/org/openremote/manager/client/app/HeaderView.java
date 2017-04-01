@@ -41,7 +41,15 @@ public interface HeaderView extends IsWidget {
 
         UserControls getUserControls();
 
-        boolean isUserInRole(String role);
+        boolean isMapEnabled();
+
+        boolean isAssetsEnabled();
+
+        boolean isRulesEnabled();
+
+        boolean isAppsEnabled();
+
+        boolean isAdminEnabled();
     }
 
     void setPresenter(Presenter presenter);
