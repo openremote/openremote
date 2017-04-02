@@ -17,10 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.event.bus;
+package org.openremote.model.event.bus;
 
-import org.openremote.model.Event;
+import org.openremote.model.event.Event;
 
+/**
+ * Handle for receiving events from {@link EventBus}.
+ */
 public class EventRegistration<E extends Event> {
 
     final public boolean prepare;

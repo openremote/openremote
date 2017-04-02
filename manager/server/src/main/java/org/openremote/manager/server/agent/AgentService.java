@@ -278,7 +278,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     }
 
     protected void linkProtocolConfiguration(ProtocolConfiguration protocolConfiguration) {
-        AttributeRef protocolAttributeRef = protocolConfiguration.getAttributeRef();
+        AttributeRef protocolAttributeRef = protocolConfiguration.getReference();
 
         synchronized (protocolConfigurations) {
             // Store this configuration for easy access later
@@ -307,7 +307,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     }
 
     protected void unlinkProtocolConfiguration(ProtocolConfiguration protocolConfiguration) {
-        AttributeRef protocolRef = protocolConfiguration.getAttributeRef();
+        AttributeRef protocolRef = protocolConfiguration.getReference();
 
         // Get all assets that have attributes that use this protocol configuration
         List<ServerAsset> assets = assetStorageService.findAll(

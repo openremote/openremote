@@ -3,7 +3,7 @@ package org.openremote.agent.command.builtin;
 // TODO Can this dependency be replaced with Java 8 datetime API?
 import com.luckycatlabs.sunrisesunset.SunriseSunsetCalculator;
 import com.luckycatlabs.sunrisesunset.dto.Location;
-import org.openremote.container.util.TextUtil;
+import org.openremote.model.util.TextUtil;
 import org.openremote.agent.command.PushCommand;
 import org.openremote.agent.deploy.CommandDefinition;
 import org.openremote.agent.sensor.Sensor;

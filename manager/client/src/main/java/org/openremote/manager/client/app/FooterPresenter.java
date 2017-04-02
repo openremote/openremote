@@ -23,7 +23,7 @@ import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.inject.Inject;
 import org.openremote.manager.client.event.GoToPlaceEvent;
-import org.openremote.manager.client.event.bus.EventBus;
+import org.openremote.model.event.bus.EventBus;
 
 public class FooterPresenter implements FooterView.Presenter {
 

@@ -17,7 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.container.util;
+package org.openremote.model.util;
+
+import java.util.Locale;
 
 public class TextUtil {
 
@@ -85,9 +87,41 @@ public class TextUtil {
             try {
                 return Enum.valueOf(c, string.trim().toUpperCase());
             } catch (IllegalArgumentException ex) {
+                // Ignore
             }
         }
         return null;
     }
 
+    /**
+     * Transforms <code>EXFooBar123</code> into <code>ex-foo-bar-123</code> and
+     * <code>attributeX</code> into <code>attribute-x</code> without regex (GWT!)
+     */
+    public static String toLowerCaseDash(String camelCase) {
+        if (camelCase == null)
+            return null;
+        if (camelCase.length() == 0)
+            return camelCase;
+        StringBuilder sb = new StringBuilder();
+        char[] chars = camelCase.toCharArray();
+        boolean inNonLowerCase = false;
+        for (int i = 0; i < chars.length; i++) {
+            char c = chars[i];
+            if (!Character.isLowerCase(c)) {
+                if (!inNonLowerCase) {
+                    if (i > 0)
+                        sb.append("-");
+                } else if (i < chars.length - 1 && Character.isLowerCase(chars[i + 1])) {
+                    sb.append("-");
+                }
+                inNonLowerCase = true;
+            } else {
+                inNonLowerCase = false;
+            }
+            sb.append(c);
+        }
+        String name = sb.toString();
+        name = name.toLowerCase(Locale.ROOT);
+        return name;
+    }
 }

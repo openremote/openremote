@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -22,9 +22,9 @@ package org.openremote.manager.client.event;
 import com.github.nmorel.gwtjackson.client.ObjectMapper;
 import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
 import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
-import org.openremote.model.Event;
+import org.openremote.model.event.shared.CancelEventSubscription;
 
-@JsonMixIns({@JsonMixIns.JsonMixIn(target = Event.class, mixIn = DefaultJsonMixin.class)})
-public interface EventMapper extends ObjectMapper<Event> {
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = CancelEventSubscription.class, mixIn = DefaultJsonMixin.class)})
+public interface CancelEventSubscriptionMapper extends ObjectMapper<CancelEventSubscription> {
 
 }

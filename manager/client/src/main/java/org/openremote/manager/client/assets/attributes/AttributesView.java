@@ -22,6 +22,8 @@ package org.openremote.manager.client.assets.attributes;
 import com.google.gwt.user.client.ui.InsertPanel;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.Widget;
+import elemental.json.JsonValue;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowInfoEvent;
@@ -38,7 +40,9 @@ import org.openremote.model.asset.AbstractAssetAttributes;
 import org.openremote.model.asset.AssetMeta;
 
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 public abstract class AttributesView<
     C extends AttributesView.Container<S>,
@@ -66,9 +70,15 @@ public abstract class AttributesView<
         String booleanEditor();
     }
 
+    public interface AttributeEditor extends IsWidget {
+
+        void setValue(JsonValue value);
+    }
+
     final protected Environment environment;
     final protected C container;
     final protected ATTRIBUTES attributes;
+    final protected Map<String, AttributeEditor> editors = new HashMap<>();
     final protected LinkedHashMap<A, FormGroup> attributeGroups = new LinkedHashMap<>();
 
     public AttributesView(Environment environment, C container, ATTRIBUTES attributes) {
@@ -85,6 +95,7 @@ public abstract class AttributesView<
         while (container.getPanel().getWidgetCount() > 0) {
             container.getPanel().remove(0);
         }
+        editors.clear();
         attributeGroups.clear();
     }
 
@@ -149,19 +160,21 @@ public abstract class AttributesView<
 
         FormField formField = new FormField();
 
-        IsWidget editor = createEditor(attribute, formGroup);
+        AttributeEditor attributeEditor = createEditor(attribute, formGroup);
 
-        addAttributeActions(attribute, formGroup, formField, formGroupActions, editor);
+        addAttributeActions(attribute, formGroup, formField, formGroupActions, attributeEditor);
 
-        if (editor == null)
-            editor = createUnsupportedEditor(attribute);
-        formField.add(editor);
+        if (attributeEditor == null)
+            attributeEditor = createUnsupportedEditor(attribute);
+
+        formField.add(attributeEditor);
 
         formGroup.addFormField(formField);
         formGroup.addFormGroupActions(formGroupActions);
 
         addAttributeExtensions(attribute, formGroup);
 
+        editors.put(attribute.getName(), attributeEditor);
         return formGroup;
     }
 
@@ -189,65 +202,72 @@ public abstract class AttributesView<
         return null;
     }
 
-    protected IsWidget createEditor(A attribute, FormGroup formGroup) {
-        IsWidget editor;
-        S style = container.getStyle();
+    protected AttributeEditor createEditor(A attribute, FormGroup formGroup) {
         MetaItem defaultValueItem = attribute.firstMetaItem(AssetMeta.DEFAULT);
-        Consumer<String> errorConsumer = msg -> {
-            formGroup.setError(true);
-            showValidationError(msg);
-        };
+        S style = container.getStyle();
 
+        AttributeEditor attributeEditor;
         if (attribute.getType().equals(AttributeType.STRING)) {
-            String currentValue = attribute.getValueAsString();
-            String defaultValue = defaultValueItem != null ? defaultValueItem.getValueAsString() : null;
-            Consumer<String> updateConsumer = isDefaultReadOnly(attribute) ? null : value -> {
-                formGroup.setError(false);
-                attribute.setValueAsString(value);
-            };
-            editor = createStringEditor(style, currentValue, defaultValue, updateConsumer);
+            attributeEditor = createStringEditor(attribute, defaultValueItem, style, formGroup);
         } else if (attribute.getType().equals(AttributeType.INTEGER)) {
-            Integer currentValue = attribute.getValueAsInteger();
-            Integer defaultValue = defaultValueItem != null ? defaultValueItem.getValueAsInteger() : null;
-            Consumer<Integer> updateConsumer = isDefaultReadOnly(attribute) ? null : value -> {
-                formGroup.setError(false);
-                attribute.setValueAsInteger(value);
-            };
-            editor = createIntegerEditor(style, currentValue, defaultValue, updateConsumer, errorConsumer);
+            attributeEditor = createIntegerEditor(attribute, defaultValueItem, style, formGroup);
         } else if (attribute.getType().equals(AttributeType.DECIMAL)) {
-            Double currentValue = attribute.getValueAsDecimal();
-            Double defaultValue = defaultValueItem != null ? defaultValueItem.getValueAsDecimal() : null;
-            Consumer<Double> updateConsumer = isDefaultReadOnly(attribute) ? null : value -> {
-                formGroup.setError(false);
-                attribute.setValueAsDecimal(value);
-            };
-            editor = createDecimalEditor(style, currentValue, defaultValue, updateConsumer, errorConsumer);
+            attributeEditor = createDecimalEditor(attribute, defaultValueItem, style, formGroup);
         } else if (attribute.getType().equals(AttributeType.BOOLEAN)) {
-            Boolean currentValue = attribute.getValueAsBoolean();
-            Boolean defaultValue = defaultValueItem != null ? defaultValueItem.getValueAsBoolean() : null;
-            Consumer<Boolean> updateConsumer = isDefaultReadOnly(attribute) ? null : value -> {
-                formGroup.setError(false);
-                attribute.setValueAsBoolean(value);
-            };
-            editor = createBooleanEditor(style, currentValue, defaultValue, updateConsumer);
+            attributeEditor = createBooleanEditor(attribute, defaultValueItem, style, formGroup);
         } else {
             return null;
         }
-        return editor;
+        return attributeEditor;
     }
 
-    protected IsWidget createUnsupportedEditor(A attribute) {
+    protected AttributeEditor createUnsupportedEditor(A attribute) {
         FormField unsupportedField = new FormField();
         unsupportedField.add(new FormOutputText(
             environment.getMessages().unsupportedAttributeType(attribute.getType().getValue())
         ));
-        return unsupportedField;
+        return new AttributeEditor() {
+            @Override
+            public void setValue(JsonValue value) {
+                // Do nothing
+            }
+
+            @Override
+            public Widget asWidget() {
+                return unsupportedField;
+            }
+        };
     }
 
-    protected FormInputText createStringEditor(S style,
-                                               String currentValue,
-                                               String defaultValue,
-                                               Consumer<String> updateConsumer) {
+    protected AttributeEditor createStringEditor(A attribute, MetaItem defaultValueItem, S style, FormGroup formGroup) {
+        String currentValue = attribute.getValueAsString();
+        String defaultValue = defaultValueItem != null ? defaultValueItem.getValueAsString() : null;
+
+        Consumer<String> updateConsumer = isDefaultReadOnly(attribute) ? null : value -> {
+            formGroup.setError(false);
+            attribute.setValueAsString(value);
+        };
+
+        FormInputText widget = createStringEditorWidget(style, currentValue, defaultValue, updateConsumer);
+
+        return new AttributeEditor() {
+            @Override
+            public void setValue(JsonValue value) {
+                attribute.setValue(value);
+                widget.setValue(attribute.getValueAsString());
+            }
+
+            @Override
+            public Widget asWidget() {
+                return widget;
+            }
+        };
+    }
+
+    protected FormInputText createStringEditorWidget(S style,
+                                                     String currentValue,
+                                                     String defaultValue,
+                                                     Consumer<String> updateConsumer) {
         FormInputText input = createFormInputText(style.stringEditor());
 
         if (currentValue != null) {
@@ -270,17 +290,47 @@ public abstract class AttributesView<
         return input;
     }
 
-    protected FormInputNumber createIntegerEditor(S style,
-                                                  Integer currentValue,
-                                                  Integer defaultValue,
-                                                  Consumer<Integer> updateConsumer,
-                                                  Consumer<String> errorConsumer) {
+    protected AttributeEditor createIntegerEditor(A attribute, MetaItem defaultValueItem, S style, FormGroup formGroup) {
+        String currentValue = attribute.getValueAsString();
+        String defaultValue = defaultValueItem != null ? defaultValueItem.getValueAsString() : null;
+        Consumer<String> updateConsumer = isDefaultReadOnly(attribute) ? null : value -> {
+            Integer intValue = Integer.valueOf(value);
+            formGroup.setError(false);
+            attribute.setValueAsInteger(intValue);
+        };
+
+        Consumer<String> errorConsumer = msg -> {
+            formGroup.setError(true);
+            showValidationError(msg);
+        };
+
+        FormInputNumber widget = createIntegerEditorWidget(style, currentValue, defaultValue, updateConsumer, errorConsumer);
+
+        return new AttributeEditor() {
+            @Override
+            public void setValue(JsonValue value) {
+                attribute.setValue(value);
+                widget.setValue(attribute.getValueAsString());
+            }
+
+            @Override
+            public Widget asWidget() {
+                return widget;
+            }
+        };
+    }
+
+    protected FormInputNumber createIntegerEditorWidget(S style,
+                                                        String currentValue,
+                                                        String defaultValue,
+                                                        Consumer<String> updateConsumer,
+                                                        Consumer<String> errorConsumer) {
         FormInputNumber input = createFormInputNumber(style.integerEditor());
 
         if (currentValue != null) {
-            input.setValue(currentValue.toString());
+            input.setValue(currentValue);
         } else if (defaultValue != null) {
-            input.setValue(defaultValue.toString());
+            input.setValue(defaultValue);
         }
 
         if (updateConsumer != null) {
@@ -288,7 +338,7 @@ public abstract class AttributesView<
                 try {
                     updateConsumer.accept(
                         event.getValue() != null && event.getValue().length() > 0
-                            ? Integer.valueOf(event.getValue())
+                            ? event.getValue()
                             : null
                     );
                 } catch (NumberFormatException ex) {
@@ -301,17 +351,47 @@ public abstract class AttributesView<
         return input;
     }
 
-    protected FormInputText createDecimalEditor(S style,
-                                                Double currentValue,
-                                                Double defaultValue,
-                                                Consumer<Double> updateConsumer,
-                                                Consumer<String> errorConsumer) {
+    protected AttributeEditor createDecimalEditor(A attribute, MetaItem defaultValueItem, S style, FormGroup formGroup) {
+        String currentValue = attribute.getValueAsString();
+        String defaultValue = defaultValueItem != null ? defaultValueItem.getValueAsString() : null;
+        Consumer<String> updateConsumer = isDefaultReadOnly(attribute) ? null : value -> {
+            Double decimalValue = Double.valueOf(value);
+            formGroup.setError(false);
+            attribute.setValueAsDecimal(decimalValue);
+        };
+
+        Consumer<String> errorConsumer = msg -> {
+            formGroup.setError(true);
+            showValidationError(msg);
+        };
+
+        FormInputText widget = createDecimalEditorWidget(style, currentValue, defaultValue, updateConsumer, errorConsumer);
+
+        return new AttributeEditor() {
+            @Override
+            public void setValue(JsonValue value) {
+                attribute.setValue(value);
+                widget.setValue(attribute.getValueAsString());
+            }
+
+            @Override
+            public Widget asWidget() {
+                return widget;
+            }
+        };
+    }
+
+    protected FormInputText createDecimalEditorWidget(S style,
+                                                      String currentValue,
+                                                      String defaultValue,
+                                                      Consumer<String> updateConsumer,
+                                                      Consumer<String> errorConsumer) {
         FormInputText input = createFormInputText(style.decimalEditor());
 
         if (currentValue != null) {
-            input.setValue(currentValue.toString());
+            input.setValue(currentValue);
         } else if (defaultValue != null) {
-            input.setValue(defaultValue.toString());
+            input.setValue(defaultValue);
         }
 
         if (updateConsumer != null) {
@@ -319,7 +399,7 @@ public abstract class AttributesView<
                 try {
                     updateConsumer.accept(
                         event.getValue() != null && event.getValue().length() > 0
-                            ? Double.valueOf(event.getValue())
+                            ? event.getValue()
                             : null
                     );
                 } catch (NumberFormatException ex) {
@@ -332,10 +412,34 @@ public abstract class AttributesView<
         return input;
     }
 
-    protected FormCheckBox createBooleanEditor(S style,
-                                               Boolean currentValue,
-                                               Boolean defaultValue,
-                                               Consumer<Boolean> updateConsumer) {
+    protected AttributeEditor createBooleanEditor(A attribute, MetaItem defaultValueItem, S style, FormGroup formGroup) {
+        Boolean currentValue = attribute.getValueAsBoolean();
+        Boolean defaultValue = defaultValueItem != null ? defaultValueItem.getValueAsBoolean() : null;
+        Consumer<Boolean> updateConsumer = isDefaultReadOnly(attribute) ? null : value -> {
+            formGroup.setError(false);
+            attribute.setValueAsBoolean(value);
+        };
+
+        FormCheckBox widget = createBooleanEditorWidget(style, currentValue, defaultValue, updateConsumer);
+
+        return new AttributeEditor() {
+            @Override
+            public void setValue(JsonValue value) {
+                attribute.setValue(value);
+                widget.setValue(attribute.getValueAsBoolean());
+            }
+
+            @Override
+            public Widget asWidget() {
+                return widget;
+            }
+        };
+    }
+
+    protected FormCheckBox createBooleanEditorWidget(S style,
+                                                     Boolean currentValue,
+                                                     Boolean defaultValue,
+                                                     Consumer<Boolean> updateConsumer) {
         FormCheckBox input = createFormInputCheckBox(style.booleanEditor());
 
         Boolean value = null;
@@ -379,6 +483,7 @@ public abstract class AttributesView<
 
     protected void removeAttribute(A attribute) {
         attributes.remove(attribute.getName());
+        editors.remove(attribute.getName());
         int attributeGroupIndex = container.getPanel().getWidgetIndex(attributeGroups.get(attribute));
         container.getPanel().remove(attributeGroupIndex);
         attributeGroups.remove(attribute);

@@ -26,19 +26,26 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.web.socket.WebsocketConstants;
-import org.openremote.model.Event;
+import org.openremote.model.event.shared.CancelEventSubscription;
+import org.openremote.model.event.shared.EventSubscription;
+import org.openremote.model.event.shared.SharedEvent;
 
 import java.util.logging.Logger;
+
+import static org.apache.camel.builder.PredicateBuilder.or;
 
 public class EventService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(EventService.class.getName());
+
     public static final String WEBSOCKET_EVENTS = "events";
 
-    // TODO: Unbounded queue
-    public static final String INCOMING_EVENT_QUEUE = "seda://IncomingEvent?multipleConsumers=true&waitForTaskToComplete=NEVER";
-    // TODO: Unbounded queue
-    public static final String OUTGOING_EVENT_QUEUE = "seda://OutgoingEvent?multipleConsumers=true&waitForTaskToComplete=NEVER";
+    // TODO: Some of these options should be configurable depending on expected load etc.
+    public static final String INCOMING_EVENT_TOPIC = "seda://IncomingEventTopic?multipleConsumers=true&concurrentConsumers=10&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
+
+    public static final String OUTGOING_EVENT_QUEUE = "seda://OutgoingEventQueue?multipleConsumers=false&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&size=1000";
+
+    final protected EventSubscriptions eventSubscriptions = new EventSubscriptions();
 
     protected MessageBrokerService messageBrokerService;
 
@@ -56,13 +63,47 @@ public class EventService implements ContainerService {
             public void configure() throws Exception {
 
                 from("websocket://" + WEBSOCKET_EVENTS)
-                    .routeId("Receive incoming events on WebSocket session(s)")
-                    .convertBodyTo(Event.class)
-                    .to(EventService.INCOMING_EVENT_QUEUE);
+                    .routeId("Receive incoming message on WebSocket session(s)")
+                    .choice()
+                    .when(or(
+                        header(WebsocketConstants.SESSION_CLOSE),
+                        header(WebsocketConstants.SESSION_CLOSE_ERROR)
+                    ))
+                    .process(exchange -> {
+                        String sessionKey = getSessionKey(exchange);
+                        eventSubscriptions.cancelAll(sessionKey);
+                    })
+                    .stop()
+                    .end()
+                    .choice()
+                    .when(bodyAs(String.class).startsWith(EventSubscription.MESSAGE_PREFIX))
+                    .convertBodyTo(EventSubscription.class)
+                    .process(exchange -> {
+                        String sessionKey = getSessionKey(exchange);
+                        eventSubscriptions.update(sessionKey, exchange.getIn().getBody(EventSubscription.class));
+                    })
+                    .when(bodyAs(String.class).startsWith(CancelEventSubscription.MESSAGE_PREFIX))
+                    .convertBodyTo(CancelEventSubscription.class)
+                    .process(exchange -> {
+                        String sessionKey = getSessionKey(exchange);
+                        eventSubscriptions.cancel(sessionKey, exchange.getIn().getBody(CancelEventSubscription.class));
+                    })
+                    .when(bodyAs(String.class).startsWith(SharedEvent.MESSAGE_PREFIX))
+                    .convertBodyTo(SharedEvent.class)
+                    .to(EventService.INCOMING_EVENT_TOPIC)
+                    .otherwise()
+                    .process(exchange -> {
+                        LOG.fine("Unsupported message body: " + exchange.getIn().getBody());
+                    })
+                    .end();
 
                 from(EventService.OUTGOING_EVENT_QUEUE)
                     .routeId("Send outgoing events to WebSocket session(s)")
-                    .to("websocket://" + WEBSOCKET_EVENTS);
+                    .choice()
+                    .when(body().isInstanceOf(SharedEvent.class))
+                    .split(method(eventSubscriptions, "splitForSubscribers"))
+                    .to("websocket://" + WEBSOCKET_EVENTS)
+                    .end();
             }
         });
     }
@@ -77,21 +118,16 @@ public class EventService implements ContainerService {
 
     }
 
-    public static String getSessionKey(Exchange exchange) {
-        return exchange.getIn().getHeader(WebsocketConstants.SESSION_KEY, null, String.class);
-    }
-
-    public void sendEvent(String session, Event event) {
-        messageBrokerService.getProducerTemplate().sendBodyAndHeader(
+    public void publishEvent(SharedEvent event) {
+        LOG.fine("Publishing: " + event);
+        messageBrokerService.getProducerTemplate().sendBody(
             OUTGOING_EVENT_QUEUE,
-            event,
-            session != null ? WebsocketConstants.SESSION_KEY : WebsocketConstants.SEND_TO_ALL,
-            session != null ? session : true
+            event
         );
     }
 
-    public void sendEvent(Event event) {
-        sendEvent(null, event);
+    public static String getSessionKey(Exchange exchange) {
+        return exchange.getIn().getHeader(WebsocketConstants.SESSION_KEY, null, String.class);
     }
 
     @Override

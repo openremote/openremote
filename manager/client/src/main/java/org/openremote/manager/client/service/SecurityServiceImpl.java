@@ -23,7 +23,7 @@ import com.google.inject.Inject;
 import elemental.client.Browser;
 import elemental.html.Location;
 import org.openremote.manager.client.event.UserChangeEvent;
-import org.openremote.manager.client.event.bus.EventBus;
+import org.openremote.model.event.bus.EventBus;
 import org.openremote.manager.client.interop.keycloak.*;
 import org.openremote.model.Constants;
 import org.openremote.model.Consumer;

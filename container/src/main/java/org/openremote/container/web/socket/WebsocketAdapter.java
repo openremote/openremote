@@ -41,13 +41,13 @@ public class WebsocketAdapter extends Endpoint {
         if (LOG.isLoggable(Level.FINE))
             LOG.fine("Websocket session open: " + session.getId());
         consumer.getEndpoint().getWebsocketSessions().add(session);
+        this.consumer.sendMessage(session.getId(), getWebsocketAuth(session), null, exchange -> {
+            exchange.getIn().setHeader(WebsocketConstants.SESSION_OPEN, true);
+        });
         session.addMessageHandler(String.class, message -> {
             if (LOG.isLoggable(Level.FINE))
                 LOG.fine("Websocket session " + session.getId() + " message received: " + message);
-            WebsocketAuth websocketAuth = (WebsocketAuth) session.getUserProperties().get(WebsocketConstants.AUTH);
-            if (websocketAuth == null)
-                throw new IllegalStateException("No authorization details in websocket session: " + session.getId());
-            this.consumer.sendMessage(session.getId(), websocketAuth, message);
+            this.consumer.sendMessage(session.getId(), getWebsocketAuth(session), message);
         });
     }
 
@@ -55,6 +55,9 @@ public class WebsocketAdapter extends Endpoint {
     public void onClose(Session session, CloseReason closeReason) {
         if (LOG.isLoggable(Level.FINE))
             LOG.fine("Websocket session close: " + session.getId() + " " + closeReason);
+        this.consumer.sendMessage(session.getId(), getWebsocketAuth(session), closeReason, exchange -> {
+            exchange.getIn().setHeader(WebsocketConstants.SESSION_CLOSE, true);
+        });
         consumer.getEndpoint().getWebsocketSessions().remove(session);
     }
 
@@ -63,6 +66,16 @@ public class WebsocketAdapter extends Endpoint {
         super.onError(session, thr);
         if (LOG.isLoggable(Level.INFO))
             LOG.log(Level.INFO, "Websocket session error: " + session.getId(), thr);
+        this.consumer.sendMessage(session.getId(), getWebsocketAuth(session), thr, exchange -> {
+            exchange.getIn().setHeader(WebsocketConstants.SESSION_CLOSE_ERROR, true);
+        });
         consumer.getEndpoint().getWebsocketSessions().remove(session);
+    }
+
+    protected WebsocketAuth getWebsocketAuth(Session session) {
+        WebsocketAuth auth = (WebsocketAuth) session.getUserProperties().get(WebsocketConstants.AUTH);
+        if (auth == null)
+            throw new IllegalStateException("No authorization details in websocket session: " + session.getId());
+        return auth;
     }
 }

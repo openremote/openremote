@@ -20,9 +20,9 @@
 package org.openremote.manager.client;
 
 import com.google.gwt.place.shared.PlaceController;
-import org.openremote.manager.client.event.bus.EventBus;
+import org.openremote.model.event.bus.EventBus;
 import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.service.EventService;
+import org.openremote.model.event.shared.EventService;
 import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.style.WidgetStyle;
@@ -82,10 +82,16 @@ public interface Environment {
 
     RequestService getRequestService();
 
-    EventService getEventService();
-
     PlaceController getPlaceController();
 
+    /**
+     * Subscribe to, unsubscribe from, and dispatch shared events on the server.
+     */
+    EventService getEventService();
+
+    /**
+     * Register on this bus to listen for local and shared events from the server, and to dispatch local events.
+     */
     EventBus getEventBus();
 
     ManagerMessages getMessages();

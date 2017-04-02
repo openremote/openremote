@@ -17,8 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.event.bus;
+package org.openremote.model.event.bus;
 
-public class VetoEventException extends RuntimeException {
+import jsinterop.annotations.JsFunction;
+import org.openremote.model.event.Event;
 
+@JsFunction
+public interface EventListener<E extends Event> {
+    void on(E event);
 }

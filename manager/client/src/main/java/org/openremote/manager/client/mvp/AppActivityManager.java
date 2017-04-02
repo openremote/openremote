@@ -26,8 +26,8 @@ import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.Label;
 import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.WillGoToPlaceEvent;
-import org.openremote.manager.client.event.bus.EventBus;
-import org.openremote.manager.client.event.bus.EventRegistration;
+import org.openremote.model.event.bus.EventBus;
+import org.openremote.model.event.bus.EventRegistration;
 
 import java.util.Collection;
 import java.util.HashSet;

@@ -20,7 +20,7 @@
 package org.openremote.manager.client.http;
 
 import org.openremote.manager.client.Environment;
-import org.openremote.manager.client.event.bus.EventBus;
+import org.openremote.model.event.bus.EventBus;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.model.Consumer;
 import org.openremote.manager.client.event.ShowFailureEvent;

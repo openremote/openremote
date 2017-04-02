@@ -25,11 +25,11 @@
         }
 
         .integerEditor {
-            width: 5em;
+            width: 10em;
         }
 
         .decimalEditor {
-            width: 5em;
+            width: 15em;
         }
 
         .booleanEditor {

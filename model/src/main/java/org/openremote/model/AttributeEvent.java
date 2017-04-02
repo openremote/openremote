@@ -19,16 +19,53 @@
  */
 package org.openremote.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreType;
 import elemental.json.JsonValue;
+import org.openremote.model.event.shared.EventFilter;
+import org.openremote.model.event.shared.SharedEvent;
 
 /**
  * A timestamped {@link AttributeState}.
  */
-@JsonIgnoreType
-public class AttributeEvent extends Event {
+public class AttributeEvent extends SharedEvent {
 
-    final protected AttributeState attributeState;
+    static public class EntityIdFilter extends EventFilter<AttributeEvent> {
+
+        protected String entityId;
+
+        protected EntityIdFilter() {
+        }
+
+        public EntityIdFilter(String entityId) {
+            this.entityId = entityId;
+        }
+
+        public String getEntityId() {
+            return entityId;
+        }
+
+        public void setEntityId(String entityId) {
+            this.entityId = entityId;
+        }
+
+        @Override
+        public AttributeEvent apply(AttributeEvent event) {
+            if (event.getEntityId().equals(entityId))
+                return event;
+            return null;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "assetId='" + entityId + '\'' +
+                '}';
+        }
+    }
+
+    protected AttributeState attributeState;
+
+    protected AttributeEvent() {
+    }
 
     public AttributeEvent(String entityId, String attributeName, JsonValue value) {
         this(new AttributeState(new AttributeRef(entityId, attributeName), value));

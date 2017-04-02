@@ -148,8 +148,8 @@ public class SimulatorProtocol extends AbstractProtocol {
         }
 
         LOG.info("Putting element '" + element + "' for: " + attribute);
-        elements.put(attribute.getAttributeRef(), element);
-        attributeInstanceMap.put(attribute.getAttributeRef(), configName);
+        elements.put(attribute.getReference(), element);
+        attributeInstanceMap.put(attribute.getReference(), configName);
     }
 
     @Override
@@ -159,8 +159,8 @@ public class SimulatorProtocol extends AbstractProtocol {
 
     @Override
     protected void onAttributeRemoved(ThingAttribute attribute) {
-        elements.remove(attribute.getAttributeRef());
-        attributeInstanceMap.remove(attribute.getAttributeRef());
+        elements.remove(attribute.getReference());
+        attributeInstanceMap.remove(attribute.getReference());
     }
 
     @Override

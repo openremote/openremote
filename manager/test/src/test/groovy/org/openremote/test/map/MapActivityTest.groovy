@@ -4,7 +4,7 @@ import com.google.gwt.place.shared.PlaceController
 import com.google.gwt.user.client.ui.AcceptsOneWidget
 import elemental.json.JsonObject
 import org.openremote.manager.client.assets.browser.AssetBrowser
-import org.openremote.manager.client.event.bus.EventBus
+import org.openremote.model.event.bus.EventBus
 import org.openremote.manager.client.i18n.ManagerMessages
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper
 import org.openremote.manager.client.map.MapActivity

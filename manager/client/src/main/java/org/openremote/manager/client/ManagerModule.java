@@ -25,17 +25,19 @@ import com.google.gwt.place.shared.PlaceHistoryHandler;
 import com.google.gwt.place.shared.PlaceHistoryMapper;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import org.openremote.manager.client.event.EventMapper;
-import org.openremote.manager.client.event.bus.EventBus;
+import org.openremote.manager.client.event.CancelEventSubscriptionMapper;
+import org.openremote.manager.client.event.EventSubscriptionMapper;
+import org.openremote.manager.client.event.SharedEventMapper;
+import org.openremote.model.event.bus.EventBus;
 import org.openremote.manager.client.http.ConstraintViolationReportMapper;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.interop.keycloak.Keycloak;
 import org.openremote.manager.client.map.MapAssetPlace;
-import org.openremote.manager.client.map.MapPlace;
 import org.openremote.manager.client.mvp.AppActivityManager;
 import org.openremote.manager.client.mvp.AppPlaceController;
 import org.openremote.manager.client.service.*;
 import org.openremote.manager.client.style.WidgetStyle;
+import org.openremote.model.event.shared.EventService;
 
 public class ManagerModule extends AbstractGinModule {
 
@@ -85,12 +87,21 @@ public class ManagerModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    public EventService getEventService(SecurityService securityService, EventBus eventBus, EventMapper eventMapper) {
-        EventService eventService = EventServiceImpl.create(securityService, eventBus, eventMapper);
+    public EventService getEventService(SecurityService securityService,
+                                        EventBus eventBus,
+                                        SharedEventMapper sharedEventMapper,
+                                        EventSubscriptionMapper eventSubscriptionMapper,
+                                        CancelEventSubscriptionMapper cancelEventSubscriptionMapper) {
+        EventService eventService = EventServiceImpl.create(
+            securityService,
+            eventBus,
+            sharedEventMapper,
+            eventSubscriptionMapper,
+            cancelEventSubscriptionMapper
+        );
         eventService.connect();
         return eventService;
     }
-
 
     @Provides
     @Singleton

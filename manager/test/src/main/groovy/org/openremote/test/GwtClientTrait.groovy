@@ -33,7 +33,7 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget
 import com.google.web.bindery.event.shared.SimpleEventBus
 import elemental.json.JsonValue
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
-import org.openremote.manager.client.event.bus.EventBus
+import org.openremote.model.event.bus.EventBus
 import org.openremote.manager.client.mvp.AppActivityManager
 import org.openremote.manager.client.mvp.AppActivityMapper
 import org.openremote.manager.client.mvp.AppPlaceController

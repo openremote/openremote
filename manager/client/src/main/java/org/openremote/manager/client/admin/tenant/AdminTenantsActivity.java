@@ -25,8 +25,8 @@ import org.openremote.manager.client.admin.AbstractAdminActivity;
 import org.openremote.manager.client.admin.AdminView;
 import org.openremote.manager.client.admin.TenantArrayMapper;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
-import org.openremote.manager.client.event.bus.EventBus;
-import org.openremote.manager.client.event.bus.EventRegistration;
+import org.openremote.model.event.bus.EventBus;
+import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
 

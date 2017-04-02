@@ -26,7 +26,7 @@ import com.google.gwt.place.shared.PlaceController;
 import com.google.web.bindery.event.shared.UmbrellaException;
 import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.WillGoToPlaceEvent;
-import org.openremote.manager.client.event.bus.EventBus;
+import org.openremote.model.event.bus.EventBus;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.model.Constants;
 

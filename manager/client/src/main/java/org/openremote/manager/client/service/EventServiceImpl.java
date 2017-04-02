@@ -23,88 +23,68 @@ import elemental.client.Browser;
 import elemental.events.CloseEvent;
 import elemental.html.Location;
 import elemental.html.WebSocket;
-import org.openremote.manager.client.event.*;
-import org.openremote.manager.client.event.bus.EventBus;
+import org.openremote.manager.client.event.CancelEventSubscriptionMapper;
+import org.openremote.manager.client.event.EventSubscriptionMapper;
+import org.openremote.manager.client.event.SharedEventMapper;
+import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.session.*;
 import org.openremote.manager.client.util.Timeout;
 import org.openremote.model.Constants;
-import org.openremote.model.Event;
+import org.openremote.model.event.bus.EventBus;
+import org.openremote.model.event.shared.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
 
 public class EventServiceImpl implements EventService {
 
     private static final Logger LOG = Logger.getLogger(EventServiceImpl.class.getName());
 
-    public static EventService create(SecurityService securityService, EventBus eventBus, EventMapper eventMapper) {
+    public static EventService create(SecurityService securityService,
+                                      EventBus eventBus,
+                                      SharedEventMapper sharedEventMapper,
+                                      EventSubscriptionMapper eventSubscriptionMapper,
+                                      CancelEventSubscriptionMapper cancelEventSubscriptionMapper) {
         Location location = Browser.getWindow().getLocation();
         return new EventServiceImpl(
             securityService,
             eventBus,
             "ws://" + location.getHostname() + ":" + location.getPort() + "/websocket/events",
-            eventMapper
+            sharedEventMapper,
+            eventSubscriptionMapper,
+            cancelEventSubscriptionMapper
         );
     }
 
     public static final int MAX_ATTEMPTS = 12;
     public static final int DELAY_MILLIS = 5000;
+    public static final int MAX_QUEUE_SIZE = 1000;
 
     final protected SecurityService securityService;
     final protected EventBus eventBus;
     final protected String serviceUrl;
-    final protected EventMapper eventMapper;
+    final protected SharedEventMapper sharedEventMapper;
+    final protected EventSubscriptionMapper eventSubscriptionMapper;
+    final protected CancelEventSubscriptionMapper cancelEventSubscriptionMapper;
 
-    // TODO This should be made thread-safe, how?
     final protected List<String> queue = new ArrayList<>();
-    final protected Map<String, Integer> eventIntervals = new HashMap<>();
+    final protected Map<String, Integer> activeSubscriptions = new HashMap<>();
 
     protected WebSocket webSocket;
     protected int failureCount;
 
-    public EventServiceImpl(SecurityService securityService, EventBus eventBus, String serviceUrl, EventMapper eventMapper) {
+    public EventServiceImpl(SecurityService securityService,
+                            EventBus eventBus,
+                            String serviceUrl,
+                            SharedEventMapper sharedEventMapper,
+                            EventSubscriptionMapper eventSubscriptionMapper,
+                            CancelEventSubscriptionMapper cancelEventSubscriptionMapper) {
         this.securityService = securityService;
         this.eventBus = eventBus;
         this.serviceUrl = serviceUrl;
-        this.eventMapper = eventMapper;
-
-        this.eventBus.register(
-            ServerSendEvent.class,
-            serverSendEvent -> sendData(this.eventMapper.write(serverSendEvent.getEvent()))
-        );
-
-        this.eventBus.register(
-            RepeatingServerSendEvent.class,
-            repeatEvent -> {
-                final String key = repeatEvent.getKey();
-                final String data = this.eventMapper.write(repeatEvent.getEvent());
-                sendData(data);
-                if (eventIntervals.containsKey(key)) {
-                    Browser.getWindow().clearInterval(eventIntervals.get(key));
-                }
-                int interval = Browser.getWindow().setInterval(
-                    () -> sendData(data), repeatEvent.getIntervalMillis()
-                );
-                eventIntervals.put(key, interval);
-
-                // TODO If the websocket connection drops and is established again, all repeating events should be send immediately?
-            }
-        );
-
-        this.eventBus.register(
-            CancelRepeatingServerSendEvent.class,
-            cancelEvent -> {
-                final String key = cancelEvent.getKey();
-                if (eventIntervals.containsKey(key)) {
-                    Browser.getWindow().clearInterval(eventIntervals.get(key));
-                }
-                final String data = this.eventMapper.write(cancelEvent.getEvent());
-                sendData(data);
-            }
-        );
+        this.sharedEventMapper = sharedEventMapper;
+        this.eventSubscriptionMapper = eventSubscriptionMapper;
+        this.cancelEventSubscriptionMapper = cancelEventSubscriptionMapper;
 
         this.eventBus.register(
             SessionConnectEvent.class,
@@ -126,10 +106,12 @@ public class EventServiceImpl implements EventService {
                 LOG.fine("Session opened successfully, resetting failure count...");
                 failureCount = 0;
                 LOG.fine("Flushing send data queue: " + queue.size());
-                for (String s : queue) {
-                    sendData(s);
+                Iterator<String> it = queue.iterator();
+                while (it.hasNext()) {
+                    String next = it.next();
+                    sendData(next);
+                    it.remove();
                 }
-                queue.clear();
             }
         );
 
@@ -212,12 +194,53 @@ public class EventServiceImpl implements EventService {
 
     }
 
+    @Override
+    public <E extends SharedEvent> void subscribe(Class<E> eventClass) {
+        subscribe(eventClass, null);
+    }
+
+    @Override
+    public <E extends SharedEvent> void subscribe(Class<E> eventClass, EventFilter<E> filter) {
+        EventSubscription<E> subscription = new EventSubscription<>(eventClass, filter);
+        final String key = subscription.getEventType();
+        final String data = EventSubscription.MESSAGE_PREFIX + eventSubscriptionMapper.write(subscription);
+        LOG.fine("Subscribing on server: " + subscription);
+        sendData(data);
+        if (activeSubscriptions.containsKey(key)) {
+            Browser.getWindow().clearInterval(activeSubscriptions.get(key));
+        }
+        int interval = Browser.getWindow().setInterval(
+            () -> {
+                LOG.fine("Updating subscription on server: " + subscription);
+                sendData(data);
+            }, EventSubscription.RENEWAL_PERIOD_SECONDS * 1000
+        );
+        activeSubscriptions.put(key, interval);
+    }
+
+    @Override
+    public <E extends SharedEvent> void unsubscribe(Class<E> eventClass) {
+        CancelEventSubscription<E> cancellation = new CancelEventSubscription<>(eventClass);
+        final String key = cancellation.getEventType();
+        if (activeSubscriptions.containsKey(key)) {
+            Browser.getWindow().clearInterval(activeSubscriptions.get(key));
+        }
+        LOG.fine("Unsubscribing on server: " + cancellation);
+        sendData(CancelEventSubscription.MESSAGE_PREFIX + cancelEventSubscriptionMapper.write(cancellation));
+    }
+
+    @Override
+    public void dispatch(SharedEvent sharedEvent) {
+        LOG.fine("Dispatching: " + sharedEvent);
+        sendData(SharedEvent.MESSAGE_PREFIX + sharedEventMapper.write(sharedEvent));
+    }
+
     protected void sendData(String data) {
         if (webSocket != null && webSocket.getReadyState() == WebSocket.OPEN) {
             LOG.fine("Sending data on WebSocket: " + data);
             webSocket.send(data);
         } else {
-            if (queue.size() <= 1000) {
+            if (queue.size() <= MAX_QUEUE_SIZE) {
                 LOG.fine("WebSocket not connected, queuing: " + data);
                 queue.add(data);
             } else {
@@ -227,7 +250,10 @@ public class EventServiceImpl implements EventService {
     }
 
     protected void onDataReceived(String data) {
-        Event event = eventMapper.read(data);
+        if (data == null || !data.startsWith(SharedEvent.MESSAGE_PREFIX))
+            return;
+        data = data.substring(SharedEvent.MESSAGE_PREFIX.length());
+        SharedEvent event = sharedEventMapper.read(data);
         eventBus.dispatch(event);
     }
 

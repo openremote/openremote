@@ -26,9 +26,9 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.manager.server.agent.AgentService;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
+import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.rules.RulesService;
 import org.openremote.model.AttributeEvent;
-import org.openremote.model.AttributeState;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.thing.ThingAttribute;
 
@@ -39,6 +39,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.agent3.protocol.Protocol.SENSOR_TOPIC;
+import static org.openremote.manager.server.event.EventService.INCOMING_EVENT_TOPIC;
 
 /**
  * Receives {@link AttributeEvent}s and processes them.
@@ -116,6 +117,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     protected AssetStorageService assetStorageService;
     protected AssetDatapointService assetDatapointService;
     protected MessageBrokerService messageBrokerService;
+    protected EventService eventService;
 
     final protected List<Consumer<AssetUpdate>> processors = new ArrayList<>();
 
@@ -126,6 +128,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         assetStorageService = container.getService(AssetStorageService.class);
         assetDatapointService = container.getService(AssetDatapointService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
+        eventService = container.getService(EventService.class);
 
         processors.add(rulesService);
         processors.add(agentService);
@@ -152,6 +155,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         from(SENSOR_TOPIC)
             .filter(body().isInstanceOf(AttributeEvent.class))
             .process(exchange -> processSensorUpdate(exchange.getIn().getBody(AttributeEvent.class)));
+
+        // Process attribute events from clients through the message broker
+        from(INCOMING_EVENT_TOPIC)
+            .filter(body().isInstanceOf(AttributeEvent.class))
+            .process(exchange -> updateAttributeValue(exchange.getIn().getBody(AttributeEvent.class)));
     }
 
     /**
@@ -315,9 +323,18 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 }
             }
             assetUpdate.setStatus(AssetUpdate.Status.COMPLETED);
+
+            publishEvent(assetUpdate);
+
         } finally {
             LOG.fine("<<< Processing complete: " + assetUpdate);
         }
+    }
+
+    protected void publishEvent(AssetUpdate assetUpdate) {
+        eventService.publishEvent(
+            new AttributeEvent(assetUpdate.getId(), assetUpdate.getAttributeName(), assetUpdate.getValue())
+        );
     }
 
     @Override

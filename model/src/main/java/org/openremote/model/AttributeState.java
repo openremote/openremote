@@ -30,7 +30,7 @@ public class AttributeState {
     protected AttributeRef attributeRef;
     protected JsonValue value;
 
-    public AttributeState() {
+    protected AttributeState() {
     }
 
     public AttributeState(AttributeRef attributeRef, JsonValue value) {

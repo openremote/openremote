@@ -95,14 +95,14 @@ public abstract class AbstractProtocol implements Protocol {
     public void linkAttributes(Collection<ThingAttribute> attributes) throws Exception {
         synchronized (linkedAttributes) {
             for (ThingAttribute attribute : attributes) {
-                if (linkedAttributes.containsKey(attribute.getAttributeRef())) {
+                if (linkedAttributes.containsKey(attribute.getReference())) {
                     LOG.fine("Attribute updated on '" + getProtocolName() + "': " + attribute);
                     onAttributeUpdated(attribute);
-                    linkedAttributes.put(attribute.getAttributeRef(), attribute);
+                    linkedAttributes.put(attribute.getReference(), attribute);
                 } else {
                     LOG.fine("Attribute added on '" + getProtocolName() + "': " + attribute);
                     onAttributeAdded(attribute);
-                    linkedAttributes.put(attribute.getAttributeRef(), attribute);
+                    linkedAttributes.put(attribute.getReference(), attribute);
                 }
             }
         }
@@ -115,10 +115,10 @@ public abstract class AbstractProtocol implements Protocol {
                     .stream()
                     .filter(thingAttribute -> linkedAttributes.values()
                                     .stream()
-                                    .anyMatch(linkedAttribute -> linkedAttribute.getAttributeRef().equals(thingAttribute.getAttributeRef()))
+                                    .anyMatch(linkedAttribute -> linkedAttribute.getReference().equals(thingAttribute.getReference()))
                     )
                     .forEach(attributeToRemove -> {
-                        linkedAttributes.remove(attributeToRemove.getAttributeRef());
+                        linkedAttributes.remove(attributeToRemove.getReference());
                         LOG.fine("Attribute removed on '" + getProtocolName() + "': " + attributeToRemove);
                         onAttributeRemoved(attributeToRemove);
                     });

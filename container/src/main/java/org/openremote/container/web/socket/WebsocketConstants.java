@@ -24,5 +24,8 @@ public interface WebsocketConstants {
     String SESSION_KEY = "websocket.sessionKey";
     String SEND_TO_ALL = "websocket.sendToAll";
     String AUTH = "websocket.auth";
+    String SESSION_OPEN = "websocket.sessionOpen";
+    String SESSION_CLOSE = "websocket.sessionClose";
+    String SESSION_CLOSE_ERROR = "websocket.sessionCloseError";
 
 }

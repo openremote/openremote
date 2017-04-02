@@ -34,5 +34,10 @@ public class SerializationConfiguration extends AbstractConfiguration {
         creatorVisibility(JsonAutoDetect.Visibility.NONE);
         type(JsonObject.class).serializer(ElementalJsonSerializer.class).deserializer(ElementalJsonDeserializer.class);
         type(JsonArray.class).serializer(ElementalJsonSerializer.class).deserializer(ElementalJsonDeserializer.class);
+        type(JsonValue.class).serializer(ElementalJsonSerializer.class).deserializer(ElementalJsonDeserializer.class);
+        type(JsonNull.class).serializer(ElementalJsonSerializer.class).deserializer(ElementalJsonDeserializer.class);
+        type(JsonNumber.class).serializer(ElementalJsonSerializer.class).deserializer(ElementalJsonDeserializer.class);
+        type(JsonString.class).serializer(ElementalJsonSerializer.class).deserializer(ElementalJsonDeserializer.class);
+        type(JsonBoolean.class).serializer(ElementalJsonSerializer.class).deserializer(ElementalJsonDeserializer.class);
     }
 }

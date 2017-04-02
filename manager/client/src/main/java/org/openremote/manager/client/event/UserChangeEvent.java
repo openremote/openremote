@@ -19,13 +19,11 @@
  */
 package org.openremote.manager.client.event;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreType;
-import org.openremote.model.Event;
+import org.openremote.model.event.Event;
 
-@JsonIgnoreType
 public class UserChangeEvent extends Event {
 
-    final private String username;
+    final protected String username;
 
     public UserChangeEvent(String username) {
         this.username = username;

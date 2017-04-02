@@ -19,9 +19,7 @@
  */
 package org.openremote.manager.client.event.session;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreType;
-import org.openremote.model.Event;
+import org.openremote.model.event.Event;
 
-@JsonIgnoreType
 public class SessionOpenedEvent extends Event {
 }

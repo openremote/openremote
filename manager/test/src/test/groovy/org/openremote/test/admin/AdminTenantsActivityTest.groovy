@@ -17,9 +17,9 @@ import org.openremote.manager.client.event.GoToPlaceEvent
 import org.openremote.manager.client.event.ShowFailureEvent
 import org.openremote.manager.client.event.ShowSuccessEvent
 import org.openremote.manager.client.event.WillGoToPlaceEvent
-import org.openremote.manager.client.event.bus.EventListener
+import org.openremote.model.event.bus.EventListener
 import org.openremote.manager.client.i18n.ManagerMessages
-import org.openremote.manager.client.service.EventService
+import org.openremote.model.event.shared.EventService
 import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.service.SecurityService
 import org.openremote.manager.client.style.WidgetStyle
@@ -28,7 +28,7 @@ import org.openremote.manager.shared.security.Tenant
 import org.openremote.manager.shared.security.TenantResource
 import org.openremote.manager.shared.validation.ConstraintViolationReport
 import org.openremote.model.Consumer
-import org.openremote.model.Event
+import org.openremote.model.event.Event
 import org.openremote.model.Runnable
 import org.openremote.test.ClientObjectMapper
 import org.openremote.test.GwtClientTrait

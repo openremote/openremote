@@ -27,7 +27,7 @@ import elemental.json.JsonArray;
  * <p>
  * The {@link #entityId} and {@link #attributeName} are required to identify
  * an entity's attribute.
- *
+ * <p>
  * Two attribute references are {@link #equals} if they reference the same entity
  * and attribute.
  */
@@ -36,7 +36,7 @@ public class AttributeRef {
     protected String entityId;
     protected String attributeName;
 
-    public AttributeRef() {
+    protected AttributeRef() {
     }
 
     public AttributeRef(String entityId, String attributeName) {

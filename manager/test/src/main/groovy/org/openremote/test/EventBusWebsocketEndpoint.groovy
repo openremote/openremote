@@ -20,16 +20,10 @@
 package org.openremote.test
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.openremote.model.event.Event
+import org.openremote.model.event.bus.EventBus
 
-import org.openremote.manager.client.event.session.ServerSendEvent
-import org.openremote.manager.client.event.bus.EventBus
-import org.openremote.model.Event
-
-import javax.websocket.CloseReason
-import javax.websocket.Endpoint
-import javax.websocket.EndpointConfig
-import javax.websocket.MessageHandler
-import javax.websocket.Session
+import javax.websocket.*
 
 class EventBusWebsocketEndpoint extends Endpoint {
 
@@ -40,15 +34,6 @@ class EventBusWebsocketEndpoint extends Endpoint {
     EventBusWebsocketEndpoint(EventBus eventBus, ObjectMapper eventMapper) {
         this.eventBus = eventBus
         this.eventMapper = eventMapper;
-
-        eventBus.register(ServerSendEvent.class, { serverSendEvent ->
-            if (session == null) {
-                return;
-            }
-            session.basicRemote.sendText(
-                    eventMapper.writeValueAsString(serverSendEvent.event)
-            );
-        });
     }
 
     @Override

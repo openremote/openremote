@@ -19,16 +19,11 @@
  */
 package org.openremote.manager.client.event;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreType;
-import org.openremote.model.Event;
+import org.openremote.model.event.Event;
 
-@JsonIgnoreType
 public class ShowInfoEvent extends Event {
 
-    public String text;
-
-    public ShowInfoEvent() {
-    }
+    final protected String text;
 
     public ShowInfoEvent(String text) {
         this.text = text;

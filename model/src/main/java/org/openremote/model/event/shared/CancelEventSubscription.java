@@ -17,14 +17,43 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.assets.browser;
+package org.openremote.model.event.shared;
 
 import org.openremote.model.event.Event;
 
-public class AssetBrowserSelectionCleared extends Event {
+/**
+ * A client can unsubscribe from {@link SharedEvent}s on the server, providing the
+ * type of event it doesn't want to receive anymore
+ */
+public class CancelEventSubscription<E extends SharedEvent> {
+
+    public static final String MESSAGE_PREFIX = "UNSUBSCRIBE";
+
+    protected String eventType;
+
+    protected CancelEventSubscription() {
+    }
+
+    public CancelEventSubscription(String eventType) {
+        this.eventType = eventType;
+    }
+
+    public CancelEventSubscription(Class<E> eventClass) {
+        this(Event.getEventType(eventClass));
+    }
+
+    public String getEventType() {
+        return eventType;
+    }
+
+    public void setEventType(String eventType) {
+        this.eventType = eventType;
+    }
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{}";
+        return getClass().getSimpleName() + "{" +
+            "eventType='" + eventType + '\'' +
+            '}';
     }
 }

@@ -31,7 +31,7 @@ import org.openremote.manager.client.assets.browser.TenantTreeNode;
 import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
 import org.openremote.manager.client.event.GoToPlaceEvent;
 import org.openremote.manager.client.event.UserChangeEvent;
-import org.openremote.manager.client.event.bus.EventBus;
+import org.openremote.model.event.bus.EventBus;
 import org.openremote.manager.client.map.MapAssetPlace;
 import org.openremote.manager.client.map.MapTenantPlace;
 import org.openremote.manager.client.rules.asset.AssetRulesListPlace;

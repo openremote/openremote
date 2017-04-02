@@ -20,38 +20,35 @@
 package org.openremote.manager.client.app;
 
 import com.google.gwt.place.shared.Place;
-import com.google.gwt.place.shared.PlaceController;
 import com.google.gwt.place.shared.PlaceHistoryHandler;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.inject.Provider;
-import org.openremote.manager.client.event.ShowSuccessEvent;
-import org.openremote.manager.client.event.bus.EventBus;
-import org.openremote.manager.client.toast.Toast;
-import org.openremote.manager.client.toast.Toasts;
+import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowInfoEvent;
+import org.openremote.manager.client.event.ShowSuccessEvent;
+import org.openremote.manager.client.toast.Toast;
+import org.openremote.manager.client.toast.Toasts;
 
 import javax.inject.Inject;
 
 public class AppControllerImpl implements AppController, AppView.Presenter {
 
-    private final AppView appView;
-    private final PlaceController placeController;
-    private final PlaceHistoryHandler placeHistoryHandler;
+    protected final AppView appView;
+    protected final Environment environment;
+    protected final PlaceHistoryHandler placeHistoryHandler;
 
     @Inject
-    public AppControllerImpl(PlaceController placeController,
+    public AppControllerImpl(Environment environment,
+                             PlaceHistoryHandler placeHistoryHandler,
                              Provider<HeaderPresenter> headerPresenterProvider,
                              Provider<FooterPresenter> footerPresenterProvider,
-                             PlaceHistoryHandler placeHistoryHandler,
-                             EventBus eventBus,
                              AppView appView,
                              Toasts toasts,
                              AppInitializer appInitializer) { // AppInitializer is needed so that activities are mapped to views
-
         this.appView = appView;
-        this.placeController = placeController;
+        this.environment = environment;
         this.placeHistoryHandler = placeHistoryHandler;
 
         // Configure layout as not using activity mapper (it's static)
@@ -60,21 +57,21 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
         FooterPresenter footerPresenter = footerPresenterProvider.get();
         appView.getFooterPanel().setWidget(footerPresenter.getView());
 
-        eventBus.register(
+        environment.getEventBus().register(
             ShowInfoEvent.class,
             event -> toasts.showToast(
                 new Toast(Toast.Type.INFO, event.getText(), Toast.DEFAULT_MAX_AGE)
             )
         );
 
-        eventBus.register(
+        environment.getEventBus().register(
             ShowSuccessEvent.class,
             event -> toasts.showToast(
                 new Toast(Toast.Type.SUCCESS, event.getText(), Toast.DEFAULT_MAX_AGE)
             )
         );
 
-        eventBus.register(
+        environment.getEventBus().register(
             ShowFailureEvent.class,
             event -> {
                 Toast.Type type = event.getDurationMillis() == ShowFailureEvent.DURABLE
@@ -93,7 +90,7 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
 
     @Override
     public void goTo(Place place) {
-        placeController.goTo(place);
+        environment.getPlaceController().goTo(place);
     }
 
     @Override

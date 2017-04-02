@@ -25,10 +25,21 @@ import com.github.nmorel.gwtjackson.client.JsonSerializerParameters;
 import com.github.nmorel.gwtjackson.client.stream.JsonWriter;
 import elemental.json.JsonValue;
 
-public class ElementalJsonSerializer extends JsonSerializer<JsonValue> {
+public class ElementalJsonSerializer extends JsonSerializer<Object> {
 
     @Override
-    protected void doSerialize(JsonWriter writer, JsonValue value, JsonSerializationContext ctx, JsonSerializerParameters params) {
-        writer.rawValue(value.toJson());
+    protected void doSerialize(JsonWriter writer, Object value, JsonSerializationContext ctx, JsonSerializerParameters params) {
+        if (value instanceof JsonValue) {
+            JsonValue jsonValue = (JsonValue) value;
+            writer.rawValue(jsonValue.toJson());
+        } else {
+            // If elemental gives us a JS primitive, use JS serialization
+            writer.rawValue(stringify(value));
+        }
     }
+
+    final public native String stringify(Object value) /*-{
+        return $wnd.JSON.stringify(value);
+    }-*/;
+
 }

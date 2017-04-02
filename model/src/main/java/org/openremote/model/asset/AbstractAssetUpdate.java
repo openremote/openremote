@@ -234,7 +234,7 @@ public abstract class AbstractAssetUpdate {
      */
     public boolean attributeRefsEqual(AbstractAssetUpdate assetUpdate) {
         return !(assetUpdate == null || assetUpdate.attribute == null)
-            && assetUpdate.attribute.getAttributeRef().equals(attribute.getAttributeRef());
+            && assetUpdate.attribute.getReference().equals(attribute.getReference());
     }
 
     @Override

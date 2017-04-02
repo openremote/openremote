@@ -21,8 +21,8 @@ package org.openremote.manager.client.apps;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
-import org.openremote.manager.client.event.bus.EventBus;
-import org.openremote.manager.client.event.bus.EventRegistration;
+import org.openremote.model.event.bus.EventBus;
+import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.apps.ConsoleApp;
 import org.openremote.manager.shared.apps.ConsoleAppResource;

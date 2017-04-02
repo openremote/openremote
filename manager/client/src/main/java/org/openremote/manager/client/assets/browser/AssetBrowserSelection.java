@@ -19,10 +19,8 @@
  */
 package org.openremote.manager.client.assets.browser;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreType;
-import org.openremote.model.Event;
+import org.openremote.model.event.Event;
 
-@JsonIgnoreType
 public class AssetBrowserSelection extends Event {
 
     final protected BrowserTreeNode selectedNode;

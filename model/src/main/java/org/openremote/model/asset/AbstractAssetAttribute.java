@@ -54,7 +54,7 @@ public abstract class AbstractAssetAttribute<CHILD extends AbstractAssetAttribut
         return assetId;
     }
 
-    public AttributeRef getAttributeRef() {
+    public AttributeRef getReference() {
         return new AttributeRef(getAssetId(), getName());
     }
 
@@ -63,7 +63,7 @@ public abstract class AbstractAssetAttribute<CHILD extends AbstractAssetAttribut
      */
     public AttributeState getState() {
         return new AttributeState(
-                getAttributeRef(),
+                getReference(),
                 getValue()
         );
     }

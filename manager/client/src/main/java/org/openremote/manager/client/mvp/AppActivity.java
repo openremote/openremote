@@ -21,8 +21,8 @@ package org.openremote.manager.client.mvp;
 
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
-import org.openremote.manager.client.event.bus.EventBus;
-import org.openremote.manager.client.event.bus.EventRegistration;
+import org.openremote.model.event.bus.EventBus;
+import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.model.Constants;
 

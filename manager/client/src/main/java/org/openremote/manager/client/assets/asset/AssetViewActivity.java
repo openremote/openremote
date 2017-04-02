@@ -31,8 +31,8 @@ import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.assets.browser.AssetTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
 import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
-import org.openremote.manager.client.event.bus.EventBus;
-import org.openremote.manager.client.event.bus.EventRegistration;
+import org.openremote.model.event.bus.EventBus;
+import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
 import org.openremote.manager.client.map.MapView;
 import org.openremote.manager.shared.asset.AssetResource;
@@ -42,7 +42,6 @@ import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.model.Runnable;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetAttributes;
 import org.openremote.model.asset.AssetType;
 
 import javax.inject.Inject;
@@ -180,7 +179,7 @@ public class AssetViewActivity
         attributesBrowser = new AttributesBrowser(
             environment,
             view.getAttributesBrowserContainer(),
-            new AssetAttributes(asset)
+            asset
         ) {
             @Override
             protected void readAttributeValue(AssetAttribute attribute, Runnable onSuccess) {

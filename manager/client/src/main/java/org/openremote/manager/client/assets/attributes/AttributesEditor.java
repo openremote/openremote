@@ -120,9 +120,9 @@ public class AttributesEditor
             if (attribute.isValid()) {
                 formGroup.setError(false);
                 // TODO This is necessary because JSON elemental behavior is weird
-                AssetAttribute storedAttribute =
+                AssetAttribute att2 =
                     new AssetAttribute(attribute.getName(), Json.parse(attribute.getJsonObject().toJson()));
-                attributes.put(storedAttribute);
+                getAttributes().put(att2);
                 showInfo(environment.getMessages().attributeAdded(attribute.getName()));
                 build();
             } else {
@@ -312,21 +312,22 @@ public class AttributesEditor
                     formGroup.setError(false);
                     item.setValueAsString(value);
                 } : null;
-                editor = createStringEditor(style, currentValue, null, updateConsumer);
+                editor = createStringEditorWidget(style, currentValue, null, updateConsumer);
             } else if (valueType.equals(JsonType.NUMBER)) {
-                Double currentValue = item.getValueAsDecimal();
-                Consumer<Double> updateConsumer = isEditable == null || isEditable || forceEditable ? value -> {
+                String currentValue = item.getValueAsString();
+                Consumer<String> updateConsumer = isEditable == null || isEditable || forceEditable ? value -> {
+                    Double decimalValue = Double.valueOf(value);
                     formGroup.setError(false);
-                    item.setValueAsDecimal(value);
+                    item.setValueAsDecimal(decimalValue);
                 } : null;
-                editor = createDecimalEditor(style, currentValue, null, updateConsumer, errorConsumer);
+                editor = createDecimalEditorWidget(style, currentValue, null, updateConsumer, errorConsumer);
             } else if (valueType.equals(JsonType.BOOLEAN)) {
                 Boolean currentValue = item.getValueAsBoolean();
                 Consumer<Boolean> updateConsumer = isEditable == null || isEditable || forceEditable ? value -> {
                     formGroup.setError(false);
                     item.setValueAsBoolean(value);
                 } : null;
-                editor = createBooleanEditor(style, currentValue, null, updateConsumer);
+                editor = createBooleanEditorWidget(style, currentValue, null, updateConsumer);
             } else {
                 FormField unsupportedField = new FormField();
                 unsupportedField.add(new FormOutputText(

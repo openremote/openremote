@@ -26,7 +26,7 @@ import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.assets.browser.AssetTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
-import org.openremote.manager.client.event.bus.EventListener;
+import org.openremote.model.event.bus.EventListener;
 import org.openremote.manager.client.rules.asset.AssetRulesList;
 import org.openremote.manager.client.rules.asset.AssetRulesListActivity;
 import org.openremote.manager.client.rules.asset.AssetRulesListImpl;

@@ -19,19 +19,14 @@
  */
 package org.openremote.manager.client.event;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreType;
-import org.openremote.model.Event;
+import org.openremote.model.event.Event;
 
-@JsonIgnoreType
 public class ShowFailureEvent extends Event {
 
     public static final int DURABLE = 9999999; // 7 days...
 
-    public String text;
-    public int durationMillis;
-
-    public ShowFailureEvent() {
-    }
+    final protected String text;
+    final protected int durationMillis;
 
     public ShowFailureEvent(String text) {
         this(text, DURABLE);

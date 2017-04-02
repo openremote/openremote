@@ -43,7 +43,9 @@ import org.apache.camel.Converter;
 import org.apache.camel.Exchange;
 import org.apache.camel.TypeConverters;
 import org.openremote.container.Container;
-import org.openremote.model.Event;
+import org.openremote.model.event.shared.CancelEventSubscription;
+import org.openremote.model.event.shared.EventSubscription;
+import org.openremote.model.event.shared.SharedEvent;
 
 import java.util.logging.Logger;
 
@@ -52,14 +54,31 @@ public class EventTypeConverters implements TypeConverters {
     private static final Logger LOG = Logger.getLogger(EventTypeConverters.class.getName());
 
     @Converter
-    public String writeEvent(Event event, Exchange exchange) throws Exception {
-        LOG.fine("Writing event JSON: " + event);
-        return Container.JSON.writeValueAsString(event);
+    public String writeEvent(SharedEvent event, Exchange exchange) throws Exception {
+        return SharedEvent.MESSAGE_PREFIX + Container.JSON.writeValueAsString(event);
     }
 
     @Converter
-    public Event readEvent(String string, Exchange exchange) throws Exception {
-        LOG.fine("Reading event JSON: " + string);
-        return Container.JSON.readValue(string, Event.class);
+    public SharedEvent readEvent(String string, Exchange exchange) throws Exception {
+        if (!string.startsWith(SharedEvent.MESSAGE_PREFIX))
+            return null;
+        string = string.substring(SharedEvent.MESSAGE_PREFIX.length());
+        return Container.JSON.readValue(string, SharedEvent.class);
+    }
+
+    @Converter
+    public EventSubscription readEventSubscription(String string, Exchange exchange) throws Exception {
+        if (!string.startsWith(EventSubscription.MESSAGE_PREFIX))
+            return null;
+        string = string.substring(EventSubscription.MESSAGE_PREFIX.length());
+        return Container.JSON.readValue(string, EventSubscription.class);
+    }
+
+    @Converter
+    public CancelEventSubscription readCancelEventSubscription(String string, Exchange exchange) throws Exception {
+        if (!string.startsWith(CancelEventSubscription.MESSAGE_PREFIX))
+            return null;
+        string = string.substring(CancelEventSubscription.MESSAGE_PREFIX.length());
+        return Container.JSON.readValue(string, CancelEventSubscription.class);
     }
 }

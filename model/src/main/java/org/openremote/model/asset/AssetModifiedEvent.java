@@ -17,14 +17,47 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.assets.browser;
+package org.openremote.model.asset;
 
-import org.openremote.model.event.Event;
+import org.openremote.model.event.shared.SharedEvent;
 
-public class AssetBrowserSelectionCleared extends Event {
+public class AssetModifiedEvent extends SharedEvent {
+
+    public enum Cause {
+        CREATE,
+        UPDATE,
+        DELETE,
+        CHILDREN_MODIFIED
+    }
+
+    protected String assetId;
+    protected Cause cause;
+
+    protected AssetModifiedEvent() {
+    }
+
+    public AssetModifiedEvent(Asset asset, Cause cause) {
+        this(asset.getId(), cause);
+    }
+
+    public AssetModifiedEvent(String assetId, Cause cause) {
+        this.assetId = assetId;
+        this.cause = cause;
+    }
+
+    public String getAssetId() {
+        return assetId;
+    }
+
+    public Cause getCause() {
+        return cause;
+    }
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "{}";
+        return getClass().getSimpleName() + "{" +
+            "assetId='" + assetId + '\'' +
+            ", cause=" + cause +
+            "}";
     }
 }

@@ -17,21 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.event.session;
+package org.openremote.manager.client.event;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreType;
-import org.openremote.model.Event;
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
+import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
+import org.openremote.model.event.shared.SharedEvent;
 
-@JsonIgnoreType
-public class ServerSendEvent extends Event {
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = SharedEvent.class, mixIn = DefaultJsonMixin.class)})
+public interface SharedEventMapper extends ObjectMapper<SharedEvent> {
 
-    final public Event event;
-
-    public ServerSendEvent(Event event) {
-        this.event = event;
-    }
-
-    public Event getEvent() {
-        return event;
-    }
 }

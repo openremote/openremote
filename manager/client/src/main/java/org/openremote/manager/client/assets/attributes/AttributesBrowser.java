@@ -24,12 +24,21 @@ import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.Widget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.widget.*;
+import org.openremote.model.AttributeEvent;
 import org.openremote.model.Runnable;
+import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetAttributes;
+import org.openremote.model.event.bus.EventRegistration;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
 
 public abstract class AttributesBrowser
     extends AttributesView<AttributesBrowser.Container, AttributesBrowser.Style, AssetAttributes, AssetAttribute> {
+
+    private static final Logger LOG = Logger.getLogger(AttributesBrowser.class.getName());
 
     public interface Container extends AttributesView.Container<AttributesBrowser.Style> {
 
@@ -39,10 +48,15 @@ public abstract class AttributesBrowser
 
     }
 
-    protected FormGroup liveUpdatesGroup;
+    final protected Asset asset;
+    final protected List<FormButton> readButtons = new ArrayList<>();
 
-    public AttributesBrowser(Environment environment, Container container, AssetAttributes attributes) {
-        super(environment, container, attributes);
+    protected FormGroup liveUpdatesGroup;
+    protected EventRegistration<AttributeEvent> eventRegistration;
+
+    public AttributesBrowser(Environment environment, Container container, Asset asset) {
+        super(environment, container, new AssetAttributes(asset));
+        this.asset = asset;
     }
 
     @Override
@@ -59,6 +73,12 @@ public abstract class AttributesBrowser
     }
 
     @Override
+    public void close() {
+        super.close();
+        enableLiveUpdates(false);
+    }
+
+    @Override
     protected void addAttributeActions(AssetAttribute attribute,
                                        FormGroup formGroup,
                                        FormField formField,
@@ -72,7 +92,12 @@ public abstract class AttributesBrowser
                 writeValueButton.setText(container.getMessages().write());
                 writeValueButton.setPrimary(true);
                 writeValueButton.setIcon("cloud-upload");
-                writeValueButton.addClickHandler(clickEvent -> writeAttributeValue(attribute));
+                writeValueButton.addClickHandler(clickEvent -> {
+                    // writeAttributeValue(attribute);
+                    environment.getEventService().dispatch(
+                        new AttributeEvent(attribute.getState())
+                    );
+                });
                 formGroupActions.add(writeValueButton);
             }
 
@@ -88,6 +113,7 @@ public abstract class AttributesBrowser
                     refreshedEditor = createUnsupportedEditor(attribute);
                 formField.add(refreshedEditor);
             }));
+            readButtons.add(readValueButton);
             formGroupActions.add(readValueButton);
         }
     }
@@ -110,7 +136,7 @@ public abstract class AttributesBrowser
         formGroup.addFormField(formField);
 
         FormCheckBox liveUpdatesCheckBox = new FormCheckBox();
-        liveUpdatesCheckBox.addValueChangeHandler(event -> showInfo("TODO: Not implemented"));
+        liveUpdatesCheckBox.addValueChangeHandler(event -> enableLiveUpdates(event.getValue()));
         formField.add(liveUpdatesCheckBox);
 
         if (attributes.size() > 0) {
@@ -121,10 +147,43 @@ public abstract class AttributesBrowser
             readAllButton.addClickHandler(event -> showInfo("TODO: Not implemented"));
             formGroupActions.add(readAllButton);
 
+            readButtons.add(readAllButton);
+
             formGroup.addFormGroupActions(formGroupActions);
         }
 
         return formGroup;
+    }
+
+    protected void enableLiveUpdates(boolean enable) {
+        for (FormButton readButton : readButtons) {
+            readButton.setEnabled(!enable);
+        }
+
+        if (eventRegistration != null) {
+            environment.getEventBus().remove(eventRegistration);
+            eventRegistration = null;
+        }
+
+        if (enable) {
+            eventRegistration = environment.getEventBus().register(
+                AttributeEvent.class,
+                event -> {
+                    AttributeEditor editor = editors.get(event.getAttributeName());
+                    if (editor != null) {
+                        editor.setValue(event.getValue());
+                    }
+                }
+            );
+            environment.getEventService().subscribe(
+                AttributeEvent.class,
+                new AttributeEvent.EntityIdFilter(asset.getId())
+            );
+        } else {
+            environment.getEventService().unsubscribe(
+                AttributeEvent.class
+            );
+        }
     }
 
     protected Widget createDatapointBrowser(AssetAttribute attribute) {

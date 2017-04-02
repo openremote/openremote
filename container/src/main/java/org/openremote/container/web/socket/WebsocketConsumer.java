@@ -22,6 +22,7 @@ package org.openremote.container.web.socket;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.impl.DefaultConsumer;
+import org.openremote.model.Consumer;
 
 public class WebsocketConsumer extends DefaultConsumer {
 
@@ -49,14 +50,21 @@ public class WebsocketConsumer extends DefaultConsumer {
     }
 
     public void sendMessage(final String sessionKey, final WebsocketAuth websocketAuth, final String message) {
-        sendMessage(sessionKey, websocketAuth, (Object)message);
+        sendMessage(sessionKey, websocketAuth, (Object) message);
     }
 
     public void sendMessage(final String sessionKey, final WebsocketAuth websocketAuth, final Object message) {
+        sendMessage(sessionKey, websocketAuth, message, null);
+    }
+
+    public void sendMessage(final String sessionKey, final WebsocketAuth websocketAuth, final Object message, Consumer<Exchange> exchangePreparer) {
         final Exchange exchange = getEndpoint().createExchange();
         exchange.getIn().setHeader(WebsocketConstants.SESSION_KEY, sessionKey);
         exchange.getIn().setHeader(WebsocketConstants.AUTH, websocketAuth);
         exchange.getIn().setBody(message);
+        if (exchangePreparer != null) {
+            exchangePreparer.accept(exchange);
+        }
 
         getAsyncProcessor().process(exchange, doneSync -> {
             if (exchange.getException() != null) {
@@ -64,5 +72,4 @@ public class WebsocketConsumer extends DefaultConsumer {
             }
         });
     }
-
 }

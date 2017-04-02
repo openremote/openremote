@@ -17,21 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.event.session;
+package org.openremote.manager.client.event;
 
-import org.openremote.model.Event;
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
+import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
+import org.openremote.model.event.shared.EventSubscription;
 
-public class CancelRepeatingServerSendEvent extends ServerSendEvent {
-
-    final public String key;
-
-    public CancelRepeatingServerSendEvent(Event event, String key) {
-        super(event);
-        this.key = key;
-    }
-
-    public String getKey() {
-        return key;
-    }
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = EventSubscription.class, mixIn = DefaultJsonMixin.class)})
+public interface EventSubscriptionMapper extends ObjectMapper<EventSubscription> {
 
 }

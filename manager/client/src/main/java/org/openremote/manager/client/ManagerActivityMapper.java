@@ -43,7 +43,7 @@ import org.openremote.manager.client.assets.asset.AssetViewPlace;
 import org.openremote.manager.client.assets.tenant.AssetsTenantActivity;
 import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
 import org.openremote.manager.client.event.ShowFailureEvent;
-import org.openremote.manager.client.event.bus.EventBus;
+import org.openremote.model.event.bus.EventBus;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.map.MapActivity;
 import org.openremote.manager.client.map.MapPlace;
