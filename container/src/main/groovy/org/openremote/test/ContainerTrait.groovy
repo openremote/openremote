@@ -29,6 +29,7 @@ import org.keycloak.representations.AccessTokenResponse
 import org.openremote.container.Container
 import org.openremote.container.ContainerService
 import org.openremote.container.message.MessageBrokerService
+import org.openremote.container.message.MessageBrokerSetupService
 import org.openremote.container.security.AuthForm
 import org.openremote.container.security.IdentityService
 import org.openremote.container.web.WebClient
@@ -123,9 +124,9 @@ trait ContainerTrait {
     static def getWebsocketServerUrl(UriBuilder uriBuilder, String realm, String endpointPath, String accessToken) {
         uriBuilder.clone()
                 .scheme("ws")
-                .replacePath(MessageBrokerService.WEBSOCKET_PATH)
+                .replacePath(MessageBrokerSetupService.WEBSOCKET_PATH)
                 .path(endpointPath)
-                .queryParam(WebService.REQUEST_REALM_PARAM, realm)
+                .queryParam(WebService.REQUEST_HEADER_REALM, realm)
                 .queryParam("Authorization", "Bearer " + accessToken)
     }
 

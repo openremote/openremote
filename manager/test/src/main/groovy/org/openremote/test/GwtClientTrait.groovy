@@ -33,6 +33,7 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget
 import com.google.web.bindery.event.shared.SimpleEventBus
 import elemental.json.JsonValue
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
+import org.openremote.model.event.Event
 import org.openremote.model.event.bus.EventBus
 import org.openremote.manager.client.mvp.AppActivityManager
 import org.openremote.manager.client.mvp.AppActivityMapper
@@ -41,6 +42,8 @@ import org.openremote.manager.client.service.SecurityService
 import org.openremote.manager.shared.http.Request
 import org.openremote.manager.shared.http.RequestParams
 import org.openremote.manager.shared.http.SuccessStatusCode
+import org.openremote.model.event.bus.EventListener
+import org.openremote.test.GwtClientTrait.CollectingEventListener
 import org.spockframework.mock.IMockMethod
 
 import javax.ws.rs.ClientErrorException
@@ -105,6 +108,25 @@ trait GwtClientTrait {
 
     static EventBus createEventBus() {
         new EventBus()
+    }
+
+    static class CollectingEventListener implements EventListener<Event> {
+        List[] collectedEvents
+
+        CollectingEventListener(List[] collectedEvents) {
+            this.collectedEvents = collectedEvents
+        }
+
+        @Override
+        void on(Event event) {
+            collectedEvents += event
+        }
+    }
+
+    static EventBus createEventBus(List[] collectedEvents) {
+        def eventBus = new EventBus()
+        eventBus.register(null, new CollectingEventListener(collectedEvents))
+        return eventBus
     }
 
     static AppPlaceController createPlaceController(SecurityService securityService, EventBus eventBus) {

@@ -37,8 +37,8 @@ class AssetTreeCell extends AbstractSafeHtmlCell<BrowserTreeNode> {
     }
 
     public interface AssetTemplates extends SafeHtmlTemplates {
-        @Template("<div id=\"" + CELL_ID_PREFIX + "-{0}\"><span class=\"or-FormTreeIcon fa fa-{2}\"></span>{1}</div>")
-        SafeHtml treeNode(String id, String label, String icon);
+        @Template("<div id=\"" + CELL_ID_PREFIX + "-{0}\" class=\"or-{3}\"><span class=\"or-FormTreeIcon fa fa-{2}\"></span>{1}</div>")
+        SafeHtml treeNode(String id, String label, String icon, String type);
     }
 
     private static final AssetTemplates TEMPLATES = GWT.create(AssetTemplates.class);
@@ -63,9 +63,10 @@ class AssetTreeCell extends AbstractSafeHtmlCell<BrowserTreeNode> {
         @Override
         public void render(BrowserTreeNode node, SafeHtmlBuilder appendable) {
             appendable.append(TEMPLATES.treeNode(
-                node.getId(),
+                node.getId() != null ? node.getId() : "without-id",
                 TextUtil.ellipsize(node.getLabel(), maxLabelLength),
-                node.getIcon()
+                node.getIcon(),
+                node.getClass().getSimpleName()
             ));
         }
     }

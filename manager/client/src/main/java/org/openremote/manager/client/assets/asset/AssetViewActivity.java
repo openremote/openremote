@@ -42,7 +42,6 @@ import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.model.Runnable;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetType;
 
 import javax.inject.Inject;
 import java.util.Collection;
