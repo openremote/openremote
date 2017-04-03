@@ -160,7 +160,7 @@ public class AssetViewActivity
         view.setLocation(asset.getCoordinates());
         view.showFeaturesSelection(MapView.getFeature(asset));
         view.flyTo(asset.getCoordinates());
-        view.setType(asset.getWellKnownType() != AssetType.CUSTOM ? asset.getWellKnownType().name() : asset.getType());
+        view.setType(asset.getType());
     }
 
     protected void writeParentToView() {

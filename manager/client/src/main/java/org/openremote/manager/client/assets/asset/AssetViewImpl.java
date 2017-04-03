@@ -39,6 +39,7 @@ import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.*;
 import org.openremote.manager.shared.map.GeoJSON;
 import org.openremote.model.Constants;
+import org.openremote.model.asset.AssetType;
 
 import javax.inject.Inject;
 import java.util.Date;
@@ -263,7 +264,12 @@ public class AssetViewImpl extends Composite implements AssetView {
 
     @Override
     public void setType(String type) {
-        typeLabel.setText(type);
+        AssetType assetType = AssetType.getByValue(type);
+        if (assetType == AssetType.CUSTOM) {
+            typeLabel.setText(managerMessages.assetTypeLabel(type));
+        } else {
+            typeLabel.setText(managerMessages.assetTypeLabel(assetType.name()));
+        }
     }
 
     @Override

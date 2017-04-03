@@ -129,7 +129,7 @@ public enum AssetMeta {
      * facts from the rules sessions if they are older than this value (using event source timestamp, not event
      * processing time).
      */
-    RULES_EVENT_EXPIRES(ASSET_META_NAMESPACE + ":rulesEventExpires", new Access(true, false, true), JsonType.NUMBER),
+    RULES_EVENT_EXPIRES(ASSET_META_NAMESPACE + ":rulesEventExpires", new Access(true, false, true), JsonType.STRING),
 
     /**
      * Enable flag to be used by asset attributes that could require this functionality (e.g. ProtocolConfiguration)
@@ -196,7 +196,7 @@ public enum AssetMeta {
      */
     public enum EditableType {
         STRING("String", JsonType.STRING),
-        DECIMAL("Decimal", JsonType.NUMBER),
+        NUMBER("Number", JsonType.NUMBER),
         BOOLEAN("Boolean", JsonType.BOOLEAN);
 
         EditableType(String label, JsonType valueType) {
