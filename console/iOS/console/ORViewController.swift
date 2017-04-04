@@ -20,12 +20,9 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor.white
-    }
-    
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
         self.configureAccess()
     }
+    
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         let defaults = UserDefaults(suiteName: AppGroup.entitlement)
         defaults?.set(message.body, forKey: message.name)
