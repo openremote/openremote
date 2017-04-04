@@ -13,17 +13,22 @@ enum Server {
     static let port = "8080"
     static let initialPath = String(format:"console/%@/index.html",Server.realm)
     static let realm = "blok61"
-    static let apiTestResource = String(format:"http://%@:%@/%@/asset",Server.hostURL,Server.port,Server.realm)
+    static let apiTestResource = String(format:"http://%@:%@/%@/notification/alert",Server.hostURL,Server.port,Server.realm)
+    static let registerDeviceResource = String(format:"http://%@:%@/%@/notification/token",Server.hostURL,Server.port,Server.realm)
 }
 
 enum Client {
     static let clientId = "openremote"
 }
 
+enum FCM {
+    static let serverKey = "Dummy"
+}
 enum DefaultsKey {
     static let offlineToken = "offlineToken"
     static let refreshToken = "refreshToken"
     static let idToken = "idToken"
+    static let deviceId = "deviceToken"
 }
 
 enum NotificationsNames {

@@ -133,6 +133,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             {
                 if let token = FIRInstanceID.instanceID().token() {
                     NSLog("Connected to FCM. Token is %@",token as String)
+                    TokenManager.sharedInstance.storeDeviceId(token: token)
                 } else {
                     NSLog("Connected to FCM. Token is currently nil")
                 }
