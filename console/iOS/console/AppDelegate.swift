@@ -21,7 +21,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     var reachabilityAlert : UIAlertController?
     var reachabilityAlertShown = false
     let internetReachability = Reachability.forInternetConnection()
-
+    
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         setActions()
@@ -39,9 +39,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         NotificationCenter.default.addObserver(self, selector: #selector(self.tokenRefreshNotification), name: NSNotification.Name.firInstanceIDTokenRefresh, object: nil)
         
         NotificationCenter.default.addObserver(self,
-                                                         selector: #selector(self.reachabilityChanged(note:)),
-                                                         name: NSNotification.Name.reachabilityChanged,
-                                                         object: internetReachability)
+                                               selector: #selector(self.reachabilityChanged(note:)),
+                                               name: NSNotification.Name.reachabilityChanged,
+                                               object: internetReachability)
         internetReachability?.startNotifier()
         self.updateReachabilityStatus(reachability: internetReachability!)
         return true
@@ -65,9 +65,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     
     func applicationWillEnterForeground(_ application: UIApplication) {
         // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
-       DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-        self.internetReachability?.startNotifier()
-        self.updateReachabilityStatus(reachability: self.internetReachability!)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            self.internetReachability?.startNotifier()
+            self.updateReachabilityStatus(reachability: self.internetReachability!)
         }
     }
     
@@ -111,7 +111,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
         NSLog("Action asked : %@",response.actionIdentifier)
     }
-
+    
     
     func application(_ application: UIApplication, open url: URL, sourceApplication: String?, annotation: Any) -> Bool {
         if (self.currentAuthorizationFlow?.resumeAuthorizationFlow(with: url))! {

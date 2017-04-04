@@ -132,7 +132,6 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
                 NotificationCenter.default.post(name: notificationName, object: nil)
             })
         }
-        
     }
     
     func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
@@ -159,7 +158,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
             NSLog("error %@", error.localizedDescription)
             showError(error: NSError(domain: "navigationError", code: 0, userInfo:[
                 NSLocalizedDescriptionKey :  NSLocalizedString("navigationError", value: "Could not navigate to page", comment: "")
-                ]))            
+                ]))
         }
     }
     
@@ -253,7 +252,6 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
             }
         })
         req.resume()
-        
     }
     
     func showError(error : Error) {
