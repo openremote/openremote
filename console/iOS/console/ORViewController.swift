@@ -54,7 +54,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         if (navigationAction.request.url?.absoluteString.contains("logout"))! {
             decisionHandler(.allow)
             TokenManager.sharedInstance.didLogOut = true
-            self.dismiss(animated: true, completion: nil)
+            self.dismiss(animated: false, completion: nil)
         } else {
             decisionHandler(.allow)
         }
@@ -74,6 +74,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         self.present(alertVC, animated: true, completion: nil)
     }
     
+    // just for testing purpose (ask backend to send a notification to device)
     func apiCall() {
         guard let tkurlRequest = URL(string: String(format:"http://%@:%@/auth/realms/%@/protocol/openid-connect/token",Server.hostURL,Server.port,Server.realm)) else { return }
         let tkRequest = NSMutableURLRequest(url: tkurlRequest)
@@ -90,6 +91,9 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
                     if ((jsonDictionnary["access_token"]) != nil) {
                         guard let urlRequest = URL(string: String(Server.apiTestResource)) else { return }
                         let request = NSMutableURLRequest(url: urlRequest)
+                        request.httpMethod = "POST"
+                        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+                        request.httpBody = "{\"title\" :\" The Title\",\"message\" : \"Message\",\"appUrl\" : \" AppUrl\",\"actions\": [ {\"title\" : \"Action title\" , \"type\": \"ACTION_TYPE1\"} ]}".data(using: .utf8)
                         request.addValue(String(format:"Bearer %@", jsonDictionnary["access_token"] as! String), forHTTPHeaderField: "Authorization")
                         let sessionConfiguration = URLSessionConfiguration.default
                         let session = URLSession(configuration: sessionConfiguration)
@@ -109,13 +113,15 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
                         reqDataTask.resume()
                     } else {
                         if let httpResponse = response as? HTTPURLResponse {
-                            NSLog("error %@", (error as! NSError).localizedDescription as String)
+                            NSLog("error %@", httpResponse)
                             let error = NSError(domain: "", code: httpResponse.statusCode, userInfo:  [
                                 NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
                                 ])
                             self.showError(error: error)
                         } else {
-                            NSLog("error %@", (error as! NSError).localizedDescription as String)
+                            if (error != nil) {
+                                NSLog("error %@", (error as! NSError).localizedDescription as String)
+                            }
                             let error = NSError(domain: "", code: 0, userInfo:  [
                                 NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
                                 ])
