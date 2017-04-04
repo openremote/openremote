@@ -170,8 +170,9 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         userController.addUserScript(userScript)
         
         webCfg?.userContentController = userController;
-        
-        myWebView = WKWebView(frame: view.frame, configuration: webCfg!)
+        let sbHeight = UIApplication.shared.statusBarFrame.height
+        let webFrame = CGRect(x : 0,y : sbHeight,width : view.frame.size.width,height : view.frame.size.height - sbHeight)
+        myWebView = WKWebView(frame: webFrame, configuration: webCfg!)
         myWebView?.uiDelegate = self;
         myWebView?.navigationDelegate = self;
         view.addSubview(myWebView!)
