@@ -121,7 +121,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         default:
             NSLog("unknown message received from javascript : %@", message.name)
         }
-        if (offlineToken != nil && refreshToken != nil && idToken != nil ) {
+        if (offlineToken != nil && refreshToken != nil && idToken != nil && !didLogOut) {
             self.hasToken = true
             //myWeb
             self.viewController.dismiss(animated: true, completion: {
@@ -152,7 +152,6 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     }
     
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        NSLog("navigation failed %@",error as NSError)
         let errorCode = (error as NSError).code
         if errorCode != NSURLErrorCancelled {
             NSLog("error %@", error.localizedDescription)

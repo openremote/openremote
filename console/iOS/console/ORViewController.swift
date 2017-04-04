@@ -20,10 +20,12 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor.white
-        self.configureAccess()
-        
     }
     
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        self.configureAccess()
+    }
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         let defaults = UserDefaults(suiteName: AppGroup.entitlement)
         defaults?.set(message.body, forKey: message.name)
@@ -172,7 +174,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
             exec_template = String(format: "var iOSToken = \"%@\"; var iOSRefreshToken = \"%@\"; var iOSTokenId = \"%@\";", TokenManager.sharedInstance.offlineToken!, TokenManager.sharedInstance.refreshToken!, TokenManager.sharedInstance.idToken!)
         }
         
-        let userScript:WKUserScript = WKUserScript(source: exec_template, injectionTime: .atDocumentStart, forMainFrameOnly: false)
+        let userScript:WKUserScript = WKUserScript(source: exec_template, injectionTime: .atDocumentStart, forMainFrameOnly: true)
         userController.addUserScript(userScript)
         
         webCfg?.userContentController = userController;
@@ -184,7 +186,6 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         view.addSubview(myWebView!)
         
         //self.apiCall()
-        
         self.login()
     }
     
