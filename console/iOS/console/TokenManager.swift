@@ -165,7 +165,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     
     func storeDeviceId(token : String) {
         let defaults = UserDefaults(suiteName: AppGroup.entitlement)
-        if deviceId == nil  || (deviceId != (defaults?.object(forKey: DefaultsKey.deviceId) as! String)){
+        if deviceId == nil  || (deviceId != token){
             deviceId = token
             defaults?.set(token, forKey: DefaultsKey.deviceId)
             isDeviceIdSend = false
