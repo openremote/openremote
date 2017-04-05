@@ -35,6 +35,9 @@ import java.io.Serializable;
  * <li>
  * When a restricted user client updates asset data, only a subset of protected data can be changed.
  * </li>
+ * <li>
+ * A restricted user client can not create or delete assets.
+ * </li>
  * </ul>
  * Asset attribute data can be protected with {@link AssetMeta#PROTECTED} and {@link AssetMeta.Access},
  * it is filtered in {@link AbstractAssetAttributes#filterProtected}.

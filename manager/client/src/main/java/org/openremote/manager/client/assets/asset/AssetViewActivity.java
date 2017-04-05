@@ -120,6 +120,7 @@ public class AssetViewActivity
                 assetBrowserPresenter.selectAsset(asset);
                 writeAssetToView();
                 writeAttributesBrowserToView();
+                // TODO This fails if the user is restricted, can't just load parent and assume we have access
                 if (asset.getParentId() != null) {
                     assetBrowserPresenter.loadAsset(asset.getParentId(), loadedParentAsset -> {
                         this.parentAsset = loadedParentAsset;

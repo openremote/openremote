@@ -204,11 +204,11 @@ public class EventServiceImpl implements EventService {
         EventSubscription<E> subscription = new EventSubscription<>(eventClass, filter);
         final String key = subscription.getEventType();
         final String data = EventSubscription.MESSAGE_PREFIX + eventSubscriptionMapper.write(subscription);
-        LOG.fine("Subscribing on server: " + subscription);
-        sendData(data);
         if (activeSubscriptions.containsKey(key)) {
             Browser.getWindow().clearInterval(activeSubscriptions.get(key));
         }
+        LOG.fine("Subscribing on server: " + subscription);
+        sendData(data);
         int interval = Browser.getWindow().setInterval(
             () -> {
                 LOG.fine("Updating subscription on server: " + subscription);
@@ -224,9 +224,9 @@ public class EventServiceImpl implements EventService {
         final String key = cancellation.getEventType();
         if (activeSubscriptions.containsKey(key)) {
             Browser.getWindow().clearInterval(activeSubscriptions.get(key));
+            LOG.fine("Unsubscribing on server: " + cancellation);
+            sendData(CancelEventSubscription.MESSAGE_PREFIX + cancelEventSubscriptionMapper.write(cancellation));
         }
-        LOG.fine("Unsubscribing on server: " + cancellation);
-        sendData(CancelEventSubscription.MESSAGE_PREFIX + cancelEventSubscriptionMapper.write(cancellation));
     }
 
     @Override
@@ -240,7 +240,9 @@ public class EventServiceImpl implements EventService {
             LOG.fine("Sending data on WebSocket: " + data);
             webSocket.send(data);
         } else {
-            if (queue.size() <= MAX_QUEUE_SIZE) {
+            if (failureCount >= MAX_ATTEMPTS) {
+                LOG.warning("WebSocket connection failed, discarding: " + data);
+            } else if (queue.size() <= MAX_QUEUE_SIZE) {
                 LOG.fine("WebSocket not connected, queuing: " + data);
                 queue.add(data);
             } else {

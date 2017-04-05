@@ -41,7 +41,6 @@ import javax.websocket.Session
 import javax.websocket.WebSocketContainer
 import javax.ws.rs.client.WebTarget
 import javax.ws.rs.core.UriBuilder
-import java.util.stream.Stream
 
 import static java.util.concurrent.TimeUnit.SECONDS
 
@@ -130,8 +129,8 @@ trait ContainerTrait {
                 .queryParam("Authorization", "Bearer " + accessToken)
     }
 
-    static Session connect(WebSocketContainer websocketContainer, Endpoint endpoint, WebTarget webTarget, String realm, String accessToken, String endpointPath) {
-        def websocketUrl = getWebsocketServerUrl(webTarget.getUriBuilder(), realm, endpointPath, accessToken)
+    static Session connect(WebSocketContainer websocketContainer, Endpoint endpoint, UriBuilder serverUri, String realm, String accessToken, String endpointPath) {
+        def websocketUrl = getWebsocketServerUrl(serverUri, realm, endpointPath, accessToken)
         def config = ClientEndpointConfig.Builder.create().build()
         websocketContainer.connectToServer(endpoint, config, websocketUrl.build())
     }

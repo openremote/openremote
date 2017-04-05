@@ -60,11 +60,21 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     @Override
     public Asset[] getCurrentUserAssets(RequestParams requestParams) {
         try {
-            if (isSuperUser() || !isRestrictedUser()) {
+            if (isSuperUser()) {
                 return new Asset[0];
             }
+
+            if (!isRestrictedUser()) {
+                List<ServerAsset> result = assetStorageService.findAll(
+                    new AssetQuery()
+                        .parent(new AssetQuery.ParentPredicate(true))
+                        .tenant(new AssetQuery.TenantPredicate().realm(getAuthenticatedRealm()))
+                );
+                return result.toArray(new Asset[result.size()]);
+            }
+
             List<ServerAsset> assets = assetStorageService.findAll(
-                new AssetQuery().select(new AssetQuery.Select(true, true)).userId(getUserId())
+                new AssetQuery().select(new AssetQuery.Select(false, true)).userId(getUserId())
             );
 
             // Filter assets that might have been moved into a different realm and can no longer be accessed by user
@@ -82,11 +92,6 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }
-    }
-
-    @Override
-    public void updateCurrentUserAsset(RequestParams requestParams, String assetId, Asset protectedAsset) {
-        throw new UnsupportedOperationException("Not Implemented"); // TODO
     }
 
     @Override
@@ -148,17 +153,28 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     @Override
     public Asset get(RequestParams requestParams, String assetId) {
         try {
+            ServerAsset asset;
+
+            // Check restricted
             if (isRestrictedUser()) {
-                throw new WebApplicationException(Response.Status.FORBIDDEN);
+                if (!assetStorageService.isUserAsset(getUserId(), assetId)) {
+                    throw new WebApplicationException(Response.Status.FORBIDDEN);
+                }
+                asset = assetStorageService.find(assetId, true, true);
+            } else {
+                asset = assetStorageService.find(assetId, true);
             }
-            Asset asset = assetStorageService.find(assetId, true);
+
             if (asset == null)
                 throw new WebApplicationException(NOT_FOUND);
+
             if (!isTenantActiveAndAccessible(asset)) {
                 LOG.fine("Forbidden access for user '" + getUsername() + "': " + asset);
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
+
             return asset;
+
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }
@@ -167,10 +183,18 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     @Override
     public void update(RequestParams requestParams, String assetId, Asset asset) {
         try {
+            ServerAsset serverAsset;
+            // Check restricted
             if (isRestrictedUser()) {
-                throw new WebApplicationException(Response.Status.FORBIDDEN);
+                if (!assetStorageService.isUserAsset(getUserId(), assetId)) {
+                    throw new WebApplicationException(Response.Status.FORBIDDEN);
+                }
+                // TODO Implement restricted user asset updates, what do we want to allow to update?
+                throw new UnsupportedOperationException("TODO Implement asset updates for restricted users");
+            } else {
+                serverAsset = assetStorageService.find(assetId, true);
             }
-            ServerAsset serverAsset = assetStorageService.find(assetId, true, false);
+
             if (serverAsset == null)
                 throw new WebApplicationException(NOT_FOUND);
 

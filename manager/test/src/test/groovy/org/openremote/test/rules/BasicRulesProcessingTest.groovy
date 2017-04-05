@@ -25,7 +25,6 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import static org.openremote.manager.server.setup.builtin.BuiltinSetupTasks.SETUP_IMPORT_DEMO_RULES
 import static org.openremote.test.RulesTestUtil.attachRuleExecutionLogger
 
 class BasicRulesProcessingTest extends Specification implements ManagerContainerTrait {
@@ -66,7 +65,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         and: "the container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort) << [(SETUP_IMPORT_DEMO_RULES): "false"], defaultServices())
+        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)

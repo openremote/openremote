@@ -1,5 +1,7 @@
 package org.openremote.test.rules
 
+import org.drools.core.time.impl.PseudoClockScheduler
+import org.kie.api.runtime.conf.ClockTypeOption
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.rules.RulesDeployment
@@ -13,12 +15,10 @@ import org.openremote.manager.shared.rules.Ruleset
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
-import org.kie.api.runtime.conf.ClockTypeOption
-import org.drools.core.time.impl.PseudoClockScheduler
 
+import static java.util.concurrent.TimeUnit.SECONDS
 import static org.openremote.manager.server.setup.builtin.BuiltinSetupTasks.SETUP_IMPORT_DEMO_RULES
 import static org.openremote.test.RulesTestUtil.attachRuleExecutionLogger
-import static java.util.concurrent.TimeUnit.*
 
 class BasicRulesTimedExecutionTest extends Specification implements ManagerContainerTrait {
 
@@ -40,7 +40,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
 
         and: "the container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort) << [(SETUP_IMPORT_DEMO_RULES): "false"], defaultServices())
+        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)

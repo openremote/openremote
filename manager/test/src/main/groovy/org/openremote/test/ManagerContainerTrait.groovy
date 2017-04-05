@@ -2,6 +2,7 @@ package org.openremote.test
 
 import com.google.common.collect.Lists
 import org.openremote.agent3.protocol.Protocol
+import org.openremote.container.Container
 import org.openremote.container.ContainerService
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.message.MessageBrokerSetupService
@@ -20,6 +21,8 @@ import org.openremote.manager.server.rules.RulesetStorageService
 import org.openremote.manager.server.security.ManagerIdentityService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.web.ManagerWebService
+
+import static org.openremote.manager.server.setup.builtin.BuiltinSetupTasks.SETUP_IMPORT_DEMO_RULES
 
 trait ManagerContainerTrait extends ContainerTrait {
 
@@ -50,5 +53,12 @@ trait ManagerContainerTrait extends ContainerTrait {
 
     static Iterable<ContainerService> defaultServices(ContainerService... additionalServices) {
         defaultServices(Arrays.asList(additionalServices))
+    }
+
+    /**
+     * Faster startup if you don't need to test rules.
+     */
+    static Container startContainerWithoutDemoRules(Map<String, String> config, Iterable<ContainerService> services) {
+        startContainer(config << [(SETUP_IMPORT_DEMO_RULES): "false"], services)
     }
 }

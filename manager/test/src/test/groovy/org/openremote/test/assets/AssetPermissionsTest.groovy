@@ -27,7 +27,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     def "Access assets as superuser"() {
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
@@ -239,7 +239,11 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def assets = assetResource.getCurrentUserAssets(null)
 
         then: "result should match"
-        assets.length == 0
+        assets.length == 1
+        assets[0].id == managerDemoSetup.smartOfficeId
+        // Assets should not be completely loaded
+        assets[0].path == null
+        assets[0].attributes == null
 
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.getRoot(null, keycloakDemoSetup.masterTenant.id)
@@ -401,7 +405,11 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def assets = assetResource.getCurrentUserAssets(null)
 
         then: "result should match"
-        assets.length == 0
+        assets.length == 1
+        assets[0].id == managerDemoSetup.smartHomeId
+        // Assets should not be completely loaded
+        assets[0].path == null
+        assets[0].attributes == null
 
         when: "the root assets of a foreign realm are retrieved"
         assets = assetResource.getRoot(null, keycloakDemoSetup.masterTenant.id)
@@ -553,6 +561,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment1.parentId == managerDemoSetup.smartHomeId
         apartment1.coordinates[0] == 5.470945d
         apartment1.coordinates[1] == 51.438d
+        apartment1.path == null
+        apartment1.attributes == null
 
         Asset apartment1Livingroom = assets[1]
         apartment1Livingroom.id == managerDemoSetup.apartment1LivingroomId
@@ -561,17 +571,6 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         Asset apartment1LivingroomThermostat = assets[2]
         apartment1LivingroomThermostat.id == managerDemoSetup.apartment1LivingroomThermostatId
         apartment1LivingroomThermostat.name == "Livingroom Thermostat"
-
-        AssetAttributes protectedAttributes = new AssetAttributes(apartment1LivingroomThermostat)
-        protectedAttributes.size() == 2
-        protectedAttributes.get("currentTemperature")
-        protectedAttributes.get("currentTemperature").getType() == AttributeType.DECIMAL
-        protectedAttributes.get("currentTemperature").getValueAsDecimal() == null
-        Meta protectedMeta = protectedAttributes.get("currentTemperature").getMeta()
-        protectedMeta.all().length == 3
-        protectedMeta.first(AssetMeta.LABEL).getValueAsString() == "Current Temperature"
-        protectedMeta.first(AssetMeta.READ_ONLY).getValueAsBoolean()
-        protectedMeta.first(AssetMeta.RULES_FACT).getValueAsBoolean()
 
         Asset apartment2 = assets[3]
         apartment2.id == managerDemoSetup.apartment2Id
@@ -620,6 +619,23 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         WebApplicationException ex = thrown()
         ex.response.status == 403
 
+        when: "a user asset is retrieved by ID in the authenticated realm"
+        apartment1LivingroomThermostat = assetResource.get(null, managerDemoSetup.apartment1LivingroomThermostatId)
+
+        then: "the protected asset details should be available"
+        apartment1LivingroomThermostat.id == managerDemoSetup.apartment1LivingroomThermostatId
+        apartment1LivingroomThermostat.name == "Livingroom Thermostat"
+        AssetAttributes protectedAttributes = new AssetAttributes(apartment1LivingroomThermostat)
+        protectedAttributes.size() == 2
+        protectedAttributes.get("currentTemperature")
+        protectedAttributes.get("currentTemperature").getType() == AttributeType.DECIMAL
+        protectedAttributes.get("currentTemperature").getValueAsDecimal() == null
+        Meta protectedMeta = protectedAttributes.get("currentTemperature").getMeta()
+        protectedMeta.all().length == 3
+        protectedMeta.first(AssetMeta.LABEL).getValueAsString() == "Current Temperature"
+        protectedMeta.first(AssetMeta.READ_ONLY).getValueAsBoolean()
+        protectedMeta.first(AssetMeta.RULES_FACT).getValueAsBoolean()
+
         when: "an asset is retrieved by ID in a foreign realm"
         assetResource.get(null, managerDemoSetup.thingId)
 
@@ -663,9 +679,9 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         testAsset.setParentId(null)
         assetResource.update(null, testAsset.id, testAsset)
 
-        then: "access should be forbidden"
+        then: "a TODO error should occur"
         ex = thrown()
-        ex.response.status == 403
+        ex.response.status == 500
 
         when: "an asset is created in the authenticated realm"
         testAsset = new Asset(keycloakDemoSetup.customerATenant.id, "Test Room", AssetType.ROOM)

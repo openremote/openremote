@@ -21,43 +21,53 @@ package org.openremote.model.asset;
 
 import org.openremote.model.event.shared.SharedEvent;
 
-public class AssetModifiedEvent extends SharedEvent {
+/**
+ * Published by the server when either tenants or assets are modified, and when that
+ * modification may impact any client-side asset tree structure.
+ * <p>
+ * Tree modifications are:
+ * <ul>
+ * <li>Tenant addition, removal, or name change</li>
+ * <li>Asset addition, removal, or name change</li>
+ * <li>Moving of assets between parent assets or tenants</li>
+ * </ul>
+ * <p>
+ * If a tenant is modified, the {@link #assetId} property will be <code>null</code>.
+ */
+public class AssetTreeModifiedEvent extends SharedEvent {
 
-    public enum Cause {
-        CREATE,
-        UPDATE,
-        DELETE,
-        CHILDREN_MODIFIED
-    }
-
+    protected String realmId;
     protected String assetId;
-    protected Cause cause;
 
-    protected AssetModifiedEvent() {
+    protected AssetTreeModifiedEvent() {
     }
 
-    public AssetModifiedEvent(Asset asset, Cause cause) {
-        this(asset.getId(), cause);
-    }
-
-    public AssetModifiedEvent(String assetId, Cause cause) {
+    public AssetTreeModifiedEvent(String realmId, String assetId) {
+        this.realmId = realmId;
         this.assetId = assetId;
-        this.cause = cause;
+    }
+
+    public AssetTreeModifiedEvent(String assetId) {
+        this.assetId = assetId;
+    }
+
+    public String getRealmId() {
+        return realmId;
     }
 
     public String getAssetId() {
         return assetId;
     }
 
-    public Cause getCause() {
-        return cause;
+    public boolean isTenantModified() {
+        return getRealmId() != null && getAssetId() == null;
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "assetId='" + assetId + '\'' +
-            ", cause=" + cause +
-            "}";
+            "realmId='" + realmId + '\'' +
+            ", assetId='" + assetId + '\'' +
+            '}';
     }
 }

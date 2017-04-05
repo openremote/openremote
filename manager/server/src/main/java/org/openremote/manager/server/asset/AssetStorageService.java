@@ -21,13 +21,17 @@ package org.openremote.manager.server.asset;
 
 import elemental.json.JsonType;
 import elemental.json.JsonValue;
+import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
+import org.openremote.container.message.MessageBrokerSetupService;
+import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.util.Pair;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.model.Attribute;
 import org.openremote.model.AttributeEvent;
@@ -38,21 +42,27 @@ import javax.persistence.EntityManager;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
-public class AssetStorageService implements ContainerService, Consumer<AssetUpdate> {
+import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
+import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
+
+public class AssetStorageService extends RouteBuilder implements ContainerService, Consumer<AssetUpdate> {
 
     private static final Logger LOG = Logger.getLogger(AssetStorageService.class.getName());
     protected PersistenceService persistenceService;
     protected ManagerIdentityService managerIdentityService;
     protected AssetProcessingService assetProcessingService;
+    protected EventService eventService;
 
     @Override
     public void init(Container container) throws Exception {
         persistenceService = container.getService(PersistenceService.class);
         managerIdentityService = container.getService(ManagerIdentityService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
+        eventService = container.getService(EventService.class);
 
         container.getService(WebService.class).getApiSingletons().add(
             new AssetResourceImpl(
@@ -61,6 +71,8 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
                 container.getService(AssetProcessingService.class)
             )
         );
+
+        container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
     }
 
     @Override
@@ -87,7 +99,18 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
         }
     }
 
+    @SuppressWarnings("unchecked")
+    @Override
+    public void configure() throws Exception {
+        // If any asset was modified in the database, publish events
+        from(PERSISTENCE_TOPIC)
+            .filter(isPersistenceEventForEntityType(ServerAsset.class))
+            .process(exchange -> publishModificationEvents(exchange.getIn().getBody(PersistenceEvent.class)));
+    }
+
     public ServerAsset find(String assetId) {
+        if (assetId == null)
+            throw new IllegalArgumentException("Can't query null asset identifier");
         return find(new AssetQuery().id(assetId));
     }
 
@@ -95,6 +118,8 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
      * @param loadComplete If the whole asset data (including path and attributes) should be loaded.
      */
     public ServerAsset find(String assetId, boolean loadComplete) {
+        if (assetId == null)
+            throw new IllegalArgumentException("Can't query null asset identifier");
         return find(new AssetQuery().select(new AssetQuery.Select(loadComplete, false)).id(assetId));
     }
 
@@ -103,6 +128,8 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
      * @param filterProtected If the asset attributes should be filtered and only protected details included.
      */
     public ServerAsset find(String assetId, boolean loadComplete, boolean filterProtected) {
+        if (assetId == null)
+            throw new IllegalArgumentException("Can't query null asset identifier");
         return find(new AssetQuery().select(new AssetQuery.Select(loadComplete, filterProtected)).id(assetId));
     }
 
@@ -198,6 +225,8 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
     }
 
     protected ServerAsset find(EntityManager em, String assetId, boolean loadComplete, boolean filterProtected) {
+        if (assetId == null)
+            throw new IllegalArgumentException("Can't query null asset identifier");
         return find(em, new AssetQuery().select(new AssetQuery.Select(loadComplete, filterProtected)).id(assetId));
     }
 
@@ -530,6 +559,55 @@ public class AssetStorageService implements ContainerService, Consumer<AssetUpda
                 }
             })
         );
+    }
+
+    protected void publishModificationEvents(PersistenceEvent<ServerAsset> persistenceEvent) {
+        ServerAsset asset = persistenceEvent.getEntity();
+        switch (persistenceEvent.getCause()) {
+            case INSERT:
+                eventService.publishEvent(
+                    new AssetTreeModifiedEvent(asset.getRealmId(), asset.getId())
+                );
+                break;
+            case UPDATE:
+
+                // Did the name change?
+                String previousName = persistenceEvent.getPreviousState("name");
+                String currentName = persistenceEvent.getCurrentState("name");
+                if (!Objects.equals(previousName, currentName)) {
+                    eventService.publishEvent(
+                        new AssetTreeModifiedEvent(asset.getRealmId(), asset.getId())
+                    );
+                    break;
+                };
+
+                // Did the parent change?
+                String previousParentId = persistenceEvent.getPreviousState("parentId");
+                String currentParentId = persistenceEvent.getCurrentState("parentId");
+                if (!Objects.equals(previousParentId, currentParentId)) {
+                    eventService.publishEvent(
+                        new AssetTreeModifiedEvent(asset.getRealmId(), asset.getId())
+                    );
+                    break;
+                };
+
+                // Did the realm change?
+                String previousRealmId = persistenceEvent.getPreviousState("realmId");
+                String currentRealmId = persistenceEvent.getCurrentState("realmId");
+                if (!Objects.equals(previousRealmId, currentRealmId)) {
+                    eventService.publishEvent(
+                        new AssetTreeModifiedEvent(asset.getRealmId(), asset.getId())
+                    );
+                    break;
+                };
+
+                break;
+            case DELETE:
+                eventService.publishEvent(
+                    new AssetTreeModifiedEvent(asset.getRealmId(), asset.getId())
+                );
+                break;
+        }
     }
 
     public String toString() {

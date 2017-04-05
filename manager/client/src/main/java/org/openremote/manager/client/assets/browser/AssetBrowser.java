@@ -60,7 +60,6 @@ public interface AssetBrowser extends IsWidget {
          */
         void useSelector(AssetSelector assetSelector);
 
-        void refresh(boolean rootRefresh);
     }
 
     void setPresenter(Presenter presenter);
@@ -71,5 +70,5 @@ public interface AssetBrowser extends IsWidget {
 
     void clearSelection();
 
-    void refresh(boolean rootRefresh);
+    void refresh(String modifiedNodeId);
 }

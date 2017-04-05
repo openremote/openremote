@@ -23,7 +23,7 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
 
         when: "the demo agent and thing have been deployed"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def simulatorProtocol = container.getService(SimulatorProtocol.class)
         def assetStorageService = container.getService(AssetStorageService.class)

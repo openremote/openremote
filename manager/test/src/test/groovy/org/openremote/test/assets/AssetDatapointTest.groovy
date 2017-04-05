@@ -7,7 +7,6 @@ import org.openremote.manager.server.datapoint.AssetDatapointService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.model.AttributeRef
-import org.openremote.model.Attributes
 import org.openremote.model.asset.AssetAttributes
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -22,7 +21,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
 
         when: "the demo agent and thing have been deployed"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def simulatorProtocol = container.getService(SimulatorProtocol.class)
         def assetStorageService = container.getService(AssetStorageService.class)

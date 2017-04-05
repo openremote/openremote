@@ -14,7 +14,7 @@ class MapResourceTest extends Specification implements ManagerContainerTrait {
     def "Retrieve map settings"() {
         given: "the server container is started"
         def serverPort = findEphemeralPort();
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
 
         and: "an authenticated user"
         def realm = MASTER_REALM;

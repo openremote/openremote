@@ -17,7 +17,6 @@ import spock.util.concurrent.PollingConditions
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
-import static org.openremote.manager.server.setup.builtin.BuiltinSetupTasks.SETUP_IMPORT_DEMO_RULES
 import static org.openremote.model.Constants.*
 
 class BasicRulesDeploymentTest extends Specification implements ManagerContainerTrait {
@@ -29,7 +28,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         and: "the container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort) << [(SETUP_IMPORT_DEMO_RULES): "false"], defaultServices())
+        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)

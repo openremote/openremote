@@ -24,14 +24,17 @@ import org.openremote.manager.shared.validation.ConstraintViolationReport
 import org.openremote.model.Consumer
 import org.openremote.model.Runnable
 import org.openremote.model.asset.Asset
-import org.openremote.model.event.shared.EventService
+import org.openremote.model.asset.AssetTreeModifiedEvent
+import org.openremote.model.event.shared.SharedEvent
 import org.openremote.test.ClientObjectMapper
+import org.openremote.test.EventBusWebsocketEndpoint
 import org.openremote.test.GwtClientTrait
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static org.openremote.container.util.MapAccess.getString
+import static org.openremote.manager.server.event.EventService.WEBSOCKET_EVENTS
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
@@ -42,7 +45,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
 
         given: "The server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def assetStorageService = container.getService(AssetStorageService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -68,10 +71,18 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
             isSuperUser() >> true
         }
 
-        and: "A client request service and target"
+        and: "a client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
         def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
         def clientTarget = getClientTarget(createClient(container).build(), serverUri(serverPort), realm)
+
+        and: "a client websocket connection and attach event bus and service"
+        List<SharedEvent> collectedSharedEvents = []
+        def eventBus = createEventBus(collectedSharedEvents)
+        def eventBusEndpoint = new EventBusWebsocketEndpoint(eventBus, container.JSON)
+        def websocketClient = createWebsocketClient()
+        def clientEventService = createEventService(eventBusEndpoint)
+        connect(websocketClient, eventBusEndpoint, serverUri(serverPort), realm, accessToken, WEBSOCKET_EVENTS)
 
         and: "the server resources to call from client"
         def assetResource = Stub(AssetResource) {
@@ -87,8 +98,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def tenantArrayMapper = new ClientObjectMapper(container.JSON, Tenant[].class) as TenantArrayMapper
 
         and: "The expected result"
-        def conditions = new PollingConditions(initialDelay: 2, timeout: 10)
-        def collectedClientEvents = []
+        def conditions = new PollingConditions(initialDelay: 1, timeout: 5)
 
         and: "The fake client MVP environment"
         GWTMockUtilities.disarm()
@@ -100,12 +110,11 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
                 "TestMessageRequestFailed:" + it[0]
             }
         }
-        def eventBus = createEventBus(collectedClientEvents)
         def placeController = createPlaceController(securityService, eventBus)
         def environment = Environment.create(
                 securityService,
                 requestService,
-                Mock(EventService),
+                clientEventService,
                 placeController,
                 eventBus,
                 managerMessages,
@@ -132,7 +141,10 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
                 tenantArrayMapper
         )
 
-        when: "the asset tree is created"
+        when: "the view is attached"
+        assetBrowserPresenter.onViewAttached()
+
+        and: "the asset tree is created"
         assetBrowserPresenter.loadNodeChildren(rootTreeNode, treeDisplay)
 
         then: "the loading message should be displayed"
@@ -180,7 +192,26 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         }
         1 * treeDisplay.setRowCount(1, true)
 
-        cleanup: "The server should be stopped"
+        when: "an asset is modified in the database"
+        def asset = assetStorageService.find(managerDemoSetup.smartOfficeId)
+        asset.setName("Testname123")
+        assetStorageService.merge(asset)
+
+        then: "a tree modified event should be received from the server"
+        conditions.eventually {
+            assert collectedSharedEvents.size() == 1
+            assert collectedSharedEvents[0] instanceof AssetTreeModifiedEvent
+            assert collectedSharedEvents[0].realmId == keycloakDemoSetup.masterTenant.id
+            assert collectedSharedEvents[0].assetId == managerDemoSetup.smartOfficeId
+        }
+
+        then: "the asset tree should be refreshed"
+        1 * assetBrowser.refresh(managerDemoSetup.smartOfficeId)
+
+        cleanup: "the client should be stopped"
+        clientEventService.close()
+
+        and : "the server should be stopped"
         stopContainer(container);
     }
 }

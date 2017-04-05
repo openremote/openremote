@@ -29,16 +29,21 @@ import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.model.Consumer;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetTreeModifiedEvent;
+import org.openremote.model.event.bus.EventRegistration;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
 public class AssetBrowserPresenter implements AssetBrowser.Presenter {
+
+    private static final Logger LOG = Logger.getLogger(AssetBrowserPresenter.class.getName());
 
     final Environment environment;
     final AssetBrowser view;
@@ -52,6 +57,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     BrowserTreeNode selectedNode;
     String[] selectedNodePath;
     AssetSelector assetSelector;
+    EventRegistration<AssetTreeModifiedEvent> assetModifiedEventEventRegistration;
 
     @Inject
     public AssetBrowserPresenter(Environment environment,
@@ -70,16 +76,25 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
         this.assetArrayMapper = assetArrayMapper;
 
         view.setPresenter(this);
+
+        assetModifiedEventEventRegistration = environment.getEventBus().register(
+            AssetTreeModifiedEvent.class,
+            event -> {
+                String modifiedNodeId = event.isTenantModified() ? event.getRealmId() : event.getAssetId();
+                LOG.fine("Asset tree modified on server, refreshing tree due to modified node: " + modifiedNodeId);
+                view.refresh(modifiedNodeId);
+            }
+        );
     }
 
     @Override
     public void onViewAttached() {
-        // TODO LOG.fine("Asset browser attached, subscribing to asset changes on the server");
+        environment.getEventService().subscribe(AssetTreeModifiedEvent.class);
     }
 
     @Override
     public void onViewDetached() {
-        // TODO LOG.fine("Asset browser detached, unsubscribing from asset changes on the server");
+        environment.getEventService().unsubscribe(AssetTreeModifiedEvent.class);
     }
 
     @Override
@@ -176,11 +191,6 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     @Override
     public void useSelector(AssetSelector assetSelector) {
         this.assetSelector = assetSelector;
-    }
-
-    @Override
-    public void refresh(boolean rootRefresh) {
-        view.refresh(rootRefresh);
     }
 
     protected void showLoadingMessage(HasData<BrowserTreeNode> display) {

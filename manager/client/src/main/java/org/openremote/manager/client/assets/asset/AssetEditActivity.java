@@ -217,7 +217,6 @@ public class AssetEditActivity
                 environment.getEventBus().dispatch(new ShowSuccessEvent(
                     environment.getMessages().assetUpdated(asset.getName())
                 ));
-                assetBrowserPresenter.refresh(asset.getParentId() == null);
                 environment.getPlaceController().goTo(new AssetViewPlace(assetId));
             },
             ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
@@ -238,7 +237,6 @@ public class AssetEditActivity
                 environment.getEventBus().dispatch(new ShowSuccessEvent(
                     environment.getMessages().assetCreated(asset.getName())
                 ));
-                assetBrowserPresenter.refresh(asset.getParentId() == null);
                 environment.getPlaceController().goTo(new AssetsDashboardPlace());
             },
             ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
@@ -261,7 +259,6 @@ public class AssetEditActivity
                         environment.getEventBus().dispatch(new ShowSuccessEvent(
                             environment.getMessages().assetDeleted(asset.getName())
                         ));
-                        assetBrowserPresenter.refresh(asset.getParentId() == null);
                         environment.getPlaceController().goTo(new AssetsDashboardPlace());
                     },
                     ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)

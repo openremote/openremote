@@ -134,9 +134,17 @@ public class AssetBrowserImpl extends Composite implements AssetBrowser {
     }
 
     @Override
-    public void refresh(boolean rootRefresh) {
-        if (rootRefresh) {
-            // TODO Horrible but I have no idea how to force a reload of the root node of a CellTree
+    public void refresh(String modifiedNodeId) {
+        // TODO Horrible but I have no idea how to force a reload of the root node of a CellTree
+        boolean forceRebuild = false;
+        for (int i = 0, n = assetTree.getRootTreeNode().getChildCount(); i < n; ++i) {
+            BrowserTreeNode treeNode = (BrowserTreeNode) assetTree.getRootTreeNode().getChildValue(i);
+            if (treeNode.getId().equals(modifiedNodeId)) {
+                forceRebuild = true;
+                break;
+            }
+        }
+        if (forceRebuild) {
             createAssetTree();
         } else {
             assetTree.refresh();

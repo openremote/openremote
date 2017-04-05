@@ -46,7 +46,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * {@link org.openremote.model.asset.UserAsset}).
  * <p>
  * The only operations a restricted user is able to perform are {@link #getCurrentUserAssets},
- * {@link #updateCurrentUserAsset}, {@link #readAttributeValue} and {@link #writeAttributeValue}.
+ * {@link #get}, {@link #update}, {@link #readAttributeValue} and {@link #writeAttributeValue}.
  * </li>
  * </ul>
  */
@@ -56,8 +56,11 @@ public interface AssetResource {
 
     /**
      * Retrieve the linked assets of the currently authenticated user. If the request is made
-     * by the superuser, or if the user has no linked assets and is therefore not restricted, an empty
-     * result will be returned.
+     * by the superuser, an empty result is returned. If the request is made by a regular user,
+     * but the user has no linked assets and is therefore not restricted, the assets without
+     * parent (root assets) of the authenticated realm are returned. Note that the assets returned
+     * from this operation are not completely loaded and the {@link Asset#path} and
+     * {@link Asset#attributes} are empty. Call {@link #get} to retrieve all asset details.
      */
     @GET
     @Path("user/current")
@@ -67,22 +70,12 @@ public interface AssetResource {
     Asset[] getCurrentUserAssets(@BeanParam RequestParams requestParams);
 
     /**
-     * Updates an asset linked to the current user. A 403 status is returned if a regular user tries to update an
-     * asset in a realm different than its authenticated realm, or if the user is restricted and the given asset
-     * is not in the set of linked assets.
-     */
-    @PUT
-    @Path("user/current/{assetId}")
-    @Consumes(APPLICATION_JSON)
-    @SuccessStatusCode(204)
-    @RolesAllowed({"write:assets"})
-    void updateCurrentUserAsset(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, Asset protectedAsset);
-
-    /**
      * Retrieve the assets without parent (root assets) of the given realm, or if the realm argument
      * is empty, of the authenticated realm. Regular users can only access assets in their authenticated
      * realm. The superuser can access assets in other (all) realms. An empty result is returned if the user
-     * does not have access to the assets or if the user is restricted.
+     * does not have access to the assets or if the user is restricted. Note that the assets returned
+     * from this operation are not completely loaded and the {@link Asset#path} and
+     * {@link Asset#attributes} are empty. Call {@link #get} to retrieve all asset details.
      */
     @GET
     @Produces(APPLICATION_JSON)
@@ -94,7 +87,9 @@ public interface AssetResource {
      * Retrieve the child assets of the given parent asset. If the authenticated user is the superuser,
      * parent and child assets can be in any realm. Otherwise, assets must in the same realm as the
      * authenticated user. An empty result is returned if the user does not have access to the assets
-     * or if the user is restricted.
+     * or if the user is restricted. Note that the assets returned from this operation are not completely
+     * loaded and the {@link Asset#path} and {@link Asset#attributes} are empty. Call {@link #get} to
+     * retrieve all asset details.
      */
     @GET
     @Path("{assetId}/children")
@@ -107,7 +102,7 @@ public interface AssetResource {
      * Retrieve the asset. Regular users can only access assets in their authenticated realm,
      * the superuser can access assets in other (all) realms. A 403 status is returned if a regular
      * user tries to access an asset in a realm different than its authenticated realm, or if the
-     * user is restricted.
+     * user is restricted and the asset is not linked to the user.
      */
     @GET
     @Path("{assetId}")
@@ -120,7 +115,8 @@ public interface AssetResource {
      * Updates the asset. Regular users can only update assets in their authenticated realm,
      * the superuser can update assets in other (all) realms. A 403 status is returned if a regular
      * user tries to update an asset in a realm different than its authenticated realm, or if the
-     * user is restricted. A 400 status is returned if the asset's parent or realm doesn't exist.
+     * user is restricted and the asset is not linked to the user. A 400 status is returned if
+     * the asset's parent or realm doesn't exist.
      */
     @PUT
     @Path("{assetId}")

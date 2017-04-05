@@ -4,7 +4,10 @@ import org.openremote.manager.server.rules.RulesetStorageService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
-import org.openremote.manager.shared.rules.*
+import org.openremote.manager.shared.rules.AssetRuleset
+import org.openremote.manager.shared.rules.GlobalRuleset
+import org.openremote.manager.shared.rules.RulesetResource
+import org.openremote.manager.shared.rules.TenantRuleset
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 
@@ -13,7 +16,6 @@ import javax.ws.rs.WebApplicationException
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
-import static org.openremote.manager.server.setup.builtin.BuiltinSetupTasks.SETUP_IMPORT_DEMO_RULES
 import static org.openremote.model.Constants.*
 
 class BasicRulesetResourceTest extends Specification implements ManagerContainerTrait {
@@ -21,7 +23,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
     def "Access rules as superuser"() {
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort) << [(SETUP_IMPORT_DEMO_RULES): "false"], defaultServices())
+        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)

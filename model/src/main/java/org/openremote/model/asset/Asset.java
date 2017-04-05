@@ -297,7 +297,7 @@ public class Asset implements IdentifiableEntity {
         this.tenantDisplayName = tenantDisplayName;
         this.path = path;
 
-        if (filterProtectedAttributes) {
+        if (filterProtectedAttributes && attributes != null) {
             AbstractAssetAttributes assetAttributes = new AssetAttributes(this.id, attributes);
             assetAttributes.filterProtected();
             this.attributes = assetAttributes.size() > 0 ? assetAttributes.getJsonObject() : null;

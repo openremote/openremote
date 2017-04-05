@@ -65,6 +65,11 @@ public class EventService implements ContainerService {
                 from("websocket://" + WEBSOCKET_EVENTS)
                     .routeId("Receive incoming message on WebSocket session(s)")
                     .choice()
+                    .when(header(WebsocketConstants.SESSION_OPEN))
+                    .process(exchange -> {
+                        // Do nothing except stop the exchanges
+                    })
+                    .stop()
                     .when(or(
                         header(WebsocketConstants.SESSION_CLOSE),
                         header(WebsocketConstants.SESSION_CLOSE_ERROR)

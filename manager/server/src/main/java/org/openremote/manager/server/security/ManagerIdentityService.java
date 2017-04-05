@@ -34,10 +34,12 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.KeycloakResource;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantEmailConfig;
 import org.openremote.model.Constants;
+import org.openremote.model.asset.AssetTreeModifiedEvent;
 
 import javax.ws.rs.core.UriBuilder;
 import java.util.ArrayList;
@@ -54,6 +56,7 @@ public class ManagerIdentityService extends IdentityService {
     protected boolean devMode;
     protected PersistenceService persistenceService;
     protected MessageBrokerService messageBrokerService;
+    protected EventService eventService;
 
     public ManagerIdentityService() {
         super(Constants.KEYCLOAK_CLIENT_ID);
@@ -66,6 +69,7 @@ public class ManagerIdentityService extends IdentityService {
         this.devMode = container.isDevMode();
         this.persistenceService = container.getService(PersistenceService.class);
         this.messageBrokerService = container.getService(MessageBrokerService.class);
+        this.eventService = container.getService(EventService.class);
 
         enableAuthProxy(container.getService(WebService.class));
 
@@ -175,7 +179,7 @@ public class ManagerIdentityService extends IdentityService {
         getRealms(bearerAuth).create(realmRepresentation);
         // TODO This is not atomic, write compensation actions
         createClientApplication(bearerAuth, realmRepresentation.getRealm());
-        sendTenantModifiedMessage(PersistenceEvent.Cause.INSERT, tenant);
+        publishModification(PersistenceEvent.Cause.INSERT, tenant);
     }
 
     public void createClientApplication(String bearerAuth, String realm) {
@@ -194,14 +198,14 @@ public class ManagerIdentityService extends IdentityService {
         getRealms(bearerAuth).realm(realm).update(
             convert(Container.JSON, RealmRepresentation.class, tenant)
         );
-        sendTenantModifiedMessage(PersistenceEvent.Cause.UPDATE, tenant);
+        publishModification(PersistenceEvent.Cause.UPDATE, tenant);
     }
 
     public void deleteTenant(String bearerAuth, String realm) throws Exception {
         Tenant tenant = getTenantForRealm(realm);
         LOG.fine("Delete tenant: " + realm);
         getRealms(bearerAuth).realm(realm).remove();
-        sendTenantModifiedMessage(PersistenceEvent.Cause.DELETE, tenant);
+        publishModification(PersistenceEvent.Cause.DELETE, tenant);
     }
 
     public void addDefaultRoles(RolesResource rolesResource) {
@@ -253,7 +257,7 @@ public class ManagerIdentityService extends IdentityService {
      *
      * @param tenant
      */
-    protected void sendTenantModifiedMessage(PersistenceEvent.Cause cause, Tenant tenant) {
+    protected void publishModification(PersistenceEvent.Cause cause, Tenant tenant) {
         PersistenceEvent persistenceEvent = new PersistenceEvent(cause, tenant, new String[0], null);
 
         messageBrokerService.getProducerTemplate().sendBodyAndHeader(
@@ -262,6 +266,10 @@ public class ManagerIdentityService extends IdentityService {
             persistenceEvent,
             PersistenceEvent.HEADER_ENTITY_TYPE,
             persistenceEvent.getEntity().getClass()
+        );
+
+        eventService.publishEvent(
+            new AssetTreeModifiedEvent(tenant.getId(), null)
         );
     }
 

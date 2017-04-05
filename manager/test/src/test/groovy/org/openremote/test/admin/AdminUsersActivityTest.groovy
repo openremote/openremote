@@ -14,9 +14,7 @@ import org.openremote.manager.client.admin.users.*
 import org.openremote.manager.client.event.GoToPlaceEvent
 import org.openremote.manager.client.event.ShowSuccessEvent
 import org.openremote.manager.client.event.WillGoToPlaceEvent
-import org.openremote.model.event.bus.EventListener
 import org.openremote.manager.client.i18n.ManagerMessages
-import org.openremote.model.event.shared.EventService
 import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.service.SecurityService
 import org.openremote.manager.client.style.WidgetStyle
@@ -24,8 +22,10 @@ import org.openremote.manager.shared.http.EntityReader
 import org.openremote.manager.shared.security.*
 import org.openremote.manager.shared.validation.ConstraintViolationReport
 import org.openremote.model.Consumer
-import org.openremote.model.event.Event
 import org.openremote.model.Runnable
+import org.openremote.model.event.Event
+import org.openremote.model.event.bus.EventListener
+import org.openremote.model.event.shared.EventService
 import org.openremote.test.ClientObjectMapper
 import org.openremote.test.GwtClientTrait
 import org.openremote.test.ManagerContainerTrait
@@ -43,7 +43,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
 
         given: "The server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
 
         and: "An authenticated user and client security service"
         def realm = MASTER_REALM;
