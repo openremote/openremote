@@ -131,6 +131,10 @@ public abstract class AbstractProtocol implements Protocol {
         }
     }
 
+    protected void sendAttributeUpdate(AttributeState state) {
+        producerTemplate.sendBodyAndHeader(SENSOR_TOPIC, new AttributeEvent(state, System.currentTimeMillis()), "isSensorUpdate", false);
+    }
+
     protected void onSensorUpdate(AttributeState state, long timestamp) {
         producerTemplate.sendBody(SENSOR_TOPIC, new AttributeEvent(state, timestamp));
     }

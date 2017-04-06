@@ -38,6 +38,7 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.openremote.agent3.protocol.Protocol.ACTUATOR_TOPIC;
 import static org.openremote.agent3.protocol.Protocol.SENSOR_TOPIC;
 import static org.openremote.manager.server.event.EventService.INCOMING_EVENT_TOPIC;
 
@@ -151,10 +152,18 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     @Override
     public void configure() throws Exception {
 
-        // Sensor updates are processed first by rules, then stored in the asset and datapoint databases
+        // Process attribute events from protocols
         from(SENSOR_TOPIC)
             .filter(body().isInstanceOf(AttributeEvent.class))
-            .process(exchange -> processSensorUpdate(exchange.getIn().getBody(AttributeEvent.class)));
+            .process(exchange -> {
+                // Can either come from onUpdateSensor or sendAttributeUpdate
+                boolean isSensorUpdate = (boolean)exchange.getIn().getHeader("isSensorUpdate", true);
+                if (isSensorUpdate) {
+                    processSensorUpdate(exchange.getIn().getBody(AttributeEvent.class));
+                } else {
+                    updateAttributeValue(exchange.getIn().getBody(AttributeEvent.class));
+                }
+            });
 
         // Process attribute events from clients through the message broker
         from(INCOMING_EVENT_TOPIC)
