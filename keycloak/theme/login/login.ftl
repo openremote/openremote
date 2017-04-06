@@ -55,7 +55,7 @@
                     </#if>
                     <div>
                         <#if realm.resetPasswordAllowed>
-                            <span><a href="${url.loginResetCredentialsUrl}">${msg("doForgotPassword")}</a></span>
+                            <span class="or-Hyperlink"><a href="${url.loginResetCredentialsUrl}">${msg("doForgotPassword")}</a></span>
                         </#if>
                     </div>
                 </div>

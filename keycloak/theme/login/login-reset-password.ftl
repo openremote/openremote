@@ -15,7 +15,7 @@
                 </div>
             </div>
             <div class="layout horizontal center-center or-FormGroup">
-                <span><a href="${url.loginUrl}">${msg("backToLogin")}</a></span>
+                <span class="or-Hyperlink"><a href="${url.loginUrl}">${msg("backToLogin")}</a></span>
                 <div class="or-FormField">
                     <input class="or-FormControl or-FormButtonPrimary or-PushButton" type="submit" value="${msg("doSubmit")}"/>
                 </div>
@@ -23,7 +23,7 @@
         </form>
 
     <#elseif section = "info" >
-        <div class="layout horizontal center">
+        <div class="layout horizontal center" style="margin: 1em;">
             ${msg("emailInstruction")}
         </div>
     </#if>
