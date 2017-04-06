@@ -345,6 +345,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     }
 
     protected void linkAttributes(Protocol protocol, List<ThingAttribute> attributes) {
+        if (protocol == null) {
+            LOG.severe("Cannot link protocol attributes as protocol is null");
+            return;
+        }
+
         try {
             LOG.finest("Linking protocol attributes to: " + protocol.getProtocolName());
             protocol.linkAttributes(attributes);
@@ -355,6 +360,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     }
 
     protected void unlinkAttributes(Protocol protocol, List<ThingAttribute> attributes) {
+        if (protocol == null) {
+            LOG.severe("Cannot link protocol attributes as protocol is null");
+            return;
+        }
+
         try {
             LOG.finest("Unlinking protocol attributes form: " + protocol.getProtocolName());
             protocol.unlinkAttributes(attributes);
