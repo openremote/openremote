@@ -134,7 +134,12 @@ public enum AssetMeta {
     /**
      * Enable flag to be used by asset attributes that could require this functionality (e.g. ProtocolConfiguration)
      */
-    ENABLED(ASSET_META_NAMESPACE + ":enabled", new Access(true, false, true), JsonType.BOOLEAN);
+    ENABLED(ASSET_META_NAMESPACE + ":enabled", new Access(true, false, true), JsonType.BOOLEAN),
+
+    /**
+     * Marks an attribute as being an executable command
+     */
+    COMMAND(ASSET_META_NAMESPACE + ":command", new Access(true, false, true), JsonType.BOOLEAN);
 
     final protected String name;
     final protected Access access;
