@@ -45,6 +45,7 @@ import javax.ws.rs.core.UriBuilder
 import static java.util.concurrent.TimeUnit.SECONDS
 
 trait ContainerTrait {
+    private static Container container;
 
     static Map<String, String> defaultConfig(int serverPort) {
         [
@@ -55,9 +56,13 @@ trait ContainerTrait {
     }
 
     static Container startContainer(Map<String, String> config, Iterable<ContainerService> services) {
-        def container = new Container(config, services)
+        container = new Container(config, services)
         container.startBackground()
         container
+    }
+
+    static boolean isContainerRunning() {
+        container.running
     }
 
     static ResteasyClientBuilder createClient(Container container) {
