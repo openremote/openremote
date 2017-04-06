@@ -281,14 +281,16 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1.setType(RESIDENCE);
         AssetAttributes apartment1Attributes = new AssetAttributes();
         apartment1Attributes.put(
-            new AssetAttribute("allLightsOffSwitch", AttributeType.BOOLEAN, Json.create(false))
+            new AssetAttribute("allLightsOffSwitch", AttributeType.BOOLEAN, Json.create(true))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("All Lights Off Switch"))
                     ).add(
                         new MetaItem(AssetMeta.DESCRIPTION, Json.create("When triggered, turns all lights in the apartment off"))
                     ).add(
-                        new MetaItem(AssetMeta.RULES_FACT, Json.create(true))
+                        new MetaItem(AssetMeta.RULES_EVENT, Json.create(true))
+                    ).add(
+                        new MetaItem(AssetMeta.RULES_EVENT_EXPIRES, Json.create("10s"))
                     )
                 )
         );
@@ -323,13 +325,21 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Light Switch"))
                     ).add(
-                        new MetaItem(AssetMeta.RULES_FACT, Json.create(false))
+                        new MetaItem(AssetMeta.RULES_FACT, Json.create(true))
                     )
                 ),
             new AssetAttribute("windowOpen", AttributeType.BOOLEAN, Json.create(false))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Window Open"))
+                    )
+                ),
+            new AssetAttribute("co2Level", AttributeType.DECIMAL, Json.create(450))
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("CO2 Level"))
+                    ).add(
+                        new MetaItem(AssetMeta.RULES_FACT, Json.create(false))
                     )
                 )
         );

@@ -23,7 +23,11 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
 
     def "All Lights Off"() {
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 5, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, delay: 1)
+
+        and: "a pseudo rules engine clock"
+        RulesDeployment.DefaultClockType = ClockTypeOption.get("pseudo")
+        PseudoClockScheduler sessionClock
 
         and: "the container is started"
         def serverPort = findEphemeralPort()
@@ -47,13 +51,19 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         conditions.eventually {
             assert rulesService.facts.size() == 8
             assert customerAEngine.facts.size() == 8
+            assert customerAEngine.knowledgeSession.factCount == 8
         }
 
         and: "the room lights in an apartment to be on"
         def livingRoomAsset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
         assert new AssetAttributes(livingRoomAsset).get("lightSwitch").valueAsBoolean
 
-        when: "the ALL LIGHTS OFF switch is set to off for an apartment"
+        when: "we have prepared a rules clock"
+        sessionClock = customerAEngine.sessionClock as PseudoClockScheduler
+        // Set the session clock to wall time, as event expiration offsets are based on wall time
+        sessionClock.advanceTime(System.currentTimeMillis(), MILLISECONDS)
+
+        and: "the ALL LIGHTS OFF switch is pressed for an apartment"
         def apartment1AllLightsOffChange = new AttributeEvent(
                 managerDemoSetup.apartment1Id, "allLightsOffSwitch", Json.create(false)
         )
@@ -61,11 +71,21 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
 
         then: "the room lights in the apartment should be off"
         conditions.eventually {
+            assert customerAEngine.knowledgeSession.factCount == 9
             livingRoomAsset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
             assert !new AssetAttributes(livingRoomAsset).get("lightSwitch").valueAsBoolean
         }
 
+        when: "time advanced"
+        sessionClock.advanceTime(15, SECONDS)
+
+        then: "event expires"
+        conditions.eventually {
+            assert customerAEngine.knowledgeSession.factCount == 8
+        }
+
         cleanup: "the server should be stopped"
+        RulesDeployment.DefaultClockType = null
         stopContainer(container)
     }
 

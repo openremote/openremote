@@ -6,6 +6,7 @@ import org.openremote.agent.AgentService
 import org.openremote.agent.rules.RulesProvider
 import org.openremote.test.ContainerTrait
 import spock.lang.Specification
+import spock.util.concurrent.PollingConditions
 
 import java.util.stream.Stream
 
@@ -42,36 +43,38 @@ class SimpleRuleTest extends Specification implements ContainerTrait {
         )
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), [agentService])
+        def conditions = new PollingConditions(timeout: 10)
 
-        when: "we wait for initial state polling of sensor and rule execution"
-        Thread.sleep(500);
-
-        then: "the rules should immediately switch the sensor off again"
-        agentService.getContext().queryValue(123) == "off"
+        expect: "the rules should immediately switch the sensor off again"
+        conditions.eventually {
+            assert agentService.getContext().queryValue(123) == "off"
+        }
 
         and: "the deployment model should work"
-        def deployment = agentService.getContext().getDeployment()
-        deployment.getCommandDefinition(456).getCommandID() == 456
-        deployment.getCommandDefinition(123123) == null
-        deployment.getCommandDefinition("TestDevice", "TestCommand").getCommandID() == 456
-        deployment.getCommandDefinition("TestDevice", "NoSuchThing") == null
-        deployment.getCommandDefinition("NoSuchThing", "NoSuchThing") == null
-        deployment.getCommandDefinition("", "") == null
-        deployment.getCommandDefinition(null, "") == null
-        deployment.getCommandDefinition("", null) == null
-        deployment.getCommandDefinition(null, null) == null
-        deployment.getCommandDefinition("TestCommand").getCommandID() == 456
-        deployment.getCommandDefinition("NoSuchThing") == null
-        deployment.getCommandDefinition("") == null
-        deployment.getCommandDefinition(null) == null
-        deployment.getDevices().length == 1
-        deployment.getDevices()[0].getName() == "TestDevice"
-        deployment.getDevices()[0].getDeviceID() == 111
-        deployment.getDevice("TestDevice").getName() == "TestDevice"
-        deployment.getDevice("TestDevice").getDeviceID() == 111
-        deployment.getConfig().get("someString") == "BAR"
-        deployment.getConfig().get("someBoolean") == "true"
-        deployment.getConfig().get("someInteger") == "333"
+        conditions.eventually {
+            def deployment = agentService.getContext().getDeployment()
+            deployment.getCommandDefinition(456).getCommandID() == 456
+            deployment.getCommandDefinition(123123) == null
+            deployment.getCommandDefinition("TestDevice", "TestCommand").getCommandID() == 456
+            deployment.getCommandDefinition("TestDevice", "NoSuchThing") == null
+            deployment.getCommandDefinition("NoSuchThing", "NoSuchThing") == null
+            deployment.getCommandDefinition("", "") == null
+            deployment.getCommandDefinition(null, "") == null
+            deployment.getCommandDefinition("", null) == null
+            deployment.getCommandDefinition(null, null) == null
+            deployment.getCommandDefinition("TestCommand").getCommandID() == 456
+            deployment.getCommandDefinition("NoSuchThing") == null
+            deployment.getCommandDefinition("") == null
+            deployment.getCommandDefinition(null) == null
+            deployment.getDevices().length == 1
+            deployment.getDevices()[0].getName() == "TestDevice"
+            deployment.getDevices()[0].getDeviceID() == 111
+            deployment.getDevice("TestDevice").getName() == "TestDevice"
+            deployment.getDevice("TestDevice").getDeviceID() == 111
+            deployment.getConfig().get("someString") == "BAR"
+            deployment.getConfig().get("someBoolean") == "true"
+            deployment.getConfig().get("someInteger") == "333"
+        }
 
         cleanup: "the server should be stopped"
         stopContainer(container)

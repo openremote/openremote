@@ -2,15 +2,16 @@ package org.openremote.test.rules;
 
 import org.openremote.model.*;
 import org.openremote.model.asset.*
+import org.openremote.model.rules.*
 import elemental.json.Json;
 
 global java.util.logging.Logger LOG;
 global org.openremote.model.rules.Assets assets;
 
-rule "Switch room lights off when apartment ALL LIGHTS OFF switch is off"
+rule "Switch room lights off when apartment ALL LIGHTS OFF switch is pressed"
 when
-    // In an asset of type RESIDENCE the power switch is turned off
-    $e: AssetUpdate(attributeName == "allLightsOffSwitch", type == AssetType.RESIDENCE, value.asBoolean() == false)
+    // In an asset of type RESIDENCE the power switch is pressed
+    $e: AssetEvent(attributeName == "allLightsOffSwitch", type == AssetType.RESIDENCE, !value.asBoolean() )
 then
     assets.query() // Execute a query to get "other" assets
         .parent($e.getId()) // Where parent is the apartment in LHS

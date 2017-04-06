@@ -118,10 +118,10 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         when: "an attribute event is pushed into the system for an attribute with RULES_FACT meta set to false"
         resetRuleExecutionLoggers()
-        def apartment1LivingRoomLightSwitchChange = new AttributeEvent(
-                managerDemoSetup.apartment1LivingroomId, "lightSwitch", Json.create(true)
+        def apartment1LivingRoomCO2Change = new AttributeEvent(
+                managerDemoSetup.apartment1LivingroomId, "co2Level", Json.create(500)
         )
-        assetProcessingService.updateAttributeValue(apartment1LivingRoomLightSwitchChange)
+        assetProcessingService.updateAttributeValue(apartment1LivingRoomCO2Change)
 
         then: "no rule engines should have fired after a few seconds"
         new PollingConditions(initialDelay: 3).eventually assertNoRulesFired
