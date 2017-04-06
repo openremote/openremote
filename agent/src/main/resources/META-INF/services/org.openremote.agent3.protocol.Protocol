@@ -1,1 +1,2 @@
 org.openremote.agent3.protocol.simulator.SimulatorProtocol
+org.openremote.agent3.protocol.macro.MacroProtocol

@@ -137,6 +137,11 @@ public enum AssetMeta {
     ENABLED(ASSET_META_NAMESPACE + ":enabled", new Access(true, false, true), JsonType.BOOLEAN),
 
     /**
+     * Identifies a meta item as a {@link org.openremote.model.asset.macro.MacroAction}
+     */
+    MACRO_ACTION(ASSET_META_NAMESPACE + ":macroAction", new Access(true, false, true), JsonType.ARRAY),
+
+    /**
      * Marks an attribute as being an executable command
      */
     COMMAND(ASSET_META_NAMESPACE + ":command", new Access(true, false, true), JsonType.BOOLEAN);
