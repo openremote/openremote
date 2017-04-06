@@ -21,7 +21,6 @@ package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
-import org.openremote.manager.client.admin.TenantMapper;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.AssetsDashboardPlace;
 import org.openremote.manager.client.assets.attributes.AttributesEditor;
@@ -29,19 +28,18 @@ import org.openremote.manager.client.assets.browser.*;
 import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
 import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowSuccessEvent;
-import org.openremote.model.event.bus.EventBus;
-import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
 import org.openremote.manager.client.map.MapView;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
-import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.manager.shared.validation.ConstraintViolation;
 import org.openremote.model.Consumer;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttributes;
 import org.openremote.model.asset.AssetType;
+import org.openremote.model.event.bus.EventBus;
+import org.openremote.model.event.bus.EventRegistration;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -57,8 +55,6 @@ public class AssetEditActivity
     final AssetMapper assetMapper;
     final MapResource mapResource;
     final JsonObjectMapper jsonObjectMapper;
-    final TenantResource tenantResource;
-    final TenantMapper tenantMapper;
     final protected Consumer<ConstraintViolation[]> validationErrorHandler;
 
     double[] selectedCoordinates;
@@ -66,22 +62,19 @@ public class AssetEditActivity
 
     @Inject
     public AssetEditActivity(Environment environment,
+                             Tenant currentTenant,
                              AssetBrowser.Presenter assetBrowserPresenter,
                              AssetEdit view,
                              AssetResource assetResource,
                              AssetMapper assetMapper,
                              MapResource mapResource,
-                             JsonObjectMapper jsonObjectMapper,
-                             TenantResource tenantResource,
-                             TenantMapper tenantMapper) {
-        super(environment, assetBrowserPresenter);
+                             JsonObjectMapper jsonObjectMapper) {
+        super(environment, currentTenant, assetBrowserPresenter);
         this.view = view;
         this.assetResource = assetResource;
         this.assetMapper = assetMapper;
         this.mapResource = mapResource;
         this.jsonObjectMapper = jsonObjectMapper;
-        this.tenantResource = tenantResource;
-        this.tenantMapper = tenantMapper;
 
         validationErrorHandler = violations -> {
             for (ConstraintViolation violation : violations) {
@@ -138,14 +131,7 @@ public class AssetEditActivity
                 startEditAsset();
             });
         } else {
-            // To create an asset, we need realm details (ID, display name), we only have the realm name
-            environment.getRequestService().execute(
-                tenantMapper,
-                params -> tenantResource.get(params, environment.getSecurityService().getAuthenticatedRealm()),
-                200,
-                this::startCreateAsset,
-                ex -> handleRequestException(ex, environment)
-            );
+            startCreateAsset();
         }
     }
 
@@ -276,12 +262,12 @@ public class AssetEditActivity
         }
     }
 
-    protected void startCreateAsset(Tenant authenticatedTenant) {
+    protected void startCreateAsset() {
         assetBrowserPresenter.clearSelection();
         asset = new Asset();
         asset.setName("My New Asset");
-        asset.setRealmId(authenticatedTenant.getId());
-        asset.setTenantDisplayName(authenticatedTenant.getDisplayName());
+        asset.setRealmId(currentTenant.getId());
+        asset.setTenantDisplayName(currentTenant.getDisplayName());
         asset.setType("urn:mydomain:customtype");
         clearViewMessages();
         view.setTypeSelectionEnabled(true);

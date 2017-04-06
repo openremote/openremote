@@ -24,6 +24,7 @@ import org.openremote.manager.shared.validation.ConstraintViolationReport
 import org.openremote.model.Consumer
 import org.openremote.model.Runnable
 import org.openremote.model.asset.Asset
+import org.openremote.manager.server.security.ManagerIdentityService
 import org.openremote.model.asset.AssetTreeModifiedEvent
 import org.openremote.model.event.shared.SharedEvent
 import org.openremote.test.ClientObjectMapper
@@ -70,6 +71,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
             }
             isSuperUser() >> true
         }
+        def currentTenant = container.getService(ManagerIdentityService.class).getTenantForRealm(realm)
 
         and: "a client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
@@ -133,6 +135,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         HasData<BrowserTreeNode> treeDisplay = Mock(HasData)
         def assetBrowserPresenter = new AssetBrowserPresenter(
                 environment,
+                currentTenant,
                 assetBrowser,
                 assetResource,
                 assetMapper,

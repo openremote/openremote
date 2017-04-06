@@ -21,10 +21,11 @@ package org.openremote.manager.client.rules.tenant;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
-import org.openremote.manager.client.admin.TenantMapper;
+import org.openremote.manager.client.TenantMapper;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
+import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
@@ -52,13 +53,14 @@ public class TenantRulesListActivity
 
     @Inject
     public TenantRulesListActivity(Environment environment,
+                                   Tenant currentTenant,
                                    AssetBrowser.Presenter assetBrowserPresenter,
                                    TenantRulesList view,
                                    TenantMapper tenantMapper,
                                    TenantResource tenantResource,
                                    TenantRulesetArrayMapper tenantRulesetArrayMapper,
                                    RulesetResource rulesetResource) {
-        super(environment, assetBrowserPresenter);
+        super(environment, currentTenant, assetBrowserPresenter);
         this.view = view;
         this.tenantMapper = tenantMapper;
         this.tenantResource = tenantResource;

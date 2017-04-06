@@ -23,6 +23,7 @@ import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.mvp.AppActivity;
+import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.asset.Asset;
 
 public abstract class AbstractAssetActivity<PLACE extends AssetPlace> extends AssetBrowsingActivity<PLACE> {
@@ -31,8 +32,8 @@ public abstract class AbstractAssetActivity<PLACE extends AssetPlace> extends As
     protected Asset asset;
     protected Asset parentAsset;
 
-    public AbstractAssetActivity(Environment environment, AssetBrowser.Presenter assetBrowserPresenter) {
-        super(environment, assetBrowserPresenter);
+    public AbstractAssetActivity(Environment environment, Tenant currentTenant, AssetBrowser.Presenter assetBrowserPresenter) {
+        super(environment, currentTenant, assetBrowserPresenter);
     }
 
     @Override

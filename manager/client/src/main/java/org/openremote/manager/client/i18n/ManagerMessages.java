@@ -306,4 +306,6 @@ public interface ManagerMessages extends Messages {
     String editAsset();
 
     String viewAsset();
+
+    String errorLoadingTenant(int statusCode);
 }

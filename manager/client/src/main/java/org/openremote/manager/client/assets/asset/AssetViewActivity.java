@@ -23,7 +23,7 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import elemental.json.Json;
 import elemental.json.JsonValue;
 import org.openremote.manager.client.Environment;
-import org.openremote.manager.client.admin.TenantMapper;
+import org.openremote.manager.client.TenantMapper;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.attributes.AttributesBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
@@ -64,6 +64,7 @@ public class AssetViewActivity
 
     @Inject
     public AssetViewActivity(Environment environment,
+                             Tenant currentTenant,
                              AssetBrowser.Presenter assetBrowserPresenter,
                              AssetView view,
                              AssetResource assetResource,
@@ -72,7 +73,7 @@ public class AssetViewActivity
                              JsonObjectMapper jsonObjectMapper,
                              TenantResource tenantResource,
                              TenantMapper tenantMapper) {
-        super(environment, assetBrowserPresenter);
+        super(environment, currentTenant, assetBrowserPresenter);
         this.view = view;
         this.assetResource = assetResource;
         this.assetMapper = assetMapper;

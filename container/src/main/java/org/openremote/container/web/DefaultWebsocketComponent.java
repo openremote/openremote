@@ -39,6 +39,7 @@ import javax.servlet.Filter;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpointConfig;
+import java.security.Principal;
 import java.util.logging.Logger;
 
 public class DefaultWebsocketComponent extends WebsocketComponent {
@@ -77,7 +78,12 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
                         public void modifyHandshake(ServerEndpointConfig config, HandshakeRequest request, HandshakeResponse response) {
                             config.getUserProperties().put(
                                 WebsocketConstants.AUTH,
-                                (WebsocketAuth) request::isUserInRole
+                                new WebsocketAuth(request.getUserPrincipal()) {
+                                    @Override
+                                    public boolean isUserInRole(String role) {
+                                        return request.isUserInRole(role);
+                                    }
+                                }
                             );
                             super.modifyHandshake(config, request, response);
                         }

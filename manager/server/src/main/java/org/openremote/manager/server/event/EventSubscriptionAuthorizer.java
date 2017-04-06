@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,19 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.container.web.socket;
+package org.openremote.manager.server.event;
 
-public interface WebsocketConstants {
+import org.openremote.container.web.socket.WebsocketAuth;
+import org.openremote.model.event.shared.EventSubscription;
 
+/**
+ * Authorizes event subscriptions.
+ */
+public interface EventSubscriptionAuthorizer {
 
-
-    int SESSION_MAX_IDLE_TIMEOUT_SECONDS = 300;
-    String SESSION = "websocket.session";
-    String SESSION_KEY = "websocket.sessionKey";
-    String SEND_TO_ALL = "websocket.sendToAll";
-    String AUTH = "websocket.auth";
-    String SESSION_OPEN = "websocket.sessionOpen";
-    String SESSION_CLOSE = "websocket.sessionClose";
-    String SESSION_CLOSE_ERROR = "websocket.sessionCloseError";
+    boolean isAuthorized(WebsocketAuth auth, EventSubscription subscription);
 
 }

@@ -25,6 +25,7 @@ import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.event.ShowSuccessEvent;
+import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
@@ -57,10 +58,11 @@ public abstract class AbstractRulesEditorActivity<T extends Ruleset, PLACE exten
 
     @Inject
     public AbstractRulesEditorActivity(Environment environment,
+                                       Tenant currentTenant,
                                        AssetBrowser.Presenter assetBrowserPresenter,
                                        RulesEditor view,
                                        RulesetResource rulesetResource) {
-        super(environment, assetBrowserPresenter);
+        super(environment, currentTenant, assetBrowserPresenter);
         this.view = view;
         this.rulesetResource = rulesetResource;
 

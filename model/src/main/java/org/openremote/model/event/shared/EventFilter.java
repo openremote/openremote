@@ -23,13 +23,14 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.AttributeEvent;
-import org.openremote.model.util.TextUtil;
+import org.openremote.model.asset.AssetTreeModifiedEvent;
 
 /**
  * Filters {@link SharedEvent} by arbitrary criteria.
  */
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = AttributeEvent.EntityIdFilter.class, name = "entity-id")
+    @JsonSubTypes.Type(value = AttributeEvent.EntityIdFilter.class, name = AttributeEvent.EntityIdFilter.FILTER_TYPE),
+    @JsonSubTypes.Type(value = AssetTreeModifiedEvent.TenantFilter.class, name = AssetTreeModifiedEvent.TenantFilter.FILTER_TYPE)
 })
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -45,20 +46,7 @@ import org.openremote.model.util.TextUtil;
 )
 public abstract class EventFilter<E extends SharedEvent> {
 
-    public static String getFilterType(String className) {
-        String type = TextUtil.toLowerCaseDash(className);
-        if (type.length() > 7 && type.substring(type.length() - 7).equals("-filter"))
-            type = type.substring(0, type.length() - 7);
-        return type;
-    }
-
-    public static String getFilterType(Class<? extends EventFilter> filterClass) {
-        return getFilterType(filterClass.getSimpleName());
-    }
-
-    public String getFilterType() {
-        return getFilterType(getClass());
-    }
+    public abstract String getFilterType();
 
     /**
      *

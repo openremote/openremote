@@ -31,6 +31,7 @@ import org.openremote.test.GwtClientTrait
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.BlockingVariables
+import spock.util.concurrent.PollingConditions
 
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
@@ -44,6 +45,14 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         given: "The server container is started"
         def serverPort = findEphemeralPort()
         def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
+        
+        and: "expected results"
+        def conditions = new PollingConditions(timeout: 10)
+        def blockingResult = new BlockingVariables(10)
+        def resultEvents = []
+        def resultTenants = []
+        def resultUsers = []
+        def resultSelectedRealm = null
 
         and: "An authenticated user and client security service"
         def realm = MASTER_REALM;
@@ -69,10 +78,6 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
         def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
         def clientTarget = getClientTarget(createClient(container).build(), serverUri(serverPort), realm)
-
-        and: "The expected result"
-        def result = new BlockingVariables(10)
-        result.appEvents = []
 
         and: "The fake client MVP environment"
         GWTMockUtilities.disarm()
@@ -107,7 +112,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         eventBus.register(null, new EventListener<Event>() {
             @Override
             void on(Event event) {
-                result.appEvents += event
+                resultEvents << event
             }
         })
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
@@ -133,11 +138,11 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
 
         def adminUsersView = Mock(AdminUsers) {
             setTenants(_, _) >> { Tenant[] tenants, String selectedRealm ->
-                result.tenants = tenants
-                result.selectedRealm = selectedRealm
+                resultTenants = tenants
+                resultSelectedRealm = selectedRealm
             }
             setUsers(_) >> {
-                result.users = it[0]
+                resultUsers = it[0]
             }
         }
         def tenantArrayMapper = new ClientObjectMapper(container.JSON, Tenant[].class) as TenantArrayMapper
@@ -213,12 +218,17 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         1 * adminUsersView.setPresenter(_ as AdminUsersActivity)
 
         and: "The view should have received the tenants and selected realm"
-        result.tenants.length == 3
-        result.selectedRealm == null
+        conditions.eventually {
+            assert resultTenants.length == 3
+            assert resultSelectedRealm == null
+        }
 
         when: "The master tenant is selected"
+        resultEvents = []
+        resultTenants = []
+        resultUsers = []
+        resultSelectedRealm = null
         adminUsersActivity != null
-        result.appEvents.clear()
         adminUsersActivity.onTenantSelected(MASTER_REALM)
 
         then: "The activity should be stopped"
@@ -226,19 +236,24 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         1 * adminView.setContent(null)
 
         and: "The admin users activity should be shown with the selected realm"
-        result.appEvents[0] instanceof WillGoToPlaceEvent
-        result.appEvents[0].place instanceof AdminUsersPlace
-        result.appEvents[1] instanceof GoToPlaceEvent
-        result.appEvents[1].place instanceof AdminUsersPlace
-        result.appEvents[1].place.realm == MASTER_REALM
+        resultEvents[0] instanceof WillGoToPlaceEvent
+        resultEvents[0].place instanceof AdminUsersPlace
+        resultEvents[1] instanceof GoToPlaceEvent
+        resultEvents[1].place instanceof AdminUsersPlace
+        resultEvents[1].place.realm == MASTER_REALM
 
         and: "The view should have received the tenants, selected realm, and users"
-        result.tenants.length == 3
-        result.selectedRealm == MASTER_REALM
-        result.users.length == 2
+        conditions.eventually {
+            assert resultTenants.length == 3
+            assert resultSelectedRealm == MASTER_REALM
+            assert resultUsers.length == 2
+        }
 
         when: "The user clicks Create User"
-        result.appEvents.clear()
+        resultEvents = []
+        resultTenants = []
+        resultUsers = []
+        resultSelectedRealm = null
         adminUsersActivity.createUser()
 
         then: "The activity should be stopped"
@@ -246,11 +261,13 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         1 * adminView.setContent(null)
 
         and: "The admin user activity should be shown with the selected realm"
-        result.appEvents[0] instanceof WillGoToPlaceEvent
-        result.appEvents[0].place instanceof AdminUserPlace
-        result.appEvents[1] instanceof GoToPlaceEvent
-        result.appEvents[1].place instanceof AdminUserPlace
-        result.appEvents[1].place.realm == MASTER_REALM
+        conditions.eventually {
+            assert resultEvents[0] instanceof WillGoToPlaceEvent
+            assert resultEvents[0].place instanceof AdminUserPlace
+            assert resultEvents[1] instanceof GoToPlaceEvent
+            assert resultEvents[1].place instanceof AdminUserPlace
+            assert resultEvents[1].place.realm == MASTER_REALM
+        }
 
         and: "The admin navigation view should have the right place set"
         1 * adminNavigationView.onPlaceChange(_ as AdminUserPlace)
@@ -288,8 +305,11 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         1 * adminUserView.setUsernameEditEnabled(true)
 
         when: "The user clicks the Create button"
+        resultEvents = []
+        resultTenants = []
+        resultUsers = []
+        resultSelectedRealm = null
         adminUserActivity != null
-        result.appEvents.clear()
         adminUserActivity.create()
 
         then: "The activity reads the form"
@@ -323,7 +343,10 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         1 * adminUserView.setFormBusy(false)
 
         when: "The user clicks the Create button"
-        result.appEvents.clear()
+        resultEvents = []
+        resultTenants = []
+        resultUsers = []
+        resultSelectedRealm = null
         adminUserActivity.create()
 
         then: "The activity reads the form"
@@ -352,8 +375,10 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         }
 
         and: "The success toast should be shown"
-        result.appEvents[0] instanceof ShowSuccessEvent
-        result.appEvents[0].text == "TestMessageUserCreated:testuser"
+        conditions.eventually {
+            assert resultEvents[0] instanceof ShowSuccessEvent
+            assert resultEvents[0].text == "TestMessageUserCreated:testuser"
+        }
 
         and: "The form should be cleared, the activity stopped"
         1 * adminUserView.setFormBusy(false)
@@ -368,19 +393,25 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         1 * adminUserView.setPasswordError(false)
 
         and: "The admin users activity should be shown"
-        result.appEvents[1] instanceof WillGoToPlaceEvent
-        result.appEvents[1].place instanceof AdminUsersPlace
-        result.appEvents[2] instanceof GoToPlaceEvent
-        result.appEvents[2].place instanceof AdminUsersPlace
-        result.appEvents[2].place.realm == MASTER_REALM
+        conditions.eventually {
+            assert resultEvents[1] instanceof WillGoToPlaceEvent
+            assert resultEvents[1].place instanceof AdminUsersPlace
+            assert resultEvents[2] instanceof GoToPlaceEvent
+            assert resultEvents[2].place instanceof AdminUsersPlace
+            assert resultEvents[2].place.realm == MASTER_REALM
+        }
 
         and: "The view should have received the users"
-        result.users.length == 3
+        conditions.eventually {
+            assert resultUsers.length == 3
+        }
 
         when: "The new user is selected"
-        result.appEvents.clear()
+        resultEvents = []
+        resultTenants = []
+        resultSelectedRealm = null
         def selectedUser
-        result.users.each {
+        resultUsers.each {
             if (it.username == "testuser") {
                 selectedUser = it
                 return
@@ -390,12 +421,14 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         adminUsersActivity.onUserSelected(selectedUser)
 
         then: "The admin user activity should be shown"
-        result.appEvents[0] instanceof WillGoToPlaceEvent
-        result.appEvents[0].place instanceof AdminUserPlace
-        result.appEvents[1] instanceof GoToPlaceEvent
-        result.appEvents[1].place instanceof AdminUserPlace
-        result.appEvents[1].place.realm == MASTER_REALM
-        result.appEvents[1].place.userId == selectedUser.id
+        conditions.eventually {
+            assert resultEvents[0] instanceof WillGoToPlaceEvent
+            assert resultEvents[0].place instanceof AdminUserPlace
+            assert resultEvents[1] instanceof GoToPlaceEvent
+            assert resultEvents[1].place instanceof AdminUserPlace
+            assert resultEvents[1].place.realm == MASTER_REALM
+            assert resultEvents[1].place.userId == selectedUser.id
+        }
 
         and: "The admin user form should be cleared"
         1 * adminUserView.clearRoles()
@@ -423,17 +456,17 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
 
         then: "The roles should be added in the right order"
         1 * adminUserView.addRole(!null, "RoleLabel:read", true, false) >> {
-            result.readRoleId = it[0]
+            blockingResult.readRoleId = it[0]
         }
 
         then: "The roles should be added in the right order"
         1 * adminUserView.addRole(!null, "RoleLabel:read-assets", false, false) >> {
-            result.readAssetsRoleId = it[0]
+            blockingResult.readAssetsRoleId = it[0]
         }
 
         then: "The roles should be added in the right order"
         1 * adminUserView.addRole(!null, "RoleLabel:read-map", false, false) >> {
-            result.readMapRoleId = it[0]
+            blockingResult.readMapRoleId = it[0]
         }
 
         then: "The roles should be added in the right order"
@@ -451,28 +484,31 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         1 * adminUserView.setUsernameEditEnabled(false)
 
         when: "The user selects a composite role"
-        adminUserActivity.onRoleAssigned(result.readRoleId, true)
+        adminUserActivity.onRoleAssigned(blockingResult.readRoleId, true)
 
         then: "The other roles must be assigned"
-        1 * adminUserView.toggleRoleAssigned(result.readAssetsRoleId, true)
-        1 * adminUserView.toggleRoleAssigned(result.readMapRoleId, true)
+        1 * adminUserView.toggleRoleAssigned(blockingResult.readAssetsRoleId, true)
+        1 * adminUserView.toggleRoleAssigned(blockingResult.readMapRoleId, true)
 
         when: "The user deselects a composite role"
-        adminUserActivity.onRoleAssigned(result.readRoleId, false)
+        adminUserActivity.onRoleAssigned(blockingResult.readRoleId, false)
 
         then: "The other roles must be unassigned"
-        1 * adminUserView.toggleRoleAssigned(result.readAssetsRoleId, false)
-        1 * adminUserView.toggleRoleAssigned(result.readMapRoleId, false)
+        1 * adminUserView.toggleRoleAssigned(blockingResult.readAssetsRoleId, false)
+        1 * adminUserView.toggleRoleAssigned(blockingResult.readMapRoleId, false)
 
         when: "The user selects a composite role and then deselects one of its component roles"
-        adminUserActivity.onRoleAssigned(result.readRoleId, true)
-        adminUserActivity.onRoleAssigned(result.readMapRoleId, false)
+        adminUserActivity.onRoleAssigned(blockingResult.readRoleId, true)
+        adminUserActivity.onRoleAssigned(blockingResult.readMapRoleId, false)
 
         then: "The composite role must be unassigned"
-        1 * adminUserView.toggleRoleAssigned(result.readRoleId, false)
+        1 * adminUserView.toggleRoleAssigned(blockingResult.readRoleId, false)
 
         when: "The user clicks the Update button"
-        result.appEvents.clear()
+        resultEvents = []
+        resultTenants = []
+        resultUsers = []
+        resultSelectedRealm = null
         adminUserActivity.update()
 
         then: "The activity reads the tenant form"
@@ -496,7 +532,10 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         1 * adminUserView.addFormMessageSuccess("TestMessageUserUpdated:testuser")
 
         when: "The user clicks the Update button"
-        result.appEvents.clear()
+        resultEvents = []
+        resultTenants = []
+        resultUsers = []
+        resultSelectedRealm = null
         adminUserActivity.update()
 
         then: "The activity reads the tenant form (with invalid passwords)"
@@ -528,7 +567,10 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         1 * adminUserView.addFormMessageSuccess("TestMessageUserUpdated:testuser")
 
         when: "The user clicks the Update button"
-        result.appEvents.clear()
+        resultEvents = []
+        resultTenants = []
+        resultUsers = []
+        resultSelectedRealm = null
         adminUserActivity.update()
 
         then: "The activity reads the tenant form (with matching passwords)"
@@ -558,9 +600,11 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         1 * adminUserView.addFormMessageSuccess("TestMessagePasswordUpdated")
         1 * adminUserView.addFormMessageSuccess("TestMessageUserUpdated:testuser")
 
-
         when: "The user clicks the Delete button"
-        result.appEvents.clear()
+        resultEvents = []
+        resultTenants = []
+        resultUsers = []
+        resultSelectedRealm = null
         adminUserActivity.delete()
 
         then: "The activity shows a confirmation dialog"
@@ -579,8 +623,10 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         1 * adminUserView.setPasswordError(false)
 
         and: "The success toast should be shown"
-        result.appEvents[0] instanceof ShowSuccessEvent
-        result.appEvents[0].text == "TestMessageUserDeleted:testuser"
+        conditions.eventually {
+            assert resultEvents[0] instanceof ShowSuccessEvent
+            assert resultEvents[0].text == "TestMessageUserDeleted:testuser"
+        }
 
         and: "The form should be cleared, the activity stopped"
         1 * adminUserView.setFormBusy(false)
@@ -595,16 +641,20 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         1 * adminUserView.setPasswordError(false)
 
         and: "The admin tenants activity should be shown"
-        result.appEvents[1] instanceof WillGoToPlaceEvent
-        result.appEvents[1].place instanceof AdminUsersPlace
-        result.appEvents[2] instanceof GoToPlaceEvent
-        result.appEvents[2].place instanceof AdminUsersPlace
-        result.appEvents[2].place.realm == MASTER_REALM
+        conditions.eventually {
+            assert resultEvents[1] instanceof WillGoToPlaceEvent
+            assert resultEvents[1].place instanceof AdminUsersPlace
+            assert resultEvents[2] instanceof GoToPlaceEvent
+            assert resultEvents[2].place instanceof AdminUsersPlace
+            assert resultEvents[2].place.realm == MASTER_REALM
+        }
 
         and: "The view should have received the tenants and users"
-        result.tenants.length == 3
-        result.selectedRealm == MASTER_REALM
-        result.users.length == 2
+        conditions.eventually {
+            assert resultTenants.length == 3
+            assert resultSelectedRealm == MASTER_REALM
+            assert resultUsers.length == 2
+        }
 
         cleanup: "The server should be stopped"
         stopContainer(container);

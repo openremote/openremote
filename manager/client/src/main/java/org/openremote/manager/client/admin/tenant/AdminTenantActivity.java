@@ -23,7 +23,7 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.admin.AbstractAdminActivity;
 import org.openremote.manager.client.admin.AdminView;
-import org.openremote.manager.client.admin.TenantMapper;
+import org.openremote.manager.client.TenantMapper;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.model.event.bus.EventBus;

@@ -56,8 +56,11 @@ public class EventServiceImpl implements EventService {
         );
     }
 
-    public static final int MAX_ATTEMPTS = 12;
+    // Give up after 10 minutes of reconnection attempts, waiting 5 seconds between each
+    public static final int MAX_ATTEMPTS = 120;
     public static final int DELAY_MILLIS = 5000;
+
+    // While not connected, buffer sent messages and finally flush the queue when connected again
     public static final int MAX_QUEUE_SIZE = 1000;
 
     final protected SecurityService securityService;
@@ -118,15 +121,20 @@ public class EventServiceImpl implements EventService {
         this.eventBus.register(
             SessionClosedErrorEvent.class,
             event -> {
-                eventBus.dispatch(new ShowFailureEvent("Dropped server connection, will try a few more times to reach: " + serviceUrl, 3000));
-                LOG.fine("Session closed with error, incrementing failure count: " + failureCount);
-                failureCount++;
-                if (failureCount < MAX_ATTEMPTS) {
-                    reconnect();
+                if (event.getReason().code == 1001) {
+                    LOG.fine("Session closed (probably idle timeout), reconnecting without delay...");
+                    reconnect(0);
                 } else {
-                    String failureMessage = "Giving up connecting to service after " + failureCount + " failures: " + serviceUrl;
-                    eventBus.dispatch(new ShowFailureEvent(failureMessage, ShowFailureEvent.DURABLE));
-                    LOG.severe(failureMessage);
+                    LOG.fine("Session closed with error, incrementing failure count: " + failureCount);
+                    failureCount++;
+                    eventBus.dispatch(new ShowFailureEvent("Dropped server connection, will try a few more times to reach: " + serviceUrl, 3000));
+                    if (failureCount < MAX_ATTEMPTS) {
+                        reconnect();
+                    } else {
+                        String failureMessage = "Giving up connecting to service after " + failureCount + " failures: " + serviceUrl;
+                        eventBus.dispatch(new ShowFailureEvent(failureMessage, ShowFailureEvent.DURABLE));
+                        LOG.severe(failureMessage);
+                    }
                 }
             }
         );
@@ -260,8 +268,16 @@ public class EventServiceImpl implements EventService {
     }
 
     protected void reconnect() {
-        LOG.fine("Session reconnection attempt '" + serviceUrl + "' with delay milliseconds: " + DELAY_MILLIS);
+        reconnect(DELAY_MILLIS);
+    }
+
+    protected void reconnect(int delayMillis) {
+        LOG.fine("Session reconnection attempt '" + serviceUrl + "' with delay milliseconds: " + delayMillis);
         SessionConnectEvent event = new SessionConnectEvent();
-        Timeout.debounce(event.getEventType(), () -> eventBus.dispatch(event), DELAY_MILLIS);
+        if (delayMillis <= 0) {
+            eventBus.dispatch(event);
+        } else {
+            Timeout.debounce(event.getEventType(), () -> eventBus.dispatch(event), delayMillis);
+        }
     }
 }

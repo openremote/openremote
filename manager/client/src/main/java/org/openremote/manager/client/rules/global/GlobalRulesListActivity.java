@@ -24,6 +24,7 @@ import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
+import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
@@ -46,11 +47,12 @@ public class GlobalRulesListActivity
 
     @Inject
     public GlobalRulesListActivity(Environment environment,
+                                   Tenant currentTenant,
                                    AssetBrowser.Presenter assetBrowserPresenter,
                                    GlobalRulesList view,
                                    GlobalRulesetArrayMapper globalRulesetArrayMapper,
                                    RulesetResource rulesetResource) {
-        super(environment, assetBrowserPresenter);
+        super(environment, currentTenant, assetBrowserPresenter);
         this.view = view;
         this.globalRulesetArrayMapper = globalRulesetArrayMapper;
         this.rulesetResource = rulesetResource;

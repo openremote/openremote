@@ -30,6 +30,8 @@ public class AttributeEvent extends SharedEvent {
 
     static public class EntityIdFilter extends EventFilter<AttributeEvent> {
 
+        public static final String FILTER_TYPE = "attribute-entity-id";
+
         protected String entityId;
 
         protected EntityIdFilter() {
@@ -45,6 +47,11 @@ public class AttributeEvent extends SharedEvent {
 
         public void setEntityId(String entityId) {
             this.entityId = entityId;
+        }
+
+        @Override
+        public String getFilterType() {
+            return FILTER_TYPE;
         }
 
         @Override

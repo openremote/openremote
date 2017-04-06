@@ -22,6 +22,7 @@ package org.openremote.manager.client.rules.global;
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
+import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.rules.AbstractRulesEditorActivity;
@@ -43,11 +44,12 @@ public class GlobalRulesEditorActivity
 
     @Inject
     public GlobalRulesEditorActivity(Environment environment,
+                                     Tenant currentTenant,
                                      AssetBrowser.Presenter assetBrowserPresenter,
                                      RulesEditor view,
                                      RulesetResource rulesetResource,
                                      GlobalRulesetMapper globalRulesetMapper) {
-        super(environment, assetBrowserPresenter, view, rulesetResource);
+        super(environment, currentTenant, assetBrowserPresenter, view, rulesetResource);
         this.globalRulesetMapper = globalRulesetMapper;
     }
 

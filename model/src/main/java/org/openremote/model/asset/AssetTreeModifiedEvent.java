@@ -19,6 +19,7 @@
  */
 package org.openremote.model.asset;
 
+import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.SharedEvent;
 
 /**
@@ -35,6 +36,44 @@ import org.openremote.model.event.shared.SharedEvent;
  * If a tenant is modified, the {@link #assetId} property will be <code>null</code>.
  */
 public class AssetTreeModifiedEvent extends SharedEvent {
+
+    public static class TenantFilter extends EventFilter<AssetTreeModifiedEvent> {
+
+        public static final String FILTER_TYPE = "asset-tree-modified-tenant";
+
+        protected String realmId;
+
+        protected TenantFilter() {
+        }
+
+        public TenantFilter(String realmId) {
+            this.realmId = realmId;
+        }
+
+        public String getRealmId() {
+            return realmId;
+        }
+
+        @Override
+        public String getFilterType() {
+            return FILTER_TYPE;
+        }
+
+        @Override
+        public AssetTreeModifiedEvent apply(AssetTreeModifiedEvent event) {
+            if (getRealmId().equals(event.getRealmId())) {
+                return event;
+            }
+            return null;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "{" +
+                "realmId='" + realmId + '\'' +
+                '}';
+        }
+    }
 
     protected String realmId;
     protected String assetId;

@@ -27,6 +27,7 @@ import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.assets.browser.AssetTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
 import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
+import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
@@ -42,9 +43,10 @@ public class AssetsDashboardActivity
 
     @Inject
     public AssetsDashboardActivity(Environment environment,
+                                   Tenant currentTenant,
                                    AssetBrowser.Presenter assetBrowserPresenter,
                                    AssetsDashboard view) {
-        super(environment, assetBrowserPresenter);
+        super(environment, currentTenant, assetBrowserPresenter);
         this.view = view;
     }
 

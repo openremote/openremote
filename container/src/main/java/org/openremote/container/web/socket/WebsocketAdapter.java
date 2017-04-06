@@ -40,14 +40,18 @@ public class WebsocketAdapter extends Endpoint {
     public void onOpen(Session session, EndpointConfig config) {
         if (LOG.isLoggable(Level.FINE))
             LOG.fine("Websocket session open: " + session.getId());
+        session.setMaxIdleTimeout(WebsocketConstants.SESSION_MAX_IDLE_TIMEOUT_SECONDS * 1000);
         consumer.getEndpoint().getWebsocketSessions().add(session);
         this.consumer.sendMessage(session.getId(), getWebsocketAuth(session), null, exchange -> {
+            exchange.getIn().setHeader(WebsocketConstants.SESSION, session);
             exchange.getIn().setHeader(WebsocketConstants.SESSION_OPEN, true);
         });
         session.addMessageHandler(String.class, message -> {
             if (LOG.isLoggable(Level.FINE))
                 LOG.fine("Websocket session " + session.getId() + " message received: " + message);
-            this.consumer.sendMessage(session.getId(), getWebsocketAuth(session), message);
+            this.consumer.sendMessage(session.getId(), getWebsocketAuth(session), message, exchange -> {
+                exchange.getIn().setHeader(WebsocketConstants.SESSION, session);
+            });
         });
     }
 
@@ -56,6 +60,7 @@ public class WebsocketAdapter extends Endpoint {
         if (LOG.isLoggable(Level.FINE))
             LOG.fine("Websocket session close: " + session.getId() + " " + closeReason);
         this.consumer.sendMessage(session.getId(), getWebsocketAuth(session), closeReason, exchange -> {
+            exchange.getIn().setHeader(WebsocketConstants.SESSION, session);
             exchange.getIn().setHeader(WebsocketConstants.SESSION_CLOSE, true);
         });
         consumer.getEndpoint().getWebsocketSessions().remove(session);
@@ -67,6 +72,7 @@ public class WebsocketAdapter extends Endpoint {
         if (LOG.isLoggable(Level.INFO))
             LOG.log(Level.INFO, "Websocket session error: " + session.getId(), thr);
         this.consumer.sendMessage(session.getId(), getWebsocketAuth(session), thr, exchange -> {
+            exchange.getIn().setHeader(WebsocketConstants.SESSION, session);
             exchange.getIn().setHeader(WebsocketConstants.SESSION_CLOSE_ERROR, true);
         });
         consumer.getEndpoint().getWebsocketSessions().remove(session);

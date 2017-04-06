@@ -27,6 +27,7 @@ import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.assets.browser.AssetTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
+import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
@@ -56,13 +57,14 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
 
     @Inject
     public MapActivity(Environment environment,
+                       Tenant currentTenant,
                        AssetBrowser.Presenter assetBrowserPresenter,
                        MapView view,
                        AssetResource assetResource,
                        AssetMapper assetMapper,
                        MapResource mapResource,
                        JsonObjectMapper jsonObjectMapper) {
-        super(environment, assetBrowserPresenter);
+        super(environment, currentTenant, assetBrowserPresenter);
         this.view = view;
         this.assetResource = assetResource;
         this.assetMapper = assetMapper;

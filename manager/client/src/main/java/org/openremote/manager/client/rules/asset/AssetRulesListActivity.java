@@ -25,6 +25,7 @@ import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
+import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
@@ -54,13 +55,14 @@ public class AssetRulesListActivity
 
     @Inject
     public AssetRulesListActivity(Environment environment,
+                                  Tenant currentTenant,
                                   AssetBrowser.Presenter assetBrowserPresenter,
                                   AssetRulesList view,
                                   AssetResource assetResource,
                                   AssetMapper assetMapper,
                                   AssetRulesetArrayMapper assetRulesetArrayMapper,
                                   RulesetResource rulesetResource) {
-        super(environment, assetBrowserPresenter);
+        super(environment, currentTenant, assetBrowserPresenter);
         this.view = view;
         this.assetResource = assetResource;
         this.assetMapper = assetMapper;

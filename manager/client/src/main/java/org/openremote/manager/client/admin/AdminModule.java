@@ -58,12 +58,6 @@ public class AdminModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    public native TenantResource getTenantResource()  /*-{
-        return $wnd.TenantResource;
-    }-*/;
-
-    @Provides
-    @Singleton
     public native UserResource getUserResource()  /*-{
         return $wnd.UserResource;
     }-*/;

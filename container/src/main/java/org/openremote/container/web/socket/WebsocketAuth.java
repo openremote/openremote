@@ -19,7 +19,64 @@
  */
 package org.openremote.container.web.socket;
 
-public interface WebsocketAuth {
+import org.keycloak.KeycloakPrincipal;
+import org.keycloak.KeycloakSecurityContext;
+import org.keycloak.representations.AccessToken;
+import org.openremote.model.Constants;
 
-    boolean isUserInRole(String role);
+import javax.ws.rs.WebApplicationException;
+
+import java.security.Principal;
+
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+
+public abstract class WebsocketAuth {
+
+    final protected Principal principal;
+
+    public WebsocketAuth(Principal principal) {
+        this.principal = principal;
+    }
+
+    @SuppressWarnings("unchecked")
+    public KeycloakPrincipal<KeycloakSecurityContext> getCallerPrincipal() {
+        KeycloakPrincipal<KeycloakSecurityContext> keycloakPrincipal = (KeycloakPrincipal<KeycloakSecurityContext>) principal;
+        if (keycloakPrincipal == null) {
+            throw new WebApplicationException("Websocket session is not authenticated, can't access user principal", FORBIDDEN);
+        }
+        return keycloakPrincipal;
+    }
+
+    public AccessToken getAccessToken() {
+        return getCallerPrincipal().getKeycloakSecurityContext().getToken();
+    }
+
+    public String getUsername() {
+        return getAccessToken().getPreferredUsername();
+    }
+
+    public String getUserId() {
+        return getAccessToken().getSubject();
+    }
+
+    /**
+     * This works only if the current caller is authenticated, we obtain the
+     * realm from auth material.
+     */
+    public String getAuthenticatedRealm() {
+        return getCallerPrincipal().getKeycloakSecurityContext().getRealm();
+    }
+
+    /**
+     * @return <code>true</code> if the user is authenticated in the "master" realm and has the realm role "admin".
+     */
+    public boolean isSuperUser() {
+        return getAuthenticatedRealm().equals(Constants.MASTER_REALM) && hasRealmRole(Constants.REALM_ADMIN_ROLE);
+    }
+
+    public boolean hasRealmRole(String role) {
+        return getAccessToken().getRealmAccess().isUserInRole(role);
+    }
+
+    public abstract boolean isUserInRole(String role);
 }

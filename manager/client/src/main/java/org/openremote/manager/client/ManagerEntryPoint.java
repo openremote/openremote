@@ -20,10 +20,7 @@
 package org.openremote.manager.client;
 
 import com.google.gwt.core.client.GWT;
-import elemental.json.Json;
-import elemental.json.JsonArray;
 import elemental.json.JsonValue;
-import org.openremote.manager.client.util.JsUtil;
 
 import java.util.logging.Logger;
 
@@ -36,19 +33,6 @@ public class ManagerEntryPoint implements com.google.gwt.core.client.EntryPoint 
     @Override
     public void onModuleLoad() {
 
-        //JsonArray array = (JsonArray) Json.parse("[0, false]");
-
-//        printJsonValue(array.get(0));
-/*
-        if (array.get(0).asNumber() < 0)
-            throw new IllegalStateException("Should not be negative");
-
-        if (array.get(0) == null)
-            throw new IllegalStateException("This is wrong!");
-
-        if (array.get(1) == null)
-            throw new IllegalStateException("This is also wrong!");
-*/
 
         injector.getAppController().start();
 
@@ -71,9 +55,5 @@ public class ManagerEntryPoint implements com.google.gwt.core.client.EntryPoint 
             throw new IllegalStateException("This is wrong!");
         */
 
-    }
-
-    public void printJsonValue(JsonValue jsonValue) {
-        LOG.info("### GOT: " + jsonValue);
     }
 }

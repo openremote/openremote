@@ -33,6 +33,7 @@ import org.openremote.container.util.Pair;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.security.ManagerIdentityService;
+import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.Attribute;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.asset.*;
@@ -63,6 +64,32 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         managerIdentityService = container.getService(ManagerIdentityService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
         eventService = container.getService(EventService.class);
+
+        eventService.addSubscriptionAuthorizer((auth, subscription) -> {
+            if (subscription.isEventType(AssetTreeModifiedEvent.class)) {
+                // Superuser can get all
+                if (auth.isSuperUser())
+                    return true;
+
+                // Restricted users get nothing (they don't have asset trees, just a list of linked assets)
+                if (managerIdentityService.isRestrictedUser(auth.getUserId()))
+                    return false;
+
+                // Ensure filter matches authenticated realm
+                if (subscription.getFilter() instanceof AssetTreeModifiedEvent.TenantFilter) {
+                    AssetTreeModifiedEvent.TenantFilter filter =
+                        (AssetTreeModifiedEvent.TenantFilter) subscription.getFilter();
+
+                    Tenant authenticatedTenant =
+                        managerIdentityService.getTenantForRealm(auth.getAuthenticatedRealm());
+                    if (authenticatedTenant == null)
+                        return false;
+                    if (filter.getRealmId().equals(authenticatedTenant.getId()))
+                        return true;
+                }
+            }
+            return false;
+        });
 
         container.getService(WebService.class).getApiSingletons().add(
             new AssetResourceImpl(

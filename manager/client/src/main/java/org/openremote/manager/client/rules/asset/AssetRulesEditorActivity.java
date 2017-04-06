@@ -23,6 +23,7 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
+import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
@@ -52,13 +53,14 @@ public class AssetRulesEditorActivity
 
     @Inject
     public AssetRulesEditorActivity(Environment environment,
+                                    Tenant currentTenant,
                                     AssetBrowser.Presenter assetBrowserPresenter,
                                     RulesEditor view,
                                     RulesetResource rulesetResource,
                                     AssetMapper assetMapper,
                                     AssetResource assetResource,
                                     AssetRulesetMapper assetRulesetMapper) {
-        super(environment, assetBrowserPresenter, view, rulesetResource);
+        super(environment, currentTenant, assetBrowserPresenter, view, rulesetResource);
         this.assetMapper = assetMapper;
         this.assetResource = assetResource;
         this.assetRulesetMapper = assetRulesetMapper;

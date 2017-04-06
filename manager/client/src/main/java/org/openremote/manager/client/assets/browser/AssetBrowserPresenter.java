@@ -46,6 +46,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
     private static final Logger LOG = Logger.getLogger(AssetBrowserPresenter.class.getName());
 
     final Environment environment;
+    final Tenant currentTenant;
     final AssetBrowser view;
     final AssetResource assetResource;
     final AssetMapper assetMapper;
@@ -61,6 +62,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
 
     @Inject
     public AssetBrowserPresenter(Environment environment,
+                                 Tenant currentTenant,
                                  AssetBrowser view,
                                  AssetResource assetResource,
                                  AssetMapper assetMapper,
@@ -68,6 +70,7 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
                                  TenantResource tenantResource,
                                  TenantArrayMapper tenantArrayMapper) {
         this.environment = environment;
+        this.currentTenant = currentTenant;
         this.view = view;
         this.tenantResource = tenantResource;
         this.tenantArrayMapper = tenantArrayMapper;
@@ -89,7 +92,12 @@ public class AssetBrowserPresenter implements AssetBrowser.Presenter {
 
     @Override
     public void onViewAttached() {
-        environment.getEventService().subscribe(AssetTreeModifiedEvent.class);
+        environment.getEventService().subscribe(
+            AssetTreeModifiedEvent.class,
+            environment.getSecurityService().isSuperUser()
+                ? null
+                : new AssetTreeModifiedEvent.TenantFilter(currentTenant.getId())
+        );
     }
 
     @Override

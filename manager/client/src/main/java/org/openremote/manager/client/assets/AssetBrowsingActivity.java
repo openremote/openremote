@@ -23,15 +23,19 @@ import com.google.gwt.place.shared.Place;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.mvp.AppActivity;
+import org.openremote.manager.shared.security.Tenant;
 
 abstract public class AssetBrowsingActivity<P extends Place> extends AppActivity<P> {
 
     final protected Environment environment;
+    final protected Tenant currentTenant;
     final protected AssetBrowser.Presenter assetBrowserPresenter;
 
     public AssetBrowsingActivity(Environment environment,
+                                 Tenant currentTenant,
                                  AssetBrowser.Presenter assetBrowserPresenter) {
         this.environment = environment;
+        this.currentTenant = currentTenant;
         this.assetBrowserPresenter = assetBrowserPresenter;
     }
 

@@ -7,9 +7,9 @@ import com.google.gwt.user.client.ui.Widget
 import org.openremote.manager.client.Environment
 import org.openremote.manager.client.ManagerActivityMapper
 import org.openremote.manager.client.ManagerHistoryMapper
+import org.openremote.manager.client.TenantMapper
 import org.openremote.manager.client.admin.AdminView
 import org.openremote.manager.client.admin.TenantArrayMapper
-import org.openremote.manager.client.admin.TenantMapper
 import org.openremote.manager.client.admin.navigation.AdminNavigation
 import org.openremote.manager.client.admin.navigation.AdminNavigationPresenter
 import org.openremote.manager.client.admin.tenant.*
@@ -34,7 +34,7 @@ import org.openremote.test.ClientObjectMapper
 import org.openremote.test.GwtClientTrait
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
-import spock.util.concurrent.BlockingVariables
+import spock.util.concurrent.PollingConditions
 
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
@@ -48,6 +48,11 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         given: "The server container is started"
         def serverPort = findEphemeralPort()
         def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
+
+        and: "expected results"
+        def conditions = new PollingConditions(timeout: 10)
+        def resultEvents = []
+        def resultTenants = []
 
         and: "An authenticated user and client security service"
         def realm = MASTER_REALM;
@@ -74,11 +79,6 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
         def clientTarget = getClientTarget(createClient(container).build(), serverUri(serverPort), realm)
 
-        and: "The expected result"
-        def result = new BlockingVariables(10)
-        result.appEvents = []
-        result.tenants = []
-
         and: "The fake client MVP environment"
         GWTMockUtilities.disarm()
         def managerMessages = Mock(ManagerMessages) {
@@ -102,7 +102,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         eventBus.register(null, new EventListener<Event>() {
             @Override
             void on(Event event) {
-                result.appEvents += event
+                resultEvents << event
             }
         })
         def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
@@ -125,7 +125,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
 
         def adminTenantsView = Mock(AdminTenants) {
             setTenants(_) >> {
-                result.tenants = it[0];
+                resultTenants = it[0];
             }
         }
         def tenantArrayMapper = new ClientObjectMapper(container.JSON, Tenant[].class) as TenantArrayMapper
@@ -198,7 +198,9 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         1 * adminTenantsView.setPresenter(_ as AdminTenantsActivity)
 
         and: "The view should have received the tenants"
-        result.tenants.length == 3
+        conditions.eventually {
+            assert resultTenants.length == 3
+        }
 
         when: "The user clicks Create Tenant"
         adminTenantsActivity != null
@@ -234,7 +236,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         1 * adminTenantView.enableCreate(true)
 
         when: "The user clicks the Create button"
-        result.appEvents.clear()
+        resultEvents = []
         adminTenantActivity != null
         adminTenantActivity.create()
 
@@ -260,7 +262,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         1 * adminTenantView.setFormBusy(false)
 
         when: "The user clicks the Create button"
-        result.appEvents.clear()
+        resultEvents = []
         adminTenantActivity.create()
 
         then: "The activity reads the tenant form"
@@ -280,8 +282,10 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         }
 
         and: "The success toast should be shown"
-        result.appEvents[0] instanceof ShowSuccessEvent
-        result.appEvents[0].text == "TestMessageTenantCreated:Test Name"
+        conditions.eventually {
+            assert resultEvents[0] instanceof ShowSuccessEvent
+            assert resultEvents[0].text == "TestMessageTenantCreated:Test Name"
+        }
 
         and: "The form should be cleared the activity stopped"
         1 * adminTenantView.setFormBusy(false)
@@ -292,18 +296,22 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         1 * adminTenantView.setTenantEnabledError(false)
 
         and: "The admin tenants activity should be shown"
-        result.appEvents[1] instanceof WillGoToPlaceEvent
-        result.appEvents[1].place instanceof AdminTenantsPlace
-        result.appEvents[2] instanceof GoToPlaceEvent
-        result.appEvents[2].place instanceof AdminTenantsPlace
+        conditions.eventually {
+            assert resultEvents[1] instanceof WillGoToPlaceEvent
+            assert resultEvents[1].place instanceof AdminTenantsPlace
+            assert resultEvents[2] instanceof GoToPlaceEvent
+            assert resultEvents[2].place instanceof AdminTenantsPlace
+        }
 
         and: "The view should have received the tenants"
-        result.tenants.length == 4
+        conditions.eventually {
+            assert resultTenants.length == 4
+        }
 
         when: "The new tenant is selected"
-        result.appEvents.clear()
+        resultEvents = []
         def selectedTenant
-        result.tenants.each {
+        resultTenants.each {
             if (it.realm == "testrealm") {
                 selectedTenant = it
                 return
@@ -312,11 +320,13 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         adminTenantsActivity.onTenantSelected(selectedTenant)
 
         then: "The admin tenant activity should be shown"
-        result.appEvents[0] instanceof WillGoToPlaceEvent
-        result.appEvents[0].place instanceof AdminTenantPlace
-        result.appEvents[1] instanceof GoToPlaceEvent
-        result.appEvents[1].place instanceof AdminTenantPlace
-        result.appEvents[1].place.realm == "testrealm"
+        conditions.eventually {
+            assert resultEvents[0] instanceof WillGoToPlaceEvent
+            assert resultEvents[0].place instanceof AdminTenantPlace
+            assert resultEvents[1] instanceof GoToPlaceEvent
+            assert resultEvents[1].place instanceof AdminTenantPlace
+            assert resultEvents[1].place.realm == "testrealm"
+        }
 
         and: "The admin tenant form should be cleared"
         1 * adminTenantView.clearFormMessages()
@@ -337,7 +347,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         1 * adminTenantView.enableDelete(true)
 
         when: "The user clicks the Update button"
-        result.appEvents.clear()
+        resultEvents = []
         adminTenantActivity.update()
 
         then: "The activity reads the tenant form"
@@ -357,11 +367,13 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         }
 
         and: "The conflict toast should be shown"
-        result.appEvents[0] instanceof ShowFailureEvent
-        result.appEvents[0].text == "TestMessageRequestFailed:TestMessageConflictRequest"
+        conditions.eventually {
+            assert resultEvents[0] instanceof ShowFailureEvent
+            assert resultEvents[0].text == "TestMessageRequestFailed:TestMessageConflictRequest"
+        }
 
         when: "The user clicks the Update button"
-        result.appEvents.clear()
+        resultEvents = []
         adminTenantActivity.update()
 
         then: "The activity reads the tenant form"
@@ -385,7 +397,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         1 * adminTenantView.addFormMessageSuccess("TestMessageTenantUpdated:Test Name2")
 
         when: "The user clicks the Delete button"
-        result.appEvents.clear()
+        resultEvents = []
         adminTenantActivity.delete()
 
         then: "The activity shows a confirmation dialog"
@@ -401,8 +413,10 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         1 * adminTenantView.setTenantEnabledError(false)
 
         and: "The success toast should be shown"
-        result.appEvents[0] instanceof ShowSuccessEvent
-        result.appEvents[0].text == "TestMessageTenantDeleted:Test Name2"
+        conditions.eventually {
+            assert resultEvents[0] instanceof ShowSuccessEvent
+            assert resultEvents[0].text == "TestMessageTenantDeleted:Test Name2"
+        }
 
         and: "The form should be cleared the activity stopped"
         1 * adminTenantView.setFormBusy(false)
@@ -413,13 +427,17 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         1 * adminTenantView.setTenantEnabledError(false)
 
         and: "The admin tenants activity should be shown"
-        result.appEvents[1] instanceof WillGoToPlaceEvent
-        result.appEvents[1].place instanceof AdminTenantsPlace
-        result.appEvents[2] instanceof GoToPlaceEvent
-        result.appEvents[2].place instanceof AdminTenantsPlace
+        conditions.eventually {
+            assert resultEvents[1] instanceof WillGoToPlaceEvent
+            assert resultEvents[1].place instanceof AdminTenantsPlace
+            assert resultEvents[2] instanceof GoToPlaceEvent
+            assert resultEvents[2].place instanceof AdminTenantsPlace
+        }
 
         and: "The view should have received the tenants"
-        result.tenants.length == 3
+        conditions.eventually {
+            resultTenants.length == 3
+        }
 
         cleanup: "The server should be stopped"
         stopContainer(container);

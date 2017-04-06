@@ -25,11 +25,14 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
+import org.openremote.container.web.socket.WebsocketAuth;
 import org.openremote.container.web.socket.WebsocketConstants;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
 
+import java.util.Collection;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.logging.Logger;
 
 import static org.apache.camel.builder.PredicateBuilder.or;
@@ -46,6 +49,7 @@ public class EventService implements ContainerService {
     public static final String OUTGOING_EVENT_QUEUE = "seda://OutgoingEventQueue?multipleConsumers=false&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&size=1000";
 
     final protected EventSubscriptions eventSubscriptions = new EventSubscriptions();
+    final protected Collection<EventSubscriptionAuthorizer> eventSubscriptionAuthorizers = new CopyOnWriteArraySet<>();
 
     protected MessageBrokerService messageBrokerService;
 
@@ -85,7 +89,23 @@ public class EventService implements ContainerService {
                     .convertBodyTo(EventSubscription.class)
                     .process(exchange -> {
                         String sessionKey = getSessionKey(exchange);
-                        eventSubscriptions.update(sessionKey, exchange.getIn().getBody(EventSubscription.class));
+                        EventSubscription subscription = exchange.getIn().getBody(EventSubscription.class);
+                        WebsocketAuth auth = getWebsocketAuth(exchange);
+                        boolean isAuthorized = false;
+                        for (EventSubscriptionAuthorizer authorizer : eventSubscriptionAuthorizers) {
+                            if (authorizer.isAuthorized(auth, subscription)) {
+                                isAuthorized = true;
+                                break;
+                            }
+                        }
+                        if (!isAuthorized) {
+                            LOG.info("Unauthorized subscription from '"
+                                + auth.getUsername() + "' in realm '" + auth.getAuthenticatedRealm()
+                                + "': " + subscription
+                            );
+                            return;
+                        }
+                        eventSubscriptions.update(sessionKey, subscription);
                     })
                     .when(bodyAs(String.class).startsWith(CancelEventSubscription.MESSAGE_PREFIX))
                     .convertBodyTo(CancelEventSubscription.class)
@@ -123,6 +143,10 @@ public class EventService implements ContainerService {
 
     }
 
+    public void addSubscriptionAuthorizer(EventSubscriptionAuthorizer authorizer) {
+        this.eventSubscriptionAuthorizers.add(authorizer);
+    }
+
     public void publishEvent(SharedEvent event) {
         LOG.fine("Publishing: " + event);
         messageBrokerService.getProducerTemplate().sendBody(
@@ -133,6 +157,13 @@ public class EventService implements ContainerService {
 
     public static String getSessionKey(Exchange exchange) {
         return exchange.getIn().getHeader(WebsocketConstants.SESSION_KEY, null, String.class);
+    }
+
+    public static WebsocketAuth getWebsocketAuth(Exchange exchange) {
+        WebsocketAuth auth = exchange.getIn().getHeader(WebsocketConstants.AUTH, null, WebsocketAuth.class);
+        if (auth == null)
+            throw new IllegalStateException("No authorization details in websocket exchange");
+        return auth;
     }
 
     @Override

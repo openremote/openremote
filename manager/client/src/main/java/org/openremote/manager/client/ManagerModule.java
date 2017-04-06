@@ -28,6 +28,9 @@ import com.google.inject.Singleton;
 import org.openremote.manager.client.event.CancelEventSubscriptionMapper;
 import org.openremote.manager.client.event.EventSubscriptionMapper;
 import org.openremote.manager.client.event.SharedEventMapper;
+import org.openremote.manager.client.event.ShowFailureEvent;
+import org.openremote.manager.shared.security.Tenant;
+import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.manager.client.http.ConstraintViolationReportMapper;
 import org.openremote.manager.client.i18n.ManagerMessages;
@@ -105,8 +108,7 @@ public class ManagerModule extends AbstractGinModule {
 
     @Provides
     @Singleton
-    public SecurityService getSecurityService(
-        CookieService cookieService, EventBus eventBus) {
+    public SecurityService getSecurityService(CookieService cookieService, EventBus eventBus) {
         return new SecurityServiceImpl(getKeyCloak(), cookieService, eventBus);
     }
 
@@ -131,4 +133,35 @@ public class ManagerModule extends AbstractGinModule {
         historyHandler.register(placeController, legacyEventBus, new MapAssetPlace());
         return historyHandler;
     }
+
+    @Provides
+    @Singleton
+    public Tenant getCurrentTenant(Environment environment,
+                                   TenantResource tenantResource,
+                                   TenantMapper tenantMapper) {
+        // Load tenant from server on startup, blocking
+        final Tenant[] currentTenant = new Tenant[1];
+        environment.getRequestService().execute(
+            tenantMapper,
+            params -> {
+                params.setAsync(false);
+                tenantResource.get(params, environment.getSecurityService().getAuthenticatedRealm());
+            },
+            200,
+            tenant -> currentTenant[0] = tenant,
+            ex -> {
+                environment.getEventBus().dispatch(new ShowFailureEvent(
+                    environment.getMessages().errorLoadingTenant(ex.getStatusCode())
+                ));
+            }
+        );
+        return currentTenant[0];
+    }
+
+    @Provides
+    @Singleton
+    public native TenantResource getTenantResource()  /*-{
+        return $wnd.TenantResource;
+    }-*/;
+
 }

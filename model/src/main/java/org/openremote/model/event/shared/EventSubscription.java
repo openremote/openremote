@@ -73,6 +73,10 @@ public class EventSubscription<E extends SharedEvent> {
         this.filter = filter;
     }
 
+    public boolean isEventType(Class<? extends Event> eventClass) {
+        return Event.getEventType(eventClass).equals(getEventType());
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
