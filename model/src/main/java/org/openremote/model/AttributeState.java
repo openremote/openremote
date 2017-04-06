@@ -20,6 +20,8 @@
 package org.openremote.model;
 
 import elemental.json.Json;
+import elemental.json.JsonArray;
+import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 
 /**
@@ -33,6 +35,11 @@ public class AttributeState {
     protected AttributeState() {
     }
 
+    public AttributeState(JsonObject jsonObject) {
+        attributeRef = new AttributeRef(jsonObject.get("attributeRef"));
+        value = jsonObject.get("value");
+    }
+
     public AttributeState(AttributeRef attributeRef, JsonValue value) {
         this.attributeRef = attributeRef;
         this.value = value == null ? Json.createNull() : value;
@@ -44,6 +51,13 @@ public class AttributeState {
 
     public JsonValue getValue() {
         return value;
+    }
+
+    public JsonValue asJsonValue() {
+        JsonObject jsonObject = Json.createObject();
+        jsonObject.put("attributeRef", attributeRef != null ? attributeRef.asJsonValue() : Json.createNull());
+        jsonObject.put("value", value != null ? value : Json.createNull());
+        return jsonObject;
     }
 
     @Override
