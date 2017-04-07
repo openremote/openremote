@@ -215,7 +215,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
@@ -381,7 +381,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     def "Access assets as testuser2"() {
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
@@ -527,7 +527,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     def "Access assets as testuser3"() {
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 

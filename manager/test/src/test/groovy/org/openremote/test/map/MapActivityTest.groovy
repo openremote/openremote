@@ -38,7 +38,7 @@ class MapActivityTest extends Specification implements ContainerTrait, GwtClient
 
         and: "the server container is started"
         def serverPort = findEphemeralPort();
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
 
         and: "An authenticated user"
         def realm = MASTER_REALM;

@@ -21,8 +21,6 @@ package org.openremote.container.web.socket;
 
 public interface WebsocketConstants {
 
-
-
     int SESSION_MAX_IDLE_TIMEOUT_SECONDS = 300;
     String SESSION = "websocket.session";
     String SESSION_KEY = "websocket.sessionKey";

@@ -47,68 +47,9 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
                 getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
         ).token
 
-        expect: "a global rules engine should have been created and be running"
-        conditions.eventually {
-            assert rulesService.globalDeployment != null
-            assert rulesService.globalDeployment.isRunning()
-        }
-
-        and: "the global rules engine should contain the global demo ruleset"
-        conditions.eventually {
-            assert rulesService.globalDeployment.allRulesets.length == 1
-            assert rulesService.globalDeployment.allRulesets[0].enabled
-            assert rulesService.globalDeployment.allRulesets[0].name == "Some global demo rules"
-            assert rulesService.globalDeployment.allRulesets[0].deploymentStatus == DeploymentStatus.DEPLOYED
-        }
-
-        and: "two tenant rules engines should have been created and be running"
-        conditions.eventually {
-            assert rulesService.tenantDeployments.size() == 2
-            def masterEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.masterTenant.id)
-            def customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
-            assert masterEngine != null
-            assert masterEngine.isRunning()
-            assert customerAEngine != null
-            assert customerAEngine.isRunning()
-        }
-
-        and: "the tenant rules engines should have the demo tenant ruleset"
-        conditions.eventually {
-            def masterEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.masterTenant.id)
-            def customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
-            assert masterEngine.allRulesets.length == 1
-            assert masterEngine.allRulesets[0].enabled
-            assert masterEngine.allRulesets[0].name == "Some master tenant demo rules"
-            assert masterEngine.allRulesets[0].deploymentStatus == DeploymentStatus.DEPLOYED
-            assert customerAEngine.allRulesets.length == 1
-            assert customerAEngine.allRulesets[0].enabled
-            assert customerAEngine.allRulesets[0].name == "Some customerA tenant demo rules"
-            assert customerAEngine.allRulesets[0].deploymentStatus == DeploymentStatus.DEPLOYED
-        }
-
-        and: "two asset rules engines should have been created and be running"
-        conditions.eventually {
-            assert rulesService.assetDeployments.size() == 2
-            def apartment1Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment1Id)
-            def apartment3Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment3Id)
-            assert apartment1Engine != null
-            assert apartment1Engine.isRunning()
-            assert apartment3Engine != null
-            assert apartment3Engine.isRunning()
-        }
-
-        and: "each asset rules engine should have the demo asset ruleset"
-        conditions.eventually {
-            def apartment1Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment1Id)
-            def apartment3Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment3Id)
-            assert apartment1Engine.allRulesets.length == 1
-            assert apartment1Engine.allRulesets[0].enabled
-            assert apartment1Engine.allRulesets[0].name == "Some apartment 1 demo rules"
-            assert apartment1Engine.allRulesets[0].deploymentStatus == DeploymentStatus.DEPLOYED
-            assert apartment3Engine.allRulesets.length == 1
-            assert apartment3Engine.allRulesets[0].enabled
-            assert apartment3Engine.allRulesets[0].name == "Some apartment 3 demo rules"
-            assert apartment3Engine.allRulesets[0].deploymentStatus == DeploymentStatus.DEPLOYED
+        expect: "the rules engines to be ready"
+        new PollingConditions(initialDelay: 3, timeout: 10, delay: 1).eventually {
+            rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
         }
 
         when: "a new global rule definition is added"
@@ -116,7 +57,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
                 "Some more global rules",
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetUpdates2.drl").text
         )
-        ruleset = rulesetStorageService.merge(ruleset)
+        rulesetStorageService.merge(ruleset)
 
         then: "the global rules engine should load this definition and restart successfully"
         conditions.eventually {
@@ -137,7 +78,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
                 keycloakDemoSetup.customerATenant.id,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetUpdates2.drl").text
         )
-        ruleset = rulesetStorageService.merge(ruleset)
+        rulesetStorageService.merge(ruleset)
 
         then: "customer A rules engine should load this definition and restart successfully"
         conditions.eventually {
@@ -159,7 +100,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
                 keycloakDemoSetup.customerBTenant.id,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetUpdates2.drl").text
         )
-        ruleset = rulesetStorageService.merge(ruleset)
+        rulesetStorageService.merge(ruleset)
 
         then: "a tenant rules engine should be created for customer B and load this definition and start successfully"
         conditions.eventually {

@@ -56,18 +56,20 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
 
         and: "An authenticated user and client security service"
         def realm = MASTER_REALM;
-        def accessToken = authenticate(
-                container,
-                realm,
-                KEYCLOAK_CLIENT_ID,
-                MASTER_REALM_ADMIN_USER,
-                getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        def accessToken = {
+            authenticate(
+                    container,
+                    realm,
+                    KEYCLOAK_CLIENT_ID,
+                    MASTER_REALM_ADMIN_USER,
+                    getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
+            ).token
+        }
         def securityService = Stub(SecurityService) {
             getRealm() >> realm
-            getToken() >> accessToken
+            getToken() >> accessToken.call()
             updateToken(_, _, _) >> { int minValiditySeconds, Consumer<Boolean> successFn, Runnable errorFn ->
-                successFn.accept(true) // The token is always valid (this assumes the test doesn't run very long)
+                successFn.accept(true)
             };
             hasResourceRoleOrIsSuperUser(_, _) >> { String role, String resource ->
                 return true; // TODO: Should use the parsed token

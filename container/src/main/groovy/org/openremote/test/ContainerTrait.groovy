@@ -39,7 +39,6 @@ import javax.websocket.ClientEndpointConfig
 import javax.websocket.Endpoint
 import javax.websocket.Session
 import javax.websocket.WebSocketContainer
-import javax.ws.rs.client.WebTarget
 import javax.ws.rs.core.UriBuilder
 
 import static java.util.concurrent.TimeUnit.SECONDS
@@ -121,11 +120,11 @@ trait ContainerTrait {
         container.getService(MessageBrokerService.class).getContext().addRoutes(routeBuilder)
     }
 
-    static def WebSocketContainer createWebsocketClient() {
+    static WebSocketContainer createWebsocketClient() {
         return ClientManager.createClient()
     }
 
-    static def getWebsocketServerUrl(UriBuilder uriBuilder, String realm, String endpointPath, String accessToken) {
+    static getWebsocketServerUrl(UriBuilder uriBuilder, String endpointPath, String realm, String accessToken) {
         uriBuilder.clone()
                 .scheme("ws")
                 .replacePath(MessageBrokerSetupService.WEBSOCKET_PATH)
@@ -134,8 +133,8 @@ trait ContainerTrait {
                 .queryParam("Authorization", "Bearer " + accessToken)
     }
 
-    static Session connect(WebSocketContainer websocketContainer, Endpoint endpoint, UriBuilder serverUri, String realm, String accessToken, String endpointPath) {
-        def websocketUrl = getWebsocketServerUrl(serverUri, realm, endpointPath, accessToken)
+    static Session connect(WebSocketContainer websocketContainer, Endpoint endpoint, UriBuilder serverUri, String endpointPath, String realm, String accessToken) {
+        def websocketUrl = getWebsocketServerUrl(serverUri, endpointPath, realm, accessToken)
         def config = ClientEndpointConfig.Builder.create().build()
         websocketContainer.connectToServer(endpoint, config, websocketUrl.build())
     }

@@ -53,18 +53,20 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
 
         and: "An authenticated user and client security service"
         def realm = MASTER_REALM;
-        def accessToken = authenticate(
-                container,
-                realm,
-                KEYCLOAK_CLIENT_ID,
-                MASTER_REALM_ADMIN_USER,
-                getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
-        ).token
+        def accessToken = {
+            authenticate(
+                    container,
+                    realm,
+                    KEYCLOAK_CLIENT_ID,
+                    MASTER_REALM_ADMIN_USER,
+                    getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
+            ).token
+        }
         def securityService = Stub(SecurityService) {
             getRealm() >> realm
-            getToken() >> accessToken
+            getToken() >> accessToken.call()
             updateToken(_, _, _) >> { int minValiditySeconds, Consumer<Boolean> successFn, Runnable errorFn ->
-                successFn.accept(true) // The token is always valid (this assumes the test doesn't run very long)
+                successFn.accept(true)
             };
             hasResourceRoleOrIsSuperUser(_, _) >> { String role, String resource ->
                 return true; // TODO: Should use the parsed token
@@ -78,13 +80,12 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
         def clientTarget = getClientTarget(createClient(container).build(), serverUri(serverPort), realm)
 
-        and: "a client websocket connection and attach event bus and service"
+        and: "a client websocket connection and attached event bus and service"
         List<SharedEvent> collectedSharedEvents = []
         def eventBus = createEventBus(collectedSharedEvents)
         def eventBusEndpoint = new EventBusWebsocketEndpoint(eventBus, container.JSON)
-        def websocketClient = createWebsocketClient()
         def clientEventService = createEventService(eventBusEndpoint)
-        connect(websocketClient, eventBusEndpoint, serverUri(serverPort), realm, accessToken, WEBSOCKET_EVENTS)
+        connect(createWebsocketClient(), eventBusEndpoint, serverUri(serverPort), WEBSOCKET_EVENTS, realm, accessToken.call())
 
         and: "the server resources to call from client"
         def assetResource = Stub(AssetResource) {

@@ -2,14 +2,9 @@ package org.openremote.test.rules
 
 import org.drools.core.time.impl.PseudoClockScheduler
 import org.kie.api.runtime.conf.ClockTypeOption
-import org.openremote.manager.server.asset.AssetProcessingService
-import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.rules.RulesDeployment
 import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.rules.RulesetStorageService
-import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
-import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.shared.rules.GlobalRuleset
 import org.openremote.manager.shared.rules.Ruleset
 import org.openremote.test.ManagerContainerTrait
@@ -17,21 +12,16 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static java.util.concurrent.TimeUnit.SECONDS
-import static org.openremote.manager.server.setup.builtin.BuiltinSetupTasks.SETUP_IMPORT_DEMO_RULES
 import static org.openremote.test.RulesTestUtil.attachRuleExecutionLogger
 
 class BasicRulesTimedExecutionTest extends Specification implements ManagerContainerTrait {
 
-    RulesDeployment globalEngine;
+    RulesDeployment globalEngine
 
     List<String> globalEngineFiredRules = []
 
     def resetRuleExecutionLoggers() {
         globalEngineFiredRules.clear()
-    }
-
-    def assertNoRulesFired = {
-        assert globalEngineFiredRules.size() == 0
     }
 
     def "Check firing of timer rules with realtime clock"() {
@@ -41,12 +31,8 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
         and: "the container is started"
         def serverPort = findEphemeralPort()
         def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
-        def assetProcessingService = container.getService(AssetProcessingService.class)
-        def assetStorageService = container.getService(AssetStorageService.class)
 
         and: "some test rulesets have been imported"
         Ruleset ruleset = new GlobalRuleset(
@@ -87,9 +73,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
 
         and: "the container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort) << [(SETUP_IMPORT_DEMO_RULES): "false"], defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
 

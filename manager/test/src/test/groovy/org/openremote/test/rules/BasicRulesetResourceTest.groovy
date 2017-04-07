@@ -1,5 +1,6 @@
 package org.openremote.test.rules
 
+import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.rules.RulesetStorageService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
@@ -10,6 +11,7 @@ import org.openremote.manager.shared.rules.RulesetResource
 import org.openremote.manager.shared.rules.TenantRuleset
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
+import spock.util.concurrent.PollingConditions
 
 import javax.ws.rs.WebApplicationException
 
@@ -25,11 +27,12 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def serverPort = findEphemeralPort()
         def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def rulesetStorageService = container.getService(RulesetStorageService.class)
+        def rulesService = container.getService(RulesService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "some test rulesets have been imported"
-        new BasicRulesImport(rulesetStorageService, keycloakDemoSetup, managerDemoSetup)
+        def rulesImport = new BasicRulesImport(rulesetStorageService, keycloakDemoSetup, managerDemoSetup)
 
         and: "an authenticated admin user"
         def accessToken = authenticate(
@@ -44,6 +47,11 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def client = createClient(container).build()
         def serverUri = serverUri(serverPort)
         def rulesetResource = getClientTarget(client, serverUri, MASTER_REALM, accessToken).proxy(RulesetResource.class)
+
+        expect: "the rules engines to be ready"
+        new PollingConditions(initialDelay: 3, timeout: 10, delay: 1).eventually {
+            rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
+        }
 
         /* ############################################## READ ####################################### */
 
@@ -289,13 +297,14 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def rulesetStorageService = container.getService(RulesetStorageService.class)
+        def rulesService = container.getService(RulesService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "some imported rulesets"
-        new BasicRulesImport(rulesetStorageService, keycloakDemoSetup, managerDemoSetup)
+        def rulesImport = new BasicRulesImport(rulesetStorageService, keycloakDemoSetup, managerDemoSetup)
 
         and: "an authenticated test user"
         def accessToken = authenticate(
@@ -310,6 +319,11 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def client = createClient(container).build()
         def serverUri = serverUri(serverPort)
         def rulesetResource = getClientTarget(client, serverUri, MASTER_REALM, accessToken).proxy(RulesetResource.class)
+
+        expect: "the rules engines to be ready"
+        new PollingConditions(initialDelay: 3, timeout: 10, delay: 1).eventually {
+            rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
+        }
 
         /* ############################################## READ ####################################### */
 
@@ -515,13 +529,14 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def rulesetStorageService = container.getService(RulesetStorageService.class)
+        def rulesService = container.getService(RulesService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "some imported rulesets"
-        new BasicRulesImport(rulesetStorageService, keycloakDemoSetup, managerDemoSetup)
+        def rulesImport = new BasicRulesImport(rulesetStorageService, keycloakDemoSetup, managerDemoSetup)
 
         and: "an authenticated test user"
         def accessToken = authenticate(
@@ -536,6 +551,11 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def client = createClient(container).build()
         def serverUri = serverUri(serverPort)
         def rulesetResource = getClientTarget(client, serverUri, keycloakDemoSetup.customerATenant.realm, accessToken).proxy(RulesetResource.class)
+
+        expect: "the rules engines to be ready"
+        new PollingConditions(initialDelay: 3, timeout: 10, delay: 1).eventually {
+            rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
+        }
 
         /* ############################################## READ ####################################### */
 
@@ -659,13 +679,14 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def rulesetStorageService = container.getService(RulesetStorageService.class)
+        def rulesService = container.getService(RulesService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
 
         and: "some imported rulesets"
-        new BasicRulesImport(rulesetStorageService, keycloakDemoSetup, managerDemoSetup)
+        def rulesImport = new BasicRulesImport(rulesetStorageService, keycloakDemoSetup, managerDemoSetup)
 
         and: "an authenticated test user"
         def accessToken = authenticate(
@@ -680,6 +701,11 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def client = createClient(container).build()
         def serverUri = serverUri(serverPort)
         def rulesetResource = getClientTarget(client, serverUri, keycloakDemoSetup.customerATenant.realm, accessToken).proxy(RulesetResource.class)
+
+        expect: "the rules engines to be ready"
+        new PollingConditions(initialDelay: 3, timeout: 10, delay: 1).eventually {
+            rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
+        }
 
         /* ############################################## READ ####################################### */
 
