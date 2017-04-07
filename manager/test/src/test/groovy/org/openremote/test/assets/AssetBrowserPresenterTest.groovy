@@ -10,9 +10,9 @@ import org.openremote.manager.client.assets.AssetMapper
 import org.openremote.manager.client.assets.browser.*
 import org.openremote.manager.client.i18n.ManagerMessages
 import org.openremote.manager.client.service.RequestServiceImpl
-import org.openremote.manager.client.service.SecurityService
 import org.openremote.manager.client.style.WidgetStyle
 import org.openremote.manager.server.asset.AssetStorageService
+import org.openremote.manager.server.security.ManagerIdentityService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
@@ -21,16 +21,10 @@ import org.openremote.manager.shared.http.EntityReader
 import org.openremote.manager.shared.security.Tenant
 import org.openremote.manager.shared.security.TenantResource
 import org.openremote.manager.shared.validation.ConstraintViolationReport
-import org.openremote.model.Consumer
-import org.openremote.model.Runnable
 import org.openremote.model.asset.Asset
-import org.openremote.manager.server.security.ManagerIdentityService
 import org.openremote.model.asset.AssetTreeModifiedEvent
 import org.openremote.model.event.shared.SharedEvent
-import org.openremote.test.ClientObjectMapper
-import org.openremote.test.EventBusWebsocketEndpoint
-import org.openremote.test.GwtClientTrait
-import org.openremote.test.ManagerContainerTrait
+import org.openremote.test.*
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
@@ -47,6 +41,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         given: "The server container is started"
         def serverPort = findEphemeralPort()
         def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
+        def identityService = container.getService(ManagerIdentityService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -62,18 +57,8 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
                     getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
             ).token
         }
-        def securityService = Stub(SecurityService) {
-            getRealm() >> realm
-            getToken() >> accessToken.call()
-            updateToken(_, _, _) >> { int minValiditySeconds, Consumer<Boolean> successFn, Runnable errorFn ->
-                successFn.accept(true)
-            };
-            hasResourceRoleOrIsSuperUser(_, _) >> { String role, String resource ->
-                return true; // TODO: Should use the parsed token
-            }
-            isSuperUser() >> true
-        }
-        def currentTenant = container.getService(ManagerIdentityService.class).getTenantForRealm(realm)
+        def securityService = new ClientSecurityService(identityService.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
+        def currentTenant = identityService.getTenantForRealm(realm)
 
         and: "a client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>

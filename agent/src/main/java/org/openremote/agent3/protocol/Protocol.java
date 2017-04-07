@@ -62,7 +62,7 @@ public interface Protocol extends ContainerService {
     String ACTUATOR_TOPIC = "seda://ActuatorTopic?multipleConsumers=true&concurrentConsumers=10&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
 
     // Message topic for communicating from protocol to thing layer (sensor changed, trigger thing attribute update)
-    String SENSOR_TOPIC = "seda://SensorTopic?waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&size=1000";
+    String SENSOR_TOPIC = "seda://SensorTopic?waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=false&size=1000";
 
     String getProtocolName();
 

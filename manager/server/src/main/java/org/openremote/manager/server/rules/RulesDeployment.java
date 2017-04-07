@@ -23,10 +23,7 @@ import org.drools.core.common.InternalWorkingMemory;
 import org.drools.core.time.InternalSchedulerService;
 import org.drools.core.time.JobContext;
 import org.drools.core.time.JobHandle;
-import org.drools.core.time.impl.DefaultJobHandle;
-import org.drools.core.time.impl.DefaultTimerJobInstance;
-import org.drools.core.time.impl.PointInTimeTrigger;
-import org.drools.core.time.impl.TimerJobInstance;
+import org.drools.core.time.impl.*;
 import org.kie.api.KieServices;
 import org.kie.api.builder.KieBuilder;
 import org.kie.api.builder.KieFileSystem;
@@ -62,11 +59,9 @@ import org.openremote.model.Consumer;
 import org.openremote.model.asset.AbstractAssetUpdate;
 import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.asset.AssetUpdate;
-import org.openremote.manager.shared.rules.Ruleset;
 import org.openremote.model.notification.AlertNotification;
 import org.openremote.model.rules.AssetEvent;
 import org.openremote.model.rules.Assets;
-import org.openremote.model.rules.Users;
 import org.openremote.model.rules.Users;
 
 import java.util.*;
@@ -465,7 +460,7 @@ public class RulesDeployment<T extends Ruleset> {
                 try {
                     // ... retract it from working memory ...
                     knowledgeSession.delete(factHandle);
-                    int fireCount = knowledgeSession.fireAllRules();
+                    knowledgeSession.fireAllRules();
                 } catch (Exception e) {
                     LOG.warning("Failed to retract fact '" + update + "' in: " + this);
                 }
@@ -649,7 +644,7 @@ public class RulesDeployment<T extends Ruleset> {
      */
     protected void scheduleExpiration(AssetEvent assetEvent, FactHandle factHandle, long expirationOffset) {
         InternalSchedulerService sessionScheduler = knowledgeSession.getSessionClock();
-        JobHandle jobHandle = new DefaultJobHandle(assetEvent.getId().hashCode());
+        JobHandle jobHandle = new JDKTimerService.JDKJobHandle(assetEvent.getId().hashCode());
         class AssetEventExpireJobContext implements JobContext {
             public JobHandle handle;
 

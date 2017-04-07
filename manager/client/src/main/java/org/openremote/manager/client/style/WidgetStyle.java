@@ -384,4 +384,8 @@ public class WidgetStyle {
     public String LeftGradient() {
         return "or-LeftGradient";
     }
+
+    public String HighlightBackground() {
+        return "or-HighlightBackground";
+    }
 }

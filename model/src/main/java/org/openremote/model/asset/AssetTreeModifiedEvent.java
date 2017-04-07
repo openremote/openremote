@@ -60,11 +60,8 @@ public class AssetTreeModifiedEvent extends SharedEvent {
         }
 
         @Override
-        public AssetTreeModifiedEvent apply(AssetTreeModifiedEvent event) {
-            if (getRealmId().equals(event.getRealmId())) {
-                return event;
-            }
-            return null;
+        public boolean apply(AssetTreeModifiedEvent event) {
+            return getRealmId().equals(event.getRealmId());
         }
 
         @Override

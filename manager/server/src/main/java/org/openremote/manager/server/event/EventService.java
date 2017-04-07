@@ -113,9 +113,11 @@ public class EventService implements ContainerService {
                         String sessionKey = getSessionKey(exchange);
                         eventSubscriptions.cancel(sessionKey, exchange.getIn().getBody(CancelEventSubscription.class));
                     })
+                    /* TODO Implement properly
                     .when(bodyAs(String.class).startsWith(SharedEvent.MESSAGE_PREFIX))
                     .convertBodyTo(SharedEvent.class)
-                    .to(EventService.INCOMING_EVENT_TOPIC)
+                    .to(EventService.INCOMING_EVENT_TOPIC) // TODO SECURITY!
+                    */
                     .otherwise()
                     .process(exchange -> {
                         LOG.fine("Unsupported message body: " + exchange.getIn().getBody());

@@ -33,6 +33,7 @@ import org.openremote.container.util.Pair;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.security.ManagerIdentityService;
+import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.Attribute;
 import org.openremote.model.AttributeEvent;
@@ -74,6 +75,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 // Restricted users get nothing (they don't have asset trees, just a list of linked assets)
                 if (managerIdentityService.isRestrictedUser(auth.getUserId()))
                     return false;
+
+                // User must have role
+                auth.isUserInRole(ClientRole.READ_ASSETS.getValue());
 
                 // Ensure filter matches authenticated realm
                 if (subscription.getFilter() instanceof AssetTreeModifiedEvent.TenantFilter) {

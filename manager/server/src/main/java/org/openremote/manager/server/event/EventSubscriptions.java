@@ -149,12 +149,8 @@ public class EventSubscriptions {
                 if (!sessionSubscription.matches(event))
                     continue;
 
-                if (sessionSubscription.subscription.getFilter() != null) {
-                    //noinspection unchecked
-                    event = sessionSubscription.subscription.getFilter().apply(event);
-                }
-
-                if (event != null) {
+                if (sessionSubscription.subscription.getFilter() == null
+                    || sessionSubscription.subscription.getFilter().apply(event)) {
                     LOG.fine("Creating message for subscribed session '" + sessionKey + "': " + event);
                     Message msg = new DefaultMessage();
                     msg.setBody(event); // Don't copy the event, use same reference

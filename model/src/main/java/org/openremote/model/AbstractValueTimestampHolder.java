@@ -89,4 +89,13 @@ public abstract class AbstractValueTimestampHolder<CHILD extends AbstractValueTi
         setValueTimestamp();
         return result;
     }
+
+    /**
+     * Use this in Javascript, can't do null checks on JsonValue.
+     */
+    public void setValueUnchecked(JsonValue value, long timestamp) {
+        jsonObject.put(VALUE_FIELD_NAME, value);
+        setValueTimestamp(timestamp);
+    }
+
 }

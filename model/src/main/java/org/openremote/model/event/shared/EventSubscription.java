@@ -32,7 +32,7 @@ import org.openremote.model.event.Event;
 public class EventSubscription<E extends SharedEvent> {
 
     public static final String MESSAGE_PREFIX = "SUBSCRIBE";
-    public static final int RENEWAL_PERIOD_SECONDS = 30;
+    public static final int RENEWAL_PERIOD_SECONDS = 300;
 
     protected String eventType;
     protected EventFilter<E> filter;

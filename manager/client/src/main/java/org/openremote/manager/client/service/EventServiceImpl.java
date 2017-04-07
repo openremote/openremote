@@ -221,7 +221,7 @@ public class EventServiceImpl implements EventService {
             () -> {
                 LOG.fine("Updating subscription on server: " + subscription);
                 sendData(data);
-            }, EventSubscription.RENEWAL_PERIOD_SECONDS * 1000
+            }, EventSubscription.RENEWAL_PERIOD_SECONDS/2 * 1000
         );
         activeSubscriptions.put(key, interval);
     }

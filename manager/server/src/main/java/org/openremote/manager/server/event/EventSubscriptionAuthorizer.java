@@ -24,6 +24,10 @@ import org.openremote.model.event.shared.EventSubscription;
 
 /**
  * Authorizes event subscriptions.
+ * <p>
+ * Note that authorization might fail because the client doesn't have the necessary
+ * permissions. It might also fail if the subscription is invalid, for example, if
+ * a required filter is not supplied or if the filter is not valid.
  */
 public interface EventSubscriptionAuthorizer {
 

@@ -55,10 +55,8 @@ public class AttributeEvent extends SharedEvent {
         }
 
         @Override
-        public AttributeEvent apply(AttributeEvent event) {
-            if (event.getEntityId().equals(entityId))
-                return event;
-            return null;
+        public boolean apply(AttributeEvent event) {
+            return event.getEntityId().equals(entityId);
         }
 
         @Override

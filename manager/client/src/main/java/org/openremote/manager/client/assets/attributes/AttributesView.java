@@ -19,11 +19,12 @@
  */
 package org.openremote.manager.client.assets.attributes;
 
+import com.google.gwt.i18n.client.DateTimeFormat;
+import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.InsertPanel;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.Label;
-import com.google.gwt.user.client.ui.Widget;
-import elemental.json.JsonValue;
+import elemental.json.Json;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowInfoEvent;
@@ -33,16 +34,14 @@ import org.openremote.manager.client.util.CollectionsUtil;
 import org.openremote.manager.client.util.TextUtil;
 import org.openremote.manager.client.widget.*;
 import org.openremote.model.AttributeType;
+import org.openremote.model.Constants;
 import org.openremote.model.Consumer;
 import org.openremote.model.MetaItem;
 import org.openremote.model.asset.AbstractAssetAttribute;
 import org.openremote.model.asset.AbstractAssetAttributes;
 import org.openremote.model.asset.AssetMeta;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 public abstract class AttributesView<
     C extends AttributesView.Container<S>,
@@ -71,9 +70,30 @@ public abstract class AttributesView<
     }
 
     public interface AttributeEditor extends IsWidget {
-
-        void setValue(JsonValue value);
     }
+
+    public static class TimestampLabel extends FormOutputText {
+
+        static protected DateTimeFormat dateTimeFormat = DateTimeFormat.getFormat(Constants.DEFAULT_DATETIME_FORMAT);
+
+        public TimestampLabel() {
+            this(null);
+        }
+
+        public TimestampLabel(Long timestamp) {
+            addStyleName("flex");
+            getElement().getStyle().setFontSize(0.8, com.google.gwt.dom.client.Style.Unit.EM);
+            getElement().getStyle().setTextAlign(com.google.gwt.dom.client.Style.TextAlign.RIGHT);
+            if (timestamp != null) {
+                setTimestamp(timestamp);
+            }
+        }
+
+        public void setTimestamp(long timestamp) {
+            setText(timestamp > 0 ? dateTimeFormat.format(new Date(timestamp)) : "");
+        }
+    }
+
 
     final protected Environment environment;
     final protected C container;
@@ -226,17 +246,7 @@ public abstract class AttributesView<
         unsupportedField.add(new FormOutputText(
             environment.getMessages().unsupportedAttributeType(attribute.getType().getValue())
         ));
-        return new AttributeEditor() {
-            @Override
-            public void setValue(JsonValue value) {
-                // Do nothing
-            }
-
-            @Override
-            public Widget asWidget() {
-                return unsupportedField;
-            }
-        };
+        return () -> unsupportedField;
     }
 
     protected AttributeEditor createStringEditor(A attribute, MetaItem defaultValueItem, S style, FormGroup formGroup) {
@@ -248,20 +258,14 @@ public abstract class AttributesView<
             attribute.setValueAsString(value);
         };
 
-        FormInputText widget = createStringEditorWidget(style, currentValue, defaultValue, updateConsumer);
+        FlowPanel panel = new FlowPanel();
+        panel.setStyleName("flex layout horizontal center");
+        FormInputText inputText = createStringEditorWidget(style, currentValue, defaultValue, updateConsumer);
+        panel.add(inputText);
+        TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
+        panel.add(timestampLabel);
 
-        return new AttributeEditor() {
-            @Override
-            public void setValue(JsonValue value) {
-                attribute.setValue(value);
-                widget.setValue(attribute.getValueAsString());
-            }
-
-            @Override
-            public Widget asWidget() {
-                return widget;
-            }
-        };
+        return () -> panel;
     }
 
     protected FormInputText createStringEditorWidget(S style,
@@ -304,20 +308,14 @@ public abstract class AttributesView<
             showValidationError(msg);
         };
 
-        FormInputNumber widget = createIntegerEditorWidget(style, currentValue, defaultValue, updateConsumer, errorConsumer);
+        FlowPanel panel = new FlowPanel();
+        panel.setStyleName("flex layout horizontal center");
+        FormInputNumber inputNumber = createIntegerEditorWidget(style, currentValue, defaultValue, updateConsumer, errorConsumer);
+        panel.add(inputNumber);
+        TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
+        panel.add(timestampLabel);
 
-        return new AttributeEditor() {
-            @Override
-            public void setValue(JsonValue value) {
-                attribute.setValue(value);
-                widget.setValue(attribute.getValueAsString());
-            }
-
-            @Override
-            public Widget asWidget() {
-                return widget;
-            }
-        };
+        return () -> panel;
     }
 
     protected FormInputNumber createIntegerEditorWidget(S style,
@@ -365,20 +363,14 @@ public abstract class AttributesView<
             showValidationError(msg);
         };
 
-        FormInputText widget = createDecimalEditorWidget(style, currentValue, defaultValue, updateConsumer, errorConsumer);
+        FlowPanel panel = new FlowPanel();
+        panel.setStyleName("flex layout horizontal center");
+        FormInputText inputText = createDecimalEditorWidget(style, currentValue, defaultValue, updateConsumer, errorConsumer);
+        panel.add(inputText);
+        TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
+        panel.add(timestampLabel);
 
-        return new AttributeEditor() {
-            @Override
-            public void setValue(JsonValue value) {
-                attribute.setValue(value);
-                widget.setValue(attribute.getValueAsString());
-            }
-
-            @Override
-            public Widget asWidget() {
-                return widget;
-            }
-        };
+        return () -> panel;
     }
 
     protected FormInputText createDecimalEditorWidget(S style,
@@ -417,23 +409,17 @@ public abstract class AttributesView<
         Boolean defaultValue = defaultValueItem != null ? defaultValueItem.getValueAsBoolean() : null;
         Consumer<Boolean> updateConsumer = isDefaultReadOnly(attribute) ? null : value -> {
             formGroup.setError(false);
-            attribute.setValueAsBoolean(value);
+            attribute.setValueUnchecked(Json.create(value));
         };
 
-        FormCheckBox widget = createBooleanEditorWidget(style, currentValue, defaultValue, updateConsumer);
+        FlowPanel panel = new FlowPanel();
+        panel.setStyleName("flex layout horizontal center");
+        FormCheckBox checkBox = createBooleanEditorWidget(style, currentValue, defaultValue, updateConsumer);
+        panel.add(checkBox);
+        TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
+        panel.add(timestampLabel);
 
-        return new AttributeEditor() {
-            @Override
-            public void setValue(JsonValue value) {
-                attribute.setValue(value);
-                widget.setValue(attribute.getValueAsBoolean());
-            }
-
-            @Override
-            public Widget asWidget() {
-                return widget;
-            }
-        };
+        return () -> panel;
     }
 
     protected FormCheckBox createBooleanEditorWidget(S style,

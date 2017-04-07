@@ -28,6 +28,8 @@ import org.openremote.manager.server.agent.AgentService;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
 import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.rules.RulesService;
+import org.openremote.manager.server.security.ManagerIdentityService;
+import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.thing.ThingAttribute;
@@ -113,6 +115,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     private static final Logger LOG = Logger.getLogger(AssetProcessingService.class.getName());
 
+    protected ManagerIdentityService managerIdentityService;
     protected RulesService rulesService;
     protected AgentService agentService;
     protected AssetStorageService assetStorageService;
@@ -124,12 +127,47 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     @Override
     public void init(Container container) throws Exception {
+        managerIdentityService = container.getService(ManagerIdentityService.class);
         rulesService = container.getService(RulesService.class);
         agentService = container.getService(AgentService.class);
         assetStorageService = container.getService(AssetStorageService.class);
         assetDatapointService = container.getService(AssetDatapointService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
         eventService = container.getService(EventService.class);
+
+        eventService.addSubscriptionAuthorizer((auth, subscription) -> {
+            if (!subscription.isEventType(AttributeEvent.class)) {
+                return false;
+            }
+
+            // Always must have a filter, as you can't subscribe to ALL asset attribute events
+            if (subscription.getFilter() != null && subscription.getFilter() instanceof AttributeEvent.EntityIdFilter) {
+                AttributeEvent.EntityIdFilter filter = (AttributeEvent.EntityIdFilter) subscription.getFilter();
+
+                // If the asset doesn't exist, subscription must fail
+                Asset asset = assetStorageService.find(filter.getEntityId());
+                if (asset == null)
+                    return false;
+
+                // Superuser can get attribute events for any asset
+                if (auth.isSuperUser())
+                    return true;
+
+                // Regular user must have role
+                auth.isUserInRole(ClientRole.READ_ASSETS.getValue());
+
+                if (managerIdentityService.isRestrictedUser(auth.getUserId())) {
+                    // Restricted users can only get attribute events for their linked assets
+                    if (assetStorageService.isUserAsset(auth.getUserId(), filter.getEntityId()))
+                        return true;
+                } else {
+                    // Regular users can only get attribute events for assets in their realm
+                    if (asset.getTenantRealm().equals(auth.getAuthenticatedRealm()))
+                        return true;
+                }
+            }
+            return false;
+        });
 
         processors.add(rulesService);
         processors.add(agentService);
@@ -157,7 +195,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             .filter(body().isInstanceOf(AttributeEvent.class))
             .process(exchange -> {
                 // Can either come from onUpdateSensor or sendAttributeUpdate
-                boolean isSensorUpdate = (boolean)exchange.getIn().getHeader("isSensorUpdate", true);
+                boolean isSensorUpdate = (boolean) exchange.getIn().getHeader("isSensorUpdate", true);
                 if (isSensorUpdate) {
                     processSensorUpdate(exchange.getIn().getBody(AttributeEvent.class));
                 } else {
@@ -166,9 +204,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             });
 
         // Process attribute events from clients through the message broker
+        /* TODO Needs security
         from(INCOMING_EVENT_TOPIC)
             .filter(body().isInstanceOf(AttributeEvent.class))
             .process(exchange -> updateAttributeValue(exchange.getIn().getBody(AttributeEvent.class)));
+        */
     }
 
     /**

@@ -22,6 +22,7 @@ package org.openremote.manager.client.assets.attributes;
 import com.google.gwt.user.client.ui.Image;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.Widget;
+import elemental.client.Browser;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.widget.*;
 import org.openremote.model.AttributeEvent;
@@ -61,8 +62,10 @@ public abstract class AttributesBrowser
 
     @Override
     protected void createAttributeGroups() {
-        liveUpdatesGroup = createLiveUpdatesGroup();
-        container.getPanel().add(liveUpdatesGroup);
+        if (getAttributes().size() > 0) {
+            liveUpdatesGroup = createLiveUpdatesGroup();
+            container.getPanel().add(liveUpdatesGroup);
+        }
         super.createAttributeGroups();
     }
 
@@ -87,31 +90,26 @@ public abstract class AttributesBrowser
 
         // Allow direct read/write of attribute if we understand attribute type (have an editor)
         if (editor != null) {
-            if (!attribute.isReadOnly()) {
-                FormButton writeValueButton = new FormButton();
-                writeValueButton.setText(container.getMessages().write());
-                writeValueButton.setPrimary(true);
-                writeValueButton.setIcon("cloud-upload");
-                writeValueButton.addClickHandler(clickEvent -> {
-                    // writeAttributeValue(attribute);
-                    environment.getEventService().dispatch(
-                        new AttributeEvent(attribute.getState())
-                    );
-                });
-                formGroupActions.add(writeValueButton);
-            }
+            FormButton writeValueButton = new FormButton();
+            writeValueButton.setEnabled(!attribute.isReadOnly());
+            writeValueButton.setText(container.getMessages().write());
+            writeValueButton.setPrimary(true);
+            writeValueButton.setIcon("cloud-upload");
+            writeValueButton.addClickHandler(clickEvent -> {
+                writeAttributeValue(attribute);
+                /* TODO implement
+                environment.getEventService().dispatch(
+                    new AttributeEvent(attribute.getState())
+                );
+                */
+            });
+            formGroupActions.add(writeValueButton);
 
             FormButton readValueButton = new FormButton();
             readValueButton.setText(container.getMessages().read());
             readValueButton.setIcon("cloud-download");
             readValueButton.addClickHandler(clickEvent -> readAttributeValue(attribute, () -> {
-                if (formField.getWidgetCount() > 0) {
-                    formField.getWidget(0).removeFromParent();
-                }
-                IsWidget refreshedEditor = createEditor(attribute, formGroup);
-                if (refreshedEditor == null)
-                    refreshedEditor = createUnsupportedEditor(attribute);
-                formField.add(refreshedEditor);
+                rebuildEditor(attribute);
             }));
             readButtons.add(readValueButton);
             formGroupActions.add(readValueButton);
@@ -169,9 +167,12 @@ public abstract class AttributesBrowser
             eventRegistration = environment.getEventBus().register(
                 AttributeEvent.class,
                 event -> {
-                    AttributeEditor editor = editors.get(event.getAttributeName());
-                    if (editor != null) {
-                        editor.setValue(event.getValue());
+                    for (AssetAttribute assetAttribute : attributeGroups.keySet()) {
+                        if (assetAttribute.getReference().equals(event.getAttributeRef())) {
+                            assetAttribute.setValueUnchecked(event.getValue(), event.getTimestamp());
+                            rebuildEditor(assetAttribute);
+                            break;
+                        }
                     }
                 }
             );
@@ -184,6 +185,29 @@ public abstract class AttributesBrowser
                 AttributeEvent.class
             );
         }
+    }
+
+    protected void rebuildEditor(AssetAttribute attribute) {
+        FormGroup formGroup = attributeGroups.get(attribute);
+        if (formGroup == null)
+            return;
+        FormField formField = formGroup.getFormField();
+        if (formField.getWidgetCount() > 0) {
+            formField.getWidget(0).removeFromParent();
+        }
+        final AttributeEditor editor = createEditor(attribute, formGroup);
+        if (editor == null) {
+            formField.add(createUnsupportedEditor(attribute));
+            return;
+        }
+
+        formField.add(editor);
+
+        // "Blink" the editor so users know there is a new value
+        editor.asWidget().addStyleName(environment.getWidgetStyle().HighlightBackground());
+        Browser.getWindow().setTimeout(() -> {
+            editor.asWidget().removeStyleName(environment.getWidgetStyle().HighlightBackground());
+        }, 1000);
     }
 
     protected Widget createDatapointBrowser(AssetAttribute attribute) {

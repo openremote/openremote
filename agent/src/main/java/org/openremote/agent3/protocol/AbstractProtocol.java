@@ -25,14 +25,17 @@ import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
 import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerSetupService;
+import org.openremote.container.observable.RetryWithDelay;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.AttributeState;
 import org.openremote.model.asset.thing.ThingAttribute;
+import rx.Observable;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 public abstract class AbstractProtocol implements Protocol {

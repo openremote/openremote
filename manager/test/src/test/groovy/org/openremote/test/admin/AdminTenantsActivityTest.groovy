@@ -19,18 +19,17 @@ import org.openremote.manager.client.event.ShowSuccessEvent
 import org.openremote.manager.client.event.WillGoToPlaceEvent
 import org.openremote.manager.client.i18n.ManagerMessages
 import org.openremote.manager.client.service.RequestServiceImpl
-import org.openremote.manager.client.service.SecurityService
 import org.openremote.manager.client.style.WidgetStyle
+import org.openremote.manager.server.security.ManagerIdentityService
 import org.openremote.manager.shared.http.EntityReader
 import org.openremote.manager.shared.security.Tenant
 import org.openremote.manager.shared.security.TenantResource
 import org.openremote.manager.shared.validation.ConstraintViolationReport
-import org.openremote.model.Consumer
-import org.openremote.model.Runnable
 import org.openremote.model.event.Event
 import org.openremote.model.event.bus.EventListener
 import org.openremote.model.event.shared.EventService
 import org.openremote.test.ClientObjectMapper
+import org.openremote.test.ClientSecurityService
 import org.openremote.test.GwtClientTrait
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -48,6 +47,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         given: "The server container is started"
         def serverPort = findEphemeralPort()
         def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
+        def identityService = container.getService(ManagerIdentityService.class)
 
         and: "expected results"
         def conditions = new PollingConditions(timeout: 10)
@@ -65,16 +65,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
                     getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
             ).token
         }
-        def securityService = Stub(SecurityService) {
-            getRealm() >> realm
-            getToken() >> accessToken.call()
-            updateToken(_, _, _) >> { int minValiditySeconds, Consumer<Boolean> successFn, Runnable errorFn ->
-                successFn.accept(true)
-            };
-            hasResourceRoleOrIsSuperUser(_, _) >> { String role, String resource ->
-                return true; // TODO: Should use the parsed token
-            }
-        }
+        def securityService = new ClientSecurityService(identityService.getKeycloakDeployment(realm, KEYCLOAK_CLIENT_ID), accessToken)
 
         and: "A client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>

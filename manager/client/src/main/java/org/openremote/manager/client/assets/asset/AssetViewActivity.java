@@ -192,7 +192,6 @@ public class AssetViewActivity
                         JsonValue value = Json.instance().parse(result);
                         // TODO Bug in Elemental, can't check this value for null etc.
                         attribute.setValueUnchecked(value);
-                        showInfo(container.getMessages().attributeValueRefreshed(attribute.getName()));
                         onSuccess.run();
                     },
                     ex -> handleRequestException(ex, environment)
