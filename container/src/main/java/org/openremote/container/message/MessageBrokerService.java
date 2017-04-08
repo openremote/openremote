@@ -42,7 +42,6 @@ public class MessageBrokerService implements ContainerService {
         MessageBrokerSetupService messageBrokerSetupService = container.getService(MessageBrokerSetupService.class);
 
         LOG.info("Starting Camel message broker");
-        Thread.sleep(10000);
         messageBrokerSetupService.getContext().start();
     }
 
