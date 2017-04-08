@@ -17,7 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.event.shared;
+package org.openremote.manager.client.service;
+
+import org.openremote.model.event.shared.EventFilter;
+import org.openremote.model.event.shared.SharedEvent;
 
 /**
  * Communicate with the server through {@link SharedEvent}s.
@@ -25,6 +28,9 @@ package org.openremote.model.event.shared;
  * Call {@link #subscribe} and {@link #unsubscribe} to tell the server which
  * events you would like to receive. Register on the
  * {@link org.openremote.model.event.bus.EventBus} to actually receive the events.
+ * <p>
+ * If your subscription fails, a {@link org.openremote.manager.client.event.SubscriptionFailureEvent}
+ * will be dispatched on the event bus.
  * <p>
  * Events can be send to the server with {@link #dispatch}, dispatching any kind
  * of event (even {@link SharedEvent}s) on the local event bus will only dispatch

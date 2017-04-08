@@ -19,7 +19,7 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
     def "Check agent and thing deployment"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 30, initialDelay: 3)
+        def conditions = new PollingConditions(timeout: 30, initialDelay: 1)
 
         when: "the demo agent and thing have been deployed"
         def serverPort = findEphemeralPort()
@@ -38,7 +38,7 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         }
 
         when: "a client wants to change a thing attributes' value, triggering an actuator"
-        conditions = new PollingConditions(timeout: 3, initialDelay: 2)
+        conditions = new PollingConditions(timeout: 3, initialDelay: 1)
         def light1DimmerChange = new AttributeEvent(
                 managerDemoSetup.thingId, "light1Dimmer", Json.create(66)
         )
@@ -54,7 +54,7 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         }
 
         when: "a simulated sensor changes its value"
-        conditions = new PollingConditions(timeout: 3, initialDelay: 2)
+        conditions = new PollingConditions(timeout: 3, initialDelay: 1)
         simulatorProtocol.putState(managerDemoSetup.thingId, "light1Dimmer", Json.create(77))
 
         then: "the thing attribute value should be updated"

@@ -308,4 +308,6 @@ public interface ManagerMessages extends Messages {
     String viewAsset();
 
     String errorLoadingTenant(int statusCode);
+
+    String subscriptionFailed(String eventType);
 }

@@ -30,6 +30,7 @@ import org.openremote.container.web.socket.WebsocketConstants;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
+import org.openremote.model.event.shared.UnauthorizedEventSubscription;
 
 import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -37,6 +38,44 @@ import java.util.logging.Logger;
 
 import static org.apache.camel.builder.PredicateBuilder.or;
 
+/**
+ * Receives and publishes messages, handles the client/server event bus.
+ * <p>
+ * Messages always start with a message discriminator in all uppercase letters, followed
+ * by an optional JSON payload.
+ * <p>
+ * The following messages can be send by a client:
+ * <dl>
+ * <dt><code>SUBSCRIBE{...}</code><dt>
+ * <dd><p>
+ * The payload is a serialized representation of {@link EventSubscription} with an optional
+ * {@link org.openremote.model.event.shared.EventFilter}. Clients can subscribe to receive {@link SharedEvent}s
+ * when they are published on the server. Subscriptions are handled by {@link SharedEvent#getEventType}, there
+ * can only be one active subscription for a particular event type and any new subscription for the same event
+ * type will replace any currently active subscription. The <code>SUBSCRIBE</code> message must be send
+ * repeatedly to renew the subscription,or the server will expire the subscription. The default expiration
+ * time is {@link EventSubscription#RENEWAL_PERIOD_SECONDS}; it is recommended clients renew the subscription
+ * in shorter periods to allow for processing time of the renewal.
+ * </p></dd>
+ * <dt><code>UNSUBSCRIBE{}</code></dt>
+ * <dd><p>
+ * The payload is a serialized representation of {@link CancelEventSubscription}. If a client
+ * does not want to wait for expiration of its subscriptions, it can cancel a subscription.
+ * </p></dd>
+ * </dl>
+ * <p>
+ * The following messages can be published/returned by the server:
+ * <dl>
+ * <dt><code>UNAUTHORIZED{...}</code></dt>
+ * <dd><p>
+ * The payload is a serialized representation of {@link UnauthorizedEventSubscription}.
+ * </p></dd>
+ * <dt><code>EVENT{...}</code></dt>
+ * <dd><p>
+ * The payload is a serialized representation of a subtype of {@link SharedEvent}.
+ * </p></dd>
+ * </dl>
+ */
 public class EventService implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(EventService.class.getName());
@@ -98,14 +137,15 @@ public class EventService implements ContainerService {
                                 break;
                             }
                         }
-                        if (!isAuthorized) {
-                            LOG.info("Unauthorized subscription from '"
+                        if (isAuthorized) {
+                            eventSubscriptions.update(sessionKey, subscription);
+                        } else {
+                            LOG.warning("Unauthorized subscription from '"
                                 + auth.getUsername() + "' in realm '" + auth.getAuthenticatedRealm()
                                 + "': " + subscription
                             );
-                            return;
+                            sendToSession(sessionKey, new UnauthorizedEventSubscription(subscription.getEventType()));
                         }
-                        eventSubscriptions.update(sessionKey, subscription);
                     })
                     .when(bodyAs(String.class).startsWith(CancelEventSubscription.MESSAGE_PREFIX))
                     .convertBodyTo(CancelEventSubscription.class)
@@ -154,6 +194,15 @@ public class EventService implements ContainerService {
         messageBrokerService.getProducerTemplate().sendBody(
             OUTGOING_EVENT_QUEUE,
             event
+        );
+    }
+
+    protected void sendToSession(String sessionKey, Object data) {
+        LOG.fine("Sending to session '" + sessionKey + "': " + data);
+        messageBrokerService.getProducerTemplate().sendBodyAndHeader(
+            "websocket://" + WEBSOCKET_EVENTS,
+            data,
+            WebsocketConstants.SESSION_KEY, sessionKey
         );
     }
 

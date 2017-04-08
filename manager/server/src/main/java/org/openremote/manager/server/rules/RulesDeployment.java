@@ -465,8 +465,6 @@ public class RulesDeployment<T extends Ruleset> {
                     LOG.warning("Failed to retract fact '" + update + "' in: " + this);
                 }
             }
-        } else {
-            LOG.fine("No fact handle for '" + assetUpdate + "' in: " + this);
         }
     }
 

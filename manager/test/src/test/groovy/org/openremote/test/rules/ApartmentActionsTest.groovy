@@ -91,7 +91,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
 
     def "Presence Detection"() {
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 5, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, delay: 1)
 
         and: "a pseudo rules engine clock"
         RulesDeployment.DefaultClockType = ClockTypeOption.get("pseudo")

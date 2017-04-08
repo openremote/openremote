@@ -21,7 +21,7 @@ package org.openremote.manager.client.interop.mapbox;
 
 import jsinterop.annotations.JsType;
 
-@JsType(isNative = true, name = "Navigation", namespace = "mapboxgl")
-public class Navigation extends Control<Navigation> {
-    public Navigation() {}
+@JsType(isNative = true, name = "NavigationControl", namespace = "mapboxgl")
+public class NavigationControl extends Control<NavigationControl> {
+    public NavigationControl() {}
 }

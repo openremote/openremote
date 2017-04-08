@@ -189,7 +189,7 @@ public class MapWidget extends ComplexPanel {
     public void addNavigationControl() {
         if (mapboxMap == null)
             return;
-        mapboxMap.addControl(new Navigation());
+        mapboxMap.addControl(new NavigationControl());
     }
 
     public void resize() {

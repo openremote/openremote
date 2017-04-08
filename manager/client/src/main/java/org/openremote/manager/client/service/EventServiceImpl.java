@@ -23,11 +23,9 @@ import elemental.client.Browser;
 import elemental.events.CloseEvent;
 import elemental.html.Location;
 import elemental.html.WebSocket;
-import org.openremote.manager.client.event.CancelEventSubscriptionMapper;
-import org.openremote.manager.client.event.EventSubscriptionMapper;
-import org.openremote.manager.client.event.SharedEventMapper;
-import org.openremote.manager.client.event.ShowFailureEvent;
+import org.openremote.manager.client.event.*;
 import org.openremote.manager.client.event.session.*;
+import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.util.Timeout;
 import org.openremote.model.Constants;
 import org.openremote.model.event.bus.EventBus;
@@ -44,7 +42,8 @@ public class EventServiceImpl implements EventService {
                                       EventBus eventBus,
                                       SharedEventMapper sharedEventMapper,
                                       EventSubscriptionMapper eventSubscriptionMapper,
-                                      CancelEventSubscriptionMapper cancelEventSubscriptionMapper) {
+                                      CancelEventSubscriptionMapper cancelEventSubscriptionMapper,
+                                      UnauthorizedEventSubscriptionMapper unauthorizedEventSubscriptionMapper) {
         Location location = Browser.getWindow().getLocation();
         return new EventServiceImpl(
             securityService,
@@ -52,7 +51,8 @@ public class EventServiceImpl implements EventService {
             "ws://" + location.getHostname() + ":" + location.getPort() + "/websocket/events",
             sharedEventMapper,
             eventSubscriptionMapper,
-            cancelEventSubscriptionMapper
+            cancelEventSubscriptionMapper,
+            unauthorizedEventSubscriptionMapper
         );
     }
 
@@ -69,6 +69,7 @@ public class EventServiceImpl implements EventService {
     final protected SharedEventMapper sharedEventMapper;
     final protected EventSubscriptionMapper eventSubscriptionMapper;
     final protected CancelEventSubscriptionMapper cancelEventSubscriptionMapper;
+    final protected UnauthorizedEventSubscriptionMapper unauthorizedEventSubscriptionMapper;
 
     final protected List<String> queue = new ArrayList<>();
     final protected Map<String, Integer> activeSubscriptions = new HashMap<>();
@@ -81,13 +82,15 @@ public class EventServiceImpl implements EventService {
                             String serviceUrl,
                             SharedEventMapper sharedEventMapper,
                             EventSubscriptionMapper eventSubscriptionMapper,
-                            CancelEventSubscriptionMapper cancelEventSubscriptionMapper) {
+                            CancelEventSubscriptionMapper cancelEventSubscriptionMapper,
+                            UnauthorizedEventSubscriptionMapper unauthorizedEventSubscriptionMapper) {
         this.securityService = securityService;
         this.eventBus = eventBus;
         this.serviceUrl = serviceUrl;
         this.sharedEventMapper = sharedEventMapper;
         this.eventSubscriptionMapper = eventSubscriptionMapper;
         this.cancelEventSubscriptionMapper = cancelEventSubscriptionMapper;
+        this.unauthorizedEventSubscriptionMapper = unauthorizedEventSubscriptionMapper;
 
         this.eventBus.register(
             SessionConnectEvent.class,
@@ -221,7 +224,7 @@ public class EventServiceImpl implements EventService {
             () -> {
                 LOG.fine("Updating subscription on server: " + subscription);
                 sendData(data);
-            }, EventSubscription.RENEWAL_PERIOD_SECONDS/2 * 1000
+            }, EventSubscription.RENEWAL_PERIOD_SECONDS / 2 * 1000
         );
         activeSubscriptions.put(key, interval);
     }
@@ -260,11 +263,16 @@ public class EventServiceImpl implements EventService {
     }
 
     protected void onDataReceived(String data) {
-        if (data == null || !data.startsWith(SharedEvent.MESSAGE_PREFIX))
+        if (data == null || data.length() == 0)
             return;
-        data = data.substring(SharedEvent.MESSAGE_PREFIX.length());
-        SharedEvent event = sharedEventMapper.read(data);
-        eventBus.dispatch(event);
+        if (data.startsWith(UnauthorizedEventSubscription.MESSAGE_PREFIX)) {
+            UnauthorizedEventSubscription failure = unauthorizedEventSubscriptionMapper.read(data);
+            eventBus.dispatch(new SubscriptionFailureEvent(failure.getEventType()));
+        } else if (data.startsWith(SharedEvent.MESSAGE_PREFIX)) {
+            data = data.substring(SharedEvent.MESSAGE_PREFIX.length());
+            SharedEvent event = sharedEventMapper.read(data);
+            eventBus.dispatch(event);
+        }
     }
 
     protected void reconnect() {

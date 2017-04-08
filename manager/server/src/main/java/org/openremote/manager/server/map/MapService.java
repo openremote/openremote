@@ -27,6 +27,7 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.web.ManagerWebService;
 
+import javax.ws.rs.core.UriBuilder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -55,12 +56,9 @@ public class MapService implements ContainerService {
     protected boolean devMode;
     protected Path mapTilesPath;
     protected Path mapSettingsPath;
-    protected JsonObject mapSettings;
 
     @Override
     public void init(Container container) throws Exception {
-        this.devMode = container.isDevMode();
-
         mapTilesPath = Paths.get(getString(container.getConfig(), MAP_TILES_PATH, MAP_TILES_PATH_DEFAULT));
         if (!Files.isRegularFile(mapTilesPath)) {
             throw new IllegalStateException(
@@ -71,7 +69,7 @@ public class MapService implements ContainerService {
         mapSettingsPath = Paths.get(getString(container.getConfig(), MAP_SETTINGS_PATH, MAP_SETTINGS_PATH_DEFAULT));
         if (!Files.isRegularFile(mapSettingsPath)) {
             throw new IllegalStateException(
-                "MapWidget settings file not found: " + mapSettingsPath.toAbsolutePath()
+                "Map settings file not found: " + mapSettingsPath.toAbsolutePath()
             );
         }
 
@@ -85,8 +83,6 @@ public class MapService implements ContainerService {
         LOG.info("Starting map service with tile data: " + mapTilesPath.toAbsolutePath());
         Class.forName(org.sqlite.JDBC.class.getName());
         connection = DriverManager.getConnection("jdbc:sqlite:" + mapTilesPath.toAbsolutePath());
-
-        readMapSettings();
     }
 
     @Override
@@ -97,51 +93,8 @@ public class MapService implements ContainerService {
         }
     }
 
-    public JsonObject getMapSettings(String tileUrl) {
-
-        // Refresh map settings for every request in dev mode, cache it in production
-        if (devMode) {
-            readMapSettings();
-        }
-
-        JsonObject settingsCopy = Json.parse(mapSettings.toJson());
-        JsonArray tilesArray = Json.createArray();
-        tilesArray.set(0, tileUrl);
-        settingsCopy.getObject("style").getObject("sources").getObject("vector_tiles").put("tiles", tilesArray);
-        return settingsCopy;
-    }
-
-    public byte[] getMapTile(int zoom, int column, int row) {
-        // Flip y, oh why
-        row = new Double(Math.pow(2, zoom) - 1 - row).intValue();
-
-        PreparedStatement query = null;
-        ResultSet result = null;
-        try {
-            query = connection.prepareStatement(
-                "select TILE_DATA from TILES where ZOOM_LEVEL = ? and TILE_COLUMN = ? and TILE_ROW = ?"
-            );
-
-            int index = 0;
-            query.setInt(++index, zoom);
-            query.setInt(++index, column);
-            query.setInt(++index, row);
-
-            result = query.executeQuery();
-
-            if (result.next()) {
-                return result.getBytes(1);
-            } else {
-                return null;
-            }
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        } finally {
-            closeQuietly(query, result);
-        }
-    }
-
-    protected void readMapSettings() {
+    public JsonObject getMapSettings(String realm, UriBuilder baseUriBuilder) {
+        JsonObject mapSettings;
 
         // Mix settings from file with database metadata, and some hardcoded magic
         try {
@@ -155,7 +108,20 @@ public class MapService implements ContainerService {
 
         style.put("version", 8);
 
-        style.put("glyphs", ManagerWebService.MANAGER_PATH + "/fonts/{fontstack}/{range}.pbf");
+        if (style.hasKey("sprite")) {
+            String spriteUri =
+                baseUriBuilder.clone()
+                    .replacePath(ManagerWebService.MANAGER_PATH)
+                    .path(style.getString("sprite"))
+                    .build().toString();
+            style.put("sprite", spriteUri);
+        }
+
+        String glyphsUri = baseUriBuilder.clone()
+            .replacePath(ManagerWebService.MANAGER_PATH)
+            .path("/fonts/")
+            .build().toString() + "{fontstack}/{range}.pbf";
+        style.put("glyphs", glyphsUri);
 
         JsonObject sources = Json.createObject();
         style.put("sources", sources);
@@ -185,6 +151,43 @@ public class MapService implements ContainerService {
             vectorTiles.put("maxzoom", Integer.valueOf(resultMap.get("maxzoom")));
             vectorTiles.put("minzoom", Integer.valueOf(resultMap.get("minzoom")));
             vectorTiles.put("attribution", resultMap.get("attribution"));
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        } finally {
+            closeQuietly(query, result);
+        }
+
+        JsonArray tilesArray = Json.createArray();
+        String tileUrl = baseUriBuilder.clone().replacePath(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
+        tilesArray.set(0, tileUrl);
+        mapSettings.getObject("style").getObject("sources").getObject("vector_tiles").put("tiles", tilesArray);
+
+        return mapSettings;
+    }
+
+    public byte[] getMapTile(int zoom, int column, int row) {
+        // Flip y, oh why
+        row = new Double(Math.pow(2, zoom) - 1 - row).intValue();
+
+        PreparedStatement query = null;
+        ResultSet result = null;
+        try {
+            query = connection.prepareStatement(
+                "select TILE_DATA from TILES where ZOOM_LEVEL = ? and TILE_COLUMN = ? and TILE_ROW = ?"
+            );
+
+            int index = 0;
+            query.setInt(++index, zoom);
+            query.setInt(++index, column);
+            query.setInt(++index, row);
+
+            result = query.executeQuery();
+
+            if (result.next()) {
+                return result.getBytes(1);
+            } else {
+                return null;
+            }
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         } finally {

@@ -28,6 +28,7 @@ import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowInfoEvent;
 import org.openremote.manager.client.event.ShowSuccessEvent;
+import org.openremote.manager.client.event.SubscriptionFailureEvent;
 import org.openremote.manager.client.toast.Toast;
 import org.openremote.manager.client.toast.Toasts;
 
@@ -79,6 +80,15 @@ public class AppControllerImpl implements AppController, AppView.Presenter {
                 toasts.showToast(
                     new Toast(type, event.getText(), event.getDurationMillis())
                 );
+            }
+        );
+
+        environment.getEventBus().register(
+            SubscriptionFailureEvent.class,
+            event -> {
+                environment.getEventBus().dispatch(new ShowFailureEvent(
+                    environment.getMessages().subscriptionFailed(event.getEventType()), 5000
+                ));
             }
         );
     }

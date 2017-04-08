@@ -37,9 +37,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
 
     @Override
     public JsonObject getSettings(RequestParams requestParams) {
-        String tileUrl = uriInfo.getBaseUriBuilder().clone()
-            .replacePath(getRealm()).path("map/tile").build().toString() + "/{z}/{x}/{y}";
-        return mapService.getMapSettings(tileUrl);
+        return mapService.getMapSettings(getRealm(), uriInfo.getBaseUriBuilder().clone());
     }
 
     @Override

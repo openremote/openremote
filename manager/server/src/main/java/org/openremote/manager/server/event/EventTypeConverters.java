@@ -46,6 +46,7 @@ import org.openremote.container.Container;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
+import org.openremote.model.event.shared.UnauthorizedEventSubscription;
 
 import java.util.logging.Logger;
 
@@ -80,5 +81,10 @@ public class EventTypeConverters implements TypeConverters {
             return null;
         string = string.substring(CancelEventSubscription.MESSAGE_PREFIX.length());
         return Container.JSON.readValue(string, CancelEventSubscription.class);
+    }
+
+    @Converter
+    public String writeUnauthorizedEventSubscription(UnauthorizedEventSubscription unauthorizedEventSubscription, Exchange exchange) throws Exception {
+        return UnauthorizedEventSubscription.MESSAGE_PREFIX + Container.JSON.writeValueAsString(unauthorizedEventSubscription);
     }
 }

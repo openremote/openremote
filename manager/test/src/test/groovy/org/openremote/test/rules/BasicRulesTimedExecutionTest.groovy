@@ -11,6 +11,7 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS
 import static java.util.concurrent.TimeUnit.SECONDS
 import static org.openremote.test.RulesTestUtil.attachRuleExecutionLogger
 
@@ -89,10 +90,12 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
             globalEngine = rulesService.globalDeployment
             assert globalEngine != null
             assert globalEngine.isRunning()
-            sessionClock = globalEngine.sessionClock as PseudoClockScheduler
         }
 
-        when: "the execution logger is attached"
+        when: "we have prepared a rules clock"
+        sessionClock = globalEngine.sessionClock as PseudoClockScheduler
+
+        and: "the execution logger is attached"
         attachRuleExecutionLogger(globalEngine, globalEngineFiredRules)
 
         then: "after a few seconds the rule engines should not have fired any rules"
@@ -104,7 +107,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
         sessionClock.advanceTime(5, SECONDS)
 
         then: "the rule engines should have fire the timed execution rule in the background"
-        new PollingConditions(initialDelay: 1).eventually {
+        new PollingConditions().eventually {
             def expectedFiredRules = ["Log something every 2 seconds"]
             assert globalEngineFiredRules.size() == 2
             assert globalEngineFiredRules.containsAll(expectedFiredRules)

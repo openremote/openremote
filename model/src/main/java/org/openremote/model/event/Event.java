@@ -51,7 +51,7 @@ public abstract class Event {
         return getEventType(eventClass.getSimpleName());
     }
 
-    public String getEventType() {
+    final public String getEventType() {
         return getEventType(getClass());
     }
 

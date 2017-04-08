@@ -27,7 +27,7 @@ import org.openremote.manager.shared.security.TenantResource
 import org.openremote.manager.shared.validation.ConstraintViolationReport
 import org.openremote.model.event.Event
 import org.openremote.model.event.bus.EventListener
-import org.openremote.model.event.shared.EventService
+import org.openremote.manager.client.service.EventService
 import org.openremote.test.ClientObjectMapper
 import org.openremote.test.ClientSecurityService
 import org.openremote.test.GwtClientTrait

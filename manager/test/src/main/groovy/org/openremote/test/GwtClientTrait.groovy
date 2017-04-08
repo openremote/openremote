@@ -29,6 +29,7 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget
 import com.google.web.bindery.event.shared.SimpleEventBus
 import elemental.json.JsonValue
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
+import org.openremote.manager.client.i18n.ManagerMessages
 import org.openremote.manager.client.mvp.AppActivityManager
 import org.openremote.manager.client.mvp.AppActivityMapper
 import org.openremote.manager.client.mvp.AppPlaceController
@@ -39,7 +40,7 @@ import org.openremote.manager.shared.http.SuccessStatusCode
 import org.openremote.model.event.Event
 import org.openremote.model.event.bus.EventBus
 import org.openremote.model.event.bus.EventListener
-import org.openremote.model.event.shared.*
+import org.openremote.model.event.shared.SharedEvent
 import org.spockframework.mock.IMockMethod
 
 import javax.ws.rs.ClientErrorException
@@ -123,47 +124,6 @@ trait GwtClientTrait {
         def eventBus = new EventBus()
         eventBus.register(null, new CollectingEventListener(collectedEvents))
         return eventBus
-    }
-
-    static class ClientEventService implements EventService {
-        final EventBusWebsocketEndpoint endpoint
-
-        ClientEventService(EventBusWebsocketEndpoint endpoint) {
-            this.endpoint = endpoint
-        }
-
-        @Override
-        void connect() {
-            throw new UnsupportedOperationException("Not available in test environment")
-        }
-
-        @Override
-        <E extends SharedEvent> void subscribe(Class<E> eventClass) {
-            endpoint.sendSubscription(new EventSubscription(eventClass))
-        }
-
-        @Override
-        <E extends SharedEvent> void subscribe(Class<E> eventClass, EventFilter<E> filter) {
-            endpoint.sendSubscription(new EventSubscription(eventClass, filter))
-        }
-
-        @Override
-        def <E extends SharedEvent> void unsubscribe(Class<E> eventClass) {
-            endpoint.sendCancelSubscription(new CancelEventSubscription(eventClass))
-        }
-
-        @Override
-        void dispatch(SharedEvent sharedEvent) {
-            endpoint.send(sharedEvent)
-        }
-
-        void close() {
-            endpoint.close()
-        }
-    }
-
-    static ClientEventService createEventService(EventBusWebsocketEndpoint endpoint) {
-        return new ClientEventService(endpoint)
     }
 
     static AppPlaceController createPlaceController(SecurityService securityService, EventBus eventBus) {

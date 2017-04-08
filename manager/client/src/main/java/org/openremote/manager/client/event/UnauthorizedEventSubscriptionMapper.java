@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,8 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.service;
+package org.openremote.manager.client.event;
 
-public interface ValidatorService {
-    //Validator getBlankFieldValidator();
+import com.github.nmorel.gwtjackson.client.ObjectMapper;
+import com.github.nmorel.gwtjackson.client.annotation.JsonMixIns;
+import org.openremote.manager.client.interop.jackson.DefaultJsonMixin;
+import org.openremote.model.event.shared.UnauthorizedEventSubscription;
+
+@JsonMixIns({@JsonMixIns.JsonMixIn(target = UnauthorizedEventSubscription.class, mixIn = DefaultJsonMixin.class)})
+public interface UnauthorizedEventSubscriptionMapper extends ObjectMapper<UnauthorizedEventSubscription> {
+
 }

@@ -22,7 +22,7 @@ package org.openremote.manager.client;
 import com.google.gwt.place.shared.PlaceController;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.model.event.shared.EventService;
+import org.openremote.manager.client.service.EventService;
 import org.openremote.manager.client.service.RequestService;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.manager.client.style.WidgetStyle;

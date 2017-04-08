@@ -17,7 +17,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
     def "Receive sensor values and store asset datapoints"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 30, initialDelay: 3)
+        def conditions = new PollingConditions(timeout: 30, initialDelay: 1)
 
         when: "the demo agent and thing have been deployed"
         def serverPort = findEphemeralPort()
@@ -33,7 +33,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         }
 
         when: "a simulated sensor changes its value several times"
-        conditions = new PollingConditions(timeout: 3, initialDelay: 2)
+        conditions = new PollingConditions(timeout: 3, initialDelay: 1)
         sleep(10)
         simulatorProtocol.putState(managerDemoSetup.thingId, "light1PowerConsumption", Json.create(13.3))
         sleep(10)
