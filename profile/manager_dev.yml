@@ -9,10 +9,17 @@ services:
   manager_dev:
     build:
       context: ../manager/build/install
+    environment:
+      TZ: Europe/Zurich
+      DEV_MODE: 'true'
+      IDENTITY_NETWORK_HOST: 192.168.99.100
+      IDENTITY_NETWORK_WEBSERVER_PORT: 443
+      IDENTITY_NETWORK_SECURE: 'true'
+      KEYCLOAK_HOST: keycloak
+      KEYCLOAK_PORT: 8080
+      DATABASE_CONNECTION_URL: jdbc:postgresql://postgresql:5432/openremote
+    links:
+      - keycloak_dev:keycloak
+      - postgresql_dev:postgresql
     ports:
       - "8080:8080"
-    environment:
-      TZ: "Europe/Zurich"
-      DEV_MODE: 'true'
-      IDENTITY_NETWORK_HOST: '192.168.99.100'
-      IDENTITY_NETWORK_WEBSERVER_PORT: 8080

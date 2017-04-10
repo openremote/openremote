@@ -232,4 +232,9 @@ public class RulesetStorageService implements ContainerService {
                 entityManager.remove(ruleset);
         });
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{}";
+    }
 }

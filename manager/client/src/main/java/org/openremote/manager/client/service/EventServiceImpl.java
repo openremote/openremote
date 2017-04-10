@@ -25,7 +25,6 @@ import elemental.html.Location;
 import elemental.html.WebSocket;
 import org.openremote.manager.client.event.*;
 import org.openremote.manager.client.event.session.*;
-import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.util.Timeout;
 import org.openremote.model.Constants;
 import org.openremote.model.event.bus.EventBus;
@@ -48,7 +47,8 @@ public class EventServiceImpl implements EventService {
         return new EventServiceImpl(
             securityService,
             eventBus,
-            "ws://" + location.getHostname() + ":" + location.getPort() + "/websocket/events",
+            ("https:".equals(location.getProtocol()) ? "wss" : "ws")
+                + "://" + location.getHostname() + ":" + location.getPort() + "/websocket/events",
             sharedEventMapper,
             eventSubscriptionMapper,
             cancelEventSubscriptionMapper,

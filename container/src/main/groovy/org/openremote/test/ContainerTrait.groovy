@@ -64,13 +64,13 @@ trait ContainerTrait {
         container.running
     }
 
-    static ResteasyClientBuilder createClient(Container container) {
+    static ResteasyClientBuilder createClient() {
         ResteasyClientBuilder clientBuilder =
                 new ResteasyClientBuilder()
                         .establishConnectionTimeout(2, SECONDS)
                         .socketTimeout(10, SECONDS)
                         .connectionPoolSize(10)
-        return WebClient.registerDefaults(container, clientBuilder)
+        return WebClient.registerDefaults(clientBuilder)
     }
 
     static UriBuilder serverUri(int serverPort) {
@@ -84,20 +84,24 @@ trait ContainerTrait {
         }
     }
 
-    static ResteasyWebTarget getClientTarget(ResteasyClient client, UriBuilder serverUri) {
-        WebClient.getTarget(client, serverUri.clone().build())
+    static ResteasyWebTarget getClientTarget(UriBuilder serverUri) {
+        WebClient.getTarget(createClient().build(), serverUri.clone().build(), null, null, null)
     }
 
-    static ResteasyWebTarget getClientTarget(ResteasyClient client, UriBuilder serverUri, String realm) {
-        WebClient.getTarget(client, serverUri.clone().replacePath(realm).build())
+    static ResteasyWebTarget getClientTarget(UriBuilder serverUri, String realm) {
+        WebClient.getTarget(createClient().build(), serverUri.clone().replacePath(realm).build(), null, null, null)
+    }
+
+    static ResteasyWebTarget getClientTarget(UriBuilder serverUri, String realm, String accessToken) {
+        WebClient.getTarget(createClient().build(), serverUri.clone().replacePath(realm).build(), accessToken, null, null)
     }
 
     static ResteasyWebTarget getClientTarget(ResteasyClient client, UriBuilder serverUri, String realm, String accessToken) {
-        WebClient.getTarget(client, serverUri.clone().replacePath(realm).build(), accessToken)
+        WebClient.getTarget(client, serverUri.clone().replacePath(realm).build(), accessToken, null, null)
     }
 
     static ResteasyWebTarget getClientTarget(ResteasyClient client, UriBuilder serverUri, String realm, String path, String accessToken) {
-        WebClient.getTarget(client, serverUri.clone().replacePath(realm).path(path).build(), accessToken)
+        WebClient.getTarget(client, serverUri.clone().replacePath(realm).path(path).build(), accessToken, null, null)
     }
 
     static int findEphemeralPort() {

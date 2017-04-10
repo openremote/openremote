@@ -26,7 +26,7 @@ import java.io.IOException;
 import static org.openremote.container.web.WebClient.*;
 
 /**
- * Add X-Forwarded-For and X-Forwarded-Proto headers if request context is configured with values.
+ * Add X-Forwarded-* headers if request context is configured with values.
  */
 public class ProxyClientRequestFilter implements ClientRequestFilter {
 
@@ -36,12 +36,16 @@ public class ProxyClientRequestFilter implements ClientRequestFilter {
         if (forwardedFor != null) {
             requestContext.getHeaders().add("X-Forwarded-For", forwardedFor);
         }
+        String forwardedHost = (String) requestContext.getConfiguration().getProperty(REQUEST_PROPERTY_X_FORWARDED_HOST);
+        if (forwardedHost != null) {
+            requestContext.getHeaders().add("X-Forwarded-Host", forwardedHost);
+        }
         String forwardedProto = (String) requestContext.getConfiguration().getProperty(REQUEST_PROPERTY_X_FORWARDED_PROTO);
         if (forwardedProto != null) {
             requestContext.getHeaders().add("X-Forwarded-Proto", forwardedProto);
         }
         Integer forwardedPort = (Integer) requestContext.getConfiguration().getProperty(REQUEST_PROPERTY_X_FORWARDED_PORT);
-        if (forwardedPort != null) {
+        if (forwardedPort != null && forwardedPort > 0) {
             requestContext.getHeaders().add("X-Forwarded-Port", forwardedPort);
         }
     }

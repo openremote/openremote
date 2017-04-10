@@ -1,0 +1,17 @@
+#
+# HAProxy SSL terminator with self-signed demo certificate (development)
+#
+version: '2'
+services:
+
+  haproxy_dev:
+    build:
+      context: ../haproxy
+    environment:
+      TZ: Europe/Zurich
+      HAPROXY_CONFIG: /etc/haproxy/demo/haproxy-demo.cfg
+    links:
+      - manager_dev:manager
+    ports:
+      - "80:80"
+      - "443:443"

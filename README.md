@@ -20,12 +20,14 @@ A demo preview can be started with Docker Compose (install [Docker Toolbox](http
 docker-compose -p openremote -f profile/demo.yml up
 ```
 
-Access the manager UI and API on http://192.168.99.100:8080/ with username `admin` and password `secret`. Configuration options of the images are documented in the compose profiles.
+Access the manager UI and API on https://192.168.99.100/ with username `admin` and password `secret`. Configuration options of the images are documented in the compose profiles.
 
 You can build the Docker images from source with:
 
 ```
 ./gradlew clean prepareImage
+docker build -t openremote/haproxy:latest haproxy
+docker build -t openremote/letsencrypt:latest letsencrypt
 docker build -t openremote/postgresql:latest postgresql
 docker build -t openremote/keycloak:latest keycloak
 docker build -t openremote/manager:latest manager/build/install
@@ -34,6 +36,8 @@ docker build -t openremote/manager:latest manager/build/install
 Push images to [Docker Hub](https://hub.docker.com/u/openremote):
 
 ```
+docker push openremote/haproxy:latest
+docker push openremote/letsencrypt:latest
 docker push openremote/postgresql:latest
 docker push openremote/keycloak:latest
 docker push openremote/manager:latest
@@ -47,6 +51,7 @@ docker-compose -p ordev \
     -f profile/postgresql_dev.yml \
     -f profile/keycloak_dev.yml \
     -f profile/manager_dev.yml \
+    -f profile/haproxy_dev.yml \
     up --build
 ```
 
@@ -63,4 +68,8 @@ Join us on the [community group](https://groups.google.com/forum/#!forum/openrem
 * [Manager](https://github.com/openremote/openremote/tree/master/manager) - Provides IoT backend services and a web-based operations frontend and management application for agents and domain assets. Design custom data flow, rules, notifications, and build end-user interfaces.
 
 * [Console](https://github.com/openremote/openremote/tree/master/console) - Render and deploy custom end-user interfaces as applications for Web, iOS and Android.
+
+* [HAProxy](https://github.com/openremote/openremote/tree/master/haproxy) - SSL/TLS frontend reverse proxy, terminating SSL connections and forwarding them to the Manager. Also handles Let's Encrypt validation challenges for certificate creation and renewal.
+
+* [Let's Encrypt](https://github.com/openremote/openremote/tree/master/letsencrypt) - Create and automatically renew free SSL certificates in the HAProxy frontend, see https://letsencrypt.org/.
 

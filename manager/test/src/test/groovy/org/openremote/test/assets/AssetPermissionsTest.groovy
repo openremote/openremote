@@ -41,9 +41,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ).token
 
         and: "the asset resource"
-        def client = createClient(container).build()
-        def serverUri = serverUri(serverPort)
-        def assetResource = getClientTarget(client, serverUri, MASTER_REALM, accessToken).proxy(AssetResource.class)
+        def assetResource = getClientTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
 
         /* ############################################## READ ####################################### */
 
@@ -229,9 +227,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ).token
 
         and: "the asset resource"
-        def client = createClient(container).build()
-        def serverUri = serverUri(serverPort)
-        def assetResource = getClientTarget(client, serverUri, MASTER_REALM, accessToken).proxy(AssetResource.class)
+        def assetResource = getClientTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(AssetResource.class)
 
         /* ############################################## READ ####################################### */
 
@@ -395,9 +391,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ).token
 
         and: "the asset resource"
-        def client = createClient(container).build()
-        def serverUri = serverUri(serverPort)
-        def assetResource = getClientTarget(client, serverUri, keycloakDemoSetup.customerATenant.realm, accessToken).proxy(AssetResource.class)
+        def assetResource = getClientTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm, accessToken).proxy(AssetResource.class)
 
         /* ############################################## READ ####################################### */
 
@@ -541,9 +535,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ).token
 
         and: "the asset resource"
-        def client = createClient(container).build()
-        def serverUri = serverUri(serverPort)
-        def assetResource = getClientTarget(client, serverUri, keycloakDemoSetup.customerATenant.realm, accessToken).proxy(AssetResource.class)
+        def assetResource = getClientTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm, accessToken).proxy(AssetResource.class)
 
         /* ############################################## READ ####################################### */
 

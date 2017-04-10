@@ -1,4 +1,4 @@
-FROM jboss/keycloak:2.5.4.Final
+FROM jboss/keycloak:2.5.5.Final
 
 ADD changeDatabase.xsl /opt/jboss/keycloak/
 RUN java -jar /usr/share/java/saxon.jar -s:/opt/jboss/keycloak/standalone/configuration/standalone.xml -xsl:/opt/jboss/keycloak/changeDatabase.xsl -o:/opt/jboss/keycloak/standalone/configuration/standalone.xml; java -jar /usr/share/java/saxon.jar -s:/opt/jboss/keycloak/standalone/configuration/standalone-ha.xml -xsl:/opt/jboss/keycloak/changeDatabase.xsl -o:/opt/jboss/keycloak/standalone/configuration/standalone-ha.xml; rm /opt/jboss/keycloak/changeDatabase.xsl
@@ -11,6 +11,10 @@ RUN java -jar /usr/share/java/saxon.jar -s:/opt/jboss/keycloak/standalone/config
 
 ADD devModeConfig.xsl /opt/jboss/keycloak/
 RUN java -jar /usr/share/java/saxon.jar -s:/opt/jboss/keycloak/standalone/configuration/standalone.xml -xsl:/opt/jboss/keycloak/devModeConfig.xsl -o:/opt/jboss/keycloak/standalone/configuration/standalone.xml
+
+# This produces a lot of log output, only enable when you must log all HTTP traffic into Keycloak
+# ADD enableRequestDumping.xsl /opt/jboss/keycloak/
+# RUN java -jar /usr/share/java/saxon.jar -s:/opt/jboss/keycloak/standalone/configuration/standalone.xml -xsl:/opt/jboss/keycloak/enableRequestDumping.xsl -o:/opt/jboss/keycloak/standalone/configuration/standalone.xml
 
 RUN rm /opt/jboss/keycloak/*.xsl
 

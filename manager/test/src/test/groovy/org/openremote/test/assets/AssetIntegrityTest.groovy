@@ -44,9 +44,8 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         ).token
 
         and: "the asset resource"
-        def client = createClient(container).build()
         def serverUri = serverUri(serverPort)
-        def assetResource = getClientTarget(client, serverUri, MASTER_REALM, accessToken).proxy(AssetResource.class)
+        def assetResource = getClientTarget(serverUri, MASTER_REALM, accessToken).proxy(AssetResource.class)
 
         when: "an asset is created in the authenticated realm"
         def testAsset = new Asset(keycloakDemoSetup.masterTenant.id, "Test Room", AssetType.ROOM)

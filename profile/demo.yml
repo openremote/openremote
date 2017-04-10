@@ -7,29 +7,45 @@
 version: '2'
 services:
 
-  # This is the API gateway for the whole system and hosting the public resources
-  # of the manager web application.
-  manager:
+  # The frontend proxy, terminates SSL/TLS connections and forwards them to the Manager backend.
+  # TODO Document how to install sidecar letsencrypt container for production certificates, with shared volume mapping.
+  haproxy:
 
     # Use installed or pull the latest image from Docker Hub.
-    image: openremote/manager:latest
-
-    # This application exposes a public web service that should be mapped to a host
-    # port. The default is '8080', this is the port on your Docker host to access
-    # the application. The second '8080' must match the service-internal port (see below).
-    ports:
-      - "8080:8080"
-
-    # This service needs access to other services on the Docker network.
-    links:
-      - postgresql
-      - keycloak
+    image: openremote/haproxy:latest
 
     environment:
 
       # It is important that all services have the same timezone and are time synchronized.
       # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts.
-      TZ: "Europe/Zurich"
+      TZ: Europe/Zurich
+
+      # This is a demo configuration with a self-signed dummy SSL certificate, baked into the image.
+      HAPROXY_CONFIG: /etc/haproxy/demo/haproxy-demo.cfg
+
+    # This service needs access to other services on the Docker network.
+    links:
+      - manager
+
+    # Expose a public web service mapped to ports on the host.
+    ports:
+      - "80:80"
+      - "443:443"
+
+    # Configure logging of the container
+    logging:
+        options:
+            max-size: 10m
+
+  # The API gateway and Manager web application.
+  manager:
+
+    # Use installed or pull the latest image from Docker Hub.
+    image: openremote/manager:latest
+
+    environment:
+
+      TZ: Europe/Zurich
 
       # If developer mode is enabled, all setup tasks will be executed on application startup.
       # This will clean all data in Keycloak and the Manager database, and then import demo/test
@@ -43,19 +59,16 @@ services:
       SETUP_KEYCLOAK_ADMIN_PASSWORD: secret
       SETUP_IMPORT_DEMO_DATA: 'true'
 
-      # The service-internal interface and port to listen on. This should not be changed.
-      WEBSERVER_LISTEN_HOST: 0.0.0.0
-      WEBSERVER_LISTEN_PORT: 8080
-
       # The public host name of this OpenRemote installation. This name is used in bearer tokens
       # and must be the name you access the web services under. If you are using Docker Toolbox,
       # this is the IP of a virtual machine running the Linux Docker host (see VirtualBox).
-      IDENTITY_NETWORK_HOST: '192.168.99.100'
+      IDENTITY_NETWORK_HOST: 192.168.99.100
 
-      # The public port of this OpenRemote installation. For simple installations without an
-      # HTTP proxy in front of this application, this will be the public webservice host-mapped
-      # port.
-      IDENTITY_NETWORK_WEBSERVER_PORT: 8080
+      # Set if SSL is enabled on the frontend reverse proxy and all internal proxies should assume https
+      IDENTITY_NETWORK_SECURE: 'true'
+
+      # The public port of this OpenRemote installation.
+      IDENTITY_NETWORK_WEBSERVER_PORT: 443
 
       # The service-internal JDBC connection URL for the database service.
       DATABASE_CONNECTION_URL: jdbc:postgresql://postgresql/openremote
@@ -71,22 +84,28 @@ services:
       KEYCLOAK_HOST: keycloak
       KEYCLOAK_PORT: 8080
 
+    # This service needs access to other services on the Docker network.
+    links:
+      - postgresql
+      - keycloak
+
     # Configure logging of the container, see config/logging.properties
     logging:
         options:
-            max-size: "10m"
+            max-size: 10m
 
   # Keycloak identity provider
   keycloak:
     image: openremote/keycloak:latest
-    links:
-      - postgresql
     environment:
-      TZ: "Europe/Zurich"
+      TZ: Europe/Zurich
 
+      # Switch to DEBUG to diagnose Keycloak problems.
       KEYCLOAK_LOGLEVEL: INFO
 
+      # The master realm superuser, you should not change this.
       KEYCLOAK_USER: admin
+
       # Change the admin root password if you make this application publicly accessible! Note
       # that imported demo data uses the admin account and also creates a 'test' user with
       # password 'test'. Importing will be broken if you change the password only here.
@@ -98,11 +117,20 @@ services:
       POSTGRES_USER: openremote
       POSTGRES_PASSWORD: CHANGE_ME_DB_USER_PASSWORD
 
+    # This service needs access to other services on the Docker network.
+    links:
+      - postgresql
+
+    # Configure logging of the container
+    logging:
+        options:
+            max-size: 10m
+
   # PostgreSQL DBMS
   postgresql:
     image: openremote/postgresql:latest
     environment:
-      TZ: "Europe/Zurich"
+      TZ: Europe/Zurich
       # This is the DBMS superuser and password. You should change this, especially if you
       # expose the DBMS port and make it accessible externally!
       POSTGRES_USER: postgres
@@ -116,3 +144,8 @@ services:
     # Durable data requires a volume mapping on your Docker host
     # volumes:
     #  - /path/to/data/on/my/host/postgresql:/var/lib/postgresql/data
+
+    # Configure logging of the container
+    logging:
+        options:
+            max-size: 10m

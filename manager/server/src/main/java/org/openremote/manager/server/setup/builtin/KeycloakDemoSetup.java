@@ -105,8 +105,8 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         ));
         LOG.info("Added demo user '" + testuser1.getUsername() + "' with password '" + testuser1Credentials.getValue() + "'");
 
-        UsersResource customerAUsersResource = identityService.getRealms(accessToken, false).realm("customerA").users();
-        ClientsResource customerAClientsResource = identityService.getRealms(accessToken, false).realm("customerA").clients();
+        UsersResource customerAUsersResource = identityService.getRealms(accessToken).realm("customerA").users();
+        ClientsResource customerAClientsResource = identityService.getRealms(accessToken).realm("customerA").clients();
         String customerAClientObjectId = getClientObjectId(customerAClientsResource);
         RolesResource customerARolesResource = customerAClientsResource.get(customerAClientObjectId).roles();
 

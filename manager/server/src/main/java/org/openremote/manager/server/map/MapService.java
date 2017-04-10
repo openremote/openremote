@@ -25,6 +25,7 @@ import elemental.json.JsonObject;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.web.WebService;
+import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebService;
 
 import javax.ws.rs.core.UriBuilder;
@@ -53,7 +54,6 @@ public class MapService implements ContainerService {
     // Shared SQL connection is fine concurrently in SQLite
     protected Connection connection;
 
-    protected boolean devMode;
     protected Path mapTilesPath;
     protected Path mapSettingsPath;
 
@@ -74,7 +74,7 @@ public class MapService implements ContainerService {
         }
 
         container.getService(WebService.class).getApiSingletons().add(
-            new MapResourceImpl(this)
+            new MapResourceImpl(this, container.getService(ManagerIdentityService.class))
         );
     }
 

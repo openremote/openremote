@@ -60,9 +60,7 @@ class MapActivityTest extends Specification implements ContainerTrait, GwtClient
         def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
 
         and: "a test client target"
-        def client = createClient(container).build();
-        def serverUri = serverUri(serverPort);
-        def clientTarget = getClientTarget(client, serverUri, realm);
+        def clientTarget = getClientTarget(serverUri(serverPort), realm);
 
         and: "The map view, resource, and activity"
         def mapView = Mock(MapView) {

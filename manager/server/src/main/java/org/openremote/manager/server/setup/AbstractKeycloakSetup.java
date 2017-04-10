@@ -52,15 +52,15 @@ public abstract class AbstractKeycloakSetup implements Setup {
         this.identityService = container.getService(ManagerIdentityService.class);
         this.setupService = container.getService(SetupService.class);
 
-        // Use a non-proxy client to get the access token
+        // Use direct access grant feature of Keycloak Admin CLI to get superuser access token
         String demoAdminPassword = container.getConfig().getOrDefault(SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT);
         this.accessToken = identityService.getKeycloak().getAccessToken(
             MASTER_REALM, new AuthForm(ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, demoAdminPassword)
         ).getToken();
 
-        masterRealmResource = identityService.getRealms(accessToken, false).realm(MASTER_REALM);
-        masterClientsResource = identityService.getRealms(accessToken, false).realm(MASTER_REALM).clients();
-        masterUsersResource = identityService.getRealms(accessToken, false).realm(MASTER_REALM).users();
+        masterRealmResource = identityService.getRealms(accessToken).realm(MASTER_REALM);
+        masterClientsResource = identityService.getRealms(accessToken).realm(MASTER_REALM).clients();
+        masterUsersResource = identityService.getRealms(accessToken).realm(MASTER_REALM).users();
     }
 
     protected String getClientObjectId(ClientsResource clientsResource) {

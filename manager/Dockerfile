@@ -1,4 +1,4 @@
-FROM java:8
+FROM openjdk:8
 
 ENV MANAGER_DOCROOT webapp
 ENV CONSOLE_DOCROOT deployment/resources_console

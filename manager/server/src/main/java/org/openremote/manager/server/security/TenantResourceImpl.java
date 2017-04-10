@@ -54,7 +54,7 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         try {
-            return identityService.getTenants(requestParams.getBearerAuth());
+            return identityService.getTenants(getClientRemoteAddress(), requestParams.getBearerAuth());
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {

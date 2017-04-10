@@ -46,9 +46,7 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
         notificationAlert.addAction(alertAction)
 
         and: "the notification resource"
-        def client = createClient(container).build()
-        def serverUri = serverUri(serverPort)
-        def notificationResource = getClientTarget(client, serverUri, realm, accessToken).proxy(NotificationResource.class)
+        def notificationResource = getClientTarget(serverUri(serverPort), realm, accessToken).proxy(NotificationResource.class)
 
         when: "the notification tokens of some devices are stored"
         notificationResource.storeDeviceToken(null, "device123", "token123")

@@ -43,10 +43,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
                 getString(container.getConfig(), SETUP_KEYCLOAK_ADMIN_PASSWORD, SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT)
         ).token
 
-        and: "the rules resource"
-        def client = createClient(container).build()
-        def serverUri = serverUri(serverPort)
-        def rulesetResource = getClientTarget(client, serverUri, MASTER_REALM, accessToken).proxy(RulesetResource.class)
+        and: "the ruleset resource"
+        def rulesetResource = getClientTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(RulesetResource.class)
 
         expect: "the rules engines to be ready"
         new PollingConditions(initialDelay: 3, timeout: 10, delay: 1).eventually {
@@ -315,10 +313,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
                 "testuser1"
         ).token
 
-        and: "the asset resource"
-        def client = createClient(container).build()
-        def serverUri = serverUri(serverPort)
-        def rulesetResource = getClientTarget(client, serverUri, MASTER_REALM, accessToken).proxy(RulesetResource.class)
+        and: "the ruleset resource"
+        def rulesetResource = getClientTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(RulesetResource.class)
 
         expect: "the rules engines to be ready"
         new PollingConditions(initialDelay: 3, timeout: 10, delay: 1).eventually {
@@ -547,10 +543,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
                 "testuser2"
         ).token
 
-        and: "the asset resource"
-        def client = createClient(container).build()
-        def serverUri = serverUri(serverPort)
-        def rulesetResource = getClientTarget(client, serverUri, keycloakDemoSetup.customerATenant.realm, accessToken).proxy(RulesetResource.class)
+        and: "the ruleset resource"
+        def rulesetResource = getClientTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm, accessToken).proxy(RulesetResource.class)
 
         expect: "the rules engines to be ready"
         new PollingConditions(initialDelay: 3, timeout: 10, delay: 1).eventually {
@@ -697,10 +691,8 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
                 "testuser3"
         ).token
 
-        and: "the asset resource"
-        def client = createClient(container).build()
-        def serverUri = serverUri(serverPort)
-        def rulesetResource = getClientTarget(client, serverUri, keycloakDemoSetup.customerATenant.realm, accessToken).proxy(RulesetResource.class)
+        and: "the ruleset resource"
+        def rulesetResource = getClientTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm, accessToken).proxy(RulesetResource.class)
 
         expect: "the rules engines to be ready"
         new PollingConditions(initialDelay: 3, timeout: 10, delay: 1).eventually {

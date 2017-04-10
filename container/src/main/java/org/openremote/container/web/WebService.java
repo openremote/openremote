@@ -22,6 +22,7 @@ package org.openremote.container.web;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.handlers.RedirectHandler;
+import io.undertow.server.handlers.RequestDumpingHandler;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
@@ -53,8 +54,7 @@ import java.util.regex.Pattern;
 
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.UriBuilder.fromUri;
-import static org.openremote.container.util.MapAccess.getInteger;
-import static org.openremote.container.util.MapAccess.getString;
+import static org.openremote.container.util.MapAccess.*;
 
 public abstract class WebService implements ContainerService {
 
@@ -64,6 +64,8 @@ public abstract class WebService implements ContainerService {
     public static final String WEBSERVER_LISTEN_HOST_DEFAULT = "0.0.0.0";
     public static final String WEBSERVER_LISTEN_PORT = "WEBSERVER_LISTEN_PORT";
     public static final int WEBSERVER_LISTEN_PORT_DEFAULT = 8080;
+    public static final String WEBSERVER_DUMP_REQUESTS = "WEBSERVER_DUMP_REQUESTS";
+    public static final boolean WEBSERVER_DUMP_REQUESTS_DEFAULT = false;
 
     // Authenticating requests requires a realm, either we receive this in a header or
     // we extract it (e.g. from request path segment) and set it as a header before
@@ -209,6 +211,10 @@ public abstract class WebService implements ContainerService {
         };
 
         handler = new WebServiceExceptions.RootUndertowExceptionHandler(devMode, handler);
+
+        if (getBoolean(container.getConfig(), WEBSERVER_DUMP_REQUESTS, WEBSERVER_DUMP_REQUESTS_DEFAULT)) {
+            handler = new RequestDumpingHandler(handler);
+        }
 
         builder.setHandler(handler);
 

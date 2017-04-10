@@ -25,6 +25,7 @@ import org.keycloak.representations.AccessToken;
 import org.openremote.container.Container;
 import org.openremote.model.Constants;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.*;
 
@@ -35,6 +36,9 @@ public class WebResource {
 
     @Context
     protected Application application;
+
+    @Context
+    HttpServletRequest request;
 
     @Context
     protected UriInfo uriInfo;
@@ -51,6 +55,10 @@ public class WebResource {
 
     public Container getContainer() {
         return getApplication().getContainer();
+    }
+
+    public String getClientRemoteAddress() {
+        return request.getRemoteAddr();
     }
 
     /**

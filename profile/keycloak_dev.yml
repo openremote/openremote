@@ -11,7 +11,7 @@ services:
     volumes:
       - ../keycloak/theme:/opt/jboss/keycloak/themes/openremote
     environment:
-      TZ: "Europe/Zurich"
+      TZ: Europe/Zurich
       KEYCLOAK_USER: admin
       KEYCLOAK_PASSWORD: secret
       KEYCLOAK_LOGLEVEL: DEBUG

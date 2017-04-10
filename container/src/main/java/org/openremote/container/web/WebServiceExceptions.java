@@ -219,6 +219,8 @@ public class WebServiceExceptions {
         // Ignore dropped connection errors
         if ("java.io.IOException: Broken pipe".equals(getRootCause(throwable).toString()))
             return;
+        if ("java.io.IOException: Connection reset by peer".equals(getRootCause(throwable).toString()))
+            return;
 
         if (LOG.isLoggable(Level.FINE)) {
             LOG.log(Level.FINE, "Web service exception in '" + origin + "' for '" + info + "'", throwable);

@@ -26,12 +26,10 @@ import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.server.handlers.proxy.SimpleProxyClientProvider;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.keycloak.adapters.KeycloakConfigResolver;
 import org.keycloak.adapters.KeycloakDeployment;
 import org.keycloak.adapters.KeycloakDeploymentBuilder;
 import org.keycloak.admin.client.resource.RealmsResource;
-import org.keycloak.admin.client.resource.ServerInfoResource;
 import org.keycloak.common.enums.SslRequired;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.keycloak.representations.idm.ClientRepresentation;
@@ -50,7 +48,6 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -87,19 +84,13 @@ public abstract class IdentityService implements ContainerService {
     public static final String KEYCLOAK_CLIENT_POOL_SIZE = "KEYCLOAK_CLIENT_POOL_SIZE";
     public static final int KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT = 20;
 
-    public static final String AUTH_PATH = "/auth";
-
     // The externally visible address of this installation
     protected UriBuilder externalServerUri;
 
     // Each realm in Keycloak has a client application with this identifier
     final protected String clientId;
 
-    // The token issuer URL, the externally visible address of this service
-    protected URI externalAuthServerUri;
-
-    // The internal host where Keycloak can be found
-    protected UriBuilder keycloakHostUri;
+    // The (internal) URI where Keycloak can be found
     protected UriBuilder keycloakServiceUri;
 
     // The client we use to access Keycloak
@@ -141,27 +132,22 @@ public abstract class IdentityService implements ContainerService {
             externalServerUri = externalServerUri.port(identityNetworkPort);
         }
 
-        LOG.info("External system base URL: " + externalServerUri);
+        LOG.info("External system base URL: " + externalServerUri.build());
 
-        externalAuthServerUri = externalServerUri.clone().path(AUTH_PATH).build();
-
-        LOG.info("Token issuer URL: " + externalAuthServerUri);
-
-        keycloakHostUri =
+        keycloakServiceUri =
             UriBuilder.fromPath("/")
                 .scheme("http")
                 .host(getString(container.getConfig(), KEYCLOAK_HOST, KEYCLOAK_HOST_DEFAULT))
-                .port(getInteger(container.getConfig(), KEYCLOAK_PORT, KEYCLOAK_PORT_DEFAULT));
+                .port(getInteger(container.getConfig(), KEYCLOAK_PORT, KEYCLOAK_PORT_DEFAULT))
+                .path(KeycloakResource.KEYCLOAK_CONTEXT_PATH);
 
-        keycloakServiceUri = keycloakHostUri.clone().replacePath(KeycloakResource.KEYCLOAK_CONTEXT_PATH);
-
-        LOG.info("Preparing identity service for Keycloak host: " + keycloakServiceUri.build());
+        LOG.info("Keycloak service/token issuer URL: " + keycloakServiceUri.build());
 
         // This client sets a custom Host header on outgoing requests, acting like a reverse proxy that "preserves"
         // the Host header. Keycloak will verify token issuer name based on this, so it must match the external host
         // and port that was used to obtain the token.
         ResteasyClientBuilder clientBuilder =
-            new ProxyWebClientBuilder(externalAuthServerUri.getHost(), externalAuthServerUri.getPort())
+            new ProxyWebClientBuilder(externalServerUri.build().getHost(), externalServerUri.build().getPort())
                 .establishConnectionTimeout(
                     getInteger(container.getConfig(), KEYCLOAK_CONNECT_TIMEOUT, KEYCLOAK_CONNECT_TIMEOUT_DEFAULT),
                     TimeUnit.MILLISECONDS
@@ -174,7 +160,7 @@ public abstract class IdentityService implements ContainerService {
                     getInteger(container.getConfig(), KEYCLOAK_CLIENT_POOL_SIZE, KEYCLOAK_CLIENT_POOL_SIZE_DEFAULT)
                 );
 
-        httpClient = WebClient.registerDefaults(container, clientBuilder).build();
+        httpClient = WebClient.registerDefaults(clientBuilder).build();
 
         keycloakDeploymentCache = createKeycloakDeploymentCache();
 
@@ -194,10 +180,10 @@ public abstract class IdentityService implements ContainerService {
         };
 
         authProxyHandler = new ProxyHandler(
-            new SimpleProxyClientProvider(keycloakHostUri.build()),
+            new SimpleProxyClientProvider(keycloakServiceUri.clone().replacePath("").build()),
             getInteger(container.getConfig(), KEYCLOAK_REQUEST_TIMEOUT, KEYCLOAK_REQUEST_TIMEOUT_DEFAULT),
             ResponseCodeHandler.HANDLE_404
-        );
+        ).setReuseXForwarded(true);
     }
 
     public String getClientId() {
@@ -232,46 +218,23 @@ public abstract class IdentityService implements ContainerService {
     public void enableAuthProxy(WebService webService) {
         if (authProxyHandler == null)
             throw new IllegalStateException("Initialize this service first");
-        LOG.info("Enabling auth reverse proxy (passing requests through to Keycloak) on web context: " + AUTH_PATH);
-        webService.getPrefixRoutes().put(AUTH_PATH, authProxyHandler);
+        LOG.info("Enabling auth reverse proxy (passing requests through to Keycloak) on web context: /" + KeycloakResource.KEYCLOAK_CONTEXT_PATH);
+        webService.getPrefixRoutes().put("/" + KeycloakResource.KEYCLOAK_CONTEXT_PATH, authProxyHandler);
     }
 
     public KeycloakResource getKeycloak() {
-        return getKeycloak(null, false);
+        return getTarget(getHttpClient(), keycloakServiceUri.build(), null, null, null)
+            .proxy(KeycloakResource.class);
     }
 
-    public KeycloakResource getKeycloak(String accessToken) {
-        return getKeycloak(accessToken, false);
+    public RealmsResource getRealms(String accessToken) {
+        return getTarget(getHttpClient(), keycloakServiceUri.build(), accessToken, null, null)
+            .proxy(RealmsResource.class);
     }
 
-    public KeycloakResource getKeycloak(String accessToken, boolean enableProxyForward) {
-        return getKeycloak(
-            getTarget(getHttpClient(), keycloakServiceUri.build(), accessToken, externalAuthServerUri, enableProxyForward)
-        );
-    }
-
-    public KeycloakResource getKeycloak(ResteasyWebTarget target) {
-        return target.proxy(KeycloakResource.class);
-    }
-
-    public RealmsResource getRealms(String accessToken, boolean enableProxyForward) {
-        return getRealms(
-            getTarget(getHttpClient(), keycloakServiceUri.build(), accessToken, externalAuthServerUri, enableProxyForward)
-        );
-    }
-
-    public RealmsResource getRealms(ResteasyWebTarget target) {
-        return target.proxy(RealmsResource.class);
-    }
-
-    public ServerInfoResource getServerInfo(String accessToken, boolean enableProxyForward) {
-        return getServerInfo(
-            getTarget(getHttpClient(), keycloakServiceUri.build(), accessToken, externalAuthServerUri, enableProxyForward)
-        );
-    }
-
-    public ServerInfoResource getServerInfo(ResteasyWebTarget target) {
-        return target.proxy(ServerInfoResource.class);
+    public RealmsResource getRealms(String forwardFor, String accessToken) {
+        return getTarget(getHttpClient(), keycloakServiceUri.build(), accessToken, forwardFor, forwardFor != null ? externalServerUri.build(): null)
+            .proxy(RealmsResource.class);
     }
 
     public void pingKeycloak() {
@@ -327,7 +290,9 @@ public abstract class IdentityService implements ContainerService {
 
                     // Must rewrite the auth-server URL to our external host and port, which
                     // we reverse-proxy back to Keycloak. This is the issuer baked into a token.
-                    adapterConfig.setAuthServerUrl(externalAuthServerUri.toString());
+                    adapterConfig.setAuthServerUrl(
+                        externalServerUri.clone().replacePath(KeycloakResource.KEYCLOAK_CONTEXT_PATH).build().toString()
+                    );
 
                     // TODO: Some other options should be configurable, e.g. CORS and NotBefore
 
@@ -344,7 +309,7 @@ public abstract class IdentityService implements ContainerService {
 
     public void configureRealm(RealmRepresentation realmRepresentation, int accessTokenLifespanSeconds) {
         realmRepresentation.setDisplayNameHtml(
-            "<span>"+ (realmRepresentation.getDisplayName().replaceAll("[^A-Za-z0-9]", ""))+ " </span>"
+            "<span>" + (realmRepresentation.getDisplayName().replaceAll("[^A-Za-z0-9]", "")) + " </span>"
         );
         realmRepresentation.setAccessTokenLifespan(accessTokenLifespanSeconds);
         realmRepresentation.setLoginTheme("openremote");
@@ -352,7 +317,6 @@ public abstract class IdentityService implements ContainerService {
         realmRepresentation.setEmailTheme("openremote");
         realmRepresentation.setSsoSessionIdleTimeout(sessionTimeoutSeconds);
 
-        // TODO: Make SSL setup configurable
         realmRepresentation.setSslRequired(SslRequired.NONE.toString());
     }
 

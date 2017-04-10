@@ -22,7 +22,6 @@ package org.openremote.manager.server.security;
 import org.apache.camel.ExchangePattern;
 import org.keycloak.admin.client.resource.ClientResource;
 import org.keycloak.admin.client.resource.ClientsResource;
-import org.keycloak.admin.client.resource.RealmsResource;
 import org.keycloak.admin.client.resource.RolesResource;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -32,7 +31,6 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.security.IdentityService;
-import org.openremote.container.security.KeycloakResource;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.shared.security.ClientRole;
@@ -46,8 +44,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-import static org.openremote.model.util.JsonUtil.convert;
 import static org.openremote.model.Constants.*;
+import static org.openremote.model.util.JsonUtil.convert;
 
 public class ManagerIdentityService extends IdentityService {
 
@@ -90,28 +88,10 @@ public class ManagerIdentityService extends IdentityService {
         // Callback URL used by Console web client authentication, any relative path to "ourselves" is fine
         String consoleCallbackUrl = UriBuilder.fromUri("/console/").path(realm).path("*").build().toString();
         redirectUrls.add(consoleCallbackUrl);
-
-        // Callback URL used by AeroGear for authentication from Console
-        // TODO: Do we still need this?
-        redirectUrls.add("org.openremote.console://oauth2Callback");
     }
 
-    /**
-     * Pass access token from external request to Keycloak request, emulate a reverse proxy.
-     */
-    public KeycloakResource getKeycloak(String bearerAuth) {
-        return getKeycloak(bearerAuth, true);
-    }
-
-    /**
-     * Pass access token from external request to Keycloak request, emulate a reverse proxy.
-     */
-    public RealmsResource getRealms(String bearerAuth) {
-        return getRealms(bearerAuth, true);
-    }
-
-    public Tenant[] getTenants(String bearerAuth) {
-        List<RealmRepresentation> realms = getRealms(bearerAuth).findAll();
+    public Tenant[] getTenants(String sourceAddress, String bearerAuth) {
+        List<RealmRepresentation> realms = getRealms(sourceAddress, bearerAuth).findAll();
 
         // Make sure the master tenant is always on top
         realms.sort((o1, o2) -> {
@@ -254,11 +234,9 @@ public class ManagerIdentityService extends IdentityService {
 
     /**
      * Use PERSISTENCE_TOPIC and persistence event
-     *
-     * @param tenant
      */
     protected void publishModification(PersistenceEvent.Cause cause, Tenant tenant) {
-        PersistenceEvent persistenceEvent = new PersistenceEvent(cause, tenant, new String[0], null);
+        PersistenceEvent persistenceEvent = new PersistenceEvent<>(cause, tenant, new String[0], null);
 
         messageBrokerService.getProducerTemplate().sendBodyAndHeader(
             PersistenceEvent.PERSISTENCE_TOPIC,

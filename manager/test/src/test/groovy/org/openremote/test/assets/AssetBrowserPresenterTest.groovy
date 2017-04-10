@@ -64,7 +64,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         and: "a client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
         def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
-        def clientTarget = getClientTarget(createClient(container).build(), serverUri(serverPort), realm)
+        def clientTarget = getClientTarget(serverUri(serverPort), realm)
 
         and: "a client websocket connection and attached event bus and service"
         List<SharedEvent> collectedSharedEvents = []
@@ -231,7 +231,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         and: "a client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
         def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
-        def clientTarget = getClientTarget(createClient(container).build(), serverUri(serverPort), realm)
+        def clientTarget = getClientTarget(serverUri(serverPort), realm)
 
         and: "a client websocket connection and attached event bus and service"
         List<SharedEvent> collectedSharedEvents = []
@@ -407,7 +407,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
         and: "a client request service and target"
         def constraintViolationReader = new ClientObjectMapper(container.JSON, ConstraintViolationReport.class) as EntityReader<ConstraintViolationReport>
         def requestService = new RequestServiceImpl(securityService, constraintViolationReader)
-        def clientTarget = getClientTarget(createClient(container).build(), serverUri(serverPort), realm)
+        def clientTarget = getClientTarget(serverUri(serverPort), realm)
 
         and: "a client websocket connection and attached event bus and service"
         List<SharedEvent> collectedSharedEvents = []

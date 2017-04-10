@@ -143,4 +143,9 @@ public class NotificationService implements ContainerService {
             return query.getResultList();
         });
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{}";
+    }
 }

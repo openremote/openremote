@@ -42,7 +42,8 @@ public class LogUtil {
         // If no JUL configuration is provided
         if (System.getProperty("java.util.logging.config.file") == null) {
             // Load the logging configuration file specified with an environment variable
-            if (System.getenv(LOGGING_CONFIG_FILE) != null) {
+            if (System.getenv(LOGGING_CONFIG_FILE) != null &&
+                Files.isReadable(Paths.get(System.getenv(LOGGING_CONFIG_FILE)))) {
                 try (InputStream is = Files.newInputStream(Paths.get(System.getenv(LOGGING_CONFIG_FILE)))) {
                     LogManager.getLogManager().readConfiguration(is);
                 } catch (Exception ex) {
