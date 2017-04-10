@@ -262,8 +262,10 @@ public abstract class AttributesView<
         panel.setStyleName("flex layout horizontal center");
         FormInputText inputText = createStringEditorWidget(style, currentValue, defaultValue, updateConsumer);
         panel.add(inputText);
-        TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
-        panel.add(timestampLabel);
+        if (isShowTimestamp(attribute)) {
+            TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
+            panel.add(timestampLabel);
+        }
 
         return () -> panel;
     }
@@ -312,8 +314,10 @@ public abstract class AttributesView<
         panel.setStyleName("flex layout horizontal center");
         FormInputNumber inputNumber = createIntegerEditorWidget(style, currentValue, defaultValue, updateConsumer, errorConsumer);
         panel.add(inputNumber);
-        TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
-        panel.add(timestampLabel);
+        if (isShowTimestamp(attribute)) {
+            TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
+            panel.add(timestampLabel);
+        }
 
         return () -> panel;
     }
@@ -367,8 +371,10 @@ public abstract class AttributesView<
         panel.setStyleName("flex layout horizontal center");
         FormInputText inputText = createDecimalEditorWidget(style, currentValue, defaultValue, updateConsumer, errorConsumer);
         panel.add(inputText);
-        TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
-        panel.add(timestampLabel);
+        if (isShowTimestamp(attribute)) {
+            TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
+            panel.add(timestampLabel);
+        }
 
         return () -> panel;
     }
@@ -416,8 +422,10 @@ public abstract class AttributesView<
         panel.setStyleName("flex layout horizontal center");
         FormCheckBox checkBox = createBooleanEditorWidget(style, currentValue, defaultValue, updateConsumer);
         panel.add(checkBox);
-        TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
-        panel.add(timestampLabel);
+        if (isShowTimestamp(attribute)) {
+            TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
+            panel.add(timestampLabel);
+        }
 
         return () -> panel;
     }
@@ -464,7 +472,11 @@ public abstract class AttributesView<
     }
 
     protected boolean isDefaultReadOnly(A attribute) {
-        return false;
+        return attribute.isReadOnly();
+    }
+
+    protected boolean isShowTimestamp(A attribute) {
+        return true;
     }
 
     protected void removeAttribute(A attribute) {

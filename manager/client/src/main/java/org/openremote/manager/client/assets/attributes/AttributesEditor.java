@@ -35,12 +35,8 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetAttributes;
 import org.openremote.model.asset.AssetMeta;
 
-import java.util.logging.Logger;
-
 public class AttributesEditor
     extends AttributesView<AttributesEditor.Container, AttributesEditor.Style, AssetAttributes, AssetAttribute> {
-
-    private static final Logger LOG = Logger.getLogger(AttributesEditor.class.getName());
 
     protected final RegExp attributeNameRegExp = RegExp.compile(Attribute.ATTRIBUTE_NAME_PATTERN);
 
@@ -103,6 +99,11 @@ public class AttributesEditor
     @Override
     protected void addAttributeExtensions(AssetAttribute attribute, FormGroup formGroup) {
         formGroup.addExtension(new MetaEditor(attribute));
+    }
+
+    @Override
+    protected boolean isShowTimestamp(AssetAttribute attribute) {
+        return false;
     }
 
     /* ####################################################################### */

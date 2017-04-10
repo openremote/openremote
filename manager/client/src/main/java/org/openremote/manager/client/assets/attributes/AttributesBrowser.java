@@ -217,7 +217,7 @@ public abstract class AttributesBrowser
         editor.asWidget().addStyleName(environment.getWidgetStyle().HighlightBackground());
         Browser.getWindow().setTimeout(() -> {
             editor.asWidget().removeStyleName(environment.getWidgetStyle().HighlightBackground());
-        }, 1000);
+        }, 250);
     }
 
     protected Widget createDatapointBrowser(AssetAttribute attribute) {
