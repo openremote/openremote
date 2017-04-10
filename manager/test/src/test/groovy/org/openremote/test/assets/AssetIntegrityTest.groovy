@@ -84,7 +84,6 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         then: "the attribute value should match"
         new AssetAttributes(testAsset).get("foo").getValueAsString() == "bar2"
-        assetResource.readAttributeValue(null, testAsset.getId(), "foo") == "\"bar2\""
 
         when: "an asset attribute value null is written directly"
         assetResource.writeAttributeValue(null, testAsset.getId(), "foo", "null")
@@ -92,7 +91,6 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         then: "the attribute value should match"
         !new AssetAttributes(testAsset).get("foo").hasValue()
-        assetResource.readAttributeValue(null, testAsset.getId(), "foo") == "null"
 
         when: "an asset is updated with a different type"
         testAsset = assetResource.get(null, testAsset.getId())

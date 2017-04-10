@@ -62,6 +62,11 @@ import static org.apache.camel.builder.PredicateBuilder.or;
  * The payload is a serialized representation of {@link CancelEventSubscription}. If a client
  * does not want to wait for expiration of its subscriptions, it can cancel a subscription.
  * </p></dd>
+ * <dt><code>EVENT{...}</code></dt>
+ * <dd><p>
+ * The payload is a serialized representation of a subtype of {@link SharedEvent}. If the server
+ * does not recognize the event, it is silently ignored.
+ * </p></dd>
  * </dl>
  * <p>
  * The following messages can be published/returned by the server:
@@ -153,15 +158,11 @@ public class EventService implements ContainerService {
                         String sessionKey = getSessionKey(exchange);
                         eventSubscriptions.cancel(sessionKey, exchange.getIn().getBody(CancelEventSubscription.class));
                     })
-                    /* TODO Implement properly
                     .when(bodyAs(String.class).startsWith(SharedEvent.MESSAGE_PREFIX))
                     .convertBodyTo(SharedEvent.class)
-                    .to(EventService.INCOMING_EVENT_TOPIC) // TODO SECURITY!
-                    */
+                    .to(EventService.INCOMING_EVENT_TOPIC)
                     .otherwise()
-                    .process(exchange -> {
-                        LOG.fine("Unsupported message body: " + exchange.getIn().getBody());
-                    })
+                    .process(exchange -> LOG.fine("Unsupported message body: " + exchange.getIn().getBody()))
                     .end();
 
                 from(EventService.OUTGOING_EVENT_QUEUE)
@@ -197,7 +198,7 @@ public class EventService implements ContainerService {
         );
     }
 
-    protected void sendToSession(String sessionKey, Object data) {
+    public void sendToSession(String sessionKey, Object data) {
         LOG.fine("Sending to session '" + sessionKey + "': " + data);
         messageBrokerService.getProducerTemplate().sendBodyAndHeader(
             "websocket://" + WEBSOCKET_EVENTS,

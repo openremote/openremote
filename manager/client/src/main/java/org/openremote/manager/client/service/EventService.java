@@ -32,9 +32,9 @@ import org.openremote.model.event.shared.SharedEvent;
  * If your subscription fails, a {@link org.openremote.manager.client.event.SubscriptionFailureEvent}
  * will be dispatched on the event bus.
  * <p>
- * Events can be send to the server with {@link #dispatch}, dispatching any kind
- * of event (even {@link SharedEvent}s) on the local event bus will only dispatch
- * the events locally and not send them to the server.
+ * Events can be send to the server with {@link #dispatch}. This is how the client
+ * sends events to the server, because dispatching events on the local event bus
+ * will not send them to the server.
  */
 public interface EventService {
 

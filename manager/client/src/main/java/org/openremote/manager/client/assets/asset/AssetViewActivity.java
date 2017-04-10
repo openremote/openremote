@@ -20,8 +20,6 @@
 package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
-import elemental.json.Json;
-import elemental.json.JsonValue;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.TenantMapper;
 import org.openremote.manager.client.assets.AssetMapper;
@@ -31,8 +29,6 @@ import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.assets.browser.AssetTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
 import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
-import org.openremote.model.event.bus.EventBus;
-import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
 import org.openremote.manager.client.map.MapView;
 import org.openremote.manager.shared.asset.AssetResource;
@@ -40,8 +36,9 @@ import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
-import org.openremote.model.Runnable;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.event.bus.EventBus;
+import org.openremote.model.event.bus.EventRegistration;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -182,22 +179,6 @@ public class AssetViewActivity
             view.getAttributesBrowserContainer(),
             asset
         ) {
-            @Override
-            protected void readAttributeValue(AssetAttribute attribute, Runnable onSuccess) {
-                environment.getRequestService().execute(
-                    value -> value,
-                    requestParams -> assetResource.readAttributeValue(requestParams, assetId, attribute.getName()),
-                    200,
-                    result -> {
-                        JsonValue value = Json.instance().parse(result);
-                        // TODO Bug in Elemental, can't check this value for null etc.
-                        attribute.setValueUnchecked(value);
-                        onSuccess.run();
-                    },
-                    ex -> handleRequestException(ex, environment)
-                );
-            }
-
             @Override
             protected void writeAttributeValue(AssetAttribute attribute) {
                 environment.getRequestService().execute(

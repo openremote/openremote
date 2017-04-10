@@ -141,7 +141,7 @@ public abstract class IdentityService implements ContainerService {
                 .port(getInteger(container.getConfig(), KEYCLOAK_PORT, KEYCLOAK_PORT_DEFAULT))
                 .path(KeycloakResource.KEYCLOAK_CONTEXT_PATH);
 
-        LOG.info("Keycloak service/token issuer URL: " + keycloakServiceUri.build());
+        LOG.info("Keycloak service URL: " + keycloakServiceUri.build());
 
         // This client sets a custom Host header on outgoing requests, acting like a reverse proxy that "preserves"
         // the Host header. Keycloak will verify token issuer name based on this, so it must match the external host

@@ -25,8 +25,9 @@ import com.google.gwt.user.client.ui.Widget;
 import elemental.client.Browser;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.widget.*;
+import org.openremote.model.Attribute;
 import org.openremote.model.AttributeEvent;
-import org.openremote.model.Runnable;
+import org.openremote.model.ReadAttributesEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetAttributes;
@@ -35,6 +36,7 @@ import org.openremote.model.event.bus.EventRegistration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public abstract class AttributesBrowser
     extends AttributesView<AttributesBrowser.Container, AttributesBrowser.Style, AssetAttributes, AssetAttribute> {
@@ -58,6 +60,19 @@ public abstract class AttributesBrowser
     public AttributesBrowser(Environment environment, Container container, Asset asset) {
         super(environment, container, new AssetAttributes(asset));
         this.asset = asset;
+
+        eventRegistration = environment.getEventBus().register(
+            AttributeEvent.class,
+            event -> {
+                for (AssetAttribute assetAttribute : attributeGroups.keySet()) {
+                    if (assetAttribute.getReference().equals(event.getAttributeRef())) {
+                        assetAttribute.setValueUnchecked(event.getValue(), event.getTimestamp());
+                        rebuildEditor(assetAttribute);
+                        break;
+                    }
+                }
+            }
+        );
     }
 
     @Override
@@ -78,7 +93,13 @@ public abstract class AttributesBrowser
     @Override
     public void close() {
         super.close();
-        enableLiveUpdates(false);
+
+        if (eventRegistration != null) {
+            environment.getEventBus().remove(eventRegistration);
+            eventRegistration = null;
+        }
+
+        subscribeToLiveUpdates(false);
     }
 
     @Override
@@ -95,22 +116,13 @@ public abstract class AttributesBrowser
             writeValueButton.setText(container.getMessages().write());
             writeValueButton.setPrimary(true);
             writeValueButton.setIcon("cloud-upload");
-            writeValueButton.addClickHandler(clickEvent -> {
-                writeAttributeValue(attribute);
-                /* TODO implement
-                environment.getEventService().dispatch(
-                    new AttributeEvent(attribute.getState())
-                );
-                */
-            });
+            writeValueButton.addClickHandler(clickEvent -> writeAttributeValue(attribute));
             formGroupActions.add(writeValueButton);
 
             FormButton readValueButton = new FormButton();
             readValueButton.setText(container.getMessages().read());
             readValueButton.setIcon("cloud-download");
-            readValueButton.addClickHandler(clickEvent -> readAttributeValue(attribute, () -> {
-                rebuildEditor(attribute);
-            }));
+            readValueButton.addClickHandler(clickEvent -> readAttributeValue(attribute));
             readButtons.add(readValueButton);
             formGroupActions.add(readValueButton);
         }
@@ -124,6 +136,21 @@ public abstract class AttributesBrowser
 
     /* ####################################################################### */
 
+    protected void readAllAttributeValues() {
+        environment.getEventService().dispatch(
+            new ReadAttributesEvent(
+                asset.getId(),
+                attributeGroups.keySet().stream().map(Attribute::getName).collect(Collectors.toList())
+            )
+        );
+    }
+
+    protected void readAttributeValue(AssetAttribute attribute) {
+        environment.getEventService().dispatch(
+            new ReadAttributesEvent(attribute.getAssetId(), attribute.getName())
+        );
+    }
+
     protected FormGroup createLiveUpdatesGroup() {
         FormGroup formGroup = new FormGroup();
 
@@ -134,7 +161,7 @@ public abstract class AttributesBrowser
         formGroup.addFormField(formField);
 
         FormCheckBox liveUpdatesCheckBox = new FormCheckBox();
-        liveUpdatesCheckBox.addValueChangeHandler(event -> enableLiveUpdates(event.getValue()));
+        liveUpdatesCheckBox.addValueChangeHandler(event -> subscribeToLiveUpdates(event.getValue()));
         formField.add(liveUpdatesCheckBox);
 
         if (attributes.size() > 0) {
@@ -142,7 +169,7 @@ public abstract class AttributesBrowser
 
             FormButton readAllButton = new FormButton();
             readAllButton.setText("Read and refresh all attributes");
-            readAllButton.addClickHandler(event -> showInfo("TODO: Not implemented"));
+            readAllButton.addClickHandler(event -> readAllAttributeValues());
             formGroupActions.add(readAllButton);
 
             readButtons.add(readAllButton);
@@ -153,29 +180,12 @@ public abstract class AttributesBrowser
         return formGroup;
     }
 
-    protected void enableLiveUpdates(boolean enable) {
+    protected void subscribeToLiveUpdates(boolean enable) {
         for (FormButton readButton : readButtons) {
             readButton.setEnabled(!enable);
         }
 
-        if (eventRegistration != null) {
-            environment.getEventBus().remove(eventRegistration);
-            eventRegistration = null;
-        }
-
         if (enable) {
-            eventRegistration = environment.getEventBus().register(
-                AttributeEvent.class,
-                event -> {
-                    for (AssetAttribute assetAttribute : attributeGroups.keySet()) {
-                        if (assetAttribute.getReference().equals(event.getAttributeRef())) {
-                            assetAttribute.setValueUnchecked(event.getValue(), event.getTimestamp());
-                            rebuildEditor(assetAttribute);
-                            break;
-                        }
-                    }
-                }
-            );
             environment.getEventService().subscribe(
                 AttributeEvent.class,
                 new AttributeEvent.EntityIdFilter(asset.getId())
@@ -216,8 +226,6 @@ public abstract class AttributesBrowser
     }
 
     /* ####################################################################### */
-
-    abstract protected void readAttributeValue(AssetAttribute attribute, Runnable onSuccess);
 
     abstract protected void writeAttributeValue(AssetAttribute attribute);
 

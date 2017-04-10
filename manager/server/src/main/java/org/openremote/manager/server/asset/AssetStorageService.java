@@ -31,18 +31,21 @@ import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.util.Pair;
 import org.openremote.container.web.WebService;
+import org.openremote.container.web.socket.WebsocketAuth;
 import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.Attribute;
 import org.openremote.model.AttributeEvent;
+import org.openremote.model.ReadAttributesEvent;
 import org.openremote.model.asset.*;
 import org.postgresql.util.PGobject;
 
 import javax.persistence.EntityManager;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -50,6 +53,9 @@ import java.util.logging.Logger;
 
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
+import static org.openremote.manager.server.event.EventService.INCOMING_EVENT_TOPIC;
+import static org.openremote.manager.server.event.EventService.getSessionKey;
+import static org.openremote.manager.server.event.EventService.getWebsocketAuth;
 
 public class AssetStorageService extends RouteBuilder implements ContainerService, Consumer<AssetState> {
 
@@ -137,6 +143,37 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         from(PERSISTENCE_TOPIC)
             .filter(isPersistenceEventForEntityType(ServerAsset.class))
             .process(exchange -> publishModificationEvents(exchange.getIn().getBody(PersistenceEvent.class)));
+
+        // React if a client wants to read attribute state
+        from(INCOMING_EVENT_TOPIC)
+            .filter(body().isInstanceOf(ReadAttributesEvent.class))
+            .process(exchange -> {
+                ReadAttributesEvent event = exchange.getIn().getBody(ReadAttributesEvent.class);
+                String sessionKey = getSessionKey(exchange);
+                WebsocketAuth auth = getWebsocketAuth(exchange);
+
+                // Superuser can get all
+                if (auth.isSuperUser()) {
+                    ServerAsset asset = find(event.getEntityId(), true);
+                    if (asset != null)
+                        replyWithAttributeEvents(sessionKey, asset, Arrays.asList(event.getAttributeNames()));
+                    return;
+                }
+
+                // User must have role
+                if (!auth.isUserInRole(ClientRole.READ_ASSETS.getValue())) {
+                    return;
+                }
+
+                ServerAsset asset = find(
+                    event.getEntityId(),
+                    true,
+                    managerIdentityService.isRestrictedUser(auth.getUserId()) // Restricted users get filtered state
+                );
+                if (asset != null)
+                    replyWithAttributeEvents(sessionKey, asset, Arrays.asList(event.getAttributeNames()));
+            });
+
     }
 
     public ServerAsset find(String assetId) {
@@ -639,6 +676,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 );
                 break;
         }
+    }
+
+    protected void replyWithAttributeEvents(String sessionKey, ServerAsset asset, List<String> attributeNames) {
+        LOG.fine("For client session '" + sessionKey + "', reading asset attributes " + attributeNames + " on: " + asset);
+        new AssetAttributes(asset).get().stream()
+            .filter(assetAttribute -> attributeNames.contains(assetAttribute.getName()))
+            .map(AbstractAssetAttribute::getStateEvent)
+            .forEach(attributeEvent -> eventService.sendToSession(sessionKey, attributeEvent));
     }
 
     public String toString() {

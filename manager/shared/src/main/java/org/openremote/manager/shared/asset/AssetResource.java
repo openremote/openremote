@@ -46,7 +46,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
  * {@link org.openremote.model.asset.UserAsset}).
  * <p>
  * The only operations a restricted user is able to perform are {@link #getCurrentUserAssets},
- * {@link #get}, {@link #update}, {@link #readAttributeValue} and {@link #writeAttributeValue}.
+ * {@link #get}, {@link #update}, and {@link #writeAttributeValue}.
  * </li>
  * </ul>
  */
@@ -102,7 +102,8 @@ public interface AssetResource {
      * Retrieve the asset. Regular users can only access assets in their authenticated realm,
      * the superuser can access assets in other (all) realms. A 403 status is returned if a regular
      * user tries to access an asset in a realm different than its authenticated realm, or if the
-     * user is restricted and the asset is not linked to the user.
+     * user is restricted and the asset is not linked to the user. All asset details (path, attributes)
+     * will be populated, the asset is loaded completely.
      */
     @GET
     @Path("{assetId}")
@@ -140,20 +141,6 @@ public interface AssetResource {
     @SuccessStatusCode(204)
     @RolesAllowed({"write:assets"})
     void writeAttributeValue(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @PathParam("attributeName") String attributeName, String rawJson);
-
-    /**
-     * Reads the attribute state of an asset. Regular users can only access assets in
-     * their authenticated realm, the superuser can access assets in other (all) realms. A 403 status
-     * is returned if a regular user tries to access an asset in a realm different than its
-     * authenticated realm, or if the user is restricted and the asset to read is not in the set of linked
-     * assets of the restricted user.
-     */
-    @GET
-    @Path("{assetId}/attribute/{attributeName}")
-    @Produces(APPLICATION_JSON)
-    @SuccessStatusCode(200)
-    @RolesAllowed({"read:assets"})
-    String readAttributeValue(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @PathParam("attributeName") String attributeName);
 
     /**
      * Creates an asset. The identifier value of the asset can be provided, it should be a

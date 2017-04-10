@@ -26,7 +26,6 @@ import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.security.Tenant;
-import org.openremote.model.Attribute;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.asset.Asset;
@@ -227,9 +226,22 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
     @Override
     public void writeAttributeValue(RequestParams requestParams, String assetId, String attributeName, String rawJson) {
         try {
-            ServerAsset asset = assetStorageService.find(assetId, true, false);
-            if (asset == null)
-                throw new WebApplicationException(NOT_FOUND);
+
+            ServerAsset asset;
+
+            if (isRestrictedUser()) {
+                asset = assetStorageService.find(assetId, true, true);
+                if (asset == null)
+                    throw new WebApplicationException(NOT_FOUND);
+
+                if (!assetStorageService.isUserAsset(getUserId(), assetId))
+                    throw new WebApplicationException(Response.Status.FORBIDDEN);
+
+            } else {
+                asset = assetStorageService.find(assetId, true);
+                if (asset == null)
+                    throw new WebApplicationException(NOT_FOUND);
+            }
 
             // Check attribute exists
             AssetAttributes attributes = new AssetAttributes(asset);
@@ -242,9 +254,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
-            // Check restricted
-            if (isRestrictedUser() &&
-                !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
+            // Check read-only
+            if (!isSuperUser() && attributes.get(attributeName).isReadOnly()) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 
@@ -257,39 +268,6 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             } catch (RuntimeException ex) {
                 throw new IllegalStateException("Error updating attribute: " + attributeName, ex);
             }
-
-        } catch (IllegalStateException ex) {
-            throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
-        }
-    }
-
-    @Override
-    public String readAttributeValue(RequestParams requestParams, String assetId, String attributeName) {
-        try {
-            ServerAsset asset = assetStorageService.find(assetId, true, false);
-            if (asset == null)
-                throw new WebApplicationException(NOT_FOUND);
-
-            // Check realm, must be accessible
-            if (!isTenantActiveAndAccessible(asset)) {
-                LOG.fine("Forbidden access for user '" + getUsername() + "': " + asset);
-                throw new WebApplicationException(Response.Status.FORBIDDEN);
-            }
-
-            // Check restricted
-            if (isRestrictedUser() &&
-                !assetStorageService.isUserAsset(getUserId(), asset.getId())) {
-                throw new WebApplicationException(Response.Status.FORBIDDEN);
-            }
-
-            AssetAttributes attributes = new AssetAttributes(asset);
-            Attribute attribute = attributes.get(attributeName);
-            if (attribute == null) {
-                throw new WebApplicationException(NOT_FOUND);
-            }
-
-            // No idea why toJson() would produce a Java null instead of a "null" literal, but it does
-            return attribute.hasValue() ? attribute.getValue().toJson() : "null";
 
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
