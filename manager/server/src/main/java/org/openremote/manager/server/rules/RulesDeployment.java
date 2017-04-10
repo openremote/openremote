@@ -489,7 +489,9 @@ public class RulesDeployment<T extends Ruleset> {
             FactHandle factHandle = knowledgeSession.insert(abstractAssetUpdate);
             afterInsert.accept(factHandle);
             LOG.finest("On " + this + ", firing all rules");
-            int fireCount = knowledgeSession.fireAllRules((match) -> !silent || !match.getFactHandles().contains(factHandle));
+            // TODO The silent option is now disabled, do we still need this even though we have RULE_STATE and RULE_EVENT?
+            //int fireCount = knowledgeSession.fireAllRules((match) -> !silent || !match.getFactHandles().contains(factHandle));
+            int fireCount = knowledgeSession.fireAllRules();
             LOG.finest("On " + this + ", fired rules count: " + fireCount);
 
             newFactCount = knowledgeSession.getFactCount();

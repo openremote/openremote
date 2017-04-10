@@ -293,7 +293,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert apartment3EngineFiredRules.containsAll(["All", "All changed"])
             assert apartment1EngineFiredRules.size() == 0
         }
-
+/* TODO Update these tests when we are sure that "silent insertion" is no longer needed
         when: "a Kitchen room asset is inserted into apartment 1 that contains a RULE_STATE = true meta flag"
         resetRuleExecutionLoggers()
         def apartment1 = assetStorageService.find(managerDemoSetup.apartment1Id)
@@ -439,7 +439,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert apartment1EngineFiredRules.size() == 0
             assert apartment3EngineFiredRules.size() == 0
         }
-
+*/
         cleanup: "the server should be stopped"
         stopContainer(container)
     }
