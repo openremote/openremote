@@ -40,6 +40,7 @@ public class EventServiceImpl implements EventService {
     public static EventService create(SecurityService securityService,
                                       EventBus eventBus,
                                       SharedEventMapper sharedEventMapper,
+                                      SharedEventArrayMapper sharedEventArrayMapper,
                                       EventSubscriptionMapper eventSubscriptionMapper,
                                       CancelEventSubscriptionMapper cancelEventSubscriptionMapper,
                                       UnauthorizedEventSubscriptionMapper unauthorizedEventSubscriptionMapper) {
@@ -50,6 +51,7 @@ public class EventServiceImpl implements EventService {
             ("https:".equals(location.getProtocol()) ? "wss" : "ws")
                 + "://" + location.getHostname() + ":" + location.getPort() + "/websocket/events",
             sharedEventMapper,
+            sharedEventArrayMapper,
             eventSubscriptionMapper,
             cancelEventSubscriptionMapper,
             unauthorizedEventSubscriptionMapper
@@ -67,6 +69,7 @@ public class EventServiceImpl implements EventService {
     final protected EventBus eventBus;
     final protected String serviceUrl;
     final protected SharedEventMapper sharedEventMapper;
+    final protected SharedEventArrayMapper sharedEventArrayMapper;
     final protected EventSubscriptionMapper eventSubscriptionMapper;
     final protected CancelEventSubscriptionMapper cancelEventSubscriptionMapper;
     final protected UnauthorizedEventSubscriptionMapper unauthorizedEventSubscriptionMapper;
@@ -81,6 +84,7 @@ public class EventServiceImpl implements EventService {
                             EventBus eventBus,
                             String serviceUrl,
                             SharedEventMapper sharedEventMapper,
+                            SharedEventArrayMapper sharedEventArrayMapper,
                             EventSubscriptionMapper eventSubscriptionMapper,
                             CancelEventSubscriptionMapper cancelEventSubscriptionMapper,
                             UnauthorizedEventSubscriptionMapper unauthorizedEventSubscriptionMapper) {
@@ -88,6 +92,7 @@ public class EventServiceImpl implements EventService {
         this.eventBus = eventBus;
         this.serviceUrl = serviceUrl;
         this.sharedEventMapper = sharedEventMapper;
+        this.sharedEventArrayMapper = sharedEventArrayMapper;
         this.eventSubscriptionMapper = eventSubscriptionMapper;
         this.cancelEventSubscriptionMapper = cancelEventSubscriptionMapper;
         this.unauthorizedEventSubscriptionMapper = unauthorizedEventSubscriptionMapper;
@@ -270,8 +275,16 @@ public class EventServiceImpl implements EventService {
             eventBus.dispatch(new SubscriptionFailureEvent(failure.getEventType()));
         } else if (data.startsWith(SharedEvent.MESSAGE_PREFIX)) {
             data = data.substring(SharedEvent.MESSAGE_PREFIX.length());
-            SharedEvent event = sharedEventMapper.read(data);
-            eventBus.dispatch(event);
+            if (data.startsWith("[")) {
+                // Handle array of events
+                SharedEvent[] events = sharedEventArrayMapper.read(data);
+                for (SharedEvent event : events) {
+                    eventBus.dispatch(event);
+                }
+            } else {
+                SharedEvent event = sharedEventMapper.read(data);
+                eventBus.dispatch(event);
+            }
         }
     }
 

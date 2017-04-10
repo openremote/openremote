@@ -57,8 +57,16 @@ class ClientEventService implements EventService {
                             eventBus.dispatch(new SubscriptionFailureEvent(failure.getEventType()))
                         } else if (data.startsWith(SharedEvent.MESSAGE_PREFIX)) {
                             data = data.substring(SharedEvent.MESSAGE_PREFIX.length())
-                            SharedEvent event = objectMapper.readValue(data, SharedEvent.class)
-                            eventBus.dispatch(event)
+                            if (data.startsWith("[")) {
+                                // Handle array of events
+                                SharedEvent[] events = objectMapper.readValue(data, SharedEvent[].class)
+                                for (SharedEvent event : events) {
+                                    eventBus.dispatch(event);
+                                }
+                            } else {
+                                SharedEvent event = objectMapper.readValue(data, SharedEvent.class)
+                                eventBus.dispatch(event)
+                            }
                         }
                     } catch (Throwable t) {
                         // We don't see problems in tests if we don't log it here

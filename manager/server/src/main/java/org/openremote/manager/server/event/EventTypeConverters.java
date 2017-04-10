@@ -60,6 +60,11 @@ public class EventTypeConverters implements TypeConverters {
     }
 
     @Converter
+    public String writeEventArray(SharedEvent[] event, Exchange exchange) throws Exception {
+        return SharedEvent.MESSAGE_PREFIX + Container.JSON.writeValueAsString(event);
+    }
+
+    @Converter
     public SharedEvent readEvent(String string, Exchange exchange) throws Exception {
         if (!string.startsWith(SharedEvent.MESSAGE_PREFIX))
             return null;

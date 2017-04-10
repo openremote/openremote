@@ -50,12 +50,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
-import static org.openremote.manager.server.event.EventService.INCOMING_EVENT_TOPIC;
-import static org.openremote.manager.server.event.EventService.getSessionKey;
-import static org.openremote.manager.server.event.EventService.getWebsocketAuth;
+import static org.openremote.manager.server.event.EventService.*;
 
 public class AssetStorageService extends RouteBuilder implements ContainerService, Consumer<AssetState> {
 
@@ -149,6 +148,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             .filter(body().isInstanceOf(ReadAttributesEvent.class))
             .process(exchange -> {
                 ReadAttributesEvent event = exchange.getIn().getBody(ReadAttributesEvent.class);
+                LOG.fine("Handling from client: " + event);
+
                 String sessionKey = getSessionKey(exchange);
                 WebsocketAuth auth = getWebsocketAuth(exchange);
 
@@ -647,7 +648,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         new AssetTreeModifiedEvent(asset.getRealmId(), asset.getId())
                     );
                     break;
-                };
+                }
+                ;
 
                 // Did the parent change?
                 String previousParentId = persistenceEvent.getPreviousState("parentId");
@@ -657,7 +659,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         new AssetTreeModifiedEvent(asset.getRealmId(), asset.getId())
                     );
                     break;
-                };
+                }
+                ;
 
                 // Did the realm change?
                 String previousRealmId = persistenceEvent.getPreviousState("realmId");
@@ -667,7 +670,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                         new AssetTreeModifiedEvent(asset.getRealmId(), asset.getId())
                     );
                     break;
-                };
+                }
+                ;
 
                 break;
             case DELETE:
@@ -680,10 +684,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     protected void replyWithAttributeEvents(String sessionKey, ServerAsset asset, List<String> attributeNames) {
         LOG.fine("For client session '" + sessionKey + "', reading asset attributes " + attributeNames + " on: " + asset);
-        new AssetAttributes(asset).get().stream()
+        List<AttributeEvent> events = new AssetAttributes(asset).get().stream()
             .filter(assetAttribute -> attributeNames.contains(assetAttribute.getName()))
             .map(AbstractAssetAttribute::getStateEvent)
-            .forEach(attributeEvent -> eventService.sendToSession(sessionKey, attributeEvent));
+            .collect(Collectors.toList());
+        eventService.sendToSession(sessionKey, events.toArray(new AttributeEvent[events.size()]));
     }
 
     public String toString() {

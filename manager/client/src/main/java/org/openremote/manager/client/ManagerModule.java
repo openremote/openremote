@@ -89,6 +89,7 @@ public class ManagerModule extends AbstractGinModule {
     public EventService getEventService(SecurityService securityService,
                                         EventBus eventBus,
                                         SharedEventMapper sharedEventMapper,
+                                        SharedEventArrayMapper sharedEventArrayMapper,
                                         EventSubscriptionMapper eventSubscriptionMapper,
                                         CancelEventSubscriptionMapper cancelEventSubscriptionMapper,
                                         UnauthorizedEventSubscriptionMapper unauthorizedEventSubscriptionMapper) {
@@ -96,6 +97,7 @@ public class ManagerModule extends AbstractGinModule {
             securityService,
             eventBus,
             sharedEventMapper,
+            sharedEventArrayMapper,
             eventSubscriptionMapper,
             cancelEventSubscriptionMapper,
             unauthorizedEventSubscriptionMapper

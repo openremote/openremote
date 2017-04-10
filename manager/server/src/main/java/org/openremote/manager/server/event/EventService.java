@@ -79,6 +79,10 @@ import static org.apache.camel.builder.PredicateBuilder.or;
  * <dd><p>
  * The payload is a serialized representation of a subtype of {@link SharedEvent}.
  * </p></dd>
+ * <dt><code>EVENT[...]</code></dt>
+ * <dd><p>
+ * The payload is an array of {@link SharedEvent}s.
+ * </p></dd>
  * </dl>
  */
 public class EventService implements ContainerService {
