@@ -62,11 +62,11 @@
                 <button type="submit"
                         class="or-FormControl or-FormButtonPrimary or-PushButton"
                         name="submitAction" value="Save">
-                    <span class="or-PushButtonIcon fa fa-save"></span>${msg("doSave")}</button>
+                    <span class="or-PushButtonIcon fa fa-save"></span><span class="html-face">${msg("doSave")}</span></button>
                 <button type="submit"
                         class="or-FormControl or-FormButton or-PushButton"
                         name="submitAction" value="Cancel">
-                    <span class="or-PushButtonIcon fa fa-close"></span>${msg("doCancel")}</button>
+                    <span class="or-PushButtonIcon fa fa-close"></span><span class="html-face">${msg("doCancel")}</span></button>
             </div>
         </div>
     </form>

@@ -57,7 +57,7 @@ import static org.apache.camel.builder.PredicateBuilder.or;
  * time is {@link EventSubscription#RENEWAL_PERIOD_SECONDS}; it is recommended clients renew the subscription
  * in shorter periods to allow for processing time of the renewal.
  * </p></dd>
- * <dt><code>UNSUBSCRIBE{}</code></dt>
+ * <dt><code>UNSUBSCRIBE{...}</code></dt>
  * <dd><p>
  * The payload is a serialized representation of {@link CancelEventSubscription}. If a client
  * does not want to wait for expiration of its subscriptions, it can cancel a subscription.

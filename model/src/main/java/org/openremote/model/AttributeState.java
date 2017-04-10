@@ -20,7 +20,6 @@
 package org.openremote.model;
 
 import elemental.json.Json;
-import elemental.json.JsonArray;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 

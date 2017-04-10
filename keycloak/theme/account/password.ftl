@@ -50,7 +50,7 @@
             <div class="or-FormField">
                 <button type="submit" class="or-FormControl or-FormButtonPrimary or-PushButton"
                         name="submitAction" value="Save">
-                    <span class="or-PushButtonIcon fa fa-save"></span>${msg("doSave")}</button>
+                    <span class="or-PushButtonIcon fa fa-save"></span><span class="html-face">${msg("doSave")}</span></button>
             </div>
         </div>
     </form>

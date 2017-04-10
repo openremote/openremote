@@ -25,8 +25,8 @@ import org.openremote.model.util.TextUtil;
  * A timestamped event.
  * <p>
  * The event type string is a lowercase, dash-separated name of the event class without the "event" suffix. For
- * example, the type string of <code>AssetModifiedEvent</code> is <code>asset-modified</code>. The event type
- * is therefore usable in JavaScript frameworks, e.g. when declaring Polymer event listeners.
+ * example, the type string of <code>AssetTreeModifiedEvent</code> is <code>asset-tree-modified</code>. The event
+ * type is therefore usable in JavaScript frameworks, e.g. when declaring Polymer event listeners.
  */
 public abstract class Event {
 

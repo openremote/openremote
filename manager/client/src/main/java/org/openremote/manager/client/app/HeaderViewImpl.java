@@ -45,9 +45,6 @@ public class HeaderViewImpl extends Composite implements HeaderView {
     private Presenter presenter;
 
     @UiField
-    HTMLPanel quickAccess;
-
-    @UiField
     PushButton mapButton;
 
     @UiField
