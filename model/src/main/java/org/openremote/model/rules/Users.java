@@ -19,9 +19,7 @@
  */
 package org.openremote.model.rules;
 
-import org.openremote.model.AttributeEvent;
 import org.openremote.model.Consumer;
-import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.notification.AlertNotification;
 import org.openremote.model.user.UserQuery;
 

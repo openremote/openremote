@@ -288,9 +288,9 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     ).add(
                         new MetaItem(AssetMeta.DESCRIPTION, Json.create("When triggered, turns all lights in the apartment off"))
                     ).add(
-                        new MetaItem(AssetMeta.RULES_EVENT, Json.create(true))
+                        new MetaItem(AssetMeta.RULE_EVENT, Json.create(true))
                     ).add(
-                        new MetaItem(AssetMeta.RULES_EVENT_EXPIRES, Json.create("10s"))
+                        new MetaItem(AssetMeta.RULE_EVENT_EXPIRES, Json.create("10s"))
                     )
                 )
         );
@@ -309,7 +309,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Presence Sensor"))
                     ).add(
-                        new MetaItem(AssetMeta.RULES_EVENT, Json.create(true))
+                        new MetaItem(AssetMeta.RULE_EVENT, Json.create(true))
                     )
                 ),
             new AssetAttribute("presenceDetected", AttributeType.BOOLEAN, Json.create(false))
@@ -317,7 +317,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Presence Detected"))
                     ).add(
-                        new MetaItem(AssetMeta.RULES_FACT, Json.create(true))
+                        new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
             new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Json.create(true))
@@ -325,7 +325,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Light Switch"))
                     ).add(
-                        new MetaItem(AssetMeta.RULES_FACT, Json.create(true))
+                        new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
             new AssetAttribute("windowOpen", AttributeType.BOOLEAN, Json.create(false))
@@ -339,7 +339,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("CO2 Level"))
                     ).add(
-                        new MetaItem(AssetMeta.RULES_FACT, Json.create(false))
+                        new MetaItem(AssetMeta.RULE_STATE, Json.create(false))
                     )
                 )
         );
@@ -359,7 +359,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         Json.create("Current Temperature"))
                     )
                     .add(new MetaItem(
-                        AssetMeta.RULES_FACT,
+                        AssetMeta.RULE_STATE,
                         Json.create(true)
                     ))
                     .add(new MetaItem(
@@ -384,7 +384,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         Json.create("Comfort Temperature"))
                     )
                     .add(new MetaItem(
-                        AssetMeta.RULES_FACT,
+                        AssetMeta.RULE_STATE,
                         Json.create(true)
                     ))
                     .add(new MetaItem(
@@ -420,7 +420,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     ).add(
                         new MetaItem(AssetMeta.DESCRIPTION, Json.create("When triggered, turns all lights in the apartment off"))
                     ).add(
-                        new MetaItem(AssetMeta.RULES_FACT, Json.create(true))
+                        new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 )
         );
@@ -439,7 +439,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Presence Sensor"))
                     ).add(
-                        new MetaItem(AssetMeta.RULES_EVENT, Json.create(true))
+                        new MetaItem(AssetMeta.RULE_EVENT, Json.create(true))
                     )
                 ),
             new AssetAttribute("presenceDetected", AttributeType.BOOLEAN, Json.create(false))
@@ -447,7 +447,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Presence Detected"))
                     ).add(
-                        new MetaItem(AssetMeta.RULES_FACT, Json.create(true))
+                        new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
             new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Json.create(true))
@@ -455,7 +455,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Light Switch"))
                     ).add(
-                        new MetaItem(AssetMeta.RULES_FACT, Json.create(false))
+                        new MetaItem(AssetMeta.RULE_STATE, Json.create(false))
                     )
                 ),
             new AssetAttribute("windowOpen", AttributeType.BOOLEAN, Json.create(false))
@@ -482,7 +482,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     ).add(
                         new MetaItem(AssetMeta.DESCRIPTION, Json.create("When triggered, turns all lights in the apartment off"))
                     ).add(
-                        new MetaItem(AssetMeta.RULES_FACT, Json.create(true))
+                        new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 )
         );
@@ -501,7 +501,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Presence Sensor"))
                     ).add(
-                        new MetaItem(AssetMeta.RULES_EVENT, Json.create(true))
+                        new MetaItem(AssetMeta.RULE_EVENT, Json.create(true))
                     )
                 ),
             new AssetAttribute("presenceDetected", AttributeType.BOOLEAN, Json.create(false))
@@ -509,7 +509,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Presence Detected"))
                     ).add(
-                        new MetaItem(AssetMeta.RULES_FACT, Json.create(true))
+                        new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
             new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Json.create(true))
@@ -517,7 +517,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Light Switch"))
                     ).add(
-                        new MetaItem(AssetMeta.RULES_FACT, Json.create(false))
+                        new MetaItem(AssetMeta.RULE_STATE, Json.create(false))
                     )
                 ),
             new AssetAttribute("windowOpen", AttributeType.BOOLEAN, Json.create(false))

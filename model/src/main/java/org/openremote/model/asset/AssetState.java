@@ -22,15 +22,19 @@ package org.openremote.model.asset;
 import elemental.json.JsonValue;
 
 /**
- * An asset attribute value change that can be handled by a sequence of processors
- * with status and error handling.
+ * An asset attribute value update, capturing that asset state at a point in time.
+ * <p>
+ * Instances of this class are processed by the system, with a sequence of processors. Each
+ * processor can consume the asset state, and optionally set its status, thus controlling
+ * how the asset state update is ultimately handled (e.g. the rules processor can stop it
+ * from being handled by the database processors).
  */
-public class AssetUpdate extends AbstractAssetUpdate {
+public class AssetState extends AbstractAssetUpdate {
 
     /**
-     * Processors of updates can change the status to direct further processing.
+     * Processors of asset state updates can change the status to direct further processing.
      */
-    public enum Status {
+    public enum ProcessingStatus {
         /**
          * Processor is happy for update to continue through the system.
          */
@@ -58,28 +62,31 @@ public class AssetUpdate extends AbstractAssetUpdate {
         COMPLETED
     }
 
-    protected Status status = Status.CONTINUE;
+    protected ProcessingStatus processingStatus = ProcessingStatus.CONTINUE;
 
     protected Throwable error;
 
-    public AssetUpdate(Asset asset, AbstractAssetAttribute attribute) {
+    public AssetState(Asset asset, AbstractAssetAttribute attribute) {
         super(asset, attribute);
     }
 
-    public AssetUpdate(Asset asset, AbstractAssetAttribute attribute, JsonValue oldValue, long oldValueTimestamp, boolean northbound) {
+    public AssetState(Asset asset, AbstractAssetAttribute attribute, JsonValue oldValue, long oldValueTimestamp, boolean northbound) {
         super(asset, attribute, oldValue, oldValueTimestamp, northbound);
     }
 
-    public Status getStatus() {
-        return status;
+    public ProcessingStatus getProcessingStatus() {
+        return processingStatus;
     }
 
     public Throwable getError() {
         return error;
     }
 
+    /**
+     * @return <code>true</code> is this state has completed processing, it's not currently being processed.
+     */
     public boolean isCompleted() {
-        return getStatus() == Status.COMPLETED;
+        return getProcessingStatus() == ProcessingStatus.COMPLETED;
     }
 
     /////////////////////////////////////////////////////////////////
@@ -90,14 +97,14 @@ public class AssetUpdate extends AbstractAssetUpdate {
         if (!isCompleted()) {
             return attribute;
         }
-        throw new IllegalStateException("Instance is immutable, status '" + getStatus() + "': " + this);
+        throw new IllegalStateException("Instance is immutable, processing status '" + getProcessingStatus() + "': " + this);
     }
 
     public void setValue(JsonValue value) {
         if (!isCompleted()) {
             attribute.setValue(value);
         } else {
-            throw new IllegalStateException("Instance is immutable, status '" + getStatus() + "': " + this);
+            throw new IllegalStateException("Instance is immutable, processing status '" + getProcessingStatus() + "': " + this);
         }
     }
 
@@ -105,15 +112,15 @@ public class AssetUpdate extends AbstractAssetUpdate {
         if (!isCompleted()) {
             attribute.setValueUnchecked(value);
         } else {
-            throw new IllegalStateException("Instance is immutable, status '" + getStatus() + "': " + this);
+            throw new IllegalStateException("Instance is immutable, processing status '" + getProcessingStatus() + "': " + this);
         }
     }
 
-    public void setStatus(Status status) {
+    public void setProcessingStatus(ProcessingStatus processingStatus) {
         if (!isCompleted()) {
-            this.status = status;
+            this.processingStatus = processingStatus;
         } else {
-            throw new IllegalStateException("Instance is immutable, status '" + getStatus() + "': " + this);
+            throw new IllegalStateException("Instance is immutable, processing status '" + getProcessingStatus() + "': " + this);
         }
     }
 
@@ -121,7 +128,7 @@ public class AssetUpdate extends AbstractAssetUpdate {
         if (!isCompleted()) {
             this.error = error;
         } else {
-            throw new IllegalStateException("Instance is immutable, status '" + getStatus() + "': " + this);
+            throw new IllegalStateException("Instance is immutable, processing status '" + getProcessingStatus() + "': " + this);
         }
     }
 }

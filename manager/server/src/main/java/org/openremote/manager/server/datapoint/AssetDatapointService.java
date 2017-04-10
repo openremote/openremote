@@ -3,7 +3,7 @@ package org.openremote.manager.server.datapoint;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
-import org.openremote.model.asset.AssetUpdate;
+import org.openremote.model.asset.AssetState;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.datapoint.AssetDatapoint;
 
@@ -14,7 +14,7 @@ import java.util.function.Consumer;
 /**
  * Store and retrieve datapoints.
  */
-public class AssetDatapointService implements ContainerService, Consumer<AssetUpdate> {
+public class AssetDatapointService implements ContainerService, Consumer<AssetState> {
 
     private static final Logger LOG = Logger.getLogger(AssetDatapointService.class.getName());
 
@@ -34,13 +34,13 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetUp
     }
 
     @Override
-    public void accept(AssetUpdate assetUpdate) {
-        if (assetUpdate.getAttribute().isStoreDatapoints()) {
-            LOG.finest("Storing asset update data point: " + assetUpdate);
-            AssetDatapoint assetDatapoint = new AssetDatapoint(assetUpdate.getAttribute().getStateEvent());
+    public void accept(AssetState assetState) {
+        if (assetState.getAttribute().isStoreDatapoints()) {
+            LOG.finest("Storing data point for: " + assetState);
+            AssetDatapoint assetDatapoint = new AssetDatapoint(assetState.getAttribute().getStateEvent());
             persistenceService.doTransaction(entityManager -> entityManager.persist(assetDatapoint));
         } else {
-            LOG.finest("Ignoring asset update as attribute is not a data point: " + assetUpdate);
+            LOG.finest("Ignoring as attribute is not a data point: " + assetState);
         }
     }
 

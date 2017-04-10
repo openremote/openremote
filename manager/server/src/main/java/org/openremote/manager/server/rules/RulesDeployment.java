@@ -58,9 +58,9 @@ import org.openremote.model.AttributeEvent;
 import org.openremote.model.Consumer;
 import org.openremote.model.asset.AbstractAssetUpdate;
 import org.openremote.model.asset.AssetQuery;
-import org.openremote.model.asset.AssetUpdate;
+import org.openremote.model.asset.AssetState;
 import org.openremote.model.notification.AlertNotification;
-import org.openremote.model.rules.AssetEvent;
+import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Users;
 
@@ -98,7 +98,7 @@ public class RulesDeployment<T extends Ruleset> {
     protected Throwable error;
     protected boolean running;
     protected long currentFactCount;
-    final protected Map<AssetUpdate, FactHandle> facts = new HashMap<>();
+    final protected Map<AssetState, FactHandle> assetStates = new HashMap<>();
     protected static final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     protected ScheduledFuture startTimer;
 
@@ -396,8 +396,9 @@ public class RulesDeployment<T extends Ruleset> {
         }
 
         // Insert all the facts into the session
-        List<AssetUpdate> factEntries = new ArrayList<>(facts.keySet());
-        factEntries.forEach(factEntry -> insertFact(factEntry, true));
+        new ArrayList<>(assetStates.keySet()).forEach(
+            factEntry -> insertAssetState(factEntry, true)
+        );
 
         LOG.info("Rule engine started");
         knowledgeSession.fireAllRules();
@@ -419,42 +420,42 @@ public class RulesDeployment<T extends Ruleset> {
         running = false;
     }
 
-    protected synchronized FactHandle insertFact(AssetUpdate assetUpdate, boolean silent) {
+    protected synchronized FactHandle insertAssetState(AssetState assetState, boolean silent) {
         return insertIntoSession(
-            assetUpdate,
+            assetState,
             silent,
-            factHandle -> facts.put(assetUpdate, factHandle)
+            factHandle -> assetStates.put(assetState, factHandle)
         );
     }
 
-    protected synchronized void updateFact(AssetUpdate assetUpdate, boolean silent) {
+    protected synchronized void updateAssetState(AssetState assetState, boolean silent) {
         // Check if fact already exists using equals()
-        if (!facts.containsKey(assetUpdate)) {
+        if (!assetStates.containsKey(assetState)) {
             // Delete any existing fact for this attribute ref
             // Put the fact into working memory and store the handle
-            retractFact(assetUpdate);
+            retractAssetState(assetState);
 
             if (isRunning()) {
-                insertFact(assetUpdate, silent);
+                insertAssetState(assetState, silent);
             } else {
-                facts.put(assetUpdate, null);
+                assetStates.put(assetState, null);
             }
         }
     }
 
-    protected synchronized void retractFact(AssetUpdate assetUpdate) {
+    protected synchronized void retractAssetState(AssetState assetState) {
 
         // If there already is a fact in working memory for this attribute then delete it
-        AssetUpdate update = facts.keySet()
+        AssetState update = assetStates.keySet()
             .stream()
-            .filter(au -> au.attributeRefsEqual(assetUpdate))
+            .filter(au -> au.attributeRefsEqual(assetState))
             .findFirst()
             .orElse(null);
 
-        FactHandle factHandle = update != null ? facts.get(update) : null;
+        FactHandle factHandle = update != null ? assetStates.get(update) : null;
 
         if (factHandle != null) {
-            facts.remove(update);
+            assetStates.remove(update);
 
             if (isRunning()) {
                 try {
@@ -468,7 +469,7 @@ public class RulesDeployment<T extends Ruleset> {
         }
     }
 
-    protected synchronized FactHandle insertEvent(AssetEvent assetEvent, long expirationOffset) {
+    protected synchronized FactHandle insertAssetEvent(AssetEvent assetEvent, long expirationOffset) {
         return insertIntoSession(
             assetEvent,
             false,
@@ -631,8 +632,6 @@ public class RulesDeployment<T extends Ruleset> {
             public void storeAndNotify(String userId, AlertNotification alert) {
                 notificationService.storeAndNotify(userId,alert);
             }
-
-
         };
     }
 

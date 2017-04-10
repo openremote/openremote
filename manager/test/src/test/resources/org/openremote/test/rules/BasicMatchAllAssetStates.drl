@@ -1,5 +1,3 @@
-// Renamed rules so they can be deployed again
-
 package org.openremote.test.rules;
 
 import org.openremote.model.*;
@@ -7,16 +5,16 @@ import org.openremote.model.asset.*;
 
 global java.util.logging.Logger LOG;
 
-rule "All 2"
+rule "All"
 when
-  $e: AssetUpdate()
+  $e: AssetState()
 then
   return;
 end
 
-rule "All changed 2"
+rule "All changed"
 when
-  $e: AssetUpdate(valueChanged)
+  $e: AssetState(valueChanged)
 then
   return;
 end

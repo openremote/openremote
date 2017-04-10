@@ -8,84 +8,84 @@ global java.util.logging.Logger LOG;
 
 rule "Living Room All"
 when
-  $e: AssetUpdate(name == "Livingroom")
+  $e: AssetState(name == "Livingroom")
 then
   return;
 end
 
 rule "Kitchen All"
 when
-  $e: AssetUpdate(name == "Kitchen")
+  $e: AssetState(name == "Kitchen")
 then
   return;
 end
 
 rule "Kitchen Integer Attributes"
 when
-  $e: AssetUpdate(name == "Kitchen", attributeType == AttributeType.INTEGER)
+  $e: AssetState(name == "Kitchen", attributeType == AttributeType.INTEGER)
 then
   return;
 end
 
 rule "Living Room Thermostat"
 when
-  $e: AssetUpdate(name == "Livingroom Thermostat")
+  $e: AssetState(name == "Livingroom Thermostat")
 then
   return;
 end
 
 rule "Living Room Comfort Temperature"
 when
-  $e: AssetUpdate(name == "Livingroom Thermostat", attributeName == "comfortTemperature")
+  $e: AssetState(name == "Livingroom Thermostat", attributeName == "comfortTemperature")
 then
   return;
 end
 
 rule "Living Room as Parent"
 when
-    AssetUpdate(parentName == "Livingroom")
+    AssetState(parentName == "Livingroom")
 then
     return;
 end
 
 rule "Boolean Attributes"
 when
-    AssetUpdate(attributeType == AttributeType.BOOLEAN)
+    AssetState(attributeType == AttributeType.BOOLEAN)
 then
   return;
 end
 
 rule "String Attributes"
 when
-    AssetUpdate(attributeType == AttributeType.STRING)
+    AssetState(attributeType == AttributeType.STRING)
 then
   return;
 end
 
 rule "JSON Number value types"
 when
-    AssetUpdate(value.type == JsonType.NUMBER)
+    AssetState(value.type == JsonType.NUMBER)
 then
     return;
 end
 
 rule "Current Asset Update"
 when
-    AssetUpdate(status != AssetUpdate.Status.COMPLETED)
+    AssetState(processingStatus != AssetState.ProcessingStatus.COMPLETED)
 then
     return;
 end
 
 rule "Parent Type Residence"
 when
-    AssetUpdate(parentType == AssetType.RESIDENCE)
+    AssetState(parentType == AssetType.RESIDENCE)
 then
     return;
 end
 
 rule "Asset Type Room"
 when
-    AssetUpdate(type == AssetType.ROOM)
+    AssetState(type == AssetType.ROOM)
 then
     return;
 end

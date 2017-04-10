@@ -47,10 +47,10 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
             assert customerAEngine.isRunning()
         }
 
-        and: "the demo attributes marked with RULES_FACT = true meta should be inserted into the engines"
+        and: "the demo attributes marked with RULE_STATE = true meta should be inserted into the engines"
         conditions.eventually {
-            assert rulesService.facts.size() == 8
-            assert customerAEngine.facts.size() == 8
+            assert rulesService.assetStates.size() == 8
+            assert customerAEngine.assetStates.size() == 8
             assert customerAEngine.knowledgeSession.factCount == 8
         }
 

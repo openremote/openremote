@@ -2,7 +2,6 @@ package org.openremote.test.rules;
 
 import org.openremote.model.*;
 import org.openremote.model.asset.*
-import org.openremote.model.rules.*
 import elemental.json.Json;
 
 global java.util.logging.Logger LOG;
@@ -18,7 +17,7 @@ when
         count($pir2)
     )
     // And the presence latch is not set already
-    AssetUpdate(id == $pir.getId(), attributeName == "presenceDetected", !value.asBoolean)
+    AssetState(id == $pir.getId(), attributeName == "presenceDetected", !value.asBoolean)
 
 then
     LOG.info("### PRESENCE DETECTED IN ROOM: " + $pir);

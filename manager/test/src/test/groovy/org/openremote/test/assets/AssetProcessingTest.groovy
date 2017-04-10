@@ -76,14 +76,14 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
         //region and: "a mock attribute event consumer"
         and: "a mock attribute event consumer"
-        List<AssetUpdate> updatesPassedStartOfProcessingChain = []
-        List<AssetUpdate> updatesReachedEndOfProcessingChain = []
+        List<AssetState> updatesPassedStartOfProcessingChain = []
+        List<AssetState> updatesReachedEndOfProcessingChain = []
 
-        Consumer<AssetUpdate> mockEndConsumer = { assetUpdate ->
+        Consumer<AssetState> mockEndConsumer = { assetUpdate ->
             updatesReachedEndOfProcessingChain.add(assetUpdate)
         }
 
-        Consumer<AssetUpdate> mockStartConsumer = { assetUpdate ->
+        Consumer<AssetState> mockStartConsumer = { assetUpdate ->
             updatesPassedStartOfProcessingChain.add(assetUpdate)
         }
         //endregion
@@ -195,7 +195,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert sendToActuatorEvents[0].entityId == mockThing.id
             assert sendToActuatorEvents[0].attributeName == "light1Toggle"
             assert sendToActuatorEvents[0].attributeState.value.asBoolean() == true
-            assert updatesPassedStartOfProcessingChain[0].status == AssetUpdate.Status.COMPLETED
+            assert updatesPassedStartOfProcessingChain[0].processingStatus == AssetState.ProcessingStatus.COMPLETED
         }
 
         when: "the protocol gets a response from the server"
@@ -211,7 +211,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert updatesReachedEndOfProcessingChain[0].attributeName == "light1Toggle"
             assert updatesReachedEndOfProcessingChain[0].oldValue.asBoolean() == false
             assert updatesReachedEndOfProcessingChain[0].value.asBoolean() == true
-            assert updatesReachedEndOfProcessingChain[0].status == AssetUpdate.Status.COMPLETED
+            assert updatesReachedEndOfProcessingChain[0].processingStatus == AssetState.ProcessingStatus.COMPLETED
         }
         //endregion
 
@@ -234,7 +234,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert updatesPassedStartOfProcessingChain[0].attributeName == "light2Toggle"
             assert updatesPassedStartOfProcessingChain[0].error != null
             assert updatesPassedStartOfProcessingChain[0].error instanceof RuntimeException
-            assert updatesPassedStartOfProcessingChain[0].status == AssetUpdate.Status.COMPLETED
+            assert updatesPassedStartOfProcessingChain[0].processingStatus == AssetState.ProcessingStatus.COMPLETED
         }
 
         when: "an attribute event occurs for the plain attribute"
@@ -256,7 +256,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert updatesReachedEndOfProcessingChain[0].oldValue.asString() == "demo"
             assert updatesReachedEndOfProcessingChain[0].value.asString() == "test"
             assert updatesReachedEndOfProcessingChain[0].error == null
-            assert updatesReachedEndOfProcessingChain[0].status == AssetUpdate.Status.COMPLETED
+            assert updatesReachedEndOfProcessingChain[0].processingStatus == AssetState.ProcessingStatus.COMPLETED
         }
     }
 }

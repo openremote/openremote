@@ -626,7 +626,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         protectedMeta.all().length == 3
         protectedMeta.first(AssetMeta.LABEL).getValueAsString() == "Current Temperature"
         protectedMeta.first(AssetMeta.READ_ONLY).getValueAsBoolean()
-        protectedMeta.first(AssetMeta.RULES_FACT).getValueAsBoolean()
+        protectedMeta.first(AssetMeta.RULE_STATE).getValueAsBoolean()
 
         when: "an asset is retrieved by ID in a foreign realm"
         assetResource.get(null, managerDemoSetup.thingId)

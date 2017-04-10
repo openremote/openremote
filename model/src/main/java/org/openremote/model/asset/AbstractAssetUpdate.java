@@ -26,7 +26,8 @@ import org.openremote.model.util.JsonUtil;
 import java.util.Date;
 
 /**
- * An asset attribute value change that can be handled by a sequence of processors.
+ * An asset attribute value update, capturing that asset state at a point in time.
+ * <p>
  * This class layout is convenient for writing expressions that match getters, while
  * carrying as much asset details as needed.
  */

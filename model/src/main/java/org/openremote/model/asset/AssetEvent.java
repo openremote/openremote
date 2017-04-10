@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.rules;
+package org.openremote.model.asset;
 
 import org.kie.api.definition.type.Role;
-import org.openremote.model.asset.AbstractAssetUpdate;
 
 /**
  * An asset attribute value change as a punctual event in rules processing.
@@ -34,6 +33,6 @@ public class AssetEvent extends AbstractAssetUpdate {
     }
 
     public String getExpires() {
-        return attribute.getRulesEventExpires();
+        return attribute.getRuleEventExpires();
     }
 }

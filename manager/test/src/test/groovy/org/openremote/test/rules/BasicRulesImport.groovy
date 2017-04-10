@@ -28,13 +28,13 @@ class BasicRulesImport {
 
         Ruleset ruleset = new GlobalRuleset(
                 "Some global demo rules",
-                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetUpdates.drl").text
+                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.drl").text
         )
         rulesetStorageService.merge(ruleset)
 
         ruleset = new GlobalRuleset(
                 "Other global demo rules with a long name that should fill up space in UI",
-                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetUpdates.drl").text
+                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.drl").text
         )
         ruleset.setEnabled(false)
         rulesetStorageService.merge(ruleset)
@@ -42,21 +42,21 @@ class BasicRulesImport {
         ruleset = new TenantRuleset(
                 "Some master tenant demo rules",
                 keycloakDemoSetup.masterTenant.id,
-                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetUpdates.drl").text
+                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.drl").text
         )
         rulesetStorageService.merge(ruleset)
 
         ruleset = new TenantRuleset(
                 "Some customerA tenant demo rules",
                 keycloakDemoSetup.customerATenant.id,
-                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetUpdates.drl").text
+                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.drl").text
         )
         rulesetStorageService.merge(ruleset)
 
         ruleset = new TenantRuleset(
                 "Some customerB tenant demo rules",
                 keycloakDemoSetup.customerBTenant.id,
-                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetUpdates.drl").text
+                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.drl").text
         )
         ruleset.setEnabled(false)
         customerBRulesetId = rulesetStorageService.merge(ruleset).id
@@ -64,14 +64,14 @@ class BasicRulesImport {
         ruleset = new AssetRuleset(
                 "Some apartment 1 demo rules",
                 managerDemoSetup.apartment1Id,
-                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetUpdates.drl").text
+                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.drl").text
         )
         apartment1RulesetId = rulesetStorageService.merge(ruleset).id
 
         ruleset = new AssetRuleset(
                 "Some apartment 2 demo rules",
                 managerDemoSetup.apartment2Id,
-                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetUpdates.drl").text
+                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.drl").text
         )
         ruleset.setEnabled(false)
         rulesetStorageService.merge(ruleset)
@@ -79,7 +79,7 @@ class BasicRulesImport {
         ruleset = new AssetRuleset(
                 "Some apartment 3 demo rules",
                 managerDemoSetup.apartment3Id,
-                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetUpdates.drl").text
+                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.drl").text
         )
         rulesetStorageService.merge(ruleset)
     }

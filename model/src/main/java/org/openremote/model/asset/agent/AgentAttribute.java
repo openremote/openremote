@@ -24,9 +24,6 @@ import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 import org.openremote.model.AttributeType;
 import org.openremote.model.asset.AbstractAssetAttribute;
-import org.openremote.model.asset.AssetAttribute;
-
-import static org.openremote.model.asset.AssetMeta.RULES_FACT;
 
 public class AgentAttribute<CHILD extends AgentAttribute<CHILD>> extends AbstractAssetAttribute<CHILD> {
 

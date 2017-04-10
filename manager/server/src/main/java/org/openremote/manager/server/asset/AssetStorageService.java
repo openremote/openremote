@@ -51,7 +51,7 @@ import java.util.logging.Logger;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
 
-public class AssetStorageService extends RouteBuilder implements ContainerService, Consumer<AssetUpdate> {
+public class AssetStorageService extends RouteBuilder implements ContainerService, Consumer<AssetState> {
 
     private static final Logger LOG = Logger.getLogger(AssetStorageService.class.getName());
     protected PersistenceService persistenceService;
@@ -116,12 +116,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     @Override
-    public void accept(AssetUpdate assetUpdate) {
-        String assetId = assetUpdate.getId();
-        String attributeName = assetUpdate.getAttribute().getName();
-        JsonValue value = assetUpdate.getAttribute().getValue();
+    public void accept(AssetState assetState) {
+        String assetId = assetState.getId();
+        String attributeName = assetState.getAttribute().getName();
+        JsonValue value = assetState.getAttribute().getValue();
         // Some sanity checking, of course the timestamp should never be -1 if we store updated attribute state
-        long timestamp = assetUpdate.getAttribute().getValueTimestamp();
+        long timestamp = assetState.getAttribute().getValueTimestamp();
         String valueTimestamp = Long.toString(
             timestamp >= 0 ? timestamp : System.currentTimeMillis()
         );

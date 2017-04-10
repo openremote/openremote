@@ -55,7 +55,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         when: "a new global rule definition is added"
         def ruleset = new GlobalRuleset(
                 "Some more global rules",
-                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetUpdates2.drl").text
+                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.drl").text
         )
         rulesetStorageService.merge(ruleset)
 
@@ -76,7 +76,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         ruleset = new TenantRuleset(
                 "Some more customerA tenant rules",
                 keycloakDemoSetup.customerATenant.id,
-                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetUpdates2.drl").text
+                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.drl").text
         )
         rulesetStorageService.merge(ruleset)
 
@@ -98,7 +98,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         ruleset = new TenantRuleset(
                 "Some more customerB tenant rules",
                 keycloakDemoSetup.customerBTenant.id,
-                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetUpdates2.drl").text
+                getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates2.drl").text
         )
         rulesetStorageService.merge(ruleset)
 

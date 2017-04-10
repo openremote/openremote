@@ -54,7 +54,7 @@ import static org.openremote.model.asset.AssetType.AGENT;
 /**
  * Finds all {@link AssetType#AGENT} and {@link AssetType#THING} assets and starts the protocols for them.
  */
-public class AgentService extends RouteBuilder implements ContainerService, Consumer<AssetUpdate> {
+public class AgentService extends RouteBuilder implements ContainerService, Consumer<AssetState> {
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
     protected Container container;
@@ -384,39 +384,39 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
      *
      */
     @Override
-    public void accept(AssetUpdate assetUpdate) {
+    public void accept(AssetState assetState) {
         // If update was initiated by a protocol ignore it
-        if (assetUpdate.isNorthbound()) {
-            LOG.fine("Ignoring asset update as it came from a protocol:" + assetUpdate);
+        if (assetState.isNorthbound()) {
+            LOG.fine("Ignoring as it came from a protocol:" + assetState);
             return;
         }
 
 
-        AttributeRef protocolRef = ThingAttribute.getProtocolRef(assetUpdate.getAttribute());
+        AttributeRef protocolRef = ThingAttribute.getProtocolRef(assetState.getAttribute());
 
         if (protocolRef != null) {
             // Check attribute is linked to an actual agent
             ProtocolConfiguration protocolConfiguration = protocolConfigurationResolver.apply(protocolRef);
 
             if (protocolConfiguration == null) {
-                LOG.warning("Cannot process asset update as agent link is invalid:" + assetUpdate);
-                assetUpdate.setError(new RuntimeException("Attribute has an invalid agent link:" + assetUpdate.getAttribute()));
-                assetUpdate.setStatus(AssetUpdate.Status.ERROR);
+                LOG.warning("Cannot process as agent link is invalid:" + assetState);
+                assetState.setError(new RuntimeException("Attribute has an invalid agent link:" + assetState.getAttribute()));
+                assetState.setProcessingStatus(AssetState.ProcessingStatus.ERROR);
                 return;
             }
         } else {
             // This is just a non protocol attribute so allow the processing to continue
-            LOG.fine("Ignoring asset update as it is not for an attribute linked to an agent:" + assetUpdate);
+            LOG.fine("Ignoring as it is not for an attribute linked to an agent:" + assetState);
             return;
         }
 
         // Its' a send to actuator - push the update to the protocol
-        LOG.fine("Processing asset update: " + assetUpdate);
+        LOG.fine("Processing: " + assetState);
         messageBrokerService.getProducerTemplate().sendBody(
             ACTUATOR_TOPIC,
-            assetUpdate.getAttribute().getStateEvent()
+            assetState.getAttribute().getStateEvent()
         );
-        assetUpdate.setStatus(AssetUpdate.Status.HANDLED);
+        assetState.setProcessingStatus(AssetState.ProcessingStatus.HANDLED);
     }
 
     public Function<AttributeRef, ProtocolConfiguration> getProtocolConfigurationResolver() {

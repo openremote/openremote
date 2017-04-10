@@ -98,16 +98,16 @@ public abstract class AbstractAssetAttribute<CHILD extends AbstractAssetAttribut
         return hasMetaItem(STORE_DATA_POINTS) && firstMetaItem(STORE_DATA_POINTS).isValueTrue();
     }
 
-    public boolean isRulesFact() {
-        return hasMetaItem(RULES_FACT) && firstMetaItem(RULES_FACT).isValueTrue();
+    public boolean isRuleState() {
+        return hasMetaItem(RULE_STATE) && firstMetaItem(RULE_STATE).isValueTrue();
     }
 
-    public boolean isRulesEvent() {
-        return hasMetaItem(RULES_EVENT) && firstMetaItem(RULES_EVENT).isValueTrue();
+    public boolean isRuleEvent() {
+        return hasMetaItem(RULE_EVENT) && firstMetaItem(RULE_EVENT).isValueTrue();
     }
 
-    public String getRulesEventExpires() {
-        return hasMetaItem(RULES_EVENT_EXPIRES) ? firstMetaItem(RULES_EVENT_EXPIRES).getValueAsString() : null;
+    public String getRuleEventExpires() {
+        return hasMetaItem(RULE_EVENT_EXPIRES) ? firstMetaItem(RULE_EVENT_EXPIRES).getValueAsString() : null;
     }
 
     public boolean isAgentLinked() {
