@@ -82,7 +82,7 @@ public class AppsViewImpl extends Composite implements AppsView {
         this.presenter = presenter;
         if (presenter == null) {
             appsListPanel.clear();
-            frame.setSrc("blank:");
+            frame.setSrc("about:blank");
             placeholder.setVisible(true);
         }
     }
