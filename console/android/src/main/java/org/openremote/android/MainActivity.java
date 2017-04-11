@@ -1,6 +1,8 @@
 package org.openremote.android;
 
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -10,7 +12,10 @@ import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.support.v4.app.NotificationBuilderWithBuilderAccessor;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
@@ -21,6 +26,8 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import org.openremote.android.service.AlertNotification;
+import org.openremote.android.service.NotificationService;
 import org.openremote.android.service.TokenService;
 
 
@@ -37,6 +44,11 @@ public class MainActivity extends Activity {
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
         setContentView(R.layout.activity_web);
+        if (getIntent().hasExtra("notification")) {
+            AlertNotification alertNotification = (AlertNotification) getIntent().getSerializableExtra("notification");
+            Notification notification = new Notification();
+  
+        }
         webView = (WebView) findViewById(R.id.webview);
         if (savedInstanceState != null) {
             webView.restoreState(savedInstanceState);
@@ -66,6 +78,22 @@ public class MainActivity extends Activity {
         super.onPause();
 
         unregisterReceiver(connectivityChangeReceiver);
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (event.getAction() == KeyEvent.ACTION_DOWN) {
+            switch (keyCode) {
+                case KeyEvent.KEYCODE_BACK:
+                    if (webView.canGoBack()) {
+                        webView.goBack();
+                    } else {
+                        finish();
+                    }
+                    return true;
+            }
+        }
+        return super.onKeyDown(keyCode, event);
     }
 
     @Override
@@ -135,6 +163,12 @@ public class MainActivity extends Activity {
 
         public WebAppInterface(Activity activity) {
             tokenService = new TokenService(activity);
+        }
+
+
+        @JavascriptInterface
+        public void logOut() {
+            tokenService.clearToken();
         }
 
         @JavascriptInterface

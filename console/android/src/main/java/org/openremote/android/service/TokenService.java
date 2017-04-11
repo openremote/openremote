@@ -156,4 +156,12 @@ public class TokenService {
             }
         });
     }
+
+    public void clearToken() {
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.remove(tokenKey);
+        editor.remove(refreshTokenKey);
+        editor.remove(tokenIdKey);
+        editor.commit();
+    }
 }

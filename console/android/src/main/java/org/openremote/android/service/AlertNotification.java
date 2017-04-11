@@ -1,9 +1,10 @@
 package org.openremote.android.service;
 
 
+import java.io.Serializable;
 import java.util.List;
 
-public class AlertNotification {
+public class AlertNotification implements Serializable {
     private Long id;
 
     private String title;
