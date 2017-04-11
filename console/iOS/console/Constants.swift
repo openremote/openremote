@@ -45,3 +45,8 @@ enum Notifications {
     static let fullScreenHidden = Notification.Name("fullScreenHidden")
     static let idleTimerFired = Notification.Name("idleTimerFired")
 }
+
+enum ActionType {
+    static let ACTION_TYPE1 = "ACTION_TYPE1"
+    static let ACTION_TYPE2 = "ACTION_TYPE2"
+}

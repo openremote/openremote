@@ -24,7 +24,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
-        setActions()
         UNUserNotificationCenter.current().delegate = self
         let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
         UNUserNotificationCenter.current().requestAuthorization(
@@ -109,7 +108,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     }
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-        NSLog("Action asked : %@",response.actionIdentifier)
+        switch response.actionIdentifier {
+        case ActionType.ACTION_TYPE1 :
+            NSLog("Action asked : %@",response.actionIdentifier)
+        case ActionType.ACTION_TYPE2 :
+            NSLog("Action asked : %@",response.actionIdentifier)
+        default : break
+        }
+        completionHandler()
     }
     
     
@@ -188,24 +194,5 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     
 }
 
-func setActions() {
-    let openApp = UNNotificationAction(
-        identifier: "openApp",
-        title: "Open Application",
-        options : [.foreground]
-    )
-    let dismiss = UNNotificationAction(
-        identifier: "dismiss",
-        title: "Dismiss",
-        options: [.destructive]
-    )
-    let category = UNNotificationCategory(
-        identifier: "blok61Notification",
-        actions: [openApp, dismiss],
-        intentIdentifiers: []
-    )
-    
-    UNUserNotificationCenter.current().setNotificationCategories([category])
-}
 
 

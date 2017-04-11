@@ -75,14 +75,14 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     
     // just for testing purpose (ask backend to send a notification to device)
     func apiCall() {
-        guard let tkurlRequest = URL(string: String(format:"http://%@:%@/auth/realms/%@/protocol/openid-connect/token",Server.hostURL,Server.port,Server.realm)) else { return }
+        guard let tkurlRequest = URL(string: String(format:"https://%@/auth/realms/%@/protocol/openid-connect/token",Server.hostURL,Server.realm)) else { return }
         let tkRequest = NSMutableURLRequest(url: tkurlRequest)
         tkRequest.addValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type");
         tkRequest.httpMethod = "POST"
         let postString = String(format:"grant_type=refresh_token&refresh_token=%@&client_id=%@",(TokenManager.sharedInstance.refreshToken )!,Client.clientId)
         tkRequest.httpBody = postString.data(using: .utf8)
         let sessionConfiguration = URLSessionConfiguration.default
-        let session = URLSession(configuration: sessionConfiguration)
+        let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: nil)
         let req = session.dataTask(with: tkRequest as URLRequest, completionHandler: { (data, response, error) in
             if (data != nil){
                 do {
@@ -90,12 +90,12 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
                     if ((jsonDictionnary["access_token"]) != nil) {
                         guard let urlRequest = URL(string: String(Server.apiTestResource)) else { return }
                         let request = NSMutableURLRequest(url: urlRequest)
-                        request.httpMethod = "POST"
+                        request.httpMethod = "GET"
                         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-                        request.httpBody = "{\"title\" :\" The Title\",\"message\" : \"Message\",\"appUrl\" : \" AppUrl\",\"actions\": [ {\"title\" : \"Action title\" , \"type\": \"ACTION_TYPE1\"} ]}".data(using: .utf8)
+                        request.httpBody = "{\"title\" :\" oula\",\"message\" : \"sdlkfslkdfjslkdfj\",\"appUrl\" : \" kljlkjlkjlk\",\"actions\": [ {\"title\" : \"Action title\" , \"type\": \"ACTION_TYPE1\"},{\"title\" : \"Action title\" , \"type\": \"ACTION_TYPE2\"} ]}".data(using: .utf8)
                         request.addValue(String(format:"Bearer %@", jsonDictionnary["access_token"] as! String), forHTTPHeaderField: "Authorization")
                         let sessionConfiguration = URLSessionConfiguration.default
-                        let session = URLSession(configuration: sessionConfiguration)
+                        let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue : nil)
                         let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
                             DispatchQueue.main.async {
                                 if (error != nil) {
@@ -105,6 +105,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
                                         ])
                                     self.showError(error: error)
                                 } else {
+                                    print(response.debugDescription)
                                     _ = self.myWebView?.load(data!, mimeType: "text/html", characterEncodingName: "utf8", baseURL: URL(string:Server.apiTestResource)!)
                                 }
                             }
@@ -147,7 +148,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     }
     
     func login() {
-        guard let request = URL(string: String(format:"http://%@:%@/%@",Server.hostURL,Server.port,Server.initialPath)) else { return }
+        guard let request = URL(string: String(format:"https://%@/%@",Server.hostURL,Server.initialPath)) else { return }
         _ = self.myWebView?.load(URLRequest(url: request))
     }
     
@@ -156,6 +157,28 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         showError(error: NSError(domain: "networkError", code: 0, userInfo:[
             NSLocalizedDescriptionKey :  NSLocalizedString("FailedLoadingPage", value: "Could not load page", comment: "")
             ]))
+    }
+    
+    func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        if (challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust) {
+            if challenge.protectionSpace.host == Server.hostURL || challenge.protectionSpace.host == "fonts.googleapis.com" {
+                completionHandler(.useCredential, URLCredential(trust: challenge.protectionSpace.serverTrust!))
+            } else {
+                print("Error : unsupported domain :",challenge.protectionSpace.serverTrust ?? "")
+            }
+            
+        }
+    }
+    
+    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        if (challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust) {
+            if challenge.protectionSpace.host == Server.hostURL || challenge.protectionSpace.host == "fonts.googleapis.com" {
+                completionHandler(.useCredential, URLCredential(trust: challenge.protectionSpace.serverTrust!))
+            } else {
+                print("Error : unsupported domain :",challenge.protectionSpace.serverTrust ?? "")
+            }
+            
+        }
     }
     
     func configureAccess() {
@@ -182,8 +205,8 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         myWebView?.navigationDelegate = self;
         view.addSubview(myWebView!)
         
-        //self.apiCall()
-        self.login()
+        self.apiCall()
+        //self.login()
     }
     
 }

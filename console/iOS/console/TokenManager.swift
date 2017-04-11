@@ -92,7 +92,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         myWebView.navigationDelegate = self;
         viewController.view.addSubview(myWebView)
         UIApplication.shared.keyWindow?.rootViewController?.present(viewController, animated: true, completion: nil)
-        guard let request = URL(string: String(format:"http://%@:%@/%@",Server.hostURL,Server.port,Server.initialPath)) else { return }
+        guard let request = URL(string: String(format:"https://%@/%@",Server.hostURL,Server.initialPath)) else { return }
         myWebView.load(URLRequest(url: request))
     }
     
@@ -151,6 +151,17 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
             ]))
     }
     
+    func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        if (challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust) {
+            if challenge.protectionSpace.host == Server.hostURL || challenge.protectionSpace.host == "fonts.googleapis.com" {
+                completionHandler(.useCredential, URLCredential(trust: challenge.protectionSpace.serverTrust!))
+            } else {
+                print("Error : unsupported domain :",challenge.protectionSpace.serverTrust ?? "")
+            }
+            
+        }
+    }
+    
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         let errorCode = (error as NSError).code
         if errorCode != NSURLErrorCancelled {
@@ -173,7 +184,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     }
     
     func sendDeviceId() {
-        guard let tkurlRequest = URL(string: String(format:"http://%@:%@/auth/realms/%@/protocol/openid-connect/token",Server.hostURL,Server.port,Server.realm)) else { return }
+        guard let tkurlRequest = URL(string: String(format:"https://%@/auth/realms/%@/protocol/openid-connect/token",Server.hostURL,Server.realm)) else { return }
         let tkRequest = NSMutableURLRequest(url: tkurlRequest)
         tkRequest.addValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type");
         tkRequest.httpMethod = "POST"

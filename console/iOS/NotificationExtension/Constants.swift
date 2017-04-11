@@ -19,9 +19,13 @@ struct AppGroup {
 }
 
 enum Server {
-    static let hostURL = "192.168.0.138"
-    static let port = "8080"
+    static let hostURL = "192.168.0.173"
     static let initialPath = String(format:"console/%@/index.html",Server.realm)
     static let realm = "blok61"
-    static let apiTestResource = String(format:"http://%@:%@/%@/asset",Server.hostURL,Server.port,Server.realm)
+    static let apiTestResource = String(format:"https://%@/%@/notification/alert",Server.hostURL,Server.realm)
+}
+
+enum ActionType {
+    static let ACTION_TYPE1 = "ACTION_TYPE1"
+    static let ACTION_TYPE2 = "ACTION_TYPE2"
 }

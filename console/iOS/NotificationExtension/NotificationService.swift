@@ -8,7 +8,7 @@
 
 import UserNotifications
 
-class NotificationService: UNNotificationServiceExtension {
+class NotificationService: UNNotificationServiceExtension, URLSessionDelegate {
 
     var contentHandler: ((UNNotificationContent) -> Void)?
     var bestAttemptContent: UNMutableNotificationContent?
@@ -20,10 +20,10 @@ class NotificationService: UNNotificationServiceExtension {
         if let bestAttemptContent = bestAttemptContent {
             // Call backend to get payload and adapt title, body and actions
             let defaults = UserDefaults(suiteName: AppGroup.entitlement)
+            
             defaults?.synchronize()
-            bestAttemptContent.title = "You received an alarm from blok61 :"
-            bestAttemptContent.body = "payload received from backend..."
-            guard let tkurlRequest = URL(string:String(format: "http://%@:%@/auth/realms/%@/protocol/openid-connect/token",Server.hostURL, Server.port,Server.realm))
+
+            guard let tkurlRequest = URL(string:String(format: "https://%@/auth/realms/%@/protocol/openid-connect/token",Server.hostURL,Server.realm))
                 else { return }
             let tkRequest = NSMutableURLRequest(url: tkurlRequest)
             tkRequest.addValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type");
@@ -31,7 +31,7 @@ class NotificationService: UNNotificationServiceExtension {
             let postString = String(format: "grant_type=refresh_token&refresh_token=%@&client_id=openremote", defaults!.object(forKey: DefaultsKey.refreshToken) as! CVarArg)
             tkRequest.httpBody = postString.data(using: .utf8)
             let sessionConfiguration = URLSessionConfiguration.default
-            let session = URLSession(configuration: sessionConfiguration)
+            let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: nil)
             let req = session.dataTask(with: tkRequest as URLRequest, completionHandler: { (data, response, error) in
                 if (data != nil){
                     do {
@@ -41,13 +41,39 @@ class NotificationService: UNNotificationServiceExtension {
                             let request = NSMutableURLRequest(url: urlRequest)
                             request.addValue(String(format:"Bearer %@", jsonDictionnary["access_token"] as! String), forHTTPHeaderField: "Authorization")
                             let sessionConfiguration = URLSessionConfiguration.default
-                            let session = URLSession(configuration: sessionConfiguration)
+                            let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: nil)
                             let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
                                 DispatchQueue.main.async {
                                     if (error != nil) {
                                         bestAttemptContent.body = error.debugDescription
                                     } else {
-                                        bestAttemptContent.body = String(data: data!, encoding: .utf8)!
+                                        do {
+                                            let json = try JSONSerialization.jsonObject(with: data!) as? [[String: Any]]
+                                            let detailedJson = (json?[0])! as [String: Any]
+                                            bestAttemptContent.title = detailedJson["title"] as! String
+                                            bestAttemptContent.body = detailedJson["message"] as! String
+                                            let actions = detailedJson["actions"] as! [[String : Any]]
+                                            var notificationActions = [UNNotificationAction]()
+                                            for var i in (0..<actions.count) {
+                                                let actionTitle = actions[i]["title"]! as! String
+                                                let actionType = actions[i]["type"]! as! String
+                                                switch actionType {
+                                                case ActionType.ACTION_TYPE1 :
+                                                    notificationActions.append(UNNotificationAction(identifier: actionType, title: actionTitle, options: UNNotificationActionOptions.destructive))
+                                                case ActionType.ACTION_TYPE2 :
+                                                    notificationActions.append(UNNotificationAction(identifier: actionType, title: actionTitle, options: UNNotificationActionOptions.foreground))
+                                                default : break
+                                                    
+                                                }
+                                                    i += 1
+                                            }
+                                            let categoryName = "blok61Notification"
+                                            let category = UNNotificationCategory(identifier: categoryName, actions: notificationActions, intentIdentifiers: [], options: [])
+                                            let categories : Set = [category]
+                                            UNUserNotificationCenter.current().setNotificationCategories(categories)
+                                        } catch  {
+                                            bestAttemptContent.body = "could not deserialize JSON"
+                                        }
                                         contentHandler(bestAttemptContent)
                                     }
                                 }
@@ -87,6 +113,17 @@ class NotificationService: UNNotificationServiceExtension {
             bestAttemptContent.title = "You received an alarm from blok61 :"
             bestAttemptContent.body = "Please open application to check what's happening"
             contentHandler(bestAttemptContent)
+        }
+    }
+    
+    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        if (challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust) {
+            if challenge.protectionSpace.host == Server.hostURL || challenge.protectionSpace.host == "fonts.googleapis.com" {
+                completionHandler(.useCredential, URLCredential(trust: challenge.protectionSpace.serverTrust!))
+            } else {
+                print("Error : unsupported domain :",challenge.protectionSpace.serverTrust ?? "")
+            }
+            
         }
     }
 }
