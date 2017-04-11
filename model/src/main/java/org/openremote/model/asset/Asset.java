@@ -217,7 +217,7 @@ public class Asset implements IdentifiableEntity {
     protected long version;
 
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "CREATED_ON", updatable = false, nullable = false)
+    @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition= "TIMESTAMP WITH TIME ZONE")
     @org.hibernate.annotations.CreationTimestamp
     protected Date createdOn = new Date();
 

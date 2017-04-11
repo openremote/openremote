@@ -21,6 +21,8 @@ package org.openremote.model;
 
 import elemental.json.*;
 
+import java.time.LocalDateTime;
+
 /**
  * Base class for all model classes which have to internally store data in a
  * {@link JsonObject} that has a <code>value</code> field that accepts any

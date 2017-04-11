@@ -28,15 +28,19 @@ import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.assets.browser.AssetTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
+import org.openremote.manager.client.assets.datapoint.NumberDatapointArrayMapper;
 import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
 import org.openremote.manager.client.map.MapView;
 import org.openremote.manager.shared.asset.AssetResource;
+import org.openremote.manager.shared.datapoint.AssetDatapointResource;
 import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
+import org.openremote.model.Consumer;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.datapoint.NumberDatapoint;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 
@@ -52,6 +56,8 @@ public class AssetViewActivity
     final AssetView view;
     final AssetResource assetResource;
     final AssetMapper assetMapper;
+    final AssetDatapointResource assetDatapointResource;
+    final NumberDatapointArrayMapper numberDatapointArrayMapper;
     final MapResource mapResource;
     final JsonObjectMapper jsonObjectMapper;
     final TenantResource tenantResource;
@@ -66,6 +72,8 @@ public class AssetViewActivity
                              AssetView view,
                              AssetResource assetResource,
                              AssetMapper assetMapper,
+                             AssetDatapointResource assetDatapointResource,
+                             NumberDatapointArrayMapper numberDatapointArrayMapper,
                              MapResource mapResource,
                              JsonObjectMapper jsonObjectMapper,
                              TenantResource tenantResource,
@@ -74,6 +82,8 @@ public class AssetViewActivity
         this.view = view;
         this.assetResource = assetResource;
         this.assetMapper = assetMapper;
+        this.assetDatapointResource = assetDatapointResource;
+        this.numberDatapointArrayMapper = numberDatapointArrayMapper;
         this.mapResource = mapResource;
         this.jsonObjectMapper = jsonObjectMapper;
         this.tenantResource = tenantResource;
@@ -190,6 +200,21 @@ public class AssetViewActivity
                     () -> showSuccess(container.getMessages().attributeValueStored(attribute.getName())),
                     ex -> handleRequestException(ex, environment)
                 );
+            }
+
+            @Override
+            protected void getNumberDatapoints(AssetAttribute attribute,
+                                               Consumer<NumberDatapoint[]> consumer) {
+                environment.getRequestService().execute(
+                    numberDatapointArrayMapper,
+                    requestParams -> assetDatapointResource.getNumberDatapoints(
+                        requestParams, assetId, attribute.getName()
+                    ),
+                    200,
+                    consumer,
+                    ex -> handleRequestException(ex, environment)
+                );
+
             }
         };
         view.setAttributesBrowser(attributesBrowser);

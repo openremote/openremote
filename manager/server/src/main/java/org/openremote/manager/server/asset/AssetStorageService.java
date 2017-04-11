@@ -29,7 +29,7 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
-import org.openremote.container.util.Pair;
+import org.openremote.model.Pair;
 import org.openremote.container.web.WebService;
 import org.openremote.container.web.socket.WebsocketAuth;
 import org.openremote.manager.server.event.EventService;

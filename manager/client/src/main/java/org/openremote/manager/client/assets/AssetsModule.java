@@ -30,6 +30,7 @@ import org.openremote.manager.client.assets.tenant.AssetsTenant;
 import org.openremote.manager.client.assets.tenant.AssetsTenantActivity;
 import org.openremote.manager.client.assets.tenant.AssetsTenantImpl;
 import org.openremote.manager.shared.asset.AssetResource;
+import org.openremote.manager.shared.datapoint.AssetDatapointResource;
 
 public class AssetsModule extends AbstractGinModule {
 
@@ -55,5 +56,11 @@ public class AssetsModule extends AbstractGinModule {
     @Singleton
     public native AssetResource getAssetResource() /*-{
         return $wnd.AssetResource;
+    }-*/;
+
+    @Provides
+    @Singleton
+    public native AssetDatapointResource getAssetDatapointResource() /*-{
+        return $wnd.AssetDatapointResource;
     }-*/;
 }

@@ -17,37 +17,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.container.util;
+package org.openremote.manager.shared.datapoint;
 
-import java.io.Serializable;
+import jsinterop.annotations.JsType;
+import org.openremote.manager.shared.http.RequestParams;
+import org.openremote.manager.shared.http.SuccessStatusCode;
+import org.openremote.model.datapoint.NumberDatapoint;
 
-public class Pair<K, V> implements Serializable {
-    public K key;
-    public V value;
+import javax.annotation.security.RolesAllowed;
+import javax.ws.rs.*;
 
-    public Pair(K key, V value) {
-        this.key = key;
-        this.value = value;
-    }
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o instanceof Pair) {
-            Pair pair = (Pair) o;
-            return (key != null ? key.equals(pair.key) : pair.key == null)
-                    && (value != null ? value.equals(pair.value) : pair.value == null);
-        }
-        return false;
-    }
+@Path("asset/datapoint")
+@JsType(isNative = true)
+public interface AssetDatapointResource {
 
-    @Override
-    public int hashCode() {
-        return key.hashCode() * 13 + (value == null ? 0 : value.hashCode());
-    }
+    @GET
+    @Path("{assetId}/attribute/{attributeName}")
+    @Produces(APPLICATION_JSON)
+    @SuccessStatusCode(200)
+    @RolesAllowed({"read:assets"})
+    NumberDatapoint[] getNumberDatapoints(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @PathParam("attributeName") String attributeName);
 
-    @Override
-    public String toString() {
-        return key + "=" + value;
-    }
 }

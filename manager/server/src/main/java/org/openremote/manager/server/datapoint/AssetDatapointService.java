@@ -3,16 +3,19 @@ package org.openremote.manager.server.datapoint;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
-import org.openremote.model.asset.AssetState;
+import org.openremote.container.web.WebService;
+import org.openremote.manager.server.asset.AssetStorageService;
+import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.model.AttributeRef;
+import org.openremote.model.asset.AssetState;
 import org.openremote.model.datapoint.AssetDatapoint;
 
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.function.Consumer;
+import java.util.logging.Logger;
 
 /**
- * Store and retrieve datapoints.
+ * Store and retrieve datapoints for asset attributes.
  */
 public class AssetDatapointService implements ContainerService, Consumer<AssetState> {
 
@@ -23,6 +26,15 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetSt
     @Override
     public void init(Container container) throws Exception {
         persistenceService = container.getService(PersistenceService.class);
+
+        container.getService(WebService.class).getApiSingletons().add(
+            new AssetDatapointResourceImpl(
+                container.getService(ManagerIdentityService.class),
+                container.getService(AssetStorageService.class),
+                this
+            )
+        );
+
     }
 
     @Override
@@ -49,7 +61,7 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetSt
             "select dp from AssetDatapoint dp " +
                 "where dp.entityId = :assetId " +
                 "and dp.attributeName = :attributeName " +
-                "order by dp.timestamp asc",
+                "order by dp.timestamp desc",
             AssetDatapoint.class)
             .setParameter("assetId", attributeRef.getEntityId())
             .setParameter("attributeName", attributeRef.getAttributeName())

@@ -31,14 +31,14 @@ import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.setup.AbstractManagerSetup;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.*;
-import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetAttributes;
-import org.openremote.model.asset.AssetMeta;
-import org.openremote.model.asset.AssetType;
+import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.AgentAttributes;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.units.AttributeUnits;
 import org.openremote.model.units.ColorRGB;
+
+import java.time.*;
+import java.util.Calendar;
 
 import static org.openremote.model.AttributeType.*;
 import static org.openremote.model.asset.AssetMeta.*;
@@ -240,6 +240,36 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         thing.setAttributes(thingAttributes.getJsonObject());
         thing = assetStorageService.merge(thing);
         thingId = thing.getId();
+
+        // Some sample datapoints
+        thing = assetStorageService.find(thingId, true);
+        thingAttributes = new AssetAttributes(thing);
+        ZonedDateTime now = LocalDateTime.now().atZone(ZoneId.systemDefault());
+        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+            .setValueTimestamp(now.minusDays(8).toEpochSecond()).setValueAsDecimal(0.11)));
+        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+            .setValueTimestamp(now.minusDays(7).toEpochSecond()).setValueAsDecimal(1.22)));
+        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+            .setValueTimestamp(now.minusDays(6).toEpochSecond()).setValueAsDecimal(2.33)));
+        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+            .setValueTimestamp(now.minusDays(5).toEpochSecond()).setValueAsDecimal(3.44)));
+        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+            .setValueTimestamp(now.minusDays(4).toEpochSecond()).setValueAsDecimal(4.55)));
+        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+            .setValueTimestamp(now.minusDays(3).toEpochSecond()).setValueAsDecimal(5.66)));
+        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+            .setValueTimestamp(now.minusDays(2).toEpochSecond()).setValueAsDecimal(6.77)));
+        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+            .setValueTimestamp(now.minusDays(1).toEpochSecond()).setValueAsDecimal(7.88)));
+        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+            .setValueTimestamp(now.minusHours(10).toEpochSecond()).setValueAsDecimal(8.99)));
+        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+            .setValueTimestamp(now.minusHours(5).toEpochSecond()).setValueAsDecimal(9.11)));
+        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+            .setValueTimestamp(now.minusHours(2).toEpochSecond()).setValueAsDecimal(10.22)));
+        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+            .setValueTimestamp(now.minusHours(1).toEpochSecond()).setValueAsDecimal(11.33)));
+
 
         // ################################ Demo assets for 'customerA' realm ###################################
 

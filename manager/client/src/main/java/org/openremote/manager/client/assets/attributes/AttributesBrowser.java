@@ -19,18 +19,21 @@
  */
 package org.openremote.manager.client.assets.attributes;
 
-import com.google.gwt.user.client.ui.Image;
-import com.google.gwt.user.client.ui.IsWidget;
-import com.google.gwt.user.client.ui.Widget;
+import com.google.gwt.canvas.client.Canvas;
+import com.google.gwt.core.client.JavaScriptObject;
+import com.google.gwt.user.client.ui.*;
 import elemental.client.Browser;
 import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.interop.chartjs.Chart;
 import org.openremote.manager.client.widget.*;
 import org.openremote.model.Attribute;
 import org.openremote.model.AttributeEvent;
+import org.openremote.model.Consumer;
 import org.openremote.model.ReadAttributesEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetAttributes;
+import org.openremote.model.datapoint.NumberDatapoint;
 import org.openremote.model.event.bus.EventRegistration;
 
 import java.util.ArrayList;
@@ -131,7 +134,9 @@ public abstract class AttributesBrowser
     @Override
     protected void addAttributeExtensions(AssetAttribute attribute,
                                           FormGroup formGroup) {
-        formGroup.addExtension(createDatapointBrowser(attribute));
+        Widget datapointBrowser = createDatapointBrowser(attribute);
+        if (datapointBrowser != null)
+            formGroup.addExtension(datapointBrowser);
     }
 
     /* ####################################################################### */
@@ -186,6 +191,10 @@ public abstract class AttributesBrowser
         }
 
         if (enable) {
+
+            // Poll all values once so we have some state
+            readAllAttributeValues();
+
             environment.getEventService().subscribe(
                 AttributeEvent.class,
                 new AttributeEvent.EntityIdFilter(asset.getId())
@@ -221,12 +230,104 @@ public abstract class AttributesBrowser
     }
 
     protected Widget createDatapointBrowser(AssetAttribute attribute) {
-        // TODO
-        return new Image("/static/img/Example%20Chart%20Big.png");
+        if (!attribute.isStoreDatapoints())
+            return null;
+
+        class ChartPanel extends FlowPanel {
+
+            Chart chart;
+
+            public ChartPanel() {
+                addAttachHandler(event -> {
+                    if (event.isAttached()) {
+                        createChart();
+                    } else {
+                        destroyChart();
+                    }
+                });
+            }
+
+            void createChart() {
+                Browser.getWindow().setTimeout(() -> {
+                        Canvas canvas = Canvas.createIfSupported();
+                        if (canvas == null) {
+                            add(new Label("Canvas not supported on this browser."));
+                            return;
+                        }
+
+                        canvas.getCanvasElement().setWidth(400);
+                        canvas.getCanvasElement().setHeight(200);
+                        add(canvas);
+
+                        chart = sampleChart(canvas.getContext2d());
+                    }, 3000);
+/*
+                ChartInit chartInit = new ChartInit("line");
+                chart = new Chart(canvas.getContext2d(), chartInit);
+*/
+
+/*
+                getNumberDatapoints(attribute, numberDatapoints -> {
+                    LOG.info("### GOT: " + Arrays.toString(numberDatapoints));
+                });
+*/
+            }
+
+            void destroyChart() {
+                if (chart != null) {
+                    chart.destroy();
+                    chart = null;
+                }
+                clear();
+            }
+        }
+
+        return new ChartPanel();
     }
+
+    public native static Chart sampleChart(JavaScriptObject ctx) /*-{
+        return new $wnd.Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
+                datasets: [{
+                    label: '# of Votes',
+                    data: [12, 19, 3, 5, 2, 3],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(255, 206, 86, 0.2)',
+                        'rgba(75, 192, 192, 0.2)',
+                        'rgba(153, 102, 255, 0.2)',
+                        'rgba(255, 159, 64, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(255,99,132,1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true
+                        }
+                    }]
+                }
+            }
+        });
+    }-*/;
+
 
     /* ####################################################################### */
 
     abstract protected void writeAttributeValue(AssetAttribute attribute);
 
+    abstract protected void getNumberDatapoints(AssetAttribute assetAttribute, Consumer<NumberDatapoint[]> consumer);
 }

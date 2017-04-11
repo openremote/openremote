@@ -60,12 +60,12 @@ public abstract class Ruleset {
     protected long version;
 
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "CREATED_ON", updatable = false, nullable = false)
+    @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition= "TIMESTAMP WITH TIME ZONE")
     @org.hibernate.annotations.CreationTimestamp
     protected Date createdOn = new Date();
 
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "LAST_MODIFIED", nullable = false)
+    @Column(name = "LAST_MODIFIED", nullable = false, columnDefinition= "TIMESTAMP WITH TIME ZONE")
     protected Date lastModified;
 
     @NotNull(message = "{Ruleset.name.NotNull}")
