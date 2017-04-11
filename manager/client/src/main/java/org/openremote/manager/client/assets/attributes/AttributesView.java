@@ -253,7 +253,7 @@ public abstract class AttributesView<
         String currentValue = attribute.getValueAsString();
         String defaultValue = defaultValueItem != null ? defaultValueItem.getValueAsString() : null;
 
-        Consumer<String> updateConsumer = isDefaultReadOnly(attribute) ? null : value -> {
+        Consumer<String> updateConsumer = isReadOnly(attribute) ? null : value -> {
             formGroup.setError(false);
             attribute.setValueAsString(value);
         };
@@ -299,7 +299,7 @@ public abstract class AttributesView<
     protected AttributeEditor createIntegerEditor(A attribute, MetaItem defaultValueItem, S style, FormGroup formGroup) {
         String currentValue = attribute.getValueAsString();
         String defaultValue = defaultValueItem != null ? defaultValueItem.getValueAsString() : null;
-        Consumer<String> updateConsumer = isDefaultReadOnly(attribute) ? null : value -> {
+        Consumer<String> updateConsumer = isReadOnly(attribute) ? null : value -> {
             Integer intValue = Integer.valueOf(value);
             formGroup.setError(false);
             attribute.setValueAsInteger(intValue);
@@ -356,7 +356,7 @@ public abstract class AttributesView<
     protected AttributeEditor createDecimalEditor(A attribute, MetaItem defaultValueItem, S style, FormGroup formGroup) {
         String currentValue = attribute.getValueAsString();
         String defaultValue = defaultValueItem != null ? defaultValueItem.getValueAsString() : null;
-        Consumer<String> updateConsumer = isDefaultReadOnly(attribute) ? null : value -> {
+        Consumer<String> updateConsumer = isReadOnly(attribute) ? null : value -> {
             Double decimalValue = Double.valueOf(value);
             formGroup.setError(false);
             attribute.setValueAsDecimal(decimalValue);
@@ -413,7 +413,7 @@ public abstract class AttributesView<
     protected AttributeEditor createBooleanEditor(A attribute, MetaItem defaultValueItem, S style, FormGroup formGroup) {
         Boolean currentValue = attribute.getValueAsBoolean();
         Boolean defaultValue = defaultValueItem != null ? defaultValueItem.getValueAsBoolean() : null;
-        Consumer<Boolean> updateConsumer = isDefaultReadOnly(attribute) ? null : value -> {
+        Consumer<Boolean> updateConsumer = isReadOnly(attribute) ? null : value -> {
             formGroup.setError(false);
             attribute.setValueUnchecked(Json.create(value));
         };
@@ -471,7 +471,7 @@ public abstract class AttributesView<
         return input;
     }
 
-    protected boolean isDefaultReadOnly(A attribute) {
+    protected boolean isReadOnly(A attribute) {
         return attribute.isReadOnly();
     }
 

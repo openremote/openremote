@@ -102,6 +102,11 @@ public class AttributesEditor
     }
 
     @Override
+    protected boolean isReadOnly(AssetAttribute attribute) {
+        return false; // Always allow editing of attribute value
+    }
+
+    @Override
     protected boolean isShowTimestamp(AssetAttribute attribute) {
         return false;
     }
