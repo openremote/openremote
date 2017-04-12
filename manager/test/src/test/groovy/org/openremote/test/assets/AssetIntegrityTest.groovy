@@ -16,6 +16,7 @@ import org.openremote.model.asset.AssetType
 import org.openremote.model.AttributeType
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
+import spock.util.concurrent.PollingConditions
 
 import javax.ws.rs.WebApplicationException
 import javax.xml.ws.WebServiceException
@@ -80,17 +81,21 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         when: "an asset attribute value is written directly"
         assetResource.writeAttributeValue(null, testAsset.getId(), "foo", "\"bar2\"")
-        testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the attribute value should match"
-        new AssetAttributes(testAsset).get("foo").getValueAsString() == "bar2"
+        new PollingConditions(delay: 1, timeout: 5).eventually {
+            def asset = assetResource.get(null, testAsset.getId())
+            new AssetAttributes(asset).get("foo").getValueAsString() == "bar2"
+        }
 
         when: "an asset attribute value null is written directly"
         assetResource.writeAttributeValue(null, testAsset.getId(), "foo", "null")
-        testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the attribute value should match"
-        !new AssetAttributes(testAsset).get("foo").hasValue()
+        new PollingConditions(delay: 1, timeout: 5).eventually {
+            def asset = assetResource.get(null, testAsset.getId())
+            !new AssetAttributes(asset).get("foo").hasValue()
+        }
 
         when: "an asset is updated with a different type"
         testAsset = assetResource.get(null, testAsset.getId())

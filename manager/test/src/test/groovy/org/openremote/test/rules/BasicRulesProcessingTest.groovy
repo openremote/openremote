@@ -59,7 +59,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
     def "Check firing of rules"() {
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10)
+        def conditions = new PollingConditions(timeout: 10, delay: 0.5)
 
         and: "the container is started"
         def serverPort = findEphemeralPort()
@@ -75,17 +75,17 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def rulesImport = new BasicRulesImport(rulesetStorageService, keycloakDemoSetup, managerDemoSetup)
 
         expect: "the rules engines to be ready"
-        new PollingConditions(initialDelay: 3, timeout: 10, delay: 1).eventually {
+        new PollingConditions(initialDelay: 3, timeout: 20, delay: 1).eventually {
             rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
         }
 
         and: "the demo attributes marked with RULE_STATE = true meta should be inserted into the engines"
         conditions.eventually {
-            assert rulesService.assetStates.size() == 8
-            assert rulesImport.globalEngine.assetStates.size() == 8
+            assert rulesService.assetStates.size() == 9
+            assert rulesImport.globalEngine.assetStates.size() == 9
             assert rulesImport.masterEngine.assetStates.size() == 0
-            assert rulesImport.customerAEngine.assetStates.size() == 8
-            assert rulesImport.apartment1Engine.assetStates.size() == 4
+            assert rulesImport.customerAEngine.assetStates.size() == 9
+            assert rulesImport.apartment1Engine.assetStates.size() == 5
             assert rulesImport.apartment3Engine.assetStates.size() == 2
         }
 
@@ -100,7 +100,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def apartment1LivingRoomPresenceDetectedChange = new AttributeEvent(
                 managerDemoSetup.apartment1LivingroomId, "presenceDetected", Json.create(true)
         )
-        assetProcessingService.updateAttributeValue(apartment1LivingRoomPresenceDetectedChange)
+        assetProcessingService.sendAttributeEvent(apartment1LivingRoomPresenceDetectedChange)
 
         then: "the rule engines in scope should fire the 'All' and 'All changed' rules"
         conditions.eventually {
@@ -121,7 +121,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def apartment1LivingRoomCO2Change = new AttributeEvent(
                 managerDemoSetup.apartment1LivingroomId, "co2Level", Json.create(500)
         )
-        assetProcessingService.updateAttributeValue(apartment1LivingRoomCO2Change)
+        assetProcessingService.sendAttributeEvent(apartment1LivingRoomCO2Change)
 
         then: "no rule engines should have fired after a few seconds"
         new PollingConditions(initialDelay: 3).eventually assertNoRulesFired
@@ -131,14 +131,14 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def apartment1LivingRoomWindowOpenChange = new AttributeEvent(
                 managerDemoSetup.apartment1LivingroomId, "windowOpen", Json.create(true)
         )
-        assetProcessingService.updateAttributeValue(apartment1LivingRoomWindowOpenChange)
+        assetProcessingService.sendAttributeEvent(apartment1LivingRoomWindowOpenChange)
 
         then: "no rule engines should have fired after a few seconds"
         new PollingConditions(initialDelay: 3).eventually assertNoRulesFired
 
         when: "an old (stale) attribute event is pushed into the system"
         resetRuleExecutionLoggers()
-        assetProcessingService.updateAttributeValue(apartment1LivingRoomPresenceDetectedChange)
+        assetProcessingService.sendAttributeEvent(apartment1LivingRoomPresenceDetectedChange)
 
         then: "no rule engines should have fired after a few seconds"
         new PollingConditions(initialDelay: 3).eventually assertNoRulesFired
@@ -148,7 +148,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         apartment1LivingRoomPresenceDetectedChange = new AttributeEvent(
                 managerDemoSetup.apartment1LivingroomId, "presenceDetected", Json.create(true)
         )
-        assetProcessingService.updateAttributeValue(apartment1LivingRoomPresenceDetectedChange)
+        assetProcessingService.sendAttributeEvent(apartment1LivingRoomPresenceDetectedChange)
 
         then: "the rule engines in scope should fire the 'All' rule but not the 'All changed' rule"
         conditions.eventually {
@@ -178,7 +178,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             smartHomeEngine = rulesService.assetDeployments.get(managerDemoSetup.smartHomeId)
             assert smartHomeEngine != null
             assert smartHomeEngine.isRunning()
-            assert smartHomeEngine.assetStates.size() == 8
+            assert smartHomeEngine.assetStates.size() == 9
             assert smartHomeEngine.allRulesets.length == 1
             assert smartHomeEngine.allRulesets[0].enabled
             assert smartHomeEngine.allRulesets[0].name == "Some smart home asset rules"
@@ -193,7 +193,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def apartment3LivingRoomPresenceDetectedChange = new AttributeEvent(
                 managerDemoSetup.apartment3LivingroomId, "presenceDetected", Json.create(true)
         )
-        assetProcessingService.updateAttributeValue(apartment3LivingRoomPresenceDetectedChange)
+        assetProcessingService.sendAttributeEvent(apartment3LivingRoomPresenceDetectedChange)
 
         then: "the engines in scope should have fired the matched rules"
         conditions.eventually {
@@ -213,7 +213,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def apartment1LivingRoomComfortTemperatureChange = new AttributeEvent(
                 managerDemoSetup.apartment1LivingroomThermostatId, "comfortTemperature", Json.create(22.5)
         )
-        assetProcessingService.updateAttributeValue(apartment1LivingRoomComfortTemperatureChange)
+        assetProcessingService.sendAttributeEvent(apartment1LivingRoomComfortTemperatureChange)
 
         then: "the engines in scope should have fired the matched rules"
         conditions.eventually {
@@ -247,7 +247,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             rulesImport.globalEngine = rulesService.globalDeployment
             assert rulesImport.globalEngine != null
             assert rulesImport.globalEngine.isRunning()
-            assert rulesImport.globalEngine.assetStates.size() == 8
+            assert rulesImport.globalEngine.assetStates.size() == 9
             assert rulesImport.globalEngine.allRulesets.length == 2
             assert rulesImport.globalEngine.allRulesets[1].enabled
             assert rulesImport.globalEngine.allRulesets[1].name == "Some global test rules"
@@ -262,7 +262,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         apartment1LivingRoomComfortTemperatureChange = new AttributeEvent(
                 managerDemoSetup.apartment1LivingroomThermostatId, "comfortTemperature", Json.create(20.3)
         )
-        assetProcessingService.updateAttributeValue(apartment1LivingRoomComfortTemperatureChange)
+        assetProcessingService.sendAttributeEvent(apartment1LivingRoomComfortTemperatureChange)
 
         then: "after a few seconds only the global engine should have fired the All, All changed and Prevent Livingroom Thermostat Change rules"
         conditions.eventually {
@@ -279,7 +279,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         apartment3LivingRoomPresenceDetectedChange = new AttributeEvent(
                 managerDemoSetup.apartment3LivingroomId, "presenceDetected", Json.create(false)
         )
-        assetProcessingService.updateAttributeValue(apartment3LivingRoomPresenceDetectedChange)
+        assetProcessingService.sendAttributeEvent(apartment3LivingRoomPresenceDetectedChange)
 
         then: "all the engines in scope should have fired the matched rules"
         conditions.eventually {

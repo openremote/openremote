@@ -266,7 +266,7 @@ public class AssetViewImpl extends Composite implements AssetView {
     public void setType(String type) {
         AssetType assetType = AssetType.getByValue(type);
         if (assetType == AssetType.CUSTOM) {
-            typeLabel.setText(managerMessages.assetTypeLabel(type));
+            typeLabel.setText(type);
         } else {
             typeLabel.setText(managerMessages.assetTypeLabel(assetType.name()));
         }

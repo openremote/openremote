@@ -131,9 +131,13 @@ public interface AssetResource {
      * their authenticated realm, the superuser can update assets in other (all) realms. A 403 status
      * is returned if a regular user tries to update an asset in a realm different than its
      * authenticated realm, or if the user is restricted and the asset to update is not in the set of linked
-     * assets of the restricted user. A 400 status is returned if the update was not successful, e.g. because
-     * the given value does not match the attribute's type. Note that this update does not increment the version
-     * of an asset entity, thus concurrent updates can overwrite data undetected ("last commit wins").
+     * assets of the restricted user.
+     * <p>
+     * This operation is ultimately asynchronous, any call will return before the actual attribute value is
+     * changed in any storage or downstream processors. Thus any constraint violation or processing error
+     * will not be returned from this method, query the system later to determine the actual state
+     * and outcome of the write operation. The version of the asset entity will not be incremented by this
+     * operation, thus concurrent updates can overwrite data undetected ("last commit wins").
      */
     @PUT
     @Path("{assetId}/attribute/{attributeName}")

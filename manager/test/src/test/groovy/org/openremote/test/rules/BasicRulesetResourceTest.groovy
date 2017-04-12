@@ -47,7 +47,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def rulesetResource = getClientTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(RulesetResource.class)
 
         expect: "the rules engines to be ready"
-        new PollingConditions(initialDelay: 3, timeout: 10, delay: 1).eventually {
+        new PollingConditions(initialDelay: 3, timeout: 20, delay: 1).eventually {
             rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
         }
 
@@ -317,7 +317,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def rulesetResource = getClientTarget(serverUri(serverPort), MASTER_REALM, accessToken).proxy(RulesetResource.class)
 
         expect: "the rules engines to be ready"
-        new PollingConditions(initialDelay: 3, timeout: 10, delay: 1).eventually {
+        new PollingConditions(initialDelay: 3, timeout: 20, delay: 1).eventually {
             rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
         }
 
@@ -547,7 +547,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def rulesetResource = getClientTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm, accessToken).proxy(RulesetResource.class)
 
         expect: "the rules engines to be ready"
-        new PollingConditions(initialDelay: 3, timeout: 10, delay: 1).eventually {
+        new PollingConditions(initialDelay: 3, timeout: 20, delay: 1).eventually {
             rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
         }
 
@@ -695,7 +695,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
         def rulesetResource = getClientTarget(serverUri(serverPort), keycloakDemoSetup.customerATenant.realm, accessToken).proxy(RulesetResource.class)
 
         expect: "the rules engines to be ready"
-        new PollingConditions(initialDelay: 3, timeout: 10, delay: 1).eventually {
+        new PollingConditions(initialDelay: 3, timeout: 20, delay: 1).eventually {
             rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
         }
 

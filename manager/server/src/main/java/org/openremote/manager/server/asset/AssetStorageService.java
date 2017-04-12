@@ -29,7 +29,6 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
-import org.openremote.model.Pair;
 import org.openremote.container.web.WebService;
 import org.openremote.container.web.socket.WebsocketAuth;
 import org.openremote.manager.server.event.EventService;
@@ -38,6 +37,7 @@ import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.Attribute;
 import org.openremote.model.AttributeEvent;
+import org.openremote.model.Pair;
 import org.openremote.model.ReadAttributesEvent;
 import org.openremote.model.asset.*;
 import org.postgresql.util.PGobject;
@@ -257,11 +257,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
             return true;
         });
-    }
-
-    // Here for convenience - a single service to handle Asset/AssetAttribute events
-    public void updateAttributeValue(AttributeEvent attributeEvent) {
-        assetProcessingService.updateAttributeValue(attributeEvent);
     }
 
     public boolean isUserAsset(String userId, String assetId) {

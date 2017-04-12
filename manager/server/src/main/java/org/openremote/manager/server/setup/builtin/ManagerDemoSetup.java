@@ -37,8 +37,9 @@ import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.units.AttributeUnits;
 import org.openremote.model.units.ColorRGB;
 
-import java.time.*;
-import java.util.Calendar;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 import static org.openremote.model.AttributeType.*;
 import static org.openremote.model.asset.AssetMeta.*;
@@ -337,6 +338,17 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_EVENT, Json.create(true))
                     ).add(
                         new MetaItem(AssetMeta.RULE_EVENT_EXPIRES, Json.create("10s"))
+                    )
+                )
+        ).put(
+            new AssetAttribute("vacationDays", AttributeType.INTEGER, Json.createNull())
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("Vacation Days"))
+                    ).add(
+                        new MetaItem(AssetMeta.DESCRIPTION, Json.create("Enable vacation mode for given days"))
+                    ).add(
+                        new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 )
         );

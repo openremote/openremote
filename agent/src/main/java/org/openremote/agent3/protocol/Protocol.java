@@ -34,7 +34,7 @@ import java.util.Collection;
  * <p>
  * The protocol implementation can receive {@link AttributeEvent} messages on the
  * {@link #ACTUATOR_TOPIC}. It can produce {@link AttributeEvent} messages on the
- * {@link #SENSOR_TOPIC}.
+ * {@link #SENSOR_QUEUE}.
  * <p>
  * The linked attributes of a protocol provide the model for the protocol to perform these operations. How
  * attributes and value changes map to actual device and service calls is up to the implementation. The method
@@ -58,11 +58,11 @@ public interface Protocol extends ContainerService {
 
     // TODO: Some of these options should be configurable depending on expected load etc.
 
-    // Message topic for communicating from thing to protocol layer (thing attribute changed, trigger actuator)
+    // Message topic for communicating from asset/thing to protocol layer (asset attribute changed, trigger actuator)
     String ACTUATOR_TOPIC = "seda://ActuatorTopic?multipleConsumers=true&concurrentConsumers=10&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
 
-    // Message topic for communicating from protocol to thing layer (sensor changed, trigger thing attribute update)
-    String SENSOR_TOPIC = "seda://SensorTopic?waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=false&size=1000";
+    // Message queue for communicating from protocol to asset/thing layer (sensor changed, trigger asset attribute update)
+    String SENSOR_QUEUE = "seda://SensorQueue?waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=false&size=1000";
 
     String getProtocolName();
 

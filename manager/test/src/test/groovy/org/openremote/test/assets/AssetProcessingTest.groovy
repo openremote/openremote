@@ -108,7 +108,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             def customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
             assert customerAEngine != null
             assert customerAEngine.isRunning()
-            assert customerAEngine.rulesets.size() == 2
+            assert customerAEngine.rulesets.size() == 3
             assert updatesPassedStartOfProcessingChain.size() == 0
             assert updatesReachedEndOfProcessingChain.size() == 0
         }
@@ -185,7 +185,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def light1toggleOn = new AttributeEvent(
                 new AttributeState(new AttributeRef(mockThing.getId(), "light1Toggle"), Json.create(true))
         )
-        assetProcessingService.updateAttributeValue(light1toggleOn)
+        assetProcessingService.sendAttributeEvent(light1toggleOn)
 
         then: "the attribute event should pass the start of the processing chain, reach the mock protocol and but not reach the end of the processing chain"
         conditions.eventually {
@@ -222,10 +222,9 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def light2toggleOn = new AttributeEvent(
                 new AttributeState(new AttributeRef(mockThing.getId(), "light2Toggle"), Json.create(true))
         )
-        assetProcessingService.updateAttributeValue(light2toggleOn)
+        assetProcessingService.sendAttributeEvent(light2toggleOn)
 
         then: "the attribute event should pass the start of the processing chain, but not reach the mock protocol or the end of the processing chain and error should be populated"
-        thrown(RuntimeException)
         conditions.eventually {
             assert updatesPassedStartOfProcessingChain.size() == 1
             assert updatesReachedEndOfProcessingChain.size() == 0
@@ -244,7 +243,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def plainAttributeTest = new AttributeEvent(
                 new AttributeState(new AttributeRef(mockThing.getId(), "plainAttribute"), Json.create("test"))
         )
-        assetProcessingService.updateAttributeValue(plainAttributeTest)
+        assetProcessingService.sendAttributeEvent(plainAttributeTest)
 
         then: "the attribute event should pass the start of the processing chain and reach the end of the processing chain"
         conditions.eventually {

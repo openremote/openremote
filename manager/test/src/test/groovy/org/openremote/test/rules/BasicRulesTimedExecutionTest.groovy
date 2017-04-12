@@ -1,7 +1,5 @@
 package org.openremote.test.rules
 
-import org.drools.core.time.impl.PseudoClockScheduler
-import org.kie.api.runtime.conf.ClockTypeOption
 import org.openremote.manager.server.rules.RulesDeployment
 import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.rules.RulesetStorageService
@@ -11,7 +9,6 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS
 import static java.util.concurrent.TimeUnit.SECONDS
 import static org.openremote.test.RulesTestUtil.attachRuleExecutionLogger
 
@@ -65,14 +62,9 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
 
     def "Check firing of timer rules with pseudo clock"() {
 
-        given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10)
-
-        and: "a pseudo rules engine clock"
-        RulesDeployment.DefaultClockType = ClockTypeOption.get("pseudo")
-        PseudoClockScheduler sessionClock = null
-
-        and: "the container is started"
+        given: "the container environment is started"
+        enablePseudoClock()
+        def conditions = new PollingConditions(timeout: 10, delay: 1)
         def serverPort = findEphemeralPort()
         def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def rulesService = container.getService(RulesService.class)
@@ -92,10 +84,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
             assert globalEngine.isRunning()
         }
 
-        when: "we have prepared a rules clock"
-        sessionClock = globalEngine.sessionClock as PseudoClockScheduler
-
-        and: "the execution logger is attached"
+        when: "the execution logger is attached"
         attachRuleExecutionLogger(globalEngine, globalEngineFiredRules)
 
         then: "after a few seconds the rule engines should not have fired any rules"
@@ -104,7 +93,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
         }
 
         when: "the clock is advanced by a few seconds"
-        sessionClock.advanceTime(5, SECONDS)
+        withClockOf(globalEngine) { it.advanceTime(5, SECONDS) }
 
         then: "the rule engines should have fire the timed execution rule in the background"
         new PollingConditions().eventually {
@@ -114,7 +103,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
         }
 
         cleanup: "the server should be stopped"
-        RulesDeployment.DefaultClockType = null
+        disablePseudoClock()
         stopContainer(container)
     }
 }

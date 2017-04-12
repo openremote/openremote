@@ -40,7 +40,7 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.openremote.agent3.protocol.Protocol.SENSOR_TOPIC;
+import static org.openremote.agent3.protocol.Protocol.SENSOR_QUEUE;
 
 /**
  * Receives {@link AttributeEvent}s and processes them.
@@ -114,6 +114,10 @@ import static org.openremote.agent3.protocol.Protocol.SENSOR_TOPIC;
 public class AssetProcessingService extends RouteBuilder implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(AssetProcessingService.class.getName());
+
+    // TODO: Some of these options should be configurable depending on expected load etc.
+    // Message topic for communicating from client to asset/thing layer
+    String ASSET_QUEUE = "seda://AssetQueue?waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=false&size=1000";
 
     protected ManagerIdentityService managerIdentityService;
     protected RulesService rulesService;
@@ -191,51 +195,58 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     public void configure() throws Exception {
 
         // Process attribute events from protocols
-        from(SENSOR_TOPIC)
+        from(SENSOR_QUEUE)
             .filter(body().isInstanceOf(AttributeEvent.class))
             .process(exchange -> {
+                AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
+                LOG.fine("Received on sensor queue: " + event);
                 // Can either come from onUpdateSensor or sendAttributeUpdate
                 boolean isSensorUpdate = (boolean) exchange.getIn().getHeader("isSensorUpdate", true);
                 if (isSensorUpdate) {
-                    processSensorUpdate(exchange.getIn().getBody(AttributeEvent.class));
+                    processSensorUpdate(event);
                 } else {
-                    updateAttributeValue(exchange.getIn().getBody(AttributeEvent.class));
+                    updateAttributeValue(event);
                 }
             });
 
-        // Process attribute events from clients through the message broker
-        /* TODO Needs security
-        from(INCOMING_EVENT_TOPIC)
+        // Process attribute events from clients
+        from(ASSET_QUEUE)
             .filter(body().isInstanceOf(AttributeEvent.class))
-            .process(exchange -> updateAttributeValue(exchange.getIn().getBody(AttributeEvent.class)));
-        */
+            .process(exchange -> {
+                AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
+                LOG.fine("Received on asset queue: " + event);
+                updateAttributeValue(event);
+            });
+    }
+
+    public void sendAttributeEvent(AttributeEvent attributeEvent) {
+        messageBrokerService.getProducerTemplate().sendBody(ASSET_QUEUE, attributeEvent);
     }
 
     /**
-     * This is the entry point for any attribute value change event in the entire system. This deals
-     * with single attribute value changes and pushes them through the attribute event processing chain
-     * where each consumer is given the opportunity to consume the event or allow it progress to the
-     * next consumer {@link AssetState.ProcessingStatus}.
+     * This is the entry point for any attribute value change event in the entire system.
+     * <p>
+     * Ingestion is asynchronous, through either
+     * {@link org.openremote.agent3.protocol.Protocol#SENSOR_QUEUE} or {@link #ASSET_QUEUE}.
+     * <p>
+     * This deals with single attribute value changes and pushes them through the attribute event
+     * processing chain where each consumer is given the opportunity to consume the event or allow
+     * it progress to the next consumer {@link AssetState.ProcessingStatus}.
      * <p>
      * NOTE: An attribute value can be changed during Asset CRUD but this does not come through
      * this route but is handled separately see {@link AssetResourceImpl}. Any attribute values
      * assigned during Asset CRUD can be thought of as the attributes initial value and is subject
-     * to change by the following actors (depending on attribute meta etc.) all actors use this
-     * entry point to initiate an attribute value change:
-     * <p>
-     * Rules
-     * Protocol
-     * User
-     *
-     * @param attributeEvent
+     * to change by the following actors (depending on attribute meta etc.) All actors use this
+     * entry point to initiate an attribute value change: Sensor updates from protocols, attribute
+     * write requests from clients, and attribute write dispatching as rules RHS action.
      */
-    public void updateAttributeValue(AttributeEvent attributeEvent) {
+    private void updateAttributeValue(AttributeEvent attributeEvent) {
 
         // Check this event relates to a valid asset
         ServerAsset asset = assetStorageService.find(attributeEvent.getEntityId(), true);
 
         if (asset == null) {
-            LOG.warning("Processing client update failed, asset not found: " + attributeEvent);
+            LOG.warning("Processing event failed, asset not found: " + attributeEvent);
             return;
         }
 
@@ -247,7 +258,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         }
 
         // Pass attribute event through the processing chain
-        LOG.fine("Processing client " + attributeEvent + " for: " + asset);
+        LOG.fine("Processing " + attributeEvent + " for: " + asset);
         AssetAttributes attributes = new AssetAttributes(asset);
         AssetAttribute attribute = attributes.get(attributeEvent.getAttributeName());
 

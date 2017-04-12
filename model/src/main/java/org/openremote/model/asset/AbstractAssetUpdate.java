@@ -20,6 +20,7 @@
 package org.openremote.model.asset;
 
 import elemental.json.JsonValue;
+import org.openremote.model.AttributeRef;
 import org.openremote.model.AttributeType;
 import org.openremote.model.util.JsonUtil;
 
@@ -228,6 +229,10 @@ public abstract class AbstractAssetUpdate {
 
     public boolean isValueChanged() {
         return !JsonUtil.equals(attribute.getValue(), oldValue);
+    }
+
+    public AttributeRef getAttributeRef() {
+        return attribute.getReference();
     }
 
     /**

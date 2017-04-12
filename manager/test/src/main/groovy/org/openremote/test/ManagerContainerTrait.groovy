@@ -1,6 +1,8 @@
 package org.openremote.test
 
 import com.google.common.collect.Lists
+import org.drools.core.time.impl.PseudoClockScheduler
+import org.kie.api.runtime.conf.ClockTypeOption
 import org.openremote.agent3.protocol.Protocol
 import org.openremote.container.Container
 import org.openremote.container.ContainerService
@@ -16,6 +18,7 @@ import org.openremote.manager.server.event.EventService
 import org.openremote.manager.server.i18n.I18NService
 import org.openremote.manager.server.map.MapService
 import org.openremote.manager.server.notification.NotificationService
+import org.openremote.manager.server.rules.RulesDeployment
 import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.rules.RulesetStorageService
 import org.openremote.manager.server.security.ManagerIdentityService
@@ -61,4 +64,23 @@ trait ManagerContainerTrait extends ContainerTrait {
     static Container startContainerWithoutDemoRules(Map<String, String> config, Iterable<ContainerService> services) {
         startContainer(config << [(SETUP_IMPORT_DEMO_RULES): "false"], services)
     }
+
+    static void enablePseudoClock() {
+        RulesDeployment.DefaultClockType = ClockTypeOption.get("pseudo")
+    }
+
+    static void disablePseudoClock() {
+        RulesDeployment.DefaultClockType = null
+    }
+
+    /**
+     * Execute pseudo clock operations in Rules engine in a daemon thread, simulating behavior of
+     * {@link org.kie.api.runtime.conf.TimedRuleExectionOption} "yes", which lets Drools execute
+     * time-triggered rules in the background even though the engine is in passive mode and waits
+     * for <code>fireAllRules()</code> to trigger any other rules.
+     */
+    static void withClockOf(RulesDeployment engine, Closure<PseudoClockScheduler> clockConsumer) {
+        Thread.startDaemon { clockConsumer.call(engine.sessionClock as PseudoClockScheduler) }
+    }
+
 }

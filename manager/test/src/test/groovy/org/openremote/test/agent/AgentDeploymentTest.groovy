@@ -5,6 +5,7 @@ import elemental.json.JsonArray
 import elemental.json.JsonType
 import org.openremote.agent3.protocol.simulator.SimulatorProtocol
 import org.openremote.manager.server.asset.AssetStorageService
+import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.model.AttributeEvent
@@ -27,6 +28,7 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def simulatorProtocol = container.getService(SimulatorProtocol.class)
         def assetStorageService = container.getService(AssetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
 
         then: "the simulator elements should have the initial state"
         conditions.eventually {
@@ -42,7 +44,7 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         def light1DimmerChange = new AttributeEvent(
                 managerDemoSetup.thingId, "light1Dimmer", Json.create(66)
         )
-        assetStorageService.updateAttributeValue(light1DimmerChange)
+        assetProcessingService.sendAttributeEvent(light1DimmerChange)
 
         then: "the simulator state and thing attribute value should be updated (simulator reflects actuator write as sensor read)"
         conditions.eventually {

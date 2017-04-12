@@ -57,10 +57,10 @@ import org.openremote.manager.shared.rules.TenantRuleset;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.Consumer;
 import org.openremote.model.asset.AbstractAssetUpdate;
+import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.asset.AssetState;
 import org.openremote.model.notification.AlertNotification;
-import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Users;
 
@@ -88,6 +88,7 @@ public class RulesDeployment<T extends Ruleset> {
     private static Long counter = 1L;
     static final protected Util UTIL = new Util();
     protected final Map<Long, T> rulesets = new LinkedHashMap<>();
+    protected String rulesetsDebug;
     protected final RuleExecutionLogger ruleExecutionLogger = new RuleExecutionLogger();
     protected KieSession knowledgeSession;
     protected KieServices kieServices;
@@ -206,6 +207,7 @@ public class RulesDeployment<T extends Ruleset> {
             kfs.delete("src/main/resources/" + ruleset.getId());
             //noinspection SuspiciousMethodCalls
             rulesets.remove(existingRuleset);
+            updateRulesetsDebug();
         }
 
         LOG.info("Adding ruleset: " + ruleset);
@@ -254,6 +256,7 @@ public class RulesDeployment<T extends Ruleset> {
         // Add new ruleset
         ruleset.setDeploymentStatus(addSuccessful ? Ruleset.DeploymentStatus.DEPLOYED : Ruleset.DeploymentStatus.FAILED);
         rulesets.put(ruleset.getId(), ruleset);
+        updateRulesetsDebug();
 
         return addSuccessful;
     }
@@ -281,6 +284,7 @@ public class RulesDeployment<T extends Ruleset> {
         // Remove this old rules file
         kfs.delete("src/main/resources/" + ruleset.getId());
         rulesets.remove(ruleset.getId());
+        updateRulesetsDebug();
 
         // Update status of each ruleset
         boolean anyFailed = rulesets
@@ -360,6 +364,14 @@ public class RulesDeployment<T extends Ruleset> {
 
         try {
             knowledgeSession = kieContainer.newKieSession(kieSessionConfiguration);
+
+            // If the pseudo clock is enabled (we run a test environment?) then set current
+            // time on startup of session, as real time is used in offset calculations for
+            // automatic event expiration in Drools (probably a design mistake)
+            if (clockType.getClockType().equals("pseudo")) {
+                ((PseudoClockScheduler) knowledgeSession.getSessionClock()).setStartupTime(System.currentTimeMillis());
+            }
+
             running = true;
 
             setGlobal("assets", createAssetsFacade());
@@ -593,7 +605,7 @@ public class RulesDeployment<T extends Ruleset> {
                     );
                 }
                 LOG.fine("Dispatching on " + RulesDeployment.this + ": " + event);
-                assetProcessingService.updateAttributeValue(event);
+                assetProcessingService.sendAttributeEvent(event);
             }
         };
     }
@@ -632,7 +644,7 @@ public class RulesDeployment<T extends Ruleset> {
 
             @Override
             public void storeAndNotify(String userId, AlertNotification alert) {
-                notificationService.storeAndNotify(userId,alert);
+                notificationService.storeAndNotify(userId, alert);
             }
         };
     }
@@ -678,8 +690,8 @@ public class RulesDeployment<T extends Ruleset> {
 
     }
 
-    protected synchronized String getRulesetDebug() {
-        return Arrays.toString(rulesets.values().stream().map(rd ->
+    protected synchronized void updateRulesetsDebug() {
+        rulesetsDebug = Arrays.toString(rulesets.values().stream().map(rd ->
             rd.getClass().getSimpleName()
                 + " - "
                 + rd.getName()
@@ -694,7 +706,7 @@ public class RulesDeployment<T extends Ruleset> {
             "id='" + id + '\'' +
             ", running='" + running + '\'' +
             ", error='" + error + '\'' +
-            ", rulesets='" + getRulesetDebug() + '\'' +
+            ", rulesets='" + rulesetsDebug + '\'' +
             '}';
     }
 }

@@ -14,6 +14,7 @@ import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetType
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
+import spock.util.concurrent.PollingConditions
 
 import javax.ws.rs.WebApplicationException
 
@@ -30,6 +31,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def conditions = new PollingConditions(delay: 1, timeout: 5)
 
         and: "an authenticated admin user"
         def accessToken = authenticate(
@@ -160,10 +162,13 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "an asset attribute is written in the authenticated realm"
         assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet", Json.create("Teststreet 123").toJson())
-        def asset = assetResource.get(null, managerDemoSetup.smartOfficeId)
 
         then: "result should match"
-        new AssetAttributes(asset).get("geoStreet").getValue().toJson()  == Json.create("Teststreet 123").toJson()
+        def asset
+        conditions.eventually {
+            asset = assetResource.get(null, managerDemoSetup.smartOfficeId)
+            new AssetAttributes(asset).get("geoStreet").getValue().toJson() == Json.create("Teststreet 123").toJson()
+        }
 
         when: "an non-existent attribute is written in the authenticated realm"
         assetResource.writeAttributeValue(null, "doesnotexist", "geoStreet", Json.create("Teststreet 123").toJson())
@@ -181,10 +186,12 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "an asset attribute is written in a foreign realm"
         assetResource.writeAttributeValue(null, managerDemoSetup.smartHomeId, "geoStreet", Json.create("Teststreet 456").toJson())
-        asset = assetResource.get(null, managerDemoSetup.smartHomeId)
 
         then: "result should match"
-        new AssetAttributes(asset).get("geoStreet").getValue().toJson()  == Json.create("Teststreet 456").toJson()
+        conditions.eventually {
+            asset = assetResource.get(null, managerDemoSetup.smartHomeId)
+            new AssetAttributes(asset).get("geoStreet").getValue().toJson() == Json.create("Teststreet 456").toJson()
+        }
 
         cleanup: "the server should be stopped"
         stopContainer(container)
@@ -197,6 +204,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def conditions = new PollingConditions(delay: 1, timeout: 5)
 
         and: "an authenticated test user"
         def accessToken = authenticate(
@@ -326,10 +334,13 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "an asset attribute is written in the authenticated realm"
         assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet", Json.create("Teststreet 123").toJson())
-        def asset = assetResource.get(null, managerDemoSetup.smartOfficeId)
 
         then: "result should match"
-        new AssetAttributes(asset).get("geoStreet").getValue().toJson()  == Json.create("Teststreet 123").toJson()
+        def asset
+        conditions.eventually {
+            asset = assetResource.get(null, managerDemoSetup.smartOfficeId)
+            new AssetAttributes(asset).get("geoStreet").getValue().toJson() == Json.create("Teststreet 123").toJson()
+        }
 
         when: "an asset attribute is written in a foreign realm"
         assetResource.writeAttributeValue(null, managerDemoSetup.smartHomeId, "geoStreet", Json.create("Teststreet 456").toJson())
@@ -348,6 +359,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def conditions = new PollingConditions(delay: 1, timeout: 5)
 
         and: "an authenticated test user"
         def accessToken = authenticate(
@@ -479,6 +491,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def conditions = new PollingConditions(delay: 1, timeout: 5)
 
         and: "an authenticated test user"
         def accessToken = authenticate(
@@ -649,10 +662,12 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         when: "a protected asset attribute is written on a user asset"
         assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomThermostatId, "comfortTemperature", Json.create(22.123).toJson())
-        def asset = assetResource.get(null, managerDemoSetup.apartment1LivingroomThermostatId)
 
         then: "result should match"
-        new AssetAttributes(asset).get("comfortTemperature").getValue().toJson()  == Json.create(22.123).toJson()
+        conditions.eventually {
+            def asset = assetResource.get(null, managerDemoSetup.apartment1LivingroomThermostatId)
+            new AssetAttributes(asset).get("comfortTemperature").getValue().toJson() == Json.create(22.123).toJson()
+        }
 
         when: "an attribute is written on a non-existent user asset"
         assetResource.writeAttributeValue(null, "doesnotexist", "lightSwitch", Json.create(false).toJson())

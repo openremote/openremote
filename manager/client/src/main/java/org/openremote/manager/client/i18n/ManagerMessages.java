@@ -41,8 +41,6 @@ public interface ManagerMessages extends Messages {
 
     String lastModifiedOn();
 
-    String mapLoading();
-
     String loadingDotdotdot();
 
     String editAccount();
@@ -297,9 +295,7 @@ public interface ManagerMessages extends Messages {
 
     String editAssetRuleset(String name);
 
-    String attributeValueRefreshed(String name);
-
-    String attributeValueStored(String name);
+    String attributeWriteSent(String name);
 
     String invalidAttributeName();
 

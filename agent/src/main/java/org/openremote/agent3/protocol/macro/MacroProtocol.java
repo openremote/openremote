@@ -113,7 +113,7 @@ public class MacroProtocol extends AbstractProtocol {
                     }
 
                     // send attribute event
-                    sendAttributeUpdate(actionState);
+                    sendAttributeEvent(actionState);
                 });
             }
 

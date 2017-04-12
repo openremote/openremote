@@ -198,7 +198,7 @@ public class AssetViewActivity
                         requestParams, assetId, attribute.getName(), attribute.getValue().toJson()
                     ),
                     204,
-                    () -> showSuccess(container.getMessages().attributeValueStored(attribute.getName())),
+                    () -> showSuccess(container.getMessages().attributeWriteSent(attribute.getName())),
                     ex -> handleRequestException(ex, environment)
                 );
             }
