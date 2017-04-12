@@ -47,7 +47,7 @@ public class MainActivity extends Activity {
         if (getIntent().hasExtra("notification")) {
             AlertNotification alertNotification = (AlertNotification) getIntent().getSerializableExtra("notification");
             Notification notification = new Notification();
-  
+
         }
         webView = (WebView) findViewById(R.id.webview);
         if (savedInstanceState != null) {
@@ -120,34 +120,28 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
-                Log.e("WEBVIEW", "request url :" + request.getUrl().toString());
-                Log.e("WEBVIEW", "error :" + errorResponse.getStatusCode());
-                handleError(request);
+                Log.i("WEBVIEW", "request url :" + request.getUrl().toString());
+                Log.i("WEBVIEW", "error :" + errorResponse.getStatusCode());
+                if (request.getUrl().toString().startsWith(getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL))) {
+                    webView.loadUrl("about:blank");
+                    errorView.setVisibility(View.VISIBLE);
+                }
             }
 
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    Log.e("WEBVIEW", "request url :" + request.getUrl().toString());
-                    Log.e("WEBVIEW", "error :" + error.getErrorCode());
-                    Log.e("WEBVIEW", "error :" + error.getDescription());
+                    Log.i("WEBVIEW", "request url :" + request.getUrl().toString());
+                    Log.i("WEBVIEW", "error :" + error.getErrorCode());
+                    Log.i("WEBVIEW", "error :" + error.getDescription());
                 }
-                handleError(request);
+                webView.loadUrl("about:blank");
+                errorView.setVisibility(View.VISIBLE);
             }
         });
         webView.setWebChromeClient(new WebChromeClient());
         webView.loadUrl(getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL));
-
-    }
-
-    private void handleError(WebResourceRequest request) {
-        if (request.getUrl().toString().startsWith(getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL)) ||
-                request.getUrl().toString().startsWith(getString(R.string.OR_BASE_SERVER) + getString(R.string.AUTH_URL))
-                ) {
-            webView.loadUrl("about:blank");
-            errorView.setVisibility(View.VISIBLE);
-        }
     }
 
     public void reloadPage(View view) {
@@ -155,16 +149,13 @@ public class MainActivity extends Activity {
         webView.loadUrl(getString(R.string.OR_BASE_SERVER) + getString(R.string.OR_CONSOLE_URL));
     }
 
-
     private class WebAppInterface {
 
-
-        private final TokenService tokenService;
+       private final TokenService tokenService;
 
         public WebAppInterface(Activity activity) {
             tokenService = new TokenService(activity);
         }
-
 
         @JavascriptInterface
         public void logOut() {
