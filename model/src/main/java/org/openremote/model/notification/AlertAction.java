@@ -13,6 +13,31 @@ public class AlertAction {
 
     }
 
+    public AlertAction(String title, ActionType type,String assetId, String attributeName, String rawJson) {
+        this();
+        setTitle(title);
+        setType(type);
+        setAssetId(assetId);
+        setAttributeName(attributeName);
+        setRawJson(rawJson);
+    }
+
+    private void setRawJson(String rawJson) {
+        if (rawJson != null) {
+            jsonObject.put("rawJson", Json.create(rawJson));
+        } else if (jsonObject.hasKey("rawJson")) {
+            jsonObject.remove("rawJson");
+        }
+    }
+
+    private void setAttributeName(String attributeName) {
+        if (attributeName != null) {
+            jsonObject.put("attributeName", Json.create(attributeName));
+        } else if (jsonObject.hasKey("attributeName")) {
+            jsonObject.remove("attributeName");
+        }
+    }
+
     public String getTitle() {
         if (jsonObject.hasKey("title")) {
             return jsonObject.getString("title");
@@ -47,5 +72,13 @@ public class AlertAction {
 
     public JsonObject getValue() {
         return jsonObject;
+    }
+
+    public void setAssetId(String assetId) {
+        if (assetId != null) {
+            jsonObject.put("assetId", Json.create(assetId));
+        } else if (jsonObject.hasKey("assetId")) {
+            jsonObject.remove("assetId");
+        }
     }
 }

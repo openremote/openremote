@@ -77,6 +77,7 @@ public class AlertNotification {
     }
 
     public JsonArray getActions() {
+
         return actions;
     }
 
