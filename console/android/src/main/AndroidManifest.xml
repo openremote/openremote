@@ -28,6 +28,7 @@
 
         <activity android:name="org.openremote.android.MainActivity"
             android:configChanges="orientation|screenSize"
+            android:windowSoftInputMode="adjustResize"
             android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
