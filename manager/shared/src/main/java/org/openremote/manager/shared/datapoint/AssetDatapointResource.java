@@ -22,6 +22,7 @@ package org.openremote.manager.shared.datapoint;
 import jsinterop.annotations.JsType;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.http.SuccessStatusCode;
+import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
 
 import javax.annotation.security.RolesAllowed;
@@ -38,6 +39,10 @@ public interface AssetDatapointResource {
     @Produces(APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:assets"})
-    NumberDatapoint[] getNumberDatapoints(@BeanParam RequestParams requestParams, @PathParam("assetId") String assetId, @PathParam("attributeName") String attributeName);
+    NumberDatapoint[] getNumberDatapoints(@BeanParam RequestParams requestParams,
+                                          @PathParam("assetId") String assetId,
+                                          @PathParam("attributeName") String attributeName,
+                                          @QueryParam("interval") DatapointInterval datapointInterval,
+                                          @QueryParam("timestamp") long timestamp);
 
 }

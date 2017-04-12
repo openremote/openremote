@@ -68,7 +68,7 @@ public class FormGroup extends FlowPanel implements HasWidgets {
         });
         mainPanel.add(toggleExtensionButton);
 
-        extensionPanel.setStyleName("or-FormGroupExtension");
+        extensionPanel.setStyleName("layout vertical or-FormGroupExtension");
     }
 
     @UiChild(tagname = "label", limit = 1)
@@ -113,7 +113,13 @@ public class FormGroup extends FlowPanel implements HasWidgets {
     @UiChild(tagname = "expansion")
     public void addExtension(Widget widget) {
         toggleExtensionButton.setVisible(true);
+        toggleExtensionButton.setEnabled(true);
         extensionPanel.add(widget);
+    }
+
+    public void showDisabledExtensionToggle() {
+        toggleExtensionButton.setVisible(true);
+        toggleExtensionButton.setEnabled(false);
     }
 
     public int getExtensionWidgetIndex(Widget widget) {
@@ -122,6 +128,7 @@ public class FormGroup extends FlowPanel implements HasWidgets {
 
     public void insertExtension(Widget widget, int beforeIndex) {
         toggleExtensionButton.setVisible(true);
+        toggleExtensionButton.setEnabled(true);
         extensionPanel.insert(widget, beforeIndex);
     }
     public boolean removeExtension(Widget widget) {

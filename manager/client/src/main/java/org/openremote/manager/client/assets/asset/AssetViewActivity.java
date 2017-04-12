@@ -40,6 +40,7 @@ import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.model.Consumer;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
@@ -204,11 +205,13 @@ public class AssetViewActivity
 
             @Override
             protected void getNumberDatapoints(AssetAttribute attribute,
+                                               DatapointInterval interval,
+                                               long timestamp,
                                                Consumer<NumberDatapoint[]> consumer) {
                 environment.getRequestService().execute(
                     numberDatapointArrayMapper,
                     requestParams -> assetDatapointResource.getNumberDatapoints(
-                        requestParams, assetId, attribute.getName()
+                        requestParams, assetId, attribute.getName(), interval, timestamp
                     ),
                     200,
                     consumer,

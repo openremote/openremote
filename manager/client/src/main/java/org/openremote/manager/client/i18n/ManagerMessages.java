@@ -310,4 +310,16 @@ public interface ManagerMessages extends Messages {
     String errorLoadingTenant(int statusCode);
 
     String subscriptionFailed(String eventType);
+
+    String datapointInterval(@Select String name);
+
+    String showChartAggregatedFor();
+
+    String historicalData();
+
+    String canvasNotSupported();
+
+    String previous();
+
+    String next();
 }

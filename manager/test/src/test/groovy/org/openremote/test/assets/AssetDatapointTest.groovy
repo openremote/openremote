@@ -47,7 +47,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
             def attributes = new AssetAttributes(thing)
             assert attributes.get("light1PowerConsumption").getValueAsDecimal() == 15.5d
             def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerDemoSetup.thingId, "light1PowerConsumption"))
-            datapoints.size() == 15
+            datapoints.size() > 3
             datapoints.get(0).value.asNumber() == 13.3d
             datapoints.get(0).timestamp < datapoints.get(1).timestamp
             datapoints.get(1).value.asNumber() == 14.4d

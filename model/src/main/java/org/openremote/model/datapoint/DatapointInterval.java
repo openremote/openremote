@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.interop.chartjs;
+package org.openremote.model.datapoint;
 
-import jsinterop.annotations.JsType;
+public enum DatapointInterval {
 
-import static jsinterop.annotations.JsPackage.GLOBAL;
+    HOUR,
+    DAY,
+    WEEK,
+    MONTH,
+    YEAR
 
-@JsType(isNative = true, name = "Chart", namespace = GLOBAL)
-public interface Chart {
-
-    void destroy();
 }

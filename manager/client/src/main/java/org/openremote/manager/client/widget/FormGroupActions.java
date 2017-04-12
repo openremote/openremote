@@ -25,6 +25,6 @@ import com.google.gwt.user.client.ui.HasWidgets;
 public class FormGroupActions extends FlowPanel implements HasWidgets {
 
     public FormGroupActions() {
-        getElement().addClassName("layout horizontal or-FormGroupActions");
+        getElement().addClassName("layout horizontal center or-FormGroupActions");
     }
 }

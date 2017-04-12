@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -20,22 +20,21 @@
 package org.openremote.manager.server.datapoint;
 
 import org.openremote.manager.server.asset.AssetStorageService;
+import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.datapoint.AssetDatapointResource;
 import org.openremote.manager.shared.http.RequestParams;
+import org.openremote.model.AttributeRef;
+import org.openremote.model.asset.AssetAttributes;
+import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Logger;
 
 public class AssetDatapointResourceImpl extends ManagerWebResource implements AssetDatapointResource {
-
-    private static final Logger LOG = Logger.getLogger(AssetDatapointResourceImpl.class.getName());
 
     protected final AssetStorageService assetStorageService;
     protected final AssetDatapointService assetDatapointService;
@@ -49,19 +48,27 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
     }
 
     @Override
-    public NumberDatapoint[] getNumberDatapoints(@BeanParam RequestParams requestParams, String assetId, String attributeName) {
+    public NumberDatapoint[] getNumberDatapoints(@BeanParam RequestParams requestParams,
+                                                 String assetId,
+                                                 String attributeName,
+                                                 DatapointInterval interval,
+                                                 long timestamp) {
         try {
-            List<NumberDatapoint> result = new ArrayList<>();
+            // TODO Security etc.
+            ServerAsset asset = assetStorageService.find(assetId, true);
+            AssetAttributes assetAttributes = new AssetAttributes(asset);
+            if (!assetAttributes.hasAttribute(attributeName)) {
+                throw new WebApplicationException(Response.Status.NOT_FOUND);
+            }
+            if (!assetAttributes.get(attributeName).isStoreDatapoints()) {
+                throw new WebApplicationException(Response.Status.NOT_FOUND);
+            }
 
-            result.add(new NumberDatapoint("A", 1));
-            result.add(new NumberDatapoint("B", 2));
-            result.add(new NumberDatapoint("C", 0));
-            result.add(new NumberDatapoint("D", 4));
-            result.add(new NumberDatapoint("E", 3));
-            result.add(new NumberDatapoint("F", 2));
-            result.add(new NumberDatapoint("G", 4));
-
-            return result.toArray(new NumberDatapoint[result.size()]);
+            return assetDatapointService.aggregateDatapoints(
+                new AttributeRef(assetId, attributeName),
+                interval,
+                timestamp
+            );
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, Response.Status.BAD_REQUEST);
         }

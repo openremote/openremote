@@ -246,29 +246,45 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         thingAttributes = new AssetAttributes(thing);
         ZonedDateTime now = LocalDateTime.now().atZone(ZoneId.systemDefault());
         assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
-            .setValueTimestamp(now.minusDays(8).toEpochSecond()).setValueAsDecimal(0.11)));
+            .setValueAsDecimal(0.11).setValueTimestamp(now.minusDays(80).toEpochSecond() * 1000)));
         assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
-            .setValueTimestamp(now.minusDays(7).toEpochSecond()).setValueAsDecimal(1.22)));
+            .setValueAsDecimal(1.22).setValueTimestamp(now.minusDays(40).toEpochSecond() * 1000)));
         assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
-            .setValueTimestamp(now.minusDays(6).toEpochSecond()).setValueAsDecimal(2.33)));
+            .setValueAsDecimal(2.33).setValueTimestamp(now.minusDays(20).toEpochSecond() * 1000)));
         assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
-            .setValueTimestamp(now.minusDays(5).toEpochSecond()).setValueAsDecimal(3.44)));
+            .setValueAsDecimal(3.44).setValueTimestamp(now.minusDays(10).toEpochSecond() * 1000)));
         assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
-            .setValueTimestamp(now.minusDays(4).toEpochSecond()).setValueAsDecimal(4.55)));
+            .setValueAsDecimal(4.55).setValueTimestamp(now.minusDays(8).toEpochSecond() * 1000)));
         assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
-            .setValueTimestamp(now.minusDays(3).toEpochSecond()).setValueAsDecimal(5.66)));
+            .setValueAsDecimal(5.66).setValueTimestamp(now.minusDays(6).toEpochSecond() * 1000)));
         assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
-            .setValueTimestamp(now.minusDays(2).toEpochSecond()).setValueAsDecimal(6.77)));
+            .setValueAsDecimal(6.77).setValueTimestamp(now.minusDays(3).toEpochSecond() * 1000)));
         assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
-            .setValueTimestamp(now.minusDays(1).toEpochSecond()).setValueAsDecimal(7.88)));
+            .setValueAsDecimal(7.88).setValueTimestamp(now.minusDays(1).toEpochSecond() * 1000)));
         assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
-            .setValueTimestamp(now.minusHours(10).toEpochSecond()).setValueAsDecimal(8.99)));
+            .setValueAsDecimal(8.99).setValueTimestamp(now.minusHours(10).toEpochSecond() * 1000)));
         assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
-            .setValueTimestamp(now.minusHours(5).toEpochSecond()).setValueAsDecimal(9.11)));
+            .setValueAsDecimal(9.11).setValueTimestamp(now.minusHours(5).toEpochSecond() * 1000)));
         assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
-            .setValueTimestamp(now.minusHours(2).toEpochSecond()).setValueAsDecimal(10.22)));
+            .setValueAsDecimal(10.22).setValueTimestamp(now.minusHours(2).toEpochSecond() * 1000)));
         assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
-            .setValueTimestamp(now.minusHours(1).toEpochSecond()).setValueAsDecimal(11.33)));
+            .setValueAsDecimal(11.33).setValueTimestamp(now.minusHours(1).toEpochSecond() * 1000)));
+        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+            .setValueAsDecimal(11.44).setValueTimestamp(now.minusMinutes(30).toEpochSecond() * 1000)));
+        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+            .setValueAsDecimal(11.55).setValueTimestamp(now.minusMinutes(15).toEpochSecond() * 1000)));
+        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+            .setValueAsDecimal(11.66).setValueTimestamp(now.minusMinutes(6).toEpochSecond() * 1000)));
+        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+            .setValueAsDecimal(11.77).setValueTimestamp(now.minusMinutes(3).toEpochSecond() * 1000)));
+        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+            .setValueAsDecimal(11.88).setValueTimestamp(now.minusSeconds(30).toEpochSecond() * 1000)));
+        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+            .setValueAsDecimal(11.99).setValueTimestamp(now.minusSeconds(15).toEpochSecond() * 1000)));
+        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+            .setValueAsDecimal(12.00).setValueTimestamp(now.minusSeconds(1).toEpochSecond() * 1000)));
+        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+            .setValueAsDecimal(12.01).setValueTimestamp(now.toEpochSecond() * 1000 - 500)));
 
 
         // ################################ Demo assets for 'customerA' realm ###################################
