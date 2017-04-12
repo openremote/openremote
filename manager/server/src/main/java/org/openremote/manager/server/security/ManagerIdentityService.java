@@ -90,8 +90,8 @@ public class ManagerIdentityService extends IdentityService {
         redirectUrls.add(consoleCallbackUrl);
     }
 
-    public Tenant[] getTenants(String sourceAddress, String bearerAuth) {
-        List<RealmRepresentation> realms = getRealms(sourceAddress, bearerAuth).findAll();
+    public Tenant[] getTenants(String forwardFor, String accessToken) {
+        List<RealmRepresentation> realms = getRealms(forwardFor, accessToken).findAll();
 
         // Make sure the master tenant is always on top
         realms.sort((o1, o2) -> {
@@ -144,26 +144,25 @@ public class ManagerIdentityService extends IdentityService {
         configureRealm(realmRepresentation, ACCESS_TOKEN_LIFESPAN_SECONDS);
     }
 
-
-    public void createTenant(String bearerAuth, Tenant tenant) throws Exception {
-        createTenant(bearerAuth, tenant, null);
+    public void createTenant(String forwardFor, String accessToken, Tenant tenant) throws Exception {
+        createTenant(forwardFor, accessToken, tenant, null);
     }
 
-    public void createTenant(String bearerAuth, Tenant tenant, TenantEmailConfig emailConfig) throws Exception {
+    public void createTenant(String forwardFor, String accessToken, Tenant tenant, TenantEmailConfig emailConfig) throws Exception {
         LOG.fine("Create tenant: " + tenant);
         RealmRepresentation realmRepresentation = convert(Container.JSON, RealmRepresentation.class, tenant);
         if (emailConfig != null) {
             realmRepresentation.setSmtpServer(emailConfig.asMap());
         }
         configureRealm(realmRepresentation);
-        getRealms(bearerAuth).create(realmRepresentation);
+        getRealms(forwardFor, accessToken).create(realmRepresentation);
         // TODO This is not atomic, write compensation actions
-        createClientApplication(bearerAuth, realmRepresentation.getRealm());
+        createClientApplication(forwardFor, accessToken, realmRepresentation.getRealm());
         publishModification(PersistenceEvent.Cause.INSERT, tenant);
     }
 
-    public void createClientApplication(String bearerAuth, String realm) {
-        ClientsResource clientsResource = getRealms(bearerAuth).realm(realm).clients();
+    public void createClientApplication(String forwardFor, String accessToken, String realm) {
+        ClientsResource clientsResource = getRealms(forwardFor, accessToken).realm(realm).clients();
         ClientRepresentation client = createClientApplication(
             realm, KEYCLOAK_CLIENT_ID, "OpenRemote", devMode
         );
@@ -173,18 +172,18 @@ public class ManagerIdentityService extends IdentityService {
         addDefaultRoles(clientResource.roles());
     }
 
-    public void updateTenant(String bearerAuth, String realm, Tenant tenant) throws Exception {
+    public void updateTenant(String forwardFor, String accessToken, String realm, Tenant tenant) throws Exception {
         LOG.fine("Update tenant: " + tenant);
-        getRealms(bearerAuth).realm(realm).update(
+        getRealms(forwardFor, accessToken).realm(realm).update(
             convert(Container.JSON, RealmRepresentation.class, tenant)
         );
         publishModification(PersistenceEvent.Cause.UPDATE, tenant);
     }
 
-    public void deleteTenant(String bearerAuth, String realm) throws Exception {
+    public void deleteTenant(String forwardFor, String accessToken, String realm) throws Exception {
         Tenant tenant = getTenantForRealm(realm);
         LOG.fine("Delete tenant: " + realm);
-        getRealms(bearerAuth).realm(realm).remove();
+        getRealms(forwardFor, accessToken).realm(realm).remove();
         publishModification(PersistenceEvent.Cause.DELETE, tenant);
     }
 

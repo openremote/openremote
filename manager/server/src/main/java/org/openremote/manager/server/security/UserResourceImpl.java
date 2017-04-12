@@ -64,7 +64,8 @@ public class UserResourceImpl extends WebResource implements UserResource {
         }
         try {
             List<UserRepresentation> userRepresentations =
-                identityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().search(null, 0, Integer.MAX_VALUE);
+                identityService.getRealms(getClientRemoteAddress(), requestParams.getBearerAuth())
+                    .realm(realm).users().search(null, 0, Integer.MAX_VALUE);
             List<User> users = new ArrayList<>();
             for (UserRepresentation userRepresentation : userRepresentations) {
                 users.add(convertUser(realm, userRepresentation));
@@ -85,7 +86,8 @@ public class UserResourceImpl extends WebResource implements UserResource {
         try {
             return convertUser(
                 realm,
-                identityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).toRepresentation()
+                identityService.getRealms(getClientRemoteAddress(), requestParams.getBearerAuth())
+                    .realm(realm).users().get(userId).toRepresentation()
             );
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
@@ -109,7 +111,8 @@ public class UserResourceImpl extends WebResource implements UserResource {
             );
         }
         try {
-            identityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).update(
+            identityService.getRealms(getClientRemoteAddress(), requestParams.getBearerAuth())
+                .realm(realm).users().get(userId).update(
                 convert(Container.JSON, UserRepresentation.class, user)
             );
         } catch (ClientErrorException ex) {
@@ -125,7 +128,8 @@ public class UserResourceImpl extends WebResource implements UserResource {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         try {
-            Response response = identityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().create(
+            Response response = identityService.getRealms(getClientRemoteAddress(), requestParams.getBearerAuth())
+                .realm(realm).users().create(
                 convert(Container.JSON, UserRepresentation.class, user)
             );
             if (!response.getStatusInfo().equals(Response.Status.CREATED)) {
@@ -159,7 +163,8 @@ public class UserResourceImpl extends WebResource implements UserResource {
             );
         }
         try {
-            Response response = identityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().delete(userId);
+            Response response = identityService.getRealms(getClientRemoteAddress(), requestParams.getBearerAuth())
+                .realm(realm).users().delete(userId);
             if (!response.getStatusInfo().equals(Response.Status.NO_CONTENT)) {
                 throw new WebApplicationException(
                     Response.status(response.getStatus())
@@ -182,7 +187,8 @@ public class UserResourceImpl extends WebResource implements UserResource {
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         try {
-            identityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).resetPassword(
+            identityService.getRealms(getClientRemoteAddress(), requestParams.getBearerAuth())
+                .realm(realm).users().get(userId).resetPassword(
                 convert(Container.JSON, CredentialRepresentation.class, credential)
             );
         } catch (ClientErrorException ex) {
@@ -199,9 +205,11 @@ public class UserResourceImpl extends WebResource implements UserResource {
         }
         try {
             RoleMappingResource roleMappingResource =
-                identityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).roles();
+                identityService.getRealms(getClientRemoteAddress(), requestParams.getBearerAuth())
+                    .realm(realm).users().get(userId).roles();
             ClientsResource clientsResource =
-                identityService.getRealms(requestParams.getBearerAuth()).realm(realm).clients();
+                identityService.getRealms(getClientRemoteAddress(), requestParams.getBearerAuth())
+                    .realm(realm).clients();
             String clientId = clientsResource.findByClientId(KEYCLOAK_CLIENT_ID).get(0).getId();
             RolesResource rolesResource = clientsResource.get(clientId).roles();
 
@@ -241,9 +249,11 @@ public class UserResourceImpl extends WebResource implements UserResource {
         }
         try {
             RoleMappingResource roleMappingResource =
-                identityService.getRealms(requestParams.getBearerAuth()).realm(realm).users().get(userId).roles();
+                identityService.getRealms(getClientRemoteAddress(), requestParams.getBearerAuth())
+                    .realm(realm).users().get(userId).roles();
             ClientsResource clientsResource =
-                identityService.getRealms(requestParams.getBearerAuth()).realm(realm).clients();
+                identityService.getRealms(getClientRemoteAddress(), requestParams.getBearerAuth())
+                    .realm(realm).clients();
             String clientId = clientsResource.findByClientId(KEYCLOAK_CLIENT_ID).get(0).getId();
 
             List<RoleRepresentation> rolesToAdd = new ArrayList<>();
@@ -325,7 +335,7 @@ public class UserResourceImpl extends WebResource implements UserResource {
 
     protected UserRepresentation getMasterRealmAdminUser(RequestParams requestParams) {
         List<UserRepresentation> adminUsers = identityService
-            .getRealms(requestParams.getBearerAuth()).realm(MASTER_REALM)
+            .getRealms(null, requestParams.getBearerAuth()).realm(MASTER_REALM)
             .users().search(MASTER_REALM_ADMIN_USER, null, null);
         if (adminUsers.size() == 0) {
             throw new IllegalStateException("Can't load master realm admin user");

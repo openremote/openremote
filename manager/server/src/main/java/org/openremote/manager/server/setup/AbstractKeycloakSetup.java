@@ -58,9 +58,9 @@ public abstract class AbstractKeycloakSetup implements Setup {
             MASTER_REALM, new AuthForm(ADMIN_CLI_CLIENT_ID, MASTER_REALM_ADMIN_USER, demoAdminPassword)
         ).getToken();
 
-        masterRealmResource = identityService.getRealms(accessToken).realm(MASTER_REALM);
-        masterClientsResource = identityService.getRealms(accessToken).realm(MASTER_REALM).clients();
-        masterUsersResource = identityService.getRealms(accessToken).realm(MASTER_REALM).users();
+        masterRealmResource = identityService.getRealms(null, accessToken).realm(MASTER_REALM);
+        masterClientsResource = identityService.getRealms(null, accessToken).realm(MASTER_REALM).clients();
+        masterUsersResource = identityService.getRealms(null, accessToken).realm(MASTER_REALM).users();
     }
 
     protected String getClientObjectId(ClientsResource clientsResource) {

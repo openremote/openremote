@@ -102,7 +102,7 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
             );
         }
         try {
-            identityService.updateTenant(requestParams.getBearerAuth(), realm, tenant);
+            identityService.updateTenant(getClientRemoteAddress(), requestParams.getBearerAuth(), realm, tenant);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -116,7 +116,7 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
             throw new WebApplicationException(Response.Status.FORBIDDEN);
         }
         try {
-            identityService.createTenant(requestParams.getBearerAuth(), tenant);
+            identityService.createTenant(getClientRemoteAddress(), requestParams.getBearerAuth(), tenant);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {
@@ -140,7 +140,7 @@ public class TenantResourceImpl extends ManagerWebResource implements TenantReso
             );
         }
         try {
-            identityService.deleteTenant(requestParams.getBearerAuth(), realm);
+            identityService.deleteTenant(getClientRemoteAddress(), requestParams.getBearerAuth(), realm);
         } catch (ClientErrorException ex) {
             throw new WebApplicationException(ex.getCause(), ex.getResponse().getStatus());
         } catch (Exception ex) {

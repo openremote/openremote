@@ -67,14 +67,14 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         customerA.setRealm("customerA");
         customerA.setDisplayName("Customer A");
         customerA.setEnabled(true);
-        identityService.createTenant(accessToken, customerA);
+        identityService.createTenant(null, accessToken, customerA);
         customerATenant = identityService.getTenantForRealm(customerA.getRealm());
 
         Tenant customerB = new Tenant();
         customerB.setRealm("customerB");
         customerB.setDisplayName("Customer B");
         customerB.setEnabled(true);
-        identityService.createTenant(accessToken, customerB);
+        identityService.createTenant(null, accessToken, customerB);
         customerBTenant = identityService.getTenantForRealm(customerB.getRealm());
 
         // Users
@@ -105,8 +105,8 @@ public class KeycloakDemoSetup extends AbstractKeycloakSetup {
         ));
         LOG.info("Added demo user '" + testuser1.getUsername() + "' with password '" + testuser1Credentials.getValue() + "'");
 
-        UsersResource customerAUsersResource = identityService.getRealms(accessToken).realm("customerA").users();
-        ClientsResource customerAClientsResource = identityService.getRealms(accessToken).realm("customerA").clients();
+        UsersResource customerAUsersResource = identityService.getRealms(null, accessToken).realm("customerA").users();
+        ClientsResource customerAClientsResource = identityService.getRealms(null, accessToken).realm("customerA").clients();
         String customerAClientObjectId = getClientObjectId(customerAClientsResource);
         RolesResource customerARolesResource = customerAClientsResource.get(customerAClientObjectId).roles();
 

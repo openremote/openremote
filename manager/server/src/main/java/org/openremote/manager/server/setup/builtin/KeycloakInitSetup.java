@@ -56,7 +56,7 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
         masterRealmResource.update(masterRealm);
 
         // Create our client application with its default roles
-        identityService.createClientApplication(accessToken, masterRealm.getRealm());
+        identityService.createClientApplication(null, accessToken, masterRealm.getRealm());
 
         // Get the client application ID so we can assign roles to users at the client
         // level (we can only check realm _or_ client application roles in @RolesAllowed!)

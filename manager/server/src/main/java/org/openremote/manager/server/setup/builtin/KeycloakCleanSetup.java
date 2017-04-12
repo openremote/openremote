@@ -45,11 +45,11 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
 
         // Delete all realms that are not the master realm
         LOG.info("Deleting all non-master realms");
-        RealmsResource realmsResource = identityService.getRealms(accessToken);
+        RealmsResource realmsResource = identityService.getRealms(null, accessToken);
         List<RealmRepresentation> realms = realmsResource.findAll();
         for (RealmRepresentation realmRepresentation : realms) {
             if (!realmRepresentation.getRealm().equals(MASTER_REALM)) {
-                identityService.getRealms(accessToken).realm(realmRepresentation.getRealm()).remove();
+                identityService.getRealms(null, accessToken).realm(realmRepresentation.getRealm()).remove();
             }
         }
 

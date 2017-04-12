@@ -227,11 +227,13 @@ public abstract class IdentityService implements ContainerService {
             .proxy(KeycloakResource.class);
     }
 
-    public RealmsResource getRealms(String accessToken) {
-        return getTarget(getHttpClient(), keycloakServiceUri.build(), accessToken, null, null)
-            .proxy(RealmsResource.class);
-    }
-
+    /**
+     * @param forwardFor Must be the client source address if this is effectively a forwarded request and the
+     *                   access token was obtained by the client (can be null e.g. for Admin CLI calls during setup
+     *                   or tests where the access token was obtained directly). This should not be overloaded because
+     *                   we want to know who is calling this method with "null", as this can lead to subtle runtime
+     *                   problems.
+     */
     public RealmsResource getRealms(String forwardFor, String accessToken) {
         return getTarget(getHttpClient(), keycloakServiceUri.build(), accessToken, forwardFor, forwardFor != null ? externalServerUri.build(): null)
             .proxy(RealmsResource.class);
