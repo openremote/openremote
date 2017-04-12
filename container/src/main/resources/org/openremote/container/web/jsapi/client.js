@@ -456,11 +456,9 @@ REST.Encoding.encodePathParamValue = function (val) {
 
 REST.Encoding.encodeValue = function (val, allowed, form) {
     if (typeof val != "string") {
-        REST.log("val is not a string");
         return val;
     }
     if (val.length == 0) {
-        REST.log("empty string");
         return val;
     }
     var ret = '';

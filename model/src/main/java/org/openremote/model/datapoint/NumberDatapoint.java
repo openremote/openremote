@@ -21,33 +21,23 @@ package org.openremote.model.datapoint;
 
 public class NumberDatapoint {
 
-    protected String label1;
-    protected String label2;
+    protected String label;
     protected Number number;
 
     protected NumberDatapoint() {
     }
 
-    public NumberDatapoint(String label1, String label2, Number number) {
-        this.label1 = label1;
-        this.label2 = label2;
+    public NumberDatapoint(String label, Number number) {
+        this.label = label;
         this.number = number;
     }
 
-    public String getLabel1() {
-        return label1;
+    public String getLabel() {
+        return label;
     }
 
-    public void setLabel1(String label1) {
-        this.label1 = label1;
-    }
-
-    public String getLabel2() {
-        return label2;
-    }
-
-    public void setLabel2(String label2) {
-        this.label2 = label2;
+    public void setLabel(String label) {
+        this.label = label;
     }
 
     public Number getNumber() {
@@ -61,8 +51,7 @@ public class NumberDatapoint {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "label1='" + label1 + '\'' +
-            "label2='" + label2 + '\'' +
+            "label='" + label + '\'' +
             ", number=" + number +
             '}';
     }

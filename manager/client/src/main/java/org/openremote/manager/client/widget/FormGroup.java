@@ -131,11 +131,22 @@ public class FormGroup extends FlowPanel implements HasWidgets {
         toggleExtensionButton.setEnabled(true);
         extensionPanel.insert(widget, beforeIndex);
     }
+
     public boolean removeExtension(Widget widget) {
         boolean removed = extensionPanel.remove(widget);
         if (removed && extensionPanel.getWidgetCount() == 0)
             toggleExtensionButton.setVisible(false);
         return removed;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <W extends Widget> W getExtensionOfType(Class<W> widgetType) {
+        for (int i = 0; i < extensionPanel.getWidgetCount(); i++) {
+            Widget w = extensionPanel.getWidget(i);
+            if (widgetType.equals(w.getClass()))
+                return (W) w;
+        }
+        return null;
     }
 
     public FormLabel getFormLabel() {

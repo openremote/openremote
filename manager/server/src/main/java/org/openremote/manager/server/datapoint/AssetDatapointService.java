@@ -89,7 +89,7 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetSt
                     String truncateX;
                     String step;
                     String interval;
-                    Function<Timestamp, Pair<String, String>> labelFunction;
+                    Function<Timestamp, String> labelFunction;
 
                     SimpleDateFormat dayFormat = new SimpleDateFormat("dd. MMM yyyy");
                     SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
@@ -98,31 +98,31 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetSt
                             truncateX = "minute";
                             step = "1 minute";
                             interval = "1 hour";
-                            labelFunction = ts -> new Pair<>(timeFormat.format(ts), "");
+                            labelFunction = timeFormat::format;
                             break;
                         case DAY:
                             truncateX = "hour";
                             step = "1 hour";
                             interval = "1 day";
-                            labelFunction = ts -> new Pair<>(timeFormat.format(ts), "");
+                            labelFunction = timeFormat::format;
                             break;
                         case WEEK:
                             truncateX = "day";
                             step = "1 day";
                             interval = "7 day";
-                            labelFunction = ts -> new Pair<>(dayFormat.format(ts), "");
+                            labelFunction = dayFormat::format;
                             break;
                         case MONTH:
                             truncateX = "day";
                             step = "1 day";
                             interval = "1 month";
-                            labelFunction = ts -> new Pair<>(dayFormat.format(ts), "");
+                            labelFunction = dayFormat::format;
                             break;
                         case YEAR:
                             truncateX = "month";
                             step = "1 month";
                             interval = "1 year";
-                            labelFunction = ts -> new Pair<>(dayFormat.format(ts), "");
+                            labelFunction = dayFormat::format;
                             break;
                         default:
                             throw new IllegalArgumentException("Can't handle interval: " + datapointInterval);
@@ -166,10 +166,8 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetSt
                     try (ResultSet rs = st.executeQuery()) {
                         List<NumberDatapoint> result = new ArrayList<>();
                         while (rs.next()) {
-                            Pair<String, String> labelPair = labelFunction.apply(rs.getTimestamp(1));
                             result.add(new NumberDatapoint(
-                                    labelPair.key,
-                                    labelPair.value,
+                                    labelFunction.apply(rs.getTimestamp(1)),
                                     rs.getBigDecimal(2)
                                 )
                             );
