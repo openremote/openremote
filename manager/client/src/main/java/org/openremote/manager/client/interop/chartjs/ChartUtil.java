@@ -20,7 +20,6 @@
 package org.openremote.manager.client.interop.chartjs;
 
 import com.google.gwt.canvas.dom.client.Context2d;
-import com.google.gwt.core.client.JsArray;
 import com.google.gwt.core.client.JsArrayNumber;
 import com.google.gwt.core.client.JsArrayString;
 import org.openremote.model.datapoint.NumberDatapoint;
@@ -30,14 +29,11 @@ import org.openremote.model.datapoint.NumberDatapoint;
  */
 public class ChartUtil {
 
-    static public JsArray<JsArrayString> convertLabels(NumberDatapoint[] numberDatapoints) {
-        JsArray<JsArrayString> array = (JsArray<JsArrayString>) JsArray.createArray();
+    static public JsArrayString convertLabels(NumberDatapoint[] numberDatapoints) {
+        JsArrayString array = (JsArrayString) JsArrayString.createArray();
         for (int i = 0; i < numberDatapoints.length; i++) {
             NumberDatapoint numberDatapoint = numberDatapoints[i];
-            JsArrayString labelArray = (JsArrayString) JsArrayString.createArray();
-            labelArray.set(0, numberDatapoint.getLabel1());
-            labelArray.set(1, numberDatapoint.getLabel2());
-            array.set(i, labelArray);
+            array.set(i, numberDatapoint.getLabel());
         }
         return array;
     }
@@ -52,7 +48,7 @@ public class ChartUtil {
 
     }
 
-    public native static void update(Chart chart, JsArray<JsArrayString> labels, JsArrayNumber data) /*-{
+    public native static void update(Chart chart, JsArrayString labels, JsArrayNumber data) /*-{
         chart.data.labels = labels;
         chart.data.datasets[0].data = data;
         chart.update();
@@ -71,9 +67,9 @@ public class ChartUtil {
                         pointHoverBackgroundColor: "#374c4f",
                         pointHoverBorderColor: "#c1d72f",
                         pointBorderWidth: 2,
-                        pointHoverRadius: 10,
+                        pointHoverRadius: 4,
                         pointHoverBorderWidth: 4,
-                        pointRadius: 5,
+                        pointRadius: 4,
                         pointHitRadius: 20
                     }
                 ]

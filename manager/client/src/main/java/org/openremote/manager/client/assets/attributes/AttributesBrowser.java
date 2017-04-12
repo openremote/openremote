@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static com.google.gwt.dom.client.Style.Unit.EM;
 import static com.google.gwt.dom.client.Style.Unit.PX;
 
 public abstract class AttributesBrowser
@@ -77,7 +78,7 @@ public abstract class AttributesBrowser
                 for (AssetAttribute assetAttribute : attributeGroups.keySet()) {
                     if (assetAttribute.getReference().equals(event.getAttributeRef())) {
                         assetAttribute.setValueUnchecked(event.getValue(), event.getTimestamp());
-                        rebuildEditor(assetAttribute);
+                        refreshAttribute(assetAttribute);
                         break;
                     }
                 }
@@ -216,7 +217,9 @@ public abstract class AttributesBrowser
         }
     }
 
-    protected void rebuildEditor(AssetAttribute attribute) {
+    protected void refreshAttribute(AssetAttribute attribute) {
+
+        // Rebuild editor
         FormGroup formGroup = attributeGroups.get(attribute);
         if (formGroup == null)
             return;
@@ -232,167 +235,194 @@ public abstract class AttributesBrowser
 
         formField.add(editor);
 
-        // "Blink" the editor so users know there is a new value
+        // "Blink" the editor so users know there might be a new value
         editor.asWidget().addStyleName(environment.getWidgetStyle().HighlightBackground());
         Browser.getWindow().setTimeout(() -> {
             editor.asWidget().removeStyleName(environment.getWidgetStyle().HighlightBackground());
         }, 250);
+
+        // Refresh data point browser
+        FormGroup attributeFormGroup = attributeGroups.get(attribute);
+        if (attributeFormGroup != null) {
+            DatapointBrowser datapointBrowser = attributeFormGroup.getExtensionOfType(DatapointBrowser.class);
+            if (datapointBrowser != null) {
+                datapointBrowser.updateChart(System.currentTimeMillis());
+            }
+        }
     }
 
-    protected Widget createDatapointBrowser(AssetAttribute attribute) {
+    protected DatapointBrowser createDatapointBrowser(AssetAttribute attribute) {
         if (!attribute.isStoreDatapoints())
             return null;
+        if (!(attribute.getType() == AttributeType.DECIMAL || attribute.getType() == AttributeType.INTEGER))
+            return null;
+        return new DatapointBrowser(attribute);
+    }
 
-        class ChartPanel extends FlowPanel {
+    /* ####################################################################### */
 
-            Chart chart;
-            FormValueListBox<DatapointInterval> intervalListBox;
-            long lastUsedTimestamp;
-            FormOutputText timeOutput;
-            FormButton nextButton;
+    class DatapointBrowser extends FlowPanel {
 
-            public ChartPanel() {
-                setStyleName("layout vertical");
-                addAttachHandler(event -> {
-                    if (event.isAttached()) {
-                        createChart();
-                    } else {
-                        destroyChart();
+        final AssetAttribute attribute;
+        Chart chart;
+        DatapointInterval interval;
+        long timestamp;
+        FormValueListBox<DatapointInterval> intervalListBox;
+        FormOutputText timeOutput;
+        FormButton nextButton;
+
+        public DatapointBrowser(AssetAttribute attribute) {
+            this.attribute = attribute;
+            this.interval  = DatapointInterval.HOUR;
+            this.timestamp = System.currentTimeMillis();
+
+            setStyleName("layout vertical");
+
+            addAttachHandler(event -> {
+                if (event.isAttached()) {
+                    createChart();
+                } else {
+                    destroyChart();
+                }
+            });
+        }
+
+        void createChart() {
+            FormSectionLabel sectionLabel = new FormSectionLabel(environment.getMessages().historicalData());
+            add(sectionLabel);
+
+            Canvas canvas = Canvas.createIfSupported();
+            if (canvas == null) {
+                add(new Label(environment.getMessages().canvasNotSupported()));
+                return;
+            }
+
+            FlowPanel chartFormPanel = new FlowPanel();
+            chartFormPanel.setStyleName("layout vertical center or-FormGroup");
+            add(chartFormPanel);
+
+            canvas.getCanvasElement().setWidth(850);
+            canvas.getCanvasElement().setHeight(250);
+            FlowPanel canvasContainer = new FlowPanel();
+            canvasContainer.setWidth("850px");
+            canvasContainer.setHeight("250px");
+            canvasContainer.add(canvas);
+
+            chartFormPanel.add(canvasContainer);
+
+            Form controlForm = new Form();
+            controlForm.getElement().getStyle().setWidth(850, PX);
+            controlForm.getElement().getStyle().setMarginTop(0.4, EM);
+            controlForm.getElement().getStyle().setMarginBottom(0.4, EM);
+            chartFormPanel.add(controlForm);
+
+            FormGroup controlFormGroup = new FormGroup();
+            controlForm.add(controlFormGroup);
+
+            FormLabel controlFormLabel = new FormLabel(environment.getMessages().showChartAggregatedFor());
+            controlFormGroup.addFormLabel(controlFormLabel);
+
+            FormField controlFormField = new FormField();
+            controlFormGroup.addFormField(controlFormField);
+            intervalListBox = new FormValueListBox<>(
+                new AbstractRenderer<DatapointInterval>() {
+                    @Override
+                    public String render(DatapointInterval interval) {
+                        return environment.getMessages().datapointInterval(interval.name());
                     }
-                });
-            }
-
-            void createChart() {
-                FormSectionLabel sectionLabel = new FormSectionLabel(environment.getMessages().historicalData());
-                add(sectionLabel);
-
-                Canvas canvas = Canvas.createIfSupported();
-                if (canvas == null) {
-                    add(new Label(environment.getMessages().canvasNotSupported()));
-                    return;
                 }
+            );
+            intervalListBox.addValueChangeHandler(event -> {
+                updateChart(timestamp);
+            });
+            intervalListBox.setValue(interval);
+            intervalListBox.setAcceptableValues(Arrays.asList(DatapointInterval.values()));
+            intervalListBox.setEnabled(true);
+            controlFormField.add(intervalListBox);
 
-                FlowPanel charFormPanel = new FlowPanel();
-                charFormPanel.setStyleName("layout vertical center or-FormGroup");
-                add(charFormPanel);
+            FormGroupActions controlFormActions = new FormGroupActions();
+            controlFormGroup.addFormGroupActions(controlFormActions);
 
-                canvas.getCanvasElement().setWidth(900);
-                canvas.getCanvasElement().setHeight(250);
-                FlowPanel canvasContainer = new FlowPanel();
-                canvasContainer.setWidth("900px");
-                canvasContainer.setHeight("250px");
-                canvasContainer.add(canvas);
+            timeOutput = new FormOutputText();
+            timeOutput.addStyleName("flex");
+            timeOutput.getElement().getStyle().setFontSize(0.8, EM);
+            controlFormActions.add(timeOutput);
 
-                charFormPanel.add(canvasContainer);
+            FormButton previousButton = new FormButton();
+            previousButton.setIcon("arrow-circle-left");
+            previousButton.setText(environment.getMessages().previous());
+            previousButton.addClickHandler(event -> updateChart(calculateTimestamp(true)));
+            controlFormActions.add(previousButton);
 
-                Form controlForm = new Form();
-                controlForm.getElement().getStyle().setWidth(850, PX);
-                charFormPanel.add(controlForm);
+            nextButton = new FormButton();
+            nextButton.setIcon("arrow-circle-right");
+            nextButton.setText(environment.getMessages().next());
+            nextButton.addClickHandler(event -> updateChart(calculateTimestamp(false)));
+            controlFormActions.add(nextButton);
 
-                FormGroup controlFormGroup = new FormGroup();
-                controlForm.add(controlFormGroup);
+            chart = ChartUtil.createLineChart(canvas.getContext2d());
 
-                FormLabel controlFormLabel = new FormLabel(environment.getMessages().showChartAggregatedFor());
-                controlFormGroup.addFormLabel(controlFormLabel);
+            updateChart(timestamp);
+        }
 
-                FormField controlFormField = new FormField();
-                controlFormGroup.addFormField(controlFormField);
-                intervalListBox = new FormValueListBox<>(
-                    new AbstractRenderer<DatapointInterval>() {
-                        @Override
-                        public String render(DatapointInterval interval) {
-                            return environment.getMessages().datapointInterval(interval.name());
-                        }
-                    }
-                );
-                intervalListBox.addValueChangeHandler(event -> {
-                    updateChart(System.currentTimeMillis());
-                });
-                intervalListBox.setValue(DatapointInterval.HOUR);
-                intervalListBox.setAcceptableValues(Arrays.asList(DatapointInterval.values()));
-                intervalListBox.setEnabled(true);
-                controlFormField.add(intervalListBox);
-
-                FormGroupActions controlFormActions = new FormGroupActions();
-                controlFormGroup.addFormGroupActions(controlFormActions);
-
-                timeOutput = new FormOutputText();
-                timeOutput.addStyleName("flex");
-                controlFormActions.add(timeOutput);
-
-                FormButton previousButton = new FormButton();
-                previousButton.setIcon("arrow-circle-left");
-                previousButton.setText(environment.getMessages().previous());
-                previousButton.addClickHandler(event -> updateChart(calculateTimestamp(true)));
-                controlFormActions.add(previousButton);
-
-                nextButton = new FormButton();
-                nextButton.setIcon("arrow-circle-right");
-                nextButton.setText(environment.getMessages().next());
-                nextButton.addClickHandler(event -> updateChart(calculateTimestamp(false)));
-                controlFormActions.add(nextButton);
-
-                chart = ChartUtil.createLineChart(canvas.getContext2d());
-
-                updateChart(System.currentTimeMillis());
-            }
-
-            long calculateTimestamp(boolean subtract) {
-                long hour = 1000 * 60 * 60;
-                long day = hour * 24;
-                long week = day * 7;
-                long month = day * 30;
-                long year = day * 365;
-                switch (intervalListBox.getValue()) {
-                    case HOUR:
-                        return subtract ? (lastUsedTimestamp - hour) : (lastUsedTimestamp + hour);
-                    case DAY:
-                        return subtract ? (lastUsedTimestamp - day) : (lastUsedTimestamp + day);
-                    case WEEK:
-                        return subtract ? (lastUsedTimestamp - week) : (lastUsedTimestamp + week);
-                    case MONTH:
-                        return subtract ? (lastUsedTimestamp - month) : (lastUsedTimestamp + month);
-                    case YEAR:
-                        return subtract ? (lastUsedTimestamp - year) : (lastUsedTimestamp + year);
-                    default:
-                        throw new IllegalArgumentException("Unsupported time period: " + intervalListBox.getValue());
-                }
-            }
-
-            void updateChart(long timestamp) {
-                this.lastUsedTimestamp = timestamp;
-
-                timeOutput.setText(
-                    DateTimeFormat.getFormat(Constants.DEFAULT_DATETIME_FORMAT).format(new Date(timestamp))
-                );
-
-                nextButton.setEnabled(timestamp < System.currentTimeMillis());
-
-                getNumberDatapoints(
-                    attribute,
-                    intervalListBox.getValue(),
-                    timestamp,
-                    numberDatapoints -> {
-                        ChartUtil.update(
-                            chart,
-                            ChartUtil.convertLabels(numberDatapoints),
-                            ChartUtil.convertData(numberDatapoints)
-                        );
-                    });
-            }
-
-            void destroyChart() {
-                if (chart != null) {
-                    chart.destroy();
-                    chart = null;
-                }
-                clear();
+        long calculateTimestamp(boolean subtract) {
+            long hour = 1000 * 60 * 60;
+            long day = hour * 24;
+            long week = day * 7;
+            long month = day * 30;
+            long year = day * 365;
+            switch (intervalListBox.getValue()) {
+                case HOUR:
+                    return subtract ? (timestamp - hour) : (timestamp + hour);
+                case DAY:
+                    return subtract ? (timestamp - day) : (timestamp + day);
+                case WEEK:
+                    return subtract ? (timestamp - week) : (timestamp + week);
+                case MONTH:
+                    return subtract ? (timestamp - month) : (timestamp + month);
+                case YEAR:
+                    return subtract ? (timestamp - year) : (timestamp + year);
+                default:
+                    throw new IllegalArgumentException("Unsupported time period: " + intervalListBox.getValue());
             }
         }
 
-        return new ChartPanel();
-    }
+        void updateChart(long timestamp) {
+            if (chart == null) {
+                return;
+            }
 
+            this.timestamp = timestamp;
+            this.interval = intervalListBox.getValue();
+
+            timeOutput.setText(
+                DateTimeFormat.getFormat(Constants.DEFAULT_DATETIME_FORMAT).format(new Date(timestamp))
+            );
+
+            getNumberDatapoints(
+                attribute,
+                interval,
+                timestamp,
+                numberDatapoints -> {
+                    ChartUtil.update(
+                        chart,
+                        ChartUtil.convertLabels(numberDatapoints),
+                        ChartUtil.convertData(numberDatapoints)
+                    );
+                });
+        }
+
+        void destroyChart() {
+            if (chart != null) {
+                chart.destroy();
+            }
+            chart = null;
+            intervalListBox = null;
+            timeOutput = null;
+            nextButton = null;
+            clear();
+        }
+    }
 
     /* ####################################################################### */
 
