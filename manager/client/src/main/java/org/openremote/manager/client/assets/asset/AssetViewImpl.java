@@ -37,6 +37,7 @@ import org.openremote.manager.client.assets.browser.BrowserTreeNode;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.*;
+import org.openremote.manager.client.widget.Hyperlink;
 import org.openremote.manager.shared.map.GeoJSON;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetType;
@@ -89,7 +90,7 @@ public class AssetViewImpl extends Composite implements AssetView {
     InlineLabel headlineLabel;
 
     @UiField
-    FormButton editButton;
+    Hyperlink editAssetLink;
 
     /* ############################################################################ */
 
@@ -163,6 +164,7 @@ public class AssetViewImpl extends Composite implements AssetView {
         sidebarContainer.clear();
         setFormBusy(true);
         headlineLabel.setText(null);
+        editAssetLink.setVisible(false);
         createdOnOutput.setText(null);
         tenantDisplayName.setText(null);
         parentAssetName.setText(null);
@@ -190,20 +192,19 @@ public class AssetViewImpl extends Composite implements AssetView {
         } else {
             mapWidget.setVisible(false);
         }
-        editButton.setVisible(!busy);
+        editAssetLink.setVisible(!busy);
     }
 
     /* ############################################################################ */
 
     @Override
-    public void setName(String name) {
-        headlineLabel.setText(name);
+    public void setAssetEditHistoryToken(String token) {
+        editAssetLink.setTargetHistoryToken(token);
     }
 
-    @UiHandler("editButton")
-    void editClicked(ClickEvent e) {
-        if (presenter != null)
-            presenter.edit();
+    @Override
+    public void setName(String name) {
+        headlineLabel.setText(name);
     }
 
     @Override

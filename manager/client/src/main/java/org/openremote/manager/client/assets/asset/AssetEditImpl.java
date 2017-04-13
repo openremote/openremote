@@ -37,6 +37,7 @@ import org.openremote.manager.client.assets.browser.AssetSelector;
 import org.openremote.manager.client.assets.browser.BrowserTreeNode;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.widget.*;
+import org.openremote.manager.client.widget.Hyperlink;
 import org.openremote.manager.client.widget.PushButton;
 import org.openremote.manager.shared.map.GeoJSON;
 import org.openremote.model.Constants;
@@ -88,7 +89,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     InlineLabel headlineLabel;
 
     @UiField
-    FormButton viewButton;
+    Hyperlink viewAssetLink;
 
     /* ############################################################################ */
 
@@ -209,6 +210,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         // Restore initial state of view
         sidebarContainer.clear();
         headlineLabel.setText(null);
+        viewAssetLink.setVisible(false);
         setFormBusy(true);
         nameGroup.setError(false);
         nameInput.setReadOnly(false);
@@ -243,13 +245,12 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         mapWidget.setVisible(!busy);
         if (!busy)
             mapWidget.resize();
-        viewButton.setVisible(!busy);
+        viewAssetLink.setVisible(viewAssetLink.getTargetHistoryToken() != null && !busy);
     }
 
-    @UiHandler("viewButton")
-    void viewClicked(ClickEvent e) {
-        if (presenter != null)
-            presenter.view();
+    @Override
+    public void setAssetViewHistoryToken(String token) {
+        viewAssetLink.setTargetHistoryToken(token);
     }
 
     /* ############################################################################ */
@@ -405,7 +406,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
 
     @Override
     public void enableUpdate(boolean enable) {
-        viewButton.setVisible(enable);
+        viewAssetLink.setVisible(enable);
         updateButton.setVisible(enable);
         headlineLabel.setText(enable ? managerMessages.editAsset() : managerMessages.createAsset());
     }

@@ -1,6 +1,8 @@
 package org.openremote.test.assets
 
 import com.google.gwt.junit.GWTMockUtilities
+import org.openremote.manager.client.ManagerHistoryMapper
+import com.google.gwt.place.shared.WithTokenizers
 import com.google.gwt.user.client.ui.Widget
 import com.google.gwt.view.client.HasData
 import org.openremote.manager.client.Environment
@@ -99,11 +101,13 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
             }
         }
         def placeController = createPlaceController(securityService, eventBus)
+        def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def environment = Environment.create(
                 securityService,
                 requestService,
                 clientEventService,
                 placeController,
+                placeHistoryMapper,
                 eventBus,
                 managerMessages,
                 new WidgetStyle()
@@ -266,11 +270,13 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
             }
         }
         def placeController = createPlaceController(securityService, eventBus)
+        def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def environment = Environment.create(
                 securityService,
                 requestService,
                 clientEventService,
                 placeController,
+                placeHistoryMapper,
                 eventBus,
                 managerMessages,
                 new WidgetStyle()
@@ -442,11 +448,13 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
             }
         }
         def placeController = createPlaceController(securityService, eventBus)
+        def placeHistoryMapper = createPlaceHistoryMapper(ManagerHistoryMapper.getAnnotation(WithTokenizers.class))
         def environment = Environment.create(
                 securityService,
                 requestService,
                 clientEventService,
                 placeController,
+                placeHistoryMapper,
                 eventBus,
                 managerMessages,
                 new WidgetStyle()

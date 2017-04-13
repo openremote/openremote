@@ -52,11 +52,20 @@
                 <g:HTMLPanel
                         styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
 
+<!--
                     <w:Hyperlink
                             addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                             icon="dashboard"
                             targetHistoryToken="assets:"
                             text="{managerMessages.showDashboard}"/>
+-->
+
+                    <w:Hyperlink
+                            ui:field="editAssetLink"
+                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
+                            icon="edit"
+                            visible="false"
+                            text="{managerMessages.editAsset}"/>
 
                     <w:Hyperlink
                             addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
@@ -68,15 +77,9 @@
 
                 <div class="flex layout vertical {widgetStyle.MainContent}">
 
-                    <div class="flex-none layout horizontal">
-                        <div class="{widgetStyle.Headline1} flex">
-                            <g:InlineLabel ui:field="headlineLabel"/>
-                        </div>
-                        <div>
-                            <w:FormButton ui:field="editButton"
-                                          text="{managerMessages.editAsset}"
-                                          icon="edit"/>
-                        </div>
+                    <div class="{widgetStyle.Headline1}">
+                        <span class="fa fa-eye"/>
+                        <g:InlineLabel ui:field="headlineLabel"/>
                     </div>
 
                     <div class="flex-none layout horizontal">

@@ -56,11 +56,20 @@
                 <g:HTMLPanel
                         styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
 
+<!--
                     <w:Hyperlink
                             addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                             icon="dashboard"
                             targetHistoryToken="assets:"
                             text="{managerMessages.showDashboard}"/>
+-->
+
+                    <w:Hyperlink
+                            ui:field="viewAssetLink"
+                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
+                            icon="eye"
+                            visible="false"
+                            text="{managerMessages.viewAsset}"/>
 
                     <w:Hyperlink
                             addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
@@ -72,16 +81,9 @@
 
                 <div class="flex layout vertical {widgetStyle.MainContent}">
 
-                    <div class="flex-none layout horizontal">
-                        <div class="{widgetStyle.Headline1} flex">
-                            <g:InlineLabel ui:field="headlineLabel"/>
-                        </div>
-                        <div>
-                            <w:FormButton ui:field="viewButton"
-                                          text="{managerMessages.viewAsset}"
-                                          visible="false"
-                                          icon="eye"/>
-                        </div>
+                    <div class="{widgetStyle.Headline1}">
+                        <span class="fa fa-edit"/>
+                        <g:InlineLabel ui:field="headlineLabel"/>
                     </div>
 
                     <g:FlowPanel

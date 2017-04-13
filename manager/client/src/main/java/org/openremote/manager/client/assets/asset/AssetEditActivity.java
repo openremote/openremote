@@ -146,13 +146,6 @@ public class AssetEditActivity
     }
 
     @Override
-    public void view() {
-        if (assetId != null) {
-            environment.getPlaceController().goTo(new AssetViewPlace(assetId));
-        }
-    }
-
-    @Override
     public void onParentSelection(BrowserTreeNode treeNode) {
         if (treeNode instanceof TenantTreeNode) {
             asset.setRealmId(treeNode.getId());
@@ -281,6 +274,7 @@ public class AssetEditActivity
     protected void startEditAsset() {
         clearViewMessages();
         view.setTypeSelectionEnabled(false);
+        view.setAssetViewHistoryToken(environment.getPlaceHistoryMapper().getToken(new AssetViewPlace(assetId)));
         writeAssetToView();
         writeTypeToView();
         writeAttributesEditorToView();

@@ -61,6 +61,7 @@ public class ManagerModule extends AbstractGinModule {
                                          RequestService requestService,
                                          EventService eventService,
                                          PlaceController placeController,
+                                         PlaceHistoryMapper placeHistoryMapper,
                                          EventBus eventBus,
                                          ManagerMessages managerMessages,
                                          WidgetStyle widgetStyle) {
@@ -69,6 +70,7 @@ public class ManagerModule extends AbstractGinModule {
             requestService,
             eventService,
             placeController,
+            placeHistoryMapper,
             eventBus,
             managerMessages,
             widgetStyle

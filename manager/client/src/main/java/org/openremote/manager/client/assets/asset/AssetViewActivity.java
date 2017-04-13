@@ -158,12 +158,8 @@ public class AssetViewActivity
         view.flyTo(asset.getCoordinates());
     }
 
-    @Override
-    public void edit() {
-        environment.getPlaceController().goTo(new AssetEditPlace(assetId));
-    }
-
     protected void writeAssetToView() {
+        view.setAssetEditHistoryToken(environment.getPlaceHistoryMapper().getToken(new AssetEditPlace(assetId)));
         view.setName(asset.getName());
         view.setCreatedOn(asset.getCreatedOn());
         view.setLocation(asset.getCoordinates());

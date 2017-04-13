@@ -134,6 +134,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
                 requestService,
                 Mock(EventService),
                 placeController,
+                placeHistoryMapper,
                 eventBus,
                 managerMessages,
                 new WidgetStyle()

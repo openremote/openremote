@@ -32,13 +32,13 @@ public interface AssetView extends IsWidget {
     interface Presenter {
 
         void centerMap();
-
-        void edit();
     }
 
     void setPresenter(Presenter presenter);
 
     void setFormBusy(boolean busy);
+
+    void setAssetEditHistoryToken(String token);
 
     void setName(String name);
 

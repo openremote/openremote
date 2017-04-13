@@ -20,6 +20,7 @@
 package org.openremote.manager.client;
 
 import com.google.gwt.place.shared.PlaceController;
+import com.google.gwt.place.shared.PlaceHistoryMapper;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.service.EventService;
@@ -34,12 +35,13 @@ import org.openremote.manager.client.style.WidgetStyle;
 public interface Environment {
 
     static Environment create(SecurityService securityService,
-                                     RequestService requestService,
-                                     EventService eventService,
-                                     PlaceController placeController,
-                                     EventBus eventBus,
-                                     ManagerMessages managerMessages,
-                                     WidgetStyle widgetStyle) {
+                              RequestService requestService,
+                              EventService eventService,
+                              PlaceController placeController,
+                              PlaceHistoryMapper placeHistoryMapper,
+                              EventBus eventBus,
+                              ManagerMessages managerMessages,
+                              WidgetStyle widgetStyle) {
         return new Environment() {
             @Override
             public SecurityService getSecurityService() {
@@ -59,6 +61,11 @@ public interface Environment {
             @Override
             public PlaceController getPlaceController() {
                 return placeController;
+            }
+
+            @Override
+            public PlaceHistoryMapper getPlaceHistoryMapper() {
+                return placeHistoryMapper;
             }
 
             @Override
@@ -83,6 +90,8 @@ public interface Environment {
     RequestService getRequestService();
 
     PlaceController getPlaceController();
+
+    PlaceHistoryMapper getPlaceHistoryMapper();
 
     /**
      * Subscribe to, unsubscribe from, and dispatch shared events on the server.

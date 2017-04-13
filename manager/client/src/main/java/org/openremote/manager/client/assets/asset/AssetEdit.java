@@ -33,8 +33,6 @@ public interface AssetEdit extends FormView, IsWidget {
 
     interface Presenter {
 
-        void view();
-
         void onParentSelection(BrowserTreeNode treeNode);
 
         void centerMap();
@@ -49,6 +47,8 @@ public interface AssetEdit extends FormView, IsWidget {
 
         void delete();
     }
+
+    void setAssetViewHistoryToken(String token);
 
     void setPresenter(Presenter presenter);
 

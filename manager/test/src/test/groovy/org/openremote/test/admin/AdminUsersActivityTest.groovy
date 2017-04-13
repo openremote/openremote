@@ -154,6 +154,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
                 requestService,
                 Mock(EventService),
                 placeController,
+                placeHistoryMapper,
                 eventBus,
                 managerMessages,
                 new WidgetStyle()
