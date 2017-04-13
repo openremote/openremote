@@ -154,10 +154,7 @@ public abstract class AttributesBrowser
 
     protected void readAllAttributeValues() {
         environment.getEventService().dispatch(
-            new ReadAttributesEvent(
-                asset.getId(),
-                attributeGroups.keySet().stream().map(Attribute::getName).collect(Collectors.toList())
-            )
+            new ReadAttributesEvent(asset.getId())
         );
     }
 

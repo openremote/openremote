@@ -22,7 +22,6 @@ package org.openremote.model;
 import org.openremote.model.event.shared.SharedEvent;
 
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * A client sends this event to the server to refresh its attribute state, expecting
@@ -30,6 +29,9 @@ import java.util.List;
  * decides that the client doesn't have the right permissions, or if anything
  * else is not in order (e.g. the entity doesn't exist), the server might not react
  * at all.
+ * <p>
+ * If no attribute names and only an entity identifier are provided, all attributes
+ * of the entity, accessible by the client, will be read/returned.
  */
 public class ReadAttributesEvent extends SharedEvent {
 
@@ -43,10 +45,6 @@ public class ReadAttributesEvent extends SharedEvent {
     public ReadAttributesEvent(String entityId, String... attributeNames) {
         this.entityId = entityId;
         this.attributeNames = attributeNames;
-    }
-
-    public ReadAttributesEvent(String entityId, List<String> attributeNames) {
-        this(entityId, attributeNames.toArray(new String[attributeNames.size()]));
     }
 
     public String getEntityId() {

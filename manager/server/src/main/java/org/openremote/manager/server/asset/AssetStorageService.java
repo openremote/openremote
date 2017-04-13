@@ -157,7 +157,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 if (auth.isSuperUser()) {
                     ServerAsset asset = find(event.getEntityId(), true);
                     if (asset != null)
-                        replyWithAttributeEvents(sessionKey, asset, Arrays.asList(event.getAttributeNames()));
+                        replyWithAttributeEvents(sessionKey, asset, event.getAttributeNames());
                     return;
                 }
 
@@ -171,8 +171,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     true,
                     managerIdentityService.isRestrictedUser(auth.getUserId()) // Restricted users get filtered state
                 );
-                if (asset != null)
-                    replyWithAttributeEvents(sessionKey, asset, Arrays.asList(event.getAttributeNames()));
+                if (asset != null) {
+                    replyWithAttributeEvents(sessionKey, asset, event.getAttributeNames());
+                }
             });
 
     }
@@ -677,12 +678,20 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         }
     }
 
-    protected void replyWithAttributeEvents(String sessionKey, ServerAsset asset, List<String> attributeNames) {
-        LOG.fine("For client session '" + sessionKey + "', reading asset attributes " + attributeNames + " on: " + asset);
-        List<AttributeEvent> events = new AssetAttributes(asset).get().stream()
-            .filter(assetAttribute -> attributeNames.contains(assetAttribute.getName()))
+    protected void replyWithAttributeEvents(String sessionKey, ServerAsset asset, String[] attributeNames) {
+        AssetAttributes attributes = new AssetAttributes(asset);
+
+        // Client may want to read a subset or all attributes of the asset
+        List<String> names = attributeNames != null && attributeNames.length > 0
+            ? Arrays.asList(attributeNames)
+            : attributes.names();
+
+        LOG.fine("For client session '" + sessionKey + "', reading asset attributes " + names + " on: " + asset);
+        List<AttributeEvent> events = attributes.get().stream()
+            .filter(assetAttribute -> names.contains(assetAttribute.getName()))
             .map(AbstractAssetAttribute::getStateEvent)
             .collect(Collectors.toList());
+
         eventService.sendToSession(sessionKey, events.toArray(new AttributeEvent[events.size()]));
     }
 
