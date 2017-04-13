@@ -407,13 +407,20 @@ public class RulesDeployment<T extends Ruleset> {
             throw e;
         }
 
-        // Insert all the facts into the session
-        new ArrayList<>(assetStates.keySet()).forEach(
-            factEntry -> insertAssetState(factEntry, true)
-        );
+        // Insert initial asset states
+        try {
+            LOG.info("On " + this + " inserting initial asset states: " + assetStates.keySet().size());
+            new ArrayList<>(assetStates.keySet()).forEach(
+                factEntry -> insertAssetState(factEntry, true)
+            );
 
-        LOG.info("Rule engine started");
-        knowledgeSession.fireAllRules();
+            LOG.info("On " + this + " firing all rules after initial asset state insertion");
+            knowledgeSession.fireAllRules();
+
+        } catch (Exception ex) {
+            // This is called in a background timer thread, we must log here or the exception is swallowed
+            LOG.log(Level.WARNING, "Creating initial state of " + this + " failed", ex);
+        }
     }
 
     protected synchronized void stop() {
