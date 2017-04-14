@@ -10,19 +10,26 @@
             z-index: 10;
         }
 
+        .panel {
+            width: 30em;
+        }
+
         .content {
             overflow: auto;
             padding: 0.4em;
         }
     </ui:style>
 
-    <g:PopupPanel glassEnabled="false" addStyleNames="{style.popup} {widgetStyle.PopupPanel}">
-        <g:HTMLPanel styleName="flex layout vertical"
-                     addStyleNames="{style.content} {widgetStyle.PopupPanelContent}">
+    <w:PopupPanel glassEnabled="false" styleName="{style.popup} {widgetStyle.PopupPanel}">
+        <g:HTMLPanel ui:field="panel"
+                     styleName="layout vertical {style.panel}">
 
-            <g:InlineLabel ui:field="infoLabel"/>
+            <g:FlowPanel ui:field="contentPanel"
+                         styleName="flex layout vertical"
+                         addStyleNames="{style.content} {widgetStyle.PopupPanelContent}"/>
 
         </g:HTMLPanel>
-    </g:PopupPanel>
+
+    </w:PopupPanel>
 
 </ui:UiBinder>

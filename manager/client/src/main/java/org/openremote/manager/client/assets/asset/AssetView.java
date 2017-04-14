@@ -23,13 +23,15 @@ import com.google.gwt.user.client.ui.IsWidget;
 import elemental.json.JsonObject;
 import org.openremote.manager.client.assets.attributes.AttributesBrowser;
 import org.openremote.manager.client.assets.browser.BrowserTreeNode;
-import org.openremote.manager.shared.map.GeoJSON;
+import org.openremote.model.geo.GeoJSON;
 
 import java.util.Date;
 
 public interface AssetView extends IsWidget {
 
     interface Presenter {
+
+        void onMapReady();
 
         void centerMap();
     }
@@ -52,7 +54,7 @@ public interface AssetView extends IsWidget {
 
     void setLocation(double[] coordinates);
 
-    void showFeaturesSelection(GeoJSON mapFeatures);
+    void showDroppedPin(GeoJSON geoFeature);
 
     void flyTo(double[] coordinates);
 

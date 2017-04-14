@@ -24,7 +24,7 @@ import elemental.json.JsonObject;
 import org.openremote.manager.client.assets.attributes.AttributesEditor;
 import org.openremote.manager.client.assets.browser.BrowserTreeNode;
 import org.openremote.manager.client.widget.FormView;
-import org.openremote.manager.shared.map.GeoJSON;
+import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.asset.AssetType;
 
 import java.util.Date;
@@ -32,6 +32,8 @@ import java.util.Date;
 public interface AssetEdit extends FormView, IsWidget {
 
     interface Presenter {
+
+        void onMapReady();
 
         void onParentSelection(BrowserTreeNode treeNode);
 
@@ -72,7 +74,7 @@ public interface AssetEdit extends FormView, IsWidget {
 
     void hideMapPopup();
 
-    void showFeaturesSelection(GeoJSON mapFeatures);
+    void showDroppedPin(GeoJSON geoFeature);
 
     void flyTo(double[] coordinates);
 

@@ -38,7 +38,7 @@ import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.*;
 import org.openremote.manager.client.widget.Hyperlink;
-import org.openremote.manager.shared.map.GeoJSON;
+import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetType;
 
@@ -171,7 +171,7 @@ public class AssetViewImpl extends Composite implements AssetView {
         locationGroup.setVisible(false);
         locationOutput.setCoordinates(null, null);
         mapWidget.setVisible(false);
-        showFeaturesSelection(GeoJSON.EMPTY_FEATURE_COLLECTION);
+        showDroppedPin(GeoJSON.EMPTY_FEATURE_COLLECTION);
         typeLabel.setText(null);
         attributesBrowserContainer.clear();
         attributesBrowser = null;
@@ -236,8 +236,10 @@ public class AssetViewImpl extends Composite implements AssetView {
     @Override
     public void initialiseMap(JsonObject mapOptions) {
         mapWidget.initialise(mapOptions, () -> {
+            mapWidget.addNavigationControl();
+            if (presenter != null)
+                presenter.onMapReady();
         });
-        mapWidget.addNavigationControl();
     }
 
     @Override
@@ -246,13 +248,17 @@ public class AssetViewImpl extends Composite implements AssetView {
     }
 
     @Override
-    public void showFeaturesSelection(GeoJSON mapFeatures) {
-        mapWidget.showFeatures(MapWidget.FEATURES_SOURCE_SELECTION, mapFeatures);
+    public void showDroppedPin(GeoJSON geoFeature) {
+        if (mapWidget.isMapReady()) {
+            mapWidget.showFeature(MapWidget.FEATURE_SOURCE_DROPPED_PIN, geoFeature);
+        }
     }
 
     @Override
     public void flyTo(double[] coordinates) {
-        mapWidget.flyTo(coordinates);
+        if (mapWidget.isMapReady()) {
+            mapWidget.flyTo(coordinates);
+        }
     }
 
     @UiHandler("centerMapButton")

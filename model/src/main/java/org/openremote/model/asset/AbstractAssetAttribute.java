@@ -86,6 +86,18 @@ public abstract class AbstractAssetAttribute<CHILD extends AbstractAssetAttribut
         return firstMetaItem(assetMeta.getName());
     }
 
+    public String getLabel() {
+        return hasMetaItem(LABEL) ? firstMetaItem(LABEL).getValueAsString() : getName();
+    }
+
+    public String getFormat() {
+        return hasMetaItem(FORMAT) ? firstMetaItem(FORMAT).getValueAsString() : null;
+    }
+
+    public boolean isShowOnDashboard() {
+        return hasMetaItem(SHOWN_ON_DASHBOARD) && firstMetaItem(SHOWN_ON_DASHBOARD).isValueTrue();
+    }
+
     public boolean isProtected() {
         return hasMetaItem(PROTECTED) && firstMetaItem(PROTECTED).isValueTrue();
     }

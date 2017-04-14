@@ -25,12 +25,13 @@ import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.user.client.ui.ComplexPanel;
 import com.google.gwt.user.client.ui.FlowPanel;
+import elemental.client.Browser;
 import elemental.js.util.*;
 import elemental.json.Json;
 import elemental.json.JsonArray;
 import elemental.json.JsonObject;
 import org.openremote.manager.client.interop.mapbox.*;
-import org.openremote.manager.shared.map.GeoJSON;
+import org.openremote.model.geo.GeoJSON;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -45,18 +46,18 @@ public class MapWidget extends ComplexPanel {
     }
 
     // Feature IDs
-    public static final String FEATURES_SOURCE_ALL = "features-source-all";
-    public static final String FEATURES_LAYER_ALL = "features-layer-all";
-    public static final String FEATURES_SOURCE_SELECTION = "features-source-selection";
-    public static final String FEATURES_LAYER_SELECTION = "features-layer-selection";
+    public static final String FEATURE_SOURCE_CIRCLE = "feature-source-circle";
+    public static final String FEATURE_LAYER_CIRCLE = "feature-layer-circle";
+    public static final String FEATURE_SOURCE_DROPPED_PIN = "feature-source-dropped-pin";
+    public static final String FEATURE_LAYER_DROPPED_PIN = "feature-layer-dropped-pin";
 
     // Render a circle on location
     @SuppressWarnings("GwtInconsistentSerializableClass")
-    static final public JsMapFromStringTo<Object> LAYER_ALL = JsMapFromStringTo.create();
+    static final public JsMapFromStringTo<Object> LAYER_CIRCLE = JsMapFromStringTo.create();
 
     // Render a dropped pin and feature title on location
     @SuppressWarnings("GwtInconsistentSerializableClass")
-    static final public JsMapFromStringTo<Object> LAYER_SELECTION = JsMapFromStringTo.create();
+    static final public JsMapFromStringTo<Object> LAYER_DROPPED_PIN = JsMapFromStringTo.create();
 
     static {
         {
@@ -69,11 +70,11 @@ public class MapWidget extends ComplexPanel {
             // TODO Add color to theme settings
             paint.put("circle-color", "rgb(73, 169, 66)");
 
-            LAYER_ALL.put("id", FEATURES_LAYER_ALL);
-            LAYER_ALL.put("type", "circle");
-            LAYER_ALL.put("source", FEATURES_SOURCE_ALL);
-            LAYER_ALL.put("layout", layout);
-            LAYER_ALL.put("paint", paint);
+            LAYER_CIRCLE.put("id", FEATURE_LAYER_CIRCLE);
+            LAYER_CIRCLE.put("type", "circle");
+            LAYER_CIRCLE.put("source", FEATURE_SOURCE_CIRCLE);
+            LAYER_CIRCLE.put("layout", layout);
+            LAYER_CIRCLE.put("paint", paint);
         }
         {
             JsMapFromStringTo<Object> layout = JsMapFromStringTo.create();
@@ -115,11 +116,11 @@ public class MapWidget extends ComplexPanel {
             paint.put("text-halo-width", 4.0);
             paint.put("text-halo-blur", 4.0);
 
-            LAYER_SELECTION.put("id", FEATURES_LAYER_SELECTION);
-            LAYER_SELECTION.put("type", "symbol");
-            LAYER_SELECTION.put("source", FEATURES_SOURCE_SELECTION);
-            LAYER_SELECTION.put("layout", layout);
-            LAYER_SELECTION.put("paint", paint);
+            LAYER_DROPPED_PIN.put("id", FEATURE_LAYER_DROPPED_PIN);
+            LAYER_DROPPED_PIN.put("type", "symbol");
+            LAYER_DROPPED_PIN.put("source", FEATURE_SOURCE_DROPPED_PIN);
+            LAYER_DROPPED_PIN.put("layout", layout);
+            LAYER_DROPPED_PIN.put("paint", paint);
         }
 
     }
@@ -129,6 +130,7 @@ public class MapWidget extends ComplexPanel {
     protected ClickListener clickListener;
     protected Popup popup;
     protected MapboxMap mapboxMap;
+    protected boolean mapReady;
 
     // These sources can be initialized late, as we have to consider async arriving currentFeaturesData
     protected boolean featuresReady = false;
@@ -169,11 +171,13 @@ public class MapWidget extends ComplexPanel {
         add(host, (Element) getElement());
 
         mapOptions.put("container", hostElementId);
+        mapOptions.put("attributionControl", false);
         mapboxMap = new MapboxMap(mapOptions);
 
         mapboxMap.on(EventType.LOAD, eventData -> {
             host.setVisible(true);
             resize();
+            mapReady = true;
             if (onLoad != null)
                 onLoad.run();
             addFeaturesOnLoad();
@@ -186,6 +190,14 @@ public class MapWidget extends ComplexPanel {
         });
     }
 
+    public boolean isMapReady() {
+        return mapReady;
+    }
+
+    public boolean isFeaturesReady() {
+        return featuresReady;
+    }
+
     public void addNavigationControl() {
         if (mapboxMap == null)
             return;
@@ -196,6 +208,8 @@ public class MapWidget extends ComplexPanel {
         if (mapboxMap == null)
             return;
         mapboxMap.resize();
+        // This is not reliable, so do it again a bit later
+        Browser.getWindow().setTimeout(() -> mapboxMap.resize(), 200);
     }
 
     public void setOpaque(boolean opaque) {
@@ -242,11 +256,11 @@ public class MapWidget extends ComplexPanel {
             return;
         LOG.fine("Adding GeoJSON feature sources and layers on map load");
 
-        JsonObject sourceOptionsSelection = prepareSourceOptions(FEATURES_SOURCE_SELECTION);
-        mapboxMap.addSource(FEATURES_SOURCE_SELECTION, sourceOptionsSelection);
-        mapboxMap.addLayer(LAYER_SELECTION);
+        JsonObject sourceOptionsSelection = prepareSourceOptions(FEATURE_SOURCE_DROPPED_PIN);
+        mapboxMap.addSource(FEATURE_SOURCE_DROPPED_PIN, sourceOptionsSelection);
+        mapboxMap.addLayer(LAYER_DROPPED_PIN);
 
-        JsonObject sourceOptionsAll = prepareSourceOptions(FEATURES_SOURCE_ALL);
+        JsonObject sourceOptionsAll = prepareSourceOptions(FEATURE_SOURCE_CIRCLE);
         sourceOptionsAll.put("maxzoom", Json.create(20));
         sourceOptionsAll.put("buffer", Json.create(128));
         sourceOptionsAll.put("tolerance", Json.create(0.375));
@@ -257,15 +271,15 @@ public class MapWidget extends ComplexPanel {
         // TODO something weird is going on with JS interop, this helps for now
         sourceOptionsAll = Json.parse(sourceOptionsAll.toJson());
 
-        mapboxMap.addSource(FEATURES_SOURCE_ALL, sourceOptionsAll);
-        mapboxMap.addLayer(LAYER_ALL, FEATURES_LAYER_SELECTION);
+        mapboxMap.addSource(FEATURE_SOURCE_CIRCLE, sourceOptionsAll);
+        mapboxMap.addLayer(LAYER_CIRCLE, FEATURE_LAYER_DROPPED_PIN);
 
         featuresReady = true;
     }
 
-    public void showFeatures(String featureSourceId, GeoJSON mapFeatures) {
-        LOG.fine("Showing features on source " + featureSourceId + ": " + mapFeatures);
-        JsonObject data = mapFeatures.getJsonObject();
+    public void showFeature(String featureSourceId, GeoJSON geoFeature) {
+        LOG.fine("Showing feature on source " + featureSourceId + ": " + geoFeature);
+        JsonObject data = geoFeature.getJsonObject();
         currentFeatureSourceData.put(featureSourceId, data);
         if (featuresReady) {
             data = currentFeatureSourceData.remove(featureSourceId);

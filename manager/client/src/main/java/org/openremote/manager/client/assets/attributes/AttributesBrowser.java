@@ -19,17 +19,11 @@
  */
 package org.openremote.manager.client.assets.attributes;
 
-import com.google.gwt.canvas.client.Canvas;
-import com.google.gwt.i18n.client.DateTimeFormat;
-import com.google.gwt.text.shared.AbstractRenderer;
-import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.IsWidget;
-import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.Widget;
 import elemental.client.Browser;
 import org.openremote.manager.client.Environment;
-import org.openremote.manager.client.interop.chartjs.Chart;
-import org.openremote.manager.client.interop.chartjs.ChartUtil;
+import org.openremote.manager.client.datapoint.DatapointBrowser;
 import org.openremote.manager.client.widget.*;
 import org.openremote.model.*;
 import org.openremote.model.asset.Asset;
@@ -40,14 +34,8 @@ import org.openremote.model.datapoint.NumberDatapoint;
 import org.openremote.model.event.bus.EventRegistration;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
-
-import static com.google.gwt.dom.client.Style.Unit.EM;
-import static com.google.gwt.dom.client.Style.Unit.PX;
 
 public abstract class AttributesBrowser
     extends AttributesView<AttributesBrowser.Container, AttributesBrowser.Style, AssetAttributes, AssetAttribute> {
@@ -144,6 +132,8 @@ public abstract class AttributesBrowser
                                           FormGroup formGroup) {
         Widget datapointBrowser = createDatapointBrowser(attribute);
         if (datapointBrowser != null) {
+            FormSectionLabel sectionLabel = new FormSectionLabel(environment.getMessages().historicalData());
+            formGroup.addExtension(sectionLabel);
             formGroup.addExtension(datapointBrowser);
         } else {
             formGroup.showDisabledExtensionToggle();
@@ -243,7 +233,7 @@ public abstract class AttributesBrowser
         if (attributeFormGroup != null) {
             DatapointBrowser datapointBrowser = attributeFormGroup.getExtensionOfType(DatapointBrowser.class);
             if (datapointBrowser != null) {
-                datapointBrowser.updateChart(System.currentTimeMillis());
+                datapointBrowser.refresh(System.currentTimeMillis());
             }
         }
     }
@@ -253,172 +243,14 @@ public abstract class AttributesBrowser
             return null;
         if (!(attribute.getType() == AttributeType.DECIMAL || attribute.getType() == AttributeType.INTEGER))
             return null;
-        return new DatapointBrowser(attribute);
-    }
-
-    /* ####################################################################### */
-
-    class DatapointBrowser extends FlowPanel {
-
-        final AssetAttribute attribute;
-        Chart chart;
-        DatapointInterval interval;
-        long timestamp;
-        FormValueListBox<DatapointInterval> intervalListBox;
-        FormOutputText timeOutput;
-        FormButton nextButton;
-
-        public DatapointBrowser(AssetAttribute attribute) {
-            this.attribute = attribute;
-            this.interval  = DatapointInterval.HOUR;
-            this.timestamp = System.currentTimeMillis();
-
-            setStyleName("layout vertical");
-
-            addAttachHandler(event -> {
-                if (event.isAttached()) {
-                    createChart();
-                } else {
-                    destroyChart();
-                }
-            });
-        }
-
-        void createChart() {
-            FormSectionLabel sectionLabel = new FormSectionLabel(environment.getMessages().historicalData());
-            add(sectionLabel);
-
-            Canvas canvas = Canvas.createIfSupported();
-            if (canvas == null) {
-                add(new Label(environment.getMessages().canvasNotSupported()));
-                return;
+        return new DatapointBrowser(environment.getMessages(), 850, 250) {
+            @Override
+            protected void queryDatapoints(DatapointInterval interval,
+                                           long timestamp,
+                                           Consumer<NumberDatapoint[]> consumer) {
+                getNumberDatapoints(attribute, interval, timestamp, consumer);
             }
-
-            FlowPanel chartFormPanel = new FlowPanel();
-            chartFormPanel.setStyleName("layout vertical center or-FormGroup");
-            add(chartFormPanel);
-
-            canvas.getCanvasElement().setWidth(850);
-            canvas.getCanvasElement().setHeight(250);
-            FlowPanel canvasContainer = new FlowPanel();
-            canvasContainer.setWidth("850px");
-            canvasContainer.setHeight("250px");
-            canvasContainer.add(canvas);
-
-            chartFormPanel.add(canvasContainer);
-
-            Form controlForm = new Form();
-            controlForm.getElement().getStyle().setWidth(850, PX);
-            controlForm.getElement().getStyle().setMarginTop(0.4, EM);
-            controlForm.getElement().getStyle().setMarginBottom(0.4, EM);
-            chartFormPanel.add(controlForm);
-
-            FormGroup controlFormGroup = new FormGroup();
-            controlForm.add(controlFormGroup);
-
-            FormLabel controlFormLabel = new FormLabel(environment.getMessages().showChartAggregatedFor());
-            controlFormGroup.addFormLabel(controlFormLabel);
-
-            FormField controlFormField = new FormField();
-            controlFormGroup.addFormField(controlFormField);
-            intervalListBox = new FormValueListBox<>(
-                new AbstractRenderer<DatapointInterval>() {
-                    @Override
-                    public String render(DatapointInterval interval) {
-                        return environment.getMessages().datapointInterval(interval.name());
-                    }
-                }
-            );
-            intervalListBox.addValueChangeHandler(event -> {
-                updateChart(timestamp);
-            });
-            intervalListBox.setValue(interval);
-            intervalListBox.setAcceptableValues(Arrays.asList(DatapointInterval.values()));
-            intervalListBox.setEnabled(true);
-            controlFormField.add(intervalListBox);
-
-            FormGroupActions controlFormActions = new FormGroupActions();
-            controlFormGroup.addFormGroupActions(controlFormActions);
-
-            timeOutput = new FormOutputText();
-            timeOutput.addStyleName("flex");
-            timeOutput.getElement().getStyle().setFontSize(0.8, EM);
-            controlFormActions.add(timeOutput);
-
-            FormButton previousButton = new FormButton();
-            previousButton.setIcon("arrow-circle-left");
-            previousButton.setText(environment.getMessages().previous());
-            previousButton.addClickHandler(event -> updateChart(calculateTimestamp(true)));
-            controlFormActions.add(previousButton);
-
-            nextButton = new FormButton();
-            nextButton.setIcon("arrow-circle-right");
-            nextButton.setText(environment.getMessages().next());
-            nextButton.addClickHandler(event -> updateChart(calculateTimestamp(false)));
-            controlFormActions.add(nextButton);
-
-            chart = ChartUtil.createLineChart(canvas.getContext2d());
-
-            updateChart(timestamp);
-        }
-
-        long calculateTimestamp(boolean subtract) {
-            long hour = 1000 * 60 * 60;
-            long day = hour * 24;
-            long week = day * 7;
-            long month = day * 30;
-            long year = day * 365;
-            switch (intervalListBox.getValue()) {
-                case HOUR:
-                    return subtract ? (timestamp - hour) : (timestamp + hour);
-                case DAY:
-                    return subtract ? (timestamp - day) : (timestamp + day);
-                case WEEK:
-                    return subtract ? (timestamp - week) : (timestamp + week);
-                case MONTH:
-                    return subtract ? (timestamp - month) : (timestamp + month);
-                case YEAR:
-                    return subtract ? (timestamp - year) : (timestamp + year);
-                default:
-                    throw new IllegalArgumentException("Unsupported time period: " + intervalListBox.getValue());
-            }
-        }
-
-        void updateChart(long timestamp) {
-            if (chart == null) {
-                return;
-            }
-
-            this.timestamp = timestamp;
-            this.interval = intervalListBox.getValue();
-
-            timeOutput.setText(
-                DateTimeFormat.getFormat(Constants.DEFAULT_DATETIME_FORMAT).format(new Date(timestamp))
-            );
-
-            getNumberDatapoints(
-                attribute,
-                interval,
-                timestamp,
-                numberDatapoints -> {
-                    ChartUtil.update(
-                        chart,
-                        ChartUtil.convertLabels(numberDatapoints),
-                        ChartUtil.convertData(numberDatapoints)
-                    );
-                });
-        }
-
-        void destroyChart() {
-            if (chart != null) {
-                chart.destroy();
-            }
-            chart = null;
-            intervalListBox = null;
-            timeOutput = null;
-            nextButton = null;
-            clear();
-        }
+        };
     }
 
     /* ####################################################################### */

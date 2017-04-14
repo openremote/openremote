@@ -33,8 +33,8 @@
         }
     </ui:style>
 
-    <g:PopupPanel glassEnabled="false" addStyleNames="{style.popup} {widgetStyle.PopupPanel}">
-        <g:HTMLPanel styleName="flex layout vertical {style.panel}">
+    <w:PopupPanel glassEnabled="false" styleName="{style.popup} {widgetStyle.PopupPanel}">
+        <g:HTMLPanel styleName="layout vertical {style.panel}">
             <g:HTMLPanel
                     styleName="layout horizontal {style.header} {widgetStyle.PopupPanelHeader}">
                 <g:Label ui:field="userLabel"/>
@@ -58,6 +58,6 @@
                 <w:PushButton ui:field="logoutButton" icon="sign-out" text="{managerMessages.logout}"/>
             </g:HTMLPanel>
         </g:HTMLPanel>
-    </g:PopupPanel>
+    </w:PopupPanel>
 
 </ui:UiBinder>

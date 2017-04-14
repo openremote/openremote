@@ -22,9 +22,9 @@ package org.openremote.manager.client.toast;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.Label;
-import com.google.gwt.user.client.ui.PopupPanel;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.MessagesIcon;
+import org.openremote.manager.client.widget.PopupPanel;
 
 import javax.inject.Inject;
 import java.util.Collection;

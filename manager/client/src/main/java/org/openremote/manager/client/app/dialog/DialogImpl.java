@@ -25,9 +25,9 @@ import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HasWidgets;
 import com.google.gwt.user.client.ui.Label;
-import com.google.gwt.user.client.ui.PopupPanel;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.widget.AbstractAppPanel;
+import org.openremote.manager.client.widget.PopupPanel;
 
 import javax.inject.Inject;
 

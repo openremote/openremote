@@ -39,7 +39,7 @@ import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.widget.*;
 import org.openremote.manager.client.widget.Hyperlink;
 import org.openremote.manager.client.widget.PushButton;
-import org.openremote.manager.shared.map.GeoJSON;
+import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetType;
 
@@ -90,6 +90,9 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
 
     @UiField
     Hyperlink viewAssetLink;
+
+    @UiField
+    Hyperlink createAssetLink;
 
     /* ############################################################################ */
 
@@ -211,6 +214,8 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         sidebarContainer.clear();
         headlineLabel.setText(null);
         viewAssetLink.setVisible(false);
+        viewAssetLink.setTargetHistoryToken("");
+        createAssetLink.setVisible(false);
         setFormBusy(true);
         nameGroup.setError(false);
         nameInput.setReadOnly(false);
@@ -225,7 +230,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         typeListBox.setEnabled(true);
         typeInput.setVisible(false);
         customTypeInfoLabel.setVisible(false);
-        showFeaturesSelection(GeoJSON.EMPTY_FEATURE_COLLECTION);
+        showDroppedPin(GeoJSON.EMPTY_FEATURE_COLLECTION);
         hideMapPopup();
         setOpaque(false);
         attributesEditorContainer.clear();
@@ -245,7 +250,11 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         mapWidget.setVisible(!busy);
         if (!busy)
             mapWidget.resize();
-        viewAssetLink.setVisible(viewAssetLink.getTargetHistoryToken() != null && !busy);
+        viewAssetLink.setVisible(
+            viewAssetLink.getTargetHistoryToken() != null
+            && viewAssetLink.getTargetHistoryToken().length() > 0
+            && !busy
+        );
     }
 
     @Override
@@ -294,10 +303,12 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     @Override
     public void initialiseMap(JsonObject mapOptions) {
         mapWidget.initialise(mapOptions, () -> {
-        });
-        mapWidget.addNavigationControl();
-        mapWidget.setClickListener((lng, lat) -> {
-            presenter.onMapClicked(lng, lat);
+            mapWidget.addNavigationControl();
+            mapWidget.setClickListener((lng, lat) -> {
+                presenter.onMapClicked(lng, lat);
+            });
+            if (presenter != null)
+                presenter.onMapReady();
         });
     }
 
@@ -308,22 +319,30 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
 
     @Override
     public void showMapPopup(double lng, double lat, String text) {
-        mapWidget.showPopup(lng, lat, text);
+        if (mapWidget.isMapReady()) {
+            mapWidget.showPopup(lng, lat, text);
+        }
     }
 
     @Override
     public void hideMapPopup() {
-        mapWidget.hidePopup();
+        if (mapWidget.isMapReady()) {
+            mapWidget.hidePopup();
+        }
     }
 
     @Override
-    public void showFeaturesSelection(GeoJSON mapFeatures) {
-        mapWidget.showFeatures(MapWidget.FEATURES_SOURCE_SELECTION, mapFeatures);
+    public void showDroppedPin(GeoJSON geoFeature) {
+        if (mapWidget.isMapReady()) {
+            mapWidget.showFeature(MapWidget.FEATURE_SOURCE_DROPPED_PIN, geoFeature);
+        }
     }
 
     @Override
     public void flyTo(double[] coordinates) {
-        mapWidget.flyTo(coordinates);
+        if (mapWidget.isMapReady()) {
+            mapWidget.flyTo(coordinates);
+        }
     }
 
     @UiHandler("centerMapButton")
@@ -402,6 +421,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     public void enableCreate(boolean enable) {
         createButton.setVisible(enable);
         headlineLabel.setText(enable ? managerMessages.createAsset() : managerMessages.editAsset());
+        createAssetLink.setVisible(!enable);
     }
 
     @Override
@@ -409,6 +429,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         viewAssetLink.setVisible(enable);
         updateButton.setVisible(enable);
         headlineLabel.setText(enable ? managerMessages.editAsset() : managerMessages.createAsset());
+        createAssetLink.setVisible(enable);
     }
 
     @Override

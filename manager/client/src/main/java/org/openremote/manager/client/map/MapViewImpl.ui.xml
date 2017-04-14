@@ -14,20 +14,8 @@
             height: 100%;
         }
 
-        .mapLoadingLabel {
-            margin: 0.4em;
-            text-align: right;
-            font-weight: bold;
-        }
-
         .mapControls {
             z-index: 1;
-        }
-
-        .infoPanel {
-            width: 20em;
-            height: 2em;
-            text-align: center;
         }
     </ui:style>
 
@@ -47,6 +35,13 @@
 
                 <g:HTMLPanel
                         styleName="layout horizontal center end-justified {style.mapControls} {widgetStyle.SecondaryNavHorizontal}">
+
+                    <w:Hyperlink
+                            ui:field="viewAssetLink"
+                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
+                            icon="eye"
+                            visible="false"
+                            text="{managerMessages.viewAsset}"/>
 
                     <w:Hyperlink
                             addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"

@@ -26,7 +26,7 @@ import com.google.gwt.safehtml.shared.SafeHtml;
 import com.google.gwt.safehtml.shared.SafeHtmlBuilder;
 import com.google.gwt.safehtml.shared.SafeHtmlUtils;
 import com.google.gwt.text.shared.SafeHtmlRenderer;
-import org.openremote.manager.client.util.TextUtil;
+import org.openremote.model.util.TextUtil;
 
 class AssetTreeCell extends AbstractSafeHtmlCell<BrowserTreeNode> {
 

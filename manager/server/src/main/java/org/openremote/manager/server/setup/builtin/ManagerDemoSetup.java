@@ -246,6 +246,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         thing = assetStorageService.find(thingId, true);
         thingAttributes = new AssetAttributes(thing);
         ZonedDateTime now = LocalDateTime.now().atZone(ZoneId.systemDefault());
+        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")));
         assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
             .setValueAsDecimal(0.11).setValueTimestamp(now.minusDays(80).toEpochSecond() * 1000)));
         assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
@@ -286,7 +287,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             .setValueAsDecimal(12.00).setValueTimestamp(now.minusSeconds(1).toEpochSecond() * 1000)));
         assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
             .setValueAsDecimal(12.01).setValueTimestamp(now.toEpochSecond() * 1000 - 500)));
-
 
         // ################################ Demo assets for 'customerA' realm ###################################
 

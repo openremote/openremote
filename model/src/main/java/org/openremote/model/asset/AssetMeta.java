@@ -49,7 +49,12 @@ public enum AssetMeta {
     LABEL(ASSET_META_NAMESPACE + ":label", new Access(true, true, true), JsonType.STRING),
 
     /**
-     * Format string that can be used to render the attribute value, see {@link java.util.Formatter}.
+     * If there is a dashboard, some kind of attribute overview, should this attribute be shown.
+     */
+    SHOWN_ON_DASHBOARD(ASSET_META_NAMESPACE + ":showOnDashboard", new Access(true, true, true), JsonType.BOOLEAN),
+
+    /**
+     * Format string that can be used to render the attribute value, see https://github.com/alexei/sprintf.js.
      */
     FORMAT(ASSET_META_NAMESPACE + ":format", new Access(true, false, true), JsonType.STRING),
 

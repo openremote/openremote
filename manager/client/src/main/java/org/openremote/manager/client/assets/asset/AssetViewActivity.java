@@ -28,10 +28,9 @@ import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.assets.browser.AssetTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
-import org.openremote.manager.client.assets.datapoint.NumberDatapointArrayMapper;
 import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
+import org.openremote.manager.client.datapoint.NumberDatapointArrayMapper;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
-import org.openremote.manager.client.map.MapView;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.datapoint.AssetDatapointResource;
 import org.openremote.manager.shared.http.EntityWriter;
@@ -120,8 +119,22 @@ public class AssetViewActivity
                 view::initialiseMap,
                 ex -> handleRequestException(ex, environment)
             );
+        } else {
+            onMapReady();
         }
+    }
 
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (attributesBrowser != null) {
+            attributesBrowser.close();
+        }
+        view.setPresenter(null);
+    }
+
+    @Override
+    public void onMapReady() {
         asset = null;
         if (assetId != null) {
             assetBrowserPresenter.loadAsset(assetId, loadedAsset -> {
@@ -145,15 +158,6 @@ public class AssetViewActivity
     }
 
     @Override
-    public void onStop() {
-        super.onStop();
-        if (attributesBrowser != null) {
-            attributesBrowser.close();
-        }
-        view.setPresenter(null);
-    }
-
-    @Override
     public void centerMap() {
         view.flyTo(asset.getCoordinates());
     }
@@ -163,7 +167,7 @@ public class AssetViewActivity
         view.setName(asset.getName());
         view.setCreatedOn(asset.getCreatedOn());
         view.setLocation(asset.getCoordinates());
-        view.showFeaturesSelection(MapView.getFeature(asset));
+        view.showDroppedPin(asset.getGeoFeature(20));
         view.flyTo(asset.getCoordinates());
         view.setType(asset.getType());
     }

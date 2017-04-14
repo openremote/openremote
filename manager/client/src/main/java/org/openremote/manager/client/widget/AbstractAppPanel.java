@@ -19,12 +19,17 @@
  */
 package org.openremote.manager.client.widget;
 
+import com.google.gwt.dom.client.Style;
+import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.user.client.Window;
-import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.UIObject;
 
+import java.util.logging.Logger;
+
 public abstract class AbstractAppPanel implements AppPanel {
+
+    private static final Logger LOG = Logger.getLogger(AbstractAppPanel.class.getName());
 
     final protected PopupPanel popupPanel;
 
@@ -36,11 +41,25 @@ public abstract class AbstractAppPanel implements AppPanel {
     protected UIObject bottomRightTarget;
     protected UIObject topLeftTarget;
 
+    protected HandlerRegistration windowHandlerRegistration;
+
     public AbstractAppPanel(UiBinder<PopupPanel, AbstractAppPanel> binder) {
         this.popupPanel = binder.createAndBindUi(this);
+
+        popupPanel.getElement().getStyle().setOverflow(Style.Overflow.AUTO);
+
         popupPanel.setAutoHideOnHistoryEventsEnabled(true);
 
         popupPanel.setGlassStyleName("or-PopupPanelGlass");
+
+        popupPanel.addAttachHandler(event -> {
+            if (event.isAttached()) {
+                windowHandlerRegistration = Window.addResizeHandler(e -> resize());
+            } else if (windowHandlerRegistration != null) {
+                windowHandlerRegistration.removeHandler();
+                windowHandlerRegistration = null;
+            }
+        });
 
         popupPanel.addCloseHandler(event -> {
             if (target != null) {
@@ -49,17 +68,6 @@ public abstract class AbstractAppPanel implements AppPanel {
             }
         });
 
-        Window.addResizeHandler(event -> {
-            if (isShowing()) {
-                if (target != null) {
-                    popupPanel.showRelativeTo(target);
-                } else if (bottomRightTarget != null) {
-                    showBottomRightOf(bottomRightTarget, marginRight, marginBottom);
-                } else if (topLeftTarget != null) {
-                    showTopLeftOf(topLeftTarget, marginTop, marginLeft);
-                }
-            }
-        });
     }
 
     public PopupPanel getPopupPanel() {
@@ -145,5 +153,20 @@ public abstract class AbstractAppPanel implements AppPanel {
     @Override
     public void showCenter() {
         popupPanel.center();
+    }
+
+    @Override
+    public void resize() {
+        if (isShowing()) {
+            if (target != null) {
+                popupPanel.showRelativeTo(target);
+            } else if (bottomRightTarget != null) {
+                showBottomRightOf(bottomRightTarget, marginRight, marginBottom);
+            } else if (topLeftTarget != null) {
+                showTopLeftOf(topLeftTarget, marginTop, marginLeft);
+            } else {
+                showCenter();
+            }
+        }
     }
 }

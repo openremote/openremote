@@ -25,15 +25,19 @@ import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
-import com.google.gwt.user.client.ui.Label;
 import com.google.inject.Provider;
+import elemental.client.Browser;
 import elemental.json.JsonObject;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
+import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.FlexSplitPanel;
+import org.openremote.manager.client.widget.Hyperlink;
 import org.openremote.manager.client.widget.MapWidget;
-import org.openremote.manager.shared.map.GeoJSON;
+import org.openremote.model.Pair;
+import org.openremote.model.geo.GeoJSON;
 
 import javax.inject.Inject;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class MapViewImpl extends Composite implements MapView {
@@ -45,16 +49,16 @@ public class MapViewImpl extends Composite implements MapView {
 
     public interface Style extends CssResource {
 
-        String mapLoadingLabel();
-
         String navItem();
 
         String mapControls();
 
         String mapWidget();
 
-        String infoPanel();
     }
+
+    @UiField
+    WidgetStyle widgetStyle;
 
     @UiField
     Style style;
@@ -66,11 +70,14 @@ public class MapViewImpl extends Composite implements MapView {
     HTMLPanel sidebarContainer;
 
     @UiField
+    Hyperlink viewAssetLink;
+
+    @UiField
     MapWidget mapWidget;
 
     final AssetBrowser assetBrowser;
     final Provider<MapInfoPanel> infoPanelProvider;
-    final MapInfoPanel infoPanel;
+    MapInfoPanel infoPanel;
 
     Presenter presenter;
 
@@ -84,34 +91,46 @@ public class MapViewImpl extends Composite implements MapView {
 
         splitPanel.setOnResize(() -> {
             mapWidget.resize();
-            showInfoPanel();
+            if (infoPanel != null)
+                infoPanel.resize();
         });
-
-        infoPanel = infoPanelProvider.get();
-        infoPanel.addStyleName(style.infoPanel());
     }
 
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
+
+        // Reset state
+        sidebarContainer.clear();
+        viewAssetLink.setVisible(false);
+        viewAssetLink.setTargetHistoryToken("");
+        showDroppedPin(GeoJSON.EMPTY_FEATURE_COLLECTION);
+        if (infoPanel != null) {
+            infoPanel.hide();
+            infoPanel = null;
+        }
+
         if (presenter != null) {
             assetBrowser.asWidget().removeFromParent();
             sidebarContainer.add(assetBrowser.asWidget());
-        } else {
-            sidebarContainer.clear();
-            hideFeaturesAll();
-            hideFeaturesSelection();
-            infoPanel.hide();
-            infoPanel.init();
+        }
+    }
+
+    @Override
+    public void setAssetViewHistoryToken(String token) {
+        if (token != null) {
+            viewAssetLink.setTargetHistoryToken(token);
+            viewAssetLink.setVisible(true);
         }
     }
 
     @Override
     public void initialiseMap(JsonObject mapOptions) {
         mapWidget.initialise(mapOptions, () -> {
-            showInfoPanel();
+            mapWidget.addNavigationControl();
+            if (presenter != null)
+                presenter.onMapReady();
         });
-        mapWidget.addNavigationControl();
     }
 
     @Override
@@ -120,44 +139,33 @@ public class MapViewImpl extends Composite implements MapView {
     }
 
     @Override
-    public void showInfo(String text) {
-        infoPanel.setInfoText(text);
-        if (text != null && !infoPanel.isShowing()) {
-            showInfoPanel();
-        } else if (text == null) {
-            infoPanel.hide();
-            infoPanel.init();
+    public void showDroppedPin(GeoJSON geoFeature) {
+        if (mapWidget.isMapReady()) {
+            mapWidget.showFeature(MapWidget.FEATURE_SOURCE_DROPPED_PIN, geoFeature);
         }
-    }
-
-    @Override
-    public void showFeaturesAll(GeoJSON mapFeatures) {
-        mapWidget.showFeatures(MapWidget.FEATURES_SOURCE_ALL, mapFeatures);
-    }
-
-    @Override
-    public void hideFeaturesAll() {
-        showFeaturesAll(GeoJSON.EMPTY_FEATURE_COLLECTION);
-    }
-
-    @Override
-    public void showFeaturesSelection(GeoJSON mapFeatures) {
-        mapWidget.showFeatures(MapWidget.FEATURES_SOURCE_SELECTION, mapFeatures);
-    }
-
-    @Override
-    public void hideFeaturesSelection() {
-        showFeaturesSelection(GeoJSON.EMPTY_FEATURE_COLLECTION);
     }
 
     @Override
     public void flyTo(double[] coordinates) {
-        mapWidget.flyTo(coordinates);
+        if (mapWidget.isMapReady()) {
+            mapWidget.flyTo(coordinates);
+        }
     }
 
-    protected void showInfoPanel() {
-        if (mapWidget.isInitialised() && infoPanel.getInfoText() != null && !infoPanel.getInfoText().isEmpty()) {
-            infoPanel.showBottomRightOf(mapWidget, 10, 30);
+    @Override
+    public void showInfoItems(List<Pair<String, String>> infoItems) {
+        if (!mapWidget.isMapReady())
+            return;
+
+        if (infoPanel == null) {
+            infoPanel = infoPanelProvider.get();
         }
+
+        infoPanel.setItems(infoItems);
+
+        mapWidget.resize();
+        Browser.getWindow().setTimeout(() -> {
+            infoPanel.showBottomRightOf(mapWidget, 10, 30);
+        }, 100);
     }
 }

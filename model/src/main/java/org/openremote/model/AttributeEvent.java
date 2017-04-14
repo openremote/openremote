@@ -28,6 +28,29 @@ import org.openremote.model.event.shared.SharedEvent;
  */
 public class AttributeEvent extends SharedEvent {
 
+    /**
+     * Processing of the attribute event depends on where the event originated from.
+     *
+     * TODO Use this as header in Camel messages for conditional routing
+     */
+    public enum Source {
+
+        /**
+         * The event was created by a client, it's a write request/actuator message.
+         */
+        SOUTHBOUND,
+
+        /**
+         * The event was created by internal processing, for example, as a rule consequence.
+         */
+        PROCESSING,
+
+        /**
+         * The event was created by a protocol, it's a value change on a sensor.
+         */
+        NORTHBOUND
+    }
+
     static public class EntityIdFilter extends EventFilter<AttributeEvent> {
 
         public static final String FILTER_TYPE = "attribute-entity-id";

@@ -41,4 +41,6 @@ public interface AppPanel {
 
     void hide();
 
+    void resize();
+
 }

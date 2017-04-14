@@ -23,27 +23,37 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.AssetMapper;
+import org.openremote.manager.client.assets.asset.AssetViewPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.assets.browser.AssetTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
-import org.openremote.manager.shared.security.Tenant;
-import org.openremote.model.event.bus.EventBus;
-import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.map.MapResource;
+import org.openremote.manager.shared.security.Tenant;
+import org.openremote.model.AttributeEvent;
+import org.openremote.model.Pair;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetAttributes;
+import org.openremote.model.event.bus.EventBus;
+import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.model.geo.GeoJSON;
 
 import javax.inject.Inject;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
 public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapView.Presenter {
+
+    private static final Logger LOG = Logger.getLogger(MapActivity.class.getName());
 
     final MapView view;
     final AssetResource assetResource;
@@ -52,8 +62,9 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
     final JsonObjectMapper jsonObjectMapper;
 
     String assetId;
+    String realmId;
     Asset asset;
-    String realm;
+    List<AssetAttribute> dashboardAttributes = new ArrayList<>();
 
     @Inject
     public MapActivity(Environment environment,
@@ -79,7 +90,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
             assetId = mapAssetPlace.getAssetId();
         } else if (place instanceof MapTenantPlace) {
             MapTenantPlace mapTenantPlace = (MapTenantPlace) place;
-            realm = mapTenantPlace.getRealmId();
+            realmId = mapTenantPlace.getRealmId();
         }
         return this;
     }
@@ -101,34 +112,33 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
             }
         }));
 
+        registrations.add(environment.getEventBus().register(
+            AttributeEvent.class,
+            event -> {
+                if (asset == null
+                    || !event.getEntityId().equals(asset.getId())
+                    || dashboardAttributes.stream().noneMatch(attribute -> attribute.getName().equals(event.getAttributeName())))
+                    return;
+
+                dashboardAttributes.stream()
+                    .filter(attribute -> attribute.getName().equals(event.getAttributeName())).findFirst().get()
+                    .setValueUnchecked(
+                        event.getValue(), event.getTimestamp()
+                    );
+                showAssetInfoItems();
+            }
+        ));
+
         if (!view.isMapInitialised()) {
             environment.getRequestService().execute(
                 jsonObjectMapper,
                 mapResource::getSettings,
                 200,
-                mapSettings -> {
-                    view.initialiseMap(mapSettings);
-                    if (asset != null) {
-                        showAssetOnMap();
-                    }
-                },
+                view::initialiseMap,
                 ex -> handleRequestException(ex, environment)
             );
-        }
-
-        hideAssetOnMap();
-
-        asset = null;
-        if (assetId != null) {
-            assetBrowserPresenter.loadAsset(assetId, loadedAsset -> {
-                this.asset = loadedAsset;
-                if (asset != null) {
-                    assetBrowserPresenter.selectAsset(asset);
-                    showAssetOnMap();
-                }
-            });
-        } else if (realm != null) {
-            view.showInfo("TODO: Tenant map not implemented");
+        } else {
+            onMapReady();
         }
     }
 
@@ -136,34 +146,66 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
     public void onStop() {
         super.onStop();
         view.setPresenter(null);
-    }
 
-    protected void showAssetOnMap() {
-        if (asset != null && asset.getCoordinates() != null) {
-            if (asset.getCreatedOn() != null && asset.getCoordinates().length == 2) {
-                // TODO: This assumes 0 is Lng and 1 is Lat, which is true for PostGIS backend
-                // TODO: Because Lat/Lng is the 'right way', we flip it here for display
-                // TODO: Rounding to 5 decimals gives us precision of about 1 meter, should be enough
-                view.showInfo("Location: " + (
-                        round(asset.getCoordinates()[1], 5) + " " + round(asset.getCoordinates()[0], 5) + " Lat|Lng"
-                    )
-                );
-            } else {
-                view.showInfo(null);
-            }
-            view.showFeaturesSelection(MapView.getFeature(asset));
-            view.flyTo(asset.getCoordinates());
-        } else {
-            view.showInfo(null);
+        if (asset != null && asset.hasGeoFeature() || dashboardAttributes.size() > 0) {
+            environment.getEventService().unsubscribe(
+                AttributeEvent.class
+            );
         }
     }
 
-    protected void hideAssetOnMap() {
-        view.hideFeaturesSelection();
+    @Override
+    public void onMapReady() {
+        if (assetId != null) {
+            assetBrowserPresenter.loadAsset(assetId, loadedAsset -> {
+                this.asset = loadedAsset;
+                this.dashboardAttributes = new AssetAttributes(asset).get().stream()
+                            .filter(AssetAttribute::isShowOnDashboard).collect(Collectors.toList());
+                assetBrowserPresenter.selectAsset(asset);
+                view.setAssetViewHistoryToken(environment.getPlaceHistoryMapper().getToken(
+                    new AssetViewPlace(assetId)
+                ));
+                showAssetOnMap();
+                if (asset.hasGeoFeature() || dashboardAttributes.size() > 0) {
+                    showAssetInfoItems();
+                    environment.getEventService().subscribe(
+                        AttributeEvent.class,
+                        new AttributeEvent.EntityIdFilter(asset.getId())
+                    );
+                }
+            });
+        } else if (realmId != null) {
+            // TODO: Tenant map not implemented
+        }
     }
 
-    protected String round(double d, int places) {
-        return new BigDecimal(d).setScale(places, RoundingMode.HALF_UP).toString();
+    protected void showAssetOnMap() {
+        if (asset.hasGeoFeature()) {
+            GeoJSON geoFeature = asset.getGeoFeature(30);
+            view.showDroppedPin(geoFeature);
+            view.flyTo(asset.getCoordinates());
+        }
     }
+
+    protected void showAssetInfoItems() {
+        List<Pair<String, String>> infoItems = dashboardAttributes.stream()
+            .map(attribute -> new Pair<>(attribute.getLabel(), format(attribute.getFormat(), attribute.getValueAsString())))
+            .collect(Collectors.toList());
+        if (asset.hasGeoFeature()) {
+            infoItems.add(0, new Pair<>(
+                environment.getMessages().location(),
+                asset.getCoordinatesLabel()
+            ));
+
+        }
+        view.showInfoItems(infoItems);
+    }
+
+    protected native static String format(String formatString, String value) /*-{
+        if (formatString === null)
+            return value;
+        return $wnd.sprintf(formatString, value);
+    }-*/;
+
 
 }

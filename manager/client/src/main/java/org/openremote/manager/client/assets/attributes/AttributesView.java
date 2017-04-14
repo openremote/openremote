@@ -31,7 +31,6 @@ import org.openremote.manager.client.event.ShowInfoEvent;
 import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.util.CollectionsUtil;
-import org.openremote.manager.client.util.TextUtil;
 import org.openremote.manager.client.widget.*;
 import org.openremote.model.AttributeType;
 import org.openremote.model.Constants;
@@ -40,6 +39,7 @@ import org.openremote.model.MetaItem;
 import org.openremote.model.asset.AbstractAssetAttribute;
 import org.openremote.model.asset.AbstractAssetAttributes;
 import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.util.TextUtil;
 
 import java.util.*;
 

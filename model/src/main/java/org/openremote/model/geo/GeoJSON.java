@@ -17,21 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.shared.map;
+package org.openremote.model.geo;
 
 import elemental.json.Json;
+import elemental.json.JsonArray;
 import elemental.json.JsonObject;
-import elemental.json.JsonValue;
+import elemental.json.JsonType;
 
-public class GeoJSONFeature {
+public class GeoJSON {
+
+    public static final GeoJSON EMPTY_FEATURE_COLLECTION = new GeoJSON().setType("FeatureCollection").setEmptyFeatures();
 
     protected JsonObject jsonObject;
 
-    public GeoJSONFeature() {
+    public GeoJSON() {
         this(Json.createObject());
     }
 
-    public GeoJSONFeature(JsonObject jsonObject) {
+    public GeoJSON(JsonObject jsonObject) {
         this.jsonObject = jsonObject;
     }
 
@@ -39,7 +42,7 @@ public class GeoJSONFeature {
         return jsonObject;
     }
 
-    public GeoJSONFeature setType(String type) {
+    public GeoJSON setType(String type) {
         jsonObject.put("type", type);
         return this;
     }
@@ -48,33 +51,36 @@ public class GeoJSONFeature {
         return jsonObject.hasKey("type") ? jsonObject.get("type").asString() : null;
     }
 
-    public GeoJSONFeature setProperty(String name, String value) {
-        return setProperty(name, Json.create(value));
-    }
-
-    public GeoJSONFeature setProperty(String name, double value) {
-        return setProperty(name, Json.create(value));
-    }
-
-    public GeoJSONFeature setProperty(String name, boolean value) {
-        return setProperty(name, Json.create(value));
-    }
-
-    protected GeoJSONFeature setProperty(String name, JsonValue value) {
-        JsonObject properties = jsonObject.hasKey("properties") ? jsonObject.getObject("properties") : Json.createObject();
-        properties.put(name, value);
-        if (!jsonObject.hasKey("properties"))
-            jsonObject.put("properties", properties);
-        return this;
-    }
-
-    public GeoJSONFeature setGeometry(GeoJSONGeometry geometry) {
-        if (geometry != null) {
-            jsonObject.put("geometry", geometry.getJsonObject());
+    public GeoJSON setFeatures(GeoJSONFeature... features) {
+        if (features != null) {
+            for (int i = 0; i < features.length; i++) {
+                GeoJSONFeature feature = features[i];
+                JsonArray array = Json.createArray();
+                array.set(i, feature.getJsonObject());
+                jsonObject.put("features", array);
+            }
         } else {
-            jsonObject.remove("geometry");
+            return setEmptyFeatures();
         }
         return this;
+    }
+
+    public GeoJSON setEmptyFeatures() {
+        jsonObject.put("features", Json.createArray());
+        return this;
+    }
+
+    public GeoJSONFeature[] getFeatures() {
+        if (jsonObject.hasKey("features") && jsonObject.get("features").getType() == JsonType.ARRAY) {
+            JsonArray array = jsonObject.getArray("features");
+            GeoJSONFeature[] result = new GeoJSONFeature[array.length()];
+            for (int i = 0; i < array.length(); i++) {
+                result[i] = new GeoJSONFeature(array.getObject(i));
+            }
+            return result;
+        } else {
+            return new GeoJSONFeature[0];
+        }
     }
 
     @Override

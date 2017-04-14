@@ -20,13 +20,21 @@
 package org.openremote.manager.client.map;
 
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.dom.client.Style;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
-import com.google.gwt.user.client.ui.InlineLabel;
-import com.google.gwt.user.client.ui.PopupPanel;
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.HTMLPanel;
+import com.google.gwt.user.client.ui.Label;
+import elemental.client.Browser;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.AbstractAppPanel;
+import org.openremote.manager.client.widget.FormLabel;
+import org.openremote.manager.client.widget.PopupPanel;
+import org.openremote.model.Pair;
+
+import java.util.List;
 
 public class MapInfoPanel extends AbstractAppPanel {
 
@@ -40,25 +48,43 @@ public class MapInfoPanel extends AbstractAppPanel {
     WidgetStyle widgetStyle;
 
     @UiField
-    InlineLabel infoLabel;
+    HTMLPanel panel;
+
+    @UiField
+    FlowPanel contentPanel;
 
     public MapInfoPanel() {
         super(GWT.create(UI.class));
     }
 
-    public void addStyleName(String styleName) {
-        getPopupPanel().addStyleName(styleName);
-    }
+    public void setItems(List<Pair<String, String>> infoItems) {
+        contentPanel.clear();
 
-    public void init() {
-        infoLabel.setText(null);
-    }
+        for (Pair<String, String> infoItem : infoItems) {
+            FormLabel keyLabel = new FormLabel(infoItem.key);
+            keyLabel.addStyleName("flex");
 
-    public void setInfoText(String text) {
-        infoLabel.setText(text);
-    }
+            Label valueLabel = new Label(infoItem.value);
+            valueLabel.getElement().getStyle().setFontSize(1.4, Style.Unit.EM);
 
-    public String getInfoText() {
-        return infoLabel.getText();
+            FlowPanel itemPanel = new FlowPanel();
+            itemPanel.setStyleName("layout horizontal center");
+            itemPanel.getElement().getStyle().setWhiteSpace(Style.WhiteSpace.NOWRAP);
+            itemPanel.getElement().getStyle().setMargin(0.2, Style.Unit.EM);
+            itemPanel.add(keyLabel);
+            itemPanel.add(valueLabel);
+            contentPanel.add(itemPanel);
+        }
+
+        // Show up to 6 items, then start scrolling
+        panel.setHeight(Math.min((infoItems.size() * 2.5), 15) + "em");
+
+        // If the panel is already shown, "blink" it so users know there is an update
+        if (isShowing()) {
+            contentPanel.addStyleName(widgetStyle.HighlightBackground());
+            Browser.getWindow().setTimeout(() -> {
+                contentPanel.removeStyleName(widgetStyle.HighlightBackground());
+            }, 250);
+        }
     }
 }

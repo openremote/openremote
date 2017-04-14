@@ -22,10 +22,16 @@ package org.openremote.model.asset;
 import elemental.json.JsonObject;
 import org.hibernate.annotations.Formula;
 import org.openremote.model.IdentifiableEntity;
+import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.geo.GeoJSONFeature;
+import org.openremote.model.geo.GeoJSONGeometry;
+import org.openremote.model.util.TextUtil;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Date;
 
@@ -217,7 +223,7 @@ public class Asset implements IdentifiableEntity {
     protected long version;
 
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition= "TIMESTAMP WITH TIME ZONE")
+    @Column(name = "CREATED_ON", updatable = false, nullable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
     @org.hibernate.annotations.CreationTimestamp
     protected Date createdOn = new Date();
 
@@ -474,6 +480,32 @@ public class Asset implements IdentifiableEntity {
 
     public void setAttributes(JsonObject attributes) {
         this.attributes = attributes;
+    }
+
+    /**
+     * This assumes {@link #getCoordinates} array index 0 is Lng and index 1 is Lat,
+     * which is true for PostGIS backend. Because Lat/Lng is the 'right way', we flip
+     * it here for display. Rounding to 5 decimal places gives us precision of about 1 meter.
+     */
+    public String getCoordinatesLabel() {
+        return
+            new BigDecimal(getCoordinates()[1]).setScale(5, RoundingMode.HALF_UP) + " " +
+                new BigDecimal(getCoordinates()[0]).setScale(5, RoundingMode.HALF_UP) + " Lat|Lng";
+    }
+
+    public boolean hasGeoFeature() {
+        return getCoordinates() != null && getCoordinates().length == 2;
+    }
+
+    public GeoJSON getGeoFeature(int maxNameLength) {
+        if (!hasGeoFeature())
+            return GeoJSON.EMPTY_FEATURE_COLLECTION;
+        return new GeoJSON().setType("FeatureCollection").setFeatures(
+            new GeoJSONFeature().setType("Feature")
+                .setProperty("id", getId())
+                .setProperty("title", TextUtil.ellipsize(getName(), maxNameLength))
+                .setGeometry(new GeoJSONGeometry().setPoint(getCoordinates()))
+        );
     }
 
     @Override

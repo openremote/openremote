@@ -29,7 +29,6 @@ import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
 import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
-import org.openremote.manager.client.map.MapView;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
@@ -121,17 +120,8 @@ public class AssetEditActivity
                 view::initialiseMap,
                 ex -> handleRequestException(ex, environment)
             );
-        }
-
-        asset = null;
-        if (assetId != null) {
-            assetBrowserPresenter.loadAsset(assetId, loadedAsset -> {
-                this.asset = loadedAsset;
-                assetBrowserPresenter.selectAsset(asset);
-                startEditAsset();
-            });
         } else {
-            startCreateAsset();
+            onMapReady();
         }
     }
 
@@ -143,6 +133,21 @@ public class AssetEditActivity
         }
         clearViewMessages();
         view.setPresenter(null);
+    }
+
+
+    @Override
+    public void onMapReady() {
+        asset = null;
+        if (assetId != null) {
+            assetBrowserPresenter.loadAsset(assetId, loadedAsset -> {
+                this.asset = loadedAsset;
+                assetBrowserPresenter.selectAsset(asset);
+                startEditAsset();
+            });
+        } else {
+            startCreateAsset();
+        }
     }
 
     @Override
@@ -294,7 +299,7 @@ public class AssetEditActivity
         view.setName(asset.getName());
         view.setCreatedOn(asset.getCreatedOn());
         view.setLocation(asset.getCoordinates());
-        view.showFeaturesSelection(MapView.getFeature(asset));
+        view.showDroppedPin(asset.getGeoFeature(20));
         view.flyTo(asset.getCoordinates());
         view.enableCreate(assetId == null);
         view.enableUpdate(assetId != null);

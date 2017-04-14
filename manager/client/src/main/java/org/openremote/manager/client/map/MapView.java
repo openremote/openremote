@@ -21,52 +21,28 @@ package org.openremote.manager.client.map;
 
 import com.google.gwt.user.client.ui.IsWidget;
 import elemental.json.JsonObject;
-import org.openremote.manager.client.util.TextUtil;
-import org.openremote.manager.shared.map.GeoJSON;
-import org.openremote.manager.shared.map.GeoJSONFeature;
-import org.openremote.manager.shared.map.GeoJSONGeometry;
-import org.openremote.model.asset.Asset;
+import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.Pair;
+
+import java.util.List;
 
 public interface MapView extends IsWidget {
 
-    static GeoJSON getFeature(Asset asset) {
-        if (asset == null
-            || asset.getId() == null
-            || asset.getName() == null
-            || asset.getCoordinates() == null)
-            return GeoJSON.EMPTY_FEATURE_COLLECTION;
-
-        return new GeoJSON().setType("FeatureCollection").setFeatures(
-            new GeoJSONFeature().setType("Feature")
-                .setProperty("id", asset.getId())
-                .setProperty("title", TextUtil.ellipsize(asset.getName(), 20))
-                .setGeometry(
-                    new GeoJSONGeometry().setPoint(
-                        asset.getCoordinates()
-                    )
-                )
-        );
-    }
-
     interface Presenter {
+        void onMapReady();
     }
 
     void setPresenter(Presenter presenter);
+
+    void setAssetViewHistoryToken(String token);
 
     void initialiseMap(JsonObject mapOptions);
 
     boolean isMapInitialised();
 
-    void showInfo(String text);
-
-    void showFeaturesAll(GeoJSON mapFeatures);
-
-    void hideFeaturesAll();
-
-    void showFeaturesSelection(GeoJSON mapFeatures);
-
-    void hideFeaturesSelection();
+    void showDroppedPin(GeoJSON geoFeature);
 
     void flyTo(double[] coordinates);
 
+    void showInfoItems(List<Pair<String, String>> infoItems);
 }

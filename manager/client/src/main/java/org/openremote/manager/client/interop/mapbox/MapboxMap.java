@@ -23,7 +23,6 @@ import com.google.gwt.core.client.JavaScriptObject;
 import elemental.dom.Node;
 import elemental.json.JsonArray;
 import elemental.json.JsonObject;
-import elemental.json.JsonValue;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 

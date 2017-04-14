@@ -31,8 +31,8 @@
         }
     </ui:style>
 
-    <g:PopupPanel glassEnabled="false" addStyleNames="{style.popup} {widgetStyle.PopupPanel}">
-        <g:FlowPanel ui:field="mainPanel" styleName="flex layout vertical">
+    <w:PopupPanel glassEnabled="false" addStyleNames="{style.popup} {widgetStyle.PopupPanel}">
+        <g:FlowPanel ui:field="mainPanel" styleName="layout vertical">
             <g:FlowPanel styleName="layout horizontal {style.header} {widgetStyle.PopupPanelHeader}">
                 <g:Label ui:field="headerLabel"/>
             </g:FlowPanel>
@@ -45,6 +45,6 @@
                          addStyleNames="{style.footer} {widgetStyle.PopupPanelFooter}">
             </g:FlowPanel>
         </g:FlowPanel>
-    </g:PopupPanel>
+    </w:PopupPanel>
 
 </ui:UiBinder>
