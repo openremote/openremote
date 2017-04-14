@@ -150,6 +150,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 ReadAttributesEvent event = exchange.getIn().getBody(ReadAttributesEvent.class);
                 LOG.fine("Handling from client: " + event);
 
+                if (event.getEntityId() == null || event.getEntityId().isEmpty())
+                    return;
+
                 String sessionKey = getSessionKey(exchange);
                 WebsocketAuth auth = getWebsocketAuth(exchange);
 

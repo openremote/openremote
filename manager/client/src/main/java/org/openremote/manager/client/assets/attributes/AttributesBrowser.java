@@ -25,7 +25,10 @@ import elemental.client.Browser;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.datapoint.DatapointBrowser;
 import org.openremote.manager.client.widget.*;
-import org.openremote.model.*;
+import org.openremote.model.AttributeEvent;
+import org.openremote.model.AttributeType;
+import org.openremote.model.Consumer;
+import org.openremote.model.ReadAttributesEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetAttributes;
@@ -142,18 +145,6 @@ public abstract class AttributesBrowser
 
     /* ####################################################################### */
 
-    protected void readAllAttributeValues() {
-        environment.getEventService().dispatch(
-            new ReadAttributesEvent(asset.getId())
-        );
-    }
-
-    protected void readAttributeValue(AssetAttribute attribute) {
-        environment.getEventService().dispatch(
-            new ReadAttributesEvent(attribute.getAssetId(), attribute.getName())
-        );
-    }
-
     protected FormGroup createLiveUpdatesGroup() {
         FormGroup formGroup = new FormGroup();
 
@@ -204,6 +195,25 @@ public abstract class AttributesBrowser
         }
     }
 
+    protected void readAllAttributeValues() {
+        environment.getEventService().dispatch(
+            new ReadAttributesEvent(asset.getId())
+        );
+    }
+
+    protected void readAttributeValue(AssetAttribute attribute) {
+        environment.getEventService().dispatch(
+            new ReadAttributesEvent(attribute.getAssetId(), attribute.getName())
+        );
+    }
+
+    protected void writeAttributeValue(AssetAttribute attribute) {
+        environment.getEventService().dispatch(
+            new AttributeEvent(attribute.getState())
+        );
+        showSuccess(container.getMessages().attributeWriteSent(attribute.getName()));
+    }
+
     protected void refreshAttribute(AssetAttribute attribute) {
 
         // Rebuild editor
@@ -228,14 +238,15 @@ public abstract class AttributesBrowser
             editor.asWidget().removeStyleName(environment.getWidgetStyle().HighlightBackground());
         }, 250);
 
-        // Refresh data point browser
+        // Refresh charts, jump to current time so the new value is visible
         FormGroup attributeFormGroup = attributeGroups.get(attribute);
         if (attributeFormGroup != null) {
-            DatapointBrowser datapointBrowser =
-                attributeFormGroup.getExtension(widget -> widget instanceof DatapointBrowser);
-            if (datapointBrowser != null) {
-                datapointBrowser.refresh(System.currentTimeMillis());
-            }
+            attributeFormGroup.forExtension(widget -> {
+                if (widget instanceof DatapointBrowser) {
+                    DatapointBrowser datapointBrowser = (DatapointBrowser) widget;
+                    datapointBrowser.refresh(System.currentTimeMillis());
+                }
+            });
         }
     }
 
@@ -255,8 +266,6 @@ public abstract class AttributesBrowser
     }
 
     /* ####################################################################### */
-
-    abstract protected void writeAttributeValue(AssetAttribute attribute);
 
     abstract protected void getNumberDatapoints(AssetAttribute assetAttribute,
                                                 DatapointInterval interval,

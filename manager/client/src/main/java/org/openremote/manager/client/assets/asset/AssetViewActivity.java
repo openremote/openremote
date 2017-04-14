@@ -191,19 +191,6 @@ public class AssetViewActivity
             asset
         ) {
             @Override
-            protected void writeAttributeValue(AssetAttribute attribute) {
-                environment.getRequestService().execute(
-                    (EntityWriter<String>) value -> value,
-                    requestParams -> assetResource.writeAttributeValue(
-                        requestParams, assetId, attribute.getName(), attribute.getValue().toJson()
-                    ),
-                    204,
-                    () -> showSuccess(container.getMessages().attributeWriteSent(attribute.getName())),
-                    ex -> handleRequestException(ex, environment)
-                );
-            }
-
-            @Override
             protected void getNumberDatapoints(AssetAttribute attribute,
                                                DatapointInterval interval,
                                                long timestamp,

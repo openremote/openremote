@@ -24,6 +24,7 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
+import org.openremote.container.web.socket.WebsocketAuth;
 import org.openremote.manager.server.agent.AgentService;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
 import org.openremote.manager.server.event.EventService;
@@ -41,6 +42,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.openremote.agent3.protocol.Protocol.SENSOR_QUEUE;
+import static org.openremote.manager.server.event.EventService.INCOMING_EVENT_TOPIC;
+import static org.openremote.manager.server.event.EventService.getWebsocketAuth;
 
 /**
  * Receives {@link AttributeEvent}s and processes them.
@@ -158,7 +161,9 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     return true;
 
                 // Regular user must have role
-                auth.isUserInRole(ClientRole.READ_ASSETS.getValue());
+                if (!auth.isUserInRole(ClientRole.READ_ASSETS.getValue())) {
+                    return false;
+                }
 
                 if (managerIdentityService.isRestrictedUser(auth.getUserId())) {
                     // Restricted users can only get attribute events for their linked assets
@@ -216,6 +221,54 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
                 LOG.fine("Received on asset queue: " + event);
                 updateAttributeValue(event);
+            });
+
+        // React if a client wants to write attribute state
+        from(INCOMING_EVENT_TOPIC)
+            .filter(body().isInstanceOf(AttributeEvent.class))
+            .process(exchange -> {
+                AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
+                LOG.fine("Handling from client: " + event);
+
+                if (event.getEntityId() == null || event.getEntityId().isEmpty())
+                    return;
+
+                WebsocketAuth auth = getWebsocketAuth(exchange);
+
+                // Superuser can write all
+                if (auth.isSuperUser()) {
+                    sendAttributeEvent(event);
+                    return;
+                }
+
+                // Regular user must have role
+                if (!auth.isUserInRole(ClientRole.WRITE_ASSETS.getValue())) {
+                    return;
+                }
+
+                ServerAsset asset;
+                // Restricted users can only write attribute events for their linked assets
+                if (managerIdentityService.isRestrictedUser(auth.getUserId())) {
+                    if (!assetStorageService.isUserAsset(auth.getUserId(), event.getEntityId()))
+                        return;
+                    asset = assetStorageService.find(event.getEntityId(), true, true);
+                } else {
+                    asset = assetStorageService.find(event.getEntityId(), true);
+                }
+
+                if (asset == null)
+                    return;
+
+                // Attribute must exist
+                if (!new AssetAttributes(asset).hasAttribute(event.getAttributeName()))
+                    return;
+
+                // Regular users can only write attribute events for assets in their realm
+                if (!asset.getTenantRealm().equals(auth.getAuthenticatedRealm()))
+                    return;
+
+                // Put it on the asset queue
+                sendAttributeEvent(event);
             });
     }
 
@@ -363,7 +416,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             processorLoop:
             for (Consumer<AssetState> processor : processors) {
                 try {
-                    LOG.fine("Processor " + processor + " accepts: " + assetState);
+                    LOG.fine("==> Processor " + processor + " accepts: " + assetState);
                     processor.accept(assetState);
                 } catch (Throwable t) {
                     LOG.log(Level.SEVERE, "Asset update consumer '" + processor + "' threw an exception whilst consuming the update:" + assetState, t);
@@ -373,11 +426,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
                 switch (assetState.getProcessingStatus()) {
                     case HANDLED:
-                        LOG.fine("Processor " + processor + " finally handled: " + assetState);
+                        LOG.fine("<== Processor " + processor + " finally handled: " + assetState);
                         break processorLoop;
                     case ERROR:
                         // TODO Better error handling, not sure we need rewind?
-                        LOG.severe("Asset update status is '" + assetState.getProcessingStatus() + "' cannot continue processing");
+                        LOG.severe("!!! Asset update status is '" + assetState.getProcessingStatus() + "' cannot continue processing");
                         assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
                         throw new RuntimeException("Processor " + processor + " error: " + assetState, assetState.getError());
                 }

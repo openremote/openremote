@@ -22,6 +22,7 @@ package org.openremote.manager.client.widget;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.uibinder.client.UiChild;
 import com.google.gwt.user.client.ui.*;
+import org.openremote.model.Consumer;
 
 import java.util.function.Function;
 import java.util.logging.Logger;
@@ -140,14 +141,10 @@ public class FormGroup extends FlowPanel implements HasWidgets {
         return removed;
     }
 
-    @SuppressWarnings("unchecked")
-    public <W extends Widget> W getExtension(Function<Widget, Boolean> matcher) {
+    public void forExtension(Consumer<Widget> extension) {
         for (int i = 0; i < extensionPanel.getWidgetCount(); i++) {
-            Widget w = extensionPanel.getWidget(i);
-            if (matcher.apply(w))
-                return (W) w;
+            extension.accept(extensionPanel.getWidget(i));
         }
-        return null;
     }
 
     public FormLabel getFormLabel() {
