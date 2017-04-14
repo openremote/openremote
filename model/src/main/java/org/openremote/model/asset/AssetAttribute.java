@@ -28,7 +28,8 @@ import java.util.List;
 import static org.openremote.model.asset.AssetMeta.*;
 import static org.openremote.model.asset.AssetMeta.AGENT_LINK;
 
-public class AssetAttribute extends Attribute<AssetAttribute> {
+public class AssetAttribute extends Attribute {
+
     final protected String assetId;
 
     public AssetAttribute(String name, AttributeType type) {
@@ -63,11 +64,19 @@ public class AssetAttribute extends Attribute<AssetAttribute> {
         this.assetId = assetAttribute.getAssetId();
     }
 
+    @Override
+    public AssetAttribute setMeta(Meta meta) {
+        return (AssetAttribute) super.setMeta(meta);
+    }
+
     public String getAssetId() {
         return assetId;
     }
 
     public AttributeRef getReference() {
+        if (getAssetId() == null) {
+            throw new IllegalStateException("Asset identifier not set on: " + this);
+        }
         return new AttributeRef(getAssetId(), getName());
     }
 

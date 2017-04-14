@@ -32,7 +32,7 @@ import java.util.function.Predicate;
 /**
  * Convenience overlay API for {@link JsonObject}.
  */
-public abstract class Attribute<CHILD extends Attribute<CHILD>> extends AbstractValueTimestampHolder<CHILD> {
+public abstract class Attribute extends AbstractValueTimestampHolder {
 
     public static final String TYPE_FIELD_NAME = "type";
     public static final String META_FIELD_NAME = "meta";
@@ -63,7 +63,7 @@ public abstract class Attribute<CHILD extends Attribute<CHILD>> extends Abstract
         setValue(value);
     }
 
-    protected Attribute(CHILD attribute) {
+    protected Attribute(Attribute attribute) {
         this(attribute.getName(), attribute.getType(), attribute.getJsonObject());
     }
 
@@ -97,13 +97,12 @@ public abstract class Attribute<CHILD extends Attribute<CHILD>> extends Abstract
     }
 
     @SuppressWarnings("unchecked")
-    public CHILD setType(AttributeType type) {
+    public void setType(AttributeType type) {
         if (type != null) {
             jsonObject.put(TYPE_FIELD_NAME, Json.create(type.getValue()));
         }/* else if (jsonObject.hasKey(TYPE_FIELD_NAME)) {
             jsonObject.remove(TYPE_FIELD_NAME);
         }*/
-        return (CHILD)this;
     }
 
     public boolean hasMeta() {
@@ -115,13 +114,13 @@ public abstract class Attribute<CHILD extends Attribute<CHILD>> extends Abstract
     }
 
     @SuppressWarnings("unchecked")
-    public CHILD setMeta(Meta meta) {
+    public Attribute setMeta(Meta meta) {
         if (meta != null) {
             jsonObject.put(META_FIELD_NAME, meta.getJsonArray());
         } else if (jsonObject.hasKey(META_FIELD_NAME)) {
             jsonObject.remove(META_FIELD_NAME);
         }
-        return (CHILD) this;
+        return this;
     }
 
     public boolean hasMetaItem(String name) {

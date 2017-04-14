@@ -26,7 +26,7 @@ import elemental.json.*;
  * {@link JsonObject} that has a <code>value</code> field that accepts any
  * {@link JsonValue}.
  */
-public abstract class AbstractValueHolder<CHILD extends AbstractValueHolder> {
+public abstract class AbstractValueHolder {
     
     protected static final String VALUE_FIELD_NAME = "value";
 
@@ -78,28 +78,28 @@ public abstract class AbstractValueHolder<CHILD extends AbstractValueHolder> {
         jsonObject.remove(VALUE_FIELD_NAME);
     }
 
-    public CHILD setValueAsString(String value) {
-        return setValue(value == null ? Json.createNull() : Json.create(value));
+    public void setValueAsString(String value) {
+        setValue(value == null ? Json.createNull() : Json.create(value));
     }
 
-    public CHILD setValueAsInteger(Integer value) {
-        return setValue(value == null ? Json.createNull() : Json.create(value));
+    public void setValueAsInteger(Integer value) {
+        setValue(value == null ? Json.createNull() : Json.create(value));
     }
 
-    public CHILD setValueAsDecimal(Double value) {
-        return setValue(value == null ? Json.createNull() : Json.create(value));
+    public void setValueAsDecimal(Double value) {
+        setValue(value == null ? Json.createNull() : Json.create(value));
     }
 
-    public CHILD setValueAsBoolean(Boolean value) {
-        return setValue(value == null ? Json.createNull() : Json.create(value));
+    public void setValueAsBoolean(Boolean value) {
+        setValue(value == null ? Json.createNull() : Json.create(value));
     }
 
-    public CHILD setValueAsObject(JsonObject value) {
-        return setValue(value == null ? Json.createNull() : value);
+    public void setValueAsObject(JsonObject value) {
+        setValue(value == null ? Json.createNull() : value);
     }
 
-    public CHILD setValueAsArray(JsonArray value) {
-        return setValue(value == null ? Json.createNull() : value);
+    public void setValueAsArray(JsonArray value) {
+        setValue(value == null ? Json.createNull() : value);
     }
 
     /**
@@ -115,7 +115,7 @@ public abstract class AbstractValueHolder<CHILD extends AbstractValueHolder> {
      * @throws IllegalArgumentException if the given value is invalid and failed constraint checking.
      */
     @SuppressWarnings("unchecked")
-    public CHILD setValue(JsonValue value) throws IllegalArgumentException {
+    public void setValue(JsonValue value) throws IllegalArgumentException {
 
         if (value == null) {
             value = Json.createNull();
@@ -131,8 +131,6 @@ public abstract class AbstractValueHolder<CHILD extends AbstractValueHolder> {
         }
 
         jsonObject.put(VALUE_FIELD_NAME, value);
-
-        return (CHILD) this;
     }
 
     /**

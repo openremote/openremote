@@ -29,7 +29,7 @@ import org.openremote.model.asset.AssetMeta;
  * <p>
  * Name should be a URI, thus avoiding collisions and representing "ownership" of the meta item.
  */
-public class MetaItem extends AbstractValueHolder<MetaItem> {
+public class MetaItem extends AbstractValueHolder {
 
     public MetaItem() {
         this(Json.createObject());

@@ -19,9 +19,10 @@
  */
 package org.openremote.model;
 
-import elemental.json.*;
-
-import java.time.LocalDateTime;
+import elemental.json.Json;
+import elemental.json.JsonObject;
+import elemental.json.JsonType;
+import elemental.json.JsonValue;
 
 /**
  * Base class for all model classes which have to internally store data in a
@@ -29,7 +30,7 @@ import java.time.LocalDateTime;
  * {@link JsonValue} and a <code>valueTimestamp</code> timestamp field, in
  * milliseconds since the Unix epoch, of the most recent value change.
  */
-public abstract class AbstractValueTimestampHolder<CHILD extends AbstractValueTimestampHolder> extends AbstractValueHolder<CHILD> {
+public abstract class AbstractValueTimestampHolder extends AbstractValueHolder {
 
     public static final String VALUE_TIMESTAMP_FIELD_NAME = "valueTimestamp";
 
@@ -51,17 +52,16 @@ public abstract class AbstractValueTimestampHolder<CHILD extends AbstractValueTi
     /**
      * Sets the value timestamp to current system time.
      */
-    public CHILD setValueTimestamp() {
-        return setValueTimestamp(System.currentTimeMillis());
+    public void setValueTimestamp() {
+        setValueTimestamp(System.currentTimeMillis());
     }
 
     /**
      * Sets the value timestamp to given time.
      */
     @SuppressWarnings("unchecked")
-    public CHILD setValueTimestamp(long timestamp) {
+    public void setValueTimestamp(long timestamp) {
         jsonObject.put(VALUE_TIMESTAMP_FIELD_NAME, Json.create(timestamp));
-        return (CHILD) this;
     }
 
     /**
@@ -76,20 +76,18 @@ public abstract class AbstractValueTimestampHolder<CHILD extends AbstractValueTi
     /**
      * Sets the value and the timestamp to given time.
      */
-    public CHILD setValue(JsonValue value, long timestamp) throws IllegalArgumentException {
-        CHILD result = setValue(value);
+    public void setValue(JsonValue value, long timestamp) throws IllegalArgumentException {
+        setValue(value);
         setValueTimestamp(timestamp);
-        return result;
     }
 
     /**
      * Sets the value and the timestamp to current system time.
      */
     @Override
-    public CHILD setValue(JsonValue value) throws IllegalArgumentException {
-        CHILD result = super.setValue(value);
+    public void setValue(JsonValue value) throws IllegalArgumentException {
+        super.setValue(value);
         setValueTimestamp();
-        return result;
     }
 
     /**

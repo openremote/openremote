@@ -22,6 +22,7 @@ package org.openremote.model.asset;
 import java.util.List;
 
 public interface AttributeWrapperFilter<CHILD> {
+
     List<CHILD> getAllWrapped(List<AssetAttribute> assetAttributes, boolean excludeInvalid);
 
     List<AssetAttribute> getAll(List<AssetAttribute> assetAttributes, boolean excludeInvalid);
