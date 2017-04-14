@@ -14,7 +14,7 @@ import spock.lang.Specification
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM
 
-@Ignore // TODO Fix broken test
+
 class NotificationServiceTest extends Specification implements ManagerContainerTrait {
 
     def "Store notification tokens for user devices"() {
@@ -44,7 +44,7 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
         def alertAction = new AlertAction();
 
         alertAction.setTitle("TEST_ACTION")
-        alertAction.setType(ActionType.ACTION_TYPE1)
+        alertAction.setType(ActionType.ACTUATOR)
         notificationAlert.addAction(alertAction)
 
         and: "the notification resource"
