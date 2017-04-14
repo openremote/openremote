@@ -16,6 +16,9 @@ import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
+import retrofit2.converter.scalars.ScalarsConverterFactory;
+
+import static android.R.attr.id;
 
 
 public class TokenService {
@@ -33,6 +36,7 @@ public class TokenService {
     public TokenService(Context context) {
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(context.getString(R.string.OR_BASE_SERVER))
+                .addConverterFactory(ScalarsConverterFactory.create())
                 .addConverterFactory(JacksonConverterFactory.create())
                 .build();
 
@@ -84,7 +88,11 @@ public class TokenService {
             public void onResponse(Call<Map<String, String>> call, Response<Map<String, String>> response) {
                 Log.i("TOKEN_SERVICE", "response : " + response.body());
                 if (response.body() != null) {
-                    callback.onToken("Bearer " + response.body().get("access_token"));
+                    try {
+                        callback.onToken("Bearer " + response.body().get("access_token"));
+                    } catch (IOException e) {
+                        callback.onFailure(e);
+                    }
                 } else {
                     callback.onFailure(new NullPointerException());
                 }
@@ -163,5 +171,39 @@ public class TokenService {
         editor.remove(refreshTokenKey);
         editor.remove(tokenIdKey);
         editor.commit();
+    }
+
+    public void deleteAlert(final Long id) {
+
+        getAuthorization(new TokenCallback() {
+            @Override
+            public void onToken(String accessToken) throws IOException {
+                notificationService.deleteNotification(realm, accessToken,id).execute();
+
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                Log.e("TOKEN_SERVICE","Error deleting notification",t);
+            }
+        });
+
+
+    }
+
+    public void executeAction(final AlertAction alertAction) {
+        getAuthorization(new TokenCallback() {
+            @Override
+            public void onToken(String accessToken) throws IOException {
+                notificationService.updateAssetAction(realm, accessToken,alertAction.getAssetId(),alertAction.getAttributeName(),alertAction.getRawJson()).execute();
+
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                Log.e("TOKEN_SERVICE","Error deleting notification",t);
+            }
+        });
+
     }
 }

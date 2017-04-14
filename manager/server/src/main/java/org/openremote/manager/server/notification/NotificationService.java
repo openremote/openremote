@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.server.notification;
 
+import org.apache.http.NoHttpResponseException;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
@@ -35,6 +36,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.Response;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class NotificationService implements ContainerService {
@@ -105,16 +107,20 @@ public class NotificationService implements ContainerService {
             if (fcmKey != null) {
                 List<DeviceNotificationToken> allTokenForUser = findAllTokenForUser(userId);
                 for (DeviceNotificationToken notificationToken : allTokenForUser) {
-                    Invocation.Builder builder = target.request().header("Authorization", "key="+fcmKey);
-                    Response response = builder.post(Entity.entity(new FCMMessage(notificationToken.getToken()), "application/json"));
-                    if (response.getStatus() != 200) {
-                        LOG.severe("Error send FCM notification status=["+response.getStatus()+"], statusInformation=[" +response.getStatusInfo()+"]");
+
+                    try {
+                        Invocation.Builder builder = target.request().header("Authorization", "key=" + fcmKey);
+                        Response response = builder.post(Entity.entity(new FCMMessage(notificationToken.getToken()), "application/json"));
+                        if (response.getStatus() != 200) {
+                            LOG.severe("Error send FCM notification status=[" + response.getStatus() + "], statusInformation=[" + response.getStatusInfo() + "]");
+                        }
+                        response.close();
+                    } catch (Exception e) {
+                        LOG.log(Level.SEVERE, "Error sending notiifcation to FCM", e);
                     }
-                    response.close();
                 }
             }
         });
-
 
 
     }
@@ -123,7 +129,7 @@ public class NotificationService implements ContainerService {
         return persistenceService.doReturningTransaction(entityManager -> {
             Query query = entityManager.createQuery("SELECT an FROM AlertNotification an WHERE an.userId =:userId and an.deliveryStatus =:deliveryStatus");
             query.setParameter("userId", userId);
-            query.setParameter("deliveryStatus",DeliveryStatus.PENDING);
+            query.setParameter("deliveryStatus", DeliveryStatus.PENDING);
             return query.getResultList();
         });
     }
@@ -132,9 +138,9 @@ public class NotificationService implements ContainerService {
         persistenceService.doTransaction(entityManager -> {
             Query query = entityManager.createQuery("UPDATE AlertNotification SET deliveryStatus=:status  WHERE id =:id");
             query.setParameter("id", id);
-            query.setParameter("status",DeliveryStatus.DELIVERED);
+            query.setParameter("status", DeliveryStatus.DELIVERED);
             query.executeUpdate();
-            });
+        });
     }
 
     public List<String> findAllUsersWithToken() {
@@ -147,5 +153,15 @@ public class NotificationService implements ContainerService {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{}";
+    }
+
+    public List<String> findAllUsersWithTokenForAsset(String assetId) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+
+            Query query = entityManager.createQuery("SELECT DISTINCT dnt.id.userId FROM DeviceNotificationToken dnt, UserAsset us WHERE us.userId = dnt.id.userId AND us.assetId = :assetId");
+            query.setParameter("assetId", assetId);
+            return query.getResultList();
+        });
+
     }
 }

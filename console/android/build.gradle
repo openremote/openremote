@@ -35,6 +35,7 @@ dependencies {
     compile "com.google.firebase:firebase-core:$fcmVersion"
     compile "com.google.firebase:firebase-messaging:$fcmVersion"
     compile "com.squareup.retrofit2:converter-jackson:$jacksonVersion"
+    compile "com.squareup.retrofit2:converter-scalars:$retrofitVersion"
 }
 
 android {

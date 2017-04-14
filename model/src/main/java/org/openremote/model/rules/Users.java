@@ -32,6 +32,8 @@ import java.util.List;
 public abstract class Users {
 
     public abstract class RestrictedQuery extends UserQuery<RestrictedQuery> {
+        public String assetId;
+
         abstract public List<String> getResults();
 
         abstract public void applyResults(Consumer<List<String>> assetIdListConsumer);

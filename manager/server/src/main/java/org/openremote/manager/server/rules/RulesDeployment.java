@@ -626,7 +626,12 @@ public class RulesDeployment<T extends Ruleset> {
 
                     @Override
                     public List<String> getResults() {
-                        return notificationService.findAllUsersWithToken();
+                        if (assetId != null) {
+                            return notificationService.findAllUsersWithTokenForAsset(assetId);
+                        } else {
+
+                            return notificationService.findAllUsersWithToken();
+                        }
                     }
 
                     @Override
@@ -636,6 +641,7 @@ public class RulesDeployment<T extends Ruleset> {
                 };
 
                 if (TenantRuleset.class.isAssignableFrom(rulesetType)) {
+
                     //TODO: restrict users of tenant
                 }
                 if (AssetRuleset.class.isAssignableFrom(rulesetType)) {
@@ -643,6 +649,7 @@ public class RulesDeployment<T extends Ruleset> {
                     if (restrictedAsset == null) {
                         throw new IllegalStateException("Asset is no longer available for this deployment: " + id);
                     }
+                    query.assetId = id;
                     //TODO: restrict users of assets
                 }
                 return query;

@@ -245,6 +245,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             // Check attribute exists
             AssetAttributes attributes = new AssetAttributes(asset);
+
             if (!attributes.hasAttribute(attributeName))
                 throw new WebApplicationException(NOT_FOUND);
 

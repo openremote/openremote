@@ -43,6 +43,10 @@
             </intent-filter>
         </service>
 
+        <service android:name="org.openremote.android.ORMessagingActionService">
+
+        </service>
+
         <service
             android:name="org.openremote.android.ORFirebaseInstanceIDService">
             <intent-filter>

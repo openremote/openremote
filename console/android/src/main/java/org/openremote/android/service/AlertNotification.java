@@ -92,7 +92,7 @@ public class AlertNotification implements Serializable {
 
 
     public enum ActionType {
-        ACTION_TYPE1,
-        ACTION_TYPE2
+        ACTUATOR,
+        LINK
     }
 }

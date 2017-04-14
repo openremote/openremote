@@ -113,10 +113,10 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
 
     private void sendNotification(AlertNotification alertNotification) {
         int notificationId = alertNotification.getId().hashCode();
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.putExtra("notifcation", alertNotification);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, notificationId, intent,
+        Intent intent = new Intent(this, ORMessagingActionService.class);
+        intent.putExtra("notification", alertNotification);
+
+        PendingIntent pendingIntent = PendingIntent.getService(this, notificationId, intent,
                 PendingIntent.FLAG_ONE_SHOT);
 
 
@@ -125,14 +125,19 @@ public class ORFirebaseMessagingService extends com.google.firebase.messaging.Fi
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
                 .setContentTitle(alertNotification.getTitle())
                 .setContentText(alertNotification.getMessage())
-
+                .setDeleteIntent(pendingIntent)
                 .setSmallIcon(R.drawable.app_icon)
-                .setAutoCancel(true)
                 .setWhen(0)
                 .setSound(defaultSoundUri);
 
         for (AlertAction alertAction : alertNotification.getActions()) {
-            notificationBuilder = notificationBuilder.addAction(new NotificationCompat.Action(R.drawable.empty, alertAction.getTitle(), pendingIntent));
+            Intent actionIntent = new Intent(this, ORMessagingActionService.class);
+            actionIntent.putExtra("action", alertAction);
+            actionIntent.putExtra("notification", alertNotification);
+            actionIntent.setAction(Long.toString(System.currentTimeMillis()));
+            PendingIntent actionPendingIntent = PendingIntent.getService(this, notificationId, actionIntent,
+                    PendingIntent.FLAG_ONE_SHOT);
+            notificationBuilder = notificationBuilder.addAction(new NotificationCompat.Action(R.drawable.empty, alertAction.getTitle(), actionPendingIntent));
         }
 
         NotificationManager notificationManager =
