@@ -50,6 +50,7 @@ import static org.openremote.agent3.protocol.Protocol.ACTUATOR_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForAssetType;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
+import static org.openremote.model.asset.Asset.ATTRIBUTE_PROPERTY_NAME;
 import static org.openremote.model.asset.AssetType.AGENT;
 
 /**
@@ -140,7 +141,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             case UPDATE:
 
                 // Check if any protocol config attributes have been added/removed or modified
-                int attributesIndex = Arrays.asList(persistenceEvent.getPropertyNames()).indexOf("attributes");
+                int attributesIndex = Arrays.asList(persistenceEvent.getPropertyNames()).indexOf(ATTRIBUTE_PROPERTY_NAME);
                 if (attributesIndex < 0) {
                     return;
                 }
@@ -209,7 +210,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             case UPDATE:
 
                 // Check if attributes of the asset have been modified
-                int attributesIndex = Arrays.asList(persistenceEvent.getPropertyNames()).indexOf("attributes");
+                int attributesIndex = Arrays.asList(persistenceEvent.getPropertyNames()).indexOf(ATTRIBUTE_PROPERTY_NAME);
                 if (attributesIndex < 0) {
                     return;
                 }

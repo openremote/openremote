@@ -215,7 +215,7 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 // @formatter:on
 @MappedSuperclass
 public class Asset implements IdentifiableEntity {
-
+    public static final String ATTRIBUTE_PROPERTY_NAME = "attrs";
 
     @Id
     @Column(name = "ID", length = 27)
