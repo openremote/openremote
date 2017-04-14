@@ -231,7 +231,8 @@ public abstract class AttributesBrowser
         // Refresh data point browser
         FormGroup attributeFormGroup = attributeGroups.get(attribute);
         if (attributeFormGroup != null) {
-            DatapointBrowser datapointBrowser = attributeFormGroup.getExtensionOfType(DatapointBrowser.class);
+            DatapointBrowser datapointBrowser =
+                attributeFormGroup.getExtension(widget -> widget instanceof DatapointBrowser);
             if (datapointBrowser != null) {
                 datapointBrowser.refresh(System.currentTimeMillis());
             }

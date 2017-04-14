@@ -23,6 +23,7 @@ import com.google.gwt.dom.client.Style;
 import com.google.gwt.uibinder.client.UiChild;
 import com.google.gwt.user.client.ui.*;
 
+import java.util.function.Function;
 import java.util.logging.Logger;
 
 /**
@@ -140,10 +141,10 @@ public class FormGroup extends FlowPanel implements HasWidgets {
     }
 
     @SuppressWarnings("unchecked")
-    public <W extends Widget> W getExtensionOfType(Class<W> widgetType) {
+    public <W extends Widget> W getExtension(Function<Widget, Boolean> matcher) {
         for (int i = 0; i < extensionPanel.getWidgetCount(); i++) {
             Widget w = extensionPanel.getWidget(i);
-            if (widgetType.equals(w.getClass()))
+            if (matcher.apply(w))
                 return (W) w;
         }
         return null;
