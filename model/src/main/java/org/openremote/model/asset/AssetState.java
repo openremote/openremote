@@ -66,11 +66,11 @@ public class AssetState extends AbstractAssetUpdate {
 
     protected Throwable error;
 
-    public AssetState(Asset asset, AbstractAssetAttribute attribute) {
+    public AssetState(Asset asset, AssetAttribute attribute) {
         super(asset, attribute);
     }
 
-    public AssetState(Asset asset, AbstractAssetAttribute attribute, JsonValue oldValue, long oldValueTimestamp, boolean northbound) {
+    public AssetState(Asset asset, AssetAttribute attribute, JsonValue oldValue, long oldValueTimestamp, boolean northbound) {
         super(asset, attribute, oldValue, oldValueTimestamp, northbound);
     }
 
@@ -93,7 +93,7 @@ public class AssetState extends AbstractAssetUpdate {
     // GETTERS AND SETTERS BELOW CAN ONLY BE USED WHEN STATUS IS NOT COMPLETED
     /////////////////////////////////////////////////////////////////
 
-    public AbstractAssetAttribute getAttribute() {
+    public AssetAttribute getAttribute() {
         if (!isCompleted()) {
             return attribute;
         }

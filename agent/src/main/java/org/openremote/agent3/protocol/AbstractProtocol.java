@@ -24,11 +24,13 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
 import org.openremote.container.message.MessageBrokerContext;
+import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.AttributeState;
-import org.openremote.model.asset.thing.ThingAttribute;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.agent.ProtocolConfiguration;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -48,21 +50,25 @@ public abstract class AbstractProtocol implements Protocol {
         };
     }
 
-    final protected Map<AttributeRef, ThingAttribute> linkedAttributes = new HashMap<>();
+    final protected Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
     protected MessageBrokerContext messageBrokerContext;
     protected ProducerTemplate producerTemplate;
 
     @Override
     public void init(Container container) throws Exception {
         LOG.info("Initializing protocol: " + getProtocolName());
-        this.messageBrokerContext = container.getService(MessageBrokerSetupService.class).getContext();
-        this.producerTemplate = messageBrokerContext.createProducerTemplate();
     }
 
     @Override
     public void start(Container container) throws Exception {
+        LOG.fine("Starting protocol: " + getProtocolName());
+        this.messageBrokerContext = container.getService(MessageBrokerSetupService.class).getContext();
+        this.producerTemplate = container.getService(MessageBrokerService.class).getProducerTemplate();
+    }
+
+    @Override
+    public void allStarted(Container container) throws Exception {
         synchronized (linkedAttributes) {
-            LOG.fine("Starting: " + getProtocolName());
             messageBrokerContext.addRoutes(new RouteBuilder() {
                 @Override
                 public void configure() throws Exception {
@@ -92,40 +98,45 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     @Override
-    public void linkAttributes(Collection<ThingAttribute> attributes) throws Exception {
+    public void linkAttributes(Collection<AssetAttribute> attributes, ProtocolConfiguration protocolConfiguration) throws Exception {
         synchronized (linkedAttributes) {
-            for (ThingAttribute attribute : attributes) {
+            attributes.forEach(attribute -> {
                 if (linkedAttributes.containsKey(attribute.getReference())) {
                     LOG.fine("Attribute updated on '" + getProtocolName() + "': " + attribute);
-                    onAttributeUpdated(attribute);
+                    onAttributeUpdated(attribute, protocolConfiguration);
                     linkedAttributes.put(attribute.getReference(), attribute);
                 } else {
                     LOG.fine("Attribute added on '" + getProtocolName() + "': " + attribute);
-                    onAttributeAdded(attribute);
+                    onAttributeAdded(attribute, protocolConfiguration);
                     linkedAttributes.put(attribute.getReference(), attribute);
                 }
-            }
+            });
         }
     }
 
     @Override
-    public void unlinkAttributes(Collection<ThingAttribute> attributes) throws Exception {
+    public void unlinkAttributes(Collection<AssetAttribute> attributes, ProtocolConfiguration protocolConfiguration) throws Exception {
         synchronized (linkedAttributes) {
             attributes
                     .stream()
-                    .filter(thingAttribute -> linkedAttributes.values()
+                    .filter(attribute -> linkedAttributes.values()
                                     .stream()
-                                    .anyMatch(linkedAttribute -> linkedAttribute.getReference().equals(thingAttribute.getReference()))
+                                    .anyMatch(linkedAttribute ->
+                                        linkedAttribute
+                                            .getReference()
+                                            .equals(attribute.getReference()))
                     )
                     .forEach(attributeToRemove -> {
-                        linkedAttributes.remove(attributeToRemove.getReference());
+                        AttributeRef agentLinkedAttributeRef = attributeToRemove.getReference();
+
+                        linkedAttributes.remove(agentLinkedAttributeRef);
                         LOG.fine("Attribute removed on '" + getProtocolName() + "': " + attributeToRemove);
-                        onAttributeRemoved(attributeToRemove);
+                        onAttributeRemoved(attributeToRemove, protocolConfiguration);
                     });
         }
     }
 
-    protected ThingAttribute getLinkedAttribute(AttributeRef attributeRef) {
+    protected AssetAttribute getLinkedAttribute(AttributeRef attributeRef) {
         synchronized (linkedAttributes) {
             return linkedAttributes.get(attributeRef);
         }
@@ -151,10 +162,9 @@ public abstract class AbstractProtocol implements Protocol {
 
     abstract protected void sendToActuator(AttributeEvent event);
 
-    abstract protected void onAttributeAdded(ThingAttribute attribute);
+    abstract protected void onAttributeAdded(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration);
 
-    abstract protected void onAttributeUpdated(ThingAttribute attribute);
+    abstract protected void onAttributeUpdated(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration);
 
-    abstract protected void onAttributeRemoved(ThingAttribute attribute);
-
+    abstract protected void onAttributeRemoved(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration);
 }

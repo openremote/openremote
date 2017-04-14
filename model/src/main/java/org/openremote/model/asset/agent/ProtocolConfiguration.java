@@ -20,14 +20,14 @@
 package org.openremote.model.asset.agent;
 
 import elemental.json.Json;
-import elemental.json.JsonObject;
-import elemental.json.JsonValue;
-import org.openremote.model.*;
-import org.openremote.model.asset.AbstractAssetAttribute;
-import org.openremote.model.asset.Asset;
+import org.openremote.model.AttributeType;
+import org.openremote.model.Constants;
+import org.openremote.model.Meta;
+import org.openremote.model.MetaItem;
+import org.openremote.model.asset.AbstractAttributeWrapper;
+import org.openremote.model.asset.AttributeWrapperFilter;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
-import org.openremote.model.asset.thing.ThingAttribute;
 
 import java.util.List;
 import java.util.Locale;
@@ -38,26 +38,59 @@ import java.util.stream.Collectors;
  * <p>
  * Configuration details are managed as {@link Meta} of the attribute.
  */
-public class ProtocolConfiguration extends AgentAttribute<ProtocolConfiguration> {
+public class ProtocolConfiguration extends AbstractAttributeWrapper<ProtocolConfiguration> {
+    public static class Filter implements AttributeWrapperFilter<ProtocolConfiguration> {
+        @Override
+        public List<ProtocolConfiguration> getAllWrapped(List<AssetAttribute> assetAttributes, boolean excludeInvalid) {
+            return getAll(assetAttributes, excludeInvalid)
+                .stream()
+                .map(assetAttribute -> new ProtocolConfiguration(assetAttribute, false))
+                .collect(Collectors.toList());
+        }
 
-    public ProtocolConfiguration(String name, String protocol) {
-        super(null, name, AttributeType.STRING, Json.create(protocol));
+        @Override
+        public List<AssetAttribute> getAll(List<AssetAttribute> assetAttributes, boolean excludeInvalid) {
+            // Macro Attribute wrappers should have macro protocol name as the attribute value
+            return assetAttributes
+                .stream()
+                .filter(attribute ->
+                    ProtocolConfiguration.valueIsProtocolUrn(attribute)
+                        && (!excludeInvalid || ProtocolConfiguration.isValid(attribute)))
+                .collect(Collectors.toList());
+        }
     }
 
-    public ProtocolConfiguration(String assetId, String name, String protocol) {
-        super(assetId, name, AttributeType.STRING, Json.create(protocol));
+    public static final AttributeWrapperFilter<ProtocolConfiguration> filter = new Filter();
+
+    @Override
+    public void initialise() {
+        // Push enabled flag as true by default
+        if (!getAttribute().hasMetaItem(AssetMeta.ENABLED)) {
+            Meta meta = getAttribute().getMeta().add(new MetaItem(AssetMeta.ENABLED, Json.create(true)));
+            getAttribute().setMeta(meta);
+        }
     }
 
-    public ProtocolConfiguration(String assetId, String name, JsonObject jsonObject) {
-        super(assetId, name, jsonObject);
+    @Override
+    public AttributeWrapperFilter<ProtocolConfiguration> getFilter() {
+        return null;
     }
 
-    public ProtocolConfiguration(AbstractAssetAttribute attribute) {
-        this(attribute.getAssetId(), attribute.getName(), attribute.getJsonObject());
+    public ProtocolConfiguration(String attributeName, String protocolName) {
+        this(new AssetAttribute(attributeName, AttributeType.STRING));
+        setProtocolName(protocolName);
+    }
+
+    public ProtocolConfiguration(AssetAttribute attribute) {
+        super(attribute);
+    }
+
+    public ProtocolConfiguration(AssetAttribute attribute, boolean initialise) {
+        super(attribute, initialise);
     }
 
     public boolean isEnabled() {
-        MetaItem enabled = firstMetaItem(AssetMeta.ENABLED);
+        MetaItem enabled = getMeta().first(AssetMeta.ENABLED);
         return enabled != null ? enabled.getValueAsBoolean() : true;
     }
 
@@ -68,52 +101,39 @@ public class ProtocolConfiguration extends AgentAttribute<ProtocolConfiguration>
         setMeta(meta);
     }
 
-    @Override
-    public ProtocolConfiguration setValue(JsonValue value) throws IllegalArgumentException {
-        super.setValue(value);
-        if (!isValueValid()) {
+    public ProtocolConfiguration setProtocolName(String protocolName) throws IllegalArgumentException {
+
+        if (!valueIsProtocolUrn(protocolName)) {
             throw new IllegalArgumentException("Protocol configuration value should contain a protocol URN");
         }
+
+        getAttribute().setValue(Json.create(protocolName));
         return this;
     }
 
     public String getProtocolName() {
-        return getValueAsString();
-    }
-
-    public boolean isValueValid() {
-        return getType() == AttributeType.STRING && getValueAsString() != null && getValueAsString().startsWith(Constants.PROTOCOL_NAMESPACE);
+        return getAttribute().getValueAsString();
     }
 
     @Override
     public boolean isValid() {
-        return super.isValid() && isValueValid();
+        return super.isValid() && isValid(getAttribute());
     }
 
     /**
      * A protocol configuration attribute value must be a URN string representation starting with {@link Constants#PROTOCOL_NAMESPACE}.
      */
-    public static boolean isProtocolConfiguration(AbstractAssetAttribute attribute) {
-        return attribute.getType() == AttributeType.STRING
-                && attribute.hasValue()
-                && attribute.getValueAsString().toLowerCase(Locale.ROOT).startsWith(Constants.PROTOCOL_NAMESPACE);
+    public static boolean isValid(AssetAttribute assetAttribute) {
+        // Value must be protocol name and must be at least one macro action
+        return assetAttribute.getType() == AttributeType.STRING && valueIsProtocolUrn(assetAttribute);
     }
 
-    /**
-     * Get all protocol configuration attributes from the asset
-     */
-    public static List<ProtocolConfiguration> getAll(Asset agent) {
-        return getAll(new AgentAttributes(agent).get());
+    protected static boolean valueIsProtocolUrn(AssetAttribute assetAttribute) {
+        String value = assetAttribute.getValueAsString();
+        return valueIsProtocolUrn(value);
     }
 
-    /**
-     * Get all protocol configuration attributes from the agent attributes
-     */
-    public static List<ProtocolConfiguration> getAll(List<AgentAttribute> attributes) {
-        return attributes
-                .stream()
-                .filter(ProtocolConfiguration::isProtocolConfiguration)
-                .map(ProtocolConfiguration::new)
-                .collect(Collectors.toList());
+    protected static boolean valueIsProtocolUrn(String value) {
+        return value != null && value.toLowerCase(Locale.ROOT).startsWith(Constants.PROTOCOL_NAMESPACE);
     }
 }

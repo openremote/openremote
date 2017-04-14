@@ -43,34 +43,33 @@ public enum AssetType {
 
     CUSTOM(null, true, null),
 
-    BUILDING(ASSET_NAMESPACE + ":building", true, new AssetAttributes().put(
+    BUILDING(ASSET_NAMESPACE + ":building", true, Arrays.asList(
         new AssetAttribute("area", INTEGER)
             .setMeta(new Meta()
-                .add(createMetaItem(LABEL, Json.create("Surface area")))
-                .add(createMetaItem(DESCRIPTION, Json.create("Floor area of building measured in m²")))
-                .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/area")))
-            ),
+            .add(createMetaItem(LABEL, Json.create("Surface area")))
+            .add(createMetaItem(DESCRIPTION, Json.create("Floor area of building measured in m²")))
+            .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/area")))
+        ),
         new AssetAttribute("geoStreet", STRING)
             .setMeta(new Meta()
-                .add(createMetaItem(LABEL, Json.create("Street")))
-                .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoStreet")))
-            ),
+            .add(createMetaItem(LABEL, Json.create("Street")))
+            .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoStreet")))
+        ),
         new AssetAttribute("geoPostalCode", AttributeType.INTEGER)
             .setMeta(new Meta()
-                .add(createMetaItem(LABEL, Json.create("Postal Code")))
-                .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoPostalCode")))
-            ),
+            .add(createMetaItem(LABEL, Json.create("Postal Code")))
+            .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoPostalCode")))
+        ),
         new AssetAttribute("geoCity", STRING)
             .setMeta(new Meta()
-                .add(createMetaItem(LABEL, Json.create("City")))
-                .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCity")))
-            ),
+            .add(createMetaItem(LABEL, Json.create("City")))
+            .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCity")))
+        ),
         new AssetAttribute("geoCountry", STRING)
             .setMeta(new Meta()
-                .add(createMetaItem(LABEL, Json.create("Country")))
-                .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCountry")))
-            )
-    )),
+            .add(createMetaItem(LABEL, Json.create("Country")))
+            .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCountry")))
+        ))),
 
     FLOOR(ASSET_NAMESPACE + ":floor", true, null),
 
@@ -87,19 +86,19 @@ public enum AssetType {
     THING(ASSET_NAMESPACE + ":thing", true, null);
 
     final protected String value;
-    final protected AssetAttributes defaultAttributes;
+    final protected List<AssetAttribute> defaultAttributes;
 
-    AssetType(String value, boolean editable, AssetAttributes defaultAttributes) {
+    AssetType(String value, boolean editable, List<AssetAttribute> defaultAttributes) {
         this.value = value;
-        this.defaultAttributes = defaultAttributes != null ? defaultAttributes : new AssetAttributes();
+        this.defaultAttributes = defaultAttributes;
     }
 
     public String getValue() {
         return value;
     }
 
-    public AssetAttributes getDefaultAttributes() {
-        return defaultAttributes;
+    public AssetAttribute[] getDefaultAttributes() {
+        return defaultAttributes != null ? defaultAttributes.toArray(new AssetAttribute[0]) : new AssetAttribute[0];
     }
 
     public static AssetType[] valuesSorted() {

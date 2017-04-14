@@ -37,7 +37,6 @@ import org.openremote.model.AttributeEvent;
 import org.openremote.model.Pair;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetAttributes;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.geo.GeoJSON;
@@ -159,7 +158,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
         if (assetId != null) {
             assetBrowserPresenter.loadAsset(assetId, loadedAsset -> {
                 this.asset = loadedAsset;
-                this.dashboardAttributes = new AssetAttributes(asset).get().stream()
+                this.dashboardAttributes = asset.getAttributes().stream()
                             .filter(AssetAttribute::isShowOnDashboard).collect(Collectors.toList());
                 assetBrowserPresenter.selectAsset(asset);
                 view.setAssetViewHistoryToken(environment.getPlaceHistoryMapper().getToken(

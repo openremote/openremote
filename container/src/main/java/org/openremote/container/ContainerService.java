@@ -48,6 +48,11 @@ public interface ContainerService {
     void start(Container container) throws Exception;
 
     /**
+     * Called once the container has finished starting all services
+     */
+    void allStarted(Container container) throws Exception;
+
+    /**
      * When the container is shutting down, it stops all services in the reverse order they have been added to container.
      */
     void stop(Container container) throws Exception;

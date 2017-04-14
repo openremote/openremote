@@ -22,9 +22,12 @@ package org.openremote.agent3.protocol.simulator;
 import elemental.json.JsonValue;
 import org.openremote.agent3.protocol.AbstractProtocol;
 import org.openremote.agent3.protocol.simulator.element.*;
-import org.openremote.model.*;
+import org.openremote.model.AttributeEvent;
+import org.openremote.model.AttributeRef;
+import org.openremote.model.AttributeState;
+import org.openremote.model.MetaItem;
+import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
-import org.openremote.model.asset.thing.ThingAttribute;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -111,16 +114,15 @@ public class SimulatorProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void onAttributeAdded(ThingAttribute attribute) {
+    protected void onAttributeAdded(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration) {
         String elementType = attribute.firstMetaItemOrThrow(SIMULATOR_ELEMENT).getValueAsString();
-        ProtocolConfiguration config = attribute.getProtocolConfiguration();
-        String configName = config.getName();
+        String protocolConfigurationName = protocolConfiguration.getAttribute().getName();
 
-        Instance instance = instances.get(configName);
+        Instance instance = instances.get(protocolConfigurationName);
 
         if (instance == null) {
-            MetaItem configModeMeta = config.firstMetaItem(CONFIG_MODE);
-            MetaItem configDelayMeta = config.firstMetaItem(CONFIG_WRITE_DELAY_MILLISECONDS);
+            MetaItem configModeMeta = protocolConfiguration.getAttribute().firstMetaItem(CONFIG_MODE);
+            MetaItem configDelayMeta = protocolConfiguration.getAttribute().firstMetaItem(CONFIG_WRITE_DELAY_MILLISECONDS);
 
             Mode mode = Mode.WRITE_THROUGH_IMMEDIATE;
             if (configModeMeta != null) {
@@ -137,7 +139,7 @@ public class SimulatorProtocol extends AbstractProtocol {
             }
 
             instance = new Instance(mode, writeDelay);
-            instances.put(configName, instance);
+            instances.put(protocolConfigurationName, instance);
         }
 
         SimulatorElement element = createElement(elementType, attribute);
@@ -149,16 +151,16 @@ public class SimulatorProtocol extends AbstractProtocol {
 
         LOG.info("Putting element '" + element + "' for: " + attribute);
         elements.put(attribute.getReference(), element);
-        attributeInstanceMap.put(attribute.getReference(), configName);
+        attributeInstanceMap.put(attribute.getReference(), protocolConfigurationName);
     }
 
     @Override
-    protected void onAttributeUpdated(ThingAttribute attribute) {
-        onAttributeAdded(attribute);
+    protected void onAttributeUpdated(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration) {
+        onAttributeAdded(attribute, protocolConfiguration);
     }
 
     @Override
-    protected void onAttributeRemoved(ThingAttribute attribute) {
+    protected void onAttributeRemoved(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration) {
         elements.remove(attribute.getReference());
         attributeInstanceMap.remove(attribute.getReference());
     }
@@ -275,7 +277,7 @@ public class SimulatorProtocol extends AbstractProtocol {
         }
     }
 
-    protected SimulatorElement createElement(String elementType, ThingAttribute attribute) {
+    protected SimulatorElement createElement(String elementType, AssetAttribute attribute) {
         switch (elementType.toLowerCase(Locale.ROOT)) {
             case SwitchSimulatorElement.ELEMENT_NAME:
                 return new SwitchSimulatorElement();

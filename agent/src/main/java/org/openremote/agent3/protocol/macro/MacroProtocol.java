@@ -23,10 +23,11 @@ import elemental.json.JsonValue;
 import org.openremote.agent3.protocol.AbstractProtocol;
 import org.openremote.container.Container;
 import org.openremote.model.*;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.asset.macro.MacroAction;
-import org.openremote.model.asset.macro.MacroAttribute;
 import org.openremote.model.asset.macro.MacroAttributeCommand;
-import org.openremote.model.asset.thing.ThingAttribute;
+import org.openremote.model.asset.macro.MacroConfiguration;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -156,7 +157,7 @@ public class MacroProtocol extends AbstractProtocol {
 
     @Override
     public String getProtocolName() {
-        return MacroAttribute.PROTOCOL_NAME;
+        return MacroConfiguration.PROTOCOL_NAME;
     }
 
     @Override
@@ -205,13 +206,13 @@ public class MacroProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void onAttributeAdded(ThingAttribute attribute) {
-        // Protocol configuration is actually a MacroAttribute
-        MacroAttribute macroAttribute = new MacroAttribute(attribute.getProtocolConfiguration());
+    protected void onAttributeAdded(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration) {
+        // Protocol configuration is actually a Macro
+        MacroConfiguration macroConfiguration = new MacroConfiguration(protocolConfiguration.getAttribute());
 
         // Store the macro actions for later execution requests
         AttributeRef reference = attribute.getReference();
-        List<MacroAction> actions = macroAttribute.getActions();
+        List<MacroAction> actions = macroConfiguration.getActions();
 
         synchronized (actionMap) {
             actionMap.put(reference, actions);
@@ -219,12 +220,12 @@ public class MacroProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void onAttributeUpdated(ThingAttribute attribute) {
-        onAttributeAdded(attribute);
+    protected void onAttributeUpdated(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration) {
+        onAttributeAdded(attribute, protocolConfiguration);
     }
 
     @Override
-    protected void onAttributeRemoved(ThingAttribute attribute) {
+    protected void onAttributeRemoved(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration) {
         // Store the macro actions for later execution requests
         AttributeRef reference = attribute.getReference();
 

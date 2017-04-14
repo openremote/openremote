@@ -35,11 +35,11 @@ import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
-import org.openremote.model.Attribute;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.Pair;
 import org.openremote.model.ReadAttributesEvent;
 import org.openremote.model.asset.*;
+import org.openremote.model.util.AttributeUtil;
 import org.postgresql.util.PGobject;
 
 import javax.persistence.EntityManager;
@@ -113,6 +113,11 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     @Override
     public void start(Container container) throws Exception {
+    }
+
+    @Override
+    public void allStarted(Container container) throws Exception {
+
     }
 
     @Override
@@ -203,7 +208,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     public ServerAsset find(String assetId, boolean loadComplete, boolean filterProtected) {
         if (assetId == null)
             throw new IllegalArgumentException("Can't query null asset identifier");
-        return find(new AssetQuery().select(new AssetQuery.Select(loadComplete, filterProtected)).id(assetId));
+            return find(new AssetQuery().select(new AssetQuery.Select(loadComplete, filterProtected)).id(assetId));
     }
 
     public ServerAsset find(AssetQuery query) {
@@ -239,8 +244,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 if (parent.pathContains(asset.getId()))
                     throw new IllegalStateException("Invalid parent");
             }
+
             // Validate attribute names
-            AssetAttributes attributes = new AssetAttributes(asset);
+            if (!asset.getAttributes().stream().allMatch(AssetAttribute::isValid)) {
+                throw new IllegalStateException("One or more attributes are not valid");
+            }
+
             return em.merge(asset);
         });
     }
@@ -587,9 +596,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 try (PreparedStatement statement = connection.prepareStatement(update)) {
 
                     // Bind the value (and check we don't have a SQL injection hole in attribute name!)
-                    if (!Attribute.nameIsValid(attributeName)) {
+                    if (!AttributeUtil.nameIsValid(attributeName)) {
                         LOG.fine(
-                            "Invalid attribute name (must match '" + Attribute.ATTRIBUTE_NAME_PATTERN + "'): " + attributeName
+                            "Invalid attribute name (must match '" + AttributeUtil.ATTRIBUTE_NAME_PATTERN + "'): " + attributeName
                         );
                         return false;
                     }
@@ -648,7 +657,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     );
                     break;
                 }
-                ;
 
                 // Did the parent change?
                 String previousParentId = persistenceEvent.getPreviousState("parentId");
@@ -659,7 +667,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     );
                     break;
                 }
-                ;
 
                 // Did the realm change?
                 String previousRealmId = persistenceEvent.getPreviousState("realmId");
@@ -670,7 +677,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     );
                     break;
                 }
-                ;
 
                 break;
             case DELETE:
@@ -682,17 +688,17 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     protected void replyWithAttributeEvents(String sessionKey, ServerAsset asset, String[] attributeNames) {
-        AssetAttributes attributes = new AssetAttributes(asset);
+        List<AssetAttribute> attributes = asset.getAttributes();
 
         // Client may want to read a subset or all attributes of the asset
         List<String> names = attributeNames != null && attributeNames.length > 0
             ? Arrays.asList(attributeNames)
-            : attributes.names();
+            : AttributeUtil.getNames(attributes);
 
         LOG.fine("For client session '" + sessionKey + "', reading asset attributes " + names + " on: " + asset);
-        List<AttributeEvent> events = attributes.get().stream()
+        List<AttributeEvent> events = attributes.stream()
             .filter(assetAttribute -> names.contains(assetAttribute.getName()))
-            .map(AbstractAssetAttribute::getStateEvent)
+            .map(AssetAttribute::getStateEvent)
             .collect(Collectors.toList());
 
         eventService.sendToSession(sessionKey, events.toArray(new AttributeEvent[events.size()]));

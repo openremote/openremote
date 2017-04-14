@@ -19,6 +19,8 @@
  */
 package org.openremote.model.asset;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import elemental.json.JsonObject;
 import org.hibernate.annotations.Formula;
 import org.openremote.model.IdentifiableEntity;
@@ -26,6 +28,7 @@ import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.geo.GeoJSONFeature;
 import org.openremote.model.geo.GeoJSONGeometry;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.util.AttributeUtil;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -34,6 +37,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
@@ -69,8 +73,8 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
  * <p>
  * The {@link #coordinates} are a pair of LNG/LAT values with the location of the asset.
  * <p>
- * An asset may have dynamically-typed {@link #attributes} with an underlying
- * {@link elemental.json.JsonObject} model. Use the {@link org.openremote.model.Attributes}
+ * An asset may have dynamically-typed {@link #attrs} with an underlying
+ * {@link elemental.json.JsonObject} model. Use the {@link org.openremote.model.util.AttributeUtil}
  * class to work with this API. This property can be empty when certain optimized loading
  * operations are used.
  * <p>
@@ -266,7 +270,9 @@ public class Asset implements IdentifiableEntity {
 
     @Column(name = "ATTRIBUTES", columnDefinition = "jsonb")
     @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_OBJECT_TYPE)
-    protected JsonObject attributes;
+    @JsonProperty
+    // We have to use a different name to the getter/setter because GWT Jackson ignores it otherwise
+    public JsonObject attrs;
 
     public Asset() {
     }
@@ -303,12 +309,12 @@ public class Asset implements IdentifiableEntity {
         this.tenantDisplayName = tenantDisplayName;
         this.path = path;
 
-        if (filterProtectedAttributes && attributes != null) {
-            AbstractAssetAttributes assetAttributes = new AssetAttributes(this.id, attributes);
-            assetAttributes.filterProtected();
-            this.attributes = assetAttributes.size() > 0 ? assetAttributes.getJsonObject() : null;
+        if (filterProtectedAttributes) {
+            List<AssetAttribute> assetAttributes = AttributeUtil.getAssetAttributesFromJson(id, attributes);
+            assetAttributes = AttributeUtil.filterByProtected(assetAttributes);
+            this.attrs = assetAttributes.size() > 0 ? AttributeUtil.getAssetAttributesAsJson(assetAttributes) : null;
         } else {
-            this.attributes = attributes;
+            this.attrs = attributes;
         }
     }
 
@@ -474,12 +480,15 @@ public class Asset implements IdentifiableEntity {
         return path != null && Arrays.asList(getPath()).contains(assetId);
     }
 
-    public JsonObject getAttributes() {
-        return attributes;
+    @JsonIgnore
+    public List<AssetAttribute> getAttributes() {
+        return AttributeUtil.getAssetAttributesFromJson(id, attrs);
     }
 
-    public void setAttributes(JsonObject attributes) {
-        this.attributes = attributes;
+    @JsonIgnore
+    public void setAttributes(List<AssetAttribute> attributes) {
+        // TODO: need to verify there are no duplicate attribute names
+        this.attrs = AttributeUtil.getAssetAttributesAsJson(attributes);
     }
 
     /**
@@ -532,7 +541,7 @@ public class Asset implements IdentifiableEntity {
             ", tenantDisplayName='" + tenantDisplayName + '\'' +
             ", coordinates=" + Arrays.toString(coordinates) +
             ", path=" + Arrays.toString(path) +
-            ", attributes=" + attributes +
+            ", attributes=" + attrs +
             '}';
     }
 }

@@ -55,6 +55,11 @@ public class AgentService implements ContainerService {
     }
 
     @Override
+    public void allStarted(Container container) throws Exception {
+
+    }
+
+    @Override
     public void stop(Container container) throws Exception {
         if (agentContext != null) {
             agentContext.stop();

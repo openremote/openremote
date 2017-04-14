@@ -31,15 +31,22 @@ import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.setup.AbstractManagerSetup;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.*;
-import org.openremote.model.asset.*;
-import org.openremote.model.asset.agent.AgentAttributes;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.AssetState;
+import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.units.AttributeUnits;
 import org.openremote.model.units.ColorRGB;
+import org.openremote.model.util.AttributeUtil;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static org.openremote.model.AttributeType.*;
 import static org.openremote.model.asset.AssetMeta.*;
@@ -72,7 +79,6 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         KeycloakDemoSetup keycloakDemoSetup = setupService.getTaskOfType(KeycloakDemoSetup.class);
         Tenant masterTenant = keycloakDemoSetup.masterTenant;
         Tenant customerATenant = keycloakDemoSetup.customerATenant;
-        Tenant customerBTenant = keycloakDemoSetup.customerBTenant;
 
         // ################################ Demo assets for 'master' realm ###################################
 
@@ -82,8 +88,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         smartOffice.setName("Smart Office");
         smartOffice.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         smartOffice.setType(BUILDING);
-        AssetAttributes smartOfficeAttributes = new AssetAttributes();
-        smartOfficeAttributes.put(
+        List<AssetAttribute> smartOfficeAttributes = Arrays.asList(
             new AssetAttribute("geoStreet", STRING, Json.create("Torenallee 20"))
                 .setMeta(new Meta()
                     .add(createMetaItem(LABEL, Json.create("Street")))
@@ -105,7 +110,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCountry")))
                 )
         );
-        smartOffice.setAttributes(smartOfficeAttributes.getJsonObject());
+        smartOffice.setAttributes(smartOfficeAttributes);
         smartOffice = assetStorageService.merge(smartOffice);
         smartOfficeId = smartOffice.getId();
 
@@ -127,21 +132,21 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         agent.setName("Demo Agent");
         agent.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         agent.setType(AssetType.AGENT);
-        AgentAttributes agentAttributes = new AgentAttributes();
-        ProtocolConfiguration protocolConfigSimulator123 = new ProtocolConfiguration(agentProtocolConfigName, SimulatorProtocol.PROTOCOL_NAME);
-        protocolConfigSimulator123.setMeta(new Meta()
-            .add(new MetaItem(
-                    SimulatorProtocol.CONFIG_MODE,
-                    Json.create(SimulatorProtocol.Mode.WRITE_THROUGH_DELAYED.toString())
-                )
-            )
-            .add(new MetaItem(
-                    SimulatorProtocol.CONFIG_WRITE_DELAY_MILLISECONDS,
-                    Json.create(500)
-                )
-            ));
-        agentAttributes.put(protocolConfigSimulator123);
-        agent.setAttributes(agentAttributes.getJsonObject());
+        List<AssetAttribute> agentAttributes = Collections.singletonList(
+            new ProtocolConfiguration(agentProtocolConfigName, SimulatorProtocol.PROTOCOL_NAME)
+                .getAttribute()
+                .setMeta(new Meta()
+                    .add(new MetaItem(
+                            SimulatorProtocol.CONFIG_MODE,
+                            Json.create(SimulatorProtocol.Mode.WRITE_THROUGH_DELAYED.toString())
+                        )
+                    )
+                    .add(new MetaItem(
+                            SimulatorProtocol.CONFIG_WRITE_DELAY_MILLISECONDS,
+                            Json.create(500)
+                        )
+                    )));
+        agent.setAttributes(agentAttributes);
         agent = assetStorageService.merge(agent);
         agentId = agent.getId();
 
@@ -149,8 +154,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         thing.setName("Demo Thing");
         thing.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         thing.setType(AssetType.THING);
-        AssetAttributes thingAttributes = new AssetAttributes(thing);
-        thingAttributes.put(
+        List<AssetAttribute> thingAttributes = Arrays.asList(
             new AssetAttribute("light1Toggle", BOOLEAN, Json.create(true))
                 .setMeta(new Meta()
                     .add(new MetaItem(
@@ -238,54 +242,54 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     ))
                 )
         );
-        thing.setAttributes(thingAttributes.getJsonObject());
+        thing.setAttributes(thingAttributes);
         thing = assetStorageService.merge(thing);
         thingId = thing.getId();
 
         // Some sample datapoints
         thing = assetStorageService.find(thingId, true);
-        thingAttributes = new AssetAttributes(thing);
+        thingAttributes = thing.getAttributes();
         ZonedDateTime now = LocalDateTime.now().atZone(ZoneId.systemDefault());
-        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")));
-        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+        assetDatapointService.accept(new AssetState(thing, AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption")));
+        assetDatapointService.accept(new AssetState(thing, AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption")
             .setValueAsDecimal(0.11).setValueTimestamp(now.minusDays(80).toEpochSecond() * 1000)));
-        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+        assetDatapointService.accept(new AssetState(thing, AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption")
             .setValueAsDecimal(1.22).setValueTimestamp(now.minusDays(40).toEpochSecond() * 1000)));
-        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+        assetDatapointService.accept(new AssetState(thing, AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption")
             .setValueAsDecimal(2.33).setValueTimestamp(now.minusDays(20).toEpochSecond() * 1000)));
-        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+        assetDatapointService.accept(new AssetState(thing, AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption")
             .setValueAsDecimal(3.44).setValueTimestamp(now.minusDays(10).toEpochSecond() * 1000)));
-        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+        assetDatapointService.accept(new AssetState(thing, AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption")
             .setValueAsDecimal(4.55).setValueTimestamp(now.minusDays(8).toEpochSecond() * 1000)));
-        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+        assetDatapointService.accept(new AssetState(thing, AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption")
             .setValueAsDecimal(5.66).setValueTimestamp(now.minusDays(6).toEpochSecond() * 1000)));
-        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+        assetDatapointService.accept(new AssetState(thing, AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption")
             .setValueAsDecimal(6.77).setValueTimestamp(now.minusDays(3).toEpochSecond() * 1000)));
-        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+        assetDatapointService.accept(new AssetState(thing, AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption")
             .setValueAsDecimal(7.88).setValueTimestamp(now.minusDays(1).toEpochSecond() * 1000)));
-        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+        assetDatapointService.accept(new AssetState(thing, AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption")
             .setValueAsDecimal(8.99).setValueTimestamp(now.minusHours(10).toEpochSecond() * 1000)));
-        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+        assetDatapointService.accept(new AssetState(thing, AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption")
             .setValueAsDecimal(9.11).setValueTimestamp(now.minusHours(5).toEpochSecond() * 1000)));
-        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+        assetDatapointService.accept(new AssetState(thing, AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption")
             .setValueAsDecimal(10.22).setValueTimestamp(now.minusHours(2).toEpochSecond() * 1000)));
-        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+        assetDatapointService.accept(new AssetState(thing, AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption")
             .setValueAsDecimal(11.33).setValueTimestamp(now.minusHours(1).toEpochSecond() * 1000)));
-        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+        assetDatapointService.accept(new AssetState(thing, AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption")
             .setValueAsDecimal(11.44).setValueTimestamp(now.minusMinutes(30).toEpochSecond() * 1000)));
-        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+        assetDatapointService.accept(new AssetState(thing, AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption")
             .setValueAsDecimal(11.55).setValueTimestamp(now.minusMinutes(15).toEpochSecond() * 1000)));
-        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+        assetDatapointService.accept(new AssetState(thing, AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption")
             .setValueAsDecimal(11.66).setValueTimestamp(now.minusMinutes(6).toEpochSecond() * 1000)));
-        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+        assetDatapointService.accept(new AssetState(thing, AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption")
             .setValueAsDecimal(11.77).setValueTimestamp(now.minusMinutes(3).toEpochSecond() * 1000)));
-        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+        assetDatapointService.accept(new AssetState(thing, AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption")
             .setValueAsDecimal(11.88).setValueTimestamp(now.minusSeconds(30).toEpochSecond() * 1000)));
-        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+        assetDatapointService.accept(new AssetState(thing, AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption")
             .setValueAsDecimal(11.99).setValueTimestamp(now.minusSeconds(15).toEpochSecond() * 1000)));
-        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+        assetDatapointService.accept(new AssetState(thing, AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption")
             .setValueAsDecimal(12.00).setValueTimestamp(now.minusSeconds(1).toEpochSecond() * 1000)));
-        assetDatapointService.accept(new AssetState(thing, thingAttributes.get("light1PowerConsumption")
+        assetDatapointService.accept(new AssetState(thing, AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption")
             .setValueAsDecimal(12.01).setValueTimestamp(now.toEpochSecond() * 1000 - 500)));
 
         // ################################ Demo assets for 'customerA' realm ###################################
@@ -295,8 +299,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         smartHome.setName("Smart Home");
         smartHome.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         smartHome.setType(BUILDING);
-        AssetAttributes smartHomeAttributes = new AssetAttributes();
-        smartHomeAttributes.put(
+        List<AssetAttribute> smartHomeAttributes = Arrays.asList(
             new AssetAttribute("geoStreet", STRING, Json.create("Wilhelminaplein 21C"))
                 .setMeta(new Meta()
                     .add(createMetaItem(LABEL, Json.create("Street")))
@@ -318,7 +321,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCountry")))
                 )
         );
-        smartHome.setAttributes(smartHomeAttributes.getJsonObject());
+        smartHome.setAttributes(smartHomeAttributes);
         smartHome = assetStorageService.merge(smartHome);
         smartHomeId = smartHome.getId();
 
@@ -326,8 +329,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1.setName("Apartment 1");
         apartment1.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment1.setType(RESIDENCE);
-        AssetAttributes apartment1Attributes = new AssetAttributes();
-        apartment1Attributes.put(
+        List<AssetAttribute> apartment1Attributes = Arrays.asList(
             new AssetAttribute("allLightsOffSwitch", AttributeType.BOOLEAN, Json.create(true))
                 .setMeta(
                     new Meta().add(
@@ -339,8 +341,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     ).add(
                         new MetaItem(AssetMeta.RULE_EVENT_EXPIRES, Json.create("10s"))
                     )
-                )
-        ).put(
+                ),
             new AssetAttribute("vacationDays", AttributeType.INTEGER, Json.createNull())
                 .setMeta(
                     new Meta().add(
@@ -352,7 +353,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
                 )
         );
-        apartment1.setAttributes(apartment1Attributes.getJsonObject());
+        apartment1.setAttributes(apartment1Attributes);
         apartment1 = assetStorageService.merge(apartment1);
         apartment1Id = apartment1.getId();
 
@@ -360,8 +361,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1Livingroom.setName("Livingroom");
         apartment1Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment1Livingroom.setType(ROOM);
-        AssetAttributes apartment1LivingroomAttributes = new AssetAttributes();
-        apartment1LivingroomAttributes.put(
+        List<AssetAttribute> apartment1LivingroomAttributes = Arrays.asList(
             new AssetAttribute("presenceSensor", AttributeType.BOOLEAN, Json.create(false))
                 .setMeta(
                     new Meta().add(
@@ -401,15 +401,14 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
                 )
         );
-        apartment1Livingroom.setAttributes(apartment1LivingroomAttributes.getJsonObject());
+        apartment1Livingroom.setAttributes(apartment1LivingroomAttributes);
         apartment1Livingroom = assetStorageService.merge(apartment1Livingroom);
         apartment1LivingroomId = apartment1Livingroom.getId();
 
         ServerAsset apartment1LivingroomThermostat = new ServerAsset(apartment1Livingroom);
         apartment1LivingroomThermostat.setName("Livingroom Thermostat");
         apartment1LivingroomThermostat.setType(AssetType.THING);
-        AssetAttributes apartment1LivingroomThermostatAttributes = new AssetAttributes(apartment1LivingroomThermostat);
-        apartment1LivingroomThermostatAttributes.put(
+        List<AssetAttribute> apartment1LivingroomThermostatAttributes = Arrays.asList(
             new AssetAttribute("currentTemperature", DECIMAL, Json.createNull())
                 .setMeta(new Meta()
                     .add(new MetaItem(
@@ -461,7 +460,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 )
         );
 
-        apartment1LivingroomThermostat.setAttributes(apartment1LivingroomThermostatAttributes.getJsonObject());
+        apartment1LivingroomThermostat.setAttributes(apartment1LivingroomThermostatAttributes);
         apartment1LivingroomThermostat = assetStorageService.merge(apartment1LivingroomThermostat);
         apartment1LivingroomThermostatId = apartment1LivingroomThermostat.getId();
 
@@ -469,8 +468,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment2.setName("Apartment 2");
         apartment2.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment2.setType(RESIDENCE);
-        AssetAttributes apartment2Attributes = new AssetAttributes();
-        apartment2Attributes.put(
+        List<AssetAttribute> apartment2Attributes = Collections.singletonList(
             new AssetAttribute("allLightsOffSwitch", AttributeType.BOOLEAN, Json.create(false))
                 .setMeta(
                     new Meta().add(
@@ -482,7 +480,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
                 )
         );
-        apartment2.setAttributes(apartment2Attributes.getJsonObject());
+        apartment2.setAttributes(apartment2Attributes);
         apartment2 = assetStorageService.merge(apartment2);
         apartment2Id = apartment2.getId();
 
@@ -490,8 +488,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment2Livingroom.setName("Livingroom");
         apartment2Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment2Livingroom.setType(ROOM);
-        AssetAttributes apartment2LivingroomAttributes = new AssetAttributes();
-        apartment2LivingroomAttributes.put(
+        List<AssetAttribute> apartment2LivingroomAttributes = Arrays.asList(
             new AssetAttribute("presenceSensor", AttributeType.BOOLEAN, Json.create(false))
                 .setMeta(
                     new Meta().add(
@@ -523,7 +520,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
                 )
         );
-        apartment2Livingroom.setAttributes(apartment2LivingroomAttributes.getJsonObject());
+        apartment2Livingroom.setAttributes(apartment2LivingroomAttributes);
         apartment2Livingroom = assetStorageService.merge(apartment2Livingroom);
         apartment2LivingroomId = apartment2Livingroom.getId();
 
@@ -531,8 +528,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment3.setName("Apartment 3");
         apartment3.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment3.setType(RESIDENCE);
-        AssetAttributes apartment3Attributes = new AssetAttributes();
-        apartment3Attributes.put(
+        List<AssetAttribute> apartment3Attributes = Collections.singletonList(
             new AssetAttribute("allLightsOffSwitch", AttributeType.BOOLEAN, Json.create(false))
                 .setMeta(
                     new Meta().add(
@@ -544,7 +540,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
                 )
         );
-        apartment3.setAttributes(apartment3Attributes.getJsonObject());
+        apartment3.setAttributes(apartment3Attributes);
         apartment3 = assetStorageService.merge(apartment3);
         apartment3Id = apartment3.getId();
 
@@ -552,8 +548,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment3Livingroom.setName("Livingroom");
         apartment3Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment3Livingroom.setType(ROOM);
-        AssetAttributes apartment3LivingroomAttributes = new AssetAttributes();
-        apartment3LivingroomAttributes.put(
+        List<AssetAttribute> apartment3LivingroomAttributes = Arrays.asList(
             new AssetAttribute("presenceSensor", AttributeType.BOOLEAN, Json.create(false))
                 .setMeta(
                     new Meta().add(
@@ -585,7 +580,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
                 )
         );
-        apartment3Livingroom.setAttributes(apartment3LivingroomAttributes.getJsonObject());
+        apartment3Livingroom.setAttributes(apartment3LivingroomAttributes);
         apartment3Livingroom = assetStorageService.merge(apartment3Livingroom);
         apartment3LivingroomId = apartment3Livingroom.getId();
 

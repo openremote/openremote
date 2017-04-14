@@ -19,38 +19,127 @@
  */
 package org.openremote.model.asset;
 
-import elemental.json.Json;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 import org.openremote.model.*;
 
-public class AssetAttribute extends AbstractAssetAttribute<AssetAttribute> {
+import java.util.List;
+
+import static org.openremote.model.asset.AssetMeta.*;
+import static org.openremote.model.asset.AssetMeta.AGENT_LINK;
+
+public class AssetAttribute extends Attribute<AssetAttribute> {
+    final protected String assetId;
+
     public AssetAttribute(String name, AttributeType type) {
-        super(null, name, type);
+        this(null, name, type);
     }
 
     public AssetAttribute(String name, AttributeType type, JsonValue value) {
-        super(null, name, type, value);
+        this(null, name, type, value);
     }
 
     public AssetAttribute(String name, JsonObject jsonObject) {
-        super(null, name, jsonObject);
+        this(null, name, jsonObject);
     }
 
     public AssetAttribute(String assetId, String name, AttributeType type) {
-        super(assetId, name, type);
+        super(name, type);
+        this.assetId = assetId;
     }
 
     public AssetAttribute(String assetId, String name, AttributeType type, JsonValue value) {
-        super(assetId, name, type, value);
+        super(name, type, value);
+        this.assetId = assetId;
     }
 
     public AssetAttribute(String assetId, String name, JsonObject jsonObject) {
-        super(assetId, name, jsonObject);
+        super(name, jsonObject);
+        this.assetId = assetId;
     }
 
-    @Override
-    public AssetAttribute copy() {
-        return new AssetAttribute(assetId, getName(), Json.parse(getJsonObject().toJson()));
+    public AssetAttribute(AssetAttribute assetAttribute) {
+        super(assetAttribute);
+        this.assetId = assetAttribute.getAssetId();
+    }
+
+    public String getAssetId() {
+        return assetId;
+    }
+
+    public AttributeRef getReference() {
+        return new AttributeRef(getAssetId(), getName());
+    }
+
+    /**
+     * @return The current value.
+     */
+    public AttributeState getState() {
+        return new AttributeState(
+            getReference(),
+            getValue()
+        );
+    }
+
+    /**
+     * @return The current value and its timestamp represented as an attribute event.
+     */
+    public AttributeEvent getStateEvent() {
+        return new AttributeEvent(
+            getState(),
+            getValueTimestamp()
+        );
+    }
+
+    public boolean hasMetaItem(AssetMeta assetMeta) {
+        return hasMetaItem(assetMeta.getName());
+    }
+
+    public MetaItem firstMetaItem(AssetMeta assetMeta) {
+        return firstMetaItem(assetMeta.getName());
+    }
+
+    public List<MetaItem> getMetaItems(AssetMeta assetMeta) {
+        return getMetaItems(assetMeta.getName());
+    }
+
+    public String getLabel() {
+        return hasMetaItem(LABEL) ? firstMetaItem(LABEL).getValueAsString() : getName();
+    }
+
+    public String getFormat() {
+        return hasMetaItem(FORMAT) ? firstMetaItem(FORMAT).getValueAsString() : null;
+    }
+
+    public boolean isShowOnDashboard() {
+        return hasMetaItem(SHOWN_ON_DASHBOARD) && firstMetaItem(SHOWN_ON_DASHBOARD).isValueTrue();
+    }
+
+    public boolean isProtected() {
+        return hasMetaItem(PROTECTED) && firstMetaItem(PROTECTED).isValueTrue();
+    }
+
+    public boolean isReadOnly() {
+        return hasMetaItem(READ_ONLY) && firstMetaItem(READ_ONLY).isValueTrue();
+    }
+
+    public boolean isStoreDatapoints() {
+        return hasMetaItem(STORE_DATA_POINTS) && firstMetaItem(STORE_DATA_POINTS).isValueTrue();
+    }
+
+    public boolean isRuleState() {
+        return hasMetaItem(RULE_STATE) && firstMetaItem(RULE_STATE).isValueTrue();
+    }
+
+    public boolean isRuleEvent() {
+        return hasMetaItem(RULE_EVENT) && firstMetaItem(RULE_EVENT).isValueTrue();
+    }
+
+    public String getRuleEventExpires() {
+        return hasMetaItem(RULE_EVENT_EXPIRES) ? firstMetaItem(RULE_EVENT_EXPIRES).getValueAsString() : null;
+    }
+
+    public boolean isAgentLinked() {
+        return hasMetaItem(AGENT_LINK);
     }
 }

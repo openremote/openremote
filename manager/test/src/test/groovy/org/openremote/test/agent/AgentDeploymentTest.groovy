@@ -9,8 +9,8 @@ import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.model.AttributeEvent
-import org.openremote.model.asset.AssetAttributes
 import org.openremote.model.units.ColorRGB
+import org.openremote.model.util.AttributeUtil
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -50,9 +50,9 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         conditions.eventually {
             assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Dimmer").asNumber() == 66
             def thing = assetStorageService.find(managerDemoSetup.thingId, true)
-            def attributes = new AssetAttributes(thing)
-            assert attributes.get("light1Dimmer").getValue().getType() == JsonType.NUMBER
-            assert attributes.get("light1Dimmer").getValueAsInteger() == 66
+            def attributes = thing.getAttributes()
+            assert AttributeUtil.getAttributeByName(attributes, "light1Dimmer").getValue().getType() == JsonType.NUMBER
+            assert AttributeUtil.getAttributeByName(attributes, "light1Dimmer").getValueAsInteger() == 66
         }
 
         when: "a simulated sensor changes its value"
@@ -62,9 +62,9 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         then: "the thing attribute value should be updated"
         conditions.eventually {
             def thing = assetStorageService.find(managerDemoSetup.thingId, true)
-            def attributes = new AssetAttributes(thing)
-            assert attributes.get("light1Dimmer").getValue().getType() == JsonType.NUMBER
-            assert attributes.get("light1Dimmer").getValueAsInteger() == 77
+            def attributes = thing.getAttributes()
+            assert AttributeUtil.getAttributeByName(attributes, "light1Dimmer").getValue().getType() == JsonType.NUMBER
+            assert AttributeUtil.getAttributeByName(attributes, "light1Dimmer").getValueAsInteger() == 77
         }
 
         cleanup: "the server should be stopped"

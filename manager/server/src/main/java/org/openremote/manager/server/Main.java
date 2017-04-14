@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.server;
 
-import org.openremote.agent3.protocol.Protocol;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
@@ -33,17 +32,17 @@ import org.openremote.manager.server.datapoint.AssetDatapointService;
 import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.i18n.I18NService;
 import org.openremote.manager.server.map.MapService;
+import org.openremote.manager.server.notification.NotificationService;
 import org.openremote.manager.server.rules.RulesService;
 import org.openremote.manager.server.rules.RulesetStorageService;
-import org.openremote.manager.server.notification.NotificationService;
 import org.openremote.manager.server.security.ManagerIdentityService;
+import org.openremote.manager.server.setup.RuntimeResolverService;
 import org.openremote.manager.server.setup.SetupService;
 import org.openremote.manager.server.web.ManagerWebService;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.ServiceLoader;
 
 public class Main {
 
@@ -51,6 +50,7 @@ public class Main {
         List<ContainerService> services = new ArrayList<ContainerService>() {
             {
                 addAll(Arrays.asList(
+                    new RuntimeResolverService(),
                     new I18NService(),
                     new PersistenceService(),
                     new MessageBrokerSetupService(),
@@ -61,10 +61,7 @@ public class Main {
                     new RulesService(),
                     new AssetStorageService(),
                     new AssetDatapointService(),
-                    new AssetProcessingService()
-                ));
-                ServiceLoader.load(Protocol.class).forEach(this::add);
-                addAll(Arrays.asList(
+                    new AssetProcessingService(),
                     new AgentService(),
                     new MapService(),
                     new NotificationService(),

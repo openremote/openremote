@@ -115,6 +115,10 @@ public class Container {
                         LOG.fine("Starting service: " + service);
                         service.start(Container.this);
                     }
+                    for (ContainerService service : getServices()) {
+                        LOG.fine("Notifying service all started: " + service);
+                        service.allStarted(Container.this);
+                    }
                 } catch (RuntimeException ex) {
                     throw ex;
                 } catch (Exception ex) {

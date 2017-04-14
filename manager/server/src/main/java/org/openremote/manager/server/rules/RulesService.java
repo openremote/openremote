@@ -41,6 +41,7 @@ import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.AssetEvent;
+import org.openremote.model.util.AttributeUtil;
 import org.openremote.model.util.JsonUtil;
 
 import java.util.*;
@@ -136,6 +137,11 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
     @Override
     public void start(Container container) throws Exception {
+
+    }
+
+    @Override
+    public void allStarted(Container container) throws Exception {
         LOG.info("Deploying global rulesets");
         rulesetStorageService.findEnabledGlobalRulesets().forEach(this::deployGlobalRuleset);
 
@@ -153,7 +159,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         deployAssetRulesets(rulesetStorageService.findEnabledAssetRulesets());
 
         LOG.info("Loading all assets with fact attributes to initialize state of rules engines");
-        List<Pair<ServerAsset, List<AssetAttribute>>> assetRuleAttributesList = findRuleStateAttributes(null, null);
+        List<Pair<ServerAsset, List<AssetAttribute>>> assetRuleAttributesList = findRuleStateAttributes();
 
         // Push each rule attribute as an asset update through the rule engine chain
         // that will ensure the insert only happens to the engines in scope
@@ -253,8 +259,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             case INSERT:
 
                 // New asset has been created so get attributes that have RULE_STATE meta
-                AssetAttributes addedAttributes = new AssetAttributes(asset);
-                List<AssetAttribute> ruleAttributes = addedAttributes.get()
+                List<AssetAttribute> addedAttributes = asset.getAttributes();
+                List<AssetAttribute> ruleAttributes = addedAttributes
                     .stream()
                     .filter(AssetAttribute::isRuleState)
                     .collect(Collectors.toList());
@@ -285,14 +291,14 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
                 // Attributes have possibly changed so need to compare old and new state to determine
                 // which facts to retract and which to insert
-                AssetAttributes oldAttributes = new AssetAttributes(asset.getId(), (JsonObject) persistenceEvent.getPreviousState()[attributesIndex]);
-                AssetAttributes newAttributes = new AssetAttributes(asset.getId(), (JsonObject) persistenceEvent.getCurrentState()[attributesIndex]);
+                List<AssetAttribute> oldAttributes = AttributeUtil.getAssetAttributesFromJson(asset.getId(), (JsonObject) persistenceEvent.getPreviousState()[attributesIndex]);
+                List<AssetAttribute> newAttributes = AttributeUtil.getAssetAttributesFromJson(asset.getId(), (JsonObject) persistenceEvent.getCurrentState()[attributesIndex]);
 
-                List<AssetAttribute> oldFactAttributes = oldAttributes.get().stream()
+                List<AssetAttribute> oldFactAttributes = oldAttributes.stream()
                     .filter(AssetAttribute::isRuleState)
                     .collect(Collectors.toList());
 
-                List<AssetAttribute> newFactAttributes = newAttributes.get().stream()
+                List<AssetAttribute> newFactAttributes = newAttributes.stream()
                     .filter(AssetAttribute::isRuleState)
                     .collect(Collectors.toList());
 
@@ -354,8 +360,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                 break;
             case DELETE:
                 // Retract any facts that were associated with this asset
-                AssetAttributes removedAttributes = new AssetAttributes(asset);
-                removedAttributes.get().stream()
+                List<AssetAttribute> removedAttributes = asset.getAttributes();
+                removedAttributes.stream()
                     .filter(AssetAttribute::isRuleState)
                     .forEach(attribute -> {
                         // We can't load the asset again (it was deleted), so don't use buildAssetState() and
@@ -652,21 +658,19 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         return rulesDeployments;
     }
 
-    protected List<Pair<ServerAsset, List<AssetAttribute>>> findRuleStateAttributes(AssetQuery.TenantPredicate tenantPredicate, AssetQuery.ParentPredicate parentPredicate) {
+    protected List<Pair<ServerAsset, List<AssetAttribute>>> findRuleStateAttributes() {
         List<ServerAsset> assets = assetStorageService.findAll(
             new AssetQuery()
                 .select(new AssetQuery.Select(true))
-                .parent(parentPredicate)
-                .tenant(tenantPredicate)
                 .attributeMeta(
                     new AssetQuery.AttributeMetaPredicate(
                         AssetMeta.RULE_STATE,
                         new AssetQuery.BooleanPredicate(true))
                 ));
 
-        return assets.stream().map(asset -> {
-            AssetAttributes attributes = new AssetAttributes(asset);
-            List<AssetAttribute> ruleAttributes = attributes.get().stream()
+        return assets.stream().map((ServerAsset asset) -> {
+            List<AssetAttribute> attributes = asset.getAttributes();
+            List<AssetAttribute> ruleAttributes = attributes.stream()
                 .filter(AssetAttribute::isRuleState).collect(Collectors.toList());
             return new Pair<>(asset, ruleAttributes);
 

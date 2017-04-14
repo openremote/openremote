@@ -22,7 +22,8 @@ package org.openremote.agent3.protocol;
 import org.openremote.container.ContainerService;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.Constants;
-import org.openremote.model.asset.thing.ThingAttribute;
+import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.agent.ProtocolConfiguration;
 
 import java.util.Collection;
 
@@ -38,7 +39,7 @@ import java.util.Collection;
  * <p>
  * The linked attributes of a protocol provide the model for the protocol to perform these operations. How
  * attributes and value changes map to actual device and service calls is up to the implementation. The method
- * {@link #linkAttributes(Collection)} is first called during startup of the protocol, after
+ * {@link #linkAttributes(Collection, ProtocolConfiguration)} is first called during startup of the protocol, after
  * {@link #init} and before {@link #start}.
  * <p>
  * The linked protocol handles south-bound read and write of the attribute value: If the user writes
@@ -66,8 +67,8 @@ public interface Protocol extends ContainerService {
 
     String getProtocolName();
 
-    void linkAttributes(Collection<ThingAttribute> attributes) throws Exception;
+    void linkAttributes(Collection<AssetAttribute> attributes, ProtocolConfiguration protocolConfiguration) throws Exception;
 
-    void unlinkAttributes(Collection<ThingAttribute> attributes) throws Exception;
+    void unlinkAttributes(Collection<AssetAttribute> attributes, ProtocolConfiguration protocolConfiguration) throws Exception;
 
 }

@@ -22,10 +22,13 @@ package org.openremote.model;
 import elemental.json.Json;
 import elemental.json.JsonArray;
 import elemental.json.JsonObject;
+import elemental.json.JsonValue;
 import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.util.JsonUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * An array of {@link MetaItem} elements.
@@ -52,16 +55,32 @@ public class Meta {
         return getJsonArray().length();
     }
 
-    public MetaItem[] all() {
-        List<MetaItem> list = asList();
-        return list.toArray(new MetaItem[list.size()]);
+    public List<MetaItem> all() {
+        return get((Predicate<MetaItem>) null);
     }
 
-    public MetaItem[] get(String name) {
-        List<MetaItem> list = asList(
+    public List<MetaItem> get(String name) {
+        return get(
             item -> item.getName().equals(name)
         );
-        return list.toArray(new MetaItem[list.size()]);
+    }
+
+    public List<MetaItem> get(String name, JsonValue value) {
+        return get(metaItem -> metaItem.getName().equals(name) && JsonUtil.equals(metaItem.getValue(), value));
+    }
+
+    public List<MetaItem> get(Predicate<MetaItem> filter) {
+        List<MetaItem> list = new ArrayList<>();
+        for (int i = 0; i < jsonArray.length(); i++) {
+            JsonObject jsonObject = jsonArray.getObject(i);
+            MetaItem item = new MetaItem(jsonObject);
+            if (filter == null) {
+                list.add(item);
+            } else if (filter.test(item)) {
+                list.add(item);
+            }
+        }
+        return list;
     }
 
     public MetaItem get(int index) {
@@ -75,7 +94,16 @@ public class Meta {
     }
 
     public MetaItem first(String name) {
-        List<MetaItem> list = asList();
+        List<MetaItem> list = all();
+        for (MetaItem item : list) {
+            if (item.getName().equals(name))
+                return item;
+        }
+        return null;
+    }
+
+    public MetaItem first(String name, JsonValue value) {
+        List<MetaItem> list = all();
         for (MetaItem item : list) {
             if (item.getName().equals(name))
                 return item;
@@ -91,9 +119,14 @@ public class Meta {
         return first(name) != null;
     }
 
-    public int indexOf(MetaItem item) {
-        List<MetaItem> list = asList();
-        for (int i = 0; i < list.size(); i++) {
+    public boolean contains(String name, JsonValue value) {
+        MetaItem metaItem = first(name);
+        return metaItem != null && JsonUtil.equals(metaItem.getValue(), value);
+    }
+
+    public int firstIndexOf(MetaItem item, int startIndex) {
+        List<MetaItem> list = all();
+        for (int i = startIndex; i < list.size(); i++) {
             if (list.get(i).getName().equals(item.getName()))
                 return i;
         }
@@ -127,24 +160,6 @@ public class Meta {
 
     public Meta copy() {
         return new Meta((JsonArray) Json.parse(getJsonArray().toJson()));
-    }
-
-    protected List<MetaItem> asList() {
-        return asList(null);
-    }
-
-    protected List<MetaItem> asList(Function<MetaItem, Boolean> filter) {
-        List<MetaItem> list = new ArrayList<>();
-        for (int i = 0; i < jsonArray.length(); i++) {
-            JsonObject jsonObject = jsonArray.getObject(i);
-            MetaItem item = new MetaItem(jsonObject);
-            if (filter == null) {
-                list.add(item);
-            } else if (filter.apply(item)) {
-                list.add(item);
-            }
-        }
-        return list;
     }
 
     @Override

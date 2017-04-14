@@ -31,7 +31,6 @@ import org.openremote.model.Consumer;
 import org.openremote.model.ReadAttributesEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetAttributes;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
 import org.openremote.model.event.bus.EventRegistration;
@@ -41,7 +40,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 public abstract class AttributesBrowser
-    extends AttributesView<AttributesBrowser.Container, AttributesBrowser.Style, AssetAttributes, AssetAttribute> {
+    extends AttributesView<AttributesBrowser.Container, AttributesBrowser.Style> {
 
     private static final Logger LOG = Logger.getLogger(AttributesBrowser.class.getName());
 
@@ -60,7 +59,7 @@ public abstract class AttributesBrowser
     protected EventRegistration<AttributeEvent> eventRegistration;
 
     public AttributesBrowser(Environment environment, Container container, Asset asset) {
-        super(environment, container, new AssetAttributes(asset));
+        super(environment, container, asset.getAttributes());
         this.asset = asset;
 
         eventRegistration = environment.getEventBus().register(

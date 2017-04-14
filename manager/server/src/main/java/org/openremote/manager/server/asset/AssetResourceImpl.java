@@ -29,8 +29,9 @@ import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttributes;
+import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetQuery;
+import org.openremote.model.util.AttributeUtil;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
@@ -243,10 +244,10 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     throw new WebApplicationException(NOT_FOUND);
             }
 
-            // Check attribute exists
-            AssetAttributes attributes = new AssetAttributes(asset);
+            List<AssetAttribute> attributes = asset.getAttributes();
 
-            if (!attributes.hasAttribute(attributeName))
+            // Check attribute exists
+            if (!AttributeUtil.contains(attributes, attributeName))
                 throw new WebApplicationException(NOT_FOUND);
 
             // Check realm, must be accessible
@@ -256,7 +257,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             // Check read-only
-            if (!isSuperUser() && attributes.get(attributeName).isReadOnly()) {
+            if (!isSuperUser() && AttributeUtil.getAttributeByName(attributes, attributeName).isReadOnly()) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 

@@ -30,13 +30,14 @@ import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
+import org.openremote.manager.server.setup.RuntimeResolverService;
 import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.Function;
 import org.openremote.model.asset.*;
-import org.openremote.model.asset.agent.AgentAttributes;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
-import org.openremote.model.asset.thing.ThingAttribute;
+import org.openremote.model.asset.agent.AgentProtocolLink;
+import org.openremote.model.util.AttributeUtil;
 import org.openremote.model.util.JsonUtil;
 
 import java.util.*;
@@ -61,8 +62,10 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     protected AssetStorageService assetStorageService;
     protected AssetDatapointService assetDatapointService;
     protected MessageBrokerService messageBrokerService;
-    protected Collection<Protocol> protocols; // TODO: Can protocols be added at runtime
+    protected RuntimeResolverService resolverService;
     protected final Map<AttributeRef, ProtocolConfiguration> protocolConfigurations = new HashMap<>();
+    protected AgentProtocolLink.Filter agentLinkFilter;
+    protected ProtocolConfiguration.Filter protocolConfigFilter;
     protected Function<AttributeRef, ProtocolConfiguration> protocolConfigurationResolver = (AttributeRef protocolRef) -> {
         synchronized (protocolConfigurations) {
             return protocolConfigurations.get(protocolRef);
@@ -75,33 +78,34 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         assetStorageService = container.getService(AssetStorageService.class);
         assetDatapointService = container.getService(AssetDatapointService.class);
         messageBrokerService = container.getService(MessageBrokerService.class);
-        container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
+        resolverService = container.getService(RuntimeResolverService.class);
     }
 
     @Override
     public void start(Container container) throws Exception {
-        protocols = container.getServices(Protocol.class);
+        container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
+        agentLinkFilter = resolverService.resolve(AgentProtocolLink.Filter.class);
+        protocolConfigFilter = resolverService.resolve(ProtocolConfiguration.Filter.class);
+    }
+
+    @Override
+    public void allStarted(Container container) throws Exception {
         List<ServerAsset> agents = assetStorageService.findAll(new AssetQuery().select(new AssetQuery.Select(true, false)).type(AssetType.AGENT));
         LOG.fine("Deploy all agents in all realms: " + agents.size());
 
         for (Asset agent : agents) {
-            // Extract and store protocol configurations for this agent - there won't be any asset attributes
-            // linked yet as agent has just been created
-            // Link the protocol configuration
-            ProtocolConfiguration.getAll(agent)
-                    .forEach(this::linkProtocolConfiguration);
+            /// Link protocols for all attributes that are valid ProtocolAttributeWrappers
+            protocolConfigFilter.getAllWrapped(agent.getAttributes(), true)
+                .forEach(this::linkProtocol);
         }
     }
 
     @Override
     public void stop(Container container) throws Exception {
-        List<ProtocolConfiguration> protocolConfigs;
-
         synchronized (protocolConfigurations) {
-            protocolConfigs = Arrays.asList(protocolConfigurations.values().toArray(new ProtocolConfiguration[0]));
+            new ArrayList<>(protocolConfigurations.values())
+                .forEach(this::unlinkProtocol);
         }
-
-        protocolConfigs.forEach(this::unlinkProtocolConfiguration);
     }
 
     @Override
@@ -129,14 +133,9 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         switch (persistenceEvent.getCause()) {
             case INSERT:
 
-                // Link all protocol configurations for this agent
-                ProtocolConfiguration.getAll(agent)
-                        .forEach(protocolConfiguration -> {
-                            AttributeRef protocolRef = new AttributeRef(agent.getId(), protocolConfiguration.getName());
-                            LOG.fine("Agent was persisted (" + persistenceEvent.getCause() + "), linking protocol: " + protocolRef);
-                            linkProtocolConfiguration(protocolConfiguration);
-                        });
-
+                // Link protocols for all attributes that are valid ProtocolAttributeWrappers
+                protocolConfigFilter.getAllWrapped(agent.getAttributes(), true)
+                    .forEach(this::linkProtocol);
                 break;
             case UPDATE:
 
@@ -148,56 +147,43 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
                 // Attributes have possibly changed so need to compare old and new state to determine
                 // which protocol configs are affected
-                AgentAttributes oldAttributes = new AgentAttributes(agent.getId(), (JsonObject) persistenceEvent.getPreviousState()[attributesIndex]);
-                AgentAttributes newAttributes = new AgentAttributes(agent.getId(), (JsonObject) persistenceEvent.getCurrentState()[attributesIndex]);
-                List<ProtocolConfiguration> oldProtocolConfigs = ProtocolConfiguration.getAll(oldAttributes.get());
-                List<ProtocolConfiguration> newProtocolConfigs = ProtocolConfiguration.getAll(newAttributes.get());
+                List<AssetAttribute> oldAttributes = AttributeUtil.getAssetAttributesFromJson(agent.getId(), (JsonObject) persistenceEvent.getPreviousState()[attributesIndex]);
+                List<AssetAttribute> newAttributes = AttributeUtil.getAssetAttributesFromJson(agent.getId(), (JsonObject) persistenceEvent.getCurrentState()[attributesIndex]);
+                List<ProtocolConfiguration> oldProtocolConfigurations = protocolConfigFilter.getAllWrapped(oldAttributes, true);
+                List<ProtocolConfiguration> newProtocolConfigurations = protocolConfigFilter.getAllWrapped(newAttributes, true);
 
                 // Compare protocol configurations by JSON value
                 // Unlink protocols that are in oldConfigs but not in newConfigs
-                oldProtocolConfigs
+                oldProtocolConfigurations
                         .stream()
-                        .filter(oldProtocolConfig -> newProtocolConfigs
+                        .filter(oldProtocolAttribute -> newProtocolConfigurations
                                 .stream()
-                                .noneMatch(newProtocolConfig -> JsonUtil.equals(
-                                        oldProtocolConfig.getJsonObject(),
-                                        newProtocolConfig.getJsonObject())
+                                .noneMatch(newProtocolAttribute -> JsonUtil.equals(
+                                        oldProtocolAttribute.getAttribute().getJsonObject(),
+                                        newProtocolAttribute.getAttribute().getJsonObject())
                                 )
                         )
-                        .forEach(obsoleteProtocolConfig -> {
-                            AttributeRef protocolRef = new AttributeRef(agent.getId(), obsoleteProtocolConfig.getName());
-                            LOG.fine("Agent was persisted (" + persistenceEvent.getCause() + "), unlinking protocol: " + protocolRef);
-                            unlinkProtocolConfiguration(obsoleteProtocolConfig);
-                        });
+                        .forEach(this::unlinkProtocol);
 
                 // Link protocols that are in newConfigs but not in oldConfigs
-                newProtocolConfigs
+                newProtocolConfigurations
                         .stream()
-                        .filter(newConfig -> oldProtocolConfigs
+                        .filter(newProtocolAttribute -> oldProtocolConfigurations
                                 .stream()
-                                .noneMatch(oldConfig ->
+                                .noneMatch(oldProtocolAttribute ->
                                         JsonUtil.equals(
-                                                oldConfig.getJsonObject(),
-                                                newConfig.getJsonObject()
+                                                oldProtocolAttribute.getAttribute().getJsonObject(),
+                                                newProtocolAttribute.getAttribute().getJsonObject()
                                         )
                                 )
                         )
-                        .forEach(newProtocolConfig -> {
-                            AttributeRef protocolRef = new AttributeRef(agent.getId(), newProtocolConfig.getName());
-                            LOG.fine("Agent was persisted (" + persistenceEvent.getCause() + "), linking protocol: " + protocolRef);
-                            linkProtocolConfiguration(newProtocolConfig);
-                        });
+                        .forEach(this::linkProtocol);
                 break;
             case DELETE:
 
                 // Unlink any attributes that have an agent link to this agent
-                List<ProtocolConfiguration> protocolConfigurations = ProtocolConfiguration.getAll(agent);
-                protocolConfigurations
-                        .forEach(protocolConfig -> {
-                            AttributeRef protocolRef = new AttributeRef(agent.getId(), protocolConfig.getName());
-                            LOG.fine("Agent was persisted (" + persistenceEvent.getCause() + "), unlinking protocol: " + protocolRef);
-                            unlinkProtocolConfiguration(protocolConfig);
-                        });
+                protocolConfigFilter.getAllWrapped(agent.getAttributes(), true)
+                    .forEach(this::unlinkProtocol);
                 break;
         }
     }
@@ -216,8 +202,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                 // and handle in agent insert
 
                 // Link any AGENT_LINK attributes to the referenced protocol
-                Map<AttributeRef, List<ThingAttribute>> groupedThingAttributes = ThingAttribute.getAllGroupedByProtocolRef(asset, protocolConfigurationResolver);
-                groupedThingAttributes.forEach((protocolRef, thingAttributes) -> linkAttributes(getProtocol(protocolConfigurationResolver.apply(protocolRef)), thingAttributes));
+                Map<ProtocolConfiguration, List<AssetAttribute>> groupedAgentLinksAttributes = getGroupedAgentLinkAttributes(asset.getAttributes());
+                groupedAgentLinksAttributes.forEach(this::linkAttributes);
                 break;
             }
             case UPDATE:
@@ -230,62 +216,92 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
                 // Attributes have possibly changed so need to compare old and new state to determine any changes to
                 // AGENT_LINK attributes
-                AssetAttributes oldAttributes = new AssetAttributes(asset.getId(), (JsonObject) persistenceEvent.getPreviousState()[attributesIndex]);
-                AssetAttributes newAttributes = new AssetAttributes(asset.getId(), (JsonObject) persistenceEvent.getCurrentState()[attributesIndex]);
-                List<ThingAttribute> oldThingAttributes = ThingAttribute.getAll(oldAttributes.get(), protocolConfigurationResolver);
-                List<ThingAttribute> newThingAttributes = ThingAttribute.getAll(newAttributes.get(), protocolConfigurationResolver);
+                List<AssetAttribute> oldAttributes = AttributeUtil.getAssetAttributesFromJson(asset.getId(), (JsonObject) persistenceEvent.getPreviousState()[attributesIndex]);
+                List<AssetAttribute> newAttributes = AttributeUtil.getAssetAttributesFromJson(asset.getId(), (JsonObject) persistenceEvent.getCurrentState()[attributesIndex]);
+                List<AssetAttribute> oldAgentLinkedAttributes = agentLinkFilter.getAll(oldAttributes, true);
+                List<AssetAttribute> newAgentLinkedAttributes = agentLinkFilter.getAll(newAttributes, true);
 
                 // Unlink thing attributes that are in old but not in new
-                oldThingAttributes
+                List<AssetAttribute> attributesToUnlink = oldAgentLinkedAttributes
+                    .stream()
+                    .filter(oldAgentLinkedAttribute -> newAgentLinkedAttributes
                         .stream()
-                        .filter(oldThingAttribute -> newThingAttributes
-                                .stream()
-                                .noneMatch(newThingAttribute -> JsonUtil.equals( // Ignore the timestamp in comparison
-                                        oldThingAttribute.getJsonObject(),
-                                        newThingAttribute.getJsonObject(),
-                                        Collections.singletonList(AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME))
-                                )
+                        .noneMatch(newAgentLinkedAttribute -> JsonUtil.equals( // Ignore the timestamp in comparison
+                                oldAgentLinkedAttribute.getJsonObject(),
+                                newAgentLinkedAttribute.getJsonObject(),
+                                Collections.singletonList(AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME))
                         )
-                        .collect(Collectors.groupingBy(thingAttribute -> thingAttribute.getProtocolRef()))
-                        .forEach((protocolRef, thingAttributes) ->
-                                unlinkAttributes(getProtocol(protocolConfigurationResolver.apply(protocolRef)), thingAttributes)
-                        );
+                    )
+                    .collect(Collectors.toList());
+
+                getGroupedAgentLinkAttributes(attributesToUnlink)
+                    .forEach(
+                        this::unlinkAttributes
+                    );
 
                 // Link thing attributes that are in new but not in old
-                newThingAttributes
-                        .stream()
-                        .filter(newThingAttribute -> oldThingAttributes
-                                .stream()
-                                .noneMatch(oldThingAttribute -> JsonUtil.equals( // Ignore the timestamp in comparison
-                                        oldThingAttribute.getJsonObject(),
-                                        newThingAttribute.getJsonObject(),
-                                        Collections.singletonList(AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME))
-                                )
-                        )
-                        .collect(Collectors.groupingBy(thingAttribute -> thingAttribute.getProtocolRef()))
-                        .forEach((protocolRef, thingAttributes) ->
-                                linkAttributes(getProtocol(protocolConfigurationResolver.apply(protocolRef)), thingAttributes)
-                        );
+                List<AssetAttribute> attributesToLink = newAgentLinkedAttributes
+                    .stream()
+                    .filter(newThingAttribute -> oldAgentLinkedAttributes
+                            .stream()
+                            .noneMatch(oldThingAttribute -> JsonUtil.equals( // Ignore the timestamp in comparison
+                                    oldThingAttribute.getJsonObject(),
+                                    newThingAttribute.getJsonObject(),
+                                    Collections.singletonList(AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME))
+                            )
+                    )
+                    .collect(Collectors.toList());
+
+                getGroupedAgentLinkAttributes(attributesToLink)
+                    .forEach(
+                        this::linkAttributes
+                    );
                 break;
             case DELETE: {
 
                 // Unlink any AGENT_LINK attributes from the referenced protocol
-                Map<AttributeRef, List<ThingAttribute>> groupedThingAttributes = ThingAttribute.getAllGroupedByProtocolRef(asset, protocolConfigurationResolver);
-                groupedThingAttributes.forEach((protocolRef, thingAttributes) -> unlinkAttributes(getProtocol(protocolConfigurationResolver.apply(protocolRef)), thingAttributes));
+                Map<ProtocolConfiguration, List<AssetAttribute>> groupedAgentLinkAndProtocolAttributes = getGroupedAgentLinkAttributes(asset.getAttributes());
+                groupedAgentLinkAndProtocolAttributes
+                    .forEach(
+                        this::unlinkAttributes
+                    );
                 break;
             }
         }
     }
 
-    protected void linkProtocolConfiguration(ProtocolConfiguration protocolConfiguration) {
-        AttributeRef protocolAttributeRef = protocolConfiguration.getReference();
+    protected void linkProtocol(ProtocolConfiguration protocolConfiguration) {
+        AttributeRef protocolAttributeRef = protocolConfiguration.getAttributeReference();
 
         synchronized (protocolConfigurations) {
-            // Store this configuration for easy access later
+            // Store this protocol configuration for easy access later
             protocolConfigurations.put(protocolAttributeRef, protocolConfiguration);
         }
 
-        LOG.finest("Linking all attributes that use protocol configuration: " + protocolAttributeRef);
+        LOG.finest("Linking all attributes that use protocol attribute: " + protocolAttributeRef);
+
+        // Get all assets that have attributes that use this protocol configuration
+        List<ServerAsset> assets = assetStorageService.findAll(
+            new AssetQuery()
+                .select(new AssetQuery.Select(true, false))
+                .attributeMeta(
+                new AssetQuery.AttributeRefPredicate(
+                    AssetMeta.AGENT_LINK,
+                    protocolAttributeRef.getEntityId(),
+                    protocolAttributeRef.getAttributeName()
+                )
+            )
+        );
+
+        assets.forEach(
+            asset ->
+                getGroupedAgentLinkAttributes(asset.getAttributes())
+                    .forEach(this::linkAttributes)
+        );
+    }
+
+    protected void unlinkProtocol(ProtocolConfiguration protocolConfiguration) {
+        AttributeRef protocolAttributeRef = protocolConfiguration.getAttribute().getReference();
 
         // Get all assets that have attributes that use this protocol configuration
         List<ServerAsset> assets = assetStorageService.findAll(
@@ -300,39 +316,19 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                 )
         );
 
-        assets.forEach(asset -> {
-            Map<AttributeRef, List<ThingAttribute>> groupedThingAttributes = ThingAttribute.getAllGroupedByProtocolRef(asset, protocolConfigurationResolver);
-            linkAttributes(getProtocol(protocolConfiguration), groupedThingAttributes.get(protocolAttributeRef));
-        });
-    }
-
-    protected void unlinkProtocolConfiguration(ProtocolConfiguration protocolConfiguration) {
-        AttributeRef protocolRef = protocolConfiguration.getReference();
-
-        // Get all assets that have attributes that use this protocol configuration
-        List<ServerAsset> assets = assetStorageService.findAll(
-                new AssetQuery()
-                        .select(new AssetQuery.Select(true, false))
-                        .attributeMeta(
-                        new AssetQuery.AttributeRefPredicate(
-                                AssetMeta.AGENT_LINK,
-                                protocolRef.getEntityId(),
-                                protocolRef.getAttributeName()
-                        )
-                )
+        assets.forEach(
+            asset ->
+                getGroupedAgentLinkAttributes(asset.getAttributes())
+                    .forEach(this::unlinkAttributes)
         );
 
-        assets.forEach(asset -> {
-            Map<AttributeRef, List<ThingAttribute>> groupedThingAttributes = ThingAttribute.getAllGroupedByProtocolRef(asset, protocolConfigurationResolver);
-            unlinkAttributes(getProtocol(protocolConfiguration), groupedThingAttributes.get(protocolRef));
-        });
-
         synchronized (protocolConfigurations) {
-            protocolConfigurations.remove(protocolRef);
+            protocolConfigurations.remove(protocolAttributeRef);
         }
     }
 
     protected Protocol getProtocol(ProtocolConfiguration protocolConfiguration) {
+        Collection<Protocol> protocols = container.getServices(Protocol.class);
         return protocols
                 .stream()
                 .filter(protocol -> {
@@ -344,7 +340,9 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                 .orElse(null);
     }
 
-    protected void linkAttributes(Protocol protocol, List<ThingAttribute> attributes) {
+    protected void linkAttributes(ProtocolConfiguration protocolConfiguration, Collection<AssetAttribute> agentLinkedAttributes) {
+        Protocol protocol = getProtocol(protocolConfiguration);
+
         if (protocol == null) {
             LOG.severe("Cannot link protocol attributes as protocol is null");
             return;
@@ -352,14 +350,16 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
         try {
             LOG.finest("Linking protocol attributes to: " + protocol.getProtocolName());
-            protocol.linkAttributes(attributes);
+            protocol.linkAttributes(agentLinkedAttributes, protocolConfiguration);
         } catch (Exception ex) {
             // TODO: Better error handling?
             LOG.log(Level.WARNING, "Ignoring error on linking attributes to protocol: " + protocol.getProtocolName(), ex);
         }
     }
 
-    protected void unlinkAttributes(Protocol protocol, List<ThingAttribute> attributes) {
+    protected void unlinkAttributes(ProtocolConfiguration protocolConfiguration, Collection<AssetAttribute> attributes) {
+        Protocol protocol = getProtocol(protocolConfiguration);
+
         if (protocol == null) {
             LOG.severe("Cannot link protocol attributes as protocol is null");
             return;
@@ -367,7 +367,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
         try {
             LOG.finest("Unlinking protocol attributes form: " + protocol.getProtocolName());
-            protocol.unlinkAttributes(attributes);
+            protocol.unlinkAttributes(attributes, protocolConfiguration);
         } catch (Exception ex) {
             // TODO: Better error handling?
             LOG.log(Level.WARNING, "Ignoring error on unlinking attributes from protocol: " + protocol.getProtocolName(), ex);
@@ -391,8 +391,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             return;
         }
 
-
-        AttributeRef protocolRef = ThingAttribute.getProtocolRef(assetState.getAttribute());
+        AttributeRef protocolRef = AgentProtocolLink.getLink(assetState.getAttribute());
 
         if (protocolRef != null) {
             // Check attribute is linked to an actual agent
@@ -423,15 +422,29 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         return protocolConfigurationResolver;
     }
 
-/*
-    public static List<ThingAttribute> getThingAttributes(Asset asset) {
-        return new AssetAttributes(asset.getAttributes()).get()
-                .stream()
-                .filter(AssetAttribute::isAgentLinked)
-                .map(ThingAttribute::new)
-                .collect(Collectors.toList());
+    /**
+     * Gets all agent link attributes and their linked protocol configuration and groups them by Protocol Configuration
+     */
+    protected Map<ProtocolConfiguration, List<AssetAttribute>> getGroupedAgentLinkAttributes(List<AssetAttribute> agentLinkAttributes) {
+        AgentProtocolLink.Filter filter = resolverService.resolve(AgentProtocolLink.Filter.class);
+        Map<ProtocolConfiguration, List<AssetAttribute>> map = new HashMap<>();
+
+        filter.getAll(agentLinkAttributes, true)
+            .forEach(agentLinkAttribute -> {
+                AttributeRef agentLink = AgentProtocolLink.getLink(agentLinkAttribute);
+                ProtocolConfiguration protocolConfiguration = protocolConfigurationResolver.apply(agentLink);
+
+                if (protocolConfiguration == null) {
+                    LOG.warning("Invalid agent link '" + agentLink + "' on attribute '" + agentLinkAttribute.getReference() + "'");
+                }
+                else {
+                    map.computeIfAbsent(protocolConfiguration, newProtocolConfiguration -> new ArrayList<>())
+                        .add(agentLinkAttribute);
+                }
+            });
+
+        return map;
     }
-*/
 
     public String toString() {
         return getClass().getSimpleName() + "{" +

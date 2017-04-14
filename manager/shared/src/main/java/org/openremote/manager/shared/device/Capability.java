@@ -1,6 +1,8 @@
 package org.openremote.manager.shared.device;
 
-import org.openremote.model.Attributes;
+import org.openremote.model.Attribute;
+
+import java.util.List;
 
 /**
  * Analogous to an Object in LWM2M; note the mandatory field
@@ -19,7 +21,7 @@ public class Capability implements CapabilityDefinition {
     protected String type;
     protected String name;
     protected String description;
-    protected Attributes resources;
+    protected List<Attribute> resources;
 
     @Override
     public String getType() {
@@ -38,7 +40,7 @@ public class Capability implements CapabilityDefinition {
         return description;
     }
 
-    public Attributes getResources() {
+    public List<Attribute> getResources() {
         return resources;
     }
 
@@ -50,7 +52,7 @@ public class Capability implements CapabilityDefinition {
         this.description = description;
     }
 
-    public void setResources(Attributes resources) {
+    public void setResources(List<Attribute> resources) {
         this.resources = resources;
     }
 }

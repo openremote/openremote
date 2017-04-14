@@ -107,6 +107,11 @@ public class PersistenceService implements ContainerService {
     }
 
     @Override
+    public void allStarted(Container container) throws Exception {
+
+    }
+
+    @Override
     public void stop(Container container) throws Exception {
         LOG.info("Stopping persistence service...");
         if (entityManagerFactory != null) {

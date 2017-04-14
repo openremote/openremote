@@ -20,7 +20,9 @@
 package org.openremote.model.asset;
 
 import elemental.json.JsonValue;
+import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeRef;
+import org.openremote.model.AttributeState;
 import org.openremote.model.AttributeType;
 import org.openremote.model.util.JsonUtil;
 
@@ -34,7 +36,7 @@ import java.util.Date;
  */
 public abstract class AbstractAssetUpdate {
 
-    final protected AbstractAssetAttribute attribute;
+    final protected AssetAttribute attribute;
 
     final protected Date createdOn;
 
@@ -69,11 +71,11 @@ public abstract class AbstractAssetUpdate {
     // True if the update was initiated by a protocol and is being processed northbound
     protected boolean northbound;
 
-    public AbstractAssetUpdate(Asset asset, AbstractAssetAttribute attribute) {
+    public AbstractAssetUpdate(Asset asset, AssetAttribute attribute) {
         this(asset, attribute, null, 0, false);
     }
 
-    public AbstractAssetUpdate(Asset asset, AbstractAssetAttribute attribute, JsonValue oldValue, long oldValueTimestamp, boolean northbound) {
+    public AbstractAssetUpdate(Asset asset, AssetAttribute attribute, JsonValue oldValue, long oldValueTimestamp, boolean northbound) {
         this(
             attribute,
             asset.getCreatedOn(),
@@ -117,7 +119,7 @@ public abstract class AbstractAssetUpdate {
         );
     }
 
-    protected AbstractAssetUpdate(AbstractAssetAttribute attribute,
+    protected AbstractAssetUpdate(AssetAttribute attribute,
                                   Date createdOn, String id, String name, String typeString, AssetType type,
                                   String[] pathFromRoot, String parentId, String parentName, String parentTypeString, AssetType parentType,
                                   String realmId, String tenantRealm,
@@ -227,6 +229,10 @@ public abstract class AbstractAssetUpdate {
         return attribute.getType();
     }
 
+    public AttributeEvent getStateEvent() {
+        return new AttributeEvent(new AttributeState(getAttributeRef(), attribute.getValue()), attribute.getValueTimestamp());
+    }
+
     public boolean isValueChanged() {
         return !JsonUtil.equals(attribute.getValue(), oldValue);
     }
@@ -239,8 +245,7 @@ public abstract class AbstractAssetUpdate {
      * This is here because {@link #attribute} is not always publicly accessible
      */
     public boolean attributeRefsEqual(AbstractAssetUpdate assetUpdate) {
-        return !(assetUpdate == null || assetUpdate.attribute == null)
-            && assetUpdate.attribute.getReference().equals(attribute.getReference());
+        return assetUpdate != null && assetUpdate.getAttributeRef().equals(getAttributeRef());
     }
 
     @Override

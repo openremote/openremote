@@ -123,6 +123,11 @@ public abstract class WebService implements ContainerService {
     }
 
     @Override
+    public void allStarted(Container container) throws Exception {
+
+    }
+
+    @Override
     public void stop(Container container) throws Exception {
         if (undertow != null) {
             LOG.info("Stopping webserver...");

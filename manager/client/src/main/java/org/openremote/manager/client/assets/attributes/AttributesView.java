@@ -32,22 +32,17 @@ import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.util.CollectionsUtil;
 import org.openremote.manager.client.widget.*;
-import org.openremote.model.AttributeType;
-import org.openremote.model.Constants;
-import org.openremote.model.Consumer;
-import org.openremote.model.MetaItem;
-import org.openremote.model.asset.AbstractAssetAttribute;
-import org.openremote.model.asset.AbstractAssetAttributes;
+import org.openremote.model.*;
+import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.util.AttributeUtil;
 import org.openremote.model.util.TextUtil;
 
 import java.util.*;
 
 public abstract class AttributesView<
     C extends AttributesView.Container<S>,
-    S extends AttributesView.Style,
-    ATTRIBUTES extends AbstractAssetAttributes<?, A>,
-    A extends AbstractAssetAttribute
+    S extends AttributesView.Style
     > {
 
     public interface Container<S extends AttributesView.Style> {
@@ -97,17 +92,17 @@ public abstract class AttributesView<
 
     final protected Environment environment;
     final protected C container;
-    final protected ATTRIBUTES attributes;
+    final protected List<AssetAttribute> attributes;
     final protected Map<String, AttributeEditor> editors = new HashMap<>();
-    final protected LinkedHashMap<A, FormGroup> attributeGroups = new LinkedHashMap<>();
+    final protected LinkedHashMap<AssetAttribute, FormGroup> attributeGroups = new LinkedHashMap<>();
 
-    public AttributesView(Environment environment, C container, ATTRIBUTES attributes) {
+    public AttributesView(Environment environment, C container, List<AssetAttribute> attributes) {
         this.environment = environment;
         this.container = container;
         this.attributes = attributes;
     }
 
-    public ATTRIBUTES getAttributes() {
+    public List<AssetAttribute> getAttributes() {
         return attributes;
     }
 
@@ -136,21 +131,21 @@ public abstract class AttributesView<
 
     /* ####################################################################### */
 
-    protected void addAttributeActions(A attribute,
+    protected void addAttributeActions(AssetAttribute attribute,
                                        FormGroup formGroup,
                                        FormField formField,
                                        FormGroupActions formGroupActions,
                                        IsWidget editor) {
     }
 
-    protected void addAttributeExtensions(A attribute,
+    protected void addAttributeExtensions(AssetAttribute attribute,
                                           FormGroup formGroup) {
     }
 
     /* ####################################################################### */
 
     protected void createAttributeGroups() {
-        for (A attribute : attributes.get()) {
+        for (AssetAttribute attribute : attributes) {
             FormGroup formGroup = createAttributeGroup(attribute);
             if (formGroup != null) {
                 attributeGroups.put(attribute, formGroup);
@@ -164,7 +159,7 @@ public abstract class AttributesView<
         }
     }
 
-    protected FormGroup createAttributeGroup(A attribute) {
+    protected FormGroup createAttributeGroup(AssetAttribute attribute) {
 
         FormGroup formGroup = new FormGroup();
 
@@ -198,14 +193,14 @@ public abstract class AttributesView<
         return formGroup;
     }
 
-    protected FormLabel createAttributeLabel(A attribute) {
+    protected FormLabel createAttributeLabel(AssetAttribute attribute) {
         String label = getAttributeLabel(attribute);
         FormLabel formLabel = new FormLabel(TextUtil.ellipsize(label, 30));
         formLabel.addStyleName("larger");
         return formLabel;
     }
 
-    protected String getAttributeLabel(A attribute) {
+    protected String getAttributeLabel(AssetAttribute attribute) {
         String label = attribute.getName();
         MetaItem labelItem = attribute.firstMetaItem(AssetMeta.LABEL);
         if (labelItem != null) {
@@ -214,7 +209,7 @@ public abstract class AttributesView<
         return label;
     }
 
-    protected String getAttributeDescription(A attribute) {
+    protected String getAttributeDescription(AssetAttribute attribute) {
         MetaItem description = attribute.firstMetaItem(AssetMeta.DESCRIPTION);
         if (description != null) {
             return description.getValueAsString();
@@ -222,7 +217,7 @@ public abstract class AttributesView<
         return null;
     }
 
-    protected AttributeEditor createEditor(A attribute, FormGroup formGroup) {
+    protected AttributeEditor createEditor(AssetAttribute attribute, FormGroup formGroup) {
         MetaItem defaultValueItem = attribute.firstMetaItem(AssetMeta.DEFAULT);
         S style = container.getStyle();
 
@@ -241,7 +236,7 @@ public abstract class AttributesView<
         return attributeEditor;
     }
 
-    protected AttributeEditor createUnsupportedEditor(A attribute) {
+    protected AttributeEditor createUnsupportedEditor(AssetAttribute attribute) {
         FormField unsupportedField = new FormField();
         unsupportedField.add(new FormOutputText(
             environment.getMessages().unsupportedAttributeType(attribute.getType().getValue())
@@ -249,7 +244,7 @@ public abstract class AttributesView<
         return () -> unsupportedField;
     }
 
-    protected AttributeEditor createStringEditor(A attribute, MetaItem defaultValueItem, S style, FormGroup formGroup) {
+    protected AttributeEditor createStringEditor(AssetAttribute attribute, MetaItem defaultValueItem, S style, FormGroup formGroup) {
         String currentValue = attribute.getValueAsString();
         String defaultValue = defaultValueItem != null ? defaultValueItem.getValueAsString() : null;
 
@@ -296,7 +291,7 @@ public abstract class AttributesView<
         return input;
     }
 
-    protected AttributeEditor createIntegerEditor(A attribute, MetaItem defaultValueItem, S style, FormGroup formGroup) {
+    protected AttributeEditor createIntegerEditor(AssetAttribute attribute, MetaItem defaultValueItem, S style, FormGroup formGroup) {
         String currentValue = attribute.getValueAsString();
         String defaultValue = defaultValueItem != null ? defaultValueItem.getValueAsString() : null;
         Consumer<String> updateConsumer = isReadOnly(attribute) ? null : value -> {
@@ -353,7 +348,7 @@ public abstract class AttributesView<
         return input;
     }
 
-    protected AttributeEditor createDecimalEditor(A attribute, MetaItem defaultValueItem, S style, FormGroup formGroup) {
+    protected AttributeEditor createDecimalEditor(AssetAttribute attribute, MetaItem defaultValueItem, S style, FormGroup formGroup) {
         String currentValue = attribute.getValueAsString();
         String defaultValue = defaultValueItem != null ? defaultValueItem.getValueAsString() : null;
         Consumer<String> updateConsumer = isReadOnly(attribute) ? null : value -> {
@@ -410,7 +405,7 @@ public abstract class AttributesView<
         return input;
     }
 
-    protected AttributeEditor createBooleanEditor(A attribute, MetaItem defaultValueItem, S style, FormGroup formGroup) {
+    protected AttributeEditor createBooleanEditor(AssetAttribute attribute, MetaItem defaultValueItem, S style, FormGroup formGroup) {
         Boolean currentValue = attribute.getValueAsBoolean();
         Boolean defaultValue = defaultValueItem != null ? defaultValueItem.getValueAsBoolean() : null;
         Consumer<Boolean> updateConsumer = isReadOnly(attribute) ? null : value -> {
@@ -471,16 +466,16 @@ public abstract class AttributesView<
         return input;
     }
 
-    protected boolean isReadOnly(A attribute) {
+    protected boolean isReadOnly(AssetAttribute attribute) {
         return attribute.isReadOnly();
     }
 
-    protected boolean isShowTimestamp(A attribute) {
+    protected boolean isShowTimestamp(AssetAttribute attribute) {
         return true;
     }
 
-    protected void removeAttribute(A attribute) {
-        attributes.remove(attribute.getName());
+    protected void removeAttribute(AssetAttribute attribute) {
+        AttributeUtil.remove(attributes, attribute.getName());
         editors.remove(attribute.getName());
         int attributeGroupIndex = container.getPanel().getWidgetIndex(attributeGroups.get(attribute));
         container.getPanel().remove(attributeGroupIndex);

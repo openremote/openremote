@@ -1,6 +1,8 @@
 package org.openremote.manager.shared.device;
 
-import org.openremote.model.Attributes;
+import org.openremote.model.Attribute;
+
+import java.util.List;
 
 // TODO Not used
 public interface CapabilityDefinition {
@@ -8,5 +10,5 @@ public interface CapabilityDefinition {
 
     String getDescription();
 
-    Attributes getResources();
+    List<Attribute> getResources();
 }

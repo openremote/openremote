@@ -19,29 +19,23 @@
  */
 package org.openremote.model;
 
-import com.google.gwt.regexp.shared.RegExp;
 import elemental.json.Json;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
+import org.openremote.model.util.AttributeUtil;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.function.Predicate;
 
 /**
  * Convenience overlay API for {@link JsonObject}.
- * <p>
- * Modifies the given or an empty object.
  */
 public abstract class Attribute<CHILD extends Attribute<CHILD>> extends AbstractValueTimestampHolder<CHILD> {
 
     public static final String TYPE_FIELD_NAME = "type";
     public static final String META_FIELD_NAME = "meta";
-
-    /**
-     * Attribute names should be very simple, as we use them in SQL path expressions, etc. and must manually escape.
-     */
-    public static final String ATTRIBUTE_NAME_PATTERN = "^\\w+$";
-    protected static final RegExp attributeNamePattern = RegExp.compile(Attribute.ATTRIBUTE_NAME_PATTERN);
-
     protected String name;
 
     protected Attribute(String name) {
@@ -81,9 +75,9 @@ public abstract class Attribute<CHILD extends Attribute<CHILD>> extends Abstract
     }
 
     public void setName(String name) {
-        if (!Attribute.nameIsValid(name)) {
+        if (!AttributeUtil.nameIsValid(name)) {
             throw new IllegalArgumentException(
-                    "Invalid attribute name (must match '" + Attribute.ATTRIBUTE_NAME_PATTERN + "'): " + name
+                    "Invalid attribute name (must match '" + AttributeUtil.ATTRIBUTE_NAME_PATTERN + "'): " + name
             );
         }
         this.name = name;
@@ -117,7 +111,7 @@ public abstract class Attribute<CHILD extends Attribute<CHILD>> extends Abstract
     }
 
     public Meta getMeta() {
-        return hasMeta() ? new Meta(jsonObject.getArray(META_FIELD_NAME)) : null;
+        return hasMeta() ? new Meta(jsonObject.getArray(META_FIELD_NAME)) : new Meta();
     }
 
     @SuppressWarnings("unchecked")
@@ -134,8 +128,16 @@ public abstract class Attribute<CHILD extends Attribute<CHILD>> extends Abstract
         return hasMeta() && getMeta().contains(name);
     }
 
+    public boolean hasMetaItem(String name, JsonValue value) {
+        return hasMeta() && getMeta().contains(name, value);
+    }
+
     public MetaItem firstMetaItem(String name) {
         return hasMetaItem(name) ? getMeta().first(name) : null;
+    }
+
+    public MetaItem firstMetaItem(String name, JsonValue value) {
+        return hasMeta() ? getMeta().first(name, value) : null;
     }
 
     public MetaItem firstMetaItemOrThrow(String name) throws NoSuchElementException {
@@ -144,14 +146,42 @@ public abstract class Attribute<CHILD extends Attribute<CHILD>> extends Abstract
         return firstMetaItem(name);
     }
 
-    public static boolean nameIsValid(String name) {
-        return name != null && name.length() > 0 && attributeNamePattern.test(name);
+    public MetaItem firstMetaItemOrThrow(String name, JsonValue value) throws NoSuchElementException {
+        if (!hasMeta())
+            throw new NoSuchElementException("Missing item: " + name);
+        MetaItem metaItem = getMeta().first(name, value);
+        if (metaItem == null)
+            throw new NoSuchElementException("Missing item: " + name);
+
+        return metaItem;
+    }
+
+    public List<MetaItem> getMetaItems(String name) {
+        if (!hasMeta()) {
+            return Collections.emptyList();
+        }
+
+        return getMeta().get(name);
+    }
+
+    public List<MetaItem> getMetaItems(String name, JsonValue value) {
+        if (!hasMeta()) {
+            return Collections.emptyList();
+        }
+
+        return getMeta().get(name, value);
+    }
+
+    public List<MetaItem> getMetaItems(Predicate<MetaItem> filter) {
+        if (!hasMeta()) {
+            return Collections.emptyList();
+        }
+
+        return getMeta().get(filter);
     }
 
     @Override
     public boolean isValid() {
-        return super.isValid() && nameIsValid(name) && getType() != null;
+        return super.isValid() && AttributeUtil.nameIsValid(name) && getType() != null;
     }
-
-    public abstract CHILD copy();
 }

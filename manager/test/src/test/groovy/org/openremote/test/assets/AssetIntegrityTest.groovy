@@ -3,23 +3,19 @@ package org.openremote.test.assets
 import elemental.json.Json
 import org.openremote.container.util.IdentifierUtil
 import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
+import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.shared.asset.AssetResource
-import org.openremote.manager.shared.http.BadRequestException
-import org.openremote.model.Attribute
-import org.openremote.model.Attributes
+import org.openremote.model.AttributeType
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.AssetAttributes
 import org.openremote.model.asset.AssetType
-import org.openremote.model.AttributeType
+import org.openremote.model.util.AttributeUtil
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import javax.ws.rs.WebApplicationException
-import javax.xml.ws.WebServiceException
 
 import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
@@ -61,23 +57,22 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         testAsset.parentId == null
 
         when: "an asset is created with an illegal attribute name"
-        def attributes = new AssetAttributes(testAsset)
-        attributes.put(new AssetAttribute(testAsset.id, "illegal- Attribute:name&&&", AttributeType.STRING))
-        testAsset.setAttributes(attributes.getJsonObject())
+        def attributes = testAsset.getAttributes()
+        attributes.add(new AssetAttribute(testAsset.id, "illegal- Attribute:name&&&", AttributeType.STRING))
+        testAsset.setAttributes(attributes)
 
         then: "the request should be bad"
         thrown(IllegalArgumentException)
 
         when: "an asset is stored with a non-empty attribute value"
         testAsset = assetResource.get(null, testAsset.getId())
-        testAsset.setAttributes(
-                new AssetAttributes().put(new AssetAttribute("foo", AttributeType.STRING, Json.create("bar"))).getJsonObject()
-        )
+        testAsset.setAttributes([new AssetAttribute("foo", AttributeType.STRING, Json.create("bar"))])
         assetResource.update(null, testAsset.id, testAsset)
         testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the attribute should exist"
-        new AssetAttributes(testAsset).get("foo").getValueAsString() == "bar"
+        AttributeUtil.getAttributeByName(testAsset.getAttributes(), "foo") != null
+        AttributeUtil.getAttributeByName(testAsset.getAttributes(), "foo").getValueAsString() == "bar"
 
         when: "an asset attribute value is written directly"
         assetResource.writeAttributeValue(null, testAsset.getId(), "foo", "\"bar2\"")
@@ -85,7 +80,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         then: "the attribute value should match"
         new PollingConditions(delay: 1, timeout: 5).eventually {
             def asset = assetResource.get(null, testAsset.getId())
-            new AssetAttributes(asset).get("foo").getValueAsString() == "bar2"
+            assert AttributeUtil.getAttributeByName(asset.getAttributes(), "foo").getValueAsString() == "bar2"
         }
 
         when: "an asset attribute value null is written directly"
@@ -94,7 +89,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         then: "the attribute value should match"
         new PollingConditions(delay: 1, timeout: 5).eventually {
             def asset = assetResource.get(null, testAsset.getId())
-            !new AssetAttributes(asset).get("foo").hasValue()
+            assert AttributeUtil.getAttributeByName(asset.getAttributes(), "foo").hasValue() == false
         }
 
         when: "an asset is updated with a different type"

@@ -18,7 +18,6 @@ import org.openremote.model.AttributeType
 import org.openremote.model.Meta
 import org.openremote.model.MetaItem
 import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.AssetAttributes
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetType
 import org.openremote.test.ManagerContainerTrait
@@ -301,14 +300,13 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         asset.setRealmId(keycloakDemoSetup.customerATenant.getId())
         asset.setType(AssetType.ROOM)
         asset.setName("Kitchen")
-        AssetAttributes attributes = new AssetAttributes()
-        attributes.put(
+        def attributes = [
                 new AssetAttribute("testString", AttributeType.STRING, Json.create("test"))
                         .setMeta(new Meta()
                         .add(new MetaItem(AssetMeta.RULE_STATE, Json.create(true)))
                 )
-        )
-        asset.setAttributes(attributes.getJsonObject())
+        ]
+        asset.setAttributes(attributes)
         asset = assetStorageService.merge(asset)
 
         then: "after a few seconds the engines in scope should not have fired any rules but the facts should have been inserted"
@@ -329,16 +327,15 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         when: "the Kitchen room asset is modified to add a new attribute but RULE_STATE = true meta is not changed"
         resetRuleExecutionLoggers()
-        attributes = new AssetAttributes()
-        attributes.put(
+        attributes = [
                 new AssetAttribute("testString", AttributeType.STRING, Json.create("test"))
                         .setMeta(
                         new Meta()
                                 .add(new MetaItem(AssetMeta.RULE_STATE, Json.create(true)))
                 ),
                 new AssetAttribute("testInteger", AttributeType.INTEGER, Json.create(0))
-        )
-        asset.setAttributes(attributes.getJsonObject())
+        ]
+        asset.setAttributes(attributes)
         asset = assetStorageService.merge(asset)
 
         then: "after a few seconds the fact count shouldn't change and no rules should have fired"
@@ -358,16 +355,15 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         }
 
         when: "the Kitchen room asset is modified to set the RULE_STATE to false"
-        attributes = new AssetAttributes()
-        attributes.put(
+        attributes = [
                 new AssetAttribute("testString", AttributeType.STRING, Json.create("test"))
                         .setMeta(
                         new Meta()
                                 .add(new MetaItem(AssetMeta.RULE_STATE, Json.create(false)))
                 ),
                 new AssetAttribute("testInteger", AttributeType.INTEGER, Json.create(0))
-        )
-        asset.setAttributes(attributes.getJsonObject())
+        ]
+        asset.setAttributes(attributes)
         asset = assetStorageService.merge(asset)
 
         then: "the facts should be removed from the rule engines and no rules should have fired"
@@ -388,8 +384,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         when: "the Kitchen room asset is modified to set all attributes to RULE_STATE = true"
         resetRuleExecutionLoggers()
-        attributes = new AssetAttributes()
-        attributes.put(
+        attributes = [
                 new AssetAttribute("testString", AttributeType.STRING, Json.create("test"))
                         .setMeta(
                         new Meta()
@@ -400,8 +395,8 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
                         new Meta()
                                 .add(new MetaItem(AssetMeta.RULE_STATE, Json.create(true)))
                 )
-        )
-        asset.setAttributes(attributes.getJsonObject())
+        ]
+        asset.setAttributes(attributes)
         asset = assetStorageService.merge(asset)
 
         then: "the facts should be added to the rule engines and no rules should have fired"

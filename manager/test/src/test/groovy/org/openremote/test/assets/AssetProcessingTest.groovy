@@ -4,16 +4,17 @@ import elemental.json.Json
 import org.openremote.agent3.protocol.AbstractProtocol
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
-import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.asset.ServerAsset
+import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.model.*
-import org.openremote.model.asset.*
-import org.openremote.model.asset.agent.AgentAttributes
+import org.openremote.model.asset.AssetAttribute
+import org.openremote.model.asset.AssetMeta
+import org.openremote.model.asset.AssetState
+import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.ProtocolConfiguration
-import org.openremote.model.asset.thing.ThingAttribute
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -52,18 +53,18 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             }
 
             @Override
-            protected void onAttributeAdded(ThingAttribute attribute) {
+            protected void onAttributeAdded(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration) {
                 protocolDeployed = true
                 LOG.info("Mock Protocol: onAttributeAdded")
             }
 
             @Override
-            protected void onAttributeUpdated(ThingAttribute attribute) {
+            protected void onAttributeUpdated(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration) {
                 LOG.info("Mock Protocol: onAttributeUpdated")
             }
 
             @Override
-            protected void onAttributeRemoved(ThingAttribute attribute) {
+            protected void onAttributeRemoved(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration) {
                 LOG.info("Mock Protocol: onAttributeRemoved")
             }
 
@@ -122,10 +123,8 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def mockAgent = new ServerAsset()
         mockAgent.setName("Mock Agent")
         mockAgent.setType(AssetType.AGENT)
-        AgentAttributes agentAttributes = new AgentAttributes()
-        ProtocolConfiguration mockProtocolConfig = new ProtocolConfiguration("mock123", mockProtocolName)
-        agentAttributes.put(mockProtocolConfig)
-        mockAgent.setAttributes(agentAttributes.getJsonObject())
+        def mockProtocolConfig = new ProtocolConfiguration("mock123", mockProtocolName)
+        mockAgent.setAttributes(Collections.singletonList(mockProtocolConfig.getAttribute()))
         mockAgent.setRealmId(keycloakDemoSetup.masterTenant.id)
         mockAgent = assetStorageService.merge(mockAgent)
         //endregion
@@ -135,8 +134,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def mockThing = new ServerAsset(mockAgent)
         mockThing.setName("Mock Thing Asset")
         mockThing.setType(AssetType.THING)
-        def mockThingAttributes = new AssetAttributes(mockThing)
-        mockThingAttributes.put(
+        def mockThingAttributes = [
                 new AssetAttribute("light1Toggle", AttributeType.BOOLEAN, Json.create(false))
                         .setMeta(new Meta()
                         .add(new MetaItem(
@@ -170,8 +168,8 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
                         Json.create("A plain string attribute for storing information"))
                 )
                 )
-        )
-        mockThing.setAttributes(mockThingAttributes.getJsonObject())
+        ]
+        mockThing.setAttributes(mockThingAttributes)
         mockThing = assetStorageService.merge(mockThing)
         //endregion
 

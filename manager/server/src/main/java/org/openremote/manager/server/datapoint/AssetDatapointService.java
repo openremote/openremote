@@ -52,6 +52,11 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetSt
     }
 
     @Override
+    public void allStarted(Container container) throws Exception {
+
+    }
+
+    @Override
     public void stop(Container container) throws Exception {
     }
 

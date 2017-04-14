@@ -79,6 +79,7 @@ public abstract class IdentityService implements ContainerService {
     public static final int KEYCLOAK_PORT_DEFAULT = 8081;
     public static final String KEYCLOAK_CONNECT_TIMEOUT = "KEYCLOAK_CONNECT_TIMEOUT";
     public static final int KEYCLOAK_CONNECT_TIMEOUT_DEFAULT = 2000;
+
     public static final String KEYCLOAK_REQUEST_TIMEOUT = "KEYCLOAK_REQUEST_TIMEOUT";
     public static final int KEYCLOAK_REQUEST_TIMEOUT_DEFAULT = 10000;
     public static final String KEYCLOAK_CLIENT_POOL_SIZE = "KEYCLOAK_CLIENT_POOL_SIZE";
@@ -195,6 +196,11 @@ public abstract class IdentityService implements ContainerService {
         // TODO Not a great way to block startup while we wait for other services (Hystrix?)
         pingKeycloak();
         LOG.info("Keycloak identity provider available: " + keycloakServiceUri.build());
+    }
+
+    @Override
+    public void allStarted(Container container) throws Exception {
+
     }
 
     @Override

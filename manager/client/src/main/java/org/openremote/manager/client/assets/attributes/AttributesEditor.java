@@ -21,7 +21,6 @@ package org.openremote.manager.client.assets.attributes;
 
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.event.dom.client.DomEvent;
-import com.google.gwt.regexp.shared.RegExp;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.IsWidget;
 import elemental.json.Json;
@@ -32,13 +31,12 @@ import org.openremote.manager.client.util.JsUtil;
 import org.openremote.manager.client.widget.*;
 import org.openremote.model.*;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetAttributes;
 import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.util.AttributeUtil;
+import java.util.List;
 
 public class AttributesEditor
-    extends AttributesView<AttributesEditor.Container, AttributesEditor.Style, AssetAttributes, AssetAttribute> {
-
-    protected final RegExp attributeNameRegExp = RegExp.compile(Attribute.ATTRIBUTE_NAME_PATTERN);
+    extends AttributesView<AttributesEditor.Container, AttributesEditor.Style> {
 
     public interface Container extends AttributesView.Container<AttributesEditor.Style> {
 
@@ -51,7 +49,7 @@ public class AttributesEditor
     final protected boolean isCreate;
     protected FormGroup newAttributeGroup;
 
-    public AttributesEditor(Environment environment, Container container, AssetAttributes attributes, boolean isCreate) {
+    public AttributesEditor(Environment environment, Container container, List<AssetAttribute> attributes, boolean isCreate) {
         super(environment, container, attributes);
         this.isCreate = isCreate;
     }
@@ -128,7 +126,7 @@ public class AttributesEditor
                 // TODO This is necessary because JSON elemental behavior is weird
                 AssetAttribute att2 =
                     new AssetAttribute(attribute.getName(), Json.parse(attribute.getJsonObject().toJson()));
-                getAttributes().put(att2);
+                getAttributes().add(att2);
                 showInfo(environment.getMessages().attributeAdded(attribute.getName()));
                 build();
             } else {
@@ -155,7 +153,7 @@ public class AttributesEditor
         FormInputText nameInput = createFormInputText(container.getStyle().stringEditor());
         nameInput.setPlaceholder(environment.getMessages().attributeName());
         nameInput.addValueChangeHandler(event -> {
-            if (!attributeNameRegExp.test(event.getValue())) {
+            if (!AttributeUtil.nameIsValid(event.getValue())) {
                 formGroup.setError(true);
                 showValidationError(environment.getMessages().invalidAttributeName());
             } else {
@@ -207,15 +205,15 @@ public class AttributesEditor
         protected void buildItemList() {
             itemListPanel.clear();
 
-            if (!attribute.hasMeta() || attribute.getMeta().all().length == 0) {
+            if (!attribute.hasMeta() || attribute.getMeta().all().size() == 0) {
                 itemListSectionLabel.setVisible(false);
                 return;
             }
             itemListSectionLabel.setVisible(true);
 
-            MetaItem[] items = attribute.getMeta().all();
-            for (int i = 0; i < items.length; i++) {
-                MetaItem item = items[i];
+            List<MetaItem> items = attribute.getMeta().all();
+            for (int i = 0; i < items.size(); i++) {
+                MetaItem item = items.get(i);
                 FormGroup formGroup = new FormGroup();
 
                 FormLabel label = new FormLabel(item.getName());
