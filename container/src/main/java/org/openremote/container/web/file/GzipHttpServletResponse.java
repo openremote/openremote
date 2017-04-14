@@ -185,7 +185,16 @@ public class GzipHttpServletResponse extends HttpServletResponseOutputWrapper {
 				if (contentType != null && mimetypes.contains(contentType.split(";", 2)[0])) {
 					addHeader("Content-Encoding", "gzip");
 					setHeader("Vary", (!isOneOf(vary, null, "*") ? (vary + ",") : "") + "Accept-Encoding");
-					return new GZIPOutputStream(originalResponse.getOutputStream());
+
+					// Remove Content-Length header that was set before we knew about whether to zip the response or not.
+                    // The servlet container will now set the header (at least Undertow does) based on its internal
+                    // write buffer position to the actual number of written bytes. This fixes a bug in the
+                    // "BalusC" file servlet code, because they assume the Content-Length is the original size of the
+                    // resource. This is not the case, RFC 2616 says its the transfer-length of the message body,
+                    // thus it must the size of the gzipped data, not the original size.
+                    setHeader("Content-Length", null);
+
+                    return new GZIPOutputStream(originalResponse.getOutputStream());
 				}
 			}
 
