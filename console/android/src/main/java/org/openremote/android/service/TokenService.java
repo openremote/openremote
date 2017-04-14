@@ -107,10 +107,9 @@ public class TokenService {
 
     public void sendOrStoreFCMToken(String fcmToken, String deviceId) {
         String refreshToken_key = sharedPref.getString(this.refreshTokenKey, null);
+        storeFCMToken(fcmToken, deviceId);
         if (refreshToken_key != null) {
             sendFCMToken(fcmToken, deviceId);
-        } else {
-            storeFCMToken(fcmToken, deviceId);
         }
     }
 
