@@ -19,6 +19,8 @@
  */
 package org.openremote.manager.server.asset;
 
+import elemental.json.JsonString;
+import elemental.json.JsonValue;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
@@ -32,6 +34,7 @@ import org.openremote.manager.server.rules.RulesService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.model.AttributeEvent;
+import org.openremote.model.AttributeExecuteStatus;
 import org.openremote.model.asset.*;
 
 import java.util.ArrayList;
@@ -43,9 +46,7 @@ import java.util.logging.Logger;
 import static org.openremote.agent3.protocol.Protocol.SENSOR_QUEUE;
 import static org.openremote.manager.server.event.EventService.INCOMING_EVENT_TOPIC;
 import static org.openremote.manager.server.event.EventService.getWebsocketAuth;
-import static org.openremote.model.asset.AssetAttribute.containsAssetAttributeNamed;
-import static org.openremote.model.asset.AssetAttribute.findAssetAttribute;
-import static org.openremote.model.asset.AssetAttribute.isMatchingAttributeEvent;
+import static org.openremote.model.asset.AssetAttribute.*;
 import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
 import static org.openremote.model.asset.agent.AgentLink.isValidAgentLink;
 
@@ -214,7 +215,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 if (isSensorUpdate) {
                     processSensorUpdate(event);
                 } else {
-                    updateAttributeValue(event);
+                    updateAttributeValue(event, true);
                 }
             });
 
@@ -224,7 +225,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             .process(exchange -> {
                 AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
                 LOG.fine("Received on asset queue: " + event);
-                updateAttributeValue(event);
+                updateAttributeValue(event, false);
             });
 
         // React if a client wants to write attribute state
@@ -297,8 +298,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
      * entry point to initiate an attribute value change: Sensor updates from protocols, attribute
      * write requests from clients, and attribute write dispatching as rules RHS action.
      */
-    private void updateAttributeValue(AttributeEvent attributeEvent) {
-
+    private void updateAttributeValue(AttributeEvent attributeEvent, boolean fromProtocol) {
         // Check this event relates to a valid asset
         ServerAsset asset = assetStorageService.find(attributeEvent.getEntityId(), true);
 
@@ -328,6 +328,22 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         if (attribute.isReadOnly()) {
             LOG.warning("Ignoring " + attributeEvent + ", attribute is read-only in: " + asset);
             return;
+        }
+
+        // If attribute is marked as executable and not from northbound only allow write AttributeExecuteStatus to be sent
+        if (!fromProtocol && attribute.isExecutable()) {
+            JsonValue value = attributeEvent.getValue();
+            AttributeExecuteStatus status;
+
+            if (value == null || !(value instanceof JsonString) || (status = AttributeExecuteStatus.fromString(value.asString())) == null) {
+                LOG.warning("Attribute event doesn't contain a valid AttributeExecuteStatus value: " + attributeEvent);
+                return;
+            }
+
+            if (!status.isWrite()) {
+                LOG.warning("Only AttributeExecuteStatus write value can be written to an attribute: " + attributeEvent);
+                return;
+            }
         }
 
         processUpdate(asset, attribute, attributeEvent, false);

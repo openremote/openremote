@@ -22,13 +22,12 @@ package org.openremote.agent3.protocol.macro;
 import elemental.json.JsonValue;
 import org.openremote.agent3.protocol.AbstractProtocol;
 import org.openremote.container.Container;
-import org.openremote.model.*;
+import org.openremote.model.AttributeEvent;
+import org.openremote.model.AttributeExecuteStatus;
+import org.openremote.model.AttributeRef;
+import org.openremote.model.AttributeState;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.macro.MacroAction;
-import org.openremote.model.asset.macro.MacroAttributeCommand;
-import org.openremote.model.asset.macro.MacroConfiguration;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,43 +35,44 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static org.openremote.model.asset.macro.MacroConfiguration.getMacroActions;
+import static org.openremote.agent3.protocol.macro.MacroConfiguration.getMacroActions;
+import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 
 /**
  * This protocol is responsible for executing macros.
  * <p>
- * It expects a {@link MacroAttributeCommand} or the super type{@link AttributeCommand}
- * as the attribute event value on the sendToActuator. The protocol will then execute
- * the command and store the command status in the attribute value.
+ * It expects a {@link AttributeExecuteStatus} as the attribute event value on the
+ * sendToActuator. The protocol will then try to perform the requested status on the
+ * linked macro.
  */
 public class MacroProtocol extends AbstractProtocol {
+
+    public static final String MACRO_PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":macro";
+
     class MacroExecutionTask {
         AttributeRef attributeRef;
         List<MacroAction> actions;
-        List<MacroAttributeCommand.Execution> schedule;
         boolean repeat;
         boolean cancelled;
         ScheduledFuture scheduledFuture;
         int iteration = -1;
 
-        public MacroExecutionTask(AttributeRef attributeRef, List<MacroAction> actions, List<MacroAttributeCommand.Execution> schedule, boolean repeat) {
+        public MacroExecutionTask(AttributeRef attributeRef, List<MacroAction> actions, boolean repeat) {
             this.attributeRef = attributeRef;
             this.actions = actions;
-            this.schedule = schedule;
             this.repeat = repeat;
         }
 
         void start() {
-            synchronized (scheduleMap) {
-                scheduleMap.put(attributeRef, this);
+            synchronized (executions) {
+                executions.put(attributeRef, this);
             }
 
             // Update the command Status of this attribute
-            onSensorUpdate(new AttributeState(attributeRef, CommandStatus.ACTIVE.asJsonValue()));
+            onSensorUpdate(new AttributeState(attributeRef, AttributeExecuteStatus.RUNNING.asJsonValue()));
             run();
         }
 
@@ -80,12 +80,12 @@ public class MacroProtocol extends AbstractProtocol {
             LOG.fine("Macro Execution cancel");
             scheduledFuture.cancel(false);
             cancelled = true;
-            synchronized (scheduleMap) {
-                scheduleMap.remove(attributeRef);
+            synchronized (executions) {
+                executions.remove(attributeRef);
             }
 
             // Update the command Status of this attribute
-            onSensorUpdate(new AttributeState(attributeRef, CommandStatus.CANCELLED.asJsonValue()));
+            onSensorUpdate(new AttributeState(attributeRef, AttributeExecuteStatus.CANCELLED.asJsonValue()));
         }
 
         private void run() {
@@ -94,33 +94,15 @@ public class MacroProtocol extends AbstractProtocol {
             }
 
             if (iteration >= 0) {
-                // Process the execution
-                MacroAttributeCommand.Execution execution = schedule.get(iteration);
-                actions.forEach(action -> {
-                    // Look for override value in execution
-                    AttributeState overrideState = execution.getActionOverrides() == null ? null : execution.getActionOverrides()
-                        .stream()
-                        .filter(actionOverride -> actionOverride.getAttributeRef().equals(action.getAttributeState().getAttributeRef()))
-                        .findFirst()
-                        .orElse(null);
+                // Process the execution of the next action
+                MacroAction action = actions.get(iteration);
+                AttributeState actionState = action.getAttributeState();
 
-                    AttributeState actionState = overrideState != null ? overrideState : action.getAttributeState();
-                    if (action.getDelay() > 0) {
-                        // TODO: Better handling of macro action delays - this is ok for short delays
-                        try {
-                            Thread.sleep(action.getDelay());
-                        } catch (InterruptedException e) {
-                            LOG.log(Level.WARNING, "Macro action was cancelled assume the thread is being terminated", e);
-                            return;
-                        }
-                    }
-
-                    // send attribute event
-                    sendAttributeEvent(actionState);
-                });
+                // send attribute event
+                sendAttributeEvent(actionState);
             }
 
-            boolean isLast = iteration == schedule.size() - 1;
+            boolean isLast = iteration == actions.size() - 1;
             boolean restart = isLast && repeat;
 
             if (restart) {
@@ -130,27 +112,27 @@ public class MacroProtocol extends AbstractProtocol {
             }
 
             if ((isLast && !restart)) {
-                synchronized (scheduleMap) {
-                    scheduleMap.remove(attributeRef);
+                synchronized (executions) {
+                    executions.remove(attributeRef);
                 }
 
                 // Update the command Status of this attribute
-                onSensorUpdate(new AttributeState(attributeRef, CommandStatus.COMPLETED.asJsonValue()));
+                onSensorUpdate(new AttributeState(attributeRef, AttributeExecuteStatus.COMPLETED.asJsonValue()));
                 return;
             }
 
             // Get next execution delay
-            Integer delay = schedule.get(iteration).getDelay();
+            Integer delay = actions.get(iteration).getDelayMilliseconds();
 
             // Schedule the next iteration
-            scheduledFuture = executor.schedule(this::run, delay != null && delay >= 0 ? delay : 0, TimeUnit.MILLISECONDS);
+            scheduledFuture = executor.schedule(this::run, delay > 0 ? delay : 0, TimeUnit.MILLISECONDS);
         }
     }
 
     private static final Logger LOG = Logger.getLogger(MacroProtocol.class.getName());
     protected final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     protected final Map<AttributeRef, List<MacroAction>> actionMap = new HashMap<>();
-    protected final Map<AttributeRef, MacroExecutionTask> scheduleMap = new HashMap<>();
+    protected final Map<AttributeRef, MacroExecutionTask> executions = new HashMap<>();
 
     @Override
     public void start(Container container) throws Exception {
@@ -159,26 +141,26 @@ public class MacroProtocol extends AbstractProtocol {
 
     @Override
     public String getProtocolName() {
-        return MacroConfiguration.MACRO_PROTOCOL_NAME;
+        return MACRO_PROTOCOL_NAME;
     }
 
     @Override
     protected void sendToActuator(AttributeEvent event) {
+        // Asset processing service has already done sanity checks
+        JsonValue value = event.getValue();
+        AttributeExecuteStatus status = AttributeExecuteStatus.fromString(value.asString());
         AttributeRef attributeRef = event.getAttributeRef();
 
-        // Check that incoming value is of type Attribute Command
-        JsonValue value = event.getValue();
-        MacroAttributeCommand macroCommand = MacroAttributeCommand.fromJsonValue(value);
-
         // Check if it's a cancellation request
-        if (macroCommand.isCancel()) {
+        if (status == AttributeExecuteStatus.REQUEST_CANCEL) {
             LOG.fine("Request received to cancel macro execution: " + event);
-            synchronized (scheduleMap) {
-                MacroExecutionTask executionTask = scheduleMap.get(attributeRef);
-                if (executionTask != null) {
-                    LOG.fine("Cancelling macro execution");
-                    executionTask.cancel();
-                }
+            synchronized (executions) {
+                executions.computeIfPresent(attributeRef,
+                    (attributeRef1, macroExecutionTask) -> {
+                        macroExecutionTask.cancel();
+                        return macroExecutionTask;
+                    }
+                );
             }
 
             return;
@@ -195,16 +177,7 @@ public class MacroProtocol extends AbstractProtocol {
             return;
         }
 
-        // If the executing command has provided schedule information then include
-        // this in the execution of the macro actions
-        List<MacroAttributeCommand.Execution> schedule = macroCommand.getSchedule();
-
-        if (schedule == null) {
-            // Push in an empty execution
-            schedule = Collections.singletonList(new MacroAttributeCommand.Execution(0));
-        }
-
-        executeMacro(attributeRef, actions, schedule, macroCommand.isRepeat());
+        executeMacro(attributeRef, actions, status == AttributeExecuteStatus.REQUEST_REPEATING);
     }
 
     @Override
@@ -235,8 +208,8 @@ public class MacroProtocol extends AbstractProtocol {
         }
     }
 
-    protected void executeMacro(AttributeRef attributeRef, List<MacroAction> actions, List<MacroAttributeCommand.Execution> schedule, boolean repeat) {
-        MacroExecutionTask task = new MacroExecutionTask(attributeRef, actions, schedule, repeat);
+    protected void executeMacro(AttributeRef attributeRef, List<MacroAction> actions, boolean repeat) {
+        MacroExecutionTask task = new MacroExecutionTask(attributeRef, actions, repeat);
         task.start();
     }
 }

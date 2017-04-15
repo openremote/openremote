@@ -138,19 +138,14 @@ public enum AssetMeta {
     RULE_EVENT_EXPIRES(ASSET_META_NAMESPACE + ":ruleEventExpires", new Access(true, false, true), JsonType.STRING),
 
     /**
-     * Enable flag to be used by asset attributes that could require this functionality (e.g. ProtocolConfiguration)
+     * Enable flag to be used by asset attributes that could require this functionality (e.g. {@link org.openremote.model.asset.agent.ProtocolConfiguration})
      */
     ENABLED(ASSET_META_NAMESPACE + ":enabled", new Access(true, false, true), JsonType.BOOLEAN),
 
     /**
-     * Identifies a meta item as a {@link org.openremote.model.asset.macro.MacroAction}.
+     * Marks an attribute as being executable so it then supports values of type {@link org.openremote.model.AttributeExecuteStatus}
      */
-    MACRO_ACTION(ASSET_META_NAMESPACE + ":macroAction", new Access(true, false, true), JsonType.ARRAY),
-
-    /**
-     * Marks an attribute as being an executable command
-     */
-    COMMAND(ASSET_META_NAMESPACE + ":command", new Access(true, false, true), JsonType.BOOLEAN);
+    EXECUTABLE(ASSET_META_NAMESPACE + ":command", new Access(true, false, true), JsonType.BOOLEAN);
 
     final protected String urn;
     final protected Access access;

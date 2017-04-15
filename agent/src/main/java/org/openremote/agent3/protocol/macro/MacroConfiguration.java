@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.asset.macro;
+package org.openremote.agent3.protocol.macro;
 
 import elemental.json.Json;
 import org.openremote.model.Attribute;
 import org.openremote.model.AttributeType;
 import org.openremote.model.MetaItem;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.util.JsonUtil;
 
 import java.util.List;
@@ -36,22 +35,16 @@ import java.util.stream.Stream;
 import static org.openremote.model.Attribute.isAttributeType;
 import static org.openremote.model.Attribute.isAttributeValid;
 import static org.openremote.model.AttributeType.STRING;
-import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.asset.AssetAttribute.hasAssetMetaItem;
 import static org.openremote.model.asset.AssetAttribute.isAssetMetaItem;
-import static org.openremote.model.asset.AssetMeta.MACRO_ACTION;
-import static org.openremote.model.asset.macro.MacroAction.getMacroActionFromMetaItem;
-import static org.openremote.model.asset.macro.MacroAction.getMetaItemFromMacroAction;
 
 /**
  * Agent attributes can be macro configurations.
  * <p>
- * A macro configuration attribute has {@link AssetMeta#MACRO_ACTION} items attached to it, each
+ * A macro configuration attribute has {@link MacroAction#MACRO_ACTION} items attached to it, each
  * item is a sequence of asset state changes to be executed.
  */
 final public class MacroConfiguration {
-
-    public static final String MACRO_PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":macro";
 
     private MacroConfiguration() {
     }
@@ -59,7 +52,7 @@ final public class MacroConfiguration {
     public static Function<AssetAttribute, AssetAttribute> initMacroConfiguration() {
         return attribute -> {
             attribute.setType(AttributeType.STRING);
-            attribute.setValue(Json.create(MACRO_PROTOCOL_NAME));
+            attribute.setValue(Json.create(MacroProtocol.MACRO_PROTOCOL_NAME));
             return attribute;
         };
     }
@@ -67,7 +60,7 @@ final public class MacroConfiguration {
     public static Predicate<Attribute> isMacroConfiguration() {
         return attribute -> {
             String value = attribute.getValueAsString();
-            return value != null && value.equals(MACRO_PROTOCOL_NAME);
+            return value != null && value.equals(MacroProtocol.MACRO_PROTOCOL_NAME);
         };
     }
 
@@ -75,18 +68,18 @@ final public class MacroConfiguration {
         return isAttributeValid()
             .and(isAttributeType(STRING))
             .and(isMacroConfiguration())
-            .and(hasAssetMetaItem(MACRO_ACTION)); // Must have at least one macro action
+            .and(hasAssetMetaItem(MacroAction.MACRO_ACTION)); // Must have at least one macro action
     }
 
     public static Function<AssetAttribute, Stream<MacroAction>> getMacroActions() {
         return attribute -> attribute.getMetaItemStream()
-            .filter(isAssetMetaItem(MACRO_ACTION))
-            .map(getMacroActionFromMetaItem());
+            .filter(isAssetMetaItem(MacroAction.MACRO_ACTION))
+            .map(MacroAction.getMacroActionFromMetaItem());
     }
 
     public static Function<AssetAttribute, AssetAttribute> addMacroAction(MacroAction action) {
         return attribute -> attribute.setMeta(
-            attribute.getMeta().add(getMetaItemFromMacroAction().apply(action))
+            attribute.getMeta().add(MacroAction.getMetaItemFromMacroAction().apply(action))
         );
     }
 
@@ -97,7 +90,7 @@ final public class MacroConfiguration {
             }
             List<MetaItem> metaItems = attribute.getMeta().all();
             IntStream.range(0, metaItems.size())
-                .filter(i -> isAssetMetaItem(MACRO_ACTION).test(metaItems.get(i)))
+                .filter(i -> isAssetMetaItem(MacroAction.MACRO_ACTION).test(metaItems.get(i)))
                 .filter(i -> JsonUtil.equals(metaItems.get(i).getValueAsObject(), action.asJsonValue()))
                 .forEach(i -> attribute.getMeta().remove(i));
 

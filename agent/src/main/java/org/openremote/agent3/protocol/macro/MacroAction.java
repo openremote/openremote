@@ -17,42 +17,44 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.asset.macro;
+package org.openremote.agent3.protocol.macro;
 
 import elemental.json.Json;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 import org.openremote.model.AttributeState;
 import org.openremote.model.MetaItem;
-import org.openremote.model.asset.AssetMeta;
 
 import java.util.function.Function;
 
+import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
+
 /**
- * A desired {@link AttributeState} and a delay in seconds (TODO?) before that state
+ * A desired {@link AttributeState} and a delay in milli seconds before that state
  * is applied when the macro executes.
  */
 public class MacroAction {
 
+    public static final String MACRO_ACTION = ASSET_META_NAMESPACE + ":macroAction";
     protected AttributeState attributeState;
-    protected int delay;
+    protected int delayMilliseconds;
 
     static Function<MetaItem, MacroAction> getMacroActionFromMetaItem() {
         return metaItem -> new MacroAction(metaItem.getValueAsObject());
     }
 
     static Function<MacroAction, MetaItem> getMetaItemFromMacroAction() {
-        return macroAction -> new MetaItem(AssetMeta.MACRO_ACTION, macroAction.asJsonValue());
+        return macroAction -> new MetaItem(MACRO_ACTION, macroAction.asJsonValue());
     }
 
     public MacroAction(JsonObject jsonObject) {
         attributeState = new AttributeState(jsonObject.getObject("attributeState"));
-        delay = new Double(jsonObject.getNumber("delay")).intValue();
+        delayMilliseconds = new Double(jsonObject.getNumber("delay")).intValue();
     }
 
-    public MacroAction(AttributeState attributeState, int delay) {
+    public MacroAction(AttributeState attributeState, int delayMilliseconds) {
         this.attributeState = attributeState;
-        this.delay = delay;
+        this.delayMilliseconds = delayMilliseconds;
     }
 
     public AttributeState getAttributeState() {
@@ -63,18 +65,18 @@ public class MacroAction {
         this.attributeState = attributeState;
     }
 
-    public int getDelay() {
-        return delay;
+    public int getDelayMilliseconds() {
+        return delayMilliseconds;
     }
 
-    public void setDelay(int delay) {
-        this.delay = delay;
+    public void setDelayMilliseconds(int delayMilliseconds) {
+        this.delayMilliseconds = delayMilliseconds;
     }
 
     public JsonValue asJsonValue() {
         JsonObject jsonObect = Json.createObject();
         jsonObect.put("attributeState", attributeState != null ? attributeState.asJsonValue() : Json.create(null));
-        jsonObect.put("delay", Json.create(delay));
+        jsonObect.put("delay", Json.create(delayMilliseconds));
         return jsonObect;
     }
 
@@ -82,7 +84,7 @@ public class MacroAction {
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "attributeState='" + attributeState + '\'' +
-            ", delay='" + delay + '\'' +
+            ", delay='" + delayMilliseconds + '\'' +
             '}';
     }
 }
