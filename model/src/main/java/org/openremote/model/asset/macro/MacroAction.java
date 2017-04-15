@@ -26,9 +26,24 @@ import org.openremote.model.AttributeState;
 import org.openremote.model.MetaItem;
 import org.openremote.model.asset.AssetMeta;
 
+import java.util.function.Function;
+
+/**
+ * A desired {@link AttributeState} and a delay in seconds (TODO?) before that state
+ * is applied when the macro executes.
+ */
 public class MacroAction {
+
     protected AttributeState attributeState;
     protected int delay;
+
+    static Function<MetaItem, MacroAction> getMacroActionFromMetaItem() {
+        return metaItem -> new MacroAction(metaItem.getValueAsObject());
+    }
+
+    static Function<MacroAction, MetaItem> getMetaItemFromMacroAction() {
+        return macroAction -> new MetaItem(AssetMeta.MACRO_ACTION, macroAction.asJsonValue());
+    }
 
     public MacroAction(JsonObject jsonObject) {
         attributeState = new AttributeState(jsonObject.getObject("attributeState"));
@@ -63,15 +78,11 @@ public class MacroAction {
         return jsonObect;
     }
 
-    public MetaItem asMetaItem() {
-        return new MetaItem(AssetMeta.MACRO_ACTION, asJsonValue());
-    }
-
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-                "attributeState='" + attributeState + '\'' +
-                ", delay='" + delay + '\'' +
-                '}';
+            "attributeState='" + attributeState + '\'' +
+            ", delay='" + delay + '\'' +
+            '}';
     }
 }

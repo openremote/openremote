@@ -23,7 +23,7 @@ import elemental.json.JsonArray;
 import elemental.json.JsonObject;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
-import org.openremote.model.Runnable;
+import org.openremote.manager.client.interop.Runnable;
 
 import static jsinterop.annotations.JsPackage.GLOBAL;
 

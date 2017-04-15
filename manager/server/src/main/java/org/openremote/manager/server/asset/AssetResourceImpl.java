@@ -31,7 +31,6 @@ import org.openremote.model.AttributeRef;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetQuery;
-import org.openremote.model.util.AttributeUtil;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
@@ -41,6 +40,8 @@ import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static org.openremote.model.asset.AssetAttribute.containsAssetAttributeNamed;
+import static org.openremote.model.asset.AssetAttribute.isAssetAttribute;
 
 public class AssetResourceImpl extends ManagerWebResource implements AssetResource {
 
@@ -244,10 +245,8 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
                     throw new WebApplicationException(NOT_FOUND);
             }
 
-            List<AssetAttribute> attributes = asset.getAttributes();
-
             // Check attribute exists
-            if (!AttributeUtil.contains(attributes, attributeName))
+            if (!containsAssetAttributeNamed(attributeName).test(asset))
                 throw new WebApplicationException(NOT_FOUND);
 
             // Check realm, must be accessible
@@ -257,7 +256,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             // Check read-only
-            if (!isSuperUser() && AttributeUtil.getAttributeByName(attributes, attributeName).isReadOnly()) {
+            if (!isSuperUser() && isAssetAttribute(attributeName, AssetAttribute::isReadOnly).test(asset)) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 

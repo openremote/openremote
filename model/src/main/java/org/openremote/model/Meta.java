@@ -29,6 +29,7 @@ import org.openremote.model.util.JsonUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /**
  * An array of {@link MetaItem} elements.
@@ -57,6 +58,10 @@ public class Meta {
 
     public List<MetaItem> all() {
         return get((Predicate<MetaItem>) null);
+    }
+
+    public Stream<MetaItem> stream() {
+        return all().stream();
     }
 
     public List<MetaItem> get(String name) {
@@ -90,7 +95,7 @@ public class Meta {
     }
 
     public MetaItem first(AssetMeta assetMeta) {
-        return first(assetMeta.getName());
+        return first(assetMeta.getUrn());
     }
 
     public MetaItem first(String name) {
@@ -112,7 +117,7 @@ public class Meta {
     }
 
     public boolean contains(AssetMeta assetMeta) {
-        return contains(assetMeta.getName());
+        return contains(assetMeta.getUrn());
     }
 
     public boolean contains(String name) {
@@ -139,7 +144,7 @@ public class Meta {
     }
 
     public Meta removeAll(AssetMeta assetMeta) {
-        return removeAll(assetMeta.getName());
+        return removeAll(assetMeta.getUrn());
     }
 
     public Meta removeAll(String name) {
@@ -155,6 +160,12 @@ public class Meta {
     public Meta remove(int index) {
         if (index >= 0 && index < jsonArray.length())
             jsonArray.remove(index);
+        return this;
+    }
+
+    public Meta replace(String name, MetaItem item) {
+        removeAll(name);
+        add(item);
         return this;
     }
 

@@ -20,8 +20,8 @@
 package org.openremote.manager.client.interop.keycloak;
 
 import jsinterop.annotations.JsType;
-import org.openremote.model.Consumer;
-import org.openremote.model.Runnable;
+import org.openremote.manager.client.interop.Consumer;
+import org.openremote.manager.client.interop.Runnable;
 
 // We have GWT compiler erasure problems if this is an interface, so let's use an abstract class
 @JsType

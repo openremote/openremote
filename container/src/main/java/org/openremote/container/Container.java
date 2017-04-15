@@ -36,6 +36,18 @@ import java.util.logging.Logger;
 
 import static org.openremote.container.util.MapAccess.getBoolean;
 
+/**
+ * A thread-safe registry of {@link ContainerService}s.
+ * <p>
+ * Create the container with {@link ContainerService}s, then let it
+ * manage the life cycle of these services.
+ * <p>
+ * Access environment configuration through {@link #getConfig()} and the helper methods
+ * in {@link org.openremote.container.util.MapAccess}. Consider using {@link #DEV_MODE}
+ * to distinguish between development and production environments.
+ * <p>
+ * Read and write JSON with a sensible mapper configuration using {@link #JSON}.
+ */
 public class Container {
 
     public static final Logger LOG;
@@ -86,7 +98,7 @@ public class Container {
         }
 
         if (services != null) {
-            services.forEach(this::addService);
+            services.forEach(svc -> this.services.put(svc.getClass(), svc));
         }
 
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
@@ -114,10 +126,6 @@ public class Container {
                     for (ContainerService service : getServices()) {
                         LOG.fine("Starting service: " + service);
                         service.start(Container.this);
-                    }
-                    for (ContainerService service : getServices()) {
-                        LOG.fine("Notifying service all started: " + service);
-                        service.allStarted(Container.this);
                     }
                 } catch (RuntimeException ex) {
                     throw ex;
@@ -177,12 +185,6 @@ public class Container {
         };
         containerThread.setDaemon(false);
         containerThread.start();
-    }
-
-    public void addService(ContainerService service) {
-        synchronized (service) {
-            services.put(service.getClass(), service);
-        }
     }
 
     public ContainerService[] getServices() {

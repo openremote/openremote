@@ -11,8 +11,6 @@ import org.openremote.manager.client.map.MapActivity
 import org.openremote.manager.client.map.MapView
 import org.openremote.manager.client.service.RequestServiceImpl
 import org.openremote.manager.client.service.SecurityService
-import org.openremote.model.Consumer
-import org.openremote.model.Runnable
 import org.openremote.manager.shared.http.EntityReader
 import org.openremote.manager.shared.map.MapResource
 import org.openremote.test.ContainerTrait
@@ -24,8 +22,7 @@ import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.model.Constants.*;
 
 // TODO Fix this when we do Asset testing
-@Ignore
-class MapActivityTest extends Specification implements ContainerTrait, GwtClientTrait {
+class MapActivityTest { /* extends Specification implements ContainerTrait, GwtClientTrait {
 
     def "Initialize map"() {
         given: "The fake client environment"
@@ -99,4 +96,5 @@ class MapActivityTest extends Specification implements ContainerTrait, GwtClient
         cleanup: "the server should be stopped"
         stopContainer(container);
     }
+    */
 }

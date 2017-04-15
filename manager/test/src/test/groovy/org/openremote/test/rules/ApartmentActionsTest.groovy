@@ -8,14 +8,13 @@ import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
-import org.openremote.manager.server.setup.builtin.RulesDemoSetup
 import org.openremote.model.AttributeEvent
-import org.openremote.model.util.AttributeUtil
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static java.util.concurrent.TimeUnit.*
+import static org.openremote.model.asset.AssetAttribute.findAssetAttribute
 
 class ApartmentActionsTest extends Specification implements ManagerContainerTrait {
 
@@ -28,7 +27,6 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         def container = startContainer(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
-        def rulesDemoSetup = container.getService(SetupService.class).getTaskOfType(RulesDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
@@ -50,7 +48,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
 
         and: "the room lights in an apartment to be on"
         def livingRoomAsset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
-        assert AttributeUtil.getAttributeByName(livingRoomAsset.getAttributes(), "lightSwitch").valueAsBoolean
+        assert findAssetAttribute("lightSwitch").apply(livingRoomAsset).valueAsBoolean
 
         when: "the ALL LIGHTS OFF switch is pressed for an apartment"
         def apartment1AllLightsOffChange = new AttributeEvent(
@@ -62,7 +60,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         conditions.eventually {
             assert customerAEngine.knowledgeSession.factCount == 10
             livingRoomAsset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
-            assert !AttributeUtil.getAttributeByName(livingRoomAsset.getAttributes(), "lightSwitch").valueAsBoolean
+            assert !findAssetAttribute("lightSwitch").apply(livingRoomAsset).valueAsBoolean
         }
 
         when: "time advanced"
@@ -87,7 +85,6 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         def container = startContainer(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
-        def rulesDemoSetup = container.getService(SetupService.class).getTaskOfType(RulesDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
@@ -103,11 +100,11 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
 
         and: "the presence latch of the room should not be set"
         def livingRoomAsset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
-        assert !AttributeUtil.getAttributeByName(livingRoomAsset.getAttributes(), "presenceDetected").valueAsBoolean
+        assert !findAssetAttribute("presenceDetected").apply(livingRoomAsset).valueAsBoolean
 
         and: "the presence latch of the other room should not be set"
         def otherLivingRoomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
-        assert !AttributeUtil.getAttributeByName(otherLivingRoomAsset.getAttributes(), "presenceDetected").valueAsBoolean
+        assert !findAssetAttribute("presenceDetected").apply(otherLivingRoomAsset).valueAsBoolean
 
         and: "several presence sensor events are triggered in the room"
         for (i in 0..2) {
@@ -138,13 +135,13 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         and: "the presence latch of the room should be set"
         conditions.eventually {
             def asset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
-            assert AttributeUtil.getAttributeByName(asset.getAttributes(), "presenceDetected").valueAsBoolean
+            assert findAssetAttribute("presenceDetected").apply(asset).valueAsBoolean
         }
 
         and: "the presence latch of the other room should NOT be set"
         conditions.eventually {
             def asset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
-            assert !AttributeUtil.getAttributeByName(asset.getAttributes(), "presenceDetected").valueAsBoolean
+            assert !findAssetAttribute("presenceDetected").apply(asset).valueAsBoolean
         }
 
         when: "time is advanced enough to trigger event expiration"
@@ -169,7 +166,6 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         def container = startContainer(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
-        def rulesDemoSetup = container.getService(SetupService.class).getTaskOfType(RulesDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
@@ -197,7 +193,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         then: "that value should be stored"
         conditions.eventually {
             def asset = assetStorageService.find(managerDemoSetup.apartment1Id, true)
-            assert AttributeUtil.getAttributeByName(asset.getAttributes(), "vacationDays").valueAsInteger == 5
+            assert findAssetAttribute("vacationDays").apply(asset).valueAsInteger == 5
         }
 
         when: "time advanced to the next day, which should trigger the cron rule"
@@ -206,7 +202,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         then: "the vacation days should be decremented"
         conditions.eventually {
             def asset = assetStorageService.find(managerDemoSetup.apartment1Id, true)
-            assert AttributeUtil.getAttributeByName(asset.getAttributes(), "vacationDays").valueAsInteger == 4
+            assert findAssetAttribute("vacationDays").apply(asset).valueAsInteger == 4
         }
 
         when: "time advanced again (to test that the rule only fires once per day)"
@@ -215,7 +211,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         then: "the vacation days should NOT be decremented"
         new PollingConditions(initialDelay: 2).eventually {
             def asset = assetStorageService.find(managerDemoSetup.apartment1Id, true)
-            assert AttributeUtil.getAttributeByName(asset.getAttributes(), "vacationDays").valueAsInteger == 4
+            assert findAssetAttribute("vacationDays").apply(asset).valueAsInteger == 4
         }
 
         expect: "the remaining vacation days to be decremented with each passing day"
@@ -228,7 +224,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
 
             conditions.eventually {
                 def asset = assetStorageService.find(managerDemoSetup.apartment1Id, true)
-                assert AttributeUtil.getAttributeByName(asset.getAttributes(), "vacationDays").valueAsInteger == remainingDays
+                assert findAssetAttribute("vacationDays").apply(asset).valueAsInteger == remainingDays
             }
         }
 

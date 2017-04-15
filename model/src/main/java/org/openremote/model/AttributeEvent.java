@@ -51,7 +51,7 @@ public class AttributeEvent extends SharedEvent {
         NORTHBOUND
     }
 
-    static public class EntityIdFilter extends EventFilter<AttributeEvent> {
+    public static class EntityIdFilter extends EventFilter<AttributeEvent> {
 
         public static final String FILTER_TYPE = "attribute-entity-id";
 

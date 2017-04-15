@@ -1,5 +1,5 @@
 /*
- * Copyright 2017, OpenRemote Inc.
+ * Copyright 2016, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.asset;
+package org.openremote.manager.client.interop;
 
-import java.util.List;
+import jsinterop.annotations.JsFunction;
 
-public interface AttributeWrapperFilter<CHILD> {
-
-    List<CHILD> getAllWrapped(List<AssetAttribute> assetAttributes, boolean excludeInvalid);
-
-    List<AssetAttribute> getAll(List<AssetAttribute> assetAttributes, boolean excludeInvalid);
+@FunctionalInterface
+@JsFunction
+public interface Consumer<T> {
+    void accept(T t);
 }

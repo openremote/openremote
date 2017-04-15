@@ -20,119 +20,87 @@
 package org.openremote.model.asset.macro;
 
 import elemental.json.Json;
+import org.openremote.model.Attribute;
 import org.openremote.model.AttributeType;
-import org.openremote.model.Meta;
 import org.openremote.model.MetaItem;
-import org.openremote.model.asset.AbstractAttributeWrapper;
-import org.openremote.model.asset.AttributeWrapperFilter;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.util.JsonUtil;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
+import static org.openremote.model.Attribute.isAttributeType;
+import static org.openremote.model.Attribute.isAttributeValid;
+import static org.openremote.model.AttributeType.STRING;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
+import static org.openremote.model.asset.AssetAttribute.hasAssetMetaItem;
+import static org.openremote.model.asset.AssetAttribute.isAssetMetaItem;
+import static org.openremote.model.asset.AssetMeta.MACRO_ACTION;
+import static org.openremote.model.asset.macro.MacroAction.getMacroActionFromMetaItem;
+import static org.openremote.model.asset.macro.MacroAction.getMetaItemFromMacroAction;
 
-public class MacroConfiguration extends AbstractAttributeWrapper<MacroConfiguration> {
-    public static class Filter implements AttributeWrapperFilter<MacroConfiguration> {
-        @Override
-        public List<MacroConfiguration> getAllWrapped(List<AssetAttribute> assetAttributes, boolean excludeInvalid) {
-            return getAll(assetAttributes, excludeInvalid)
-                .stream()
-                .map(assetAttribute -> new MacroConfiguration(assetAttribute, false))
-                .collect(Collectors.toList());
-        }
+/**
+ * Agent attributes can be macro configurations.
+ * <p>
+ * A macro configuration attribute has {@link AssetMeta#MACRO_ACTION} items attached to it, each
+ * item is a sequence of asset state changes to be executed.
+ */
+final public class MacroConfiguration {
 
-        @Override
-        public List<AssetAttribute> getAll(List<AssetAttribute> assetAttributes, boolean excludeInvalid) {
-            // Macro Attribute wrappers should have macro protocol name as the attribute value
-            return assetAttributes
-                .stream()
-                .filter(attribute ->
-                    MacroConfiguration.valueIsProtocolName(attribute) && (!excludeInvalid || MacroConfiguration.isValid(attribute))
-                )
-                .collect(Collectors.toList());
-        }
+    public static final String MACRO_PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":macro";
+
+    private MacroConfiguration() {
     }
 
-    public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":macro";
-    protected static final AttributeWrapperFilter<MacroConfiguration> filter = new Filter();
-
-    public MacroConfiguration(String attributeName) {
-        this(new AssetAttribute(attributeName, AttributeType.STRING, Json.create(PROTOCOL_NAME)));
+    public static Function<AssetAttribute, AssetAttribute> initMacroConfiguration() {
+        return attribute -> {
+            attribute.setType(AttributeType.STRING);
+            attribute.setValue(Json.create(MACRO_PROTOCOL_NAME));
+            return attribute;
+        };
     }
 
-    public MacroConfiguration(AssetAttribute attribute) {
-        super(attribute);
+    public static Predicate<Attribute> isMacroConfiguration() {
+        return attribute -> {
+            String value = attribute.getValueAsString();
+            return value != null && value.equals(MACRO_PROTOCOL_NAME);
+        };
     }
 
-    public MacroConfiguration(AssetAttribute attribute, boolean initialise) {
-        super(attribute, initialise);
+    public static Predicate<Attribute> isValidMacroConfiguration() {
+        return isAttributeValid()
+            .and(isAttributeType(STRING))
+            .and(isMacroConfiguration())
+            .and(hasAssetMetaItem(MACRO_ACTION)); // Must have at least one macro action
     }
 
-    @Override
-    public boolean isValid() {
-        return super.isValid() && isValid(getAttribute());
+    public static Function<AssetAttribute, Stream<MacroAction>> getMacroActions() {
+        return attribute -> attribute.getMetaItemStream()
+            .filter(isAssetMetaItem(MACRO_ACTION))
+            .map(getMacroActionFromMetaItem());
     }
 
-    @Override
-    public void initialise() {
-        // Set value as protocol name
-        getAttribute().setValue(Json.create(PROTOCOL_NAME));
+    public static Consumer<AssetAttribute> addMacroAction(MacroAction action) {
+        return attribute -> attribute.setMeta(
+            attribute.getMeta().add(getMetaItemFromMacroAction().apply(action))
+        );
     }
 
-    @Override
-    public AttributeWrapperFilter<MacroConfiguration> getFilter() {
-        return filter;
-    }
-
-    public List<MacroAction> getActions() {
-        return getAttribute().getMeta().all()
-            .stream()
-            .filter(metaItem -> metaItem.getName().equals(AssetMeta.MACRO_ACTION.getName()))
-            .map(metaItem -> new MacroAction(metaItem.getValueAsObject()))
-            .collect(Collectors.toList());
-    }
-
-    public void setActions(List<MacroAction> actions) {
-        Meta meta = getAttribute().getMeta() != null ? getAttribute().getMeta() : new Meta();
-        meta = meta.removeAll(AssetMeta.MACRO_ACTION);
-        Meta finalMeta = meta;
-        actions.forEach(action -> finalMeta.add(action.asMetaItem()));
-    }
-
-    public void addAction(MacroAction action) {
-        Meta meta = getAttribute().getMeta() != null ? getAttribute().getMeta() : new Meta();
-        meta.add(action.asMetaItem());
-        getAttribute().setMeta(meta);
-    }
-
-    public void removeAction(MacroAction action) {
-        if (!getAttribute().hasMeta()) {
-            return;
-        }
-
-        List<MetaItem> metaItems = getAttribute().getMeta().all();
-        IntStream.range(0, metaItems.size())
-            .filter(i -> metaItems.get(i).getName().equals(AssetMeta.MACRO_ACTION.getName()))
-            .filter(i -> JsonUtil.equals(metaItems.get(i).getValueAsObject(), action.asJsonValue()))
-            .forEach(i -> getAttribute().getMeta().remove(i));
-    }
-
-    public String getProtocolName() {
-        return PROTOCOL_NAME;
-    }
-
-    public static boolean isValid(AssetAttribute assetAttribute) {
-        MetaItem item = assetAttribute.firstMetaItem(AssetMeta.MACRO_ACTION);
-        return AbstractAttributeWrapper.isValid(assetAttribute) && valueIsProtocolName(assetAttribute) && item != null;
-    }
-
-    public static boolean valueIsProtocolName(AssetAttribute assetAttribute) {
-        // Value must be protocol name and must be at least one macro action
-        String value = assetAttribute.getValueAsString();
-        return value != null && value.equals(PROTOCOL_NAME);
+    public static Consumer<AssetAttribute> removeMacroAction(MacroAction action) {
+        return attribute -> {
+            if (!attribute.hasMeta()) {
+                return;
+            }
+            List<MetaItem> metaItems = attribute.getMeta().all();
+            IntStream.range(0, metaItems.size())
+                .filter(i -> isAssetMetaItem(MACRO_ACTION).test(metaItems.get(i)))
+                .filter(i -> JsonUtil.equals(metaItems.get(i).getValueAsObject(), action.asJsonValue()))
+                .forEach(i -> attribute.getMeta().remove(i));
+        };
     }
 }

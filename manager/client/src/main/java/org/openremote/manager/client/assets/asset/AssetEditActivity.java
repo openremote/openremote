@@ -33,16 +33,15 @@ import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.validation.ConstraintViolation;
-import org.openremote.model.Consumer;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.function.Consumer;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
@@ -333,7 +332,7 @@ public class AssetEditActivity
             view.getAttributesEditorContainer(),
             assetId == null
                 ? Arrays.asList(asset.getWellKnownType().getDefaultAttributes())
-                : new ArrayList<>(),
+                : asset.getAttributeList(),
             assetId == null
         );
         view.setAttributesEditor(attributesEditor);
@@ -355,7 +354,7 @@ public class AssetEditActivity
         if (selectedCoordinates != null) {
             asset.setCoordinates(selectedCoordinates);
         }
-        asset.setAttributes(
+        asset.setAttributeList(
             attributesEditor != null ? attributesEditor.getAttributes() : null
         );
     }

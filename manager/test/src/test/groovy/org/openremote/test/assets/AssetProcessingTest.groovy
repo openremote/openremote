@@ -53,18 +53,18 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             }
 
             @Override
-            protected void onAttributeAdded(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration) {
+            protected void onAttributeAdded(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
                 protocolDeployed = true
                 LOG.info("Mock Protocol: onAttributeAdded")
             }
 
             @Override
-            protected void onAttributeUpdated(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration) {
+            protected void onAttributeUpdated(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
                 LOG.info("Mock Protocol: onAttributeUpdated")
             }
 
             @Override
-            protected void onAttributeRemoved(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration) {
+            protected void onAttributeRemoved(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
                 LOG.info("Mock Protocol: onAttributeRemoved")
             }
 
@@ -123,8 +123,8 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def mockAgent = new ServerAsset()
         mockAgent.setName("Mock Agent")
         mockAgent.setType(AssetType.AGENT)
-        def mockProtocolConfig = new ProtocolConfiguration("mock123", mockProtocolName)
-        mockAgent.setAttributes(Collections.singletonList(mockProtocolConfig.getAttribute()))
+        def mockProtocolConfig = ProtocolConfiguration.initProtocolConfiguration(mockProtocolName).apply(new AssetAttribute("mock123"))
+        mockAgent.setAttributeList(Collections.singletonList(mockProtocolConfig))
         mockAgent.setRealmId(keycloakDemoSetup.masterTenant.id)
         mockAgent = assetStorageService.merge(mockAgent)
         //endregion
@@ -169,7 +169,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
                 )
                 )
         ]
-        mockThing.setAttributes(mockThingAttributes)
+        mockThing.setAttributeList(mockThingAttributes)
         mockThing = assetStorageService.merge(mockThing)
         //endregion
 

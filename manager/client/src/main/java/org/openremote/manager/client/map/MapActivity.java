@@ -33,6 +33,7 @@ import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
+import org.openremote.model.Attribute;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.Pair;
 import org.openremote.model.asset.Asset;
@@ -44,6 +45,7 @@ import org.openremote.model.geo.GeoJSON;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -158,8 +160,9 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
         if (assetId != null) {
             assetBrowserPresenter.loadAsset(assetId, loadedAsset -> {
                 this.asset = loadedAsset;
-                this.dashboardAttributes = asset.getAttributes().stream()
-                            .filter(AssetAttribute::isShowOnDashboard).collect(Collectors.toList());
+                this.dashboardAttributes = asset.getAttributeStream()
+                    .filter(AssetAttribute::isShowOnDashboard)
+                    .collect(Collectors.toList());
                 assetBrowserPresenter.selectAsset(asset);
                 view.setAssetViewHistoryToken(environment.getPlaceHistoryMapper().getToken(
                     new AssetViewPlace(assetId)
@@ -189,6 +192,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
     protected void showAssetInfoItems() {
         List<Pair<String, String>> infoItems = dashboardAttributes.stream()
             .map(attribute -> new Pair<>(attribute.getLabel(), format(attribute.getFormat(), attribute.getValueAsString())))
+            .sorted(Comparator.comparing(pair -> pair.key))
             .collect(Collectors.toList());
         if (asset.hasGeoFeature()) {
             infoItems.add(0, new Pair<>(

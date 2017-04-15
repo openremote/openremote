@@ -28,8 +28,8 @@ import org.openremote.manager.client.interop.keycloak.LoginOptions;
 import org.openremote.manager.client.interop.keycloak.LogoutOptions;
 import org.openremote.manager.client.service.SecurityService;
 import org.openremote.model.Constants;
-import org.openremote.model.Consumer;
-import org.openremote.model.Runnable;
+
+import java.util.function.Consumer;
 
 /**
  * Does the same job as keycloak.js implementation.

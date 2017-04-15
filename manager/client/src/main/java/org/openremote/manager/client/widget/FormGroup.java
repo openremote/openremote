@@ -22,9 +22,8 @@ package org.openremote.manager.client.widget;
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.uibinder.client.UiChild;
 import com.google.gwt.user.client.ui.*;
-import org.openremote.model.Consumer;
 
-import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 /**

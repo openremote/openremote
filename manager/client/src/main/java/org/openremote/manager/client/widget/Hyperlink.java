@@ -23,10 +23,8 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.Event;
-import com.google.gwt.user.client.History;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.impl.HyperlinkImpl;
-import org.openremote.model.Runnable;
 
 public class Hyperlink extends com.google.gwt.user.client.ui.Hyperlink {
 

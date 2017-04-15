@@ -27,7 +27,6 @@ import org.openremote.manager.client.datapoint.DatapointBrowser;
 import org.openremote.manager.client.widget.*;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeType;
-import org.openremote.model.Consumer;
 import org.openremote.model.ReadAttributesEvent;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
@@ -37,6 +36,7 @@ import org.openremote.model.event.bus.EventRegistration;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 public abstract class AttributesBrowser
@@ -59,7 +59,7 @@ public abstract class AttributesBrowser
     protected EventRegistration<AttributeEvent> eventRegistration;
 
     public AttributesBrowser(Environment environment, Container container, Asset asset) {
-        super(environment, container, asset.getAttributes());
+        super(environment, container, asset.getAttributeList());
         this.asset = asset;
 
         eventRegistration = environment.getEventBus().register(

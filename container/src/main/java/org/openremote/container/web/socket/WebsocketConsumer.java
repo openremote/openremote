@@ -22,7 +22,8 @@ package org.openremote.container.web.socket;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.impl.DefaultConsumer;
-import org.openremote.model.Consumer;
+
+import java.util.function.Consumer;
 
 public class WebsocketConsumer extends DefaultConsumer {
 

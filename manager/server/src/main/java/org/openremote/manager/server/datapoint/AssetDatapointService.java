@@ -9,8 +9,6 @@ import org.openremote.container.web.WebService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.model.AttributeRef;
-import org.openremote.model.Function;
-import org.openremote.model.Pair;
 import org.openremote.model.asset.AssetState;
 import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.datapoint.DatapointInterval;
@@ -22,6 +20,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.logging.Logger;
 
 /**
@@ -49,11 +48,6 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetSt
 
     @Override
     public void start(Container container) throws Exception {
-    }
-
-    @Override
-    public void allStarted(Container container) throws Exception {
-
     }
 
     @Override

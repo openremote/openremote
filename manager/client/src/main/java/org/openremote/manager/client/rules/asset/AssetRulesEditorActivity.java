@@ -35,10 +35,10 @@ import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.rules.AssetRuleset;
 import org.openremote.manager.shared.rules.RulesetResource;
-import org.openremote.model.Consumer;
 
 import javax.inject.Inject;
 import java.util.Collection;
+import java.util.function.Consumer;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 

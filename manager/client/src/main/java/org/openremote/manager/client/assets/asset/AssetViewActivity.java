@@ -33,11 +33,9 @@ import org.openremote.manager.client.datapoint.NumberDatapointArrayMapper;
 import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.datapoint.AssetDatapointResource;
-import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
-import org.openremote.model.Consumer;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
@@ -46,6 +44,7 @@ import org.openremote.model.event.bus.EventRegistration;
 
 import javax.inject.Inject;
 import java.util.Collection;
+import java.util.function.Consumer;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 

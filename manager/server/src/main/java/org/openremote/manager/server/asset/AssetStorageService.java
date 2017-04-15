@@ -39,15 +39,11 @@ import org.openremote.model.AttributeEvent;
 import org.openremote.model.Pair;
 import org.openremote.model.ReadAttributesEvent;
 import org.openremote.model.asset.*;
-import org.openremote.model.util.AttributeUtil;
 import org.postgresql.util.PGobject;
 
 import javax.persistence.EntityManager;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -113,11 +109,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     @Override
     public void start(Container container) throws Exception {
-    }
-
-    @Override
-    public void allStarted(Container container) throws Exception {
-
     }
 
     @Override
@@ -208,7 +199,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     public ServerAsset find(String assetId, boolean loadComplete, boolean filterProtected) {
         if (assetId == null)
             throw new IllegalArgumentException("Can't query null asset identifier");
-            return find(new AssetQuery().select(new AssetQuery.Select(loadComplete, filterProtected)).id(assetId));
+        return find(new AssetQuery().select(new AssetQuery.Select(loadComplete, filterProtected)).id(assetId));
     }
 
     public ServerAsset find(AssetQuery query) {
@@ -245,8 +236,8 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     throw new IllegalStateException("Invalid parent");
             }
 
-            // Validate attribute names
-            if (!asset.getAttributes().stream().allMatch(AssetAttribute::isValid)) {
+            // Validate attributes
+            if (!asset.getAttributeStream().allMatch(AssetAttribute::isValid)) {
                 throw new IllegalStateException("One or more attributes are not valid");
             }
 
@@ -596,9 +587,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 try (PreparedStatement statement = connection.prepareStatement(update)) {
 
                     // Bind the value (and check we don't have a SQL injection hole in attribute name!)
-                    if (!AttributeUtil.nameIsValid(attributeName)) {
+                    if (!AssetAttribute.ATTRIBUTE_NAME_VALIDATOR.test(attributeName)) {
                         LOG.fine(
-                            "Invalid attribute name (must match '" + AttributeUtil.ATTRIBUTE_NAME_PATTERN + "'): " + attributeName
+                            "Invalid attribute name (must match '" + AssetAttribute.ATTRIBUTE_NAME_PATTERN + "'): " + attributeName
                         );
                         return false;
                     }
@@ -688,16 +679,13 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     protected void replyWithAttributeEvents(String sessionKey, ServerAsset asset, String[] attributeNames) {
-        List<AssetAttribute> attributes = asset.getAttributes();
-
-        // Client may want to read a subset or all attributes of the asset
         List<String> names = attributeNames != null && attributeNames.length > 0
             ? Arrays.asList(attributeNames)
-            : AttributeUtil.getNames(attributes);
+            : Collections.EMPTY_LIST;
 
-        LOG.fine("For client session '" + sessionKey + "', reading asset attributes " + names + " on: " + asset);
-        List<AttributeEvent> events = attributes.stream()
-            .filter(assetAttribute -> names.contains(assetAttribute.getName()))
+        // Client may want to read a subset or all attributes of the asset
+        List<AttributeEvent> events = asset.getAttributeStream()
+            .filter(attribute -> names.isEmpty() || names.contains(attribute.getName()))
             .map(AssetAttribute::getStateEvent)
             .collect(Collectors.toList());
 

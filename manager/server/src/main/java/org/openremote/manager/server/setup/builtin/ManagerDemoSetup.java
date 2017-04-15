@@ -38,17 +38,17 @@ import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.units.AttributeUnits;
 import org.openremote.model.units.ColorRGB;
-import org.openremote.model.util.AttributeUtil;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.openremote.model.AttributeType.*;
+import static org.openremote.model.asset.AssetAttribute.findAssetAttribute;
 import static org.openremote.model.asset.AssetMeta.*;
 import static org.openremote.model.asset.AssetType.*;
 
@@ -110,7 +110,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCountry")))
                 )
         );
-        smartOffice.setAttributes(smartOfficeAttributes);
+        smartOffice.setAttributeList(smartOfficeAttributes);
         smartOffice = assetStorageService.merge(smartOffice);
         smartOfficeId = smartOffice.getId();
 
@@ -133,8 +133,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         agent.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         agent.setType(AssetType.AGENT);
         List<AssetAttribute> agentAttributes = Collections.singletonList(
-            new ProtocolConfiguration(agentProtocolConfigName, SimulatorProtocol.PROTOCOL_NAME)
-                .getAttribute()
+            ProtocolConfiguration.initProtocolConfiguration(SimulatorProtocol.PROTOCOL_NAME)
+                .apply(new AssetAttribute(agentProtocolConfigName))
                 .setMeta(new Meta()
                     .add(new MetaItem(
                             SimulatorProtocol.CONFIG_MODE,
@@ -146,7 +146,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                             Json.create(500)
                         )
                     )));
-        agent.setAttributes(agentAttributes);
+        agent.setAttributeList(agentAttributes);
         agent = assetStorageService.merge(agent);
         agentId = agent.getId();
 
@@ -154,7 +154,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         thing.setName("Demo Thing");
         thing.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         thing.setType(AssetType.THING);
-        List<AssetAttribute> thingAttributes = Arrays.asList(
+        Stream<AssetAttribute> thingAttributes = Stream.<AssetAttribute>builder().add(
             new AssetAttribute("light1Toggle", BOOLEAN, Json.create(true))
                 .setMeta(new Meta()
                     .add(new MetaItem(
@@ -168,7 +168,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     .add(new MetaItem(
                         SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(SwitchSimulatorElement.ELEMENT_NAME)
                     ))
-                ),
+                )
+        ).add(
             new AssetAttribute("light1Dimmer", INTEGER) // No initial value!
                 .setMeta(new Meta()
                     .add(new MetaItem(
@@ -193,7 +194,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     .add(new MetaItem(
                         SimulatorProtocol.CONFIG_MODE, Json.create(true)
                     ))
-                ),
+                )
+        ).add(
             new AssetAttribute("light1Color", INTEGER_ARRAY, new ColorRGB(88, 123, 88).asJsonValue())
                 .setMeta(new Meta()
                     .add(new MetaItem(
@@ -211,7 +213,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     .add(new MetaItem(
                         SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(ColorSimulatorElement.ELEMENT_NAME)
                     ))
-                ),
+                )
+        ).add(
             new AssetAttribute("light1PowerConsumption", DECIMAL, Json.create(12.345))
                 .setMeta(new Meta()
                     .add(new MetaItem(
@@ -238,19 +241,20 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(DecimalSimulatorElement.ELEMENT_NAME)
                     ))
                     .add(new MetaItem(
-                        AssetMeta.STORE_DATA_POINTS.getName(), Json.create(true)
+                        AssetMeta.STORE_DATA_POINTS.getUrn(), Json.create(true)
                     ))
                 )
-        );
-        thing.setAttributes(thingAttributes);
+        ).build();
+
+        thing.setAttributeStream(thingAttributes);
         thing = assetStorageService.merge(thing);
         thingId = thing.getId();
 
         // Some sample datapoints
         thing = assetStorageService.find(thingId, true);
-        thingAttributes = thing.getAttributes();
         ZonedDateTime now = LocalDateTime.now().atZone(ZoneId.systemDefault());
-        AssetAttribute light1PowerConsumptionAttribute =AttributeUtil.getAttributeByName(thingAttributes, "light1PowerConsumption");
+
+        AssetAttribute light1PowerConsumptionAttribute = findAssetAttribute("light1PowerConsumption").apply(thing);
 
         assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute));
 
@@ -330,7 +334,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCountry")))
                 )
         );
-        smartHome.setAttributes(smartHomeAttributes);
+        smartHome.setAttributeList(smartHomeAttributes);
         smartHome = assetStorageService.merge(smartHome);
         smartHomeId = smartHome.getId();
 
@@ -362,7 +366,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
                 )
         );
-        apartment1.setAttributes(apartment1Attributes);
+        apartment1.setAttributeList(apartment1Attributes);
         apartment1 = assetStorageService.merge(apartment1);
         apartment1Id = apartment1.getId();
 
@@ -410,7 +414,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
                 )
         );
-        apartment1Livingroom.setAttributes(apartment1LivingroomAttributes);
+        apartment1Livingroom.setAttributeList(apartment1LivingroomAttributes);
         apartment1Livingroom = assetStorageService.merge(apartment1Livingroom);
         apartment1LivingroomId = apartment1Livingroom.getId();
 
@@ -469,7 +473,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 )
         );
 
-        apartment1LivingroomThermostat.setAttributes(apartment1LivingroomThermostatAttributes);
+        apartment1LivingroomThermostat.setAttributeList(apartment1LivingroomThermostatAttributes);
         apartment1LivingroomThermostat = assetStorageService.merge(apartment1LivingroomThermostat);
         apartment1LivingroomThermostatId = apartment1LivingroomThermostat.getId();
 
@@ -489,7 +493,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
                 )
         );
-        apartment2.setAttributes(apartment2Attributes);
+        apartment2.setAttributeList(apartment2Attributes);
         apartment2 = assetStorageService.merge(apartment2);
         apartment2Id = apartment2.getId();
 
@@ -529,7 +533,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
                 )
         );
-        apartment2Livingroom.setAttributes(apartment2LivingroomAttributes);
+        apartment2Livingroom.setAttributeList(apartment2LivingroomAttributes);
         apartment2Livingroom = assetStorageService.merge(apartment2Livingroom);
         apartment2LivingroomId = apartment2Livingroom.getId();
 
@@ -549,7 +553,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
                 )
         );
-        apartment3.setAttributes(apartment3Attributes);
+        apartment3.setAttributeList(apartment3Attributes);
         apartment3 = assetStorageService.merge(apartment3);
         apartment3Id = apartment3.getId();
 
@@ -589,7 +593,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     )
                 )
         );
-        apartment3Livingroom.setAttributes(apartment3LivingroomAttributes);
+        apartment3Livingroom.setAttributeList(apartment3LivingroomAttributes);
         apartment3Livingroom = assetStorageService.merge(apartment3Livingroom);
         apartment3LivingroomId = apartment3Livingroom.getId();
 

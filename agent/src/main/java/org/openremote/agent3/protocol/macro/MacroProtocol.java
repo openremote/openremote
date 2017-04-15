@@ -24,7 +24,6 @@ import org.openremote.agent3.protocol.AbstractProtocol;
 import org.openremote.container.Container;
 import org.openremote.model.*;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.asset.macro.MacroAction;
 import org.openremote.model.asset.macro.MacroAttributeCommand;
 import org.openremote.model.asset.macro.MacroConfiguration;
@@ -39,10 +38,13 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
+import static org.openremote.model.asset.macro.MacroConfiguration.getMacroActions;
 
 /**
  * This protocol is responsible for executing macros.
- *
+ * <p>
  * It expects a {@link MacroAttributeCommand} or the super type{@link AttributeCommand}
  * as the attribute event value on the sendToActuator. The protocol will then execute
  * the command and store the command status in the attribute value.
@@ -97,10 +99,10 @@ public class MacroProtocol extends AbstractProtocol {
                 actions.forEach(action -> {
                     // Look for override value in execution
                     AttributeState overrideState = execution.getActionOverrides() == null ? null : execution.getActionOverrides()
-                            .stream()
-                            .filter(actionOverride -> actionOverride.getAttributeRef().equals(action.getAttributeState().getAttributeRef()))
-                            .findFirst()
-                            .orElse(null);
+                        .stream()
+                        .filter(actionOverride -> actionOverride.getAttributeRef().equals(action.getAttributeState().getAttributeRef()))
+                        .findFirst()
+                        .orElse(null);
 
                     AttributeState actionState = overrideState != null ? overrideState : action.getAttributeState();
                     if (action.getDelay() > 0) {
@@ -157,7 +159,7 @@ public class MacroProtocol extends AbstractProtocol {
 
     @Override
     public String getProtocolName() {
-        return MacroConfiguration.PROTOCOL_NAME;
+        return MacroConfiguration.MACRO_PROTOCOL_NAME;
     }
 
     @Override
@@ -206,13 +208,12 @@ public class MacroProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void onAttributeAdded(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration) {
+    protected void onAttributeAdded(AssetAttribute attribute, AssetAttribute macroConfiguration) {
         // Protocol configuration is actually a Macro
-        MacroConfiguration macroConfiguration = new MacroConfiguration(protocolConfiguration.getAttribute());
 
         // Store the macro actions for later execution requests
         AttributeRef reference = attribute.getReference();
-        List<MacroAction> actions = macroConfiguration.getActions();
+        List<MacroAction> actions = getMacroActions().apply(macroConfiguration).collect(Collectors.toList());
 
         synchronized (actionMap) {
             actionMap.put(reference, actions);
@@ -220,12 +221,12 @@ public class MacroProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void onAttributeUpdated(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration) {
+    protected void onAttributeUpdated(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         onAttributeAdded(attribute, protocolConfiguration);
     }
 
     @Override
-    protected void onAttributeRemoved(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration) {
+    protected void onAttributeRemoved(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         // Store the macro actions for later execution requests
         AttributeRef reference = attribute.getReference();
 

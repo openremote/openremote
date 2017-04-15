@@ -1,7 +1,9 @@
 package org.openremote.test
 
+import com.google.common.collect.Lists
 import org.drools.core.time.impl.PseudoClockScheduler
 import org.kie.api.runtime.conf.ClockTypeOption
+import org.openremote.agent3.protocol.Protocol
 import org.openremote.container.Container
 import org.openremote.container.ContainerService
 import org.openremote.container.message.MessageBrokerService
@@ -20,7 +22,6 @@ import org.openremote.manager.server.rules.RulesDeployment
 import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.rules.RulesetStorageService
 import org.openremote.manager.server.security.ManagerIdentityService
-import org.openremote.manager.server.setup.RuntimeResolverService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.web.ManagerWebService
 
@@ -30,7 +31,6 @@ trait ManagerContainerTrait extends ContainerTrait {
 
     static Iterable<ContainerService> defaultServices(Iterable<ContainerService> additionalServices) {
         [
-                new RuntimeResolverService(),
                 new I18NService(),
                 new PersistenceService(),
                 new MessageBrokerSetupService(),
@@ -42,6 +42,7 @@ trait ManagerContainerTrait extends ContainerTrait {
                 new AssetStorageService(),
                 new AssetDatapointService(),
                 new AssetProcessingService(),
+                *Lists.newArrayList(ServiceLoader.load(Protocol.class)),
                 new AgentService(),
                 new MapService(),
                 new NotificationService(),

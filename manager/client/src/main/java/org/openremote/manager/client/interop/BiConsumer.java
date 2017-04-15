@@ -17,15 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model;
+package org.openremote.manager.client.interop;
 
 import jsinterop.annotations.JsFunction;
 
-/**
- * TODO: Remove this when GWT emulates JDK 8
- */
 @FunctionalInterface
 @JsFunction
-public interface Runnable {
-    void run();
+public interface BiConsumer<T,U> {
+    void accept(T t, U u);
 }

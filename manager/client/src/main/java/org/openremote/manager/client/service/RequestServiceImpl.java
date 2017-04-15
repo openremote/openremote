@@ -25,13 +25,13 @@ import elemental.html.Location;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
-import org.openremote.model.Consumer;
 import org.openremote.manager.shared.http.*;
 import org.openremote.manager.shared.validation.ConstraintViolationReport;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 

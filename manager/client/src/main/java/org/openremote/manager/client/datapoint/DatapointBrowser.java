@@ -29,12 +29,12 @@ import org.openremote.manager.client.interop.chartjs.Chart;
 import org.openremote.manager.client.interop.chartjs.ChartUtil;
 import org.openremote.manager.client.widget.*;
 import org.openremote.model.Constants;
-import org.openremote.model.Consumer;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
 
 import java.util.Arrays;
 import java.util.Date;
+import java.util.function.Consumer;
 
 import static com.google.gwt.dom.client.Style.Unit.EM;
 import static com.google.gwt.dom.client.Style.Unit.PX;

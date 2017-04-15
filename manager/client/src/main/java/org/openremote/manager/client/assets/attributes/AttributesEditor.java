@@ -29,11 +29,17 @@ import elemental.json.JsonValue;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.util.JsUtil;
 import org.openremote.manager.client.widget.*;
-import org.openremote.model.*;
+import org.openremote.model.Attribute;
+import org.openremote.model.AttributeType;
+import org.openremote.model.Meta;
+import org.openremote.model.MetaItem;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
-import org.openremote.model.util.AttributeUtil;
+
 import java.util.List;
+import java.util.function.Consumer;
+
+import static org.openremote.model.Attribute.ATTRIBUTE_NAME_VALIDATOR;
 
 public class AttributesEditor
     extends AttributesView<AttributesEditor.Container, AttributesEditor.Style> {
@@ -112,7 +118,7 @@ public class AttributesEditor
     /* ####################################################################### */
 
     protected FormGroup createNewAttributeEditor() {
-        AssetAttribute attribute = new AssetAttribute("NAME", AttributeType.STRING);
+        AssetAttribute attribute = AssetAttribute.createEmpty();
 
         FormGroup formGroup = createAttributeNameEditor(attribute);
 
@@ -153,7 +159,7 @@ public class AttributesEditor
         FormInputText nameInput = createFormInputText(container.getStyle().stringEditor());
         nameInput.setPlaceholder(environment.getMessages().attributeName());
         nameInput.addValueChangeHandler(event -> {
-            if (!AttributeUtil.nameIsValid(event.getValue())) {
+            if (!ATTRIBUTE_NAME_VALIDATOR.test(event.getValue())) {
                 formGroup.setError(true);
                 showValidationError(environment.getMessages().invalidAttributeName());
             } else {
@@ -369,8 +375,8 @@ public class AttributesEditor
             wellknownListBox.addChangeHandler(event -> {
                 if (wellknownListBox.getSelectedIndex() > 0) {
                     AssetMeta assetMeta = AssetMeta.editable()[wellknownListBox.getSelectedIndex() - 1];
-                    itemNameInput.setText(assetMeta.getName());
-                    item.setName(assetMeta.getName());
+                    itemNameInput.setText(assetMeta.getUrn());
+                    item.setName(assetMeta.getUrn());
                     AssetMeta.EditableType editableType = AssetMeta.EditableType.byValueType(assetMeta.getValueType());
                     typeListBox.setSelectedIndex(
                         editableType != null ? editableType.ordinal() + 1 : 0

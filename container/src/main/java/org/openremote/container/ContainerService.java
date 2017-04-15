@@ -20,19 +20,19 @@
 package org.openremote.container;
 
 /**
- * Containers manage a list of services, the order of services in a container is important.
+ * The {@link Container} is a registry of services, the order of services in a container is important.
  * <p>
  * Service startup lifecycle:
  * </p>
  * <ol>
- * <li>{@link #init} in insertion order</li>
- * <li>{@link #start} in insertion order</li>
+ * <li>{@link #init} in registry insertion order</li>
+ * <li>{@link #start} in registry insertion order</li>
  * </ol>
  * <p>
  * Service shutdown lifecycle:
  * </p>
  * <ol>
- * <li>{@link #stop} in <b>reverse</b> order</li>
+ * <li>{@link #stop} in <b>reverse</b> registry order</li>
  * </ol>
  */
 public interface ContainerService {
@@ -46,11 +46,6 @@ public interface ContainerService {
      * After initialization, services are started in the order they have been added to container.
      */
     void start(Container container) throws Exception;
-
-    /**
-     * Called once the container has finished starting all services
-     */
-    void allStarted(Container container) throws Exception;
 
     /**
      * When the container is shutting down, it stops all services in the reverse order they have been added to container.

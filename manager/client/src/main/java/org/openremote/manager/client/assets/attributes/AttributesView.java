@@ -32,13 +32,16 @@ import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.util.CollectionsUtil;
 import org.openremote.manager.client.widget.*;
-import org.openremote.model.*;
+import org.openremote.model.Attribute;
+import org.openremote.model.AttributeType;
+import org.openremote.model.Constants;
+import org.openremote.model.MetaItem;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
-import org.openremote.model.util.AttributeUtil;
 import org.openremote.model.util.TextUtil;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 public abstract class AttributesView<
     C extends AttributesView.Container<S>,
@@ -70,10 +73,6 @@ public abstract class AttributesView<
     public static class TimestampLabel extends FormOutputText {
 
         static protected DateTimeFormat dateTimeFormat = DateTimeFormat.getFormat(Constants.DEFAULT_DATETIME_FORMAT);
-
-        public TimestampLabel() {
-            this(null);
-        }
 
         public TimestampLabel(Long timestamp) {
             addStyleName("flex");
@@ -201,20 +200,11 @@ public abstract class AttributesView<
     }
 
     protected String getAttributeLabel(AssetAttribute attribute) {
-        String label = attribute.getName();
-        MetaItem labelItem = attribute.firstMetaItem(AssetMeta.LABEL);
-        if (labelItem != null) {
-            label = labelItem.getValueAsString();
-        }
-        return label;
+        return attribute.getLabel();
     }
 
     protected String getAttributeDescription(AssetAttribute attribute) {
-        MetaItem description = attribute.firstMetaItem(AssetMeta.DESCRIPTION);
-        if (description != null) {
-            return description.getValueAsString();
-        }
-        return null;
+        return attribute.getDescription();
     }
 
     protected AttributeEditor createEditor(AssetAttribute attribute, FormGroup formGroup) {
@@ -475,7 +465,7 @@ public abstract class AttributesView<
     }
 
     protected void removeAttribute(AssetAttribute attribute) {
-        AttributeUtil.remove(attributes, attribute.getName());
+        Attribute.removeAttribute(attributes, attribute.getName());
         editors.remove(attribute.getName());
         int attributeGroupIndex = container.getPanel().getWidgetIndex(attributeGroups.get(attribute));
         container.getPanel().remove(attributeGroupIndex);

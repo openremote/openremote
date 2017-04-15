@@ -19,13 +19,13 @@
  */
 package org.openremote.manager.client.service;
 
-import org.openremote.model.Consumer;
 import org.openremote.manager.shared.http.EntityReader;
 import org.openremote.manager.shared.http.EntityWriter;
 import org.openremote.manager.shared.http.RequestException;
 import org.openremote.manager.shared.http.RequestParams;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public interface RequestService {
 

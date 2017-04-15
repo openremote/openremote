@@ -48,7 +48,7 @@ public class MetaItem extends AbstractValueHolder {
     }
 
     public MetaItem(AssetMeta assetMeta, JsonValue value) {
-        this(assetMeta.getName(), value);
+        this(assetMeta.getUrn(), value);
     }
 
     public MetaItem(String name, JsonValue value) {

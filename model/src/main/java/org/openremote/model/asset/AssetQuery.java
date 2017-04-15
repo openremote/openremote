@@ -28,7 +28,7 @@ import java.util.Locale;
  */
 public class AssetQuery<CHILD extends AssetQuery<CHILD>> {
 
-    static public class Select {
+    public static class Select {
         public boolean loadComplete;
         // TODO: Filtering attributes can be moved into database functions
         public boolean filterProtected;
@@ -80,7 +80,7 @@ public class AssetQuery<CHILD extends AssetQuery<CHILD>> {
     public interface ValuePredicate {
     }
 
-    static public class StringPredicate implements ValuePredicate {
+    public static class StringPredicate implements ValuePredicate {
         public Match match = Match.EXACT;
         public boolean caseSensitive = true;
         public String value;
@@ -126,7 +126,7 @@ public class AssetQuery<CHILD extends AssetQuery<CHILD>> {
         }
     }
 
-    static public class BooleanPredicate implements ValuePredicate {
+    public static class BooleanPredicate implements ValuePredicate {
         public boolean predicate;
 
         public BooleanPredicate() {
@@ -142,7 +142,7 @@ public class AssetQuery<CHILD extends AssetQuery<CHILD>> {
         }
     }
 
-    static public class StringArrayPredicate implements ValuePredicate {
+    public static class StringArrayPredicate implements ValuePredicate {
         public StringPredicate[] predicates = new StringPredicate[0];
 
         public StringArrayPredicate() {
@@ -158,7 +158,7 @@ public class AssetQuery<CHILD extends AssetQuery<CHILD>> {
         }
     }
 
-    static public class ParentPredicate {
+    public static class ParentPredicate {
         public String id;
         public String type;
         public boolean noParent;
@@ -194,7 +194,7 @@ public class AssetQuery<CHILD extends AssetQuery<CHILD>> {
         }
     }
 
-    static public class PathPredicate {
+    public static class PathPredicate {
         public String[] path;
 
         public PathPredicate() {
@@ -214,7 +214,7 @@ public class AssetQuery<CHILD extends AssetQuery<CHILD>> {
         }
     }
 
-    static public class TenantPredicate {
+    public static class TenantPredicate {
         public String realmId;
         public String realm;
 
@@ -236,7 +236,7 @@ public class AssetQuery<CHILD extends AssetQuery<CHILD>> {
         }
     }
 
-    static public class AttributeMetaPredicate {
+    public static class AttributeMetaPredicate {
         public StringPredicate itemNamePredicate;
         public ValuePredicate itemValuePredicate;
 
@@ -248,7 +248,7 @@ public class AssetQuery<CHILD extends AssetQuery<CHILD>> {
         }
 
         public AttributeMetaPredicate(AssetMeta assetMeta) {
-            this.itemNamePredicate = new StringPredicate(assetMeta.getName());
+            this.itemNamePredicate = new StringPredicate(assetMeta.getUrn());
         }
 
         public AttributeMetaPredicate(ValuePredicate itemValuePredicate) {
@@ -261,7 +261,7 @@ public class AssetQuery<CHILD extends AssetQuery<CHILD>> {
         }
 
         public AttributeMetaPredicate(AssetMeta assetMeta, ValuePredicate itemValuePredicate) {
-            this(new StringPredicate(assetMeta.getName()), itemValuePredicate);
+            this(new StringPredicate(assetMeta.getUrn()), itemValuePredicate);
         }
 
         public AttributeMetaPredicate itemName(StringPredicate itemNamePredicate) {
@@ -270,7 +270,7 @@ public class AssetQuery<CHILD extends AssetQuery<CHILD>> {
         }
 
         public AttributeMetaPredicate itemName(AssetMeta assetMeta) {
-            return itemName(new StringPredicate(assetMeta.getName()));
+            return itemName(new StringPredicate(assetMeta.getUrn()));
         }
 
         public AttributeMetaPredicate itemValue(ValuePredicate itemValuePredicate) {
@@ -279,7 +279,7 @@ public class AssetQuery<CHILD extends AssetQuery<CHILD>> {
         }
     }
 
-    static public class AttributeRefPredicate extends AttributeMetaPredicate {
+    public static class AttributeRefPredicate extends AttributeMetaPredicate {
 
         public AttributeRefPredicate() {
         }
@@ -306,7 +306,7 @@ public class AssetQuery<CHILD extends AssetQuery<CHILD>> {
         }
 
         public AttributeRefPredicate(AssetMeta assetMeta, String entityId, String attributeName) {
-            this(assetMeta.getName(), entityId, attributeName);
+            this(assetMeta.getUrn(), entityId, attributeName);
         }
 
         public AttributeRefPredicate(StringPredicate name, AttributeRef attributeRef) {
@@ -319,11 +319,11 @@ public class AssetQuery<CHILD extends AssetQuery<CHILD>> {
         }
 
         public AttributeRefPredicate(AssetMeta assetMeta, AttributeRef attributeRef) {
-            this(new StringPredicate(assetMeta.getName()), attributeRef);
+            this(new StringPredicate(assetMeta.getUrn()), attributeRef);
         }
     }
 
-    static public class OrderBy {
+    public static class OrderBy {
 
         public enum Property {
             CREATED_ON,

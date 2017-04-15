@@ -26,9 +26,8 @@ import org.openremote.manager.client.event.UserChangeEvent;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.manager.client.interop.keycloak.*;
 import org.openremote.model.Constants;
-import org.openremote.model.Consumer;
-import org.openremote.model.Runnable;
 
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 public class SecurityServiceImpl implements SecurityService {
@@ -132,31 +131,66 @@ public class SecurityServiceImpl implements SecurityService {
 
     @Override
     public void onTokenExpired(Runnable fn) {
-        keycloak.onTokenExpired(fn);
+        keycloak.onTokenExpired(new org.openremote.manager.client.interop.Runnable(){
+            @Override
+            public void run() {
+                fn.run();
+            }
+        });
     }
 
     @Override
     public void onAuthSuccess(Runnable fn) {
-        keycloak.onAuthSuccess = fn;
+        keycloak.onAuthSuccess = new org.openremote.manager.client.interop.Runnable(){
+            @Override
+            public void run() {
+                fn.run();
+            }
+        };
     }
 
     @Override
     public void onAuthLogout(Runnable fn) {
-        keycloak.onAuthLogout = fn;
+        keycloak.onAuthLogout = new org.openremote.manager.client.interop.Runnable(){
+            @Override
+            public void run() {
+                fn.run();
+            }
+        };
     }
 
     @Override
     public void updateToken(Consumer<Boolean> successFn, Runnable errorFn) {
         KeycloakCallback kcCallback = keycloak.updateToken();
-        kcCallback.success(successFn);
-        kcCallback.error(errorFn);
+        kcCallback.success(new org.openremote.manager.client.interop.Consumer<Boolean>(){
+            @Override
+            public void accept(Boolean o) {
+                successFn.accept(o);
+            }
+        });
+        kcCallback.error(new org.openremote.manager.client.interop.Runnable(){
+            @Override
+            public void run() {
+                errorFn.run();
+            }
+        });
     }
 
     @Override
     public void updateToken(int minValiditySeconds, Consumer<Boolean> successFn, Runnable errorFn) {
         KeycloakCallback kcCallback = keycloak.updateToken(minValiditySeconds);
-        kcCallback.success(successFn);
-        kcCallback.error(errorFn);
+        kcCallback.success(new org.openremote.manager.client.interop.Consumer<Boolean>(){
+            @Override
+            public void accept(Boolean o) {
+                successFn.accept(o);
+            }
+        });
+        kcCallback.error(new org.openremote.manager.client.interop.Runnable(){
+            @Override
+            public void run() {
+                errorFn.run();
+            }
+        });
     }
 
     @Override

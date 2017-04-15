@@ -4,7 +4,8 @@ import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.Label;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.widget.*;
-import org.openremote.model.Consumer;
+
+import java.util.function.Consumer;
 
 /**
  * Shows a browser tree node in a form group and encapsulates the process of

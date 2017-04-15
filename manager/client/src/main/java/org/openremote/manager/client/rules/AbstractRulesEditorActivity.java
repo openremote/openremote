@@ -35,10 +35,10 @@ import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.rules.Ruleset;
 import org.openremote.manager.shared.rules.RulesetResource;
 import org.openremote.manager.shared.validation.ConstraintViolation;
-import org.openremote.model.Consumer;
 
 import javax.inject.Inject;
 import java.util.Collection;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;

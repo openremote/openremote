@@ -17,14 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.interop.promise;
+package org.openremote.manager.client.interop;
 
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
-import org.openremote.model.BiConsumer;
-import org.openremote.model.Consumer;
-import org.openremote.model.Function;
 
 @JsType(isNative = true, namespace = JsPackage.GLOBAL, name = "Promise")
 public class Promise<T,U> {
@@ -54,4 +51,5 @@ public class Promise<T,U> {
     public static native <T,U> Promise<T,U> all(Promise<T,U>... promises);
 
     public static native <T,U> Promise<T,U> race(Promise<T,U>... promises);
+
 }

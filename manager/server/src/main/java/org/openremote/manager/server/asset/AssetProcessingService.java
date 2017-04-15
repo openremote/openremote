@@ -33,9 +33,6 @@ import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.asset.*;
-import org.openremote.model.asset.agent.ProtocolConfiguration;
-import org.openremote.model.asset.agent.AgentProtocolLink;
-import org.openremote.model.util.AttributeUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +43,11 @@ import java.util.logging.Logger;
 import static org.openremote.agent3.protocol.Protocol.SENSOR_QUEUE;
 import static org.openremote.manager.server.event.EventService.INCOMING_EVENT_TOPIC;
 import static org.openremote.manager.server.event.EventService.getWebsocketAuth;
+import static org.openremote.model.asset.AssetAttribute.containsAssetAttributeNamed;
+import static org.openremote.model.asset.AssetAttribute.findAssetAttribute;
+import static org.openremote.model.asset.AssetAttribute.isMatchingAttributeEvent;
+import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
+import static org.openremote.model.asset.agent.AgentLink.isValidAgentLink;
 
 /**
  * Receives {@link AttributeEvent}s and processes them.
@@ -194,11 +196,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     }
 
     @Override
-    public void allStarted(Container container) throws Exception {
-
-    }
-
-    @Override
     public void stop(Container container) throws Exception {
 
     }
@@ -267,7 +264,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     return;
 
                 // Attribute must exist
-                if (!AttributeUtil.contains(asset.getAttributes(), event.getAttributeName()))
+                if (!containsAssetAttributeNamed(event.getAttributeName()).test(asset))
                     return;
 
                 // Regular users can only write attribute events for assets in their realm
@@ -319,7 +316,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
         // Pass attribute event through the processing chain
         LOG.fine("Processing " + attributeEvent + " for: " + asset);
-        AssetAttribute attribute = AttributeUtil.getAttributeByName(asset.getAttributes(), attributeEvent.getAttributeName());
+        AssetAttribute attribute = findAssetAttribute(attributeEvent.getAttributeName()).apply(asset);
 
         if (attribute == null) {
             LOG.warning("Ignoring " + attributeEvent + ", attribute doesn't exist on asset: " + asset);
@@ -338,7 +335,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     /**
      * We get here if a protocol pushes a sensor update message.
-     *
      */
     protected void processSensorUpdate(AttributeEvent attributeEvent) {
         ServerAsset asset = assetStorageService.find(attributeEvent.getEntityId(), true);
@@ -349,16 +345,22 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         // event comes from a Protocol, we can not assume that the attribute is still linked,
         // consider a protocol that receives a batch of messages because a gateway was offline
         // for a day)
+        AssetAttribute attribute = asset.getAttributeStream()
+            .filter(isMatchingAttributeEvent(attributeEvent))
+            .filter(isValidAgentLink())
+            .findFirst()
+            .orElse(null);
 
-        // Look for a matching attribute
-        AssetAttribute attribute = AttributeUtil.getAttributeByName(asset.getAttributes(), attributeEvent.getAttributeName());
+        if (attribute == null) {
+            LOG.warning("Processing sensor update failed, no attribute or not linked to an agent: " + attributeEvent);
+            return;
+        }
 
-        // Wrap this as an agent link attribute and ensure that the protocol can be resolved
-        AgentProtocolLink agentProtocolLink = new AgentProtocolLink(attribute);
-        ProtocolConfiguration protocolConfiguration = agentService.getProtocolConfigurationResolver().apply(agentProtocolLink.getLink());
+        AssetAttribute protocolConfiguration =
+            getAgentLink().andThen(agentService.getProtocolConfigurationResolver()).apply(attribute);
 
-        if (!agentProtocolLink.isValid() || protocolConfiguration == null) {
-            LOG.warning("Processing sensor update failed attribute not linked to an agent or invalid agent link: " + attributeEvent);
+        if (protocolConfiguration == null) {
+            LOG.warning("Processing sensor update failed, linked agent protocol configuration not found: " + attributeEvent);
             return;
         }
 

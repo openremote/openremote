@@ -19,8 +19,6 @@
  */
 package org.openremote.manager.client.widget;
 
-import org.openremote.model.Runnable;
-
 public interface FormView {
 
     void setFormBusy(boolean busy);

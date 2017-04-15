@@ -19,23 +19,34 @@
  */
 package org.openremote.model;
 
-import elemental.json.Json;
-import elemental.json.JsonObject;
-import elemental.json.JsonValue;
-import org.openremote.model.util.AttributeUtil;
+import com.google.gwt.regexp.shared.RegExp;
+import elemental.json.*;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /**
  * Convenience overlay API for {@link JsonObject}.
  */
 public abstract class Attribute extends AbstractValueTimestampHolder {
 
+    /**
+     * Attribute names should be very simple, as we use them in SQL path
+     * expressions, etc. and must manually escape.
+     */
+    public static final String ATTRIBUTE_NAME_PATTERN = "^\\w+$";
+    public static final RegExp ATTRIBUTE_NAME_REGEXP = RegExp.compile(ATTRIBUTE_NAME_PATTERN);
+    public static final Predicate<String> ATTRIBUTE_NAME_VALIDATOR =
+        name -> name != null && name.length() > 0 && ATTRIBUTE_NAME_REGEXP.test(name);
+
     public static final String TYPE_FIELD_NAME = "type";
     public static final String META_FIELD_NAME = "meta";
+
     protected String name;
 
     protected Attribute(String name) {
@@ -51,11 +62,6 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
     protected Attribute(String name, JsonObject jsonObject) {
         super(jsonObject);
         setName(name);
-
-        // Verify jsonObject is valid
-        if (!isValid()) {
-            throw new IllegalArgumentException("Supplied JSON object is not valid for this type of attribute: " + jsonObject.toJson());
-        }
     }
 
     protected Attribute(String name, AttributeType type, JsonValue value) {
@@ -75,11 +81,6 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
     }
 
     public void setName(String name) {
-        if (!AttributeUtil.nameIsValid(name)) {
-            throw new IllegalArgumentException(
-                    "Invalid attribute name (must match '" + AttributeUtil.ATTRIBUTE_NAME_PATTERN + "'): " + name
-            );
-        }
         this.name = name;
     }
 
@@ -111,6 +112,10 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
 
     public Meta getMeta() {
         return hasMeta() ? new Meta(jsonObject.getArray(META_FIELD_NAME)) : new Meta();
+    }
+
+    public Stream<MetaItem> getMetaItemStream() {
+        return getMeta().stream();
     }
 
     @SuppressWarnings("unchecked")
@@ -181,6 +186,68 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
 
     @Override
     public boolean isValid() {
-        return super.isValid() && AttributeUtil.nameIsValid(name) && getType() != null;
+        return super.isValid() && ATTRIBUTE_NAME_VALIDATOR.test(name) && getType() != null;
+    }
+
+    public static Predicate<Attribute> isAttributeValid() {
+        return Attribute::isValid;
+    }
+
+    public static Predicate<Attribute> isAttributeType(AttributeType attributeType) {
+        return attribute -> attribute.getType().equals(attributeType);
+    }
+
+    public static Predicate<MetaItem> isMetaItem(String name) {
+        return metaItem -> metaItem.getName().equals(name);
+    }
+
+    public static Function<Stream<? extends Attribute>, Attribute> findAttribute(String name) {
+        return attributeStream -> attributeStream
+            .filter(attribute -> attribute.getName().equals(name))
+            .findFirst()
+            .orElse(null);
+    }
+
+    public static Predicate<Stream<? extends Attribute>> containsAttributeNamed(String name) {
+        return attributeStream -> findAttribute(name).apply(attributeStream) != null;
+    }
+
+    public static java.util.function.Function<Attribute, AttributeRef> getAttributeLink(String metaName) {
+        return attribute -> {
+            MetaItem metaItem = attribute.firstMetaItem(metaName);
+            JsonArray array = metaItem != null && metaItem.getValue().getType() == JsonType.ARRAY
+                ? metaItem.getValueAsArray()
+                : null;
+            return array != null && array.length() == 2 ? new AttributeRef(array) : null;
+        };
+    }
+
+    public static void removeAttribute(List<? extends Attribute> attributes, String name) {
+        attributes.removeIf(attribute -> attribute.getName().equals(name));
+    }
+
+    public static <A extends Attribute> A findAttribute(List<A> attributes, String name) {
+        for (A attribute : attributes) {
+            if (attribute.getName().equals(name))
+                return attribute;
+        }
+        return null;
+    }
+
+    public static Consumer<Attribute> setAttributeLink(String metaName, AttributeRef attributeRef) {
+        return attribute -> {
+            if (attributeRef == null) {
+                throw new IllegalArgumentException(
+                    "Attribute reference cannot be null for '" + metaName + "' on: " + attribute
+                );
+            }
+            attribute.setMeta(
+                attribute.getMeta().replace(metaName, new MetaItem(metaName, attributeRef.asJsonValue()))
+            );
+        };
+    }
+
+    public static Consumer<Attribute> removeAttributeLink(String metaName) {
+        return attribute -> attribute.setMeta(attribute.getMeta().removeAll(metaName));
     }
 }

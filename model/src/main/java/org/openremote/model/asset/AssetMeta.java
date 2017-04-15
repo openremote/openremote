@@ -39,7 +39,8 @@ import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
 public enum AssetMeta {
 
     /**
-     * Links the attribute to an agent, connecting it to a sensor and/or actuator.
+     * Links the attribute to an agent's {@link org.openremote.model.asset.agent.ProtocolConfiguration}, connecting it
+     * to a sensor and/or actuator.
      */
     AGENT_LINK(ASSET_META_NAMESPACE + ":agentLink", new Access(false, false, true), JsonType.ARRAY),
 
@@ -142,7 +143,7 @@ public enum AssetMeta {
     ENABLED(ASSET_META_NAMESPACE + ":enabled", new Access(true, false, true), JsonType.BOOLEAN),
 
     /**
-     * Identifies a meta item as a {@link org.openremote.model.asset.macro.MacroAction}
+     * Identifies a meta item as a {@link org.openremote.model.asset.macro.MacroAction}.
      */
     MACRO_ACTION(ASSET_META_NAMESPACE + ":macroAction", new Access(true, false, true), JsonType.ARRAY),
 
@@ -151,18 +152,18 @@ public enum AssetMeta {
      */
     COMMAND(ASSET_META_NAMESPACE + ":command", new Access(true, false, true), JsonType.BOOLEAN);
 
-    final protected String name;
+    final protected String urn;
     final protected Access access;
     final protected JsonType valueType;
 
-    AssetMeta(String name, Access access, JsonType valueType) {
-        this.name = name;
+    AssetMeta(String urn, Access access, JsonType valueType) {
+        this.urn = urn;
         this.access = access;
         this.valueType = valueType;
     }
 
-    public String getName() {
-        return name;
+    public String getUrn() {
+        return urn;
     }
 
     public Access getAccess() {
@@ -185,24 +186,24 @@ public enum AssetMeta {
         return list.toArray(new AssetMeta[list.size()]);
     }
 
-    public static Boolean isEditable(String name) {
+    public static Boolean isEditable(String urn) {
         for (AssetMeta assetMeta : editable()) {
-            if (assetMeta.getName().equals(name))
+            if (assetMeta.getUrn().equals(urn))
                 return assetMeta.getAccess().editable;
         }
         return null;
     }
 
-    public static AssetMeta byName(String name) {
+    public static AssetMeta byUrn(String urn) {
         for (AssetMeta assetMeta : values()) {
-            if (assetMeta.getName().equals(name))
+            if (assetMeta.getUrn().equals(urn))
                 return assetMeta;
         }
         return null;
     }
 
-    public static MetaItem createMetaItem(AssetMeta name, JsonValue value) {
-        return new MetaItem(name.getName(), value);
+    public static MetaItem createMetaItem(AssetMeta assetMeta, JsonValue value) {
+        return new MetaItem(assetMeta.getUrn(), value);
     }
 
     /**

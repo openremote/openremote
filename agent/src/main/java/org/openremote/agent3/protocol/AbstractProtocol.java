@@ -30,7 +30,6 @@ import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.AttributeState;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.agent.ProtocolConfiguration;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -64,10 +63,7 @@ public abstract class AbstractProtocol implements Protocol {
         LOG.fine("Starting protocol: " + getProtocolName());
         this.messageBrokerContext = container.getService(MessageBrokerSetupService.class).getContext();
         this.producerTemplate = container.getService(MessageBrokerService.class).getProducerTemplate();
-    }
 
-    @Override
-    public void allStarted(Container container) throws Exception {
         synchronized (linkedAttributes) {
             messageBrokerContext.addRoutes(new RouteBuilder() {
                 @Override
@@ -98,7 +94,7 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     @Override
-    public void linkAttributes(Collection<AssetAttribute> attributes, ProtocolConfiguration protocolConfiguration) throws Exception {
+    public void linkAttributes(Collection<AssetAttribute> attributes, AssetAttribute protocolConfiguration) throws Exception {
         synchronized (linkedAttributes) {
             attributes.forEach(attribute -> {
                 if (linkedAttributes.containsKey(attribute.getReference())) {
@@ -115,24 +111,24 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     @Override
-    public void unlinkAttributes(Collection<AssetAttribute> attributes, ProtocolConfiguration protocolConfiguration) throws Exception {
+    public void unlinkAttributes(Collection<AssetAttribute> attributes, AssetAttribute protocolConfiguration) throws Exception {
         synchronized (linkedAttributes) {
             attributes
+                .stream()
+                .filter(attribute -> linkedAttributes.values()
                     .stream()
-                    .filter(attribute -> linkedAttributes.values()
-                                    .stream()
-                                    .anyMatch(linkedAttribute ->
-                                        linkedAttribute
-                                            .getReference()
-                                            .equals(attribute.getReference()))
-                    )
-                    .forEach(attributeToRemove -> {
-                        AttributeRef agentLinkedAttributeRef = attributeToRemove.getReference();
+                    .anyMatch(linkedAttribute ->
+                        linkedAttribute
+                            .getReference()
+                            .equals(attribute.getReference()))
+                )
+                .forEach(attributeToRemove -> {
+                    AttributeRef agentLinkedAttributeRef = attributeToRemove.getReference();
 
-                        linkedAttributes.remove(agentLinkedAttributeRef);
-                        LOG.fine("Attribute removed on '" + getProtocolName() + "': " + attributeToRemove);
-                        onAttributeRemoved(attributeToRemove, protocolConfiguration);
-                    });
+                    linkedAttributes.remove(agentLinkedAttributeRef);
+                    LOG.fine("Attribute removed on '" + getProtocolName() + "': " + attributeToRemove);
+                    onAttributeRemoved(attributeToRemove, protocolConfiguration);
+                });
         }
     }
 
@@ -162,9 +158,9 @@ public abstract class AbstractProtocol implements Protocol {
 
     abstract protected void sendToActuator(AttributeEvent event);
 
-    abstract protected void onAttributeAdded(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration);
+    abstract protected void onAttributeAdded(AssetAttribute attribute, AssetAttribute protocolConfiguration);
 
-    abstract protected void onAttributeUpdated(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration);
+    abstract protected void onAttributeUpdated(AssetAttribute attribute, AssetAttribute protocolConfiguration);
 
-    abstract protected void onAttributeRemoved(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration);
+    abstract protected void onAttributeRemoved(AssetAttribute attribute, AssetAttribute protocolConfiguration);
 }

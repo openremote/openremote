@@ -24,28 +24,27 @@ import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.admin.*;
 import org.openremote.manager.client.admin.navigation.AdminNavigation;
 import org.openremote.manager.client.event.ShowSuccessEvent;
-import org.openremote.model.event.bus.EventBus;
-import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.security.Credential;
 import org.openremote.manager.shared.security.Role;
 import org.openremote.manager.shared.security.User;
 import org.openremote.manager.shared.security.UserResource;
 import org.openremote.manager.shared.validation.ConstraintViolation;
-import org.openremote.model.Consumer;
-import org.openremote.model.Runnable;
+import org.openremote.model.event.bus.EventBus;
+import org.openremote.model.event.bus.EventRegistration;
 
 import javax.inject.Inject;
-import java.util.*;
-import java.util.logging.Logger;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.function.Consumer;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
 public class AdminUserActivity
     extends AbstractAdminActivity<AdminUserPlace, AdminUser>
     implements AdminUser.Presenter {
-
-    private static final Logger LOG = Logger.getLogger(AdminUserActivity.class.getName());
 
     final protected Environment environment;
     final protected UserResource userResource;
@@ -188,9 +187,7 @@ public class AdminUserActivity
         readFromView();
         environment.getRequestService().execute(
             userMapper,
-            requestParams -> {
-                userResource.create(requestParams, realm, user);
-            },
+            requestParams -> userResource.create(requestParams, realm, user),
             204,
             () -> {
                 adminContent.setFormBusy(false);
@@ -231,13 +228,9 @@ public class AdminUserActivity
         Credential credential = new Credential(password, false);
         environment.getRequestService().execute(
             credentialMapper,
-            requestParams -> {
-                userResource.resetPassword(requestParams, realm, userId, credential);
-            },
+            requestParams -> userResource.resetPassword(requestParams, realm, userId, credential),
             204,
-            () -> {
-                adminContent.addFormMessageSuccess(environment.getMessages().passwordUpdated());
-            },
+            () -> adminContent.addFormMessageSuccess(environment.getMessages().passwordUpdated()),
             ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
         );
     }
@@ -245,16 +238,12 @@ public class AdminUserActivity
     protected void updateUser() {
         environment.getRequestService().execute(
             userMapper,
-            requestParams -> {
-                userResource.update(requestParams, realm, userId, user);
-            },
+            requestParams -> userResource.update(requestParams, realm, userId, user),
             204,
-            () -> {
-                updateRoles(() -> {
-                    adminContent.setFormBusy(false);
-                    adminContent.addFormMessageSuccess(environment.getMessages().userUpdated(user.getUsername()));
-                });
-            },
+            () -> updateRoles(() -> {
+                adminContent.setFormBusy(false);
+                adminContent.addFormMessageSuccess(environment.getMessages().userUpdated(user.getUsername()));
+            }),
             ex -> handleRequestException(ex, environment.getEventBus(), environment.getMessages(), validationErrorHandler)
         );
     }
@@ -262,11 +251,9 @@ public class AdminUserActivity
     protected void updateRoles(Runnable onComplete) {
         environment.getRequestService().execute(
             roleArrayMapper,
-            requestParams -> {
-                userResource.updateRoles(requestParams, realm, userId, roles);
-            },
+            requestParams -> userResource.updateRoles(requestParams, realm, userId, roles),
             204,
-            onComplete::run,
+            onComplete,
             ex -> handleRequestException(ex, environment)
         );
     }
@@ -281,9 +268,7 @@ public class AdminUserActivity
                 adminContent.clearFormMessages();
                 clearViewFieldErrors();
                 environment.getRequestService().execute(
-                    requestParams -> {
-                        userResource.delete(requestParams, realm, userId);
-                    },
+                    requestParams -> userResource.delete(requestParams, realm, userId),
                     204,
                     () -> {
                         adminContent.setFormBusy(false);

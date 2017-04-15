@@ -22,8 +22,8 @@ package org.openremote.manager.client.service;
 import org.openremote.manager.client.interop.keycloak.AuthToken;
 import org.openremote.manager.client.interop.keycloak.LoginOptions;
 import org.openremote.manager.client.interop.keycloak.LogoutOptions;
-import org.openremote.model.Consumer;
-import org.openremote.model.Runnable;
+
+import java.util.function.Consumer;
 
 public interface SecurityService {
 

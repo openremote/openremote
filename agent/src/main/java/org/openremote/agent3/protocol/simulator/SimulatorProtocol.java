@@ -27,7 +27,6 @@ import org.openremote.model.AttributeRef;
 import org.openremote.model.AttributeState;
 import org.openremote.model.MetaItem;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.asset.agent.ProtocolConfiguration;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -114,15 +113,15 @@ public class SimulatorProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void onAttributeAdded(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration) {
+    protected void onAttributeAdded(AssetAttribute attribute, AssetAttribute  protocolConfiguration) {
         String elementType = attribute.firstMetaItemOrThrow(SIMULATOR_ELEMENT).getValueAsString();
-        String protocolConfigurationName = protocolConfiguration.getAttribute().getName();
+        String protocolConfigurationName = protocolConfiguration.getName();
 
         Instance instance = instances.get(protocolConfigurationName);
 
         if (instance == null) {
-            MetaItem configModeMeta = protocolConfiguration.getAttribute().firstMetaItem(CONFIG_MODE);
-            MetaItem configDelayMeta = protocolConfiguration.getAttribute().firstMetaItem(CONFIG_WRITE_DELAY_MILLISECONDS);
+            MetaItem configModeMeta = protocolConfiguration.firstMetaItem(CONFIG_MODE);
+            MetaItem configDelayMeta = protocolConfiguration.firstMetaItem(CONFIG_WRITE_DELAY_MILLISECONDS);
 
             Mode mode = Mode.WRITE_THROUGH_IMMEDIATE;
             if (configModeMeta != null) {
@@ -155,12 +154,12 @@ public class SimulatorProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void onAttributeUpdated(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration) {
+    protected void onAttributeUpdated(AssetAttribute attribute, AssetAttribute  protocolConfiguration) {
         onAttributeAdded(attribute, protocolConfiguration);
     }
 
     @Override
-    protected void onAttributeRemoved(AssetAttribute attribute, ProtocolConfiguration protocolConfiguration) {
+    protected void onAttributeRemoved(AssetAttribute attribute, AssetAttribute  protocolConfiguration) {
         elements.remove(attribute.getReference());
         attributeInstanceMap.remove(attribute.getReference());
     }

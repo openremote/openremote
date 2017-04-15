@@ -19,8 +19,6 @@
  */
 package org.openremote.manager.client.app.dialog;
 
-import org.openremote.model.Runnable;
-
 public interface ConfirmationDialog {
 
     void setTitle(String title);

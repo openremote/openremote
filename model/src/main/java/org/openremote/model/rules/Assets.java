@@ -20,10 +20,10 @@
 package org.openremote.model.rules;
 
 import org.openremote.model.AttributeEvent;
-import org.openremote.model.Consumer;
 import org.openremote.model.asset.AssetQuery;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Facade for writing rules RHS actions, supporting asset queries within the scope

@@ -19,8 +19,6 @@
  */
 package org.openremote.model.asset;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import elemental.json.JsonObject;
 import org.hibernate.annotations.Formula;
 import org.openremote.model.IdentifiableEntity;
@@ -28,7 +26,6 @@ import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.geo.GeoJSONFeature;
 import org.openremote.model.geo.GeoJSONGeometry;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.util.AttributeUtil;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -38,9 +35,14 @@ import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
+import static org.openremote.model.asset.AssetAttribute.filterProtectedAssetAttribute;
+import static org.openremote.model.asset.AssetAttribute.getAssetAttributesAsJson;
+import static org.openremote.model.asset.AssetAttribute.getAssetAttributesFromJson;
 
 // @formatter:off
 /**
@@ -215,7 +217,6 @@ import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
 // @formatter:on
 @MappedSuperclass
 public class Asset implements IdentifiableEntity {
-    public static final String ATTRIBUTE_PROPERTY_NAME = "attrs";
 
     @Id
     @Column(name = "ID", length = 27)
@@ -270,9 +271,7 @@ public class Asset implements IdentifiableEntity {
 
     @Column(name = "ATTRIBUTES", columnDefinition = "jsonb")
     @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_OBJECT_TYPE)
-    @JsonProperty
-    // We have to use a different name to the getter/setter because GWT Jackson ignores it otherwise
-    public JsonObject attrs;
+    public JsonObject attributes;
 
     public Asset() {
     }
@@ -310,11 +309,12 @@ public class Asset implements IdentifiableEntity {
         this.path = path;
 
         if (filterProtectedAttributes) {
-            List<AssetAttribute> assetAttributes = AttributeUtil.getAssetAttributesFromJson(id, attributes);
-            assetAttributes = AttributeUtil.filterByProtected(assetAttributes);
-            this.attrs = assetAttributes.size() > 0 ? AttributeUtil.getAssetAttributesAsJson(assetAttributes) : null;
+            this.attributes = getAssetAttributesFromJson(id)
+                .andThen(filterProtectedAssetAttribute())
+                .andThen(getAssetAttributesAsJson())
+                .apply(attributes);
         } else {
-            this.attrs = attributes;
+            this.attributes = attributes;
         }
     }
 
@@ -480,15 +480,28 @@ public class Asset implements IdentifiableEntity {
         return path != null && Arrays.asList(getPath()).contains(assetId);
     }
 
-    @JsonIgnore
-    public List<AssetAttribute> getAttributes() {
-        return AttributeUtil.getAssetAttributesFromJson(id, attrs);
+    public JsonObject getAttributes() {
+        return attributes;
     }
 
-    @JsonIgnore
-    public void setAttributes(List<AssetAttribute> attributes) {
-        // TODO: need to verify there are no duplicate attribute names
-        this.attrs = AttributeUtil.getAssetAttributesAsJson(attributes);
+    public void setAttributes(JsonObject attributes) {
+        this.attributes = attributes;
+    }
+
+    public Stream<AssetAttribute> getAttributeStream() {
+        return getAssetAttributesFromJson(id).apply(getAttributes());
+    }
+
+    public void setAttributeStream(Stream<AssetAttribute> attributeStream) {
+        setAttributes(getAssetAttributesAsJson().apply(attributeStream));
+    }
+
+    public List<AssetAttribute> getAttributeList() {
+        return getAttributeStream().collect(Collectors.toList());
+    }
+
+    public void setAttributeList(List<AssetAttribute> attributes) {
+        setAttributeStream(attributes.stream());
     }
 
     /**
@@ -541,7 +554,7 @@ public class Asset implements IdentifiableEntity {
             ", tenantDisplayName='" + tenantDisplayName + '\'' +
             ", coordinates=" + Arrays.toString(coordinates) +
             ", path=" + Arrays.toString(path) +
-            ", attributes=" + attrs +
+            ", attributes=" + attributes +
             '}';
     }
 }

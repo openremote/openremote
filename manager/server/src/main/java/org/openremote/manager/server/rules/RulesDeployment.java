@@ -55,7 +55,6 @@ import org.openremote.manager.shared.rules.GlobalRuleset;
 import org.openremote.manager.shared.rules.Ruleset;
 import org.openremote.manager.shared.rules.TenantRuleset;
 import org.openremote.model.AttributeEvent;
-import org.openremote.model.Consumer;
 import org.openremote.model.asset.AbstractAssetUpdate;
 import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetQuery;
@@ -69,6 +68,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
