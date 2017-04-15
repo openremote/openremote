@@ -33,11 +33,13 @@ import org.openremote.manager.server.datapoint.AssetDatapointService;
 import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.asset.*;
+import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.util.JsonUtil;
 
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -208,7 +210,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
                 // Link any AGENT_LINK attributes to the referenced protocol
                 Map<AssetAttribute, List<AssetAttribute>> groupedAgentLinksAttributes =
-                    getGroupedAgentLinkAttributes(asset.getAttributeStream());
+                    getGroupedAgentLinkAttributes(asset.getAttributeStream(), null);
                 groupedAgentLinksAttributes.forEach(this::linkAttributes);
 
                 break;
@@ -245,7 +247,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                         )
                     );
 
-                getGroupedAgentLinkAttributes(attributesToUnlink)
+                getGroupedAgentLinkAttributes(attributesToUnlink, null)
                     .forEach(this::unlinkAttributes);
 
                 // Link thing attributes that are in new but not in old
@@ -260,7 +262,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                         )
                     );
 
-                getGroupedAgentLinkAttributes(attributesToLink)
+                getGroupedAgentLinkAttributes(attributesToLink, null)
                     .forEach(this::linkAttributes);
 
                 break;
@@ -268,7 +270,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
                 // Unlink any AGENT_LINK attributes from the referenced protocol
                 Map<AssetAttribute, List<AssetAttribute>> groupedAgentLinkAndProtocolAttributes =
-                    getGroupedAgentLinkAttributes(asset.getAttributeStream());
+                    getGroupedAgentLinkAttributes(asset.getAttributeStream(), null);
                 groupedAgentLinkAndProtocolAttributes
                     .forEach(
                         this::unlinkAttributes
@@ -303,7 +305,10 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
         assets.forEach(
             asset ->
-                getGroupedAgentLinkAttributes(asset.getAttributeStream())
+                getGroupedAgentLinkAttributes(
+                    asset.getAttributeStream(),
+                    assetAttribute -> AgentLink.getAgentLink().apply(assetAttribute).equals(protocolAttributeRef)
+                )
                     .forEach(this::linkAttributes)
         );
     }
@@ -326,7 +331,10 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
         assets.forEach(
             asset ->
-                getGroupedAgentLinkAttributes(asset.getAttributeStream())
+                getGroupedAgentLinkAttributes(
+                    asset.getAttributeStream(),
+                    assetAttribute -> AgentLink.getAgentLink().apply(assetAttribute).equals(protocolAttributeRef)
+                )
                     .forEach(this::unlinkAttributes)
         );
 
@@ -432,21 +440,23 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     /**
      * Gets all agent link attributes and their linked protocol configuration and groups them by Protocol Configuration
      */
-    protected Map<AssetAttribute, List<AssetAttribute>> getGroupedAgentLinkAttributes(Stream<AssetAttribute> attributes) {
+    protected Map<AssetAttribute, List<AssetAttribute>> getGroupedAgentLinkAttributes(Stream<AssetAttribute> attributes, Predicate<AssetAttribute> filter) {
 
         Map<AssetAttribute, List<AssetAttribute>> map = new HashMap<>();
 
         attributes
             .filter(isValidAgentLink())
             .forEach(agentLinkAttribute -> {
-                AttributeRef protocolRef = getAgentLink().apply(agentLinkAttribute);
-                AssetAttribute protocolConfiguration = protocolConfigurationResolver.apply(protocolRef);
+                if (filter == null || filter.test(agentLinkAttribute)) {
+                    AttributeRef protocolRef = getAgentLink().apply(agentLinkAttribute);
+                    AssetAttribute protocolConfiguration = protocolConfigurationResolver.apply(protocolRef);
 
-                if (protocolConfiguration == null) {
-                    LOG.warning("Invalid agent link '" + protocolRef + "' on attribute '" + agentLinkAttribute.getReference() + "'");
-                } else {
-                    map.computeIfAbsent(protocolConfiguration, newProtocolConfiguration -> new ArrayList<>())
-                        .add(agentLinkAttribute);
+                    if (protocolConfiguration == null) {
+                        LOG.warning("Invalid agent link '" + protocolRef + "' on attribute '" + agentLinkAttribute.getReference() + "'");
+                    } else {
+                        map.computeIfAbsent(protocolConfiguration, newProtocolConfiguration -> new ArrayList<>())
+                            .add(agentLinkAttribute);
+                    }
                 }
             });
         return map;
