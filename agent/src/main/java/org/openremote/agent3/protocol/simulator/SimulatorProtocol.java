@@ -22,10 +22,10 @@ package org.openremote.agent3.protocol.simulator;
 import elemental.json.JsonValue;
 import org.openremote.agent3.protocol.AbstractProtocol;
 import org.openremote.agent3.protocol.simulator.element.*;
+import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.AttributeState;
-import org.openremote.model.MetaItem;
 import org.openremote.model.asset.AssetAttribute;
 
 import java.util.HashMap;
@@ -113,29 +113,32 @@ public class SimulatorProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void onAttributeAdded(AssetAttribute attribute, AssetAttribute  protocolConfiguration) {
-        String elementType = attribute.firstMetaItemOrThrow(SIMULATOR_ELEMENT).getValueAsString();
+    protected void onAttributeAdded(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
+        String elementType = attribute.firstMetaItem(SIMULATOR_ELEMENT)
+            .map(AbstractValueHolder::getValueAsString).orElseThrow(
+                () -> new IllegalArgumentException(
+                    "Can't configure simulator, missing " + SIMULATOR_ELEMENT + " meta item on: " + attribute
+                )
+            );
         String protocolConfigurationName = protocolConfiguration.getName();
 
         Instance instance = instances.get(protocolConfigurationName);
 
         if (instance == null) {
-            MetaItem configModeMeta = protocolConfiguration.firstMetaItem(CONFIG_MODE);
-            MetaItem configDelayMeta = protocolConfiguration.firstMetaItem(CONFIG_WRITE_DELAY_MILLISECONDS);
+            Mode mode = protocolConfiguration.firstMetaItem(CONFIG_MODE)
+                .map(item -> {
+                    try {
+                        return Mode.valueOf(item.getValueAsString());
+                    } catch (Exception e) {
+                        LOG.fine("Invalid Mode value '" + item + "' provided");
+                        return null;
+                    }
+                })
+                .orElse(Mode.WRITE_THROUGH_IMMEDIATE);
 
-            Mode mode = Mode.WRITE_THROUGH_IMMEDIATE;
-            if (configModeMeta != null) {
-                try {
-                    mode = Mode.valueOf(configModeMeta.getValueAsString());
-                } catch (Exception e) {
-                    LOG.fine("Invalid Mode value '" + configModeMeta.getValueAsString() + "' provided");
-                }
-            }
-
-            int writeDelay = DEFAULT_WRITE_DELAY;
-            if (configDelayMeta != null) {
-                writeDelay = configDelayMeta.getValueAsInteger();
-            }
+            int writeDelay = protocolConfiguration.firstMetaItem(CONFIG_WRITE_DELAY_MILLISECONDS)
+                .map(AbstractValueHolder::getValueAsInteger)
+                .orElse(DEFAULT_WRITE_DELAY);
 
             instance = new Instance(mode, writeDelay);
             instances.put(protocolConfigurationName, instance);
@@ -154,12 +157,12 @@ public class SimulatorProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void onAttributeUpdated(AssetAttribute attribute, AssetAttribute  protocolConfiguration) {
+    protected void onAttributeUpdated(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         onAttributeAdded(attribute, protocolConfiguration);
     }
 
     @Override
-    protected void onAttributeRemoved(AssetAttribute attribute, AssetAttribute  protocolConfiguration) {
+    protected void onAttributeRemoved(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         elements.remove(attribute.getReference());
         attributeInstanceMap.remove(attribute.getReference());
     }
@@ -285,10 +288,8 @@ public class SimulatorProtocol extends AbstractProtocol {
             case DecimalSimulatorElement.ELEMENT_NAME:
                 return new DecimalSimulatorElement();
             case IntegerSimulatorElement.ELEMENT_NAME_RANGE:
-                MetaItem minItem = attribute.firstMetaItem(RANGE_MIN);
-                MetaItem maxItem = attribute.firstMetaItem(RANGE_MAX);
-                double min = minItem != null ? minItem.getValueAsInteger() : 0;
-                double max = maxItem != null ? maxItem.getValueAsInteger() : 100;
+                double min = attribute.firstMetaItem(RANGE_MIN).map(AbstractValueHolder::getValueAsInteger).orElse(0);
+                double max = attribute.firstMetaItem(RANGE_MAX).map(AbstractValueHolder::getValueAsInteger).orElse(100);
                 return new IntegerSimulatorElement(min, max);
             case ColorSimulatorElement.ELEMENT_NAME:
                 return new ColorSimulatorElement();

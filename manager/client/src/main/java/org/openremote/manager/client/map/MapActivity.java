@@ -33,7 +33,6 @@ import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
-import org.openremote.model.Attribute;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.Pair;
 import org.openremote.model.asset.Asset;
@@ -191,7 +190,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
 
     protected void showAssetInfoItems() {
         List<Pair<String, String>> infoItems = dashboardAttributes.stream()
-            .map(attribute -> new Pair<>(attribute.getLabel(), format(attribute.getFormat(), attribute.getValueAsString())))
+            .map(attribute -> new Pair<>(attribute.getLabel(), format(attribute.getFormat().orElse(null), attribute.getValueAsString())))
             .sorted(Comparator.comparing(pair -> pair.key))
             .collect(Collectors.toList());
         if (asset.hasGeoFeature()) {

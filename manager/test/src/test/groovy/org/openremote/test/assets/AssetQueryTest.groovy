@@ -103,7 +103,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.coordinates.length == 2
         asset.path.length == 1
         asset.path[0] == managerDemoSetup.smartOfficeId
-        findAssetAttribute("geoStreet").apply(asset).valueAsString == "Torenallee 20"
+        findAssetAttribute("geoStreet").apply(asset).get().valueAsString == "Torenallee 20"
 
         when: "a query is executed"
         def assets = assetStorageService.findAll(
@@ -153,7 +153,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).coordinates.length == 2
         assets.get(0).path.length == 1
         assets.get(0).path[0] == managerDemoSetup.smartOfficeId
-        findAssetAttribute("geoStreet").apply(assets.get(0)).valueAsString == "Torenallee 20"
+        findAssetAttribute("geoStreet").apply(assets.get(0)).get().valueAsString == "Torenallee 20"
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -251,10 +251,10 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
         assets.get(2).id == managerDemoSetup.apartment1LivingroomThermostatId
         assets.get(2).getAttributeList().size() == 2
-        findAssetAttribute("currentTemperature").apply(assets.get(2)).valueAsDecimal == null
-        findAssetAttribute("currentTemperature").apply(assets.get(2)).meta.size() == 3
-        findAssetAttribute("comfortTemperature").apply(assets.get(2)).valueAsDecimal == null
-        findAssetAttribute("comfortTemperature").apply(assets.get(2)).meta.size() == 2
+        findAssetAttribute("currentTemperature").apply(assets.get(2)).get().valueAsDecimal == null
+        findAssetAttribute("currentTemperature").apply(assets.get(2)).get().meta.size() == 3
+        findAssetAttribute("comfortTemperature").apply(assets.get(2)).get().valueAsDecimal == null
+        findAssetAttribute("comfortTemperature").apply(assets.get(2)).get().meta.size() == 2
         assets.get(3).id == managerDemoSetup.apartment2Id
 
         when: "a query is executed"

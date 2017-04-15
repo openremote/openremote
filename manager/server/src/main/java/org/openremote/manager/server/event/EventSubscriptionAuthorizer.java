@@ -22,6 +22,8 @@ package org.openremote.manager.server.event;
 import org.openremote.container.web.socket.WebsocketAuth;
 import org.openremote.model.event.shared.EventSubscription;
 
+import java.util.function.BiFunction;
+
 /**
  * Authorizes event subscriptions.
  * <p>
@@ -29,8 +31,6 @@ import org.openremote.model.event.shared.EventSubscription;
  * permissions. It might also fail if the subscription is invalid, for example, if
  * a required filter is not supplied or if the filter is not valid.
  */
-public interface EventSubscriptionAuthorizer {
-
-    boolean isAuthorized(WebsocketAuth auth, EventSubscription subscription);
+public interface EventSubscriptionAuthorizer extends BiFunction<WebsocketAuth, EventSubscription, Boolean> {
 
 }

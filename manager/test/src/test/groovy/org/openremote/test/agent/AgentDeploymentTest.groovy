@@ -54,8 +54,8 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
             def thing = assetStorageService.find(managerDemoSetup.thingId, true)
             def attributes = thing.getAttributeStream()
             def attribute = findAttribute("light1Dimmer").apply(attributes)
-            assert attribute.getValue().getType() == JsonType.NUMBER
-            assert attribute.getValueAsInteger() == 66
+            assert attribute.get().getValue().getType() == JsonType.NUMBER
+            assert attribute.get().getValueAsInteger() == 66
         }
 
         when: "a simulated sensor changes its value"
@@ -67,8 +67,8 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
             def thing = assetStorageService.find(managerDemoSetup.thingId, true)
             def attributes = thing.getAttributeStream()
             def attribute = findAttribute("light1Dimmer").apply(attributes)
-            assert attribute.getValue().getType() == JsonType.NUMBER
-            assert attribute.getValueAsInteger() == 77
+            assert attribute.get().getValue().getType() == JsonType.NUMBER
+            assert attribute.get().getValueAsInteger() == 77
         }
 
         cleanup: "the server should be stopped"

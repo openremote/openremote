@@ -201,8 +201,10 @@ public abstract class AttributesBrowser
     }
 
     protected void readAttributeValue(AssetAttribute attribute) {
-        environment.getEventService().dispatch(
-            new ReadAttributesEvent(attribute.getAssetId(), attribute.getName())
+        attribute.getAssetId().ifPresent(assetId ->
+            environment.getEventService().dispatch(
+                new ReadAttributesEvent(assetId, attribute.getName())
+            )
         );
     }
 
@@ -252,7 +254,8 @@ public abstract class AttributesBrowser
     protected DatapointBrowser createDatapointBrowser(AssetAttribute attribute) {
         if (!attribute.isStoreDatapoints())
             return null;
-        if (!(attribute.getType() == AttributeType.DECIMAL || attribute.getType() == AttributeType.INTEGER))
+        if (!attribute.getType().isPresent()
+            || !(attribute.getType().get() == AttributeType.DECIMAL || attribute.getType().get() == AttributeType.INTEGER))
             return null;
         return new DatapointBrowser(environment.getMessages(), 850, 250) {
             @Override

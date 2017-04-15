@@ -36,6 +36,7 @@ import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
 public class MacroAction {
 
     public static final String MACRO_ACTION = ASSET_META_NAMESPACE + ":macroAction";
+
     protected AttributeState attributeState;
     protected int delayMilliseconds;
 

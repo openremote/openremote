@@ -286,13 +286,13 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     getAssetAttributesFromJson(asset.getId()).apply(
                         (JsonObject) persistenceEvent.getPreviousState()[attributesIndex]
                     ).filter(AssetAttribute::isRuleState)
-                    .collect(Collectors.toList());
+                        .collect(Collectors.toList());
 
                 List<AssetAttribute> newFactAttributes =
                     getAssetAttributesFromJson(asset.getId()).apply(
                         (JsonObject) persistenceEvent.getCurrentState()[attributesIndex]
                     ).filter(AssetAttribute::isRuleState)
-                    .collect(Collectors.toList());
+                        .collect(Collectors.toList());
 
                 // Compare attributes by JSON value
                 // Retract facts for attributes that are in oldFactAttributes but not in newFactAttributes
@@ -530,7 +530,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
             // Any exceptions in rule RHS will bubble up and the engine would be marked as in ERROR so future
             // updates will be blocked
-            String eventExpires = assetEvent.getExpires() != null ? assetEvent.getExpires() : configEventExpires;
+            String eventExpires = assetEvent.getExpires().orElse(configEventExpires);
             long expirationOffset = TimeIntervalParser.parseSingle(eventExpires);
 
             deployment.insertAssetEvent(assetEvent, expirationOffset);

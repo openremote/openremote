@@ -32,6 +32,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -40,9 +41,7 @@ import java.util.stream.Stream;
 
 import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
-import static org.openremote.model.asset.AssetAttribute.filterProtectedAssetAttribute;
-import static org.openremote.model.asset.AssetAttribute.getAssetAttributesAsJson;
-import static org.openremote.model.asset.AssetAttribute.getAssetAttributesFromJson;
+import static org.openremote.model.asset.AssetAttribute.*;
 
 // @formatter:off
 /**
@@ -75,9 +74,9 @@ import static org.openremote.model.asset.AssetAttribute.getAssetAttributesFromJs
  * <p>
  * The {@link #coordinates} are a pair of LNG/LAT values with the location of the asset.
  * <p>
- * An asset may have dynamically-typed {@link #attrs} with an underlying
- * {@link elemental.json.JsonObject} model. Use the {@link org.openremote.model.util.AttributeUtil}
- * class to work with this API. This property can be empty when certain optimized loading
+ * An asset may have dynamically-typed {@link #attributes} with an underlying
+ * {@link elemental.json.JsonObject} model. Use the {@link org.openremote.model.Attribute}
+ * etc. class to work with this API. This property can be empty when certain optimized loading
  * operations are used.
  * <p>
  * Constructors can filter attributes of an asset as to only contain protected attributes,
@@ -312,7 +311,7 @@ public class Asset implements IdentifiableEntity {
             this.attributes = getAssetAttributesFromJson(id)
                 .andThen(filterProtectedAssetAttribute())
                 .andThen(getAssetAttributesAsJson())
-                .apply(attributes);
+                .apply(attributes).orElse(null);
         } else {
             this.attributes = attributes;
         }
@@ -493,11 +492,11 @@ public class Asset implements IdentifiableEntity {
     }
 
     public void setAttributeStream(Stream<AssetAttribute> attributeStream) {
-        setAttributes(getAssetAttributesAsJson().apply(attributeStream));
+        setAttributes(getAssetAttributesAsJson().apply(attributeStream).orElse(null));
     }
 
     public List<AssetAttribute> getAttributeList() {
-        return getAttributeStream().collect(Collectors.toList());
+        return getAttributeStream().collect(Collectors.toCollection(ArrayList::new));
     }
 
     public void setAttributeList(List<AssetAttribute> attributes) {

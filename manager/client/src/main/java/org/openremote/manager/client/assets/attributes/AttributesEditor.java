@@ -37,6 +37,7 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import static org.openremote.model.Attribute.ATTRIBUTE_NAME_VALIDATOR;
@@ -73,8 +74,8 @@ public class AttributesEditor
     }
 
     @Override
-    protected String getAttributeDescription(AssetAttribute attribute) {
-        return null;
+    protected Optional<String> getAttributeDescription(AssetAttribute attribute) {
+        return Optional.empty();
     }
 
     @Override
@@ -322,7 +323,7 @@ public class AttributesEditor
                     formGroup.setError(false);
                     item.setValueAsString(value);
                 } : null;
-                editor = createStringEditorWidget(style, currentValue, null, updateConsumer);
+                editor = createStringEditorWidget(style, currentValue, Optional.empty(), updateConsumer);
             } else if (valueType.equals(JsonType.NUMBER)) {
                 String currentValue = item.getValueAsString();
                 Consumer<String> updateConsumer = isEditable == null || isEditable || forceEditable ? value -> {
@@ -330,14 +331,14 @@ public class AttributesEditor
                     formGroup.setError(false);
                     item.setValueAsDecimal(decimalValue);
                 } : null;
-                editor = createDecimalEditorWidget(style, currentValue, null, updateConsumer, errorConsumer);
+                editor = createDecimalEditorWidget(style, currentValue, Optional.empty(), updateConsumer, errorConsumer);
             } else if (valueType.equals(JsonType.BOOLEAN)) {
                 Boolean currentValue = item.getValueAsBoolean();
                 Consumer<Boolean> updateConsumer = isEditable == null || isEditable || forceEditable ? value -> {
                     formGroup.setError(false);
-                    item.setValueAsBoolean(value);
+                    item.setValueUnchecked(Json.create(value));
                 } : null;
-                editor = createBooleanEditorWidget(style, currentValue, null, updateConsumer);
+                editor = createBooleanEditorWidget(style, currentValue, Optional.empty(), updateConsumer);
             } else {
                 FormField unsupportedField = new FormField();
                 unsupportedField.add(new FormOutputText(

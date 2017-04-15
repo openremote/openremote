@@ -139,14 +139,8 @@ public class EventService implements ContainerService {
                         String sessionKey = getSessionKey(exchange);
                         EventSubscription subscription = exchange.getIn().getBody(EventSubscription.class);
                         WebsocketAuth auth = getWebsocketAuth(exchange);
-                        boolean isAuthorized = false;
-                        for (EventSubscriptionAuthorizer authorizer : eventSubscriptionAuthorizers) {
-                            if (authorizer.isAuthorized(auth, subscription)) {
-                                isAuthorized = true;
-                                break;
-                            }
-                        }
-                        if (isAuthorized) {
+                        if (eventSubscriptionAuthorizers.stream()
+                            .anyMatch(authorizer -> authorizer.apply(auth, subscription))) {
                             eventSubscriptions.update(sessionKey, subscription);
                         } else {
                             LOG.warning("Unauthorized subscription from '"

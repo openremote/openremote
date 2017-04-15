@@ -28,6 +28,7 @@ import org.openremote.model.util.JsonUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -88,32 +89,20 @@ public class Meta {
         return list;
     }
 
-    public MetaItem get(int index) {
-        return index > 0 && index < jsonArray.length()
+    public Optional<MetaItem> get(int index) {
+        return Optional.ofNullable(
+            index > 0 && index < jsonArray.length()
             ? new MetaItem(jsonArray.getObject(index))
-            : null;
+            : null
+        );
     }
 
-    public MetaItem first(AssetMeta assetMeta) {
+    public Optional<MetaItem> first(AssetMeta assetMeta) {
         return first(assetMeta.getUrn());
     }
 
-    public MetaItem first(String name) {
-        List<MetaItem> list = all();
-        for (MetaItem item : list) {
-            if (item.getName().equals(name))
-                return item;
-        }
-        return null;
-    }
-
-    public MetaItem first(String name, JsonValue value) {
-        List<MetaItem> list = all();
-        for (MetaItem item : list) {
-            if (item.getName().equals(name))
-                return item;
-        }
-        return null;
+    public Optional<MetaItem> first(String name) {
+        return all().stream().filter(item -> item.getName().equals(name)).findFirst();
     }
 
     public boolean contains(AssetMeta assetMeta) {
@@ -124,9 +113,8 @@ public class Meta {
         return first(name) != null;
     }
 
-    public boolean contains(String name, JsonValue value) {
-        MetaItem metaItem = first(name);
-        return metaItem != null && JsonUtil.equals(metaItem.getValue(), value);
+    public int firstIndexOf(MetaItem item) {
+        return firstIndexOf(item, 0);
     }
 
     public int firstIndexOf(MetaItem item, int startIndex) {

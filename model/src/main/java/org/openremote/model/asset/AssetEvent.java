@@ -21,6 +21,8 @@ package org.openremote.model.asset;
 
 import org.kie.api.definition.type.Role;
 
+import java.util.Optional;
+
 /**
  * An asset attribute value change as a punctual event in rules processing.
  */
@@ -32,7 +34,7 @@ public class AssetEvent extends AbstractAssetUpdate {
         super(that);
     }
 
-    public String getExpires() {
+    public Optional<String> getExpires() {
         return attribute.getRuleEventExpires();
     }
 }

@@ -27,6 +27,7 @@ import org.openremote.model.units.AttributeUnits;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
 
@@ -189,12 +190,12 @@ public enum AssetMeta {
         return null;
     }
 
-    public static AssetMeta byUrn(String urn) {
+    public static Optional<AssetMeta> byUrn(String urn) {
         for (AssetMeta assetMeta : values()) {
             if (assetMeta.getUrn().equals(urn))
-                return assetMeta;
+                return Optional.of(assetMeta);
         }
-        return null;
+        return Optional.empty();
     }
 
     public static MetaItem createMetaItem(AssetMeta assetMeta, JsonValue value) {

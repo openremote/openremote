@@ -39,6 +39,7 @@ import org.openremote.model.asset.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -316,22 +317,22 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
         // Pass attribute event through the processing chain
         LOG.fine("Processing " + attributeEvent + " for: " + asset);
-        AssetAttribute attribute = findAssetAttribute(attributeEvent.getAttributeName()).apply(asset);
+        Optional<AssetAttribute> attribute = findAssetAttribute(attributeEvent.getAttributeName()).apply(asset);
 
-        if (attribute == null) {
+        if (!attribute.isPresent()) {
             LOG.warning("Ignoring " + attributeEvent + ", attribute doesn't exist on asset: " + asset);
             return;
         }
 
         // Prevent editing of read only attributes
         // TODO This also means a rule RHS can't write a read-only attribute with Assets#dispatch!
-        if (attribute.isReadOnly()) {
+        if (attribute.get().isReadOnly()) {
             LOG.warning("Ignoring " + attributeEvent + ", attribute is read-only in: " + asset);
             return;
         }
 
         // If attribute is marked as executable and not from northbound only allow write AttributeExecuteStatus to be sent
-        if (!fromProtocol && attribute.isExecutable()) {
+        if (!fromProtocol && attribute.get().isExecutable()) {
             JsonValue value = attributeEvent.getValue();
             AttributeExecuteStatus status;
 
@@ -346,7 +347,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             }
         }
 
-        processUpdate(asset, attribute, attributeEvent, false);
+        processUpdate(asset, attribute.get(), attributeEvent, false);
     }
 
     /**
@@ -372,10 +373,10 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             return;
         }
 
-        AssetAttribute protocolConfiguration =
+        Optional<AssetAttribute> protocolConfiguration =
             getAgentLink().andThen(agentService.getProtocolConfigurationResolver()).apply(attribute);
 
-        if (protocolConfiguration == null) {
+        if (!protocolConfiguration.isPresent()) {
             LOG.warning("Processing sensor update failed, linked agent protocol configuration not found: " + attributeEvent);
             return;
         }

@@ -76,7 +76,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
 
         then: "the attribute should exist"
         findAssetAttribute("foo").apply(testAsset) != null
-        findAssetAttribute("foo").apply(testAsset).getValueAsString() == "bar"
+        findAssetAttribute("foo").apply(testAsset).get().getValueAsString() == "bar"
 
         when: "an asset attribute value is written directly"
         assetResource.writeAttributeValue(null, testAsset.getId(), "foo", "\"bar2\"")
@@ -84,7 +84,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         then: "the attribute value should match"
         new PollingConditions(delay: 1, timeout: 5).eventually {
             def asset = assetResource.get(null, testAsset.getId())
-            assert findAssetAttribute("foo").apply(asset).getValueAsString() == "bar2"
+            assert findAssetAttribute("foo").apply(asset).get().getValueAsString() == "bar2"
         }
 
         when: "an asset attribute value null is written directly"
@@ -93,7 +93,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         then: "the attribute value should match"
         new PollingConditions(delay: 1, timeout: 5).eventually {
             def asset = assetResource.get(null, testAsset.getId())
-            assert findAssetAttribute("foo").apply(asset).hasValue() == false
+            assert findAssetAttribute("foo").apply(asset).get().hasValue() == false
         }
 
         when: "an asset is updated with a different type"

@@ -29,13 +29,14 @@ import org.openremote.model.util.JsonUtil;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static org.openremote.model.Attribute.isAttributeType;
-import static org.openremote.model.Attribute.isAttributeValid;
+import static org.openremote.agent3.protocol.macro.MacroAction.MACRO_ACTION;
+import static org.openremote.model.Attribute.*;
 import static org.openremote.model.AttributeType.STRING;
-import static org.openremote.model.asset.AssetAttribute.hasAssetMetaItem;
+import static org.openremote.model.asset.AssetAttribute.hasMetaItem;
 import static org.openremote.model.asset.AssetAttribute.isAssetMetaItem;
 
 /**
@@ -49,7 +50,7 @@ final public class MacroConfiguration {
     private MacroConfiguration() {
     }
 
-    public static Function<AssetAttribute, AssetAttribute> initMacroConfiguration() {
+    public static UnaryOperator<AssetAttribute> initMacroConfiguration() {
         return attribute -> {
             attribute.setType(AttributeType.STRING);
             attribute.setValue(Json.create(MacroProtocol.MACRO_PROTOCOL_NAME));
@@ -68,29 +69,29 @@ final public class MacroConfiguration {
         return isAttributeValid()
             .and(isAttributeType(STRING))
             .and(isMacroConfiguration())
-            .and(hasAssetMetaItem(MacroAction.MACRO_ACTION)); // Must have at least one macro action
+            .and(hasMetaItem(MACRO_ACTION)); // Must have at least one macro action
     }
 
     public static Function<AssetAttribute, Stream<MacroAction>> getMacroActions() {
         return attribute -> attribute.getMetaItemStream()
-            .filter(isAssetMetaItem(MacroAction.MACRO_ACTION))
+            .filter(isMetaItem(MACRO_ACTION))
             .map(MacroAction.getMacroActionFromMetaItem());
     }
 
-    public static Function<AssetAttribute, AssetAttribute> addMacroAction(MacroAction action) {
+    public static UnaryOperator<AssetAttribute> addMacroAction(MacroAction action) {
         return attribute -> attribute.setMeta(
             attribute.getMeta().add(MacroAction.getMetaItemFromMacroAction().apply(action))
         );
     }
 
-    public static Function<AssetAttribute, AssetAttribute> removeMacroAction(MacroAction action) {
+    public static UnaryOperator<AssetAttribute> removeMacroAction(MacroAction action) {
         return attribute -> {
             if (!attribute.hasMeta()) {
                 return attribute;
             }
             List<MetaItem> metaItems = attribute.getMeta().all();
             IntStream.range(0, metaItems.size())
-                .filter(i -> isAssetMetaItem(MacroAction.MACRO_ACTION).test(metaItems.get(i)))
+                .filter(i -> isMetaItem(MACRO_ACTION).test(metaItems.get(i)))
                 .filter(i -> JsonUtil.equals(metaItems.get(i).getValueAsObject(), action.asJsonValue()))
                 .forEach(i -> attribute.getMeta().remove(i));
 

@@ -51,6 +51,7 @@ import static org.openremote.model.AttributeType.*;
 import static org.openremote.model.asset.AssetAttribute.findAssetAttribute;
 import static org.openremote.model.asset.AssetMeta.*;
 import static org.openremote.model.asset.AssetType.*;
+import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
 
 public class ManagerDemoSetup extends AbstractManagerSetup {
 
@@ -133,7 +134,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         agent.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         agent.setType(AssetType.AGENT);
         List<AssetAttribute> agentAttributes = Collections.singletonList(
-            ProtocolConfiguration.initProtocolConfiguration(SimulatorProtocol.PROTOCOL_NAME)
+            initProtocolConfiguration(SimulatorProtocol.PROTOCOL_NAME)
                 .apply(new AssetAttribute(agentProtocolConfigName))
                 .setMeta(new Meta()
                     .add(new MetaItem(
@@ -254,7 +255,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         thing = assetStorageService.find(thingId, true);
         ZonedDateTime now = LocalDateTime.now().atZone(ZoneId.systemDefault());
 
-        AssetAttribute light1PowerConsumptionAttribute = findAssetAttribute("light1PowerConsumption").apply(thing);
+        AssetAttribute light1PowerConsumptionAttribute = findAssetAttribute("light1PowerConsumption").apply(thing).get();
 
         assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute));
 

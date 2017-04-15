@@ -27,9 +27,9 @@ import org.openremote.model.Meta;
 import org.openremote.model.asset.AssetAttribute;
 
 import java.util.Locale;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
 import static org.openremote.model.Attribute.isAttributeType;
 import static org.openremote.model.AttributeType.STRING;
@@ -50,7 +50,7 @@ final public class ProtocolConfiguration {
     private ProtocolConfiguration() {
     }
 
-    public static Function<AssetAttribute, AssetAttribute> initProtocolConfiguration(String protocolName) {
+    public static UnaryOperator<AssetAttribute> initProtocolConfiguration(String protocolName) {
         return attribute -> {
             attribute.setEnabled(true);
             attribute.setType(AttributeType.STRING);
@@ -73,12 +73,13 @@ final public class ProtocolConfiguration {
         return value -> value != null && value.toLowerCase(Locale.ROOT).startsWith(Constants.PROTOCOL_NAMESPACE);
     }
 
-    public static Consumer<AssetAttribute> setProtocolName(String protocolName) throws IllegalArgumentException {
+    public static UnaryOperator<AssetAttribute> setProtocolName(String protocolName) throws IllegalArgumentException {
         return attribute -> {
             if (!isProtocolUrn().test(protocolName)) {
                 throw new IllegalArgumentException("Protocol configuration value should contain a protocol URN");
             }
             attribute.setValue(Json.create(protocolName));
+            return attribute;
         };
     }
 

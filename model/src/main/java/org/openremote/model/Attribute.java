@@ -20,13 +20,17 @@
 package org.openremote.model;
 
 import com.google.gwt.regexp.shared.RegExp;
-import elemental.json.*;
+import elemental.json.Json;
+import elemental.json.JsonObject;
+import elemental.json.JsonType;
+import elemental.json.JsonValue;
+import org.openremote.model.asset.AssetMeta;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 /**
@@ -69,13 +73,13 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
     }
 
     protected Attribute(Attribute attribute) {
-        this(attribute.getName(), attribute.getType(), attribute.getJsonObject());
+        this(attribute.getName(), attribute.getType().orElse(null), attribute.getJsonObject());
     }
 
     @Override
     protected boolean isValidValue(JsonValue value) {
-        return getType() != null
-            ? getType().isValid(value)
+        return getType().isPresent()
+            ? getType().get().isValid(value)
             : super.isValidValue(value);
     }
 
@@ -91,18 +95,16 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         return jsonObject;
     }
 
-    public AttributeType getType() {
+    public Optional<AttributeType> getType() {
         String typeName = jsonObject.hasKey(TYPE_FIELD_NAME) ? jsonObject.get(TYPE_FIELD_NAME).asString() : null;
-        return typeName != null ? AttributeType.fromValue(typeName) : null;
+        return Optional.ofNullable(typeName != null ? AttributeType.fromValue(typeName) : null);
     }
 
     @SuppressWarnings("unchecked")
     public void setType(AttributeType type) {
         if (type != null) {
             jsonObject.put(TYPE_FIELD_NAME, Json.create(type.getValue()));
-        }/* else if (jsonObject.hasKey(TYPE_FIELD_NAME)) {
-            jsonObject.remove(TYPE_FIELD_NAME);
-        }*/
+        }
     }
 
     public boolean hasMeta() {
@@ -127,65 +129,13 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         return this;
     }
 
-    public boolean hasMetaItem(String name) {
-        return hasMeta() && getMeta().contains(name);
-    }
-
-    public boolean hasMetaItem(String name, JsonValue value) {
-        return hasMeta() && getMeta().contains(name, value);
-    }
-
-    public MetaItem firstMetaItem(String name) {
-        return hasMetaItem(name) ? getMeta().first(name) : null;
-    }
-
-    public MetaItem firstMetaItem(String name, JsonValue value) {
-        return hasMeta() ? getMeta().first(name, value) : null;
-    }
-
-    public MetaItem firstMetaItemOrThrow(String name) throws NoSuchElementException {
-        if (!hasMetaItem(name))
-            throw new NoSuchElementException("Missing item: " + name);
-        return firstMetaItem(name);
-    }
-
-    public MetaItem firstMetaItemOrThrow(String name, JsonValue value) throws NoSuchElementException {
-        if (!hasMeta())
-            throw new NoSuchElementException("Missing item: " + name);
-        MetaItem metaItem = getMeta().first(name, value);
-        if (metaItem == null)
-            throw new NoSuchElementException("Missing item: " + name);
-
-        return metaItem;
-    }
-
-    public List<MetaItem> getMetaItems(String name) {
-        if (!hasMeta()) {
-            return Collections.emptyList();
-        }
-
-        return getMeta().get(name);
-    }
-
-    public List<MetaItem> getMetaItems(String name, JsonValue value) {
-        if (!hasMeta()) {
-            return Collections.emptyList();
-        }
-
-        return getMeta().get(name, value);
-    }
-
-    public List<MetaItem> getMetaItems(Predicate<MetaItem> filter) {
-        if (!hasMeta()) {
-            return Collections.emptyList();
-        }
-
-        return getMeta().get(filter);
+    public Optional<MetaItem> firstMetaItem(String name) {
+        return getMeta().first(name);
     }
 
     @Override
     public boolean isValid() {
-        return super.isValid() && ATTRIBUTE_NAME_VALIDATOR.test(name) && getType() != null;
+        return super.isValid() && ATTRIBUTE_NAME_VALIDATOR.test(name) && getType().isPresent();
     }
 
     public static Predicate<Attribute> isAttributeValid() {
@@ -193,47 +143,47 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
     }
 
     public static Predicate<Attribute> isAttributeType(AttributeType attributeType) {
-        return attribute -> attribute.getType().equals(attributeType);
+        return attribute -> attribute.getType().map(at -> at.equals(attributeType)).orElse(false);
+    }
+
+    public  static Predicate<Attribute> hasMetaItem(String name) {
+        return attribute -> attribute.firstMetaItem(name).isPresent();
     }
 
     public static Predicate<MetaItem> isMetaItem(String name) {
         return metaItem -> metaItem.getName().equals(name);
     }
 
-    public static Function<Stream<? extends Attribute>, Attribute> findAttribute(String name) {
+    public static Function<Stream<? extends Attribute>, Optional<? extends Attribute>> findAttribute(String name) {
         return attributeStream -> attributeStream
             .filter(attribute -> attribute.getName().equals(name))
-            .findFirst()
-            .orElse(null);
+            .findFirst();
     }
 
     public static Predicate<Stream<? extends Attribute>> containsAttributeNamed(String name) {
-        return attributeStream -> findAttribute(name).apply(attributeStream) != null;
+        return attributeStream -> findAttribute(name).apply(attributeStream).isPresent();
     }
 
-    public static java.util.function.Function<Attribute, AttributeRef> getAttributeLink(String metaName) {
-        return attribute -> {
-            MetaItem metaItem = attribute.firstMetaItem(metaName);
-            JsonArray array = metaItem != null && metaItem.getValue().getType() == JsonType.ARRAY
-                ? metaItem.getValueAsArray()
-                : null;
-            return array != null && array.length() == 2 ? new AttributeRef(array) : null;
-        };
+    public static Function<Attribute, Optional<AttributeRef>> getAttributeLink(String metaName) {
+        return attribute -> attribute.firstMetaItem(metaName)
+            .filter(item -> item.getValue().getType() == JsonType.ARRAY)
+            .map(AbstractValueHolder::getValueAsArray)
+            .map(AttributeRef::new);
     }
 
     public static void removeAttribute(List<? extends Attribute> attributes, String name) {
         attributes.removeIf(attribute -> attribute.getName().equals(name));
     }
 
-    public static <A extends Attribute> A findAttribute(List<A> attributes, String name) {
+    public static <A extends Attribute> Optional<A> findAttribute(List<A> attributes, String name) {
         for (A attribute : attributes) {
             if (attribute.getName().equals(name))
-                return attribute;
+                return Optional.of(attribute);
         }
-        return null;
+        return Optional.empty();
     }
 
-    public static Function<Attribute, Attribute> setAttributeLink(String metaName, AttributeRef attributeRef) {
+    public static UnaryOperator<Attribute> setAttributeLink(String metaName, AttributeRef attributeRef) {
         return attribute -> {
             if (attributeRef == null) {
                 throw new IllegalArgumentException(
@@ -246,7 +196,7 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         };
     }
 
-    public static Function<Attribute, Attribute> removeAttributeLink(String metaName) {
+    public static UnaryOperator<Attribute> removeAttributeLink(String metaName) {
         return attribute -> attribute.setMeta(attribute.getMeta().removeAll(metaName));
     }
 }

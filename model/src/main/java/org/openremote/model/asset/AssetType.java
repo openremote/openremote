@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.openremote.model.AttributeType.INTEGER;
 import static org.openremote.model.AttributeType.STRING;
@@ -97,8 +98,8 @@ public enum AssetType {
         return value;
     }
 
-    public AssetAttribute[] getDefaultAttributes() {
-        return defaultAttributes != null ? defaultAttributes.toArray(new AssetAttribute[0]) : new AssetAttribute[0];
+    public Stream<AssetAttribute> getDefaultAttributes() {
+        return defaultAttributes != null ? defaultAttributes.stream() : Stream.empty();
     }
 
     public static AssetType[] valuesSorted() {

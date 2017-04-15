@@ -168,7 +168,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def asset
         conditions.eventually {
             asset = assetResource.get(null, managerDemoSetup.smartOfficeId)
-            assert findAssetAttribute("geoStreet").apply(asset).getValue().toJson() == Json.create("Teststreet 123").toJson()
+            assert findAssetAttribute("geoStreet").apply(asset).get().getValue().toJson() == Json.create("Teststreet 123").toJson()
         }
 
         when: "an non-existent attribute is written in the authenticated realm"
@@ -191,7 +191,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "result should match"
         conditions.eventually {
             asset = assetResource.get(null, managerDemoSetup.smartHomeId)
-            assert findAssetAttribute("geoStreet").apply(asset).getValue().toJson() == Json.create("Teststreet 456").toJson()
+            assert findAssetAttribute("geoStreet").apply(asset).get().getValue().toJson() == Json.create("Teststreet 456").toJson()
         }
 
         cleanup: "the server should be stopped"
@@ -340,7 +340,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def asset
         conditions.eventually {
             asset = assetResource.get(null, managerDemoSetup.smartOfficeId)
-            assert findAssetAttribute("geoStreet").apply(asset).getValue().toJson() == Json.create("Teststreet 123").toJson()
+            assert findAssetAttribute("geoStreet").apply(asset).get().getValue().toJson() == Json.create("Teststreet 123").toJson()
         }
 
         when: "an asset attribute is written in a foreign realm"
@@ -588,13 +588,13 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def protectedAttributes = apartment1LivingroomThermostat.getAttributeList()
         protectedAttributes.size() == 2
         def currentTemperature = findAssetAttribute("currentTemperature").apply(apartment1LivingroomThermostat)
-        currentTemperature.getType() == AttributeType.DECIMAL
-        currentTemperature.getValueAsDecimal() == null
-        Meta protectedMeta = currentTemperature.getMeta()
+        currentTemperature.get().getType().get() == AttributeType.DECIMAL
+        currentTemperature.get().getValueAsDecimal() == null
+        Meta protectedMeta = currentTemperature.get().getMeta()
         protectedMeta.all().size() == 3
-        protectedMeta.first(AssetMeta.LABEL).getValueAsString() == "Current Temperature"
-        protectedMeta.first(AssetMeta.READ_ONLY).getValueAsBoolean()
-        protectedMeta.first(AssetMeta.RULE_STATE).getValueAsBoolean()
+        protectedMeta.first(AssetMeta.LABEL).get().getValueAsString() == "Current Temperature"
+        protectedMeta.first(AssetMeta.READ_ONLY).get().getValueAsBoolean()
+        protectedMeta.first(AssetMeta.RULE_STATE).get().getValueAsBoolean()
 
         when: "an asset is retrieved by ID in a foreign realm"
         assetResource.get(null, managerDemoSetup.thingId)
@@ -666,7 +666,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "result should match"
         conditions.eventually {
             def asset = assetResource.get(null, managerDemoSetup.apartment1LivingroomThermostatId)
-            assert findAssetAttribute("comfortTemperature").apply(asset).getValue().toJson() == Json.create(22.123).toJson()
+            assert findAssetAttribute("comfortTemperature").apply(asset).get().getValue().toJson() == Json.create(22.123).toJson()
         }
 
         when: "an attribute is written on a non-existent user asset"

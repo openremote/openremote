@@ -23,7 +23,7 @@ import org.openremote.model.Attribute;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.asset.AssetMeta;
 
-import java.util.function.Consumer;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -52,7 +52,7 @@ final public class AgentLink {
         return isAttributeValid().and(isAgentLink());
     }
 
-    public static Function<Attribute, AttributeRef> getAgentLink() {
+    public static Function<Attribute, Optional<AttributeRef>> getAgentLink() {
         return getAttributeLink(AGENT_LINK.getUrn());
     }
 
