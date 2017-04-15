@@ -25,7 +25,6 @@ import elemental.json.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;

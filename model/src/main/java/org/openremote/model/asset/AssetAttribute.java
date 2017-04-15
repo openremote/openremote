@@ -130,10 +130,27 @@ public class AssetAttribute extends Attribute {
         return hasMetaItem(LABEL) ? firstMetaItem(LABEL).getValueAsString() : getName();
     }
 
-    public void setLabel(String label) {
-        setMeta(
-            getMeta().replace(AssetMeta.LABEL.getUrn(), new MetaItem(AssetMeta.LABEL, Json.create(label)))
+    public AssetAttribute setLabel(String label) {
+        return setMeta(
+            getMeta().replace(AssetMeta.LABEL, new MetaItem(AssetMeta.LABEL, Json.create(label)))
         );
+    }
+
+    public boolean isExecutable() {
+        return hasMetaItem(EXECUTABLE) ? firstMetaItem(EXECUTABLE).getValueAsBoolean() : false;
+    }
+
+    public AssetAttribute setExecutable(boolean executable) {
+        if (executable) {
+            return setMeta(
+                getMeta()
+                    .replace(EXECUTABLE, new MetaItem(EXECUTABLE, Json.create(true)))
+            );
+        } else {
+            return setMeta(
+                getMeta().removeAll(EXECUTABLE)
+            );
+        }
     }
 
     public boolean isShowOnDashboard() {
@@ -149,11 +166,12 @@ public class AssetAttribute extends Attribute {
     }
 
     public boolean isEnabled() {
-        return hasMetaItem(ENABLED) && firstMetaItem(AssetMeta.ENABLED).isValueTrue();
+        // Default to true
+        return hasMetaItem(ENABLED) ? firstMetaItem(AssetMeta.ENABLED).isValueTrue() : true;
     }
 
-    public void setEnabled(boolean enabled) {
-        setMeta(
+    public AssetAttribute setEnabled(boolean enabled) {
+        return setMeta(
             getMeta().replace(AssetMeta.ENABLED.getUrn(), new MetaItem(AssetMeta.ENABLED, Json.create(enabled)))
         );
     }
@@ -186,12 +204,20 @@ public class AssetAttribute extends Attribute {
         return hasMetaItem(AGENT_LINK);
     }
 
+    public static Predicate<Attribute> hasAssetMetaItem(String name) {
+        return attribute -> attribute.hasMetaItem(name);
+    }
+
     public static Predicate<Attribute> hasAssetMetaItem(AssetMeta assetMeta) {
         return attribute -> attribute.hasMetaItem(assetMeta.getUrn());
     }
 
     public static Predicate<MetaItem> isAssetMetaItem(AssetMeta assetMeta) {
         return isMetaItem(assetMeta.getUrn());
+    }
+
+    public static Predicate<MetaItem> isAssetMetaItem(String name) {
+        return isMetaItem(name);
     }
 
     public static Function<Asset, AssetAttribute> findAssetAttribute(String name) {

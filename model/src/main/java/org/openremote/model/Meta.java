@@ -163,6 +163,10 @@ public class Meta {
         return this;
     }
 
+    public Meta replace(AssetMeta meta, MetaItem item) {
+        return replace(meta.getUrn(), item);
+    }
+
     public Meta replace(String name, MetaItem item) {
         removeAll(name);
         add(item);
