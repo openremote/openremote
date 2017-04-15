@@ -195,10 +195,7 @@ public class AssetAttribute extends Attribute {
     }
 
     public static Function<Asset, AssetAttribute> findAssetAttribute(String name) {
-        return asset -> asset.getAttributeStream()
-            .filter(attribute -> attribute.getName().equals(name))
-            .findFirst()
-            .orElse(null);
+        return asset -> getAssetAttributeFromJson(asset.getId(), name).apply(asset.getAttributes());
     }
 
     public static Predicate<Asset> containsAssetAttributeNamed(String name) {
@@ -258,6 +255,15 @@ public class AssetAttribute extends Attribute {
                 sb.add(new AssetAttribute(assetId, key, jsonObject.getObject(key)));
             }
             return sb.build();
+        };
+    }
+
+    public static Function<JsonObject, AssetAttribute> getAssetAttributeFromJson(String assetId, String attributeName) {
+        return jsonObject -> {
+            if (jsonObject == null || jsonObject.keys().length == 0 || !jsonObject.hasKey(attributeName)) {
+                return null;
+            }
+            return new AssetAttribute(assetId, attributeName, jsonObject.getObject(attributeName));
         };
     }
 

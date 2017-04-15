@@ -56,11 +56,11 @@ final public class AgentLink {
         return getAttributeLink(AGENT_LINK.getUrn());
     }
 
-    public static Consumer<Attribute> setAgentLink(AttributeRef protocolConfigurationRef) {
+    public static Function<Attribute, Attribute> setAgentLink(AttributeRef protocolConfigurationRef) {
         return setAttributeLink(AGENT_LINK.getUrn(), protocolConfigurationRef);
     }
 
-    public static Consumer<Attribute> removeAgentLink(Attribute attribute) {
+    public static Function<Attribute, Attribute> removeAgentLink() {
         return removeAttributeLink(AGENT_LINK.getUrn());
     }
 }

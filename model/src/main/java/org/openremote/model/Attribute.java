@@ -234,20 +234,20 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         return null;
     }
 
-    public static Consumer<Attribute> setAttributeLink(String metaName, AttributeRef attributeRef) {
+    public static Function<Attribute, Attribute> setAttributeLink(String metaName, AttributeRef attributeRef) {
         return attribute -> {
             if (attributeRef == null) {
                 throw new IllegalArgumentException(
                     "Attribute reference cannot be null for '" + metaName + "' on: " + attribute
                 );
             }
-            attribute.setMeta(
+            return attribute.setMeta(
                 attribute.getMeta().replace(metaName, new MetaItem(metaName, attributeRef.asJsonValue()))
             );
         };
     }
 
-    public static Consumer<Attribute> removeAttributeLink(String metaName) {
+    public static Function<Attribute, Attribute> removeAttributeLink(String metaName) {
         return attribute -> attribute.setMeta(attribute.getMeta().removeAll(metaName));
     }
 }

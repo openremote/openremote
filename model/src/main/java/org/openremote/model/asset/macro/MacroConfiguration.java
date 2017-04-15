@@ -28,7 +28,6 @@ import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.util.JsonUtil;
 
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
@@ -85,22 +84,24 @@ final public class MacroConfiguration {
             .map(getMacroActionFromMetaItem());
     }
 
-    public static Consumer<AssetAttribute> addMacroAction(MacroAction action) {
+    public static Function<AssetAttribute, AssetAttribute> addMacroAction(MacroAction action) {
         return attribute -> attribute.setMeta(
             attribute.getMeta().add(getMetaItemFromMacroAction().apply(action))
         );
     }
 
-    public static Consumer<AssetAttribute> removeMacroAction(MacroAction action) {
+    public static Function<AssetAttribute, AssetAttribute> removeMacroAction(MacroAction action) {
         return attribute -> {
             if (!attribute.hasMeta()) {
-                return;
+                return attribute;
             }
             List<MetaItem> metaItems = attribute.getMeta().all();
             IntStream.range(0, metaItems.size())
                 .filter(i -> isAssetMetaItem(MACRO_ACTION).test(metaItems.get(i)))
                 .filter(i -> JsonUtil.equals(metaItems.get(i).getValueAsObject(), action.asJsonValue()))
                 .forEach(i -> attribute.getMeta().remove(i));
+
+            return attribute;
         };
     }
 }
