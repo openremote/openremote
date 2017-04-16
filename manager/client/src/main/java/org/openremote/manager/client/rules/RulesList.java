@@ -27,11 +27,11 @@ public interface RulesList<P extends RulesList.Presenter<R>, R extends Ruleset> 
 
         void onRulesetSelected(R ruleset);
 
-        void createRule();
-
     }
 
     void setPresenter(P presenter);
+
+    void setCreateRulesetHistoryToken(String token);
 
     void setRulesets(R[] rulesets);
 

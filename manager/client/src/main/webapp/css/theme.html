@@ -17,11 +17,11 @@
         --theme-purple: #660092; /* rgb(102, 0, 146) */
     }
 
-    ::-webkit-scrollbar-track {
+    :not(textarea)::-webkit-scrollbar-track {
         background-color: var(--theme-black);
     }
 
-    ::-webkit-scrollbar-thumb {
+    :not(textarea)::-webkit-scrollbar-thumb {
         background-color: var(--theme-lightgreen);
     }
 
@@ -111,7 +111,7 @@
         color: var(--theme-darkgrey);
     }
 
-    .or-Headline1 {
+    .or-Headline {
         color: var(--theme-darkgrey);
     }
 
@@ -128,6 +128,11 @@
     .or-FormMessages.success {
         color: var(--theme-darkgrey);
         background-color: var(--theme-lightgreen)
+    }
+
+    .or-FormMessages.info {
+        color: var(--theme-black);
+        background-color: var(--theme-lightgrey)
     }
 
     .or-FormGroup {
@@ -259,7 +264,7 @@
     }
 
     .or-FormTableHoveredRow {
-        background-color: var(--theme-lightgreen) !important;
+        background-color: var(--theme-lightgrey) !important;
     }
 
     .or-FormTableEvenRow {

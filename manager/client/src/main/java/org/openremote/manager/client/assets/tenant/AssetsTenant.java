@@ -28,6 +28,6 @@ public interface AssetsTenant extends IsWidget {
 
     void setPresenter(Presenter presenter);
 
-    void setName(String name);
+    void setTenantName(String name);
 
 }

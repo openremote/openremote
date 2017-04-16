@@ -31,13 +31,13 @@ public interface AdminUsers extends AdminContent {
 
         void onUserSelected(User user);
 
-        void createUser();
-
     }
 
     void setPresenter(Presenter presenter);
 
     void setTenants(Tenant[] tenants, String selectedRealm);
+
+    void setCreateUserHistoryToken(String token);
 
     void setUsers(User[] users);
 

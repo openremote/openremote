@@ -24,9 +24,10 @@ import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
-import com.google.gwt.user.client.ui.InlineLabel;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
+import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.widget.FlexSplitPanel;
+import org.openremote.manager.client.widget.Headline;
 
 import javax.inject.Inject;
 
@@ -36,12 +37,15 @@ public class AssetsTenantImpl extends Composite implements AssetsTenant {
     }
 
     @UiField
+    ManagerMessages managerMessages;
+
+    @UiField
     HTMLPanel sidebarContainer;
 
     /* ############################################################################ */
 
     @UiField
-    InlineLabel nameLabel;
+    Headline headline;
 
     final AssetBrowser assetBrowser;
     Presenter presenter;
@@ -58,7 +62,10 @@ public class AssetsTenantImpl extends Composite implements AssetsTenant {
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
 
+        // Reset state
         sidebarContainer.clear();
+        headline.setText(null);
+        headline.setSub(managerMessages.manageTenantAssets());
 
         if (presenter != null) {
             assetBrowser.asWidget().removeFromParent();
@@ -67,7 +74,7 @@ public class AssetsTenantImpl extends Composite implements AssetsTenant {
     }
 
     @Override
-    public void setName(String name) {
-        nameLabel.setText(name);
+    public void setTenantName(String name) {
+        headline.setText(name);
     }
 }

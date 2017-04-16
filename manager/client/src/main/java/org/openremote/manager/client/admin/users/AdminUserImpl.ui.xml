@@ -13,150 +13,156 @@
 
     <g:HTMLPanel styleName="flex layout vertical">
 
-        <g:FlowPanel
-                styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"
-                visible="false">
-            <w:IconLabel icon="check" addStyleNames="{widgetStyle.MessagesIcon}"/>
-            <g:FlowPanel ui:field="formMessagesSuccess"/>
-        </g:FlowPanel>
+        <g:HTMLPanel
+                styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
 
-        <g:FlowPanel
-                styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} error"
-                visible="false">
-            <w:IconLabel icon="warning" addStyleNames="{widgetStyle.MessagesIcon}"/>
-            <g:FlowPanel ui:field="formMessagesError"/>
-        </g:FlowPanel>
+        </g:HTMLPanel>
 
-        <div class="{widgetStyle.Headline1}">
-            <g:InlineLabel text="{managerMessages.editUser}"/>
-        </div>
+        <g:HTMLPanel ui:field="mainContent"
+                     styleName="flex {widgetStyle.MainContent}">
 
-        <div class="{widgetStyle.HeadlineSub}">
-            <span class="required">*</span>
-            <g:InlineLabel text="{managerMessages.requiredFields}"/>
-        </div>
+            <g:FlowPanel
+                    styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"
+                    visible="false">
+                <w:IconLabel icon="check" addStyleNames="{widgetStyle.MessagesIcon}"/>
+                <g:FlowPanel ui:field="formMessagesSuccess"/>
+            </g:FlowPanel>
 
-        <w:Form ui:field="form">
+            <g:FlowPanel
+                    styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} error"
+                    visible="false">
+                <w:IconLabel icon="warning" addStyleNames="{widgetStyle.MessagesIcon}"/>
+                <g:FlowPanel ui:field="formMessagesError"/>
+            </g:FlowPanel>
 
-            <w:FormGroup ui:field="usernameGroup">
-                <w:label>
-                    <w:FormLabel text="{managerMessages.username}" required="true" addStyleNames="larger"/>
-                </w:label>
-                <w:field>
-                    <w:FormField>
-                        <w:FormInputText ui:field="usernameInput"/>
-                    </w:FormField>
-                </w:field>
-            </w:FormGroup>
+            <w:Headline icon="edit"
+                        text="{managerMessages.editUser}"
+                        sub="* {managerMessages.requiredFields}"/>
 
-            <w:FormGroup ui:field="firstNameGroup">
-                <w:label>
-                    <w:FormLabel text="{managerMessages.firstName}" addStyleNames="larger"/>
-                </w:label>
-                <w:field>
-                    <w:FormField>
-                        <w:FormInputText ui:field="firstNameInput"/>
-                    </w:FormField>
-                </w:field>
-            </w:FormGroup>
+            <w:Form ui:field="form">
 
-            <w:FormGroup ui:field="lastNameGroup">
-                <w:label>
-                    <w:FormLabel text="{managerMessages.lastName}" addStyleNames="larger"/>
-                </w:label>
-                <w:field>
-                    <w:FormField>
-                        <w:FormInputText ui:field="lastNameInput"/>
-                    </w:FormField>
-                </w:field>
-            </w:FormGroup>
+                <w:FormGroup ui:field="usernameGroup">
+                    <w:label>
+                        <w:FormLabel text="{managerMessages.username}" required="true" addStyleNames="larger"/>
+                    </w:label>
+                    <w:field>
+                        <w:FormField>
+                            <w:FormInputText ui:field="usernameInput"/>
+                        </w:FormField>
+                    </w:field>
+                </w:FormGroup>
 
-            <w:FormGroup ui:field="emailGroup">
-                <w:label>
-                    <w:FormLabel text="{managerMessages.email}" addStyleNames="larger"/>
-                </w:label>
-                <w:field>
-                    <w:FormField>
-                        <w:FormInputText ui:field="emailInput"/>
-                    </w:FormField>
-                </w:field>
-            </w:FormGroup>
+                <w:FormGroup ui:field="firstNameGroup">
+                    <w:label>
+                        <w:FormLabel text="{managerMessages.firstName}" addStyleNames="larger"/>
+                    </w:label>
+                    <w:field>
+                        <w:FormField>
+                            <w:FormInputText ui:field="firstNameInput"/>
+                        </w:FormField>
+                    </w:field>
+                </w:FormGroup>
 
-            <w:FormGroup ui:field="enabledGroup">
-                <w:label>
-                    <w:FormLabel text="{managerMessages.enabled}" addStyleNames="larger"/>
-                </w:label>
-                <w:field>
-                    <w:FormField>
-                        <w:FormCheckBox ui:field="enabledCheckBox"/>
-                    </w:FormField>
-                </w:field>
-            </w:FormGroup>
+                <w:FormGroup ui:field="lastNameGroup">
+                    <w:label>
+                        <w:FormLabel text="{managerMessages.lastName}" addStyleNames="larger"/>
+                    </w:label>
+                    <w:field>
+                        <w:FormField>
+                            <w:FormInputText ui:field="lastNameInput"/>
+                        </w:FormField>
+                    </w:field>
+                </w:FormGroup>
 
-            <w:FormGroup ui:field="resetPasswordNoteGroup">
-                <w:label>
-                    <w:FormLabel text="{managerMessages.notePasswordAfterCreate}" addStyleNames="larger"/>
-                </w:label>
-            </w:FormGroup>
+                <w:FormGroup ui:field="emailGroup">
+                    <w:label>
+                        <w:FormLabel text="{managerMessages.email}" addStyleNames="larger"/>
+                    </w:label>
+                    <w:field>
+                        <w:FormField>
+                            <w:FormInputText ui:field="emailInput"/>
+                        </w:FormField>
+                    </w:field>
+                </w:FormGroup>
 
-            <w:FormGroup ui:field="resetPasswordGroup">
-                <w:label>
-                    <w:FormLabel text="{managerMessages.resetPassword}" addStyleNames="larger"/>
-                </w:label>
-                <w:field>
-                    <w:FormField>
-                        <!-- TODO: autocomplete="new-password" to disable browser saving password popup-->
-                        <g:PasswordTextBox ui:field="resetPasswordInput"
-                                           addStyleNames="{widgetStyle.FormControl} {widgetStyle.FormInputText}"/>
-                    </w:FormField>
-                </w:field>
-            </w:FormGroup>
+                <w:FormGroup ui:field="enabledGroup">
+                    <w:label>
+                        <w:FormLabel text="{managerMessages.enabled}" addStyleNames="larger"/>
+                    </w:label>
+                    <w:field>
+                        <w:FormField>
+                            <w:FormCheckBox ui:field="enabledCheckBox"/>
+                        </w:FormField>
+                    </w:field>
+                </w:FormGroup>
 
-            <w:FormGroup ui:field="resetPasswordControlGroup">
-                <w:label>
-                    <w:FormLabel text="{managerMessages.repeatPassword}" addStyleNames="larger"/>
-                </w:label>
-                <w:field>
-                    <w:FormField>
-                        <g:PasswordTextBox ui:field="resetPasswordControlInput"
-                                           addStyleNames="{widgetStyle.FormControl} {widgetStyle.FormInputText}"/>
-                    </w:FormField>
-                </w:field>
-            </w:FormGroup>
+                <w:FormGroup ui:field="resetPasswordNoteGroup">
+                    <w:label>
+                        <w:FormLabel text="{managerMessages.notePasswordAfterCreate}" addStyleNames="larger"/>
+                    </w:label>
+                </w:FormGroup>
 
-            <w:FormGroup ui:field="rolesNoteGroup">
-                <w:label>
-                    <w:FormLabel text="{managerMessages.noteRolesAfterCreate}" addStyleNames="larger"/>
-                </w:label>
-            </w:FormGroup>
+                <w:FormGroup ui:field="resetPasswordGroup">
+                    <w:label>
+                        <w:FormLabel text="{managerMessages.resetPassword}" addStyleNames="larger"/>
+                    </w:label>
+                    <w:field>
+                        <w:FormField>
+                            <!-- TODO: autocomplete="new-password" to disable browser saving password popup-->
+                            <g:PasswordTextBox ui:field="resetPasswordInput"
+                                               addStyleNames="{widgetStyle.FormControl} {widgetStyle.FormInputText}"/>
+                        </w:FormField>
+                    </w:field>
+                </w:FormGroup>
 
-            <w:FormGroup ui:field="rolesGroup" alignStart="true">
-                <w:label>
-                    <w:FormLabel text="{managerMessages.assignedRoles}" addStyleNames="larger"/>
-                </w:label>
-                <w:field>
-                    <w:FormField>
-                        <g:FlowPanel styleName="layout vertical"
-                                     ui:field="rolesPanel"/>
-                    </w:FormField>
-                </w:field>
-            </w:FormGroup>
+                <w:FormGroup ui:field="resetPasswordControlGroup">
+                    <w:label>
+                        <w:FormLabel text="{managerMessages.repeatPassword}" addStyleNames="larger"/>
+                    </w:label>
+                    <w:field>
+                        <w:FormField>
+                            <g:PasswordTextBox ui:field="resetPasswordControlInput"
+                                               addStyleNames="{widgetStyle.FormControl} {widgetStyle.FormInputText}"/>
+                        </w:FormField>
+                    </w:field>
+                </w:FormGroup>
 
-            <w:FormGroup>
-                <w:field>
-                    <w:FormField>
-                        <w:FormButton ui:field="updateButton" primary="true" text="{managerMessages.updateUser}"
-                                      visible="false" icon="save"/>
-                        <w:FormButton ui:field="createButton" primary="true" text="{managerMessages.createUser}"
-                                      visible="false" icon="save"/>
-                        <w:FormButton ui:field="deleteButton" danger="true" text="{managerMessages.deleteUser}"
-                                      visible="false" icon="trash"/>
-                        <w:FormButton ui:field="cancelButton" text="{managerMessages.cancel}" icon="close"/>
-                    </w:FormField>
-                </w:field>
-            </w:FormGroup>
+                <w:FormGroup ui:field="rolesNoteGroup">
+                    <w:label>
+                        <w:FormLabel text="{managerMessages.noteRolesAfterCreate}" addStyleNames="larger"/>
+                    </w:label>
+                </w:FormGroup>
 
-        </w:Form>
+                <w:FormGroup ui:field="rolesGroup" alignStart="true">
+                    <w:label>
+                        <w:FormLabel text="{managerMessages.assignedRoles}" addStyleNames="larger"/>
+                    </w:label>
+                    <w:field>
+                        <w:FormField>
+                            <g:FlowPanel styleName="layout vertical"
+                                         ui:field="rolesPanel"/>
+                        </w:FormField>
+                    </w:field>
+                </w:FormGroup>
+
+                <w:FormGroup>
+                    <w:field>
+                        <w:FormField>
+                            <w:FormButton ui:field="updateButton" primary="true" text="{managerMessages.updateUser}"
+                                          visible="false" icon="save"/>
+                            <w:FormButton ui:field="createButton" primary="true" text="{managerMessages.createUser}"
+                                          visible="false" icon="save"/>
+                            <w:FormButton ui:field="deleteButton" danger="true" text="{managerMessages.deleteUser}"
+                                          visible="false" icon="trash"/>
+                            <w:FormButton ui:field="cancelButton" text="{managerMessages.cancel}" icon="close"/>
+                        </w:FormField>
+                    </w:field>
+                </w:FormGroup>
+
+            </w:Form>
+
+        </g:HTMLPanel>
+
     </g:HTMLPanel>
 
 </ui:UiBinder>

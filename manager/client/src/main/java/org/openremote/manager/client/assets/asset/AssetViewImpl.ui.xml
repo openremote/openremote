@@ -13,8 +13,8 @@
 
         .mapWidget {
             margin-left: 2em;
-            width: 44%;
-            height: 12.5em;
+            width: 40%;
+            height: 15em;
         }
     </ui:style>
 
@@ -52,13 +52,13 @@
                 <g:HTMLPanel
                         styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
 
-<!--
-                    <w:Hyperlink
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                            icon="dashboard"
-                            targetHistoryToken="assets:"
-                            text="{managerMessages.showDashboard}"/>
--->
+                    <!--
+                                        <w:Hyperlink
+                                                addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
+                                                icon="dashboard"
+                                                targetHistoryToken="assets:"
+                                                text="{managerMessages.showDashboard}"/>
+                    -->
 
                     <w:Hyperlink
                             ui:field="editAssetLink"
@@ -77,88 +77,77 @@
 
                 <div class="flex layout vertical {widgetStyle.MainContent}">
 
-                    <div class="{widgetStyle.Headline1}">
-                        <span class="fa fa-eye"/>
-                        <g:InlineLabel ui:field="headlineLabel"/>
-                    </div>
-
                     <div class="flex-none layout horizontal">
-                        <w:Form ui:field="form" addStyleNames="flex">
 
-                            <w:FormGroup ui:field="createdOnGroup">
-                                <w:label>
-                                    <w:FormLabel text="{managerMessages.createdOn}"/>
-                                </w:label>
-                                <w:field>
-                                    <w:FormField>
-                                        <w:FormOutputText ui:field="createdOnOutput"/>
-                                    </w:FormField>
-                                </w:field>
-                                <w:actions>
-                                    <w:FormGroupActions>
-                                        <w:FormButton ui:field="showHistoryButton"
-                                                      text="{managerMessages.showHistory}"
-                                                      enabled="false"
-                                                      icon="history"/>
-                                    </w:FormGroupActions>
-                                </w:actions>
-                            </w:FormGroup>
+                        <div class="flex layout vertical">
 
-                            <w:FormGroup ui:field="parentGroup" alignStart="true">
-                                <w:label>
-                                    <w:FormLabel text="{managerMessages.parentAsset}"/>
-                                </w:label>
-                                <w:field>
-                                    <w:FormField>
-                                        <g:HTMLPanel styleName="layout vertical">
-                                            <w:FormOutputText ui:field="tenantDisplayName"/>
-                                            <w:FormInputText ui:field="parentAssetName" readOnly="true"/>
-                                        </g:HTMLPanel>
-                                    </w:FormField>
-                                </w:field>
-                            </w:FormGroup>
+                            <w:Headline ui:field="headline"/>
 
-                            <w:FormGroup ui:field="locationGroup">
-                                <w:label>
-                                    <w:FormLabel text="{managerMessages.location}"/>
-                                </w:label>
-                                <w:field>
-                                    <w:FormField>
-                                        <w:FormOutputLocation ui:field="locationOutput"/>
-                                    </w:FormField>
-                                </w:field>
-                                <w:actions>
-                                    <w:FormGroupActions>
-                                        <w:FormButton ui:field="centerMapButton"
-                                                      text="{managerMessages.centerMap}"
-                                                      icon="location-arrow"/>
-                                    </w:FormGroupActions>
-                                </w:actions>
-                            </w:FormGroup>
+                            <w:Form ui:field="form">
 
-                            <w:FormGroup ui:field="typeGroup">
-                                <w:label>
-                                    <w:FormLabel text="{managerMessages.assetType}"/>
-                                </w:label>
-                                <w:field>
-                                    <w:FormField>
-                                        <w:FormInputText ui:field="typeLabel" addStyleNames="flex" readOnly="true"/>
-                                    </w:FormField>
-                                </w:field>
-                            </w:FormGroup>
+                                <w:FormGroup ui:field="createdOnGroup">
+                                    <w:label>
+                                        <w:FormLabel text="{managerMessages.createdOn}"/>
+                                    </w:label>
+                                    <w:field>
+                                        <w:FormField>
+                                            <w:FormOutputText ui:field="createdOnOutput"/>
+                                        </w:FormField>
+                                    </w:field>
+                                    <w:actions>
+                                        <w:FormGroupActions>
+                                            <w:FormButton ui:field="showHistoryButton"
+                                                          text="{managerMessages.showHistory}"
+                                                          enabled="false"
+                                                          icon="history"/>
+                                        </w:FormGroupActions>
+                                    </w:actions>
+                                </w:FormGroup>
 
-                        </w:Form>
+                                <w:FormGroup ui:field="parentGroup" alignStart="true">
+                                    <w:label>
+                                        <w:FormLabel text="{managerMessages.parentAsset}"/>
+                                    </w:label>
+                                    <w:field>
+                                        <w:FormField>
+                                            <g:HTMLPanel styleName="layout vertical">
+                                                <w:FormOutputText ui:field="tenantDisplayName"/>
+                                                <w:FormInputText ui:field="parentAssetName" readOnly="true"/>
+                                            </g:HTMLPanel>
+                                        </w:FormField>
+                                    </w:field>
+                                </w:FormGroup>
+
+                                <w:FormGroup ui:field="locationGroup">
+                                    <w:label>
+                                        <w:FormLabel text="{managerMessages.location}"/>
+                                    </w:label>
+                                    <w:field>
+                                        <w:FormField>
+                                            <w:FormOutputLocation ui:field="locationOutput"/>
+                                        </w:FormField>
+                                    </w:field>
+                                    <w:actions>
+                                        <w:FormGroupActions>
+                                            <w:FormButton ui:field="centerMapButton"
+                                                          text="{managerMessages.centerMap}"
+                                                          icon="location-arrow"/>
+                                        </w:FormGroupActions>
+                                    </w:actions>
+                                </w:FormGroup>
+
+                            </w:Form>
+
+                        </div>
 
                         <w:MapWidget ui:field="mapWidget"
                                      visible="false"
                                      addStyleNames="{style.mapWidget} {widgetStyle.ItemWithBorder}"/>
                     </div>
 
-                    <g:HTMLPanel styleName="flex-none layout horizontal">
-                        <w:Form ui:field="attributesForm" addStyleNames="flex">
-                            <g:FlowPanel ui:field="attributesBrowserContainer"/>
-                        </w:Form>
-                    </g:HTMLPanel>
+                    <w:Form ui:field="attributesForm" addStyleNames="flex">
+                        <g:FlowPanel ui:field="attributesBrowserContainer"/>
+                    </w:Form>
 
                 </div>
 

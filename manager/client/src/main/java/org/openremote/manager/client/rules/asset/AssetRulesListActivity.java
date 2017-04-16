@@ -25,15 +25,15 @@ import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
-import org.openremote.manager.shared.security.Tenant;
-import org.openremote.model.event.bus.EventBus;
-import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.rules.RulesModule;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.rules.AssetRuleset;
 import org.openremote.manager.shared.rules.RulesetResource;
+import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.event.bus.EventBus;
+import org.openremote.model.event.bus.EventRegistration;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -93,6 +93,9 @@ public class AssetRulesListActivity
                 if (asset != null) {
                     assetBrowserPresenter.selectAsset(asset);
                     view.setAssetLabel(asset.getName());
+                    view.setCreateRulesetHistoryToken(
+                        environment.getPlaceHistoryMapper().getToken(new AssetRulesEditorPlace(assetId))
+                    );
                 }
             });
 
@@ -116,11 +119,4 @@ public class AssetRulesListActivity
     public void onRulesetSelected(AssetRuleset ruleset) {
         environment.getPlaceController().goTo(new AssetRulesEditorPlace(assetId, ruleset.getId()));
     }
-
-    @Override
-    public void createRule() {
-        environment.getPlaceController().goTo(new AssetRulesEditorPlace(assetId));
-    }
-
-
 }

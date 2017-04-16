@@ -24,13 +24,13 @@ import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
-import org.openremote.manager.shared.security.Tenant;
-import org.openremote.model.event.bus.EventBus;
-import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.rules.RulesModule;
 import org.openremote.manager.shared.rules.GlobalRuleset;
 import org.openremote.manager.shared.rules.RulesetResource;
+import org.openremote.manager.shared.security.Tenant;
+import org.openremote.model.event.bus.EventBus;
+import org.openremote.model.event.bus.EventRegistration;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -81,6 +81,10 @@ public class GlobalRulesListActivity
             ex -> handleRequestException(ex, environment)
         );
 
+        view.setCreateRulesetHistoryToken(
+            environment.getPlaceHistoryMapper().getToken(new GlobalRulesEditorPlace())
+        );
+
         assetBrowserPresenter.clearSelection();
     }
 
@@ -93,10 +97,5 @@ public class GlobalRulesListActivity
     @Override
     public void onRulesetSelected(GlobalRuleset ruleset) {
         environment.getPlaceController().goTo(new GlobalRulesEditorPlace(ruleset.getId()));
-    }
-
-    @Override
-    public void createRule() {
-        environment.getPlaceController().goTo(new GlobalRulesEditorPlace());
     }
 }

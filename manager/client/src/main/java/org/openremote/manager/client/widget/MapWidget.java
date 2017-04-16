@@ -164,8 +164,10 @@ public class MapWidget extends ComplexPanel {
 
         hostElementId = Document.get().createUniqueId();
 
+        addStyleName("flex layout vertical or-MapWidget");
+
         host = new FlowPanel();
-        host.getElement().getStyle().setHeight(100, Style.Unit.PCT);
+        host.setStyleName("flex layout vertical");
         host.getElement().setId(hostElementId);
         host.setVisible(false);
         add(host, (Element) getElement());

@@ -99,7 +99,12 @@ public class AdminUsersActivity
                 userArrayMapper,
                 requestParams -> userResource.getAll(requestParams, realm),
                 200,
-                adminContent::setUsers,
+                users -> {
+                    adminContent.setUsers(users);
+                    adminContent.setCreateUserHistoryToken(
+                        environment.getPlaceHistoryMapper().getToken(new AdminUserPlace(realm))
+                    );
+                },
                 ex -> handleRequestException(ex, environment)
             );
         }
@@ -114,11 +119,6 @@ public class AdminUsersActivity
     @Override
     public void onTenantSelected(String realm) {
         environment.getPlaceController().goTo(new AdminUsersPlace(realm));
-    }
-
-    @Override
-    public void createUser() {
-        environment.getPlaceController().goTo(new AdminUserPlace(realm));
     }
 
     @Override

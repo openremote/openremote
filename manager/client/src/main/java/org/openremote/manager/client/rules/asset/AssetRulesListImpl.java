@@ -35,9 +35,6 @@ public class AssetRulesListImpl
     extends AbstractRulesList<AssetRulesList.Presenter, AssetRuleset>
     implements AssetRulesList {
 
-    @UiField
-    InlineLabel assetLabel;
-
     interface UI extends UiBinder<FlexSplitPanel, AssetRulesListImpl> {
     }
 
@@ -55,11 +52,11 @@ public class AssetRulesListImpl
     @Override
     protected void onPresenterReset() {
         super.onPresenterReset();
-        assetLabel.setText(null);
+        headline.setText(null);
     }
 
     @Override
     public void setAssetLabel(String label) {
-        assetLabel.setText(label);
+        headline.setText(label);
     }
 }

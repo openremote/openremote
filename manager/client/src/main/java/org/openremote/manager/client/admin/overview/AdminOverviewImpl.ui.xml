@@ -7,11 +7,22 @@
 
     <g:HTMLPanel styleName="flex layout vertical">
 
-        <div class="{widgetStyle.Headline1}">Admin Overview</div>
+        <g:HTMLPanel
+                styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
 
-        <div>
-            TODO: Implement some general admin actions, logs display, etc.
-        </div>
+        </g:HTMLPanel>
+
+        <g:HTMLPanel ui:field="mainContent"
+                     styleName="flex {widgetStyle.MainContent}">
+
+            <w:Headline icon="gears"
+                        text="System Status"/>
+
+            <div class="{widgetStyle.FormMessages} info">
+                TODO Implement some general admin actions, logs display, etc.
+            </div>
+        </g:HTMLPanel>
+
     </g:HTMLPanel>
 
 </ui:UiBinder>

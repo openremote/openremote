@@ -6,17 +6,21 @@
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
 
     <ui:style>
+        .nav {
+            padding-top: 2.8em !important;
+        }
+
         .navItem {
             margin: 0 1em;
         }
     </ui:style>
 
-    <g:HTMLPanel styleName="layout vertical {widgetStyle.SecondaryNav}">
+    <g:HTMLPanel styleName="layout vertical {widgetStyle.SecondaryNav} {style.nav}">
 
         <w:Hyperlink ui:field="overviewLink"
                      addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                      icon="dashboard"
-                     text="{managerMessages.overview}"/>
+                     text="{managerMessages.systemStatus}"/>
 
         <w:Hyperlink ui:field="tenantsLink"
                      addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"

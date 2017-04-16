@@ -38,9 +38,12 @@
                 </g:HTMLPanel>
 
                 <g:HTMLPanel styleName="flex {widgetStyle.MainContent}">
-                    <g:SimplePanel ui:field="assetsContentContainer">
-                        <g:Label text="Please create or select an asset on the left-hand-side."/>
-                    </g:SimplePanel>
+
+                    <w:Headline text="Assets Dashboard"/>
+
+                    <g:Label addStyleNames="{widgetStyle.FormMessages} info"
+                             text="Please create or select an asset on the left-hand-side."/>
+
                 </g:HTMLPanel>
 
             </g:HTMLPanel>

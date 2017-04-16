@@ -2,6 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <title>OpenRemote Login</title>
 
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -16,29 +17,27 @@
     <link rel="icon" type="image/png" href="/static/img/favicon.png" />
 
     <script src="/static/js/loader.js"></script>
-
-    <title>OpenRemote Login</title>
-
-    <link rel="icon" type="image/png" href="/static/img/favicon.png" />
+    <link rel="stylesheet" type="text/css" href="/static/css/loader.css" />
 
     <script>
         document.addEventListener("DOMContentLoaded", function (event) {
-            Promise.all([
-                load.js("/static/bower_components/webcomponentsjs/webcomponents-lite.min.js"),
-                load.import("/static/bower_components/iron-flex-layout/iron-flex-layout-classes.html"),
-                load.css("/static/bower_components/font-awesome/css/font-awesome.css"),
+            setTimeout(function() {
+                Promise.all([
+                    load.js("/static/bower_components/webcomponentsjs/webcomponents-lite.min.js"),
+                    load.import("/static/bower_components/iron-flex-layout/iron-flex-layout-classes.html"),
+                    load.css("/static/bower_components/font-awesome/css/font-awesome.css"),
 
-                load.import("/static/css/style.html"),
-                load.import("/static/css/theme.html")
-            ]).then(function () {
-                console.log("Auxiliary application resources loaded, web components will initialize...");
-            }).catch(function () {
-                alert("Error loading application resources. " + defaultErrorMessage);
-            });
+                    load.import("/static/css/style.html"),
+                    load.import("/static/css/theme.html")
+                ]).then(function () {
+                    console.log("Application resources loaded, starting...");
+                    handleLoadComplete();
+                }).catch(handleLoadError);
+            }, 0);
         });
     </script>
 </head>
-<body class="layout vertical">
+<body class="layout vertical loading">
 
     <div class="flex layout vertical center-center">
 
@@ -56,7 +55,7 @@
             </svg>
             </a>
             <div class="layout vertical">
-                <div class="or-Headline1" style="margin: 0; white-space: nowrap;"><#nested "header"></div>
+                <div class="or-HeadlineText" style="margin: 0; white-space: nowrap;"><#nested "header"></div>
                 <div class="or-HeadlineSub" style="margin-left: 0.2em;">OpenRemote Login</div>
             </div>
         </div>

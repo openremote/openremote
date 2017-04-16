@@ -28,11 +28,11 @@ public interface AdminTenants extends AdminContent {
 
         void onTenantSelected(Tenant tenant);
 
-        void createTenant();
-
     }
 
     void setPresenter(Presenter presenter);
+
+    void setCreateTenantHistoryToken(String token);
 
     void setTenants(Tenant[] tenants);
 

@@ -38,11 +38,8 @@ import org.openremote.model.geo.GeoJSON;
 
 import javax.inject.Inject;
 import java.util.List;
-import java.util.logging.Logger;
 
 public class MapViewImpl extends Composite implements MapView {
-
-    private static final Logger LOG = Logger.getLogger(MapViewImpl.class.getName());
 
     interface UI extends UiBinder<FlexSplitPanel, MapViewImpl> {
     }
@@ -52,16 +49,10 @@ public class MapViewImpl extends Composite implements MapView {
         String navItem();
 
         String mapControls();
-
-        String mapWidget();
-
     }
 
     @UiField
     WidgetStyle widgetStyle;
-
-    @UiField
-    Style style;
 
     @UiField
     FlexSplitPanel splitPanel;
@@ -102,8 +93,10 @@ public class MapViewImpl extends Composite implements MapView {
 
         // Reset state
         sidebarContainer.clear();
+/*
         viewAssetLink.setVisible(false);
         viewAssetLink.setTargetHistoryToken("");
+*/
         showDroppedPin(GeoJSON.EMPTY_FEATURE_COLLECTION);
         if (infoPanel != null) {
             infoPanel.hide();
@@ -164,8 +157,8 @@ public class MapViewImpl extends Composite implements MapView {
         infoPanel.setItems(infoItems);
 
         mapWidget.resize();
-        Browser.getWindow().setTimeout(() -> {
-            infoPanel.showBottomRightOf(mapWidget, 10, 30);
-        }, 100);
+        Browser.getWindow().setTimeout(
+            () -> infoPanel.showBottomRightOf(mapWidget, 10, 30), 100
+        );
     }
 }

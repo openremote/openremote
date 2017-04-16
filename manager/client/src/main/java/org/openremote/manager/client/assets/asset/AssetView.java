@@ -58,7 +58,7 @@ public interface AssetView extends IsWidget {
 
     void flyTo(double[] coordinates);
 
-    void setType(String type);
+    void setIconAndType(String icon, String type);
 
     AttributesBrowser.Container getAttributesBrowserContainer();
 

@@ -10,10 +10,6 @@
             margin: 0 1em;
         }
 
-        .mapWidget {
-            height: 100%;
-        }
-
         .mapControls {
             z-index: 1;
         }
@@ -51,8 +47,7 @@
 
                 </g:HTMLPanel>
 
-                <w:MapWidget ui:field="mapWidget"
-                             addStyleNames="{style.mapWidget}"/>
+                <w:MapWidget ui:field="mapWidget"/>
 
             </g:HTMLPanel>
         </w:second>

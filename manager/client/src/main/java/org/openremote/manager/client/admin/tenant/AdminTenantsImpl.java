@@ -20,15 +20,13 @@
 package org.openremote.manager.client.admin.tenant;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
-import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.*;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTableStyle;
 import org.openremote.manager.client.style.WidgetStyle;
-import org.openremote.manager.client.widget.PushButton;
+import org.openremote.manager.client.widget.Hyperlink;
 import org.openremote.manager.shared.security.Tenant;
 
 import javax.inject.Inject;
@@ -50,10 +48,13 @@ public class AdminTenantsImpl extends Composite implements AdminTenants {
     AdminTenantsTable.Style tenantsTableStyle;
 
     @UiField
-    PushButton createButton;
+    Hyperlink createLink;
 
     @UiField
-    SimplePanel tableContainer;
+    HTMLPanel mainContent;
+
+    @UiField
+    Label noTenantsLabel;
 
     final AdminTenantsTable table;
     Presenter presenter;
@@ -72,27 +73,32 @@ public class AdminTenantsImpl extends Composite implements AdminTenants {
                 }
             }
         );
-        tableContainer.add(table);
+        mainContent.add(table);
     }
 
     @Override
     public void setPresenter(Presenter presenter) {
         this.presenter = presenter;
-        if (presenter == null) {
-            table.setRowData(new ArrayList<>());
-            table.flush();
-        }
+
+        // Reset state
+        setCreateTenantHistoryToken("");
+        noTenantsLabel.setVisible(true);
+        table.setVisible(false);
+        table.setRowData(new ArrayList<>());
+        table.flush();
     }
 
     @Override
     public void setTenants(Tenant[] tenants) {
-        tableContainer.setVisible(tenants.length > 0);
+        noTenantsLabel.setVisible(tenants.length == 0);
+        table.setVisible(tenants.length > 0);
         table.setRowData(Arrays.asList(tenants));
         table.flush();
     }
 
-    @UiHandler("createButton")
-    void createClicked(ClickEvent e) {
-        presenter.createTenant();
+    @Override
+    public void setCreateTenantHistoryToken(String token) {
+        createLink.setTargetHistoryToken(token);
+        createLink.setVisible(token != null && token.length() > 0);
     }
 }

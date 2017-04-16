@@ -86,7 +86,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     HTMLPanel sidebarContainer;
 
     @UiField
-    InlineLabel headlineLabel;
+    Headline headline;
 
     @UiField
     Hyperlink viewAssetLink;
@@ -212,7 +212,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
 
         // Restore initial state of view
         sidebarContainer.clear();
-        headlineLabel.setText(null);
+        headline.setText(null);
         viewAssetLink.setVisible(false);
         viewAssetLink.setTargetHistoryToken("");
         createAssetLink.setVisible(false);
@@ -245,6 +245,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     @Override
     public void setFormBusy(boolean busy) {
         super.setFormBusy(busy);
+        headline.setVisible(!busy);
         attributesForm.setBusy(busy);
         submitForm.setBusy(busy);
         mapWidget.setVisible(!busy);
@@ -420,7 +421,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     @Override
     public void enableCreate(boolean enable) {
         createButton.setVisible(enable);
-        headlineLabel.setText(enable ? managerMessages.createAsset() : managerMessages.editAsset());
+        headline.setText(enable ? managerMessages.createAsset() : managerMessages.editAsset());
         createAssetLink.setVisible(!enable);
     }
 
@@ -428,7 +429,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     public void enableUpdate(boolean enable) {
         viewAssetLink.setVisible(enable);
         updateButton.setVisible(enable);
-        headlineLabel.setText(enable ? managerMessages.editAsset() : managerMessages.createAsset());
+        headline.setText(enable ? managerMessages.editAsset() : managerMessages.createAsset());
         createAssetLink.setVisible(enable);
     }
 

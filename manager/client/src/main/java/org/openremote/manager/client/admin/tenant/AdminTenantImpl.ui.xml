@@ -13,79 +13,88 @@
 
     <g:HTMLPanel styleName="flex layout vertical">
 
-        <g:FlowPanel
-                styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"
-                visible="false">
-            <w:IconLabel icon="check" addStyleNames="{widgetStyle.MessagesIcon}"/>
-            <g:FlowPanel ui:field="formMessagesSuccess"/>
-        </g:FlowPanel>
+        <g:HTMLPanel
+                styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
 
-        <g:FlowPanel
-                styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} error"
-                visible="false">
-            <w:IconLabel icon="warning" addStyleNames="{widgetStyle.MessagesIcon}"/>
-            <g:FlowPanel ui:field="formMessagesError"/>
-        </g:FlowPanel>
+        </g:HTMLPanel>
 
-        <div class="{widgetStyle.Headline1}">
-            <g:InlineLabel text="{managerMessages.editTenant}"/>
-        </div>
+        <g:HTMLPanel ui:field="mainContent"
+                     styleName="flex {widgetStyle.MainContent}">
 
-        <div class="{widgetStyle.HeadlineSub}">
-            <span class="required">*</span>
-            <g:InlineLabel text="{managerMessages.requiredFields}"/>
-        </div>
+            <g:FlowPanel
+                    styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"
+                    visible="false">
+                <w:IconLabel icon="check" addStyleNames="{widgetStyle.MessagesIcon}"/>
+                <g:FlowPanel ui:field="formMessagesSuccess"/>
+            </g:FlowPanel>
 
-        <w:Form ui:field="form">
+            <g:FlowPanel
+                    styleName="layout horizontal {style.formMessages} {widgetStyle.FormMessages} error"
+                    visible="false">
+                <w:IconLabel icon="warning" addStyleNames="{widgetStyle.MessagesIcon}"/>
+                <g:FlowPanel ui:field="formMessagesError"/>
+            </g:FlowPanel>
 
-            <w:FormGroup ui:field="displayNameGroup">
-                <w:label>
-                    <w:FormLabel text="{managerMessages.tenantDisplayName}" required="true"/>
-                </w:label>
-                <w:field>
-                    <w:FormField>
-                        <w:FormInputText ui:field="displayNameInput"/>
-                    </w:FormField>
-                </w:field>
-            </w:FormGroup>
+            <w:Headline icon="edit"
+                        text="{managerMessages.editTenant}"/>
 
-            <w:FormGroup ui:field="realmGroup">
-                <w:label>
-                    <w:FormLabel text="{managerMessages.realm}" required="true"/>
-                </w:label>
-                <w:field>
-                    <w:FormField>
-                        <w:FormInputText ui:field="realmInput"/>
-                    </w:FormField>
-                </w:field>
-            </w:FormGroup>
+            <div class="{widgetStyle.HeadlineSub}">
+                <span class="required">*</span>
+                <g:InlineLabel text="{managerMessages.requiredFields}"/>
+            </div>
 
-            <w:FormGroup ui:field="enabledGroup">
-                <w:label>
-                    <w:FormLabel text="{managerMessages.enabled}" required="false"/>
-                </w:label>
-                <w:field>
-                    <w:FormField>
-                        <w:FormCheckBox ui:field="enabledCheckBox"/>
-                    </w:FormField>
-                </w:field>
-            </w:FormGroup>
+            <w:Form ui:field="form">
 
-            <w:FormGroup>
-                <w:field>
-                    <w:FormField>
-                        <w:FormButton ui:field="updateButton" primary="true" text="{managerMessages.updateTenant}"
-                                      visible="false" icon="save"/>
-                        <w:FormButton ui:field="createButton" primary="true" text="{managerMessages.createTenant}"
-                                      visible="false" icon="save"/>
-                        <w:FormButton ui:field="deleteButton" danger="true" text="{managerMessages.deleteTenant}"
-                                      visible="false" icon="trash"/>
-                        <w:FormButton ui:field="cancelButton" text="{managerMessages.cancel}" icon="close"/>
-                    </w:FormField>
-                </w:field>
-            </w:FormGroup>
+                <w:FormGroup ui:field="displayNameGroup">
+                    <w:label>
+                        <w:FormLabel text="{managerMessages.tenantDisplayName}" required="true"/>
+                    </w:label>
+                    <w:field>
+                        <w:FormField>
+                            <w:FormInputText ui:field="displayNameInput"/>
+                        </w:FormField>
+                    </w:field>
+                </w:FormGroup>
 
-        </w:Form>
+                <w:FormGroup ui:field="realmGroup">
+                    <w:label>
+                        <w:FormLabel text="{managerMessages.realm}" required="true"/>
+                    </w:label>
+                    <w:field>
+                        <w:FormField>
+                            <w:FormInputText ui:field="realmInput"/>
+                        </w:FormField>
+                    </w:field>
+                </w:FormGroup>
+
+                <w:FormGroup ui:field="enabledGroup">
+                    <w:label>
+                        <w:FormLabel text="{managerMessages.enabled}" required="false"/>
+                    </w:label>
+                    <w:field>
+                        <w:FormField>
+                            <w:FormCheckBox ui:field="enabledCheckBox"/>
+                        </w:FormField>
+                    </w:field>
+                </w:FormGroup>
+
+                <w:FormGroup>
+                    <w:field>
+                        <w:FormField>
+                            <w:FormButton ui:field="updateButton" primary="true" text="{managerMessages.updateTenant}"
+                                          visible="false" icon="save"/>
+                            <w:FormButton ui:field="createButton" primary="true" text="{managerMessages.createTenant}"
+                                          visible="false" icon="save"/>
+                            <w:FormButton ui:field="deleteButton" danger="true" text="{managerMessages.deleteTenant}"
+                                          visible="false" icon="trash"/>
+                            <w:FormButton ui:field="cancelButton" text="{managerMessages.cancel}" icon="close"/>
+                        </w:FormField>
+                    </w:field>
+                </w:FormGroup>
+
+            </w:Form>
+
+        </g:HTMLPanel>
     </g:HTMLPanel>
 
 </ui:UiBinder>

@@ -19,7 +19,7 @@
         }
 
         .rulesTextArea {
-            min-height: 50vh;
+            min-height: 44vh;
             max-height: 75vh;
         }
     </ui:style>
@@ -48,9 +48,7 @@
 
                 <g:HTMLPanel styleName="flex {widgetStyle.MainContent}">
 
-                    <div class="{widgetStyle.Headline1}">
-                        <g:InlineLabel ui:field="headlineLabel"/>
-                    </div>
+                    <w:Headline ui:field="headline" icon="edit"/>
 
                     <g:FlowPanel
                             styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"

@@ -46,4 +46,10 @@ public class GlobalRulesListImpl
         GlobalRulesListImpl.UI ui = GWT.create(GlobalRulesListImpl.UI.class);
         initWidget(ui.createAndBindUi(this));
     }
+
+    @Override
+    protected void onPresenterReset() {
+        super.onPresenterReset();
+        headline.setText(managerMessages.manageGlobalRulesets());
+    }
 }

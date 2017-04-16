@@ -38,7 +38,7 @@ public class AdminViewImpl extends Composite implements AdminView {
     final AdminNavigation adminNavigation;
 
     @UiField
-    SimplePanel adminContentContainer;
+    HTMLPanel adminContentContainer;
 
     @Inject
     public AdminViewImpl(AdminNavigation adminNavigation) {

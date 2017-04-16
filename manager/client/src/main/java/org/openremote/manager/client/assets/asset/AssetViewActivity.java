@@ -21,7 +21,6 @@ package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
-import org.openremote.manager.client.TenantMapper;
 import org.openremote.manager.client.assets.AssetMapper;
 import org.openremote.manager.client.assets.attributes.AttributesBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
@@ -35,7 +34,6 @@ import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.datapoint.AssetDatapointResource;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
-import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
@@ -59,8 +57,6 @@ public class AssetViewActivity
     final NumberDatapointArrayMapper numberDatapointArrayMapper;
     final MapResource mapResource;
     final JsonObjectMapper jsonObjectMapper;
-    final TenantResource tenantResource;
-    final TenantMapper tenantMapper;
 
     AttributesBrowser attributesBrowser;
 
@@ -74,9 +70,7 @@ public class AssetViewActivity
                              AssetDatapointResource assetDatapointResource,
                              NumberDatapointArrayMapper numberDatapointArrayMapper,
                              MapResource mapResource,
-                             JsonObjectMapper jsonObjectMapper,
-                             TenantResource tenantResource,
-                             TenantMapper tenantMapper) {
+                             JsonObjectMapper jsonObjectMapper) {
         super(environment, currentTenant, assetBrowserPresenter);
         this.view = view;
         this.assetResource = assetResource;
@@ -85,8 +79,6 @@ public class AssetViewActivity
         this.numberDatapointArrayMapper = numberDatapointArrayMapper;
         this.mapResource = mapResource;
         this.jsonObjectMapper = jsonObjectMapper;
-        this.tenantResource = tenantResource;
-        this.tenantMapper = tenantMapper;
     }
 
     @Override
@@ -168,7 +160,7 @@ public class AssetViewActivity
         view.setLocation(asset.getCoordinates());
         view.showDroppedPin(asset.getGeoFeature(20));
         view.flyTo(asset.getCoordinates());
-        view.setType(asset.getType());
+        view.setIconAndType(asset.getIcon(), asset.getType());
     }
 
     protected void writeParentToView() {

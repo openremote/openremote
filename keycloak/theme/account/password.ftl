@@ -4,8 +4,10 @@
 
 <div class="layout vertical">
 
-    <div class="or-Headline1">${msg("changePasswordHtmlTitle")}</div>
-    <div class="or-HeadlineSub">${msg("allFieldsRequired")}</div>
+    <div class="or-Headline">
+        <span class="or-HeadlineIcon fa fa-key"></span>
+        <span class="or-HeadlineText">${msg("changePasswordHtmlTitle")}</span>
+    </div>
 
     <form action="${url.passwordUrl}" class="layout vertical or-Form" method="post">
 

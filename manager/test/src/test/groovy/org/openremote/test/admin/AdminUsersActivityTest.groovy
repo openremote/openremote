@@ -53,6 +53,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         def resultTenants = []
         def resultUsers = []
         def resultSelectedRealm = null
+        def resultCreateUserHistoryToken = null
 
         and: "An authenticated user and client security service"
         def realm = MASTER_REALM;
@@ -136,6 +137,9 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
             }
             setUsers(_) >> {
                 resultUsers = it[0]
+            }
+            setCreateUserHistoryToken(_) >> {
+                resultCreateUserHistoryToken = it[0]
             }
         }
         def tenantArrayMapper = new ClientObjectMapper(container.JSON, Tenant[].class) as TenantArrayMapper
@@ -221,6 +225,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         resultEvents = []
         resultTenants = []
         resultUsers = []
+        resultCreateUserHistoryToken = null
         resultSelectedRealm = null
         adminUsersActivity != null
         adminUsersActivity.onTenantSelected(MASTER_REALM)
@@ -248,7 +253,7 @@ class AdminUsersActivityTest extends Specification implements ManagerContainerTr
         resultTenants = []
         resultUsers = []
         resultSelectedRealm = null
-        adminUsersActivity.createUser()
+        placeController.goTo(placeHistoryMapper.getPlace(resultCreateUserHistoryToken))
 
         then: "The activity should be stopped"
         1 * adminUsersView.setPresenter(null)

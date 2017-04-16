@@ -81,7 +81,7 @@ public class TenantRulesEditorActivity
             params -> tenantResource.getForRealmId(params, realmId),
             200,
             tenant -> {
-                view.setHeadline(environment.getMessages().editTenantRuleset(tenant.getDisplayName()));
+                view.setHeadline(tenant.getDisplayName(), environment.getMessages().editTenantRuleset());
                 view.setFormBusy(false);
             },
             ex -> handleRequestException(ex, environment)

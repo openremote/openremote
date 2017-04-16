@@ -49,8 +49,6 @@ public interface ManagerMessages extends Messages {
 
     String manageUsers();
 
-    String overview();
-
     String createTenant();
 
     String tenantName();
@@ -291,9 +289,9 @@ public interface ManagerMessages extends Messages {
 
     String downloadRulesFile();
 
-    String editTenantRuleset(String name);
+    String editTenantRuleset();
 
-    String editAssetRuleset(String name);
+    String editAssetRuleset();
 
     String attributeWriteSent(String name);
 
@@ -318,4 +316,12 @@ public interface ManagerMessages extends Messages {
     String previous();
 
     String next();
+
+    String noRulesetsFound();
+
+    String systemStatus();
+
+    String noTenantsFound();
+
+    String noUserFound();
 }

@@ -26,7 +26,10 @@ import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
-import com.google.gwt.user.client.ui.*;
+import com.google.gwt.user.client.ui.Composite;
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.HTMLPanel;
+import com.google.gwt.user.client.ui.InsertPanel;
 import com.google.inject.Provider;
 import elemental.json.JsonObject;
 import org.openremote.manager.client.app.dialog.ConfirmationDialog;
@@ -37,10 +40,9 @@ import org.openremote.manager.client.assets.browser.BrowserTreeNode;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.*;
-import org.openremote.manager.client.widget.Hyperlink;
-import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetType;
+import org.openremote.model.geo.GeoJSON;
 
 import javax.inject.Inject;
 import java.util.Date;
@@ -87,7 +89,7 @@ public class AssetViewImpl extends Composite implements AssetView {
     HTMLPanel sidebarContainer;
 
     @UiField
-    InlineLabel headlineLabel;
+    Headline headline;
 
     @UiField
     Hyperlink editAssetLink;
@@ -127,12 +129,6 @@ public class AssetViewImpl extends Composite implements AssetView {
     Form attributesForm;
 
     @UiField
-    FormGroup typeGroup;
-
-    @UiField
-    FormInputText typeLabel;
-
-    @UiField
     FlowPanel attributesBrowserContainer;
 
     /* ############################################################################ */
@@ -163,7 +159,8 @@ public class AssetViewImpl extends Composite implements AssetView {
         // Restore initial state of view
         sidebarContainer.clear();
         setFormBusy(true);
-        headlineLabel.setText(null);
+        headline.setText(null);
+        headline.setSub(null);
         editAssetLink.setVisible(false);
         createdOnOutput.setText(null);
         tenantDisplayName.setText(null);
@@ -172,7 +169,6 @@ public class AssetViewImpl extends Composite implements AssetView {
         locationOutput.setCoordinates(null, null);
         mapWidget.setVisible(false);
         showDroppedPin(GeoJSON.EMPTY_FEATURE_COLLECTION);
-        typeLabel.setText(null);
         attributesBrowserContainer.clear();
         attributesBrowser = null;
 
@@ -184,6 +180,7 @@ public class AssetViewImpl extends Composite implements AssetView {
 
     @Override
     public void setFormBusy(boolean busy) {
+        headline.setVisible(!busy);
         form.setBusy(busy);
         attributesForm.setBusy(busy);
         if (!busy && locationGroup.isVisible()) {
@@ -204,7 +201,7 @@ public class AssetViewImpl extends Composite implements AssetView {
 
     @Override
     public void setName(String name) {
-        headlineLabel.setText(name);
+        headline.setText(name);
     }
 
     @Override
@@ -270,12 +267,13 @@ public class AssetViewImpl extends Composite implements AssetView {
     /* ############################################################################ */
 
     @Override
-    public void setType(String type) {
+    public void setIconAndType(String icon, String type) {
+        headline.setIcon(icon);
         AssetType assetType = AssetType.getByValue(type);
         if (assetType == AssetType.CUSTOM) {
-            typeLabel.setText(type);
+            headline.setSub(type);
         } else {
-            typeLabel.setText(managerMessages.assetTypeLabel(assetType.name()));
+            headline.setSub(managerMessages.assetTypeLabel(assetType.name()));
         }
     }
 

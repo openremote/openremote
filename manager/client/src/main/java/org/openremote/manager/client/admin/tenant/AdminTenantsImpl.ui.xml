@@ -5,6 +5,16 @@
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
 
+    <ui:style>
+        .navItem {
+            margin: 0 1em;
+        }
+
+        .noTenantsLabel {
+            max-width: 30em;
+        }
+    </ui:style>
+
     <ui:style field="tenantsTableStyle" type="org.openremote.manager.client.admin.tenant.AdminTenantsTable.Style">
         .nameColumn {
             width: 15em;
@@ -21,22 +31,30 @@
 
     <g:HTMLPanel styleName="flex layout vertical">
 
-        <div class="{widgetStyle.Headline1}">
-            <g:InlineLabel text="{managerMessages.manageTenants}"/>
-        </div>
+        <g:HTMLPanel
+                styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
 
-        <w:Form>
-            <w:FormGroup>
-                <w:field>
-                    <w:FormField>
-                        <w:FormButton ui:field="createButton" primary="true" text="{managerMessages.newTenant}"
-                                      icon="plus-square"/>
-                    </w:FormField>
-                </w:field>
-            </w:FormGroup>
+            <w:Hyperlink
+                    ui:field="createLink"
+                    addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
+                    icon="plus-square"
+                    visible="false"
+                    text="{managerMessages.createTenant}"/>
 
-            <g:SimplePanel ui:field="tableContainer"/>
-        </w:Form>
+        </g:HTMLPanel>
+
+        <g:HTMLPanel ui:field="mainContent"
+                     styleName="flex {widgetStyle.MainContent}">
+
+            <w:Headline icon="group"
+                        text="{managerMessages.manageTenants}"/>
+
+            <g:Label ui:field="noTenantsLabel"
+                     addStyleNames="{style.noTenantsLabel} {widgetStyle.FormMessages} info"
+                     visible="true"
+                     text="{managerMessages.noTenantsFound}"/>
+
+        </g:HTMLPanel>
 
     </g:HTMLPanel>
 

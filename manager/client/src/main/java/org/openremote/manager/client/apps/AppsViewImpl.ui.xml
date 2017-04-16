@@ -6,35 +6,33 @@
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
 
     <ui:style type="org.openremote.manager.client.apps.AppsViewImpl.Style">
-        .appsListPanel {
+        .nav {
+            padding-top: 2.8em !important;
         }
 
-        .appsListItem {
+        .navItem {
             margin: 0 1em;
-        }
-
-        .appsControls {
-
         }
     </ui:style>
 
     <g:HTMLPanel styleName="flex layout horizontal">
 
-        <g:HTMLPanel styleName="layout vertical {widgetStyle.SecondaryNav} {style.appsListPanel}"
+        <g:HTMLPanel styleName="layout vertical {widgetStyle.SecondaryNav} {style.nav}"
                      ui:field="appsListPanel">
         </g:HTMLPanel>
 
         <g:HTMLPanel styleName="flex layout vertical">
 
-<!-- TODO add controls
             <g:HTMLPanel
-                    styleName="layout horizontal center end-justified {style.appsControls} {widgetStyle.SecondaryNavHorizontal}">
+                    styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
             </g:HTMLPanel>
 
--->
             <g:HTMLPanel styleName="{widgetStyle.MainContent}"
                          ui:field="placeholder" >
-                <g:Label text="{managerMessages.selectConsoleApp}"/>
+
+                <g:Label addStyleNames="{widgetStyle.FormMessages} info"
+                         text="{managerMessages.selectConsoleApp}"/>
+
             </g:HTMLPanel>
 
             <iframe ui:field="frame"

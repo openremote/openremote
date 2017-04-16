@@ -57,7 +57,7 @@ public class GlobalRulesEditorActivity
     public void start(AcceptsOneWidget container, EventBus eventBus, Collection<EventRegistration> registrations) {
         super.start(container, eventBus, registrations);
 
-        view.setHeadline(environment.getMessages().editGlobalRules());
+        view.setHeadline(environment.getMessages().editGlobalRules(), null);
         view.setFormBusy(false);
     }
 

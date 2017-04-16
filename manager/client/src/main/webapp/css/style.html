@@ -1,6 +1,6 @@
 <style is="custom-style" include="iron-flex iron-flex-alignment iron-flex-factors iron-positioning">
 
-    ::-webkit-scrollbar {
+    :not(textarea)::-webkit-scrollbar {
         width: 1em;
     }
 
@@ -202,16 +202,27 @@
         text-decoration: none;
     }
 
-    .or-Headline1 {
+    .or-Headline {
+        margin: 0 0 0.8em 0;
+    }
+
+    .or-HeadlineIcon,
+    .or-HeadlineText {
         font-size: x-large;
+    }
+
+    .or-HeadlineText {
         font-weight: 600;
-        margin: 0 0 0.4em 0;
+    }
+
+    .or-HeadlineIcon {
+        margin-right: 0.4em;
     }
 
     .or-HeadlineSub {
         font-size: smaller;
         font-weight: 600;
-        margin: 0 0 0.4em 0;
+        margin: 0.4em 0;
     }
 
     .or-UnorderedList {

@@ -45,11 +45,9 @@ public class AppsViewImpl extends Composite implements AppsView {
 
     interface Style extends CssResource {
 
-        String appsListItem();
+        String nav();
 
-        String appsControls();
-
-        String appsListPanel();
+        String navItem();
     }
 
     @UiField
@@ -101,10 +99,14 @@ public class AppsViewImpl extends Composite implements AppsView {
         for (ConsoleApp app : apps) {
             Hyperlink item = new Hyperlink();
             item.setIcon("connectdevelop");
-            item.addStyleName(style.appsListItem());
+            item.addStyleName(style.navItem());
             item.addStyleName(widgetStyle.SecondaryNavItem());
             item.setText(app.getTenant().getDisplayName());
-            item.setSimpleClickHandler(() -> presenter.onAppSelected(app));
+            item.setSimpleClickHandler(() -> {
+                appsListPanel.forEach(widget -> widget.removeStyleName("active"));
+                item.addStyleName("active");
+                presenter.onAppSelected(app);
+            });
             appsListPanel.add(item);
         }
     }

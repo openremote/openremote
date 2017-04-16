@@ -54,7 +54,7 @@ public class RulesEditorImpl
     HTMLPanel sidebarContainer;
 
     @UiField
-    InlineLabel headlineLabel;
+    Headline headline;
 
     @UiField
     FormGroup nameGroup;
@@ -142,7 +142,8 @@ public class RulesEditorImpl
             sidebarContainer.clear();
 
             // Restore initial state of view
-            headlineLabel.setText(null);
+            headline.setText(null);
+            headline.setSub(null);
             nameGroup.setError(false);
             nameInput.setValue(null);
             enabledCheckBox.setValue(true);
@@ -154,8 +155,9 @@ public class RulesEditorImpl
     }
 
     @Override
-    public void setHeadline(String headline) {
-        headlineLabel.setText(headline);
+    public void setHeadline(String text, String sub) {
+        headline.setText(text);
+        headline.setSub(sub);
     }
 
     @Override

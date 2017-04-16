@@ -5,6 +5,16 @@
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
 
+    <ui:style>
+        .navItem {
+            margin: 0 1em;
+        }
+
+        .noUsersLabel {
+            max-width: 30em;
+        }
+    </ui:style>
+
     <ui:style field="usersTableStyle" type="org.openremote.manager.client.admin.users.AdminUsersTable.Style">
         .usernameColumn {
             width: 10em;
@@ -25,35 +35,45 @@
 
     <g:HTMLPanel styleName="flex layout vertical">
 
-        <div class="{widgetStyle.Headline1}">
-            <g:InlineLabel text="{managerMessages.manageUsers}"/>
-        </div>
+        <g:HTMLPanel
+                styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
 
-        <w:Form>
-            <w:FormGroup>
-                <w:field>
-                    <w:FormField>
-                        <g:ListBox ui:field="tenantListBox"
-                                   addStyleNames="{widgetStyle.FormControl} {widgetStyle.FormValueListBox}"
-                                   visibleItemCount="1"/>
-                    </w:FormField>
-                </w:field>
-            </w:FormGroup>
+            <w:Hyperlink
+                    ui:field="createLink"
+                    addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
+                    icon="plus-square"
+                    visible="false"
+                    text="{managerMessages.newUser}"/>
 
-        </w:Form>
+        </g:HTMLPanel>
 
-        <w:Form ui:field="usersForm">
-            <w:FormGroup>
-                <w:field>
-                    <w:FormField>
-                        <w:FormButton ui:field="createButton" primary="true" text="{managerMessages.newUser}"
-                                      icon="user-plus"/>
-                    </w:FormField>
-                </w:field>
-            </w:FormGroup>
+        <g:HTMLPanel ui:field="mainContent"
+                     styleName="flex {widgetStyle.MainContent}">
+
+            <w:Headline icon="user"
+                        text="{managerMessages.manageUsers}"/>
+
+            <w:Form>
+                <w:FormGroup>
+                    <w:field>
+                        <w:FormField>
+                            <g:ListBox ui:field="tenantListBox"
+                                       addStyleNames="{widgetStyle.FormControl} {widgetStyle.FormValueListBox}"
+                                       visibleItemCount="1"/>
+                        </w:FormField>
+                    </w:field>
+                </w:FormGroup>
+
+            </w:Form>
+
+            <g:Label ui:field="noUsersLabel"
+                     addStyleNames="{style.noUsersLabel} {widgetStyle.FormMessages} info"
+                     visible="false"
+                     text="{managerMessages.noUserFound}"/>
 
             <g:SimplePanel ui:field="tableContainer" visible="false"/>
-        </w:Form>
+
+        </g:HTMLPanel>
 
     </g:HTMLPanel>
 

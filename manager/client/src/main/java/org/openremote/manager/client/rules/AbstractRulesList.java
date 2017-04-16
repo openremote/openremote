@@ -19,16 +19,15 @@
  */
 package org.openremote.manager.client.rules;
 
-import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.uibinder.client.UiField;
-import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
-import com.google.gwt.user.client.ui.SimplePanel;
+import com.google.gwt.user.client.ui.Label;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.FormTableStyle;
-import org.openremote.manager.client.widget.FormButton;
+import org.openremote.manager.client.widget.Headline;
+import org.openremote.manager.client.widget.Hyperlink;
 import org.openremote.manager.shared.rules.Ruleset;
 
 import java.util.ArrayList;
@@ -45,13 +44,19 @@ public abstract class AbstractRulesList<P extends RulesList.Presenter<R>, R exte
     public HTMLPanel sidebarContainer;
 
     @UiField
+    public HTMLPanel mainContent;
+
+    @UiField
+    public Headline headline;
+
+    @UiField
+    public Hyperlink createLink;
+
+    @UiField
+    public Label noRulesetsLabel;
+
+    @UiField
     public RulesetTable.Style tableStyle;
-
-    @UiField
-    public FormButton createButton;
-
-    @UiField
-    public SimplePanel tableContainer;
 
     final protected RulesetTable<R> table;
     final AssetBrowser assetBrowser;
@@ -71,7 +76,7 @@ public abstract class AbstractRulesList<P extends RulesList.Presenter<R>, R exte
                 }
             }
         );
-        tableContainer.add(table);
+        mainContent.add(table);
     }
 
     abstract protected void initComposite();
@@ -89,19 +94,25 @@ public abstract class AbstractRulesList<P extends RulesList.Presenter<R>, R exte
 
     protected void onPresenterReset() {
         sidebarContainer.clear();
+        headline.setText(null);
+        setCreateRulesetHistoryToken("");
+        noRulesetsLabel.setVisible(true);
+        table.setVisible(false);
         table.setRowData(new ArrayList<>());
         table.flush();
     }
 
     @Override
-    public void setRulesets(R[] rulesets) {
-        tableContainer.setVisible(rulesets.length > 0);
-        table.setRowData(Arrays.asList(rulesets));
-        table.flush();
+    public void setCreateRulesetHistoryToken(String token) {
+        createLink.setTargetHistoryToken(token);
+        createLink.setVisible(token != null && token.length() > 0);
     }
 
-    @UiHandler("createButton")
-    public void createClicked(ClickEvent e) {
-        presenter.createRule();
+    @Override
+    public void setRulesets(R[] rulesets) {
+        noRulesetsLabel.setVisible(rulesets.length == 0);
+        table.setVisible(rulesets.length > 0);
+        table.setRowData(Arrays.asList(rulesets));
+        table.flush();
     }
 }

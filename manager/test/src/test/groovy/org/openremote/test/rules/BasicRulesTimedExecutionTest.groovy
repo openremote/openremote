@@ -44,6 +44,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
             globalEngine = rulesService.globalDeployment
             assert globalEngine != null
             assert globalEngine.isRunning()
+            assert globalEngine.knowledgeSession.factCount == 9
         }
 
         when: "the execution logger is attached"
@@ -82,6 +83,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
             globalEngine = rulesService.globalDeployment
             assert globalEngine != null
             assert globalEngine.isRunning()
+            assert globalEngine.knowledgeSession.factCount == 9
         }
 
         when: "the execution logger is attached"

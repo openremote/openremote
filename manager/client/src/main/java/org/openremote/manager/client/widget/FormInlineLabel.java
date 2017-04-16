@@ -63,7 +63,7 @@ public class FormInlineLabel extends ComplexPanel {
     public void setIcon(String icon) {
         if (this.icon != null) {
             iconElement.removeClassName("fa");
-            iconElement.removeClassName("fa-" + icon);
+            iconElement.removeClassName("fa-" + this.icon);
         } else {
             getElement().insertBefore(iconElement, textElement);
         }

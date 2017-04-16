@@ -3,7 +3,9 @@ package org.openremote.test.rules;
 global java.util.logging.Logger LOG;
 
 rule "Log something every 2 seconds"
-timer ( int: 0 2s)
+// Note that with an initial delay of 0, this will fire on the first call of
+// fireAllRules(), even with pseudo clock and time standing still!
+timer ( int: 2s 2s)
 then
     LOG.info("### TIMER RULE EXECUTED");
 end

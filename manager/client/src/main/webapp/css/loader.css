@@ -1,0 +1,19 @@
+body {
+    opacity: 1;
+    transition: opacity 1s;
+}
+
+.loading {
+    opacity: 0;
+    animation-name: loading;
+    animation-duration: 1s;
+    animation-iteration-count: 100;
+    animation-direction: alternate;
+    animation-timing-function: ease-in;
+}
+
+@keyframes loading {
+    0% { background-color: #fff; }
+    100% { background-color: #ccc; }
+}
+

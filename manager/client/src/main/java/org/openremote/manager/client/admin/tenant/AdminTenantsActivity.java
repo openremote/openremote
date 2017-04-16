@@ -73,6 +73,10 @@ public class AdminTenantsActivity
             adminContent::setTenants,
             ex -> handleRequestException(ex, environment)
         );
+
+        adminContent.setCreateTenantHistoryToken(
+            environment.getPlaceHistoryMapper().getToken(new AdminTenantPlace())
+        );
     }
 
     @Override
@@ -84,10 +88,5 @@ public class AdminTenantsActivity
     @Override
     public void onTenantSelected(Tenant tenant) {
         environment.getPlaceController().goTo(new AdminTenantPlace(tenant.getRealm()));
-    }
-
-    @Override
-    public void createTenant() {
-        environment.getPlaceController().goTo(new AdminTenantPlace());
     }
 }

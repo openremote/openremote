@@ -35,7 +35,7 @@ public interface RulesEditor extends RulesView, FormView {
 
     void setPresenter(Presenter presenter);
 
-    void setHeadline(String headline);
+    void setHeadline(String text, String sub);
 
     void setName(String name);
 

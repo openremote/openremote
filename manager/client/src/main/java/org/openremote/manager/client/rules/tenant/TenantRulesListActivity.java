@@ -25,14 +25,14 @@ import org.openremote.manager.client.TenantMapper;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
-import org.openremote.manager.shared.security.Tenant;
-import org.openremote.model.event.bus.EventBus;
-import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.client.rules.RulesModule;
 import org.openremote.manager.shared.rules.RulesetResource;
 import org.openremote.manager.shared.rules.TenantRuleset;
+import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantResource;
+import org.openremote.model.event.bus.EventBus;
+import org.openremote.model.event.bus.EventRegistration;
 
 import javax.inject.Inject;
 import java.util.Collection;
@@ -93,6 +93,9 @@ public class TenantRulesListActivity
                 200,
                 tenant -> {
                     view.setRealmLabel(tenant.getDisplayName());
+                    view.setCreateRulesetHistoryToken(
+                        environment.getPlaceHistoryMapper().getToken(new TenantRulesEditorPlace(realmId))
+                    );
                 },
                 ex -> handleRequestException(ex, environment)
             );
@@ -117,10 +120,4 @@ public class TenantRulesListActivity
     public void onRulesetSelected(TenantRuleset ruleset) {
         environment.getPlaceController().goTo(new TenantRulesEditorPlace(realmId, ruleset.getId()));
     }
-
-    @Override
-    public void createRule() {
-        environment.getPlaceController().goTo(new TenantRulesEditorPlace(realmId));
-    }
-
 }

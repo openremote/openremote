@@ -6,12 +6,12 @@
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
 
     <ui:style>
-        .rulesControls {
-
-        }
-
         .navItem {
             margin: 0 1em;
+        }
+
+        .noRulesetsLabel {
+            max-width: 30em;
         }
     </ui:style>
 
@@ -43,7 +43,14 @@
             <g:HTMLPanel styleName="flex layout vertical">
 
                 <g:HTMLPanel
-                        styleName="layout horizontal center end-justified {style.rulesControls} {widgetStyle.SecondaryNavHorizontal}">
+                        styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
+
+                    <w:Hyperlink
+                            ui:field="createLink"
+                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
+                            icon="plus-square"
+                            visible="false"
+                            text="{managerMessages.newRuleset}"/>
 
                     <w:Hyperlink
                             addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
@@ -53,26 +60,16 @@
 
                 </g:HTMLPanel>
 
-                <g:HTMLPanel styleName="flex {widgetStyle.MainContent}">
+                <g:HTMLPanel ui:field="mainContent"
+                             styleName="flex {widgetStyle.MainContent}">
 
-                    <div class="{widgetStyle.Headline1}">
-                        <g:InlineLabel text="{managerMessages.manageAssetRulesets}: "/>
-                        <g:InlineLabel ui:field="assetLabel"/>
-                    </div>
+                    <w:Headline ui:field="headline" icon="chain"
+                                sub="{managerMessages.manageAssetRulesets}"/>
 
-                    <w:Form>
-                        <w:FormGroup>
-                            <w:field>
-                                <w:FormField>
-                                    <w:FormButton ui:field="createButton" primary="true" text="{managerMessages.newRuleset}"
-                                                  icon="plus-square"/>
-                                </w:FormField>
-                            </w:field>
-                        </w:FormGroup>
-
-                        <g:SimplePanel ui:field="tableContainer"/>
-
-                    </w:Form>
+                    <g:Label ui:field="noRulesetsLabel"
+                             addStyleNames="{style.noRulesetsLabel} {widgetStyle.FormMessages} info"
+                             visible="true"
+                             text="{managerMessages.noRulesetsFound}"/>
 
                 </g:HTMLPanel>
 

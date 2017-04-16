@@ -53,6 +53,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         def conditions = new PollingConditions(timeout: 10)
         def resultEvents = []
         def resultTenants = []
+        def resultCreateTenantHistoryToken = null
 
         and: "An authenticated user and client security service"
         def realm = MASTER_REALM;
@@ -119,6 +120,9 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         def adminTenantsView = Mock(AdminTenants) {
             setTenants(_) >> {
                 resultTenants = it[0];
+            }
+            setCreateTenantHistoryToken(_) >> {
+                resultCreateTenantHistoryToken = it[0]
             }
         }
         def tenantArrayMapper = new ClientObjectMapper(container.JSON, Tenant[].class) as TenantArrayMapper
@@ -197,8 +201,7 @@ class AdminTenantsActivityTest extends Specification implements ManagerContainer
         }
 
         when: "The user clicks Create Tenant"
-        adminTenantsActivity != null
-        adminTenantsActivity.createTenant()
+        placeController.goTo(placeHistoryMapper.getPlace(resultCreateTenantHistoryToken))
 
         then: "The activity should be stopped"
         1 * adminTenantsView.setPresenter(null)

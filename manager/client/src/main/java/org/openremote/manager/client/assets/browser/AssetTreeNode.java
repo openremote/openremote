@@ -47,19 +47,6 @@ public class AssetTreeNode extends BrowserTreeNode {
 
     @Override
     public String getIcon() {
-        switch (asset.getWellKnownType()) {
-            case BUILDING:
-                return "building";
-            case RESIDENCE:
-                return "cubes";
-            case FLOOR:
-                return "server";
-            case AGENT:
-                return "gears";
-            case THING:
-                return "gear";
-            default:
-                return "cube";
-        }
+        return asset.getIcon();
     }
 }

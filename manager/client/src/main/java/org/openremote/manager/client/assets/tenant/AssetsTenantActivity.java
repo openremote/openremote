@@ -21,38 +21,49 @@ package org.openremote.manager.client.assets.tenant;
 
 import com.google.gwt.user.client.ui.AcceptsOneWidget;
 import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.TenantMapper;
 import org.openremote.manager.client.assets.AssetBrowsingActivity;
 import org.openremote.manager.client.assets.asset.AssetViewPlace;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.assets.browser.AssetTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
+import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.security.Tenant;
+import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
-import org.openremote.manager.client.mvp.AppActivity;
 
 import javax.inject.Inject;
 import java.util.Collection;
 
+import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
+
 public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlace> implements AssetsTenant.Presenter {
 
     final AssetsTenant view;
+    final TenantResource tenantResource;
+    final TenantMapper tenantMapper;
 
-    protected String realm;
+    protected String realmId;
+    protected Tenant tenant;
 
     @Inject
     public AssetsTenantActivity(Environment environment,
                                 Tenant currentTenant,
                                 AssetBrowser.Presenter assetBrowserPresenter,
-                                AssetsTenant view) {
+                                AssetsTenant view,
+                                TenantResource tenantResource,
+                                TenantMapper tenantMapper) {
         super(environment, currentTenant, assetBrowserPresenter);
         this.view = view;
+        this.tenantResource = tenantResource;
+        this.tenantMapper = tenantMapper;
     }
 
     @Override
     protected AppActivity<AssetsTenantPlace> init(AssetsTenantPlace place) {
-        this.realm = place.getRealmId();
+        this.realmId = place.getRealmId();
         return this;
     }
 
@@ -73,13 +84,29 @@ public class AssetsTenantActivity extends AssetBrowsingActivity<AssetsTenantPlac
             }
         }));
 
-        view.setName(realm);
+
+        if (realmId != null) {
+            environment.getRequestService().execute(
+                tenantMapper,
+                requestParams -> tenantResource.getForRealmId(requestParams, realmId),
+                200,
+                tenant -> {
+                    this.tenant = tenant;
+                    writeTenantToView();
+                },
+                ex -> handleRequestException(ex, environment)
+            );
+        }
     }
 
     @Override
     public void onStop() {
         super.onStop();
         view.setPresenter(null);
+    }
+
+    protected void writeTenantToView() {
+        view.setTenantName(tenant.getDisplayName());
     }
 
 }

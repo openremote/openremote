@@ -46,9 +46,6 @@ public class AssetsDashboardImpl extends Composite implements AssetsDashboard {
     @UiField
     HTMLPanel sidebarContainer;
 
-    @UiField
-    SimplePanel assetsContentContainer;
-
     final AssetBrowser assetBrowser;
 
     Presenter presenter;

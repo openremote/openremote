@@ -33,11 +33,13 @@
                 <g:HTMLPanel
                         styleName="layout horizontal center end-justified {style.rulesControls} {widgetStyle.SecondaryNavHorizontal}">
 
+<!--
                     <w:Hyperlink
                             addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
                             icon="dashboard"
                             targetHistoryToken="assets:"
                             text="{managerMessages.showDashboard}"/>
+-->
 
                     <w:Hyperlink
                             addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
@@ -49,12 +51,9 @@
 
                 <g:HTMLPanel styleName="flex {widgetStyle.MainContent}">
 
-                    <div class="{widgetStyle.Headline1}">
-                        <g:InlineLabel text="{managerMessages.manageTenantAssets}: "/>
-                        <g:InlineLabel ui:field="nameLabel"/>
-                    </div>
+                    <w:Headline ui:field="headline" icon="group"/>
 
-                    <div>
+                    <div class="or-FormMessages info">
                         TODO Show operations applicable for all assets of tenant
                     </div>
 

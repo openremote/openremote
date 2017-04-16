@@ -35,9 +35,6 @@ public class TenantRulesListImpl
     extends AbstractRulesList<TenantRulesList.Presenter, TenantRuleset>
     implements TenantRulesList {
 
-    @UiField
-    InlineLabel realmLabel;
-
     interface UI extends UiBinder<FlexSplitPanel, TenantRulesListImpl> {
     }
 
@@ -55,11 +52,11 @@ public class TenantRulesListImpl
     @Override
     protected void onPresenterReset() {
         super.onPresenterReset();
-        realmLabel.setText(null);
+        headline.setText(null);
     }
 
     @Override
     public void setRealmLabel(String label) {
-        realmLabel.setText(label);
+        headline.setText(label);
     }
 }

@@ -20,7 +20,6 @@
 package org.openremote.manager.client;
 
 import com.google.gwt.core.client.GWT;
-import elemental.json.JsonValue;
 
 import java.util.logging.Logger;
 
@@ -33,27 +32,15 @@ public class ManagerEntryPoint implements com.google.gwt.core.client.EntryPoint 
     @Override
     public void onModuleLoad() {
 
-
         injector.getAppController().start();
-
-        /*
-        TODO Elemental experiments...https://github.com/gwtproject/gwt/issues/9484
-        JsonObject jsonObject = Json.createObject();
-        AbstractValueHolder abstractValueHolder = new AbstractValueHolder(jsonObject) {};
-        jsonObject.put("value", true);
-        LOG.info("### GOT: " + jsonObject.getBoolean("value"));
-        LOG.info("### GOT: " + jsonObject.get("value").asBoolean());
-        LOG.info("### GOT: " + abstractValueHolder.getValueAsBoolean());
-        */
-        /*
-       JsonArray array = (JsonArray) Json.parse("[false]");
-
-        if (array.get(0).asNumber() < 0)
-            throw new IllegalStateException("Should not be negative");
-
-        if (array.get(0) == null)
-            throw new IllegalStateException("This is wrong!");
-        */
-
+        dispatchReadyEvent();
     }
+
+    public native static void dispatchReadyEvent() /*-{
+        $wnd.dispatchEvent(new CustomEvent("ManagerReady", {
+            bubbles: true,
+            cancelable: true
+        }));
+    }-*/;
+
 }

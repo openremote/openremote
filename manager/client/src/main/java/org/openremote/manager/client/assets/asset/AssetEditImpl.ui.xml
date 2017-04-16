@@ -17,8 +17,8 @@
 
         .mapWidget {
             margin-left: 2em;
-            width: 44%;
-            height: 12.5em;
+            width: 40%;
+            height: 16.5em;
         }
     </ui:style>
 
@@ -56,13 +56,13 @@
                 <g:HTMLPanel
                         styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
 
-<!--
-                    <w:Hyperlink
-                            addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
-                            icon="dashboard"
-                            targetHistoryToken="assets:"
-                            text="{managerMessages.showDashboard}"/>
--->
+                    <!--
+                                        <w:Hyperlink
+                                                addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
+                                                icon="dashboard"
+                                                targetHistoryToken="assets:"
+                                                text="{managerMessages.showDashboard}"/>
+                    -->
 
                     <w:Hyperlink
                             ui:field="viewAssetLink"
@@ -83,84 +83,86 @@
 
                 <div class="flex layout vertical {widgetStyle.MainContent}">
 
-                    <div class="{widgetStyle.Headline1}">
-                        <span class="fa fa-edit"/>
-                        <g:InlineLabel ui:field="headlineLabel"/>
-                    </div>
+                    <div class="flex-none layout horizontal">
 
-                    <g:FlowPanel
-                            styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"
-                            visible="false">
-                        <w:IconLabel icon="check"
-                                     addStyleNames="{widgetStyle.MessagesIcon}"/>
-                        <g:FlowPanel ui:field="formMessagesSuccess"/>
-                    </g:FlowPanel>
+                        <div class="flex layout vertical">
 
-                    <g:FlowPanel
-                            styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} error"
-                            visible="false">
-                        <w:IconLabel icon="warning"
-                                     addStyleNames="{widgetStyle.MessagesIcon}"/>
-                        <g:FlowPanel ui:field="formMessagesError"/>
-                    </g:FlowPanel>
+                            <w:Headline ui:field="headline" icon="edit"/>
 
-                    <g:HTMLPanel styleName="flex-none layout horizontal">
-                        <w:Form ui:field="form" addStyleNames="flex">
-                            <w:FormGroup ui:field="nameGroup">
-                                <w:label>
-                                    <w:FormLabel text="{managerMessages.assetName}"/>
-                                </w:label>
-                                <w:field>
-                                    <w:FormField addStyleNames="larger">
-                                        <w:FormInputText ui:field="nameInput" addStyleNames="flex"/>
-                                    </w:FormField>
-                                </w:field>
-                            </w:FormGroup>
+                            <g:FlowPanel
+                                    styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} success"
+                                    visible="false">
+                                <w:IconLabel icon="check"
+                                             addStyleNames="{widgetStyle.MessagesIcon}"/>
+                                <g:FlowPanel ui:field="formMessagesSuccess"/>
+                            </g:FlowPanel>
 
-                            <w:FormGroup ui:field="createdOnGroup">
-                                <w:label>
-                                    <w:FormLabel text="{managerMessages.createdOn}"/>
-                                </w:label>
-                                <w:field>
-                                    <w:FormField>
-                                        <w:FormOutputText ui:field="createdOnOutput"/>
-                                    </w:FormField>
-                                </w:field>
-                                <w:actions>
-                                    <w:FormGroupActions>
-                                        <w:FormButton ui:field="showHistoryButton"
-                                                      text="{managerMessages.showHistory}"
-                                                      enabled="false"
-                                                      icon="history"/>
-                                    </w:FormGroupActions>
-                                </w:actions>
-                            </w:FormGroup>
+                            <g:FlowPanel
+                                    styleName="flex-none layout horizontal {style.formMessages} {widgetStyle.FormMessages} error"
+                                    visible="false">
+                                <w:IconLabel icon="warning"
+                                             addStyleNames="{widgetStyle.MessagesIcon}"/>
+                                <g:FlowPanel ui:field="formMessagesError"/>
+                            </g:FlowPanel>
 
-                            <assetBrowser:AssetSelector ui:field="parentAssetSelector"/>
+                            <w:Form ui:field="form">
+                                <w:FormGroup ui:field="nameGroup">
+                                    <w:label>
+                                        <w:FormLabel text="{managerMessages.assetName}"/>
+                                    </w:label>
+                                    <w:field>
+                                        <w:FormField addStyleNames="larger">
+                                            <w:FormInputText ui:field="nameInput" addStyleNames="flex"/>
+                                        </w:FormField>
+                                    </w:field>
+                                </w:FormGroup>
 
-                            <w:FormGroup ui:field="locationGroup">
-                                <w:label>
-                                    <w:FormLabel text="{managerMessages.location}"/>
-                                </w:label>
-                                <w:field>
-                                    <w:FormField>
-                                        <w:FormOutputLocation ui:field="locationOutput"/>
-                                    </w:FormField>
-                                </w:field>
-                                <w:actions>
-                                    <w:FormGroupActions>
-                                        <w:FormButton ui:field="centerMapButton"
-                                                      enabled="false"
-                                                      text="{managerMessages.centerMap}"
-                                                      icon="location-arrow"/>
-                                    </w:FormGroupActions>
-                                </w:actions>
-                            </w:FormGroup>
-                        </w:Form>
+                                <w:FormGroup ui:field="createdOnGroup">
+                                    <w:label>
+                                        <w:FormLabel text="{managerMessages.createdOn}"/>
+                                    </w:label>
+                                    <w:field>
+                                        <w:FormField>
+                                            <w:FormOutputText ui:field="createdOnOutput"/>
+                                        </w:FormField>
+                                    </w:field>
+                                    <w:actions>
+                                        <w:FormGroupActions>
+                                            <w:FormButton ui:field="showHistoryButton"
+                                                          text="{managerMessages.showHistory}"
+                                                          enabled="false"
+                                                          icon="history"/>
+                                        </w:FormGroupActions>
+                                    </w:actions>
+                                </w:FormGroup>
+
+                                <assetBrowser:AssetSelector ui:field="parentAssetSelector"/>
+
+                                <w:FormGroup ui:field="locationGroup">
+                                    <w:label>
+                                        <w:FormLabel text="{managerMessages.location}"/>
+                                    </w:label>
+                                    <w:field>
+                                        <w:FormField>
+                                            <w:FormOutputLocation ui:field="locationOutput"/>
+                                        </w:FormField>
+                                    </w:field>
+                                    <w:actions>
+                                        <w:FormGroupActions>
+                                            <w:FormButton ui:field="centerMapButton"
+                                                          enabled="false"
+                                                          text="{managerMessages.centerMap}"
+                                                          icon="location-arrow"/>
+                                        </w:FormGroupActions>
+                                    </w:actions>
+                                </w:FormGroup>
+                            </w:Form>
+
+                        </div>
 
                         <w:MapWidget ui:field="mapWidget"
                                      addStyleNames="{style.mapWidget} {widgetStyle.ItemWithBorder}"/>
-                    </g:HTMLPanel>
+                    </div>
 
                     <g:HTMLPanel styleName="flex-none layout horizontal">
                         <w:Form ui:field="attributesForm" addStyleNames="flex">
