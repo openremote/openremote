@@ -50,16 +50,25 @@
                 load.import("/static/css/style.html"),
                 load.import("/static/css/theme.html"),
 
-                load.js("/jsapi"),
-
-                load.js("/static/gwt/Manager/Manager.nocache.js")
-
+                load.js("/jsapi")
             ]).then(function () {
-                console.log("Application resources loaded, starting...");
+                console.log("Application resources loaded...");
             }).catch(handleLoadError);
         }
 
-        window.addEventListener('ManagerReady', handleLoadComplete);
+        window.addEventListener('JSAPIReady', function() {
+            console.log("Loading application...");
+            Promise.all([
+                load.js("/static/gwt/Manager/Manager.nocache.js")
+            ]).then(function () {
+                console.log("Application loaded...");
+            }).catch(handleLoadError);
+        });
+
+        window.addEventListener('ManagerReady', function() {
+            console.log("Application starting");
+            handleLoadComplete();
+        });
 
     </script>
 

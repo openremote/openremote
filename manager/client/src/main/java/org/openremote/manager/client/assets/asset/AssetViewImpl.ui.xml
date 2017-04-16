@@ -12,9 +12,9 @@
         }
 
         .mapWidget {
-            margin-left: 2em;
-            width: 40%;
-            height: 15em;
+            margin: 0 0 1em 1em;
+            width: 50%;
+            height: 17em;
         }
     </ui:style>
 
@@ -142,7 +142,7 @@
 
                         <w:MapWidget ui:field="mapWidget"
                                      visible="false"
-                                     addStyleNames="{style.mapWidget} {widgetStyle.ItemWithBorder}"/>
+                                     addStyleNames="self-end {style.mapWidget} {widgetStyle.ItemWithBorder}"/>
                     </div>
 
                     <w:Form ui:field="attributesForm" addStyleNames="flex">

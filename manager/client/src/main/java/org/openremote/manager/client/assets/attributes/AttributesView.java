@@ -238,7 +238,7 @@ public abstract class AttributesView<
 
         Consumer<String> updateConsumer = isReadOnly(attribute) ? null : value -> {
             formGroup.setError(false);
-            attribute.setValueAsString(value);
+            attribute.setValueUnchecked(Json.create(value));
         };
 
         FlowPanel panel = new FlowPanel();
@@ -283,7 +283,7 @@ public abstract class AttributesView<
         Consumer<String> updateConsumer = isReadOnly(attribute) ? null : value -> {
             Integer intValue = Integer.valueOf(value);
             formGroup.setError(false);
-            attribute.setValueAsInteger(intValue);
+            attribute.setValueUnchecked(Json.create(intValue));
         };
 
         Consumer<String> errorConsumer = msg -> {
@@ -338,7 +338,7 @@ public abstract class AttributesView<
         Consumer<String> updateConsumer = isReadOnly(attribute) ? null : value -> {
             Double decimalValue = Double.valueOf(value);
             formGroup.setError(false);
-            attribute.setValueAsDecimal(decimalValue);
+            attribute.setValueUnchecked(Json.create(decimalValue));
         };
 
         Consumer<String> errorConsumer = msg -> {

@@ -111,7 +111,7 @@ public class JSAPIWriter {
         writer.println("REST.apiURL = '" + uri + "';");
         Set<String> declaredPrefixes = new HashSet<String>();
         printService(writer, serviceRegistry, declaredPrefixes);
-
+        printCompleteEvent(writer);
     }
 
 
@@ -332,6 +332,13 @@ public class JSAPIWriter {
         }
         if (i < replacedCurlyURI.length())
             writer.println(" uri += '" + replacedCurlyURI.substring(i) + "';");
+    }
+
+    private void printCompleteEvent(PrintWriter writer) {
+        writer.println("window.dispatchEvent(new CustomEvent(\"JSAPIReady\", {\n" +
+            " bubbles: true,\n" +
+            " cancelable: true\n" +
+            "}));\n");
     }
 
 }

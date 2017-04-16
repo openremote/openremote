@@ -16,9 +16,9 @@
         }
 
         .mapWidget {
-            margin-left: 2em;
-            width: 40%;
-            height: 16.5em;
+            margin: 0 0 1em 1em;
+            width: 50%;
+            height: 19em;
         }
     </ui:style>
 
@@ -161,7 +161,7 @@
                         </div>
 
                         <w:MapWidget ui:field="mapWidget"
-                                     addStyleNames="{style.mapWidget} {widgetStyle.ItemWithBorder}"/>
+                                     addStyleNames="self-end {style.mapWidget} {widgetStyle.ItemWithBorder}"/>
                     </div>
 
                     <g:HTMLPanel styleName="flex-none layout horizontal">

@@ -5,7 +5,7 @@
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
 
-    <ui:style>
+    <ui:style type="org.openremote.manager.client.map.MapInfoPanel.Style">
         .popup {
             z-index: 10;
         }
@@ -16,7 +16,21 @@
 
         .content {
             overflow: auto;
-            padding: 0.4em;
+        }
+
+        .contentItem {
+            white-space: nowrap;
+            margin: 8px;
+        }
+
+        .contentItemKeyLabel {
+            font-size: 14px;
+            line-height: 14px;
+        }
+
+        .contentItemValueLabel {
+            font-size: 18px;
+            line-height: 18px;
         }
     </ui:style>
 

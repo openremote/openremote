@@ -321,7 +321,7 @@ public class AttributesEditor
                 String currentValue = item.getValueAsString();
                 Consumer<String> updateConsumer = isEditable == null || isEditable || forceEditable ? value -> {
                     formGroup.setError(false);
-                    item.setValueAsString(value);
+                    item.setValueUnchecked(Json.create(value));
                 } : null;
                 editor = createStringEditorWidget(style, currentValue, Optional.empty(), updateConsumer);
             } else if (valueType.equals(JsonType.NUMBER)) {
@@ -329,7 +329,7 @@ public class AttributesEditor
                 Consumer<String> updateConsumer = isEditable == null || isEditable || forceEditable ? value -> {
                     Double decimalValue = Double.valueOf(value);
                     formGroup.setError(false);
-                    item.setValueAsDecimal(decimalValue);
+                    item.setValueUnchecked(Json.create(value));
                 } : null;
                 editor = createDecimalEditorWidget(style, currentValue, Optional.empty(), updateConsumer, errorConsumer);
             } else if (valueType.equals(JsonType.BOOLEAN)) {

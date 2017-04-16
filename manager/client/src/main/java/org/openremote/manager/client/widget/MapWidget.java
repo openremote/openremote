@@ -19,11 +19,8 @@
  */
 package org.openremote.manager.client.widget;
 
-import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
-import com.google.gwt.dom.client.Style;
-import com.google.gwt.user.client.ui.ComplexPanel;
 import com.google.gwt.user.client.ui.FlowPanel;
 import elemental.client.Browser;
 import elemental.js.util.*;
@@ -33,11 +30,9 @@ import elemental.json.JsonObject;
 import org.openremote.manager.client.interop.mapbox.*;
 import org.openremote.model.geo.GeoJSON;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Logger;
 
-public class MapWidget extends ComplexPanel {
+public class MapWidget extends FlowPanel {
 
     private static final Logger LOG = Logger.getLogger(MapWidget.class.getName());
 
@@ -125,24 +120,17 @@ public class MapWidget extends ComplexPanel {
 
     }
 
-    protected FlowPanel host;
     protected String hostElementId;
     protected ClickListener clickListener;
     protected Popup popup;
     protected MapboxMap mapboxMap;
     protected boolean mapReady;
 
-    // These sources can be initialized late, as we have to consider async arriving currentFeaturesData
-    protected boolean featuresReady = false;
-    protected Map<String, JsonObject> currentFeatureSourceData = new HashMap<>(); // We also hold received GeoJSON data, keyed by feature ID
-
-    public MapWidget(JsonObject mapOptions) {
-        this();
-        initialise(mapOptions, null);
-    }
-
     public MapWidget() {
-        setElement(Document.get().createDivElement());
+        hostElementId = Document.get().createUniqueId();
+        getElement().setId(hostElementId);
+        setStyleName("flex or-MapWidget");
+        setVisible(false);
     }
 
     public void setClickListener(ClickListener clickListener) {
@@ -153,7 +141,7 @@ public class MapWidget extends ComplexPanel {
         return mapboxMap != null;
     }
 
-    public void initialise(JsonObject mapOptions, Runnable onLoad) {
+    public void initialise(JsonObject mapOptions, Runnable onReady) {
         if (mapOptions == null) {
             return;
         }
@@ -162,27 +150,21 @@ public class MapWidget extends ComplexPanel {
             throw new IllegalStateException("Already initialized");
         }
 
-        hostElementId = Document.get().createUniqueId();
 
         addStyleName("flex layout vertical or-MapWidget");
-
-        host = new FlowPanel();
-        host.setStyleName("flex layout vertical");
-        host.getElement().setId(hostElementId);
-        host.setVisible(false);
-        add(host, (Element) getElement());
 
         mapOptions.put("container", hostElementId);
         mapOptions.put("attributionControl", false);
         mapboxMap = new MapboxMap(mapOptions);
 
         mapboxMap.on(EventType.LOAD, eventData -> {
-            host.setVisible(true);
-            resize();
+            initFeatureLayers();
+            setVisible(true);
             mapReady = true;
-            if (onLoad != null)
-                onLoad.run();
-            addFeaturesOnLoad();
+            resize();
+            if (onReady != null) {
+                onReady.run();
+            }
         });
 
         mapboxMap.on(EventType.CLICK, eventData -> {
@@ -196,36 +178,30 @@ public class MapWidget extends ComplexPanel {
         return mapReady;
     }
 
-    public boolean isFeaturesReady() {
-        return featuresReady;
-    }
-
     public void addNavigationControl() {
-        if (mapboxMap == null)
-            return;
+        if (!isMapReady())
+            throw new IllegalStateException("Map not ready");
         mapboxMap.addControl(new NavigationControl());
     }
 
     public void resize() {
-        if (mapboxMap == null)
-            return;
+        if (!isMapReady())
+            throw new IllegalStateException("Map not ready");
         mapboxMap.resize();
         // This is not reliable, so do it again a bit later
         Browser.getWindow().setTimeout(() -> mapboxMap.resize(), 200);
     }
 
     public void setOpaque(boolean opaque) {
-        if (mapboxMap == null)
-            return;
-        host.removeStyleName("opaque");
+        removeStyleName("opaque");
         if (opaque) {
-            host.addStyleName("opaque");
+            addStyleName("opaque");
         }
     }
 
     public void showPopup(double lng, double lat, String text) {
-        if (mapboxMap == null)
-            return;
+        if (!isMapReady())
+            throw new IllegalStateException("Map not ready");
         JsonObject popupOptions = Json.createObject();
         popupOptions.put("closeOnClick", Json.create(false));
         popupOptions.put("closeButton", Json.create(false));
@@ -235,27 +211,35 @@ public class MapWidget extends ComplexPanel {
     }
 
     public void hidePopup() {
+        if (!isMapReady())
+            throw new IllegalStateException("Map not ready");
         if (popup != null)
             popup.remove();
     }
 
-    protected JsonObject prepareSourceOptions(String featureSourceId) {
-        JsonObject sourceOptions = Json.createObject();
-        // We might have an async update waiting, initialize the map with this data
-        JsonObject currentFeatureData = currentFeatureSourceData.remove(featureSourceId);
-        if (currentFeatureData == null) {
-            // Or initialize with empty collection (null doesn't work)
-            currentFeatureData = GeoJSON.EMPTY_FEATURE_COLLECTION.getJsonObject();
-        }
-        LOG.fine("Preparing data on feature source: " + featureSourceId);
-        sourceOptions.put("type", Json.create("geojson"));
-        sourceOptions.put("data", currentFeatureData);
-        return sourceOptions;
+    public void showFeature(String featureSourceId, GeoJSON geoFeature) {
+        if (!isMapReady())
+            throw new IllegalStateException("Map not ready");
+        if (mapboxMap.getSource(featureSourceId) == null)
+            throw new IllegalArgumentException("Map has no such feature source: " + featureSourceId);
+        LOG.fine("Showing feature on source '" + featureSourceId + "': " + geoFeature);
+        mapboxMap.getSource(featureSourceId).setData(geoFeature.getJsonObject());
     }
 
-    protected void addFeaturesOnLoad() {
-        if (mapboxMap == null)
+    public void flyTo(double[] coordinates) {
+        if (!isMapReady())
+            throw new IllegalStateException("Map not ready");
+        if (coordinates == null || coordinates.length != 2)
             return;
+        JsonObject json = Json.createObject();
+        JsonArray center = Json.createArray();
+        center.set(0, coordinates[0]);
+        center.set(1, coordinates[1]);
+        json.put("center", center);
+        mapboxMap.flyTo(json);
+    }
+
+    protected void initFeatureLayers() {
         LOG.fine("Adding GeoJSON feature sources and layers on map load");
 
         JsonObject sourceOptionsSelection = prepareSourceOptions(FEATURE_SOURCE_DROPPED_PIN);
@@ -275,33 +259,15 @@ public class MapWidget extends ComplexPanel {
 
         mapboxMap.addSource(FEATURE_SOURCE_CIRCLE, sourceOptionsAll);
         mapboxMap.addLayer(LAYER_CIRCLE, FEATURE_LAYER_DROPPED_PIN);
-
-        featuresReady = true;
     }
 
-    public void showFeature(String featureSourceId, GeoJSON geoFeature) {
-        LOG.fine("Showing feature on source " + featureSourceId + ": " + geoFeature);
-        JsonObject data = geoFeature.getJsonObject();
-        currentFeatureSourceData.put(featureSourceId, data);
-        if (featuresReady) {
-            data = currentFeatureSourceData.remove(featureSourceId);
-            if (data != null && mapboxMap != null)
-                mapboxMap.getSource(featureSourceId).setData(data);
-        }
-    }
-
-    public void flyTo(double[] coordinates) {
-        if (coordinates == null || coordinates.length != 2)
-            return;
-        JsonObject json = Json.createObject();
-        JsonArray center = Json.createArray();
-        center.set(0, coordinates[0]);
-        center.set(1, coordinates[1]);
-        json.put("center", center);
-        Scheduler.get().scheduleDeferred(() -> {
-            if (mapboxMap == null)
-                return;
-            mapboxMap.flyTo(json);
-        });
+    protected JsonObject prepareSourceOptions(String featureSourceId) {
+        JsonObject sourceOptions = Json.createObject();
+        // Initialize with empty collection
+        JsonObject initialData = GeoJSON.EMPTY_FEATURE_COLLECTION.getJsonObject();
+        LOG.fine("Preparing initial data on feature source: " + featureSourceId);
+        sourceOptions.put("type", Json.create("geojson"));
+        sourceOptions.put("data", initialData);
+        return sourceOptions;
     }
 }

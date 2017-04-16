@@ -20,7 +20,7 @@
 package org.openremote.manager.client.map;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.dom.client.Style;
+import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.FlowPanel;
@@ -38,7 +38,24 @@ import java.util.List;
 
 public class MapInfoPanel extends AbstractAppPanel {
 
+    public static final int MAX_ITEMS_BEFORE_SCROLLING = 6;
+
     interface UI extends UiBinder<PopupPanel, MapInfoPanel> {
+    }
+
+    public interface Style extends CssResource {
+
+        String contentItemKeyLabel();
+
+        String popup();
+
+        String contentItemValueLabel();
+
+        String contentItem();
+
+        String panel();
+
+        String content();
     }
 
     @UiField
@@ -46,6 +63,9 @@ public class MapInfoPanel extends AbstractAppPanel {
 
     @UiField
     WidgetStyle widgetStyle;
+
+    @UiField
+    Style style;
 
     @UiField
     HTMLPanel panel;
@@ -60,24 +80,29 @@ public class MapInfoPanel extends AbstractAppPanel {
     public void setItems(List<Pair<String, String>> infoItems) {
         contentPanel.clear();
 
+        int itemMaxFontSizePixels = 18;
+        int itemMarginPixels = 8;
+        int itemHeightPixels = itemMaxFontSizePixels + (itemMarginPixels*2);
+        int totalMaxHeight = itemHeightPixels * MAX_ITEMS_BEFORE_SCROLLING;
+
         for (Pair<String, String> infoItem : infoItems) {
             FormLabel keyLabel = new FormLabel(infoItem.key);
             keyLabel.addStyleName("flex");
+            keyLabel.addStyleName(style.contentItemKeyLabel());
 
             Label valueLabel = new Label(infoItem.value);
-            valueLabel.getElement().getStyle().setFontSize(1.4, Style.Unit.EM);
+            valueLabel.setStyleName(style.contentItemValueLabel());
 
             FlowPanel itemPanel = new FlowPanel();
-            itemPanel.setStyleName("layout horizontal center");
-            itemPanel.getElement().getStyle().setWhiteSpace(Style.WhiteSpace.NOWRAP);
-            itemPanel.getElement().getStyle().setMargin(0.2, Style.Unit.EM);
+            itemPanel.addStyleName("flex-none layout horizontal center");
+            itemPanel.addStyleName(style.contentItem());
             itemPanel.add(keyLabel);
             itemPanel.add(valueLabel);
             contentPanel.add(itemPanel);
         }
 
         // Show up to 6 items, then start scrolling
-        panel.setHeight(Math.min((infoItems.size() * 2.5), 15) + "em");
+        panel.setHeight(Math.min((infoItems.size() * itemHeightPixels), totalMaxHeight) + "px");
 
         // If the panel is already shown, "blink" it so users know there is an update
         if (isShowing()) {
