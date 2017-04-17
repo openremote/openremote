@@ -52,7 +52,7 @@ import java.util.stream.Stream;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
-import static org.openremote.model.asset.AssetAttribute.getAssetAttributesFromJson;
+import static org.openremote.model.asset.AssetAttribute.Functions.getAssetAttributesFromJson;
 
 /**
  * Responsible for creating Drools knowledge sessions for the rulesets

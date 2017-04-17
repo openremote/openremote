@@ -4,18 +4,17 @@ import elemental.json.Json
 import elemental.json.JsonArray
 import elemental.json.JsonType
 import org.openremote.agent3.protocol.simulator.SimulatorProtocol
-import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.asset.AssetProcessingService
+import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.model.AttributeEvent
 import org.openremote.model.units.ColorRGB
-
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import static org.openremote.model.Attribute.*
+import static org.openremote.model.Attribute.Functions.getAttribute
 
 class AgentDeploymentTest extends Specification implements ManagerContainerTrait {
 
@@ -53,7 +52,7 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
             assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Dimmer").asNumber() == 66
             def thing = assetStorageService.find(managerDemoSetup.thingId, true)
             def attributes = thing.getAttributeStream()
-            def attribute = findAttribute("light1Dimmer").apply(attributes)
+            def attribute = getAttribute("light1Dimmer").apply(attributes)
             assert attribute.get().getValue().getType() == JsonType.NUMBER
             assert attribute.get().getValueAsInteger() == 66
         }
@@ -66,7 +65,7 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         conditions.eventually {
             def thing = assetStorageService.find(managerDemoSetup.thingId, true)
             def attributes = thing.getAttributeStream()
-            def attribute = findAttribute("light1Dimmer").apply(attributes)
+            def attribute = getAttribute("light1Dimmer").apply(attributes)
             assert attribute.get().getValue().getType() == JsonType.NUMBER
             assert attribute.get().getValueAsInteger() == 77
         }

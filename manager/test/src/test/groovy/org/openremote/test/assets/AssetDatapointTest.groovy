@@ -11,7 +11,7 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import static org.openremote.model.asset.AssetAttribute.findAssetAttribute
+import static org.openremote.model.asset.Asset.getAttribute
 
 class AssetDatapointTest extends Specification implements ManagerContainerTrait {
 
@@ -45,7 +45,7 @@ class AssetDatapointTest extends Specification implements ManagerContainerTrait 
         then: "the thing attribute value should be updated and the datapoints stored"
         conditions.eventually {
             def thing = assetStorageService.find(managerDemoSetup.thingId, true)
-            assert findAssetAttribute("light1PowerConsumption").apply(thing).get().getValueAsDecimal() == 15.5d
+            assert thing.getAttribute("light1PowerConsumption").get().getValueAsDecimal() == 15.5d
             def datapoints = assetDatapointService.getDatapoints(new AttributeRef(managerDemoSetup.thingId, "light1PowerConsumption"))
             datapoints.size() > 3
             datapoints.get(0).value.asNumber() == 13.3d

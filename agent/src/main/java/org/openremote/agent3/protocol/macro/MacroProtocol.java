@@ -50,7 +50,7 @@ import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
  */
 public class MacroProtocol extends AbstractProtocol {
 
-    public static final String MACRO_PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":macro";
+    public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":macro";
 
     class MacroExecutionTask {
         AttributeRef attributeRef;
@@ -141,7 +141,7 @@ public class MacroProtocol extends AbstractProtocol {
 
     @Override
     public String getProtocolName() {
-        return MACRO_PROTOCOL_NAME;
+        return PROTOCOL_NAME;
     }
 
     @Override

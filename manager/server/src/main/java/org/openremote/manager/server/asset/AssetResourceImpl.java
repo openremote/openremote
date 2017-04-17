@@ -40,8 +40,6 @@ import java.util.logging.Logger;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
-import static org.openremote.model.asset.AssetAttribute.containsAssetAttributeNamed;
-import static org.openremote.model.asset.AssetAttribute.isAssetAttribute;
 
 public class AssetResourceImpl extends ManagerWebResource implements AssetResource {
 
@@ -246,7 +244,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             // Check attribute exists
-            if (!containsAssetAttributeNamed(attributeName).test(asset))
+            if (!asset.hasAttribute(attributeName))
                 throw new WebApplicationException(NOT_FOUND);
 
             // Check realm, must be accessible
@@ -256,7 +254,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             // Check read-only
-            if (!isSuperUser() && isAssetAttribute(attributeName, AssetAttribute::isReadOnly).test(asset)) {
+            if (!isSuperUser() && asset.hasAttribute(attributeName, AssetAttribute::isReadOnly)) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 

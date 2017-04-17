@@ -23,6 +23,9 @@ import elemental.json.Json;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.util.JsonUtil;
+
+import java.util.function.Predicate;
 
 /**
  * A named arbitrary {@link JsonValue}.
@@ -76,5 +79,21 @@ public class MetaItem extends AbstractValueHolder {
 
     public boolean isValid() {
         return getName() != null && getName().length() > 0 && hasValue();
+    }
+
+    public static Predicate<MetaItem> matches(MetaItem item) {
+        return matches(item.getName(), item.getValue());
+    }
+
+    public static Predicate<MetaItem> matches(String name) {
+        return item -> item.getName().equals(name);
+    }
+
+    public static Predicate<MetaItem> matches(String name, JsonValue value) {
+        return item -> item.getName().equals(name) && item.getValue() != null && JsonUtil.equals(item.getValue(), value);
+    }
+
+    public static <T extends JsonValue> Predicate<MetaItem> matches(String name, Class<T> clazz) {
+        return item -> item.getName().equals(name) && item.getValue() != null && item.getValue().getClass().getSuperclass() == clazz;
     }
 }

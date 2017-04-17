@@ -21,13 +21,15 @@ package org.openremote.model.asset.agent;
 
 import org.openremote.model.Attribute;
 import org.openremote.model.AttributeRef;
+import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static org.openremote.model.Attribute.*;
+import static org.openremote.model.Attribute.Functions.isValid;
+import static org.openremote.model.asset.AssetAttribute.Functions.*;
 import static org.openremote.model.asset.AssetMeta.AGENT_LINK;
 
 /**
@@ -44,23 +46,25 @@ final public class AgentLink {
     private AgentLink() {
     }
 
-    public static Predicate<Attribute> isAgentLink() {
-        return attribute -> getAgentLink().apply(attribute) != null;
+    public static <A extends Attribute> Predicate<A> isAgentLink() {
+        return attribute -> getAgentLink().apply(attribute).isPresent();
     }
 
-    public static Predicate<Attribute> isValidAgentLink() {
-        return isAttributeValid().and(isAgentLink());
+    @SuppressWarnings("unchecked")
+    public static <A extends Attribute> Predicate<A> isValidAgentLink() {
+        return (Predicate<A>) isValid().and(isAgentLink());
     }
 
-    public static Function<Attribute, Optional<AttributeRef>> getAgentLink() {
-        return getAttributeLink(AGENT_LINK.getUrn());
+    @SuppressWarnings("unchecked")
+    public static <A extends Attribute> Function<A, Optional<AttributeRef>> getAgentLink() {
+        return (Function<A, Optional<AttributeRef>>) getAttributeLink(AGENT_LINK);
     }
 
-    public static Function<Attribute, Attribute> setAgentLink(AttributeRef protocolConfigurationRef) {
-        return setAttributeLink(AGENT_LINK.getUrn(), protocolConfigurationRef);
+    public static Function<AssetAttribute, AssetAttribute> setAgentLink(AttributeRef protocolConfigurationRef) {
+        return setAttributeLink(AGENT_LINK, protocolConfigurationRef);
     }
 
-    public static Function<Attribute, Attribute> removeAgentLink() {
-        return removeAttributeLink(AGENT_LINK.getUrn());
+    public static Function<AssetAttribute, AssetAttribute> removeAgentLink() {
+        return removeAttributeLink(AGENT_LINK);
     }
 }

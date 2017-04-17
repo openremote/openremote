@@ -32,6 +32,7 @@ import elemental.json.JsonValue;
  */
 public enum AttributeType {
 
+    NULL("Null", JsonType.NULL),
     STRING("String", JsonType.STRING),
     OBJECT("Object", JsonType.OBJECT),
     INTEGER("Integer", JsonType.NUMBER),

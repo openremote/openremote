@@ -21,6 +21,10 @@ package org.openremote.model;
 
 import elemental.json.Json;
 import elemental.json.JsonArray;
+import elemental.json.JsonType;
+
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * A reference to an entity and an {@link Attribute}.
@@ -84,5 +88,22 @@ public class AttributeRef {
             "entityId='" + entityId + '\'' +
             ", attributeName='" + attributeName + '\'' +
             '}';
+    }
+
+    public static final <T extends AbstractValueHolder> Predicate<T> isAttributeRef() {
+        return abstractValueHolder -> {
+            return abstractValueHolder != null
+                && abstractValueHolder.getValue() != null
+                && abstractValueHolder.getValue().getType() == JsonType.ARRAY
+                && abstractValueHolder.getValueAsArray().length() == 2;
+        };
+    }
+
+    public static final Function<AbstractValueHolder, AttributeRef> getAttributeRef() {
+        return abstractValueHolder ->
+            isAttributeRef()
+                .test(abstractValueHolder)
+                ? new AttributeRef(abstractValueHolder.getValueAsArray())
+                : null;
     }
 }

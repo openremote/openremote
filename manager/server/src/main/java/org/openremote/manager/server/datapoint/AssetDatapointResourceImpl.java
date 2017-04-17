@@ -34,8 +34,6 @@ import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 
-import static org.openremote.model.asset.AssetAttribute.isAssetAttribute;
-
 public class AssetDatapointResourceImpl extends ManagerWebResource implements AssetDatapointResource {
 
     protected final AssetStorageService assetStorageService;
@@ -59,7 +57,7 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             // TODO Security etc.
             ServerAsset asset = assetStorageService.find(assetId, true);
 
-            if (!isAssetAttribute(attributeName, AssetAttribute::isStoreDatapoints).test(asset)) {
+            if (!asset.hasAttribute(attributeName, AssetAttribute::isStoreDatapoints)) {
                 throw new WebApplicationException(Response.Status.NOT_FOUND);
             }
 

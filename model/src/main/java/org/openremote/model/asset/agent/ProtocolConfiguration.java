@@ -31,9 +31,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
-import static org.openremote.model.Attribute.isAttributeType;
+import static org.openremote.model.Attribute.Functions.isOfType;
+import static org.openremote.model.Attribute.Functions.isValid;
 import static org.openremote.model.AttributeType.STRING;
-import static org.openremote.model.asset.AssetAttribute.isAttributeValid;
 
 /**
  * Agent attributes can be named protocol configurations.
@@ -59,13 +59,14 @@ final public class ProtocolConfiguration {
         };
     }
 
-    public static Predicate<Attribute> isProtocolConfiguration() {
+    public static <A extends Attribute> Predicate<A> isProtocolConfiguration() {
         return attribute -> isProtocolUrn().test(attribute.getValueAsString());
     }
 
-    public static Predicate<Attribute> isValidProtocolConfiguration() {
-        return isAttributeValid()
-            .and(isAttributeType(STRING))
+    @SuppressWarnings("unchecked")
+    public static <A extends Attribute> Predicate<A> isValidProtocolConfiguration() {
+        return (Predicate<A>) isValid()
+            .and(isOfType(STRING))
             .and(isProtocolConfiguration());
     }
 

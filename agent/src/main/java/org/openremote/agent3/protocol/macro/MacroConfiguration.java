@@ -33,11 +33,9 @@ import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static org.openremote.agent3.protocol.macro.MacroAction.MACRO_ACTION;
-import static org.openremote.model.Attribute.*;
+import static org.openremote.model.Attribute.Functions.*;
 import static org.openremote.model.AttributeType.STRING;
-import static org.openremote.model.asset.AssetAttribute.hasMetaItem;
-import static org.openremote.model.asset.AssetAttribute.isAssetMetaItem;
+import static org.openremote.model.MetaItem.matches;
 
 /**
  * Agent attributes can be macro configurations.
@@ -53,28 +51,28 @@ final public class MacroConfiguration {
     public static UnaryOperator<AssetAttribute> initMacroConfiguration() {
         return attribute -> {
             attribute.setType(AttributeType.STRING);
-            attribute.setValue(Json.create(MacroProtocol.MACRO_PROTOCOL_NAME));
+            attribute.setValue(Json.create(MacroProtocol.PROTOCOL_NAME));
             return attribute;
         };
     }
 
-    public static Predicate<Attribute> isMacroConfiguration() {
+    public static <A extends Attribute> Predicate<A> isMacroConfiguration() {
         return attribute -> {
             String value = attribute.getValueAsString();
-            return value != null && value.equals(MacroProtocol.MACRO_PROTOCOL_NAME);
+            return value != null && value.equals(MacroProtocol.PROTOCOL_NAME);
         };
     }
 
-    public static Predicate<Attribute> isValidMacroConfiguration() {
-        return isAttributeValid()
-            .and(isAttributeType(STRING))
+    public static <A extends Attribute> Predicate<A> isValidMacroConfiguration() {
+        return (Predicate<A>) isValid()
+            .and(isOfType(STRING))
             .and(isMacroConfiguration())
-            .and(hasMetaItem(MACRO_ACTION)); // Must have at least one macro action
+            .and(hasMetaItem(MacroAction.MACRO_ACTION)); // Must have at least one macro action
     }
 
     public static Function<AssetAttribute, Stream<MacroAction>> getMacroActions() {
         return attribute -> attribute.getMetaItemStream()
-            .filter(isMetaItem(MACRO_ACTION))
+            .filter(matches(MacroAction.MACRO_ACTION))
             .map(MacroAction.getMacroActionFromMetaItem());
     }
 
@@ -89,9 +87,9 @@ final public class MacroConfiguration {
             if (!attribute.hasMeta()) {
                 return attribute;
             }
-            List<MetaItem> metaItems = attribute.getMeta().all();
+            List<MetaItem> metaItems = attribute.getMeta().getAll();
             IntStream.range(0, metaItems.size())
-                .filter(i -> isMetaItem(MACRO_ACTION).test(metaItems.get(i)))
+                .filter(i -> matches(MacroAction.MACRO_ACTION).test(metaItems.get(i)))
                 .filter(i -> JsonUtil.equals(metaItems.get(i).getValueAsObject(), action.asJsonValue()))
                 .forEach(i -> attribute.getMeta().remove(i));
 

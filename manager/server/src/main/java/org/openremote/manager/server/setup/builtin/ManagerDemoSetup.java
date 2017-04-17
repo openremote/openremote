@@ -35,7 +35,6 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.AssetState;
 import org.openremote.model.asset.AssetType;
-import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.units.AttributeUnits;
 import org.openremote.model.units.ColorRGB;
 
@@ -48,7 +47,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.openremote.model.AttributeType.*;
-import static org.openremote.model.asset.AssetAttribute.findAssetAttribute;
 import static org.openremote.model.asset.AssetMeta.*;
 import static org.openremote.model.asset.AssetType.*;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
@@ -255,7 +253,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         thing = assetStorageService.find(thingId, true);
         ZonedDateTime now = LocalDateTime.now().atZone(ZoneId.systemDefault());
 
-        AssetAttribute light1PowerConsumptionAttribute = findAssetAttribute("light1PowerConsumption").apply(thing).get();
+        AssetAttribute light1PowerConsumptionAttribute = thing.getAttribute("light1PowerConsumption").get();
 
         assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute));
 

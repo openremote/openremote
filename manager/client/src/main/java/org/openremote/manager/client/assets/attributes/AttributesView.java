@@ -207,7 +207,7 @@ public abstract class AttributesView<
         S style = container.getStyle();
 
         AttributeEditor attributeEditor;
-        AttributeType attributeType = attribute.getType().orElse(AttributeType.STRING);
+        AttributeType attributeType = attribute.getType();
         if (attributeType == AttributeType.STRING) {
             attributeEditor = createStringEditor(attribute, defaultValueItem, style, formGroup);
         } else if (attributeType ==  AttributeType.INTEGER) {
@@ -226,7 +226,7 @@ public abstract class AttributesView<
         FormField unsupportedField = new FormField();
         unsupportedField.add(new FormOutputText(
             environment.getMessages().unsupportedAttributeType(
-                attribute.getType().map(AttributeType::getValue).orElse(null)
+                attribute.getType().getValue()
             )
         ));
         return () -> unsupportedField;
@@ -457,7 +457,7 @@ public abstract class AttributesView<
     }
 
     protected void removeAttribute(AssetAttribute attribute) {
-        Attribute.removeAttribute(attributes, attribute.getName());
+        Attribute.Functions.removeAttribute(attributes, attribute.getName());
         editors.remove(attribute.getName());
         int attributeGroupIndex = container.getPanel().getWidgetIndex(attributeGroups.get(attribute));
         container.getPanel().remove(attributeGroupIndex);

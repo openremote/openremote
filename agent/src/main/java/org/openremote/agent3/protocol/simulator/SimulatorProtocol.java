@@ -114,7 +114,7 @@ public class SimulatorProtocol extends AbstractProtocol {
 
     @Override
     protected void onAttributeAdded(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-        String elementType = attribute.firstMetaItem(SIMULATOR_ELEMENT)
+        String elementType = attribute.getMetaItem(SIMULATOR_ELEMENT)
             .map(AbstractValueHolder::getValueAsString).orElseThrow(
                 () -> new IllegalArgumentException(
                     "Can't configure simulator, missing " + SIMULATOR_ELEMENT + " meta item on: " + attribute
@@ -125,7 +125,7 @@ public class SimulatorProtocol extends AbstractProtocol {
         Instance instance = instances.get(protocolConfigurationName);
 
         if (instance == null) {
-            Mode mode = protocolConfiguration.firstMetaItem(CONFIG_MODE)
+            Mode mode = protocolConfiguration.getMetaItem(CONFIG_MODE)
                 .map(item -> {
                     try {
                         return Mode.valueOf(item.getValueAsString());
@@ -136,7 +136,7 @@ public class SimulatorProtocol extends AbstractProtocol {
                 })
                 .orElse(Mode.WRITE_THROUGH_IMMEDIATE);
 
-            int writeDelay = protocolConfiguration.firstMetaItem(CONFIG_WRITE_DELAY_MILLISECONDS)
+            int writeDelay = protocolConfiguration.getMetaItem(CONFIG_WRITE_DELAY_MILLISECONDS)
                 .map(AbstractValueHolder::getValueAsInteger)
                 .orElse(DEFAULT_WRITE_DELAY);
 

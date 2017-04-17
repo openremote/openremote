@@ -227,7 +227,7 @@ public abstract class AbstractAssetUpdate {
     }
 
     public AttributeType getAttributeType() {
-        return attribute.getType().orElse(null);
+        return attribute.getType();
     }
 
     public AttributeEvent getStateEvent() {

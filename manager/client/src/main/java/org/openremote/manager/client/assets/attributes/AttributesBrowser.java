@@ -254,8 +254,7 @@ public abstract class AttributesBrowser
     protected DatapointBrowser createDatapointBrowser(AssetAttribute attribute) {
         if (!attribute.isStoreDatapoints())
             return null;
-        if (!attribute.getType().isPresent()
-            || !(attribute.getType().get() == AttributeType.DECIMAL || attribute.getType().get() == AttributeType.INTEGER))
+        if (!(attribute.getType() == AttributeType.DECIMAL || attribute.getType() == AttributeType.INTEGER))
             return null;
         return new DatapointBrowser(environment.getMessages(), 850, 250) {
             @Override

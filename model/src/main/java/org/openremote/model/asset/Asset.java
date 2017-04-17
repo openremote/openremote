@@ -20,7 +20,9 @@
 package org.openremote.model.asset;
 
 import elemental.json.JsonObject;
+import elemental.json.JsonValue;
 import org.hibernate.annotations.Formula;
+import org.openremote.model.AttributeType;
 import org.openremote.model.IdentifiableEntity;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.geo.GeoJSONFeature;
@@ -32,16 +34,15 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.openremote.model.Attribute.Functions.isValueEqualTo;
 import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
-import static org.openremote.model.asset.AssetAttribute.*;
+import static org.openremote.model.asset.AssetAttribute.Functions.*;
 
 // @formatter:off
 /**
@@ -544,6 +545,31 @@ public class Asset implements IdentifiableEntity {
             default:
                 return "cube";
         }
+    }
+
+    public Optional<AssetAttribute> getAttribute(String name) {
+        return getFromJson(id, name).apply(getAttributes());
+    }
+
+    public boolean hasAttribute(String name) {
+        return getAttribute(name).isPresent();
+    }
+
+    public boolean hasAttribute(String name, AttributeType type) {
+        Optional<AssetAttribute> attribute = getAttribute(name);
+        return attribute.isPresent() && attribute.get().getType() == type;
+    }
+
+    public boolean hasAttribute(String name, JsonValue value) {
+        return getAttribute(name)
+            .map(isValueEqualTo(value)::test)
+            .orElse(false);
+    }
+
+    public boolean hasAttribute(String name, Predicate<AssetAttribute> predicate) {
+        return getAttribute(name)
+            .map(predicate::test)
+            .orElse(false);
     }
 
     @Override

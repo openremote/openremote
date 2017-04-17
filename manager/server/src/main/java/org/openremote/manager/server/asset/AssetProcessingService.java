@@ -47,7 +47,7 @@ import java.util.logging.Logger;
 import static org.openremote.agent3.protocol.Protocol.SENSOR_QUEUE;
 import static org.openremote.manager.server.event.EventService.INCOMING_EVENT_TOPIC;
 import static org.openremote.manager.server.event.EventService.getWebsocketAuth;
-import static org.openremote.model.asset.AssetAttribute.*;
+import static org.openremote.model.asset.AssetAttribute.Functions.matches;
 import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
 import static org.openremote.model.asset.agent.AgentLink.isValidAgentLink;
 
@@ -266,7 +266,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     return;
 
                 // Attribute must exist
-                if (!containsAssetAttributeNamed(event.getAttributeName()).test(asset))
+                if (!asset.hasAttribute(event.getAttributeName()))
                     return;
 
                 // Regular users can only write attribute events for assets in their realm
@@ -317,7 +317,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
         // Pass attribute event through the processing chain
         LOG.fine("Processing " + attributeEvent + " for: " + asset);
-        Optional<AssetAttribute> attribute = findAssetAttribute(attributeEvent.getAttributeName()).apply(asset);
+        Optional<AssetAttribute> attribute = asset.getAttribute(attributeEvent.getAttributeName());
 
         if (!attribute.isPresent()) {
             LOG.warning("Ignoring " + attributeEvent + ", attribute doesn't exist on asset: " + asset);
@@ -363,7 +363,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         // consider a protocol that receives a batch of messages because a gateway was offline
         // for a day)
         AssetAttribute attribute = asset.getAttributeStream()
-            .filter(isMatchingAttributeEvent(attributeEvent))
+            .filter(matches(attributeEvent))
             .filter(isValidAgentLink())
             .findFirst()
             .orElse(null);

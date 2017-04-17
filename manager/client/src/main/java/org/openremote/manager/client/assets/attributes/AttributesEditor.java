@@ -212,13 +212,13 @@ public class AttributesEditor
         protected void buildItemList() {
             itemListPanel.clear();
 
-            if (!attribute.hasMeta() || attribute.getMeta().all().size() == 0) {
+            if (!attribute.hasMeta() || !attribute.getMeta().any()) {
                 itemListSectionLabel.setVisible(false);
                 return;
             }
             itemListSectionLabel.setVisible(true);
 
-            List<MetaItem> items = attribute.getMeta().all();
+            List<MetaItem> items = attribute.getMeta().getAll();
             for (int i = 0; i < items.size(); i++) {
                 MetaItem item = items.get(i);
                 FormGroup formGroup = new FormGroup();

@@ -49,7 +49,7 @@ import static org.openremote.agent3.protocol.Protocol.ACTUATOR_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForAssetType;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
-import static org.openremote.model.asset.AssetAttribute.getAssetAttributesFromJson;
+import static org.openremote.model.asset.AssetAttribute.Functions.getAssetAttributesFromJson;
 import static org.openremote.model.asset.AssetType.AGENT;
 import static org.openremote.model.asset.agent.AgentLink.*;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.getProtocolName;

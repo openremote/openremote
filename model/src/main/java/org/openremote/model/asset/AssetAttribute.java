@@ -32,14 +32,159 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.openremote.model.Constants.NAMESPACE;
+import static org.openremote.model.asset.AssetAttribute.Functions.removeAllMetaItem;
+import static org.openremote.model.asset.AssetAttribute.Functions.replaceMetaItem;
 import static org.openremote.model.asset.AssetMeta.*;
 
 public class AssetAttribute extends Attribute {
 
+    public static final class Functions {
+
+        private Functions() {}
+
+        public static <A extends Attribute> Predicate<A> hasMetaItem(AssetMeta assetMeta) {
+            return Attribute.Functions.hasMetaItem(assetMeta.getUrn());
+        }
+
+        public static Predicate<AssetAttribute> hasMetaItem(AssetMeta assetMeta, JsonValue value) {
+            return Attribute.Functions.hasMetaItem(assetMeta.getUrn(), value);
+        }
+
+        public static <T extends JsonValue> Predicate<AssetAttribute> hasMetaItem(AssetMeta assetMeta, Class<T> clazz) {
+            return Attribute.Functions.hasMetaItem(assetMeta.getUrn(), clazz);
+        }
+
+        public static Function<AssetAttribute, Optional<MetaItem>> getMetaItem(AssetMeta meta) {
+            return Attribute.Functions.getMetaItem(meta.getUrn());
+        }
+
+        public static <T extends JsonValue> Function<AssetAttribute, Optional<MetaItem>> getMetaItem(AssetMeta assetMeta, Class<T> clazz) {
+            return Attribute.Functions.getMetaItem(assetMeta.getUrn(), clazz);
+        }
+
+        public static Function<AssetAttribute, Optional<MetaItem>> getMetaItem(AssetMeta assetMeta, JsonValue value) {
+            return Attribute.Functions.getMetaItem(assetMeta.getUrn(), value);
+        }
+
+        public static Function<AssetAttribute, Optional<AttributeRef>> getAttributeLink(AssetMeta meta) {
+            return Attribute.Functions.getAttributeLink(meta.getUrn());
+        }
+
+        public static <T extends Attribute> Predicate<T> isAttributeLink(AssetMeta meta) {
+            return Attribute.Functions.isAttributeLink(meta.getUrn());
+        }
+
+        public static Function<AssetAttribute, AssetAttribute> setAttributeLink(AssetMeta meta, AttributeRef attributeRef) {
+            return Attribute.Functions.setAttributeLink(meta.getUrn(), attributeRef);
+        }
+
+        public static Function<AssetAttribute, AssetAttribute> removeAttributeLink(AssetMeta meta) {
+            return Attribute.Functions.removeAttributeLink(meta.getUrn());
+        }
+
+        public static Function<AssetAttribute, AssetAttribute> replaceMetaItem(AssetMeta meta, MetaItem item) {
+            return attribute -> attribute.setMeta(
+                attribute.getMeta().replace(meta.getUrn(), item)
+            );
+        }
+
+        public static Function<AssetAttribute, AssetAttribute> removeAllMetaItem(AssetMeta meta) {
+            return attribute -> attribute.setMeta(
+                attribute.getMeta().removeAll(meta.getUrn())
+            );
+        }
+
+        public static Predicate<AssetAttribute> matches(AttributeEvent event) {
+            return attribute -> attribute.getAssetId().map(assetId -> assetId.equals(event.getEntityId())).orElse(false)
+                && attribute.getName().equals(event.getAttributeName());
+        }
+
+        /**
+         * Returns either an attribute with protected-only meta items, or <code>null</code> if
+         * the attribute is private.
+         */
+        public static Function<Stream<AssetAttribute>, Stream<AssetAttribute>> filterProtectedAssetAttribute() {
+            return attributeStream ->
+                attributeStream
+                    .filter(AssetAttribute::isProtected)
+                    .filter(Attribute::hasMeta)
+                    .map(attribute -> {
+                        // Any meta item of the attribute, if it's in our namespace, must be protected READ to be included
+                        Meta protectedMeta = new Meta();
+                        for (MetaItem metaItem : attribute.getMeta().getAll()) {
+                            if (!metaItem.getName().startsWith(NAMESPACE))
+                                continue;
+                            boolean protectedRead =
+                                AssetMeta.byUrn(metaItem.getName()).map(meta -> meta.getAccess().protectedRead).orElse(false);
+                            if (protectedRead) {
+                                protectedMeta.add(
+                                    new MetaItem(metaItem.getName(), metaItem.getValue())
+                                );
+                            }
+                        }
+                        if (protectedMeta.size() > 0)
+                            attribute.setMeta(protectedMeta);
+
+                        return attribute;
+                    });
+        }
+
+        public static Function<JsonObject, Optional<AssetAttribute>> getFromJson(String assetId, String attributeName) {
+            return jsonObject -> {
+                if (jsonObject == null || jsonObject.keys().length == 0 || !jsonObject.hasKey(attributeName)) {
+                    return Optional.empty();
+                }
+                return Optional.of(new AssetAttribute(assetId, attributeName, jsonObject.getObject(attributeName)));
+            };
+        }
+
+        public static Function<JsonObject, Optional<AssetAttribute>> getFromJson(String assetId, String attributeName, AttributeType type) {
+            return jsonObject -> {
+                if (jsonObject == null || jsonObject.keys().length == 0 || !jsonObject.hasKey(attributeName)) {
+                    return Optional.empty();
+                }
+                AssetAttribute attribute = new AssetAttribute(assetId, attributeName, jsonObject.getObject(attributeName));
+                return attribute.getType() == type ? Optional.of((attribute)) : Optional.empty();
+            };
+        }
+
+        public static Function<JsonObject, Stream<AssetAttribute>> getAssetAttributesFromJson(String assetId) {
+            return jsonObject -> {
+                if (jsonObject == null || jsonObject.keys().length == 0) {
+                    return Stream.empty();
+                }
+                Stream.Builder<AssetAttribute> sb = Stream.builder();
+                String[] keys = jsonObject.keys();
+                for (String key : keys) {
+                    sb.add(new AssetAttribute(assetId, key, jsonObject.getObject(key)));
+                }
+                return sb.build();
+            };
+        }
+
+        /**
+         * Maps the attribute stream to a {@link JsonObject}, duplicate attribute names are not
+         * allowed (internally this is a hash map in Elemental, thus not allowing duplicate
+         * JSON object property names).
+         */
+        public static Function<Stream<AssetAttribute>, Optional<JsonObject>> getAssetAttributesAsJson() {
+            return attributeStream -> {
+                List<AssetAttribute> list = attributeStream.collect(Collectors.toList());
+                if (list.size() == 0)
+                    return Optional.empty();
+                JsonObject jsonObject = Json.createObject();
+                for (AssetAttribute attribute : list) {
+                    jsonObject.put(attribute.getName(), attribute.getJsonObject());
+                }
+                return Optional.of(jsonObject);
+            };
+        }
+    }
+
     final protected Optional<String> assetId;
 
     public static AssetAttribute createEmpty() {
-        return new AssetAttribute(null, Json.createObject());
+        return new AssetAttribute(null, AttributeType.NULL, Json.createNull());
     }
 
     public AssetAttribute(String name) {
@@ -115,7 +260,7 @@ public class AssetAttribute extends Attribute {
     }
 
     public Optional<MetaItem> firstMetaItem(AssetMeta assetMeta) {
-        return firstMetaItem(assetMeta.getUrn());
+        return getMetaItem(assetMeta.getUrn());
     }
 
     public String getLabel() {
@@ -123,9 +268,7 @@ public class AssetAttribute extends Attribute {
     }
 
     public AssetAttribute setLabel(String label) {
-        return setMeta(
-            getMeta().replace(AssetMeta.LABEL, new MetaItem(AssetMeta.LABEL, Json.create(label)))
-        );
+        return replaceMetaItem(AssetMeta.LABEL, new MetaItem(AssetMeta.LABEL, Json.create(label))).apply(this);
     }
 
     public boolean isExecutable() {
@@ -134,14 +277,13 @@ public class AssetAttribute extends Attribute {
 
     public AssetAttribute setExecutable(boolean executable) {
         if (executable) {
-            return setMeta(
-                getMeta()
-                    .replace(EXECUTABLE, new MetaItem(EXECUTABLE, Json.create(true)))
-            );
+            return replaceMetaItem(
+                AssetMeta.EXECUTABLE,
+                new MetaItem(AssetMeta.EXECUTABLE, Json.create(true))
+            ).apply(this);
         } else {
-            return setMeta(
-                getMeta().removeAll(EXECUTABLE)
-            );
+            return removeAllMetaItem(EXECUTABLE)
+                .apply(this);
         }
     }
 
@@ -194,103 +336,7 @@ public class AssetAttribute extends Attribute {
         return firstMetaItem(RULE_EVENT_EXPIRES).map(AbstractValueHolder::getValueAsString);
     }
 
-    public  static Predicate<Attribute> hasMetaItem(AssetMeta assetMeta) {
-        return hasMetaItem(assetMeta.getUrn());
+    public boolean isAgentLinked() {
+        return Functions.hasMetaItem(AGENT_LINK).test(this);
     }
-
-    public static Predicate<MetaItem> isAssetMetaItem(AssetMeta assetMeta) {
-        return isMetaItem(assetMeta.getUrn());
-    }
-
-    public static Function<Asset, Optional<AssetAttribute>> findAssetAttribute(String name) {
-        return asset -> getAssetAttributeFromJson(asset.getId(), name).apply(asset.getAttributes());
-    }
-
-    public static Predicate<Asset> containsAssetAttributeNamed(String name) {
-        return asset -> findAssetAttribute(name).apply(asset).isPresent();
-    }
-
-    public static Predicate<Asset> isAssetAttribute(String name, Predicate<AssetAttribute> predicate) {
-        return asset -> {
-            Optional<AssetAttribute> attribute = findAssetAttribute(name).apply(asset);
-            return attribute.isPresent() && predicate.test(attribute.get());
-        };
-    }
-
-    public static Predicate<AssetAttribute> isMatchingAttributeEvent(AttributeEvent event) {
-        return attribute -> attribute.getAssetId().map(assetId -> assetId.equals(event.getEntityId())).orElse(false)
-            && attribute.getName().equals(event.getAttributeName());
-    }
-
-    /**
-     * Returns either an attribute with protected-only meta items, or <code>null</code> if
-     * the attribute is private.
-     */
-    public static Function<Stream<AssetAttribute>, Stream<AssetAttribute>> filterProtectedAssetAttribute() {
-        return attributeStream ->
-            attributeStream
-                .filter(AssetAttribute::isProtected)
-                .filter(Attribute::hasMeta)
-                .map(attribute -> {
-                    // Any meta item of the attribute, if it's in our namespace, must be protected READ to be included
-                    Meta protectedMeta = new Meta();
-                    for (MetaItem metaItem : attribute.getMeta().all()) {
-                        if (!metaItem.getName().startsWith(NAMESPACE))
-                            continue;
-                        boolean protectedRead =
-                            AssetMeta.byUrn(metaItem.getName()).map(meta -> meta.getAccess().protectedRead).orElse(false);
-                        if (protectedRead) {
-                            protectedMeta.add(
-                                new MetaItem(metaItem.getName(), metaItem.getValue())
-                            );
-                        }
-                    }
-                    if (protectedMeta.size() > 0)
-                        attribute.setMeta(protectedMeta);
-
-                    return attribute;
-                });
-    }
-
-    public static Function<JsonObject, Stream<AssetAttribute>> getAssetAttributesFromJson(String assetId) {
-        return jsonObject -> {
-            if (jsonObject == null || jsonObject.keys().length == 0) {
-                return Stream.empty();
-            }
-            Stream.Builder<AssetAttribute> sb = Stream.builder();
-            String[] keys = jsonObject.keys();
-            for (String key : keys) {
-                sb.add(new AssetAttribute(assetId, key, jsonObject.getObject(key)));
-            }
-            return sb.build();
-        };
-    }
-
-    public static Function<JsonObject, Optional<AssetAttribute>> getAssetAttributeFromJson(String assetId, String attributeName) {
-        return jsonObject -> {
-            if (jsonObject == null || jsonObject.keys().length == 0 || !jsonObject.hasKey(attributeName)) {
-                return Optional.empty();
-            }
-            return Optional.of(new AssetAttribute(assetId, attributeName, jsonObject.getObject(attributeName)));
-        };
-    }
-
-    /**
-     * Maps the attribute stream to a {@link JsonObject}, duplicate attribute names are not
-     * allowed (internally this is a hash map in Elemental, thus not allowing duplicate
-     * JSON object property names).
-     */
-    public static Function<Stream<AssetAttribute>, Optional<JsonObject>> getAssetAttributesAsJson() {
-        return attributeStream -> {
-            List<AssetAttribute> list = attributeStream.collect(Collectors.toList());
-            if (list.size() == 0)
-                return Optional.empty();
-            JsonObject jsonObject = Json.createObject();
-            for (AssetAttribute attribute : list) {
-                jsonObject.put(attribute.getName(), attribute.getJsonObject());
-            }
-            return Optional.of(jsonObject);
-        };
-    }
-
 }

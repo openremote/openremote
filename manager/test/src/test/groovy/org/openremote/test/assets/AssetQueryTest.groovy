@@ -9,18 +9,16 @@ import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetQuery
 import org.openremote.model.asset.AssetType
-
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 
 import javax.persistence.EntityManager
 import java.util.function.Function
 
+import static org.openremote.model.asset.Asset.getAttribute
 import static org.openremote.model.asset.AssetQuery.*
 import static org.openremote.model.asset.AssetQuery.OrderBy.Property.NAME
 import static org.openremote.model.asset.AssetType.THING
-
-import static org.openremote.model.asset.AssetAttribute.*
 
 class AssetQueryTest extends Specification implements ManagerContainerTrait {
 
@@ -103,7 +101,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.coordinates.length == 2
         asset.path.length == 1
         asset.path[0] == managerDemoSetup.smartOfficeId
-        findAssetAttribute("geoStreet").apply(asset).get().valueAsString == "Torenallee 20"
+        asset.getAttribute("geoStreet").get().valueAsString == "Torenallee 20"
 
         when: "a query is executed"
         def assets = assetStorageService.findAll(
@@ -153,7 +151,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).coordinates.length == 2
         assets.get(0).path.length == 1
         assets.get(0).path[0] == managerDemoSetup.smartOfficeId
-        findAssetAttribute("geoStreet").apply(assets.get(0)).get().valueAsString == "Torenallee 20"
+        assets.get(0).getAttribute("geoStreet").get().valueAsString == "Torenallee 20"
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -251,10 +249,10 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
         assets.get(2).id == managerDemoSetup.apartment1LivingroomThermostatId
         assets.get(2).getAttributeList().size() == 2
-        findAssetAttribute("currentTemperature").apply(assets.get(2)).get().valueAsDecimal == null
-        findAssetAttribute("currentTemperature").apply(assets.get(2)).get().meta.size() == 3
-        findAssetAttribute("comfortTemperature").apply(assets.get(2)).get().valueAsDecimal == null
-        findAssetAttribute("comfortTemperature").apply(assets.get(2)).get().meta.size() == 2
+        assets.get(2).getAttribute("currentTemperature").get().valueAsDecimal == null
+        assets.get(2).getAttribute("currentTemperature").get().meta.size() == 3
+        assets.get(2).getAttribute("comfortTemperature").get().valueAsDecimal == null
+        assets.get(2).getAttribute("comfortTemperature").get().meta.size() == 2
         assets.get(3).id == managerDemoSetup.apartment2Id
 
         when: "a query is executed"

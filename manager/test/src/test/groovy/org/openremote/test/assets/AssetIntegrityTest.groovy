@@ -10,7 +10,6 @@ import org.openremote.model.AttributeType
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetType
-
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -21,7 +20,7 @@ import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
-import static org.openremote.model.asset.AssetAttribute.findAssetAttribute
+import static org.openremote.model.asset.Asset.getAttribute
 
 class AssetIntegrityTest extends Specification implements ManagerContainerTrait {
 
@@ -75,8 +74,8 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         testAsset = assetResource.get(null, testAsset.getId())
 
         then: "the attribute should exist"
-        findAssetAttribute("foo").apply(testAsset) != null
-        findAssetAttribute("foo").apply(testAsset).get().getValueAsString() == "bar"
+        testAsset.getAttribute("foo") != null
+        testAsset.getAttribute("foo").get().getValueAsString() == "bar"
 
         when: "an asset attribute value is written directly"
         assetResource.writeAttributeValue(null, testAsset.getId(), "foo", "\"bar2\"")
@@ -84,7 +83,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         then: "the attribute value should match"
         new PollingConditions(delay: 1, timeout: 5).eventually {
             def asset = assetResource.get(null, testAsset.getId())
-            assert findAssetAttribute("foo").apply(asset).get().getValueAsString() == "bar2"
+            assert asset.getAttribute("foo").get().getValueAsString() == "bar2"
         }
 
         when: "an asset attribute value null is written directly"
@@ -93,7 +92,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         then: "the attribute value should match"
         new PollingConditions(delay: 1, timeout: 5).eventually {
             def asset = assetResource.get(null, testAsset.getId())
-            assert findAssetAttribute("foo").apply(asset).get().hasValue() == false
+            assert asset.getAttribute("foo").get().hasValue() == false
         }
 
         when: "an asset is updated with a different type"
