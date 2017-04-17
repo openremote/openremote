@@ -207,7 +207,7 @@ public abstract class AttributesView<
         S style = container.getStyle();
 
         AttributeEditor attributeEditor;
-        AttributeType attributeType = attribute.getType();
+        AttributeType attributeType = attribute.getType().orElse(AttributeType.STRING);
         if (attributeType == AttributeType.STRING) {
             attributeEditor = createStringEditor(attribute, defaultValueItem, style, formGroup);
         } else if (attributeType ==  AttributeType.INTEGER) {
@@ -226,7 +226,7 @@ public abstract class AttributesView<
         FormField unsupportedField = new FormField();
         unsupportedField.add(new FormOutputText(
             environment.getMessages().unsupportedAttributeType(
-                attribute.getType().getValue()
+                attribute.getType().map(AttributeType::getValue).orElse(null)
             )
         ));
         return () -> unsupportedField;

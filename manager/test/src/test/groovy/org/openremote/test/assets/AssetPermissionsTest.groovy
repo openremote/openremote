@@ -586,7 +586,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def protectedAttributes = apartment1LivingroomThermostat.getAttributeList()
         protectedAttributes.size() == 2
         def currentTemperature = apartment1LivingroomThermostat.getAttribute("currentTemperature")
-        currentTemperature.get().getType() == AttributeType.DECIMAL
+        currentTemperature.get().getType().get() == AttributeType.DECIMAL
         currentTemperature.get().getValueAsDecimal() == null
         Meta protectedMeta = currentTemperature.get().getMeta()
         protectedMeta.getAll().size() == 3

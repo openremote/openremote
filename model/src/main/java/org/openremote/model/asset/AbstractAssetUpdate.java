@@ -27,7 +27,6 @@ import org.openremote.model.AttributeType;
 import org.openremote.model.util.JsonUtil;
 
 import java.util.Date;
-import java.util.Optional;
 
 /**
  * An asset attribute value update, capturing that asset state at a point in time.
@@ -227,7 +226,7 @@ public abstract class AbstractAssetUpdate {
     }
 
     public AttributeType getAttributeType() {
-        return attribute.getType();
+        return attribute.getType().orElse(null);
     }
 
     public AttributeEvent getStateEvent() {

@@ -539,8 +539,7 @@ public class Asset implements IdentifiableEntity {
     }
 
     public boolean hasAttribute(String name, AttributeType type) {
-        Optional<AssetAttribute> attribute = getAttribute(name);
-        return attribute.isPresent() && attribute.get().getType() == type;
+        return getFromJson(id, name, type).apply(getAttributes()).isPresent();
     }
 
     public boolean hasAttribute(String name, JsonValue value) {

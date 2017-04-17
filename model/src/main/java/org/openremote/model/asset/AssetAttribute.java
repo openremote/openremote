@@ -144,7 +144,8 @@ public class AssetAttribute extends Attribute {
                     return Optional.empty();
                 }
                 AssetAttribute attribute = new AssetAttribute(assetId, attributeName, jsonObject.getObject(attributeName));
-                return attribute.getType() == type ? Optional.of((attribute)) : Optional.empty();
+                Optional<AttributeType> attributeType = attribute.getType();
+                return attributeType.isPresent() && attributeType.get() == type ? Optional.of((attribute)) : Optional.empty();
             };
         }
 
@@ -184,7 +185,7 @@ public class AssetAttribute extends Attribute {
     final protected Optional<String> assetId;
 
     public static AssetAttribute createEmpty() {
-        return new AssetAttribute(null, AttributeType.NULL, Json.createNull());
+        return new AssetAttribute(null, Json.createObject());
     }
 
     public AssetAttribute(String name) {

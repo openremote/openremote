@@ -32,7 +32,7 @@ import elemental.json.JsonValue;
  */
 public enum AttributeType {
 
-    NULL("Null", JsonType.NULL),
+    //NULL("Null", JsonType.NULL), // TODO: Decide if 'Null' is a valid AttributeType
     STRING("String", JsonType.STRING),
     OBJECT("Object", JsonType.OBJECT),
     INTEGER("Integer", JsonType.NUMBER),

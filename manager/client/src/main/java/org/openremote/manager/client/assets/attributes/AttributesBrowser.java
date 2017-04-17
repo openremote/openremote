@@ -235,9 +235,9 @@ public abstract class AttributesBrowser
 
         // "Blink" the editor so users know there might be a new value
         editor.asWidget().addStyleName(environment.getWidgetStyle().HighlightBackground());
-        Browser.getWindow().setTimeout(() -> {
-            editor.asWidget().removeStyleName(environment.getWidgetStyle().HighlightBackground());
-        }, 250);
+        Browser.getWindow().setTimeout(() -> editor
+            .asWidget()
+            .removeStyleName(environment.getWidgetStyle().HighlightBackground()), 250);
 
         // Refresh charts, jump to current time so the new value is visible
         FormGroup attributeFormGroup = attributeGroups.get(attribute);
@@ -254,7 +254,8 @@ public abstract class AttributesBrowser
     protected DatapointBrowser createDatapointBrowser(AssetAttribute attribute) {
         if (!attribute.isStoreDatapoints())
             return null;
-        if (!(attribute.getType() == AttributeType.DECIMAL || attribute.getType() == AttributeType.INTEGER))
+        if (!attribute.getType().isPresent()
+            || !(attribute.getType().get() == AttributeType.DECIMAL || attribute.getType().get() == AttributeType.INTEGER))
             return null;
         return new DatapointBrowser(environment.getMessages(), 650, 220) {
             @Override

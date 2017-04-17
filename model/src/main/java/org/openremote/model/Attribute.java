@@ -182,12 +182,14 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
     }
 
     protected Attribute(Attribute attribute) {
-        this(attribute.getName(), attribute.getType(), attribute.getJsonObject());
+        this(attribute.getName(), attribute.getType().orElse(null), attribute.getJsonObject());
     }
 
     @Override
     protected boolean isValidValue(JsonValue value) {
-        return getType().isValid(value);
+        return getType().isPresent()
+            ? getType().get().isValid(value)
+            : super.isValidValue(value);
     }
 
     public void setName(String name) {
@@ -202,17 +204,17 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         return jsonObject;
     }
 
-    public AttributeType getType() {
+    public Optional<AttributeType> getType() {
         String typeName = jsonObject.hasKey(TYPE_FIELD_NAME) ? jsonObject.get(TYPE_FIELD_NAME).asString() : null;
-        return typeName != null ? AttributeType.fromValue(typeName) : AttributeType.NULL;
+        return Optional.ofNullable(typeName != null ? AttributeType.fromValue(typeName) : null);
     }
 
     public void setType(AttributeType type) {
         if (type == null) {
-            type = AttributeType.NULL;
+            return;
         }
 
-        if (getType() == type) {
+        if (getType().isPresent() && getType().get() == type) {
             return;
         }
 
@@ -399,6 +401,7 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
 
     @Override
     public boolean isValid() {
-        return super.isValid() && ATTRIBUTE_NAME_VALIDATOR.test(name) && getValue() != null && (getValue().getType() == JsonType.NULL || getValue().getType() == getType().getJsonType());
+        // TODO: Should value validity be part of the isValid check?
+        return super.isValid() && ATTRIBUTE_NAME_VALIDATOR.test(name) && getType().isPresent();
     }
 }
