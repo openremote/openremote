@@ -25,17 +25,18 @@
     <ui:style field="attributesEditorStyle"
               type="org.openremote.manager.client.assets.asset.AssetEditImpl.AttributesEditorStyle">
         .stringEditor {
+            min-width: 5em;
             width: 100%;
         }
 
         .integerEditor {
-            max-width: 15em;
-            width: 5em;
+            min-width: 5em;
+            width: 100%;
         }
 
         .decimalEditor {
-            max-width: 15em;
-            width: 5em;
+            min-width: 5em;
+            width: 100%;
         }
 
         .booleanEditor {

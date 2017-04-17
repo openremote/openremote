@@ -109,7 +109,9 @@ public class HeaderViewImpl extends Composite implements HeaderView {
 
     @Override
     public void setUsername(String username) {
+        /* TOOD We need the space
         userButton.setText(username != null ? username : "");
+        */
         userButton.setEnabled(username != null && username.length() > 0);
     }
 
