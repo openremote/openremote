@@ -26,8 +26,8 @@
 
     <w:FlexSplitPanel handleStyle="{widgetStyle.SplitPanelHandle}"
                       firstPanelWidth="250"
-                      firstPanelMinWidth="250"
-                      secondPanelMinWidth="600">
+                      firstPanelMinWidth="0"
+                      secondPanelMinWidth="400">
         <w:first>
             <g:HTMLPanel ui:field="sidebarContainer"
                          styleName="flex layout vertical {widgetStyle.SidebarContent}"/>

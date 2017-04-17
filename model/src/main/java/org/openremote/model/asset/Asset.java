@@ -530,23 +530,6 @@ public class Asset implements IdentifiableEntity {
         );
     }
 
-    public String getIcon() {
-        switch (getWellKnownType()) {
-            case BUILDING:
-                return "building";
-            case RESIDENCE:
-                return "cubes";
-            case FLOOR:
-                return "server";
-            case AGENT:
-                return "gears";
-            case THING:
-                return "gear";
-            default:
-                return "cube";
-        }
-    }
-
     public Optional<AssetAttribute> getAttribute(String name) {
         return getFromJson(id, name).apply(getAttributes());
     }

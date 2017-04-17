@@ -11,7 +11,7 @@
         }
 
         .panel {
-            width: 30em;
+            width: 28em;
         }
 
         .content {

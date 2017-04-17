@@ -105,7 +105,7 @@ public class ChartUtil {
                         ticks: {
                             fontColor: "#000",
                             fontFamily: "'Open Sans', Helvetica, Arial, Lucida, sans-serif",
-                            fontSize: 11,
+                            fontSize: 11.5,
                             fontStyle: "normal",
                             beginAtZero: true
                         },
@@ -115,6 +115,8 @@ public class ChartUtil {
                     }],
                     xAxes: [{
                         ticks: {
+                            autoSkip: true,
+                            maxTicksLimit: 30,
                             fontColor: "#000",
                             fontFamily: "'Open Sans', Helvetica, Arial, Lucida, sans-serif",
                             fontSize: 9,

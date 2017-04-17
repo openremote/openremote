@@ -47,6 +47,6 @@ public class AssetTreeNode extends BrowserTreeNode {
 
     @Override
     public String getIcon() {
-        return asset.getIcon();
+        return asset.getWellKnownType().getIcon();
     }
 }

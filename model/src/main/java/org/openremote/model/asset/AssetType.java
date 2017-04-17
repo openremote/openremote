@@ -42,9 +42,9 @@ import static org.openremote.model.asset.AssetMeta.*;
  */
 public enum AssetType {
 
-    CUSTOM(null, true, null),
+    CUSTOM(null, "cube", null),
 
-    BUILDING(ASSET_NAMESPACE + ":building", true, Arrays.asList(
+    BUILDING(ASSET_NAMESPACE + ":building", "building", Arrays.asList(
         new AssetAttribute("area", INTEGER)
             .setMeta(new Meta()
             .add(createMetaItem(LABEL, Json.create("Surface area")))
@@ -72,30 +72,36 @@ public enum AssetType {
             .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCountry")))
         ))),
 
-    FLOOR(ASSET_NAMESPACE + ":floor", true, null),
+    FLOOR(ASSET_NAMESPACE + ":floor", "server", null),
 
-    RESIDENCE(ASSET_NAMESPACE + ":residence", true, null),
+    RESIDENCE(ASSET_NAMESPACE + ":residence", "cubes", null),
 
-    ROOM(ASSET_NAMESPACE + ":room", true, null),
+    ROOM(ASSET_NAMESPACE + ":room", "cube", null),
 
-    AGENT(ASSET_NAMESPACE + ":agent", true, null),
+    AGENT(ASSET_NAMESPACE + ":agent", "gears", null),
 
     /**
      * When a Thing asset is modified (created, updated, deleted), its attributes are examined
      * and linked to and unlinked from the configured Protocol.
      */
-    THING(ASSET_NAMESPACE + ":thing", true, null);
+    THING(ASSET_NAMESPACE + ":thing", "gear", null);
 
     final protected String value;
+    final protected String icon;
     final protected List<AssetAttribute> defaultAttributes;
 
-    AssetType(String value, boolean editable, List<AssetAttribute> defaultAttributes) {
+    AssetType(String value, String icon, List<AssetAttribute> defaultAttributes) {
         this.value = value;
+        this.icon = icon;
         this.defaultAttributes = defaultAttributes;
     }
 
     public String getValue() {
         return value;
+    }
+
+    public String getIcon() {
+        return icon;
     }
 
     public Stream<AssetAttribute> getDefaultAttributes() {

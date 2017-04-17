@@ -160,7 +160,7 @@ public class AssetViewActivity
         view.setLocation(asset.getCoordinates());
         view.showDroppedPin(asset.getGeoFeature(20));
         view.flyTo(asset.getCoordinates());
-        view.setIconAndType(asset.getIcon(), asset.getType());
+        view.setIconAndType(asset.getWellKnownType().getIcon(), asset.getType());
     }
 
     protected void writeParentToView() {

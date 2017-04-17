@@ -29,11 +29,13 @@
         }
 
         .integerEditor {
-            width: 10em;
+            max-width: 15em;
+            width: 5em;
         }
 
         .decimalEditor {
-            width: 15em;
+            max-width: 15em;
+            width: 5em;
         }
 
         .booleanEditor {
@@ -43,8 +45,8 @@
     <w:FlexSplitPanel ui:field="splitPanel"
                       handleStyle="{widgetStyle.SplitPanelHandle}"
                       firstPanelWidth="250"
-                      firstPanelMinWidth="250"
-                      secondPanelMinWidth="1000">
+                      firstPanelMinWidth="0"
+                      secondPanelMinWidth="400">
 
         <w:first>
             <g:HTMLPanel ui:field="sidebarContainer"

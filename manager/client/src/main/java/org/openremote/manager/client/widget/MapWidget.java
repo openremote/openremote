@@ -130,7 +130,6 @@ public class MapWidget extends FlowPanel {
         hostElementId = Document.get().createUniqueId();
         getElement().setId(hostElementId);
         setStyleName("flex or-MapWidget");
-        setVisible(false);
     }
 
     public void setClickListener(ClickListener clickListener) {
@@ -159,7 +158,6 @@ public class MapWidget extends FlowPanel {
 
         mapboxMap.on(EventType.LOAD, eventData -> {
             initFeatureLayers();
-            setVisible(true);
             mapReady = true;
             resize();
             if (onReady != null) {

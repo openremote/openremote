@@ -18,8 +18,8 @@
     <w:FlexSplitPanel ui:field="splitPanel"
                       handleStyle="{widgetStyle.SplitPanelHandle}"
                       firstPanelWidth="250"
-                      firstPanelMinWidth="250"
-                      secondPanelMinWidth="700">
+                      firstPanelMinWidth="0"
+                      secondPanelMinWidth="400">
 
         <w:first>
             <g:HTMLPanel ui:field="sidebarContainer"

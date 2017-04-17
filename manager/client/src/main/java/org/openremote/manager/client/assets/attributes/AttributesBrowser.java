@@ -256,7 +256,7 @@ public abstract class AttributesBrowser
             return null;
         if (!(attribute.getType() == AttributeType.DECIMAL || attribute.getType() == AttributeType.INTEGER))
             return null;
-        return new DatapointBrowser(environment.getMessages(), 850, 250) {
+        return new DatapointBrowser(environment.getMessages(), 650, 220) {
             @Override
             protected void queryDatapoints(DatapointInterval interval,
                                            long timestamp,

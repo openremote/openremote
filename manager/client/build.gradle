@@ -89,7 +89,7 @@ task compileGwt(dependsOn: classes, type: JavaExec) {
             "-extra", gwtExtraDir,
             "-generateJsInteropExports",
             "-logLevel", "INFO",
-            "-style", "OBFUSCATED"
+            "-style", "PRETTY"
     ]
 }
 

@@ -46,8 +46,11 @@ import org.openremote.model.geo.GeoJSON;
 
 import javax.inject.Inject;
 import java.util.Date;
+import java.util.logging.Logger;
 
 public class AssetViewImpl extends Composite implements AssetView {
+
+    private static final Logger LOG = Logger.getLogger(AssetViewImpl.class.getName());
 
     interface UI extends UiBinder<FlexSplitPanel, AssetViewImpl> {
     }

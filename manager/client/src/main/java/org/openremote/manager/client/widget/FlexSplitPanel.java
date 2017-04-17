@@ -24,7 +24,11 @@ import com.google.gwt.uibinder.client.UiChild;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.*;
 
+import java.util.logging.Logger;
+
 public class FlexSplitPanel extends Composite {
+
+    private static final Logger LOG = Logger.getLogger(FlexSplitPanel.class.getName());
 
     final protected FlowPanel mainPanel = new FlowPanel();
     final protected FlowPanel firstPanel = new FlowPanel();
@@ -74,6 +78,32 @@ public class FlexSplitPanel extends Composite {
             }
         });
         resizeHandle.addMouseUpHandler(event -> {
+            if (isResizing) {
+                isResizing = false;
+                DOM.releaseCapture(resizeHandle.getElement());
+                resizeStop();
+            }
+        });
+
+        resizeHandle.addTouchStartHandler(event -> {
+            isResizing = true;
+            resizeStart(event.getTouches().get(0).getClientX() - getAbsoluteLeft(), event.getTouches().get(0).getClientY() - getAbsoluteTop());
+            DOM.setCapture(resizeHandle.getElement());
+            event.preventDefault();
+        });
+        resizeHandle.addTouchMoveHandler(event -> {
+            if (isResizing) {
+                resizeMove(event.getTouches().get(0).getClientX() - getAbsoluteLeft(), event.getTouches().get(0).getClientY() - getAbsoluteTop());
+            }
+        });
+        resizeHandle.addTouchEndHandler(event -> {
+            if (isResizing) {
+                isResizing = false;
+                DOM.releaseCapture(resizeHandle.getElement());
+                resizeStop();
+            }
+        });
+        resizeHandle.addTouchCancelHandler(event -> {
             if (isResizing) {
                 isResizing = false;
                 DOM.releaseCapture(resizeHandle.getElement());
