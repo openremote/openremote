@@ -147,8 +147,8 @@ public abstract class AttributesView<
                 attributeGroups.put(attribute, formGroup);
             }
         }
-        // Sort form groups by label text ascending
-        CollectionsUtil.sortMap(attributeGroups, Comparator.comparing(a -> a.getFormLabel().getText()));
+
+        sortAttributes(attributeGroups);
 
         for (FormGroup attributeGroup : attributeGroups.values()) {
             container.getPanel().add(attributeGroup);
@@ -207,11 +207,11 @@ public abstract class AttributesView<
         AttributeType attributeType = attribute.getType().orElse(AttributeType.STRING);
         if (attributeType == AttributeType.STRING) {
             attributeEditor = createStringEditor(attribute, defaultValueItem, style, formGroup);
-        } else if (attributeType ==  AttributeType.INTEGER) {
+        } else if (attributeType == AttributeType.INTEGER) {
             attributeEditor = createIntegerEditor(attribute, defaultValueItem, style, formGroup);
         } else if (attributeType == AttributeType.DECIMAL) {
             attributeEditor = createDecimalEditor(attribute, defaultValueItem, style, formGroup);
-        } else if (attributeType ==  AttributeType.BOOLEAN) {
+        } else if (attributeType == AttributeType.BOOLEAN) {
             attributeEditor = createBooleanEditor(attribute, defaultValueItem, style, formGroup);
         } else {
             return null;
@@ -233,7 +233,7 @@ public abstract class AttributesView<
         String currentValue = attribute.getValueAsString();
         Optional<String> defaultValue = defaultValueItem.map(AbstractValueHolder::getValueAsString);
 
-        Consumer<String> updateConsumer = isReadOnly(attribute) ? null : value -> {
+        Consumer<String> updateConsumer = isEditorReadOnly(attribute) ? null : value -> {
             formGroup.setError(false);
             attribute.setValueUnchecked(Json.create(value));
         };
@@ -277,7 +277,7 @@ public abstract class AttributesView<
     protected AttributeEditor createIntegerEditor(AssetAttribute attribute, Optional<MetaItem> defaultValueItem, S style, FormGroup formGroup) {
         String currentValue = attribute.getValueAsString();
         Optional<String> defaultValue = defaultValueItem.map(AbstractValueHolder::getValueAsString);
-        Consumer<String> updateConsumer = isReadOnly(attribute) ? null : value -> {
+        Consumer<String> updateConsumer = isEditorReadOnly(attribute) ? null : value -> {
             Integer intValue = Integer.valueOf(value);
             formGroup.setError(false);
             attribute.setValueUnchecked(Json.create(intValue));
@@ -332,7 +332,7 @@ public abstract class AttributesView<
     protected AttributeEditor createDecimalEditor(AssetAttribute attribute, Optional<MetaItem> defaultValueItem, S style, FormGroup formGroup) {
         String currentValue = attribute.getValueAsString();
         Optional<String> defaultValue = defaultValueItem.map(AbstractValueHolder::getValueAsString);
-        Consumer<String> updateConsumer = isReadOnly(attribute) ? null : value -> {
+        Consumer<String> updateConsumer = isEditorReadOnly(attribute) ? null : value -> {
             Double decimalValue = Double.valueOf(value);
             formGroup.setError(false);
             attribute.setValueUnchecked(Json.create(decimalValue));
@@ -387,7 +387,7 @@ public abstract class AttributesView<
     protected AttributeEditor createBooleanEditor(AssetAttribute attribute, Optional<MetaItem> defaultValueItem, S style, FormGroup formGroup) {
         Boolean currentValue = attribute.getValueAsBoolean();
         Optional<Boolean> defaultValue = defaultValueItem.map(AbstractValueHolder::getValueAsBoolean);
-        Consumer<Boolean> updateConsumer = isReadOnly(attribute) ? null : value -> {
+        Consumer<Boolean> updateConsumer = isEditorReadOnly(attribute) ? null : value -> {
             formGroup.setError(false);
             attribute.setValueUnchecked(Json.create(value));
         };
@@ -445,12 +445,19 @@ public abstract class AttributesView<
         return input;
     }
 
-    protected boolean isReadOnly(AssetAttribute attribute) {
+    protected boolean isEditorReadOnly(AssetAttribute attribute) {
         return attribute.isReadOnly();
     }
 
     protected boolean isShowTimestamp(AssetAttribute attribute) {
         return true;
+    }
+
+    protected void sortAttributes(LinkedHashMap<AssetAttribute, FormGroup> attributeGroups) {
+        // Sort form groups by label text ascending
+        CollectionsUtil.sortMap(attributeGroups, Comparator.comparing(
+            entry -> entry.getValue().getFormLabel().getText())
+        );
     }
 
     protected void removeAttribute(AssetAttribute attribute) {

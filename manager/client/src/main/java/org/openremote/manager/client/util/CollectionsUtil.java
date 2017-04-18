@@ -23,9 +23,9 @@ import java.util.*;
 
 public class CollectionsUtil {
 
-    public static <K, V> void sortMap(LinkedHashMap<K, V> map, Comparator<? super V> c) {
+    public static <K, V> void sortMap(LinkedHashMap<K, V> map, Comparator<Map.Entry<K, V>> c) {
         List<Map.Entry<K, V>> entries = new ArrayList<>(map.entrySet());
-        Collections.sort(entries, (lhs, rhs) -> c.compare(lhs.getValue(), rhs.getValue()));
+        entries.sort(c);
         map.clear();
         for(Map.Entry<K, V> e : entries) {
             map.put(e.getKey(), e.getValue());

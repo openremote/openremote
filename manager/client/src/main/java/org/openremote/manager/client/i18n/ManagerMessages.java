@@ -328,4 +328,12 @@ public interface ManagerMessages extends Messages {
     String showLiveUpdates();
 
     String refreshAllAttributes();
+
+    String start();
+
+    String repeat();
+
+    String getStatus();
+
+    String commandRequestSent(String name);
 }

@@ -112,7 +112,7 @@ public class AttributesEditor
     }
 
     @Override
-    protected boolean isReadOnly(AssetAttribute attribute) {
+    protected boolean isEditorReadOnly(AssetAttribute attribute) {
         return false; // Always allow editing of attribute value
     }
 
