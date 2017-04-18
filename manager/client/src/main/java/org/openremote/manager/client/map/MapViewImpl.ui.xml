@@ -43,7 +43,7 @@
 
                 </g:HTMLPanel>
 
-                <w:MapWidget ui:field="mapWidget"/>
+                <w:MapWidget ui:field="mapWidget" addStyleNames="flex"/>
 
             </g:HTMLPanel>
         </w:second>

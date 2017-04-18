@@ -13,7 +13,6 @@
 
         .mapWidget {
             margin: 0 0 1em 1em;
-            width: 50%;
             height: 17em;
         }
     </ui:style>
@@ -82,7 +81,7 @@
 
                     <div class="flex-none layout horizontal">
 
-                        <div class="flex layout vertical">
+                        <div class="layout vertical">
 
                             <w:Headline ui:field="headline"/>
 
@@ -145,7 +144,7 @@
 
                         <w:MapWidget ui:field="mapWidget"
                                      visible="false"
-                                     addStyleNames="self-end {style.mapWidget} {widgetStyle.ItemWithBorder}"/>
+                                     addStyleNames="flex self-end {style.mapWidget} {widgetStyle.ItemWithBorder}"/>
                     </div>
 
                     <w:Form ui:field="attributesForm" addStyleNames="flex">

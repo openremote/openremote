@@ -129,7 +129,7 @@ public class MapWidget extends FlowPanel {
     public MapWidget() {
         hostElementId = Document.get().createUniqueId();
         getElement().setId(hostElementId);
-        setStyleName("flex or-MapWidget");
+        setStyleName("layout vertical or-MapWidget");
     }
 
     public void setClickListener(ClickListener clickListener) {
@@ -148,9 +148,6 @@ public class MapWidget extends FlowPanel {
         if (mapboxMap != null) {
             throw new IllegalStateException("Already initialized");
         }
-
-
-        addStyleName("flex layout vertical or-MapWidget");
 
         mapOptions.put("container", hostElementId);
         mapOptions.put("attributionControl", false);

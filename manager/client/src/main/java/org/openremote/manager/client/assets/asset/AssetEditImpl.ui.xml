@@ -15,9 +15,12 @@
             max-width: 30em;
         }
 
+        .nameInput {
+            min-width: 22em;
+        }
+
         .mapWidget {
             margin: 0 0 1em 1em;
-            width: 50%;
             height: 19em;
         }
     </ui:style>
@@ -88,7 +91,7 @@
 
                     <div class="flex-none layout horizontal">
 
-                        <div class="flex layout vertical">
+                        <div class="layout vertical">
 
                             <w:Headline ui:field="headline" icon="edit"/>
 
@@ -115,7 +118,7 @@
                                     </w:label>
                                     <w:field>
                                         <w:FormField addStyleNames="larger">
-                                            <w:FormInputText ui:field="nameInput" addStyleNames="flex"/>
+                                            <w:FormInputText ui:field="nameInput" addStyleNames="flex {style.nameInput}"/>
                                         </w:FormField>
                                     </w:field>
                                 </w:FormGroup>
@@ -164,7 +167,7 @@
                         </div>
 
                         <w:MapWidget ui:field="mapWidget"
-                                     addStyleNames="self-end {style.mapWidget} {widgetStyle.ItemWithBorder}"/>
+                                     addStyleNames="flex self-end {style.mapWidget} {widgetStyle.ItemWithBorder}"/>
                     </div>
 
                     <g:HTMLPanel styleName="flex-none layout horizontal">
