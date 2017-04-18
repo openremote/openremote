@@ -126,6 +126,7 @@ public abstract class DatapointBrowser extends FlowPanel {
         controlForm.add(controlFormGroup);
 
         FormLabel controlFormLabel = new FormLabel(messages.showChartAggregatedFor());
+        controlFormLabel.addStyleName("end-justified");
         controlFormGroup.addFormLabel(controlFormLabel);
 
         FormField controlFormField = new FormField();

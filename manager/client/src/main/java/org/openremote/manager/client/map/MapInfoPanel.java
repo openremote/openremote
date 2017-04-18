@@ -33,6 +33,7 @@ import org.openremote.manager.client.widget.AbstractAppPanel;
 import org.openremote.manager.client.widget.FormLabel;
 import org.openremote.manager.client.widget.PopupPanel;
 import org.openremote.model.Pair;
+import org.openremote.model.util.TextUtil;
 
 import java.util.List;
 
@@ -86,7 +87,9 @@ public class MapInfoPanel extends AbstractAppPanel {
         int totalMaxHeight = itemHeightPixels * MAX_ITEMS_BEFORE_SCROLLING;
 
         for (Pair<String, String> infoItem : infoItems) {
-            FormLabel keyLabel = new FormLabel(infoItem.key);
+            FormLabel keyLabel = new FormLabel(
+                TextUtil.ellipsize(infoItem.key, 35)
+            );
             keyLabel.addStyleName("flex");
             keyLabel.addStyleName(style.contentItemKeyLabel());
 

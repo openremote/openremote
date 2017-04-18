@@ -31,7 +31,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.openremote.model.Constants.NAMESPACE;
 import static org.openremote.model.asset.AssetAttribute.Functions.removeAllMetaItem;
 import static org.openremote.model.asset.AssetAttribute.Functions.replaceMetaItem;
 import static org.openremote.model.asset.AssetMeta.*;
@@ -40,7 +39,12 @@ public class AssetAttribute extends Attribute {
 
     public static final class Functions {
 
-        private Functions() {}
+        private Functions() {
+        }
+
+        public static Function<AssetAttribute, AssetAttribute> copyAssetAttribute() {
+            return a -> new AssetAttribute(a.getAssetId(), a.getName(), Json.parse(a.getJsonObject().toJson()));
+        }
 
         public static <A extends Attribute> Predicate<A> hasMetaItem(AssetMeta assetMeta) {
             return Attribute.Functions.hasMetaItem(assetMeta.getUrn());
@@ -94,39 +98,54 @@ public class AssetAttribute extends Attribute {
             );
         }
 
+        /**
+         * Whether the item is one of {@link AssetMeta}.
+         */
+        public static Predicate<MetaItem> isMetaItemWellKnown() {
+            return item -> getWellKnownAssetMeta(item.getName()).isPresent();
+        }
+
+        /**
+         * Only well-known items can be protected readable.
+         *
+         * @see AssetMeta.Access#protectedRead
+         */
+        public static Predicate<MetaItem> isMetaItemProtectedReadable() {
+            return item -> getWellKnownAssetMeta(item.getName()).map(meta -> meta.getAccess().protectedRead).orElse(false);
+        }
+
+        /**
+         * Only well-known items can be protected readable.
+         *
+         * @see AssetMeta.Access#protectedWrite
+         */
+        public static Predicate<MetaItem> isMetaItemProtectedWritable() {
+            return item -> getWellKnownAssetMeta(item.getName()).map(meta -> meta.getAccess().protectedWrite).orElse(false);
+        }
+
         public static Predicate<AssetAttribute> matches(AttributeEvent event) {
             return attribute -> attribute.getAssetId().map(assetId -> assetId.equals(event.getEntityId())).orElse(false)
                 && attribute.getName().equals(event.getAttributeName());
         }
 
         /**
-         * Returns either an attribute with protected-only meta items, or <code>null</code> if
-         * the attribute is private.
+         * Returns non-private attributes with non-private meta items.
+         *
+         * @see #isProtected()
+         * @see #isMetaItemProtectedReadable()
          */
         public static Function<Stream<AssetAttribute>, Stream<AssetAttribute>> filterProtectedAssetAttribute() {
-            return attributeStream ->
-                attributeStream
-                    .filter(AssetAttribute::isProtected)
-                    .filter(Attribute::hasMeta)
-                    .map(attribute -> {
-                        // Any meta item of the attribute, if it's in our namespace, must be protected READ to be included
-                        Meta protectedMeta = new Meta();
-                        for (MetaItem metaItem : attribute.getMeta().getAll()) {
-                            if (!metaItem.getName().startsWith(NAMESPACE))
-                                continue;
-                            boolean protectedRead =
-                                AssetMeta.byUrn(metaItem.getName()).map(meta -> meta.getAccess().protectedRead).orElse(false);
-                            if (protectedRead) {
-                                protectedMeta.add(
-                                    new MetaItem(metaItem.getName(), metaItem.getValue())
-                                );
-                            }
-                        }
-                        if (protectedMeta.size() > 0)
-                            attribute.setMeta(protectedMeta);
-
-                        return attribute;
-                    });
+            return attributeStream -> attributeStream
+                .filter(AssetAttribute::isProtected)
+                .map(copyAssetAttribute())
+                .map(attribute -> {
+                    attribute.setMeta(
+                        attribute.getMetaItemStream()
+                            .filter(isMetaItemProtectedReadable())
+                            .collect(Meta.ITEM_COPY_COLLECTOR)
+                    );
+                    return attribute;
+                });
         }
 
         public static Function<JsonObject, Optional<AssetAttribute>> getFromJson(String assetId, String attributeName) {
@@ -134,7 +153,7 @@ public class AssetAttribute extends Attribute {
                 if (jsonObject == null || jsonObject.keys().length == 0 || !jsonObject.hasKey(attributeName)) {
                     return Optional.empty();
                 }
-                return Optional.of(new AssetAttribute(assetId, attributeName, jsonObject.getObject(attributeName)));
+                return Optional.of(new AssetAttribute(Optional.ofNullable(assetId), attributeName, jsonObject.getObject(attributeName)));
             };
         }
 
@@ -143,7 +162,7 @@ public class AssetAttribute extends Attribute {
                 if (jsonObject == null || jsonObject.keys().length == 0 || !jsonObject.hasKey(attributeName)) {
                     return Optional.empty();
                 }
-                AssetAttribute attribute = new AssetAttribute(assetId, attributeName, jsonObject.getObject(attributeName));
+                AssetAttribute attribute = new AssetAttribute(Optional.ofNullable(assetId), attributeName, jsonObject.getObject(attributeName));
                 Optional<AttributeType> attributeType = attribute.getType();
                 return attributeType.isPresent() && attributeType.get() == type ? Optional.of((attribute)) : Optional.empty();
             };
@@ -157,7 +176,7 @@ public class AssetAttribute extends Attribute {
                 Stream.Builder<AssetAttribute> sb = Stream.builder();
                 String[] keys = jsonObject.keys();
                 for (String key : keys) {
-                    sb.add(new AssetAttribute(assetId, key, jsonObject.getObject(key)));
+                    sb.add(new AssetAttribute(Optional.ofNullable(assetId), key, jsonObject.getObject(key)));
                 }
                 return sb.build();
             };
@@ -184,45 +203,36 @@ public class AssetAttribute extends Attribute {
 
     final protected Optional<String> assetId;
 
-    public static AssetAttribute createEmpty() {
-        return new AssetAttribute(null, Json.createObject());
+    public AssetAttribute(String name, AttributeType type) {
+        this(Optional.empty(), name, type);
     }
 
     public AssetAttribute(String name) {
-        super(name);
-        this.assetId = Optional.empty();
-    }
-
-    public AssetAttribute(String name, AttributeType type) {
-        this(null, name, type);
+        this(Optional.empty(), name);
     }
 
     public AssetAttribute(String name, AttributeType type, JsonValue value) {
-        this(null, name, type, value);
+        this(Optional.empty(), name, type, value);
     }
 
-    public AssetAttribute(String name, JsonObject jsonObject) {
-        this(null, name, jsonObject);
+    public AssetAttribute(Optional<String> assetId, String name) {
+        super(name);
+        this.assetId = assetId;
     }
 
-    public AssetAttribute(String assetId, String name, AttributeType type) {
+    public AssetAttribute(Optional<String> assetId, String name, AttributeType type) {
         super(name, type);
-        this.assetId = Optional.ofNullable(assetId);
+        this.assetId = assetId;
     }
 
-    public AssetAttribute(String assetId, String name, AttributeType type, JsonValue value) {
-        super(name, type, value);
-        this.assetId = Optional.ofNullable(assetId);
-    }
-
-    public AssetAttribute(String assetId, String name, JsonObject jsonObject) {
+    public AssetAttribute(Optional<String> assetId, String name, JsonObject jsonObject) {
         super(name, jsonObject);
-        this.assetId = Optional.ofNullable(assetId);
+        this.assetId = assetId;
     }
 
-    public AssetAttribute(AssetAttribute assetAttribute) {
-        super(assetAttribute);
-        this.assetId = assetAttribute.getAssetId();
+    public AssetAttribute(Optional<String> assetId, String name, AttributeType type, JsonValue value) {
+        super(name, type, value);
+        this.assetId = assetId;
     }
 
     @Override

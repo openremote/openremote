@@ -184,7 +184,7 @@ public class AssetEditActivity
     @Override
     public void onAssetTypeSelected(AssetType type) {
         asset.setType(type);
-        writeTypeToView();
+        writeTypeToView(true);
         writeAttributesEditorToView();
     }
 
@@ -269,20 +269,18 @@ public class AssetEditActivity
         asset.setTenantDisplayName(currentTenant.getDisplayName());
         asset.setType("urn:mydomain:customtype");
         clearViewMessages();
-        view.setTypeSelectionEnabled(true);
         writeAssetToView();
         writeParentToView();
-        writeTypeToView();
+        writeTypeToView(true);
         writeAttributesEditorToView();
         view.setFormBusy(false);
     }
 
     protected void startEditAsset() {
         clearViewMessages();
-        view.setTypeSelectionEnabled(false);
         view.setAssetViewHistoryToken(environment.getPlaceHistoryMapper().getToken(new AssetViewPlace(assetId)));
         writeAssetToView();
-        writeTypeToView();
+        writeTypeToView(false);
         writeAttributesEditorToView();
         if (asset.getParentId() != null) {
             assetBrowserPresenter.loadAsset(asset.getParentId(), loadedAsset -> {
@@ -319,12 +317,11 @@ public class AssetEditActivity
         }
     }
 
-    protected void writeTypeToView() {
-        AssetType assetType = asset.getWellKnownType();
-        view.selectType(assetType);
-        view.setAvailableTypes(AssetType.valuesSorted());
-        view.setTypeInputVisible(AssetType.CUSTOM.equals(assetType));
+    protected void writeTypeToView(boolean typeEditable) {
+        view.selectWellKnownType(asset.getWellKnownType());
+        view.setAvailableWellKnownTypes(AssetType.valuesSorted());
         view.setType(asset.getType());
+        view.setTypeEditable(typeEditable);
     }
 
     protected void writeAttributesEditorToView() {

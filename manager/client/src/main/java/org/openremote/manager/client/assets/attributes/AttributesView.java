@@ -188,10 +188,7 @@ public abstract class AttributesView<
     }
 
     protected FormLabel createAttributeLabel(AssetAttribute attribute) {
-        String label = getAttributeLabel(attribute);
-        FormLabel formLabel = new FormLabel(TextUtil.ellipsize(label, 30));
-        formLabel.addStyleName("larger");
-        return formLabel;
+        return new FormLabel(TextUtil.ellipsize(getAttributeLabel(attribute), 100));
     }
 
     protected String getAttributeLabel(AssetAttribute attribute) {

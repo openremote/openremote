@@ -23,6 +23,7 @@ import elemental.json.Json;
 import elemental.json.JsonValue;
 
 public enum AttributeExecuteStatus {
+
     /**
      * Request execution
      */

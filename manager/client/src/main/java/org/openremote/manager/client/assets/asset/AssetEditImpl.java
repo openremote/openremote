@@ -20,6 +20,7 @@
 package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.dom.client.Element;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.resources.client.CssResource;
@@ -228,6 +229,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         typeListBox.setValue(null);
         typeListBox.setAcceptableValues(new ArrayList<>());
         typeListBox.setEnabled(true);
+        typeInput.setReadOnly(false);
         typeInput.setVisible(false);
         customTypeInfoLabel.setVisible(false);
         showDroppedPin(GeoJSON.EMPTY_FEATURE_COLLECTION);
@@ -355,29 +357,26 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     /* ############################################################################ */
 
     @Override
-    public void setTypeSelectionEnabled(boolean enabled) {
-        typeListBox.setEnabled(enabled);
-    }
-
-    @Override
-    public void setAvailableTypes(AssetType[] assetTypes) {
-        typeListBox.setAcceptableValues(Arrays.asList(assetTypes));
-    }
-
-    @Override
-    public void selectType(AssetType assetType) {
+    public void selectWellKnownType(AssetType assetType) {
         typeListBox.setValue(assetType);
+        typeInput.setVisible(assetType == AssetType.CUSTOM);
     }
 
     @Override
-    public void setTypeInputVisible(boolean visible) {
-        typeInput.setVisible(visible);
-        customTypeInfoLabel.setVisible(visible);
+    public void setAvailableWellKnownTypes(AssetType[] assetTypes) {
+        typeListBox.setAcceptableValues(Arrays.asList(assetTypes));
     }
 
     @Override
     public void setType(String type) {
         typeInput.setValue(type);
+    }
+
+    @Override
+    public void setTypeEditable(boolean editable) {
+        typeListBox.setEnabled(editable);
+        typeInput.setReadOnly(!editable);
+        customTypeInfoLabel.setVisible(editable && typeListBox.getValue() == AssetType.CUSTOM);
     }
 
     @Override

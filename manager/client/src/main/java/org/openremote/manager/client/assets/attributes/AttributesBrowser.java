@@ -37,12 +37,9 @@ import org.openremote.model.event.bus.EventRegistration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.logging.Logger;
 
 public abstract class AttributesBrowser
     extends AttributesView<AttributesBrowser.Container, AttributesBrowser.Style> {
-
-    private static final Logger LOG = Logger.getLogger(AttributesBrowser.class.getName());
 
     public interface Container extends AttributesView.Container<AttributesBrowser.Style> {
 
@@ -147,7 +144,7 @@ public abstract class AttributesBrowser
     protected FormGroup createLiveUpdatesGroup() {
         FormGroup formGroup = new FormGroup();
 
-        FormLabel formLabel = new FormLabel("Show live updates");
+        FormLabel formLabel = new FormLabel(environment.getMessages().showLiveUpdates());
         formGroup.addFormLabel(formLabel);
 
         FormField formField = new FormField();
@@ -161,7 +158,7 @@ public abstract class AttributesBrowser
             FormGroupActions formGroupActions = new FormGroupActions();
 
             FormButton readAllButton = new FormButton();
-            readAllButton.setText("Read and refresh all attributes");
+            readAllButton.setText(environment.getMessages().refreshAllAttributes());
             readAllButton.addClickHandler(event -> readAllAttributeValues());
             formGroupActions.add(readAllButton);
 
@@ -257,7 +254,7 @@ public abstract class AttributesBrowser
         if (!attribute.getType().isPresent()
             || !(attribute.getType().get() == AttributeType.DECIMAL || attribute.getType().get() == AttributeType.INTEGER))
             return null;
-        return new DatapointBrowser(environment.getMessages(), 650, 220) {
+        return new DatapointBrowser(environment.getMessages(), 580, 220) {
             @Override
             protected void queryDatapoints(DatapointInterval interval,
                                            long timestamp,

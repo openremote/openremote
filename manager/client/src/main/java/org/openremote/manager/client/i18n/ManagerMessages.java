@@ -324,4 +324,8 @@ public interface ManagerMessages extends Messages {
     String noTenantsFound();
 
     String noUserFound();
+
+    String showLiveUpdates();
+
+    String refreshAllAttributes();
 }

@@ -20,7 +20,6 @@
 package org.openremote.manager.client.map;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Composite;
@@ -42,13 +41,6 @@ import java.util.List;
 public class MapViewImpl extends Composite implements MapView {
 
     interface UI extends UiBinder<FlexSplitPanel, MapViewImpl> {
-    }
-
-    public interface Style extends CssResource {
-
-        String navItem();
-
-        String mapControls();
     }
 
     @UiField

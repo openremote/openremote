@@ -8,6 +8,7 @@
     <ui:style>
         .view {
             position: relative;
+            overflow: hidden;
         }
 
         .navItem {

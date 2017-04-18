@@ -144,7 +144,7 @@ public enum AssetMeta {
     ENABLED(ASSET_META_NAMESPACE + ":enabled", new Access(true, false, true), JsonType.BOOLEAN),
 
     /**
-     * Marks an attribute as being executable so it then supports values of type {@link org.openremote.model.AttributeExecuteStatus}
+     * Marks an attribute as being executable so it then supports values of type {@link org.openremote.model.AttributeExecuteStatus}.
      */
     EXECUTABLE(ASSET_META_NAMESPACE + ":command", new Access(true, false, true), JsonType.BOOLEAN);
 
@@ -190,7 +190,7 @@ public enum AssetMeta {
         return null;
     }
 
-    public static Optional<AssetMeta> byUrn(String urn) {
+    public static Optional<AssetMeta> getWellKnownAssetMeta(String urn) {
         for (AssetMeta assetMeta : values()) {
             if (assetMeta.getUrn().equals(urn))
                 return Optional.of(assetMeta);

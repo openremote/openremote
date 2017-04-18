@@ -6,10 +6,6 @@
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
 
     <ui:style>
-        .assetsControls {
-
-        }
-
         .navItem {
             margin: 0 1em;
         }
@@ -19,15 +15,17 @@
                       firstPanelWidth="250"
                       firstPanelMinWidth="0"
                       secondPanelMinWidth="400">
+
         <w:first>
             <g:HTMLPanel ui:field="sidebarContainer"
                          styleName="flex layout vertical {widgetStyle.SidebarContent}"/>
         </w:first>
+
         <w:second>
             <g:HTMLPanel styleName="flex layout vertical">
 
                 <g:HTMLPanel
-                        styleName="layout horizontal center end-justified {style.assetsControls} {widgetStyle.SecondaryNavHorizontal}">
+                        styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
 
                     <w:Hyperlink
                             addStyleNames="{style.navItem} {widgetStyle.SecondaryNavItem}"
@@ -47,7 +45,6 @@
                 </g:HTMLPanel>
 
             </g:HTMLPanel>
-
         </w:second>
     </w:FlexSplitPanel>
 

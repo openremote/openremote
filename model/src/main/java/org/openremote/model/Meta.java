@@ -26,18 +26,48 @@ import elemental.json.JsonValue;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.util.JsonUtil;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
+import java.util.*;
+import java.util.function.*;
 import java.util.stream.Stream;
 
 /**
  * An array of {@link MetaItem} elements.
- *
+ * <p>
  * Note that duplicate item names are allowed for multi-valued elements.
  */
-public class Meta {
+public class Meta  {
+
+    /**
+     * Supplies an empty {@link Meta} and {@link #add}s a {@link #copy} of each item.
+     */
+    public static final Collector ITEM_COPY_COLLECTOR = new Collector();
+
+    public static class Collector implements java.util.stream.Collector<MetaItem, Meta, Meta> {
+        @Override
+        public Supplier<Meta> supplier() {
+            return Meta::new;
+        }
+
+        @Override
+        public BiConsumer<Meta, MetaItem> accumulator() {
+            return (meta, metaItem) -> meta.add(metaItem.copy());
+        }
+
+        @Override
+        public BinaryOperator<Meta> combiner() {
+            return Meta::addAll;
+        }
+
+        @Override
+        public Function<Meta, Meta> finisher() {
+            return meta -> meta;
+        }
+
+        @Override
+        public Set<Characteristics> characteristics() {
+            return EnumSet.of(Characteristics.IDENTITY_FINISH);
+        }
+    }
 
     final protected JsonArray jsonArray;
 
@@ -62,7 +92,7 @@ public class Meta {
     }
 
     public boolean any() {
-        return size() == 0;
+        return size() > 0;
     }
 
     public List<MetaItem> getAll() {
@@ -103,8 +133,8 @@ public class Meta {
     public Optional<MetaItem> get(int index) {
         return Optional.ofNullable(
             index >= 0 && index < jsonArray.length()
-            ? new MetaItem(jsonArray.getObject(index))
-            : null
+                ? new MetaItem(jsonArray.getObject(index))
+                : null
         );
     }
 
@@ -122,7 +152,7 @@ public class Meta {
     }
 
     public Optional<MetaItem> get(String name, JsonValue value) {
-		return get(name, value, 0);
+        return get(name, value, 0);
     }
 
     public Optional<MetaItem> get(String name, JsonValue value, int startIndex) {
@@ -135,7 +165,7 @@ public class Meta {
     }
 
     public <T extends JsonValue> Optional<MetaItem> get(String name, Class<T> clazz) {
-		return get(name, clazz, 0);
+        return get(name, clazz, 0);
     }
 
     public <T extends JsonValue> Optional<MetaItem> get(String name, Class<T> clazz, int startIndex) {
@@ -251,6 +281,11 @@ public class Meta {
 
     public Meta add(MetaItem item) {
         jsonArray.set(jsonArray.length(), item.getJsonObject());
+        return this;
+    }
+
+    public Meta addAll(Meta other) {
+        other.stream().forEach(this::add);
         return this;
     }
 

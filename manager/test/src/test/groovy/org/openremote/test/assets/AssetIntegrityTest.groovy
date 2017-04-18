@@ -59,7 +59,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         when: "an asset is stored with an illegal attribute name"
         testAsset = assetResource.get(null, testAsset.getId())
         def attributes = testAsset.getAttributeList()
-        attributes.add(new AssetAttribute(testAsset.id, "illegal- Attribute:name&&&", AttributeType.STRING))
+        attributes.add(new AssetAttribute(Optional.of(testAsset.id), "illegal- Attribute:name&&&", AttributeType.STRING))
         testAsset.setAttributeList(attributes)
         assetResource.update(null, testAsset.getId(), testAsset)
 

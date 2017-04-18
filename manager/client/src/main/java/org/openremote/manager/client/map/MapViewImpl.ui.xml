@@ -5,13 +5,9 @@
     <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
     <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
 
-    <ui:style type="org.openremote.manager.client.map.MapViewImpl.Style">
+    <ui:style>
         .navItem {
             margin: 0 1em;
-        }
-
-        .mapControls {
-            z-index: 1;
         }
     </ui:style>
 
@@ -30,7 +26,7 @@
             <g:HTMLPanel styleName="flex layout vertical">
 
                 <g:HTMLPanel
-                        styleName="layout horizontal center end-justified {style.mapControls} {widgetStyle.SecondaryNavHorizontal}">
+                        styleName="layout horizontal center end-justified {widgetStyle.SecondaryNavHorizontal}">
 
                     <w:Hyperlink
                             ui:field="viewAssetLink"

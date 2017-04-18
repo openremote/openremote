@@ -244,9 +244,10 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         // persistence event might not contain a completely loaded asset
         BiFunction<Asset, AssetAttribute, AssetState> buildAssetState = (loadedAsset, attribute) ->
             new AssetState(loadedAsset,
-                new AssetAttribute(loadedAsset.getId(),
+                new AssetAttribute(Optional.of(loadedAsset.getId()),
                     attribute.getName(),
-                    attribute.getJsonObject()));
+                    attribute.getJsonObject())
+            );
         Asset loadedAsset = null;
 
         switch (persistenceEvent.getCause()) {

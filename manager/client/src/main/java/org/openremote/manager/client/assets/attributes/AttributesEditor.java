@@ -35,6 +35,7 @@ import org.openremote.model.Meta;
 import org.openremote.model.MetaItem;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.util.TextUtil;
 
 import java.util.List;
 import java.util.Optional;
@@ -66,6 +67,10 @@ public class AttributesEditor
         newAttributeGroup = createNewAttributeEditor();
         container.getPanel().add(newAttributeGroup);
         super.createAttributeGroups();
+    }
+
+    protected FormLabel createAttributeLabel(AssetAttribute attribute) {
+        return new FormLabel(TextUtil.ellipsize(getAttributeLabel(attribute), 30));
     }
 
     @Override
@@ -119,7 +124,7 @@ public class AttributesEditor
     /* ####################################################################### */
 
     protected FormGroup createNewAttributeEditor() {
-        AssetAttribute attribute = AssetAttribute.createEmpty();
+        AssetAttribute attribute = new AssetAttribute("");
 
         FormGroup formGroup = createAttributeNameEditor(attribute);
 
@@ -132,7 +137,7 @@ public class AttributesEditor
                 formGroup.setError(false);
                 // TODO This is necessary because JSON elemental behavior is weird
                 AssetAttribute att2 =
-                    new AssetAttribute(attribute.getName(), Json.parse(attribute.getJsonObject().toJson()));
+                    new AssetAttribute(attribute.getAssetId(), attribute.getName(), Json.parse(attribute.getJsonObject().toJson()));
                 getAttributes().add(att2);
                 showInfo(environment.getMessages().attributeAdded(attribute.getName()));
                 build();
@@ -151,7 +156,6 @@ public class AttributesEditor
         FormGroup formGroup = new FormGroup();
 
         FormLabel label = new FormLabel(environment.getMessages().newAttribute());
-        label.addStyleName("larger");
         formGroup.addFormLabel(label);
 
         FormField formField = new FormField();
@@ -329,7 +333,7 @@ public class AttributesEditor
                 Consumer<String> updateConsumer = isEditable == null || isEditable || forceEditable ? value -> {
                     Double decimalValue = Double.valueOf(value);
                     formGroup.setError(false);
-                    item.setValueUnchecked(Json.create(value));
+                    item.setValueUnchecked(Json.create(decimalValue));
                 } : null;
                 editor = createDecimalEditorWidget(style, currentValue, Optional.empty(), updateConsumer, errorConsumer);
             } else if (valueType.equals(JsonType.BOOLEAN)) {

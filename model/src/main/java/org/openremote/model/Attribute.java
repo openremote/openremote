@@ -193,6 +193,8 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
     }
 
     public void setName(String name) {
+        if (name == null)
+            throw new NullPointerException("Attribute name is required");
         this.name = name;
     }
 

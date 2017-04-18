@@ -78,15 +78,13 @@ public interface AssetEdit extends FormView, IsWidget {
 
     void flyTo(double[] coordinates);
 
-    void setTypeSelectionEnabled(boolean enabled);
+    void selectWellKnownType(AssetType assetType);
 
-    void setAvailableTypes(AssetType[] assetTypes);
-
-    void selectType(AssetType assetType);
-
-    void setTypeInputVisible(boolean visible);
+    void setAvailableWellKnownTypes(AssetType[] assetTypes);
 
     void setType(String type);
+
+    void setTypeEditable(boolean editable);
 
     String getType();
 
