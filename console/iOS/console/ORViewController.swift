@@ -73,7 +73,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         self.present(alertVC, animated: true, completion: nil)
     }
     
-    // just for testing purpose (ask backend to send a notification to device)
+    // just for testing purpose (ask backend to get list of notifications or send a notification to device)
     func apiCall() {
         guard let tkurlRequest = URL(string: String(format:"https://%@/auth/realms/%@/protocol/openid-connect/token",Server.hostURL,Server.realm)) else { return }
         let tkRequest = NSMutableURLRequest(url: tkurlRequest)
@@ -90,9 +90,9 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
                     if ((jsonDictionnary["access_token"]) != nil) {
                         guard let urlRequest = URL(string: String(Server.apiTestResource)) else { return }
                         let request = NSMutableURLRequest(url: urlRequest)
-                        request.httpMethod = "GET"
+                        request.httpMethod = "GET" //change to post to create a notification alert
                         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-                        request.httpBody = "{\"title\" :\" oula\",\"message\" : \"sdlkfslkdfjslkdfj\",\"appUrl\" : \" kljlkjlkjlk\",\"actions\": [ {\"title\" : \"Action title\" , \"type\": \"ACTION_TYPE1\"},{\"title\" : \"Action title\" , \"type\": \"ACTION_TYPE2\"} ]}".data(using: .utf8)
+                        request.httpBody = "{\"title\" :\" notif alert title\",\"message\" : \"notif alert message\",\"appUrl\" : \"http://www.openremote.org\",\"actions\": [ {\"title\" : \"Open link\" , \"type\": \"ACTION_DEEP_LINK\"},{\"title\" : \"background call\" , \"type\": \"ACTION_ACTUATOR\"} ]}".data(using: .utf8)
                         request.addValue(String(format:"Bearer %@", jsonDictionnary["access_token"] as! String), forHTTPHeaderField: "Authorization")
                         let sessionConfiguration = URLSessionConfiguration.default
                         let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue : nil)
@@ -161,10 +161,10 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     
     func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         if (challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust) {
-            if challenge.protectionSpace.host == Server.hostURL || challenge.protectionSpace.host == "fonts.googleapis.com" {
+            if challenge.protectionSpace.host == Server.hostURL {
                 completionHandler(.useCredential, URLCredential(trust: challenge.protectionSpace.serverTrust!))
             } else {
-                print("Error : unsupported domain :",challenge.protectionSpace.serverTrust ?? "")
+                completionHandler(.performDefaultHandling, nil)
             }
             
         }
@@ -172,10 +172,10 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     
     func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         if (challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust) {
-            if challenge.protectionSpace.host == Server.hostURL || challenge.protectionSpace.host == "fonts.googleapis.com" {
+            if challenge.protectionSpace.host == Server.hostURL {
                 completionHandler(.useCredential, URLCredential(trust: challenge.protectionSpace.serverTrust!))
             } else {
-                print("Error : unsupported domain :",challenge.protectionSpace.serverTrust ?? "")
+                completionHandler(.performDefaultHandling, nil)
             }
             
         }
@@ -207,6 +207,10 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         
         self.apiCall()
         //self.login()
+    }
+    
+    func loadURL(url : URL) {
+        _ = self.myWebView?.load(URLRequest(url:url))
     }
     
 }

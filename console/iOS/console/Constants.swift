@@ -13,8 +13,8 @@ enum Server {
     static let port = "8080"
     static let initialPath = String(format:"console/%@/index.html",Server.realm)
     static let realm = "blok61"
-    static let apiTestResource = String(format:"http://%@:%@/%@/notification/alert",Server.hostURL,Server.port,Server.realm)
-    static let registerDeviceResource = String(format:"http://%@:%@/%@/notification/token",Server.hostURL,Server.port,Server.realm)
+    static let apiTestResource = String(format:"https://%@/%@/notification/alert",Server.hostURL,Server.realm)
+    static let registerDeviceResource = String(format:"https://%@/%@/notification/token",Server.hostURL,Server.realm)
 }
 
 enum Client {
@@ -47,6 +47,6 @@ enum Notifications {
 }
 
 enum ActionType {
-    static let ACTION_TYPE1 = "ACTION_TYPE1"
-    static let ACTION_TYPE2 = "ACTION_TYPE2"
+    static let ACTION_DEEP_LINK = "ACTION_DEEP_LINK"
+    static let ACTION_ACTUATOR = "ACTION_ACTUATOR"
 }

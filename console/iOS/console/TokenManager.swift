@@ -153,10 +153,10 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     
     func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         if (challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust) {
-            if challenge.protectionSpace.host == Server.hostURL || challenge.protectionSpace.host == "fonts.googleapis.com" {
+            if challenge.protectionSpace.host == Server.hostURL {
                 completionHandler(.useCredential, URLCredential(trust: challenge.protectionSpace.serverTrust!))
             } else {
-                print("Error : unsupported domain :",challenge.protectionSpace.serverTrust ?? "")
+                completionHandler(.performDefaultHandling, nil)
             }
             
         }

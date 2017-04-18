@@ -48,19 +48,22 @@ class NotificationService: UNNotificationServiceExtension, URLSessionDelegate {
                                         bestAttemptContent.body = error.debugDescription
                                     } else {
                                         do {
+                                            print(String(data: data!, encoding: .utf8) ?? "")
                                             let json = try JSONSerialization.jsonObject(with: data!) as? [[String: Any]]
+                                            if (json?.count)! > 0 {
                                             let detailedJson = (json?[0])! as [String: Any]
                                             bestAttemptContent.title = detailedJson["title"] as! String
                                             bestAttemptContent.body = detailedJson["message"] as! String
+                                            bestAttemptContent.userInfo["appUrl"] = detailedJson["appUrl"]
                                             let actions = detailedJson["actions"] as! [[String : Any]]
                                             var notificationActions = [UNNotificationAction]()
                                             for var i in (0..<actions.count) {
                                                 let actionTitle = actions[i]["title"]! as! String
                                                 let actionType = actions[i]["type"]! as! String
                                                 switch actionType {
-                                                case ActionType.ACTION_TYPE1 :
+                                                case ActionType.ACTION_ACTUATOR :
                                                     notificationActions.append(UNNotificationAction(identifier: actionType, title: actionTitle, options: UNNotificationActionOptions.destructive))
-                                                case ActionType.ACTION_TYPE2 :
+                                                case ActionType.ACTION_DEEP_LINK :
                                                     notificationActions.append(UNNotificationAction(identifier: actionType, title: actionTitle, options: UNNotificationActionOptions.foreground))
                                                 default : break
                                                     
@@ -71,6 +74,9 @@ class NotificationService: UNNotificationServiceExtension, URLSessionDelegate {
                                             let category = UNNotificationCategory(identifier: categoryName, actions: notificationActions, intentIdentifiers: [], options: [])
                                             let categories : Set = [category]
                                             UNUserNotificationCenter.current().setNotificationCategories(categories)
+                                            } else {
+                                                    bestAttemptContent.body = "could not deserialize JSON"
+                                            }
                                         } catch  {
                                             bestAttemptContent.body = "could not deserialize JSON"
                                         }
@@ -118,10 +124,10 @@ class NotificationService: UNNotificationServiceExtension, URLSessionDelegate {
     
     func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         if (challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust) {
-            if challenge.protectionSpace.host == Server.hostURL || challenge.protectionSpace.host == "fonts.googleapis.com" {
+            if challenge.protectionSpace.host == Server.hostURL  {
                 completionHandler(.useCredential, URLCredential(trust: challenge.protectionSpace.serverTrust!))
             } else {
-                print("Error : unsupported domain :",challenge.protectionSpace.serverTrust ?? "")
+                completionHandler(.performDefaultHandling,nil)
             }
             
         }

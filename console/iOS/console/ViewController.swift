@@ -11,6 +11,7 @@ import AppAuth
 
 class ViewController: UIViewController {
     var authState : OIDAuthState?
+    let orViewController = ORViewcontroller()
     @IBOutlet weak var loginViewController: UIWebView!
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -31,6 +32,7 @@ class ViewController: UIViewController {
         if (TokenManager.sharedInstance.hasToken && !TokenManager.sharedInstance.didLogOut) {
             let orVC = ORViewcontroller()
             self.present(orVC, animated: true, completion: nil)
+            self.present(orViewController, animated: true, completion: nil)
         } else {
             TokenManager.sharedInstance.authenticate()
         }

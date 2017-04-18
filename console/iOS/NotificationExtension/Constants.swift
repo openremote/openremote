@@ -26,6 +26,6 @@ enum Server {
 }
 
 enum ActionType {
-    static let ACTION_TYPE1 = "ACTION_TYPE1"
-    static let ACTION_TYPE2 = "ACTION_TYPE2"
+    static let ACTION_DEEP_LINK = "ACTION_DEEP_LINK"
+    static let ACTION_ACTUATOR = "ACTION_ACTUATOR"
 }

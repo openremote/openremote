@@ -109,9 +109,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
         switch response.actionIdentifier {
-        case ActionType.ACTION_TYPE1 :
+        case ActionType.ACTION_DEEP_LINK :
+            // open url
+            let urlToOpen = response.notification.request.content.userInfo["appUrl"] as! String
+            (self.window?.rootViewController as! ViewController).loadUrl(url: URL(string: urlToOpen)!)
             NSLog("Action asked : %@",response.actionIdentifier)
-        case ActionType.ACTION_TYPE2 :
+        case ActionType.ACTION_ACTUATOR :
             NSLog("Action asked : %@",response.actionIdentifier)
         default : break
         }
