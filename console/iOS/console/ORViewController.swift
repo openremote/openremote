@@ -198,7 +198,6 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
                         self.showError(error: error)
                     } else {
                         print(response.debugDescription)
-                        _ = self.myWebView?.load(data!, mimeType: "text/html", characterEncodingName: "utf8", baseURL: URL(string:Server.apiTestResource)!)
                     }
                 }
             })

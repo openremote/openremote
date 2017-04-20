@@ -42,6 +42,20 @@ class ViewController: UIViewController {
         TokenManager.sharedInstance.didLogOut = false
         showLoginPage()
     }
+    func login() {
+        self.loginButton.removeFromSuperview()
+        self.showLoginPage()
+    }
+    
+    func loadUrl(url: URL) {
+        if (self.presentedViewController?.isMember(of: ORViewcontroller.self))! {
+            self.orViewController.loadURL(url: url)
+        }
+    }
+    
+    func updateAssetAttribute(assetId : String, attributeName : String, rawJson : String) {
+            self.orViewController.updateAssetAttribute(assetId: assetId, attributeName: attributeName, rawJson: rawJson)
+    }
 }
 
 

@@ -184,6 +184,24 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     }
     
     func sendDeviceId() {
+    func showError(error : Error) {
+        NSLog("showing error %@",error as NSError)
+        let topWindow = UIWindow(frame: UIScreen.main.bounds)
+        topWindow.rootViewController = UIViewController()
+        topWindow.windowLevel = UIWindowLevelAlert + 1
+        let alertVC = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
+        let alertAction = UIAlertAction(title: "Done", style: .cancel) { (action) in
+            self.viewController.dismiss(animated: true, completion: nil)
+            topWindow.isHidden = true
+        }
+        
+        alertVC.addAction(alertAction)
+        DispatchQueue.main.async {
+            topWindow.makeKeyAndVisible()
+            topWindow.rootViewController?.present(alertVC, animated: true, completion: nil)
+        }
+    }
+    
     func getAccessToken(callback: @escaping (AccesTokenResult<String>) -> ()) {
         guard let tkurlRequest = URL(string: String(format:"https://%@/auth/realms/%@/protocol/openid-connect/token",Server.hostURL,Server.realm)) else { return }
         let tkRequest = NSMutableURLRequest(url: tkurlRequest)
