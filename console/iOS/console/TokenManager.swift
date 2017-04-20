@@ -20,7 +20,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     var viewController : TokenManagerViewController
     var myWebView : WKWebView
     var didLogOut : Bool = false
-    var isDeviceIdSend = true
+
     
     static let sharedInstance = TokenManager()
     
@@ -35,7 +35,6 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
             offlineToken = token as? String
             refreshToken = defaults?.value(forKey: DefaultsKey.refreshToken) as? String
             idToken = defaults?.value(forKey: DefaultsKey.idToken) as? String
-            deviceId = defaults?.value(forKey: DefaultsKey.deviceId) as? String
         } else {
             offlineToken = nil
             refreshToken = nil
@@ -43,6 +42,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
             deviceId = nil
             hasToken = false
         }
+        deviceId = defaults?.value(forKey: DefaultsKey.deviceId) as? String
         super.init()
     }
     
@@ -123,11 +123,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         }
         if (offlineToken != nil && refreshToken != nil && idToken != nil && !didLogOut) {
             self.hasToken = true
-            //myWeb
             self.viewController.dismiss(animated: true, completion: {
-                if (!self.isDeviceIdSend) {
-                    self.sendDeviceId()
-                }
                 let notificationName = Notification.Name(NotificationsNames.isAuthenticated)
                 NotificationCenter.default.post(name: notificationName, object: nil)
             })
@@ -177,13 +173,53 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         if deviceId == nil  || (deviceId != token){
             deviceId = token
             defaults?.set(token, forKey: DefaultsKey.deviceId)
-            isDeviceIdSend = false
         } else {
             deviceId = defaults?.object(forKey: DefaultsKey.deviceId) as! String?
         }
     }
     
     func sendDeviceId() {
+        self.getAccessToken { (accessTokenResult) in
+            switch accessTokenResult {
+            case .Failure(let error) :
+                    self.showError(error: error!)
+            case .Success(let accessToken) :
+            guard let urlRequest = URL(string: String(Server.registerDeviceResource)) else { return }
+            let request = NSMutableURLRequest(url: urlRequest)
+            request.addValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type");
+            request.httpMethod = "PUT"
+            let postString = String(format:"token=%@&device_id=%@", TokenManager.sharedInstance.deviceId!, (UIDevice.current.identifierForVendor?.uuidString)!)
+            request.httpBody = postString.data(using: .utf8)
+            request.addValue(String(format:"Bearer %@", accessToken!), forHTTPHeaderField: "Authorization")
+            let sessionConfiguration = URLSessionConfiguration.default
+            let session = URLSession(configuration: sessionConfiguration)
+            let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
+                DispatchQueue.main.async {
+                    if (error != nil) {
+                        NSLog("error %@", (error as! NSError).localizedDescription)
+                        let error = NSError(domain: "", code: 0, userInfo:  [
+                            NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
+                            ])
+                        self.showError(error: error)
+                    } else {
+                        if let httpStatus = response as? HTTPURLResponse , httpStatus.statusCode != 204 {
+                            let error = NSError(domain: "", code: 0, userInfo:  [
+                                NSLocalizedDescriptionKey :  NSLocalizedString("ErrorSendingDeviceId", value: "Could not register your device for notifications", comment: "")
+                                ])
+                            self.showError(error: error)
+                        } else {
+                            NSLog("Device registred with token %@",postString)
+                            let notificationName = Notification.Name(NotificationsNames.isdeviceIdSent)
+                            NotificationCenter.default.post(name: notificationName, object: nil)
+                        }
+                    }
+                }
+            })
+            reqDataTask.resume()
+        }
+        }
+    }
+    
     func showError(error : Error) {
         NSLog("showing error %@",error as NSError)
         let topWindow = UIWindow(frame: UIScreen.main.bounds)

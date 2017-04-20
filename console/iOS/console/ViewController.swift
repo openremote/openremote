@@ -20,6 +20,9 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         let notificationName = Notification.Name(NotificationsNames.isAuthenticated)
         NotificationCenter.default.addObserver(self, selector: #selector(isAuthenticated), name: notificationName, object: nil)
+        let deviceIdSentName = Notification.Name(NotificationsNames.isdeviceIdSent)
+        NotificationCenter.default.addObserver(self, selector: #selector(isdeviceIdSent), name: deviceIdSentName, object: nil)
+
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -52,8 +55,13 @@ class ViewController: UIViewController {
     
     func isAuthenticated() {
         TokenManager.sharedInstance.didLogOut = false
+        TokenManager.sharedInstance.sendDeviceId()
+    }
+    
+    func isdeviceIdSent() {
         showLoginPage()
     }
+    
     func login() {
         self.loginButton.removeFromSuperview()
         self.showLoginPage()

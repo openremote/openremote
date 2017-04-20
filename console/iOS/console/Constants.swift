@@ -38,6 +38,7 @@ enum DefaultsKey {
 
 enum NotificationsNames {
     static let isAuthenticated = "isAuthenticated"
+    static let isdeviceIdSent = "isdeviceIdSent"
 }
 
 enum AppGroup {
