@@ -11,7 +11,10 @@ import AppAuth
 
 class ViewController: UIViewController {
     var authState : OIDAuthState?
+    var isInError : Bool = false
+    let loginButton = UIButton(type: .roundedRect)
     let orViewController = ORViewcontroller()
+    
     @IBOutlet weak var loginViewController: UIWebView!
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -21,7 +24,16 @@ class ViewController: UIViewController {
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        showLoginPage()
+        if (!isInError) {
+            showLoginPage()
+        } else {
+            let loginButton = UIButton(type: .roundedRect)
+            loginButton.setTitle("Login", for: .normal)
+            loginButton.addTarget(self, action: #selector(login), for: .touchUpInside)
+            loginButton.frame = self.view.frame
+            self.view.addSubview(loginButton)
+        }
+        
     }
     
     override func didReceiveMemoryWarning() {
@@ -30,11 +42,11 @@ class ViewController: UIViewController {
     
     func showLoginPage() {
         if (TokenManager.sharedInstance.hasToken && !TokenManager.sharedInstance.didLogOut) {
-            let orVC = ORViewcontroller()
-            self.present(orVC, animated: true, completion: nil)
+            isInError = false
             self.present(orViewController, animated: true, completion: nil)
         } else {
             TokenManager.sharedInstance.authenticate()
+            isInError = true
         }
     }
     
