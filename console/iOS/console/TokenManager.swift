@@ -10,7 +10,7 @@ import Foundation
 import UIKit
 import WebKit
 
-class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationDelegate {
+class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationDelegate, URLSessionDelegate {
     
     var offlineToken : String?
     var refreshToken : String?
@@ -184,6 +184,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     }
     
     func sendDeviceId() {
+    func getAccessToken(callback: @escaping (AccesTokenResult<String>) -> ()) {
         guard let tkurlRequest = URL(string: String(format:"https://%@/auth/realms/%@/protocol/openid-connect/token",Server.hostURL,Server.realm)) else { return }
         let tkRequest = NSMutableURLRequest(url: tkurlRequest)
         tkRequest.addValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type");
@@ -191,50 +192,20 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         let postString = String(format:"grant_type=refresh_token&refresh_token=%@&client_id=%@",(TokenManager.sharedInstance.refreshToken )!,Client.clientId)
         tkRequest.httpBody = postString.data(using: .utf8)
         let sessionConfiguration = URLSessionConfiguration.default
-        let session = URLSession(configuration: sessionConfiguration)
+        let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: nil)
         let req = session.dataTask(with: tkRequest as URLRequest, completionHandler: { (data, response, error) in
             if (data != nil){
                 do {
                     let jsonDictionnary: Dictionary = try JSONSerialization.jsonObject(with: data!, options: []) as! [String:Any]
                     if ((jsonDictionnary["access_token"]) != nil) {
-                        guard let urlRequest = URL(string: String(Server.registerDeviceResource)) else { return }
-                        let request = NSMutableURLRequest(url: urlRequest)
-                        request.addValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type");
-                        request.httpMethod = "PUT"
-                        let postString = String(format:"token=%@&device_id=%@", FCM.serverKey, TokenManager.sharedInstance.deviceId!)
-                        request.httpBody = postString.data(using: .utf8)
-                        request.addValue(String(format:"Bearer %@", jsonDictionnary["access_token"] as! String), forHTTPHeaderField: "Authorization")
-                        let sessionConfiguration = URLSessionConfiguration.default
-                        let session = URLSession(configuration: sessionConfiguration)
-                        let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
-                            DispatchQueue.main.async {
-                                if (error != nil) {
-                                    NSLog("error %@", (error as! NSError).localizedDescription)
-                                    let error = NSError(domain: "", code: 0, userInfo:  [
-                                        NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
-                                        ])
-                                    self.showError(error: error)
-                                } else {
-                                    if let httpStatus = response as? HTTPURLResponse , httpStatus.statusCode != 204 {
-                                        let error = NSError(domain: "", code: 0, userInfo:  [
-                                            NSLocalizedDescriptionKey :  NSLocalizedString("ErrorSendingDeviceId", value: "Could not register your device for notifications", comment: "")
-                                            ])
-                                        self.showError(error: error)
-                                    } else {
-                                        NSLog("Device registred")
-                                        self.isDeviceIdSend = true
-                                    }
-                                }
-                            }
-                        })
-                        reqDataTask.resume()
+                        callback(AccesTokenResult.Success(jsonDictionnary["access_token"] as? String))
                     } else {
                         if let httpResponse = response as? HTTPURLResponse {
                             NSLog("error %@", httpResponse)
                             let error = NSError(domain: "", code: httpResponse.statusCode, userInfo:  [
                                 NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
                                 ])
-                            self.showError(error: error)
+                            callback(AccesTokenResult.Failure(error))
                         } else {
                             if (error != nil) {
                                 NSLog("error %@", (error as! NSError).localizedDescription as String)
@@ -242,7 +213,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
                             let error = NSError(domain: "", code: 0, userInfo:  [
                                 NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
                                 ])
-                            self.showError(error: error)
+                            callback(AccesTokenResult.Failure(error))
                         }
                     }
                 }
@@ -251,27 +222,27 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
                     let error = NSError(domain: "", code: 0, userInfo:  [
                         NSLocalizedDescriptionKey :  NSLocalizedString("ErrorDeserializingJSON", value: "Could not convert received data", comment: "")
                         ])
-                    self.showError(error: error)
+                    callback(AccesTokenResult.Failure(error))
                 }
             } else {
                 NSLog("error %@", (error as! NSError).localizedDescription)
                 let error = NSError(domain: "", code: 0, userInfo:  [
                     NSLocalizedDescriptionKey :  NSLocalizedString("NoDataReceived", value: "Did not receive any data", comment: "")
                     ])
-                self.showError(error: error)
+                callback(AccesTokenResult.Failure(error))
             }
         })
         req.resume()
     }
     
-    func showError(error : Error) {
-        NSLog("showing error %@",error as NSError)
-        let alertVC = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
-        let alertAction = UIAlertAction(title: "Done", style: .cancel) { (action) in
-            self.viewController.dismiss(animated: true, completion: nil)
+    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        if (challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust) {
+            if challenge.protectionSpace.host == Server.hostURL {
+                completionHandler(.useCredential, URLCredential(trust: challenge.protectionSpace.serverTrust!))
+            } else {
+                completionHandler(.performDefaultHandling, nil)
+            }
+            
         }
-        
-        alertVC.addAction(alertAction)
-        viewController.present(alertVC, animated: true, completion: nil)
     }
 }

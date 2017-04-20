@@ -8,9 +8,14 @@
 
 import Foundation
 
+enum AccesTokenResult<String>
+{
+    case Success(String?)
+    case Failure(NSError?)
+}
+
 enum Server {
-    static let hostURL = "192.168.0.138"
-    static let port = "8080"
+    static let hostURL = "192.168.0.177"
     static let initialPath = String(format:"console/%@/index.html",Server.realm)
     static let realm = "blok61"
     static let apiTestResource = String(format:"https://%@/%@/notification/alert",Server.hostURL,Server.realm)
