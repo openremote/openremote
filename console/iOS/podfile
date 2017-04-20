@@ -1,6 +1,5 @@
 target 'console' do
 use_frameworks!
-pod 'AppAuth'
 pod 'Firebase/Core'
 pod 'Firebase/Messaging'
 end

@@ -7,10 +7,8 @@
 //
 
 import UIKit
-import AppAuth
 
 class ViewController: UIViewController {
-    var authState : OIDAuthState?
     var isInError : Bool = false
     let loginButton = UIButton(type: .roundedRect)
     let orViewController = ORViewcontroller()

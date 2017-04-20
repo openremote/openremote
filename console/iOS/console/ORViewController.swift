@@ -91,7 +91,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
             let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
                 DispatchQueue.main.async {
                     if (error != nil) {
-                        NSLog("error %@", (error as! NSError).localizedDescription)
+                        NSLog("error %@", (error! as NSError).localizedDescription)
                         let error = NSError(domain: "", code: 0, userInfo:  [
                             NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
                             ])
@@ -191,7 +191,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
             let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
                 DispatchQueue.main.async {
                     if (error != nil) {
-                        NSLog("error %@", (error as! NSError).localizedDescription)
+                        NSLog("error %@", (error! as NSError).localizedDescription)
                         let error = NSError(domain: "", code: 0, userInfo:  [
                             NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
                             ])

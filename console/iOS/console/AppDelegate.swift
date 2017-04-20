@@ -7,7 +7,6 @@
 //
 
 import UIKit
-import AppAuth
 import UserNotifications
 import Firebase
 
@@ -16,7 +15,6 @@ import Firebase
 class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     
     var window: UIWindow?
-    var currentAuthorizationFlow : OIDAuthorizationFlowSession?
     let gcmMessageIDKey = "gcm.message_id"
     var reachabilityAlert : UIAlertController?
     var reachabilityAlertShown = false
@@ -134,11 +132,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     
     
     func application(_ application: UIApplication, open url: URL, sourceApplication: String?, annotation: Any) -> Bool {
-        if (self.currentAuthorizationFlow?.resumeAuthorizationFlow(with: url))! {
-            self.currentAuthorizationFlow = nil
             return true
-        }
-        return false
     }
     
     
