@@ -133,7 +133,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         TokenManager.sharedInstance.getAccessToken { (accessTokenResult) in
             switch accessTokenResult {
             case .Failure(let error) :
-                self.showError(error: error!)
+                ErrorManager.showError(error: error!)
             case .Success(let accessToken) :
                 guard let urlRequest = URL(string: String(format:"%@%i", Server.deleteNotifiedAlertResource, alertId as! Int)) else { return }
                 let request = NSMutableURLRequest(url: urlRequest)
@@ -151,13 +151,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
                             let error = NSError(domain: "", code: 0, userInfo:  [
                                 NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
                                 ])
-                            self.showError(error: error)
+                            ErrorManager.showError(error: error)
                         } else {
                             if let httpStatus = response as? HTTPURLResponse , httpStatus.statusCode != 204 {
                                 let error = NSError(domain: "", code: 0, userInfo:  [
                                     NSLocalizedDescriptionKey :  NSLocalizedString("ErrorSendingDeviceId", value: "Could not delete server alert", comment: "")
                                     ])
-                                self.showError(error: error)
+                                ErrorManager.showError(error: error)
                             } else {
                                 NSLog("Deleted notification alert %i",alertId as! Int)
                             }
@@ -254,24 +254,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
                 completionHandler(.performDefaultHandling, nil)
             }
             
-        }
-    }
-    
-    func showError(error : Error) {
-        NSLog("showing error %@",error as NSError)
-        let topWindow = UIWindow(frame: UIScreen.main.bounds)
-        topWindow.rootViewController = UIViewController()
-        topWindow.windowLevel = UIWindowLevelAlert + 1
-        let alertVC = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
-        let alertAction = UIAlertAction(title: "Done", style: .cancel) { (action) in
-            topWindow.rootViewController?.presentedViewController?.dismiss(animated: true, completion: nil)
-            topWindow.isHidden = true
-        }
-        
-        alertVC.addAction(alertAction)
-        DispatchQueue.main.async {
-            topWindow.makeKeyAndVisible()
-            topWindow.rootViewController?.present(alertVC, animated: true, completion: nil)
         }
     }
 

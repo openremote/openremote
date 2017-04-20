@@ -60,25 +60,12 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     }
     
     
-    func showError(error : Error) {
-        let alertVC = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
-        let alertAction = UIAlertAction(title: "Done", style: .cancel, handler: nil)
-        let alertActionResetToken = UIAlertAction(title: "Reset Token", style: .destructive) { (action) in
-            TokenManager.sharedInstance.resetToken()
-            self.dismiss(animated: true, completion: nil)
-            
-        }
-        alertVC.addAction(alertAction)
-        alertVC.addAction(alertActionResetToken)
-        self.present(alertVC, animated: true, completion: nil)
-    }
-    
     // just for testing purpose (ask backend to get list of notifications or send a notification to device)
     func apiCall() {
         TokenManager.sharedInstance.getAccessToken { (accessTokenResult) in
             switch accessTokenResult {
             case .Failure(let error) :
-                self.showError(error: error!)
+                ErrorManager.showError(error: error!)
             case .Success(let accessToken) :
             guard let urlRequest = URL(string: String(Server.apiTestResource)) else { return }
             let request = NSMutableURLRequest(url: urlRequest)
@@ -95,7 +82,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
                         let error = NSError(domain: "", code: 0, userInfo:  [
                             NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
                             ])
-                        self.showError(error: error)
+                        ErrorManager.showError(error: error)
                     } else {
                         print(response.debugDescription)
                         _ = self.myWebView?.load(data!, mimeType: "text/html", characterEncodingName: "utf8", baseURL: URL(string:Server.apiTestResource)!)
@@ -114,7 +101,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         NSLog("error %@", error.localizedDescription)
-        showError(error: NSError(domain: "networkError", code: 0, userInfo:[
+        ErrorManager.showError(error: NSError(domain: "networkError", code: 0, userInfo:[
             NSLocalizedDescriptionKey :  NSLocalizedString("FailedLoadingPage", value: "Could not load page", comment: "")
             ]))
     }
@@ -177,7 +164,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         TokenManager.sharedInstance.getAccessToken { (accessTokenResult) in
             switch accessTokenResult {
             case .Failure(let error) :
-                self.showError(error: error!)
+                ErrorManager.showError(error: error!)
             case .Success(let accessToken) :
             guard let urlRequest = URL(string: String(String(format: "https://%@/%@/asset/%@/attribute/%@", Server.hostURL, Server.realm, assetId,attributeName))) else { return }
             print(urlRequest)
@@ -195,7 +182,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
                         let error = NSError(domain: "", code: 0, userInfo:  [
                             NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
                             ])
-                        self.showError(error: error)
+                        ErrorManager.showError(error: error)
                     } else {
                         print(response.debugDescription)
                     }

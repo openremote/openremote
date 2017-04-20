@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		06B097EA1EA902CF00DF5C43 /* ErrorManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06B097E91EA902CF00DF5C43 /* ErrorManager.swift */; };
+		06B097EB1EA902CF00DF5C43 /* ErrorManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06B097E91EA902CF00DF5C43 /* ErrorManager.swift */; };
+		06B097EC1EA902D900DF5C43 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA2D48301E560B7500C95665 /* Constants.swift */; };
 		87A2313B4335644906A6C5DB /* Pods_console.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4964874264350BC5EAC8F84 /* Pods_console.framework */; };
 		FA1D73E21E53374E00F6240A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1D73E11E53374E00F6240A /* AppDelegate.swift */; };
 		FA1D73E41E53374E00F6240A /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1D73E31E53374E00F6240A /* ViewController.swift */; };
@@ -15,7 +18,6 @@
 		FA1D73EC1E53374E00F6240A /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FA1D73EA1E53374E00F6240A /* LaunchScreen.storyboard */; };
 		FA1D73F61E53392F00F6240A /* ORViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA1D73F51E53392F00F6240A /* ORViewController.swift */; };
 		FA2D48311E560B7500C95665 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA2D48301E560B7500C95665 /* Constants.swift */; };
-		FA3297AB1E8A4FC6008B77D3 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA3297AA1E8A4FC6008B77D3 /* Constants.swift */; };
 		FAA226B81E71563F009A8FEC /* TokenManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAA226B71E71563F009A8FEC /* TokenManager.swift */; };
 		FAA226BA1E715ED6009A8FEC /* TokenManagerView.xib in Resources */ = {isa = PBXBuildFile; fileRef = FAA226B91E715ED6009A8FEC /* TokenManagerView.xib */; };
 		FAA226BC1E7163D9009A8FEC /* TokenManagerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAA226BB1E7163D9009A8FEC /* TokenManagerViewController.swift */; };
@@ -49,6 +51,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		06B097E91EA902CF00DF5C43 /* ErrorManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ErrorManager.swift; sourceTree = "<group>"; };
 		146098EE6A2181297FD32B8D /* Pods-console.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-console.debug.xcconfig"; path = "Pods/Target Support Files/Pods-console/Pods-console.debug.xcconfig"; sourceTree = "<group>"; };
 		6A25CEFE37281B00C9BA7EB5 /* Pods-console.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-console.release.xcconfig"; path = "Pods/Target Support Files/Pods-console/Pods-console.release.xcconfig"; sourceTree = "<group>"; };
 		D4964874264350BC5EAC8F84 /* Pods_console.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_console.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -62,7 +65,6 @@
 		FA1D73F51E53392F00F6240A /* ORViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ORViewController.swift; sourceTree = "<group>"; };
 		FA2D48301E560B7500C95665 /* Constants.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		FA3297A91E8A4AE5008B77D3 /* NotificationExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotificationExtension.entitlements; sourceTree = "<group>"; };
-		FA3297AA1E8A4FC6008B77D3 /* Constants.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		FAA226B71E71563F009A8FEC /* TokenManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TokenManager.swift; sourceTree = "<group>"; };
 		FAA226B91E715ED6009A8FEC /* TokenManagerView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = TokenManagerView.xib; sourceTree = "<group>"; };
 		FAA226BB1E7163D9009A8FEC /* TokenManagerViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TokenManagerViewController.swift; sourceTree = "<group>"; };
@@ -155,6 +157,7 @@
 		FA2D48291E55D9F600C95665 /* utils */ = {
 			isa = PBXGroup;
 			children = (
+				06B097E91EA902CF00DF5C43 /* ErrorManager.swift */,
 				FABC54E61E7AEBD300B7B718 /* Reachability.h */,
 				FABC54E71E7AEBD300B7B718 /* Reachability.m */,
 				FAA226B71E71563F009A8FEC /* TokenManager.swift */,
@@ -171,7 +174,6 @@
 				FA3297A91E8A4AE5008B77D3 /* NotificationExtension.entitlements */,
 				FAFF2E2C1E7A95120076BDE3 /* NotificationService.swift */,
 				FAFF2E2E1E7A95120076BDE3 /* Info.plist */,
-				FA3297AA1E8A4FC6008B77D3 /* Constants.swift */,
 			);
 			path = NotificationExtension;
 			sourceTree = "<group>";
@@ -350,6 +352,7 @@
 			files = (
 				FAA226BC1E7163D9009A8FEC /* TokenManagerViewController.swift in Sources */,
 				FA2D48311E560B7500C95665 /* Constants.swift in Sources */,
+				06B097EA1EA902CF00DF5C43 /* ErrorManager.swift in Sources */,
 				FA1D73E41E53374E00F6240A /* ViewController.swift in Sources */,
 				FABC54E81E7AEBD300B7B718 /* Reachability.m in Sources */,
 				FAA226B81E71563F009A8FEC /* TokenManager.swift in Sources */,
@@ -362,8 +365,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				06B097EB1EA902CF00DF5C43 /* ErrorManager.swift in Sources */,
 				FAFF2E2D1E7A95120076BDE3 /* NotificationService.swift in Sources */,
-				FA3297AB1E8A4FC6008B77D3 /* Constants.swift in Sources */,
+				06B097EC1EA902D900DF5C43 /* Constants.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
