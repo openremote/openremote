@@ -147,7 +147,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         FIRMessaging.messaging().connect { (error) in
             if (error != nil)
             {
-                NSLog("Unable to connect with FCM. \(error)")
+                //NSLog("Unable to connect with FCM. \(error)")
+                if let token = FIRInstanceID.instanceID().token() {
+                    NSLog("Connected to FCM. Token is %@",token as String)
+                    TokenManager.sharedInstance.storeDeviceId(token: token)
+                }
             }
             else
             {
@@ -155,7 +159,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
                     NSLog("Connected to FCM. Token is %@",token as String)
                     TokenManager.sharedInstance.storeDeviceId(token: token)
                 } else {
-                    NSLog("Connected to FCM. Token is currently nil")
+                //    NSLog("Connected to FCM. Token is currently nil")
                 }
             }
         }

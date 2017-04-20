@@ -192,7 +192,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
             request.httpBody = postString.data(using: .utf8)
             request.addValue(String(format:"Bearer %@", accessToken!), forHTTPHeaderField: "Authorization")
             let sessionConfiguration = URLSessionConfiguration.default
-            let session = URLSession(configuration: sessionConfiguration)
+            let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: nil)
             let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
                 DispatchQueue.main.async {
                     if (error != nil) {
