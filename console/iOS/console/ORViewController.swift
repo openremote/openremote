@@ -84,7 +84,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
             let request = NSMutableURLRequest(url: urlRequest)
             request.httpMethod = "GET" // post to create a notification alert, get to get a list of notification alerts
             request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = "{\"title\" :\" notif alert title\",\"message\" : \"notif alert message\",\"appUrl\" : \"http://www.openremote.org\",\"actions\": [ {\"title\" : \"Open link\" , \"type\": \"ACTION_DEEP_LINK\"},{\"title\" : \"background call\" , \"type\": \"ACTION_ACTUATOR\" , \"assetId\" : \"9sGrlb-CSZWgOeUCTYZ9Yw\", \"attributeName\" : \"targetTemp\", \"rawJson\" : \"45\" } ]}".data(using: .utf8)
+            request.httpBody = "{\"title\" :\" notif alert title\",\"message\" : \"notif alert message\",\"appUrl\" : \"Veilig\",\"actions\": [ {\"title\" : \"Open link\" , \"type\": \"ACTION_DEEP_LINK\"},{\"title\" : \"background call\" , \"type\": \"ACTION_ACTUATOR\" , \"assetId\" : \"2E2vrICRSEa6mfzOquZzxA\", \"attributeName\" : \"targetTemp\", \"rawJson\" : \"18\" } ]}".data(using: .utf8)
             request.addValue(String(format:"Bearer %@", accessToken!), forHTTPHeaderField: "Authorization")
             let sessionConfiguration = URLSessionConfiguration.default
             let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue : nil)

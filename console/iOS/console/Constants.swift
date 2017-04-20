@@ -16,9 +16,12 @@ enum AccesTokenResult<String>
 
 enum Server {
     static let hostURL = "192.168.0.177"
-    static let initialPath = String(format:"console/%@/index.html",Server.realm)
+    static let initialPath = String(format:"console/%@/",Server.realm)
+    static let navigationPath = String(format:"console/%@/#/",Server.realm)
     static let realm = "blok61"
     static let apiTestResource = String(format:"https://%@/%@/notification/alert",Server.hostURL,Server.realm)
+//    static let apiTestResource = String(format:"https://%@/%@/asset/user/current",Server.hostURL,Server.realm)
+
     static let registerDeviceResource = String(format:"https://%@/%@/notification/token",Server.hostURL,Server.realm)
 }
 

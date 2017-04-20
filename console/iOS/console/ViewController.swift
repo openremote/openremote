@@ -68,13 +68,11 @@ class ViewController: UIViewController {
     }
     
     func loadUrl(url: URL) {
-        if (self.presentedViewController?.isMember(of: ORViewcontroller.self))! {
-            self.orViewController.loadURL(url: url)
-        }
+        self.orViewController.loadURL(url: url)
     }
     
     func updateAssetAttribute(assetId : String, attributeName : String, rawJson : String) {
-            self.orViewController.updateAssetAttribute(assetId: assetId, attributeName: attributeName, rawJson: rawJson)
+        self.orViewController.updateAssetAttribute(assetId: assetId, attributeName: attributeName, rawJson: rawJson)
     }
 }
 
