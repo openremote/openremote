@@ -12,7 +12,7 @@ import Firebase
 
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate, URLSessionDelegate {
     
     var window: UIWindow?
     let gcmMessageIDKey = "gcm.message_id"
@@ -112,22 +112,64 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         switch response.actionIdentifier {
         case ActionType.ACTION_DEEP_LINK :
             // open url
-            let urlToOpen = response.notification.request.content.userInfo["appUrl"] as! String // until now we are considering anchor name (without the #)
-            (self.window?.rootViewController as! ViewController).loadUrl(url: URL(string: String(format: "https://%@/%@%@", Server.hostURL, Server.navigationPath,urlToOpen))!)
+            if let urlToOpen = response.notification.request.content.userInfo["appUrl"] { // until now we are considering anchor name (without the #)
+            (self.window?.rootViewController as! ViewController).loadUrl(url: URL(string: String(format: "https://%@/%@%@", Server.hostURL, Server.navigationPath,urlToOpen as! String))!)
             NSLog("Action asked : %@",response.actionIdentifier)
+            }
         case ActionType.ACTION_ACTUATOR :
             NSLog("Action asked : %@",response.actionIdentifier)
             
-            let actions = response.notification.request.content.userInfo["actions"] as! Dictionary<String,String>
-            assetId = actions["assetId"]!
-            attributeName =  actions["attributeName"]!
-            rawJson =  actions["rawJson"]!
-
+            if let actions = response.notification.request.content.userInfo["actions"] {
+            assetId = (actions as! Dictionary<String,String>)["assetId"]!
+            attributeName =  (actions as! Dictionary<String,String>)["attributeName"]!
+            rawJson =  (actions as! Dictionary<String,String>)["rawJson"]!
+            }
             
             (self.window?.rootViewController as! ViewController).updateAssetAttribute(assetId : assetId, attributeName : attributeName, rawJson : rawJson)
         default : break
         }
+        if let alertId = response.notification.request.content.userInfo["alertId"] {
+
+        TokenManager.sharedInstance.getAccessToken { (accessTokenResult) in
+            switch accessTokenResult {
+            case .Failure(let error) :
+                self.showError(error: error!)
+            case .Success(let accessToken) :
+                guard let urlRequest = URL(string: String(format:"%@%i", Server.deleteNotifiedAlertResource, alertId as! Int)) else { return }
+                let request = NSMutableURLRequest(url: urlRequest)
+                request.addValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type");
+                request.httpMethod = "DELETE"
+                let postString = String(format:"token=%@&device_id=%@", TokenManager.sharedInstance.deviceId!, (UIDevice.current.identifierForVendor?.uuidString)!)
+                request.httpBody = postString.data(using: .utf8)
+                request.addValue(String(format:"Bearer %@", accessToken!), forHTTPHeaderField: "Authorization")
+                let sessionConfiguration = URLSessionConfiguration.default
+                let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: nil)
+                let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
+                    DispatchQueue.main.async {
+                        if (error != nil) {
+                            NSLog("error %@", (error! as NSError).localizedDescription)
+                            let error = NSError(domain: "", code: 0, userInfo:  [
+                                NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
+                                ])
+                            self.showError(error: error)
+                        } else {
+                            if let httpStatus = response as? HTTPURLResponse , httpStatus.statusCode != 204 {
+                                let error = NSError(domain: "", code: 0, userInfo:  [
+                                    NSLocalizedDescriptionKey :  NSLocalizedString("ErrorSendingDeviceId", value: "Could not delete server alert", comment: "")
+                                    ])
+                                self.showError(error: error)
+                            } else {
+                                NSLog("Deleted notification alert %i",alertId as! Int)
+                            }
+                        }
+                    }
+                })
+                reqDataTask.resume()
+            }
+        
+        }
         completionHandler()
+        }
     }
     
     
@@ -204,6 +246,35 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         
     }
     
+    func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        if (challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust) {
+            if challenge.protectionSpace.host == Server.hostURL {
+                completionHandler(.useCredential, URLCredential(trust: challenge.protectionSpace.serverTrust!))
+            } else {
+                completionHandler(.performDefaultHandling, nil)
+            }
+            
+        }
+    }
+    
+    func showError(error : Error) {
+        NSLog("showing error %@",error as NSError)
+        let topWindow = UIWindow(frame: UIScreen.main.bounds)
+        topWindow.rootViewController = UIViewController()
+        topWindow.windowLevel = UIWindowLevelAlert + 1
+        let alertVC = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertControllerStyle.alert)
+        let alertAction = UIAlertAction(title: "Done", style: .cancel) { (action) in
+            topWindow.rootViewController?.presentedViewController?.dismiss(animated: true, completion: nil)
+            topWindow.isHidden = true
+        }
+        
+        alertVC.addAction(alertAction)
+        DispatchQueue.main.async {
+            topWindow.makeKeyAndVisible()
+            topWindow.rootViewController?.present(alertVC, animated: true, completion: nil)
+        }
+    }
+
 }
 
 

@@ -23,6 +23,7 @@ enum Server {
 //    static let apiTestResource = String(format:"https://%@/%@/asset/user/current",Server.hostURL,Server.realm)
 
     static let registerDeviceResource = String(format:"https://%@/%@/notification/token",Server.hostURL,Server.realm)
+    static let deleteNotifiedAlertResource = String(format:"https://%@/%@/notification/alert/",Server.hostURL,Server.realm)
 }
 
 enum Client {

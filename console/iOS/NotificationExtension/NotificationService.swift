@@ -55,6 +55,7 @@ class NotificationService: UNNotificationServiceExtension, URLSessionDelegate {
                                             bestAttemptContent.title = detailedJson["title"] as! String
                                             bestAttemptContent.body = detailedJson["message"] as! String
                                             bestAttemptContent.userInfo["appUrl"] = detailedJson["appUrl"]
+                                            bestAttemptContent.userInfo["alertId"] = detailedJson["id"]
                                             let actions = detailedJson["actions"] as! [[String : Any]]
                                             var notificationActions = [UNNotificationAction]()
                                             for var i in (0..<actions.count) {
