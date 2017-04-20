@@ -108,6 +108,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     }
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        var assetId : String = ""
+        var attributeName : String = ""
+        var rawJson : String = ""
         switch response.actionIdentifier {
         case ActionType.ACTION_DEEP_LINK :
             // open url
@@ -116,6 +119,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             NSLog("Action asked : %@",response.actionIdentifier)
         case ActionType.ACTION_ACTUATOR :
             NSLog("Action asked : %@",response.actionIdentifier)
+            
+            let actions = response.notification.request.content.userInfo["actions"] as! Dictionary<String,String>
+            assetId = actions["assetId"]!
+            attributeName =  actions["attributeName"]!
+            rawJson =  actions["rawJson"]!
+
+            
+            (self.window?.rootViewController as! ViewController).updateAssetAttribute(assetId : assetId, attributeName : attributeName, rawJson : rawJson)
         default : break
         }
         completionHandler()

@@ -62,6 +62,8 @@ class NotificationService: UNNotificationServiceExtension, URLSessionDelegate {
                                                 let actionType = actions[i]["type"]! as! String
                                                 switch actionType {
                                                 case ActionType.ACTION_ACTUATOR :
+                                                    bestAttemptContent.userInfo["actions"] = actions[i]
+
                                                     notificationActions.append(UNNotificationAction(identifier: actionType, title: actionTitle, options: UNNotificationActionOptions.destructive))
                                                 case ActionType.ACTION_DEEP_LINK :
                                                     notificationActions.append(UNNotificationAction(identifier: actionType, title: actionTitle, options: UNNotificationActionOptions.foreground))

@@ -90,9 +90,9 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
                     if ((jsonDictionnary["access_token"]) != nil) {
                         guard let urlRequest = URL(string: String(Server.apiTestResource)) else { return }
                         let request = NSMutableURLRequest(url: urlRequest)
-                        request.httpMethod = "GET" //change to post to create a notification alert
+                        request.httpMethod = "GET" // post to create a notification alert, get to get a list of notification alerts
                         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-                        request.httpBody = "{\"title\" :\" notif alert title\",\"message\" : \"notif alert message\",\"appUrl\" : \"http://www.openremote.org\",\"actions\": [ {\"title\" : \"Open link\" , \"type\": \"ACTION_DEEP_LINK\"},{\"title\" : \"background call\" , \"type\": \"ACTION_ACTUATOR\"} ]}".data(using: .utf8)
+                        request.httpBody = "{\"title\" :\" notif alert title\",\"message\" : \"notif alert message\",\"appUrl\" : \"http://www.openremote.org\",\"actions\": [ {\"title\" : \"Open link\" , \"type\": \"ACTION_DEEP_LINK\"},{\"title\" : \"background call\" , \"type\": \"ACTION_ACTUATOR\" , \"assetId\" : \"9sGrlb-CSZWgOeUCTYZ9Yw\", \"attributeName\" : \"targetTemp\", \"rawJson\" : \"45\" } ]}".data(using: .utf8)
                         request.addValue(String(format:"Bearer %@", jsonDictionnary["access_token"] as! String), forHTTPHeaderField: "Authorization")
                         let sessionConfiguration = URLSessionConfiguration.default
                         let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue : nil)
@@ -205,12 +205,88 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         myWebView?.navigationDelegate = self;
         view.addSubview(myWebView!)
         
-        self.apiCall()
-        //self.login()
+        //self.apiCall()
+        self.login()
     }
     
     func loadURL(url : URL) {
         _ = self.myWebView?.load(URLRequest(url:url))
     }
+    
+    func updateAssetAttribute(assetId : String, attributeName : String, rawJson : String) {
+        guard let tkurlRequest = URL(string: String(format:"https://%@/auth/realms/%@/protocol/openid-connect/token",Server.hostURL,Server.realm)) else { return }
+        let tkRequest = NSMutableURLRequest(url: tkurlRequest)
+        tkRequest.addValue("application/x-www-form-urlencoded", forHTTPHeaderField:"Content-Type");
+        tkRequest.httpMethod = "POST"
+        let postString = String(format:"grant_type=refresh_token&refresh_token=%@&client_id=%@",(TokenManager.sharedInstance.refreshToken )!,Client.clientId)
+        tkRequest.httpBody = postString.data(using: .utf8)
+        let sessionConfiguration = URLSessionConfiguration.default
+        let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: nil)
+        let req = session.dataTask(with: tkRequest as URLRequest, completionHandler: { (data, response, error) in
+            if (data != nil){
+                do {
+                    let jsonDictionnary: Dictionary = try JSONSerialization.jsonObject(with: data!, options: []) as! [String:Any]
+                    if ((jsonDictionnary["access_token"]) != nil) {
+                        guard let urlRequest = URL(string: String(String(format: "https://%@/%@/asset/%@/attribute/%@", Server.hostURL, Server.realm, assetId,attributeName))) else { return }
+                        print(urlRequest)
+                        let request = NSMutableURLRequest(url: urlRequest)
+                        request.httpMethod = "PUT"
+                        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+                        request.httpBody = rawJson.data(using: .utf8)
+                        request.addValue(String(format:"Bearer %@", jsonDictionnary["access_token"] as! String), forHTTPHeaderField: "Authorization")
+                        let sessionConfiguration = URLSessionConfiguration.default
+                        let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue : nil)
+                        let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
+                            DispatchQueue.main.async {
+                                if (error != nil) {
+                                    NSLog("error %@", (error as! NSError).localizedDescription)
+                                    let error = NSError(domain: "", code: 0, userInfo:  [
+                                        NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
+                                        ])
+                                    self.showError(error: error)
+                                } else {
+                                    print(response.debugDescription)
+                                    _ = self.myWebView?.load(data!, mimeType: "text/html", characterEncodingName: "utf8", baseURL: URL(string:Server.apiTestResource)!)
+                                }
+                            }
+                        })
+                        reqDataTask.resume()
+                    } else {
+                        if let httpResponse = response as? HTTPURLResponse {
+                            NSLog("error %@", httpResponse)
+                            let error = NSError(domain: "", code: httpResponse.statusCode, userInfo:  [
+                                NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
+                                ])
+                            self.showError(error: error)
+                        } else {
+                            if (error != nil) {
+                                NSLog("error %@", (error as! NSError).localizedDescription as String)
+                            }
+                            let error = NSError(domain: "", code: 0, userInfo:  [
+                                NSLocalizedDescriptionKey :  NSLocalizedString("ErrorCallingAPI", value: "Could not get data", comment: "")
+                                ])
+                            self.showError(error: error)
+                        }
+                    }
+                }
+                catch let error as NSError {
+                    NSLog("error %@", error.localizedDescription)
+                    let error = NSError(domain: "", code: 0, userInfo:  [
+                        NSLocalizedDescriptionKey :  NSLocalizedString("ErrorDeserializingJSON", value: "Could not convert received data", comment: "")
+                        ])
+                    self.showError(error: error)
+                }
+            } else {
+                NSLog("error %@", (error as! NSError).localizedDescription)
+                let error = NSError(domain: "", code: 0, userInfo:  [
+                    NSLocalizedDescriptionKey :  NSLocalizedString("NoDataReceived", value: "Did not receive any data", comment: "")
+                    ])
+                self.showError(error: error)
+            }
+        })
+        req.resume()
+
+    }
+
     
 }
