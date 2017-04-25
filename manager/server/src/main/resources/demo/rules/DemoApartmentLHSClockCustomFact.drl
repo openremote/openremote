@@ -1,0 +1,63 @@
+package org.openremote.test.rules;
+
+import org.openremote.model.*;
+import org.openremote.model.asset.*
+import elemental.json.Json;
+
+import java.util.*
+import java.time.DayOfWeek
+import java.time.LocalTime
+import java.time.LocalDateTime
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.TextStyle;
+import java.util.Locale;
+
+
+global java.util.logging.Logger LOG;
+global org.openremote.model.rules.Assets assets;
+
+declare CustomClock5s
+    @role(event)
+//    @expires(45s)
+    clock: LocalDateTime
+    dow: String
+    dowNext: String
+    dowi: int
+end
+
+rule "Set custom clock fields"
+    timer (cron: 0/5 * * * * ? *)
+then
+    CustomClock5s cc = new CustomClock5s();
+
+    Instant instant = Instant.ofEpochMilli( drools.getWorkingMemory().getSessionClock().getCurrentTime() );
+    LocalDateTime res = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+    cc.setClock(res);
+
+    cc.setDow( cc.getClock().getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.ROOT) );
+    cc.setDowNext( cc.getClock().getDayOfWeek().plus(1).getDisplayName(TextStyle.SHORT, Locale.ROOT) );
+    cc.setDowi( cc.getClock().getDayOfWeek().getValue() );
+
+    LOG.info("@"+cc.toString());
+    insert(cc);
+end
+
+rule "Act on clock"
+// TODO There is fundamental problem in the rule engine. This rule is never executed without delay. This is wrong.
+//    timer(int: 1s)
+when
+    $c: CustomClock5s()
+then
+    LOG.info("@"+(new java.util.Date(drools.getWorkingMemory().getSessionClock().getCurrentTime())).toString());
+end
+
+rule "Just to be sure"
+// TODO There is fundamental problem in the rule engine. This rule is never executed without delay. This is wrong.
+//    timer(int: 1s)
+when
+    $c: CustomClock5s($cl: clock)
+    CustomClock5s(clock != $cl, this after $c)
+then
+    retract($c);
+end

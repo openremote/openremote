@@ -363,6 +363,16 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     ).add(
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
+                ),
+            new AssetAttribute( "lastScene", AttributeType.STRING, Json.create("NIGHT"))
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("Current scene"))
+                    ).add(
+                        new MetaItem(AssetMeta.DESCRIPTION, Json.create("The scene which is currently active"))
+                    ).add(
+                        new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    )
                 )
         );
         apartment1.setAttributeList(apartment1Attributes);

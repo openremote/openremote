@@ -12,10 +12,32 @@ rule "Decrement vacation days every day 1 minute after midnight until vacation i
     timer (cron: 0 1 0 1/1 * ? *)
 when
     // Vacation days are more than zero, which means vacation mode is enabled
-    $s: AssetState(attributeName == "vacationDays", type == AssetType.RESIDENCE, value.asNumber() > 0 )
+    AssetState($ref: attributeRef, attributeName == "vacationDays", type == AssetType.RESIDENCE, $val: value.asNumber() > 0 )
 then
+    LOG.info("Drools SessionClock() is: "+(new java.util.Date(drools.getWorkingMemory().getSessionClock().getCurrentTime())).toString());
     // Decrement the vacation days by one
-    assets.dispatch(
-        new AttributeEvent($s.getAttributeRef(), Json.create($s.getValue().asNumber() -1))
-    );
+    assets.dispatch( new AttributeEvent($ref, Json.create($val - 1)) );
+end
+
+rule "Set state to AWAY when on holidays"
+when
+    $a: AssetState(attributeName == "vacationDays", value.asNumber() > 0 )
+    AssetState(attributeName == "lastScene", $ref: attributeRef, value.asString() != "AWAY")
+then
+    assets.dispatch( new AttributeEvent($ref, Json.create("AWAY")) );
+end
+
+rule "Set state to HOME when not on holidays"
+timer(int: 7h) // At morning
+when
+    $a: AssetState(attributeName == "vacationDays", value.asNumber() == 0 )
+    AssetState(attributeName == "lastScene", $ref: attributeRef, value.asString() != "HOME")
+then
+    assets.dispatch( new AttributeEvent($ref, Json.create("HOME")) );
+end
+
+rule "Echo asset state" // to see what states are send to the engine
+salience 10
+when AssetState()
+then
 end

@@ -80,11 +80,11 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         and: "the demo attributes marked with RULE_STATE = true meta should be inserted into the engines"
         conditions.eventually {
-            assert rulesService.assetStates.size() == 9
-            assert rulesImport.globalEngine.assetStates.size() == 9
+            assert rulesService.assetStates.size() == 10
+            assert rulesImport.globalEngine.assetStates.size() == 10
             assert rulesImport.masterEngine.assetStates.size() == 0
-            assert rulesImport.customerAEngine.assetStates.size() == 9
-            assert rulesImport.apartment1Engine.assetStates.size() == 5
+            assert rulesImport.customerAEngine.assetStates.size() == 10
+            assert rulesImport.apartment1Engine.assetStates.size() == 6
             assert rulesImport.apartment3Engine.assetStates.size() == 2
         }
 
@@ -177,7 +177,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             smartHomeEngine = rulesService.assetDeployments.get(managerDemoSetup.smartHomeId)
             assert smartHomeEngine != null
             assert smartHomeEngine.isRunning()
-            assert smartHomeEngine.assetStates.size() == 9
+            assert smartHomeEngine.assetStates.size() == 10
             assert smartHomeEngine.allRulesets.length == 1
             assert smartHomeEngine.allRulesets[0].enabled
             assert smartHomeEngine.allRulesets[0].name == "Some smart home asset rules"
@@ -246,7 +246,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             rulesImport.globalEngine = rulesService.globalDeployment
             assert rulesImport.globalEngine != null
             assert rulesImport.globalEngine.isRunning()
-            assert rulesImport.globalEngine.assetStates.size() == 9
+            assert rulesImport.globalEngine.assetStates.size() == 10
             assert rulesImport.globalEngine.allRulesets.length == 2
             assert rulesImport.globalEngine.allRulesets[1].enabled
             assert rulesImport.globalEngine.allRulesets[1].name == "Some global test rules"
