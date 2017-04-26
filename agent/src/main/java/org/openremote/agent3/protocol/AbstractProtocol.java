@@ -52,10 +52,12 @@ public abstract class AbstractProtocol implements Protocol {
     final protected Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
     protected MessageBrokerContext messageBrokerContext;
     protected ProducerTemplate producerTemplate;
+    protected ProtocolExecutorService executorService;
 
     @Override
     public void init(Container container) throws Exception {
         LOG.info("Initializing protocol: " + getProtocolName());
+        executorService = container.getService(ProtocolExecutorService.class);
     }
 
     @Override

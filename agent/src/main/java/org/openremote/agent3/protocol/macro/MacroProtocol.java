@@ -21,7 +21,6 @@ package org.openremote.agent3.protocol.macro;
 
 import elemental.json.JsonValue;
 import org.openremote.agent3.protocol.AbstractProtocol;
-import org.openremote.container.Container;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeExecuteStatus;
 import org.openremote.model.AttributeRef;
@@ -31,10 +30,7 @@ import org.openremote.model.asset.AssetAttribute;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -122,22 +118,16 @@ public class MacroProtocol extends AbstractProtocol {
             }
 
             // Get next execution delay
-            Integer delay = actions.get(iteration).getDelayMilliseconds();
+            Integer delayMillis = actions.get(iteration).getDelayMilliseconds();
 
             // Schedule the next iteration
-            scheduledFuture = executor.schedule(this::run, delay > 0 ? delay : 0, TimeUnit.MILLISECONDS);
+            scheduledFuture = executorService.schedule(this::run, delayMillis > 0 ? delayMillis: 0);
         }
     }
 
     private static final Logger LOG = Logger.getLogger(MacroProtocol.class.getName());
-    protected final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     protected final Map<AttributeRef, List<MacroAction>> actionMap = new HashMap<>();
     protected final Map<AttributeRef, MacroExecutionTask> executions = new HashMap<>();
-
-    @Override
-    public void start(Container container) throws Exception {
-        super.start(container);
-    }
 
     @Override
     public String getProtocolName() {

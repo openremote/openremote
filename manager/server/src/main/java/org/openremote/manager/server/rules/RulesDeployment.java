@@ -50,6 +50,7 @@ import org.openremote.manager.server.asset.AssetProcessingService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.notification.NotificationService;
+import org.openremote.manager.server.concurrent.ManagerExecutorService;
 import org.openremote.manager.shared.rules.AssetRuleset;
 import org.openremote.manager.shared.rules.GlobalRuleset;
 import org.openremote.manager.shared.rules.Ruleset;
@@ -64,10 +65,7 @@ import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Users;
 
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -76,7 +74,8 @@ public class RulesDeployment<T extends Ruleset> {
 
     public static final Logger LOG = Logger.getLogger(RulesDeployment.class.getName());
 
-    protected final NotificationService notificationService;
+    final protected ManagerExecutorService executorService;
+    final protected NotificationService notificationService;
     final protected AssetStorageService assetStorageService;
     final protected AssetProcessingService assetProcessingService;
     final protected Class<T> rulesetType;
@@ -100,11 +99,14 @@ public class RulesDeployment<T extends Ruleset> {
     protected boolean running;
     protected long currentFactCount;
     final protected Map<AssetState, FactHandle> assetStates = new HashMap<>();
-    protected static final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     protected ScheduledFuture startTimer;
 
-    public RulesDeployment(AssetStorageService assetStorageService, NotificationService notificationService, AssetProcessingService assetProcessingService,
+    public RulesDeployment(ManagerExecutorService executorService,
+                           AssetStorageService assetStorageService,
+                           NotificationService notificationService,
+                           AssetProcessingService assetProcessingService,
                            Class<T> rulesetType, String id) {
+        this.executorService = executorService;
         this.assetStorageService = assetStorageService;
         this.notificationService = notificationService; // shouldBeUser service or Identity Service ?
         this.assetProcessingService = assetProcessingService;
@@ -250,7 +252,7 @@ public class RulesDeployment<T extends Ruleset> {
                 }
             });
         } else {
-            startTimer = executorService.schedule(this::start, AUTO_START_DELAY_SECONDS, TimeUnit.SECONDS);
+            startTimer = executorService.schedule(this::start, AUTO_START_DELAY_SECONDS * 1000);
         }
 
         // Add new ruleset
@@ -303,7 +305,7 @@ public class RulesDeployment<T extends Ruleset> {
 
         if (!isError() && !isEmpty()) {
             // Queue engine start
-            startTimer = executorService.schedule(this::start, AUTO_START_DELAY_SECONDS, TimeUnit.SECONDS);
+            startTimer = executorService.schedule(this::start, AUTO_START_DELAY_SECONDS * 1000);
         }
     }
 

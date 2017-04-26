@@ -59,7 +59,7 @@ public interface Protocol extends ContainerService {
     // TODO: Some of these options should be configurable depending on expected load etc.
 
     // Message topic for communicating from asset/thing to protocol layer (asset attribute changed, trigger actuator)
-    String ACTUATOR_TOPIC = "seda://ActuatorTopic?multipleConsumers=true&concurrentConsumers=10&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
+    String ACTUATOR_TOPIC = "seda://ActuatorTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
 
     // Message queue for communicating from protocol to asset/thing layer (sensor changed, trigger asset attribute update)
     String SENSOR_QUEUE = "seda://SensorQueue?waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=false&size=1000";

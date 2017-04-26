@@ -19,12 +19,12 @@
  */
 package org.openremote.container.web;
 
-import io.undertow.connector.ByteBufferPool;
 import io.undertow.server.DefaultByteBufferPool;
 import io.undertow.server.HttpHandler;
 import io.undertow.servlet.api.*;
 import io.undertow.servlet.util.ImmediateInstanceHandle;
 import io.undertow.websockets.jsr.DefaultContainerConfigurator;
+import io.undertow.websockets.jsr.UndertowContainerProvider;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.security.IdentityService;
@@ -32,19 +32,21 @@ import org.openremote.container.web.socket.*;
 import org.xnio.OptionMap;
 import org.xnio.Options;
 import org.xnio.Xnio;
-import org.xnio.XnioWorker;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpointConfig;
-import java.security.Principal;
 import java.util.logging.Logger;
 
 public class DefaultWebsocketComponent extends WebsocketComponent {
 
     private static final Logger LOG = Logger.getLogger(DefaultWebsocketComponent.class.getName());
+
+    static {
+        UndertowContainerProvider.disableDefaultContainer();
+    }
 
     final protected IdentityService identityService;
     final protected WebService webService;
@@ -92,12 +94,22 @@ public class DefaultWebsocketComponent extends WebsocketComponent {
             );
         });
 
-        // TODO https://issues.jboss.org/browse/UNDERTOW-682 remove this code block in 1.3.21.final
+        // We use the I/O thread to handle received websocket frames, as we expect to quickly hand them over to
+        // an internal asynchronous message queue for processing, so we don't need a separate worker thread
+        // pool for websocket frame processing
+        webSocketDeploymentInfo.setDispatchToWorkerThread(false);
+
+        // Make the shit Undertow/Websocket JSR client bootstrap happy - this is the pool that would be used
+        // when Undertow acts as a WebSocket client, which we don't do... and I'm not even sure it can do that...
+        webSocketDeploymentInfo.setWorker(Xnio.getInstance().createWorker(
+            OptionMap.builder()
+                .set(Options.WORKER_TASK_MAX_THREADS, 1)
+                .set(Options.WORKER_NAME, "WebsocketInternalClient")
+                .set(Options.THREAD_DAEMON, true)
+                .getMap()
+        ));
         boolean directBuffers = Boolean.getBoolean("io.undertow.websockets.direct-buffers");
-        XnioWorker worker = Xnio.getInstance().createWorker(OptionMap.create(Options.THREAD_DAEMON, true));
-        ByteBufferPool buffers = new DefaultByteBufferPool(directBuffers, 1024, 100, 12);
-        webSocketDeploymentInfo.setWorker(worker);
-        webSocketDeploymentInfo.setBuffers(buffers);
+        webSocketDeploymentInfo.setBuffers(new DefaultByteBufferPool(directBuffers, 1024, 100, 12));
 
         deploymentInfo = new DeploymentInfo()
             .setDeploymentName("WebSocket Deployment")

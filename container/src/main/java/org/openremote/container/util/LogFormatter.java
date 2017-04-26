@@ -19,6 +19,8 @@
  */
 package org.openremote.container.util;
 
+import org.openremote.model.util.TextUtil;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Instant;
@@ -33,14 +35,16 @@ public class LogFormatter extends Formatter {
     public String format(LogRecord record) {
         OffsetDateTime date = fromMillis(record.getMillis());
 
-        StringBuilder sb = new StringBuilder(180);
+        StringBuilder sb = new StringBuilder(250);
 
-        sb.append(pad(date.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME), 29));
+        sb.append(TextUtil.pad(date.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME), 29));
         sb.append(" ");
-        sb.append(pad(record.getLevel().toString(), 7));
+        sb.append(TextUtil.pad(record.getLevel().toString(), 7));
         sb.append(" ");
-        sb.append("[").append(pad(truncate(Thread.currentThread().getName(), 20, true), 20)).append("] ");
-        sb.append(pad(truncate(record.getLoggerName(), 40, true), 40));
+        sb.append("[").append(
+            TextUtil.pad(Thread.currentThread().getName().replaceFirst("(.{24}).+(.{4})", "$1..$2"), 30)
+        ).append("] ");
+        sb.append(TextUtil.pad(TextUtil.truncate(record.getLoggerName(), 40, true), 40));
         sb.append(" : ");
         sb.append(formatMessage(record));
 
@@ -60,19 +64,5 @@ public class LogFormatter extends Formatter {
         return OffsetDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault());
     }
 
-    protected String pad(String s, int size) {
-        while (s.length() < size) {
-            s = s + " ";
-        }
-        return s;
-    }
 
-    protected String truncate(String s, int maxLength, boolean alignRight) {
-        if (s.length() <= maxLength)
-            return s;
-
-        return alignRight
-            ? s.substring(s.length() - maxLength, s.length())
-            : s.substring(s.length() - maxLength);
-    }
 }

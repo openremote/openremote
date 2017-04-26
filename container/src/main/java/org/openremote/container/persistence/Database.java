@@ -23,6 +23,7 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.spatial.dialect.postgis.PostgisDialect;
+import org.openremote.container.concurrent.ContainerThreadFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -57,6 +58,7 @@ public interface Database {
             @Override
             public void open(Map<String, Object> properties, String connectionUrl, String username, String password, int connectionTimeoutSeconds, int minIdle, int maxPoolSize) {
                 hikariConfig = new HikariConfig();
+                hikariConfig.setThreadFactory(new ContainerThreadFactory("Database Connections"));
                 hikariConfig.setDataSourceClassName("org.postgresql.ds.PGSimpleDataSource");
                 hikariConfig.addDataSourceProperty("url", connectionUrl);
                 hikariConfig.setUsername(username);

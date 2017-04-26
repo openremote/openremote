@@ -23,6 +23,7 @@ import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.rules.RulesetStorageService
 import org.openremote.manager.server.security.ManagerIdentityService
 import org.openremote.manager.server.setup.SetupService
+import org.openremote.manager.server.concurrent.ManagerExecutorService
 import org.openremote.manager.server.web.ManagerWebService
 
 import static org.openremote.manager.server.setup.builtin.BuiltinSetupTasks.SETUP_IMPORT_DEMO_RULES
@@ -31,6 +32,7 @@ trait ManagerContainerTrait extends ContainerTrait {
 
     static Iterable<ContainerService> defaultServices(Iterable<ContainerService> additionalServices) {
         [
+                new ManagerExecutorService(),
                 new I18NService(),
                 new PersistenceService(),
                 new MessageBrokerSetupService(),

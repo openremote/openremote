@@ -67,7 +67,7 @@ public class TextUtil {
             sb.append(s).append(",");
         }
         if (sb.length() > 0) {
-            sb.deleteCharAt(sb.length()-1);
+            sb.deleteCharAt(sb.length() - 1);
         }
         return sb.toString();
     }
@@ -153,4 +153,19 @@ public class TextUtil {
         return text.substring(0, end) + "...";
     }
 
+    public static String pad(String s, int size) {
+        while (s.length() < size) {
+            s = s + " ";
+        }
+        return s;
+    }
+
+    public static String truncate(String s, int maxLength, boolean alignRight) {
+        if (s.length() <= maxLength)
+            return s;
+
+        return alignRight
+            ? s.substring(s.length() - maxLength, s.length())
+            : s.substring(0, maxLength);
+    }
 }

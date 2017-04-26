@@ -22,14 +22,21 @@ package org.openremote.container.message;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.LoggingErrorHandlerBuilder;
 import org.apache.camel.impl.DefaultStreamCachingStrategy;
-import org.apache.camel.spi.RouteContext;
-import org.apache.camel.spi.StreamCachingStrategy;
+import org.apache.camel.spi.*;
+import org.apache.camel.util.ObjectHelper;
+import org.apache.camel.util.concurrent.CamelThreadFactory;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.security.IdentityService;
+import org.openremote.container.concurrent.ContainerExecutor;
+import org.openremote.container.concurrent.ContainerScheduledExecutor;
 import org.openremote.container.web.DefaultWebsocketComponent;
 import org.openremote.container.web.WebService;
 import org.openremote.container.web.socket.WebsocketComponent;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 
 import static org.openremote.container.util.MapAccess.getString;
 
@@ -45,6 +52,48 @@ public class MessageBrokerSetupService implements ContainerService {
     @Override
     public void init(Container container) throws Exception {
         context = new MessageBrokerContext();
+
+        // We use our own thread factories for creating thread pools - the only method called
+        // is really newThreadPool() for all of the seda:// topics and queues
+        final ExecutorServiceManager executorServiceManager = context.getExecutorServiceManager();
+        executorServiceManager.setThreadNamePattern("#counter# #name#");
+        executorServiceManager.setThreadPoolFactory(new ThreadPoolFactory() {
+            @Override
+            public ExecutorService newCachedThreadPool(ThreadFactory threadFactory) {
+                // This should only be called by the MulticastProcessor aggregation, which we don't use currently!
+                return new ContainerExecutor(getExecutorName("MessagingMcast", threadFactory), 1, 1, 0, -1);
+            }
+
+            @Override
+            public ExecutorService newThreadPool(ThreadPoolProfile profile, ThreadFactory threadFactory) {
+                return new ContainerExecutor(
+                    getExecutorName("Messaging", threadFactory),
+                    profile.getPoolSize(),
+                    profile.getMaxPoolSize(),
+                    profile.getKeepAliveTime(),
+                    profile.getMaxQueueSize()
+                );
+            }
+
+            @Override
+            public ScheduledExecutorService newScheduledThreadPool(ThreadPoolProfile profile, ThreadFactory threadFactory) {
+                return new ContainerScheduledExecutor(
+                    getExecutorName("MessagingTasks", threadFactory),
+                    profile.getPoolSize()
+                );
+            }
+
+            protected String getExecutorName(String name, ThreadFactory threadFactory) {
+                if (threadFactory instanceof CamelThreadFactory) {
+                    CamelThreadFactory factory = (CamelThreadFactory) threadFactory;
+                    String camelName = factory.getName();
+                    camelName = camelName.contains("://") ? ObjectHelper.after(camelName, "://") : camelName;
+                    camelName = camelName.contains("?") ? ObjectHelper.before(camelName, "?") : camelName;
+                    name = name + "-" + camelName;
+                }
+                return name;
+            }
+        });
 
         // TODO make configurable in environment
         context.disableJMX();

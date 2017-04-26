@@ -32,6 +32,7 @@ import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.notification.NotificationService;
 import org.openremote.manager.server.security.ManagerIdentityService;
+import org.openremote.manager.server.concurrent.ManagerExecutorService;
 import org.openremote.manager.shared.rules.AssetRuleset;
 import org.openremote.manager.shared.rules.GlobalRuleset;
 import org.openremote.manager.shared.rules.Ruleset;
@@ -74,6 +75,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     public static final String RULE_EVENT_EXPIRES = "RULE_EVENT_EXPIRES";
     public static final String RULE_EVENT_EXPIRES_DEFAULT = "1h";
 
+    protected ManagerExecutorService executorService;
     protected PersistenceService persistenceService;
     protected RulesetStorageService rulesetStorageService;
     protected ManagerIdentityService identityService;
@@ -94,6 +96,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
     @Override
     public void init(Container container) throws Exception {
+        executorService = container.getService(ManagerExecutorService.class);
         persistenceService = container.getService(PersistenceService.class);
         rulesetStorageService = container.getService(RulesetStorageService.class);
         identityService = container.getService(ManagerIdentityService.class);
@@ -408,7 +411,14 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
         // Global rules have access to everything in the system
         if (globalDeployment == null) {
-            globalDeployment = new RulesDeployment<>(assetStorageService, notificationService, assetProcessingService, GlobalRuleset.class, "GLOBAL");
+            globalDeployment = new RulesDeployment<>(
+                executorService,
+                assetStorageService,
+                notificationService,
+                assetProcessingService,
+                GlobalRuleset.class,
+                "GLOBAL"
+            );
         }
 
         globalDeployment.addRuleset(ruleset);
@@ -434,7 +444,14 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         RulesDeployment<TenantRuleset> deployment = tenantDeployments
             .computeIfAbsent(ruleset.getRealmId(), (realmId) -> {
                 created[0] = true;
-                return new RulesDeployment<>(assetStorageService, notificationService, assetProcessingService, TenantRuleset.class, realmId);
+                return new RulesDeployment<>(
+                    executorService,
+                    assetStorageService,
+                    notificationService,
+                    assetProcessingService,
+                    TenantRuleset.class,
+                    realmId
+                );
             });
 
         deployment.addRuleset(ruleset);
@@ -490,7 +507,14 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         RulesDeployment<AssetRuleset> deployment = assetDeployments
             .computeIfAbsent(ruleset.getAssetId(), (assetId) -> {
                 created[0] = true;
-                return new RulesDeployment<>(assetStorageService, notificationService, assetProcessingService, AssetRuleset.class, assetId);
+                return new RulesDeployment<>(
+                    executorService,
+                    assetStorageService,
+                    notificationService,
+                    assetProcessingService,
+                    AssetRuleset.class,
+                    assetId
+                );
             });
 
         deployment.addRuleset(ruleset);

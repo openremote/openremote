@@ -31,9 +31,6 @@ import org.openremote.model.asset.AssetAttribute;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
@@ -78,8 +75,6 @@ public class SimulatorProtocol extends AbstractProtocol {
     }
 
     protected static final Map<AttributeRef, SimulatorElement> elements = new HashMap<>();
-
-    private static final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
     private static final Logger LOG = Logger.getLogger(org.openremote.agent3.protocol.simulator.SimulatorProtocol.class.getName());
 
@@ -203,7 +198,7 @@ public class SimulatorProtocol extends AbstractProtocol {
         if (updateSensorDelayMilliseconds <= 0) {
             onSensorUpdate(state);
         } else {
-            executorService.schedule(() -> onSensorUpdate(state), updateSensorDelayMilliseconds, TimeUnit.MILLISECONDS);
+            executorService.schedule(() -> onSensorUpdate(state), updateSensorDelayMilliseconds);
         }
     }
 

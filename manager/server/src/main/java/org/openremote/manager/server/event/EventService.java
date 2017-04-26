@@ -27,6 +27,7 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.web.socket.WebsocketAuth;
 import org.openremote.container.web.socket.WebsocketConstants;
+import org.openremote.manager.server.concurrent.ManagerExecutorService;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
@@ -92,18 +93,19 @@ public class EventService implements ContainerService {
     public static final String WEBSOCKET_EVENTS = "events";
 
     // TODO: Some of these options should be configurable depending on expected load etc.
-    public static final String INCOMING_EVENT_TOPIC = "seda://IncomingEventTopic?multipleConsumers=true&concurrentConsumers=10&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
+    public static final String INCOMING_EVENT_TOPIC = "seda://IncomingEventTopic?multipleConsumers=true&concurrentConsumers=1&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&limitConcurrentConsumers=false&size=1000";
 
     public static final String OUTGOING_EVENT_QUEUE = "seda://OutgoingEventQueue?multipleConsumers=false&waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=true&size=1000";
 
-    final protected EventSubscriptions eventSubscriptions = new EventSubscriptions();
     final protected Collection<EventSubscriptionAuthorizer> eventSubscriptionAuthorizers = new CopyOnWriteArraySet<>();
-
     protected MessageBrokerService messageBrokerService;
+    protected EventSubscriptions eventSubscriptions;
 
     @Override
     public void init(Container container) throws Exception {
         messageBrokerService = container.getService(MessageBrokerService.class);
+
+        eventSubscriptions = new EventSubscriptions(container.getService(ManagerExecutorService.class));
 
         MessageBrokerSetupService messageBrokerSetupService = container.getService(MessageBrokerSetupService.class);
         messageBrokerSetupService.getContext().getTypeConverterRegistry().addTypeConverters(
@@ -176,7 +178,6 @@ public class EventService implements ContainerService {
 
     @Override
     public void start(Container container) {
-
     }
 
     @Override

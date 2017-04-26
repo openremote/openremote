@@ -23,14 +23,12 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
 import org.openremote.container.web.socket.WebsocketConstants;
+import org.openremote.manager.server.concurrent.ManagerExecutorService;
 import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
 
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -41,15 +39,6 @@ public class EventSubscriptions {
     private static final Logger LOG = Logger.getLogger(EventSubscriptions.class.getName());
 
     final protected Map<String, SessionSubscriptions> sessionSubscriptions = new HashMap<>();
-
-    final protected ScheduledExecutorService reaperScheduler = Executors.newScheduledThreadPool(
-        1,
-        r -> {
-            Thread t = Executors.defaultThreadFactory().newThread(r);
-            t.setDaemon(true);
-            return t;
-        }
-    );
 
     class SessionSubscriptions extends HashSet<SessionSubscription> {
         public void removeExpired() {
@@ -91,14 +80,15 @@ public class EventSubscriptions {
         }
     }
 
-    public EventSubscriptions() {
-        reaperScheduler.scheduleAtFixedRate(() -> {
+    public EventSubscriptions(ManagerExecutorService executorService) {
+        LOG.info("Starting background task checking for expired event subscriptions from clients");
+        executorService.scheduleAtFixedRate(() -> {
             synchronized (this.sessionSubscriptions) {
                 for (SessionSubscriptions subscriptions : sessionSubscriptions.values()) {
                     subscriptions.removeExpired();
                 }
             }
-        }, 0, 1, TimeUnit.SECONDS);
+        }, 5000, 1000);
     }
 
     public void update(String sessionKey, EventSubscription subscription) {

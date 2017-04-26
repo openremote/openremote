@@ -26,12 +26,10 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.openremote.container.json.ElementalJsonModule;
+import org.openremote.container.concurrent.ContainerThreads;
 import org.openremote.container.util.LogUtil;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 
 import static org.openremote.container.util.MapAccess.getBoolean;
@@ -75,7 +73,7 @@ public class Container {
     protected final Map<String, String> config = new HashMap<>();
     protected final boolean devMode;
 
-    protected boolean running;
+    protected Thread waitingThread;
     protected final Map<Class<? extends ContainerService>, ContainerService> services = new LinkedHashMap<>();
 
     public Container(ContainerService... services) {
@@ -112,35 +110,36 @@ public class Container {
         return devMode;
     }
 
-    public CompletableFuture start() {
-        return CompletableFuture.runAsync(() -> {
-            synchronized (services) {
-                if (running)
-                    return;
-                LOG.info(">>> Starting runtime container...");
-                try {
-                    for (ContainerService service : getServices()) {
-                        LOG.fine("Initializing service: " + service);
-                        service.init(Container.this);
-                    }
-                    for (ContainerService service : getServices()) {
-                        LOG.fine("Starting service: " + service);
-                        service.start(Container.this);
-                    }
-                } catch (RuntimeException ex) {
-                    throw ex;
-                } catch (Exception ex) {
-                    throw new RuntimeException(ex);
+    public boolean isRunning() {
+        return waitingThread != null;
+    }
+
+    public void start() {
+        synchronized (services) {
+            if (isRunning())
+                return;
+            LOG.info(">>> Starting runtime container...");
+            try {
+                for (ContainerService service : getServices()) {
+                    LOG.fine("Initializing service: " + service);
+                    service.init(Container.this);
                 }
-                running = true;
-                LOG.info(">>> Runtime container startup complete");
+                for (ContainerService service : getServices()) {
+                    LOG.fine("Starting service: " + service);
+                    service.start(Container.this);
+                }
+            } catch (RuntimeException ex) {
+                throw ex;
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
             }
-        });
+            LOG.info(">>> Runtime container startup complete");
+        }
     }
 
     public void stop() {
         synchronized (services) {
-            if (!running)
+            if (!isRunning())
                 return;
             LOG.info("<<< Stopping runtime container...");
             List<ContainerService> servicesToStop = Arrays.asList(getServices());
@@ -153,7 +152,8 @@ public class Container {
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             } finally {
-                running = false;
+                waitingThread.interrupt();
+                waitingThread = null;
             }
             LOG.info("<<< Runtime container stopped");
         }
@@ -163,28 +163,8 @@ public class Container {
      * Starts the container and a non-daemon thread that waits forever.
      */
     public void startBackground() throws Exception {
-        // We block here so we die fast if startup fails
-        try {
-            start().get();
-        } catch (ExecutionException ex) {
-            if (ex.getCause() instanceof Exception) {
-                throw (Exception) ex.getCause();
-            } else {
-                throw ex;
-            }
-        }
-        Thread containerThread = new Thread("container") {
-            @Override
-            public void run() {
-                try {
-                    new CountDownLatch(1).await();
-                } catch (InterruptedException ex) {
-                    // Shutdown
-                }
-            }
-        };
-        containerThread.setDaemon(false);
-        containerThread.start();
+        start();
+        waitingThread = ContainerThreads.startWaitingThread();
     }
 
     public ContainerService[] getServices() {

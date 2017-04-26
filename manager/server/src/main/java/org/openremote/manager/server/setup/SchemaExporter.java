@@ -75,6 +75,6 @@ public class SchemaExporter {
             }
         );
 
-        container.start().get();
+        container.start();
     }
 }

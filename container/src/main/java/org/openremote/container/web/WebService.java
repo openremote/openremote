@@ -42,6 +42,7 @@ import org.openremote.container.security.CORSFilter;
 import org.openremote.container.security.IdentityService;
 import org.openremote.container.security.SimpleKeycloakServletExtension;
 import org.openremote.container.web.jsapi.JSAPIServlet;
+import org.xnio.Options;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.UriBuilder;
@@ -66,6 +67,10 @@ public abstract class WebService implements ContainerService {
     public static final int WEBSERVER_LISTEN_PORT_DEFAULT = 8080;
     public static final String WEBSERVER_DUMP_REQUESTS = "WEBSERVER_DUMP_REQUESTS";
     public static final boolean WEBSERVER_DUMP_REQUESTS_DEFAULT = false;
+    public static final String WEBSERVER_IO_THREADS_MAX = "WEBSERVER_IO_THREADS_MAX";
+    public static final int WEBSERVER_IO_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 2);
+    public static final String WEBSERVER_WORKER_THREADS_MAX = "WEBSERVER_WORKER_THREADS_MAX";
+    public static final int WEBSERVER_WORKER_THREADS_MAX_DEFAULT = Math.max(Runtime.getRuntime().availableProcessors(), 10);
 
     // Authenticating requests requires a realm, either we receive this in a header or
     // we extract it (e.g. from request path segment) and set it as a header before
@@ -106,10 +111,15 @@ public abstract class WebService implements ContainerService {
                 .host(containerHost)
                 .port(port).build();
 
+
         undertow = build(
             container,
             Undertow.builder()
                 .addHttpListener(port, host)
+                .setIoThreads(getInteger(container.getConfig(), WEBSERVER_IO_THREADS_MAX, WEBSERVER_IO_THREADS_MAX_DEFAULT))
+                .setWorkerThreads(getInteger(container.getConfig(), WEBSERVER_WORKER_THREADS_MAX, WEBSERVER_WORKER_THREADS_MAX_DEFAULT))
+                .setWorkerOption(Options.WORKER_NAME, "WebService")
+                .setWorkerOption(Options.THREAD_DAEMON, true)
         ).build();
     }
 
