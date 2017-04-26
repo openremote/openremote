@@ -15,7 +15,7 @@ import spock.util.concurrent.PollingConditions
 import spock.lang.Ignore
 
 import static java.util.concurrent.TimeUnit.*
-import static org.openremote.model.asset.Asset.getAttribute
+import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_CUSTOMER_A
 import static org.openremote.test.RulesTestUtil.attachRuleExecutionLogger
 
 class ApartmentActionsTest extends Specification implements ManagerContainerTrait {
@@ -43,9 +43,9 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
 
         and: "the demo attributes marked with RULE_STATE = true meta should be inserted into the engines"
         conditions.eventually {
-            assert rulesService.assetStates.size() == 10
-            assert customerAEngine.assetStates.size() == 10
-            assert customerAEngine.knowledgeSession.factCount == 10
+            assert rulesService.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            assert customerAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            assert customerAEngine.knowledgeSession.factCount == DEMO_RULE_STATES_CUSTOMER_A
         }
 
         and: "the room lights in an apartment to be on"
@@ -60,7 +60,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
 
         then: "the room lights in the apartment should be off"
         conditions.eventually {
-            assert customerAEngine.knowledgeSession.factCount == 11
+            assert customerAEngine.knowledgeSession.factCount == DEMO_RULE_STATES_CUSTOMER_A + 1
             livingRoomAsset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
             assert !livingRoomAsset.getAttribute("lightSwitch").get().valueAsBoolean
         }
@@ -70,7 +70,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
 
         then: "event expired"
         conditions.eventually {
-            assert customerAEngine.knowledgeSession.factCount == 10
+            assert customerAEngine.knowledgeSession.factCount == DEMO_RULE_STATES_CUSTOMER_A
         }
 
         cleanup: "stop the container"
@@ -97,7 +97,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
             customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
             assert customerAEngine != null
             assert customerAEngine.isRunning()
-            assert customerAEngine.knowledgeSession.factCount == 10
+            assert customerAEngine.knowledgeSession.factCount == DEMO_RULE_STATES_CUSTOMER_A
         }
 
         and: "the presence latch of the room should not be set"
@@ -116,7 +116,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
             assetProcessingService.sendAttributeEvent(livingroomPresenceChange)
             conditions.eventually {
                 // Wait until we have the facts
-                assert customerAEngine.knowledgeSession.factCount == 11 + i
+                assert customerAEngine.knowledgeSession.factCount == DEMO_RULE_STATES_CUSTOMER_A + 1 + i
             }
             withClockOf(customerAEngine) { it.advanceTime(2, MINUTES) }
         }
@@ -129,7 +129,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
             assetProcessingService.sendAttributeEvent(livingroomPresenceChange)
             conditions.eventually {
                 // Wait until we have the facts
-                assert customerAEngine.knowledgeSession.factCount == 14 + i
+                assert customerAEngine.knowledgeSession.factCount == DEMO_RULE_STATES_CUSTOMER_A + 4 + i
             }
             withClockOf(customerAEngine) { it.advanceTime(10, MINUTES) }
         }
@@ -151,7 +151,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
 
         then: "the events should have been expired and retracted automatically from the knowledge session"
         conditions.eventually {
-            assert customerAEngine.knowledgeSession.factCount == 10
+            assert customerAEngine.knowledgeSession.factCount == DEMO_RULE_STATES_CUSTOMER_A
         }
 
         cleanup: "the server should be stopped"
@@ -182,9 +182,9 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
 
         and: "the demo attributes marked with RULE_STATE = true meta should be inserted into the engines"
         conditions.eventually {
-            assert rulesService.assetStates.size() >= 10
-            assert customerAEngine.assetStates.size() >= 10
-            assert customerAEngine.knowledgeSession.factCount >= 10
+            assert rulesService.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            assert customerAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            assert customerAEngine.knowledgeSession.factCount == DEMO_RULE_STATES_CUSTOMER_A
         }
 
         when: "the vacation days are set to 5"

@@ -3,7 +3,6 @@ package org.openremote.test.rules
 import elemental.json.Json
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
-import org.openremote.manager.server.asset.ServerAsset
 import org.openremote.manager.server.rules.RulesDeployment
 import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.rules.RulesetStorageService
@@ -14,16 +13,11 @@ import org.openremote.manager.shared.rules.AssetRuleset
 import org.openremote.manager.shared.rules.GlobalRuleset
 import org.openremote.manager.shared.rules.Ruleset.DeploymentStatus
 import org.openremote.model.AttributeEvent
-import org.openremote.model.AttributeType
-import org.openremote.model.Meta
-import org.openremote.model.MetaItem
-import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.AssetMeta
-import org.openremote.model.asset.AssetType
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
+import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.*
 import static org.openremote.test.RulesTestUtil.attachRuleExecutionLogger
 
 class BasicRulesProcessingTest extends Specification implements ManagerContainerTrait {
@@ -80,12 +74,12 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         and: "the demo attributes marked with RULE_STATE = true meta should be inserted into the engines"
         conditions.eventually {
-            assert rulesService.assetStates.size() == 10
-            assert rulesImport.globalEngine.assetStates.size() == 10
+            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL
+            assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.masterEngine.assetStates.size() == 0
-            assert rulesImport.customerAEngine.assetStates.size() == 10
-            assert rulesImport.apartment1Engine.assetStates.size() == 6
-            assert rulesImport.apartment3Engine.assetStates.size() == 2
+            assert rulesImport.customerAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            assert rulesImport.apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
+            assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
         }
 
         when: "rule execution loggers are attached to the engines"
@@ -177,7 +171,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             smartHomeEngine = rulesService.assetDeployments.get(managerDemoSetup.smartHomeId)
             assert smartHomeEngine != null
             assert smartHomeEngine.isRunning()
-            assert smartHomeEngine.assetStates.size() == 10
+            assert smartHomeEngine.assetStates.size() == DEMO_RULE_STATES_SMART_HOME
             assert smartHomeEngine.allRulesets.length == 1
             assert smartHomeEngine.allRulesets[0].enabled
             assert smartHomeEngine.allRulesets[0].name == "Some smart home asset rules"
@@ -246,7 +240,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             rulesImport.globalEngine = rulesService.globalDeployment
             assert rulesImport.globalEngine != null
             assert rulesImport.globalEngine.isRunning()
-            assert rulesImport.globalEngine.assetStates.size() == 10
+            assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.globalEngine.allRulesets.length == 2
             assert rulesImport.globalEngine.allRulesets[1].enabled
             assert rulesImport.globalEngine.allRulesets[1].name == "Some global test rules"

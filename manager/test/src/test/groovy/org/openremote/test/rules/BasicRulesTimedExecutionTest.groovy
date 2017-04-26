@@ -11,6 +11,7 @@ import spock.util.concurrent.PollingConditions
 
 import static java.util.concurrent.TimeUnit.SECONDS
 import static org.openremote.test.RulesTestUtil.attachRuleExecutionLogger
+import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.*
 
 class BasicRulesTimedExecutionTest extends Specification implements ManagerContainerTrait {
 
@@ -44,7 +45,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
             globalEngine = rulesService.globalDeployment
             assert globalEngine != null
             assert globalEngine.isRunning()
-            assert globalEngine.knowledgeSession.factCount == 9
+            assert globalEngine.knowledgeSession.factCount == DEMO_RULE_STATES_GLOBAL
         }
 
         when: "the execution logger is attached"
@@ -83,7 +84,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
             globalEngine = rulesService.globalDeployment
             assert globalEngine != null
             assert globalEngine.isRunning()
-            assert globalEngine.knowledgeSession.factCount == 9
+            assert globalEngine.knowledgeSession.factCount == DEMO_RULE_STATES_GLOBAL
         }
 
         when: "the execution logger is attached"

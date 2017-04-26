@@ -70,7 +70,9 @@ public class AttributesEditor
     }
 
     protected FormLabel createAttributeLabel(AssetAttribute attribute) {
-        return new FormLabel(TextUtil.ellipsize(getAttributeLabel(attribute), 30));
+        FormLabel formLabel =  new FormLabel(TextUtil.ellipsize(getAttributeLabel(attribute), 30));
+        formLabel.addStyleName("larger");
+        return formLabel;
     }
 
     @Override
@@ -156,6 +158,7 @@ public class AttributesEditor
         FormGroup formGroup = new FormGroup();
 
         FormLabel label = new FormLabel(environment.getMessages().newAttribute());
+        label.addStyleName("larger");
         formGroup.addFormLabel(label);
 
         FormField formField = new FormField();
@@ -357,7 +360,7 @@ public class AttributesEditor
             FormGroup formGroup = new FormGroup();
 
             FormLabel label = new FormLabel(environment.getMessages().itemName());
-            label.addStyleName("largest");
+            label.addStyleName("larger");
             formGroup.addFormLabel(label);
 
             FormField formField = new FormField();
@@ -401,7 +404,7 @@ public class AttributesEditor
             FormGroup formGroup = new FormGroup();
 
             FormLabel label = new FormLabel(environment.getMessages().value());
-            label.addStyleName("largest");
+            label.addStyleName("larger");
             formGroup.addFormLabel(label);
 
             FormField formField = new FormField();
