@@ -53,6 +53,7 @@ import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtoco
 
 public class ManagerDemoSetup extends AbstractManagerSetup {
 
+     // Update these numbers whenever you change a RULE_STATE flag in test data
     public static final int DEMO_RULE_STATES_APARTMENT_1 = 6;
     public static final int DEMO_RULE_STATES_APARTMENT_2 = 2;
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 2;

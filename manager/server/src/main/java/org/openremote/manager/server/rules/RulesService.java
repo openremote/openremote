@@ -372,7 +372,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                 RulesDeployment newEngine = deployGlobalRuleset((GlobalRuleset) ruleset);
                 if (newEngine != null) {
                     // Push all existing facts into the engine
-                    assetStates.forEach(assetState -> newEngine.updateAssetState(assetState, true));
+                    assetStates.forEach(newEngine::updateAssetState);
                 }
 
             } else if (ruleset instanceof TenantRuleset) {
@@ -382,7 +382,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     // Push all existing facts for this tenant into the engine
                     assetStates.forEach(assetState -> {
                         if (assetState.getRealmId().equals(((TenantRuleset) ruleset).getRealmId())) {
-                            newEngine.updateAssetState(assetState, true);
+                            newEngine.updateAssetState(assetState);
                         }
                     });
                 }
@@ -395,7 +395,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                 if (newEngine != null) {
                     // Push all existing facts for this asset (and it's children into the engine)
                     getAssetStatesInScope(((AssetRuleset) ruleset).getAssetId())
-                        .forEach(assetState -> newEngine.updateAssetState(assetState, true));
+                        .forEach(newEngine::updateAssetState);
 
                 }
             }
@@ -558,7 +558,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             String eventExpires = assetEvent.getExpires().orElse(configEventExpires);
             long expirationOffset = TimeIntervalParser.parseSingle(eventExpires);
 
-            deployment.insertAssetEvent(assetEvent, expirationOffset);
+            deployment.insertAssetEvent(expirationOffset, assetEvent);
         }
     }
 
@@ -574,10 +574,12 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
         if (!skipStatusCheck) {
             // Check that all engines in the scope are not in ERROR state
-            if (rulesDeployments.stream().anyMatch(RulesDeployment::isError)) {
-                LOG.severe("At least one rule engine is in an error state so cannot process:" + assetState);
-                assetState.setProcessingStatus(AssetState.ProcessingStatus.ERROR);
-                return;
+            for (RulesDeployment rulesDeployment : rulesDeployments) {
+                if (rulesDeployment.isError()) {
+                    assetState.setProcessingStatus(AssetState.ProcessingStatus.ERROR);
+                    assetState.setError(rulesDeployment.getError());
+                    return;
+                }
             }
         }
 
@@ -591,22 +593,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
         // Pass through each engine and try and insert the fact
         for (RulesDeployment deployment : rulesDeployments) {
-
-            // Any exceptions in rule RHS will bubble up and the engine would be marked as in ERROR so future
-            // updates will be blocked
-            deployment.updateAssetState(assetState, skipStatusCheck);
-
-            if (!skipStatusCheck) {
-                // We have to check status between each engine insert as a rule in the engine could have updated
-                // the status
-                if (assetState.getProcessingStatus() != AssetState.ProcessingStatus.CONTINUE) {
-                    LOG.info("Rules engine has marked asset state as '" + assetState.getProcessingStatus() + "' so not processing anymore");
-                    if (assetState.getProcessingStatus() == AssetState.ProcessingStatus.RULES_HANDLED) {
-                        assetState.setProcessingStatus(AssetState.ProcessingStatus.CONTINUE);
-                    }
-                    break;
-                }
-            }
+            LOG.fine("@@@ On " + deployment + ", updating: " + assetState);
+            deployment.updateAssetState(assetState);
         }
     }
 
@@ -624,6 +612,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
         // Pass through each engine and retract this fact
         for (RulesDeployment deployment : rulesDeployments) {
+            LOG.fine("@@@ On " + deployment + ", retracting: " + assetState);
             deployment.retractAssetState(assetState);
         }
     }

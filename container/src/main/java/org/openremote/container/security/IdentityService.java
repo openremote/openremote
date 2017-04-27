@@ -37,14 +37,11 @@ import org.keycloak.representations.idm.PublishedRealmRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.container.observable.RetryWithDelay;
 import org.openremote.container.web.ProxyWebClientBuilder;
 import org.openremote.container.web.WebClient;
 import org.openremote.container.web.WebService;
-import rx.Observable;
 
 import javax.ws.rs.NotFoundException;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
@@ -194,7 +191,7 @@ public abstract class IdentityService implements ContainerService {
     @Override
     public void start(Container container) throws Exception {
         // TODO Not a great way to block startup while we wait for other services (Hystrix?)
-        pingKeycloak();
+        waitForKeycloak();
         LOG.info("Keycloak identity provider available: " + keycloakServiceUri.build());
     }
 
@@ -235,28 +232,43 @@ public abstract class IdentityService implements ContainerService {
      *                   we want to know who is calling this method with "null", as this can lead to subtle runtime
      *                   problems.
      */
-    public RealmsResource getRealms(String forwardFor, String accessToken) {
+    final public RealmsResource getRealms(String forwardFor, String accessToken) {
         return getTarget(getHttpClient(), keycloakServiceUri.build(), accessToken, forwardFor, forwardFor != null ? externalServerUri.build(): null)
             .proxy(RealmsResource.class);
     }
 
-    public void pingKeycloak() {
-        Observable.fromCallable(() -> {
-            Response response = getKeycloak().getWelcomePage();
+    protected void waitForKeycloak() {
+        boolean keycloakAvailable = false;
+        while (!keycloakAvailable) {
+            LOG.info("Connecting to Keycloak server: " + keycloakServiceUri.build());
             try {
-                if (response != null &&
-                    (response.getStatusInfo().getFamily() == SUCCESSFUL
-                        || response.getStatusInfo().getFamily() == REDIRECTION)) {
-                    return true;
+                pingKeycloak();
+                keycloakAvailable = true;
+            } catch(Exception ex) {
+                LOG.info("Keycloak server not available, waiting...");
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
                 }
-                throw new WebApplicationException("Keycloak not available");
-            } finally {
-                if (response != null)
-                    response.close();
             }
-        }).retryWhen(
-            new RetryWithDelay("Connecting to Keycloak server " + keycloakServiceUri.build(), 100, 3000)
-        ).toBlocking().singleOrDefault(false);
+        }
+    }
+
+    protected void pingKeycloak() throws Exception {
+        Response response = null;
+        try {
+            response = getKeycloak().getWelcomePage();
+            if (response != null &&
+                (response.getStatusInfo().getFamily() == SUCCESSFUL
+                    || response.getStatusInfo().getFamily() == REDIRECTION)) {
+                return;
+            }
+            throw new Exception();
+        } finally {
+            if (response != null)
+                response.close();
+        }
     }
 
     public KeycloakDeployment getKeycloakDeployment(String realm, String clientId) {

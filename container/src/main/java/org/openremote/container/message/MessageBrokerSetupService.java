@@ -53,19 +53,18 @@ public class MessageBrokerSetupService implements ContainerService {
     public void init(Container container) throws Exception {
         context = new MessageBrokerContext();
 
-        // We use our own thread factories for creating thread pools - the only method called
-        // is really newThreadPool() for all of the seda:// topics and queues
         final ExecutorServiceManager executorServiceManager = context.getExecutorServiceManager();
         executorServiceManager.setThreadNamePattern("#counter# #name#");
         executorServiceManager.setThreadPoolFactory(new ThreadPoolFactory() {
             @Override
             public ExecutorService newCachedThreadPool(ThreadFactory threadFactory) {
-                // This should only be called by the MulticastProcessor aggregation, which we don't use currently!
-                return new ContainerExecutor(getExecutorName("MessagingMcast", threadFactory), 1, 1, 0, -1);
+                // This is an unlimited pool used probably only be multicast aggregation
+                return new ContainerExecutor(getExecutorName("MessagingPool", threadFactory), 1, Integer.MAX_VALUE, 10, -1);
             }
 
             @Override
             public ExecutorService newThreadPool(ThreadPoolProfile profile, ThreadFactory threadFactory) {
+                // This pool is used by SEDA consumers, so the endpoint parameters define the pool and queue sizes
                 return new ContainerExecutor(
                     getExecutorName("Messaging", threadFactory),
                     profile.getPoolSize(),

@@ -26,8 +26,8 @@ import elemental.json.JsonValue;
  * <p>
  * Instances of this class are processed by the system, with a sequence of processors. Each
  * processor can consume the asset state, and optionally set its status, thus controlling
- * how the asset state update is ultimately handled (e.g. the rules processor can stop it
- * from being handled by the database processors).
+ * how the asset state update is ultimately handled (e.g. the asset storage processor can
+ * stop it from being handled by the asset datapoint processor).
  */
 public class AssetState extends AbstractAssetUpdate {
 
@@ -44,11 +44,6 @@ public class AssetState extends AbstractAssetUpdate {
          * Processor has finally handled the update, cancel further processing.
          */
         HANDLED,
-
-        /**
-         * Don't process event in any more rule engines but continue through rest of processing chain.
-         */
-        RULES_HANDLED,
 
         /**
          * Processor encountered an error trying to process the update, cancel further processing and escalate.

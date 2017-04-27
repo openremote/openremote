@@ -76,13 +76,10 @@ trait ManagerContainerTrait extends ContainerTrait {
     }
 
     /**
-     * Execute pseudo clock operations in Rules engine in a daemon thread, simulating behavior of
-     * {@link org.kie.api.runtime.conf.TimedRuleExectionOption} "yes", which lets Drools execute
-     * time-triggered rules in the background even though the engine is in passive mode and waits
-     * for <code>fireAllRules()</code> to trigger any other rules.
+     * Execute pseudo clock operations in Rules engine.
      */
     static void withClockOf(RulesDeployment engine, Closure<PseudoClockScheduler> clockConsumer) {
-        Thread.startDaemon { clockConsumer.call(engine.sessionClock as PseudoClockScheduler) }
+        clockConsumer.call(engine.sessionClock as PseudoClockScheduler)
     }
 
 }

@@ -42,15 +42,14 @@ import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
 import org.kie.api.runtime.KieSessionConfiguration;
 import org.kie.api.runtime.conf.ClockTypeOption;
-import org.kie.api.runtime.conf.TimedRuleExectionOption;
 import org.kie.api.runtime.rule.FactHandle;
 import org.kie.api.time.SessionClock;
 import org.openremote.container.util.Util;
 import org.openremote.manager.server.asset.AssetProcessingService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
-import org.openremote.manager.server.notification.NotificationService;
 import org.openremote.manager.server.concurrent.ManagerExecutorService;
+import org.openremote.manager.server.notification.NotificationService;
 import org.openremote.manager.shared.rules.AssetRuleset;
 import org.openremote.manager.shared.rules.GlobalRuleset;
 import org.openremote.manager.shared.rules.Ruleset;
@@ -65,6 +64,7 @@ import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Users;
 
 import java.util.*;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -95,9 +95,8 @@ public class RulesDeployment<T extends Ruleset> {
     // We need to be able to reference the KieModule dynamically generated for this engine
     // from the singleton KieRepository to do this we need a pom.xml file with a release ID - crazy drools!!
     protected ReleaseId releaseId;
+    protected Future runningFuture;
     protected Throwable error;
-    protected boolean running;
-    protected long currentFactCount;
     final protected Map<AssetState, FactHandle> assetStates = new HashMap<>();
     protected ScheduledFuture startTimer;
 
@@ -129,7 +128,7 @@ public class RulesDeployment<T extends Ruleset> {
     }
 
     public boolean isRunning() {
-        return running;
+        return runningFuture != null;
     }
 
     public boolean isError() {
@@ -145,7 +144,7 @@ public class RulesDeployment<T extends Ruleset> {
     }
 
     public SessionClock getSessionClock() {
-        KieSession session = getKnowledgeSession();
+        KieSession session = knowledgeSession;
         if (session != null) {
             return session.getSessionClock();
         }
@@ -193,7 +192,6 @@ public class RulesDeployment<T extends Ruleset> {
             return true;
         }
 
-        // TODO: What is the best way to handle live deployment of new rules
         if (isRunning()) {
             stop();
         }
@@ -339,7 +337,7 @@ public class RulesDeployment<T extends Ruleset> {
         }
 
         if (isError()) {
-            LOG.fine("Cannot start rules engine as an error occurred during startup");
+            LOG.fine("Cannot start rules engine as an error occurred during initialisation");
             return;
         }
 
@@ -356,10 +354,6 @@ public class RulesDeployment<T extends Ruleset> {
 
         KieSessionConfiguration kieSessionConfiguration = kieServices.newKieSessionConfiguration();
 
-        // Use this option to ensure timer rules are fired even in passive mode (triggered by fireAllRules.
-        // This ensures compatibility with the behaviour of previously used Drools 5.1
-        kieSessionConfiguration.setOption(TimedRuleExectionOption.YES);
-
         // Which clock to use ("pseudo" for testing, "realtime" otherwise)
         ClockTypeOption clockType = DefaultClockType != null ? DefaultClockType : ClockTypeOption.get("realtime");
         kieSessionConfiguration.setOption(clockType);
@@ -373,8 +367,6 @@ public class RulesDeployment<T extends Ruleset> {
             if (clockType.getClockType().equals("pseudo")) {
                 ((PseudoClockScheduler) knowledgeSession.getSessionClock()).setStartupTime(System.currentTimeMillis());
             }
-
-            running = true;
 
             setGlobal("assets", createAssetsFacade());
             setGlobal("users", createUsersFacade());
@@ -402,54 +394,75 @@ public class RulesDeployment<T extends Ruleset> {
                 }
             });
 
-        } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to create the rules engine session", e);
-            error = e;
-            stop();
-            throw e;
-        }
+            // Start engine in active mode
+            fireUntilHalt();
 
-        // Insert initial asset states
-        try {
-            LOG.info("On " + this + " inserting initial asset states: " + assetStates.keySet().size());
-            new ArrayList<>(assetStates.keySet()).forEach(
-                factEntry -> insertAssetState(factEntry, true)
-            );
-
-            LOG.info("On " + this + " firing all rules after initial asset state insertion");
-            knowledgeSession.fireAllRules();
+            // Insert initial asset states
+            try {
+                Set<AssetState> initialState = assetStates.keySet();
+                LOG.info("On " + this + ", inserting initial asset states: " + initialState.size());
+                for (AssetState assetState : initialState) {
+                    insertAssetState(assetState);
+                }
+            } catch (Exception ex) {
+                // This is called in a background timer thread, we must log here or the exception is swallowed
+                LOG.log(Level.SEVERE, "On " + this + ", inserting initial asset states failed", ex);
+                // TODO Should we stop the engine here?
+                error = ex;
+                stop();
+            }
 
         } catch (Exception ex) {
-            // This is called in a background timer thread, we must log here or the exception is swallowed
-            LOG.log(Level.WARNING, "Creating initial state of " + this + " failed", ex);
+            LOG.log(Level.SEVERE, "On " + this + ", creating the knowledge session failed", ex);
+            error = ex;
+            stop();
         }
+    }
+
+    protected synchronized void fireUntilHalt() {
+        // Block a background thread
+        runningFuture = executorService.getRulesExecutor().submit(() -> {
+            boolean stoppedOnError = false;
+            try {
+                knowledgeSession.fireUntilHalt();
+            } catch (Exception ex) {
+                // Errors in rule RHS
+                LOG.log(Level.SEVERE, "On " + RulesDeployment.this + ", error firing rules", ex);
+                stoppedOnError = true;
+            } finally {
+                if (stoppedOnError) {
+                    // Keep running if stopped firing because of a RHS error
+                    runningFuture.cancel(true);
+                    runningFuture = null;
+                    fireUntilHalt();
+                }
+            }
+        });
     }
 
     protected synchronized void stop() {
         if (!isRunning()) {
             return;
         }
-
         LOG.fine("Stopping RuleEngine: " + this);
-
         if (knowledgeSession != null) {
-            knowledgeSession.halt();
-            knowledgeSession.dispose();
-            LOG.fine("Knowledge session disposed");
+            try {
+                knowledgeSession.halt();
+                knowledgeSession.dispose();
+                LOG.fine("On " + this + ", knowledge session disposed");
+            } finally {
+                runningFuture.cancel(true);
+                runningFuture = null;
+            }
         }
-
-        running = false;
     }
 
-    protected synchronized FactHandle insertAssetState(AssetState assetState, boolean silent) {
-        return insertIntoSession(
-            assetState,
-            silent,
-            factHandle -> assetStates.put(assetState, factHandle)
-        );
+    protected synchronized void insertAssetState(AssetState newAssetState) {
+        FactHandle factHandle = insertIntoSession(newAssetState);
+        assetStates.put(newAssetState, factHandle);
     }
 
-    protected synchronized void updateAssetState(AssetState assetState, boolean silent) {
+    protected synchronized void updateAssetState(AssetState assetState) {
         // Check if fact already exists using equals()
         if (!assetStates.containsKey(assetState)) {
             // Delete any existing fact for this attribute ref
@@ -457,7 +470,7 @@ public class RulesDeployment<T extends Ruleset> {
             retractAssetState(assetState);
 
             if (isRunning()) {
-                insertAssetState(assetState, silent);
+                insertAssetState(assetState);
             } else {
                 assetStates.put(assetState, null);
             }
@@ -482,57 +495,24 @@ public class RulesDeployment<T extends Ruleset> {
                 try {
                     // ... retract it from working memory ...
                     knowledgeSession.delete(factHandle);
-                    knowledgeSession.fireAllRules();
                 } catch (Exception e) {
-                    LOG.warning("Failed to retract fact '" + update + "' in: " + this);
+                    LOG.warning("On " + this + ", failed to retract fact: " + update);
                 }
             }
         }
     }
 
-    protected synchronized FactHandle insertAssetEvent(AssetEvent assetEvent, long expirationOffset) {
-        return insertIntoSession(
-            assetEvent,
-            false,
-            factHandle -> scheduleExpiration(assetEvent, factHandle, expirationOffset)
-        );
+    protected synchronized void insertAssetEvent(long expirationOffset, AssetEvent assetEvent) {
+        FactHandle factHandle = insertIntoSession(assetEvent);
+        scheduleExpiration(assetEvent, factHandle, expirationOffset);
     }
 
-    protected synchronized FactHandle insertIntoSession(AbstractAssetUpdate abstractAssetUpdate,
-                                                        boolean silent,
-                                                        Consumer<FactHandle> afterInsert) {
+    protected synchronized FactHandle insertIntoSession(AbstractAssetUpdate update) {
         if (!isRunning()) {
-            LOG.fine("Engine is in error state or not running (" + toString() + "), ignoring: " + abstractAssetUpdate);
+            LOG.fine("On " + this + ", engine is in error state or not running, ignoring: " + update);
             return null;
         }
-        try {
-            long newFactCount;
-            FactHandle factHandle = knowledgeSession.insert(abstractAssetUpdate);
-            afterInsert.accept(factHandle);
-            LOG.finest("On " + this + ", firing all rules");
-            // TODO The silent option is now disabled, do we still need this even though we have RULE_STATE and RULE_EVENT?
-            //int fireCount = knowledgeSession.fireAllRules((match) -> !silent || !match.getFactHandles().contains(factHandle));
-            int fireCount = knowledgeSession.fireAllRules();
-            LOG.finest("On " + this + ", fired rules count: " + fireCount);
-
-            newFactCount = knowledgeSession.getFactCount();
-            LOG.finest("On " + this + ", new fact count: " + newFactCount);
-            if (newFactCount != currentFactCount) {
-                LOG.finest("On " + this + ", fact count changed from "
-                    + currentFactCount
-                    + " to "
-                    + newFactCount
-                    + " after: "
-                    + abstractAssetUpdate);
-            }
-            currentFactCount = newFactCount;
-            return factHandle;
-        } catch (Exception e) {
-            // We can end up here because of errors in rule RHS - bubble up the cause
-            error = e;
-            stop();
-            throw new RuntimeException(e);
-        }
+        return knowledgeSession.insert(update);
     }
 
     protected Assets createAssetsFacade() {
@@ -720,7 +700,7 @@ public class RulesDeployment<T extends Ruleset> {
     public String toString() {
         return getClass().getSimpleName() + "{" +
             "id='" + id + '\'' +
-            ", running='" + running + '\'' +
+            ", running='" + isRunning() + '\'' +
             ", error='" + error + '\'' +
             ", rulesets='" + rulesetsDebug + '\'' +
             '}';

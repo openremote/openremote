@@ -24,13 +24,11 @@ import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.openremote.container.Container;
 import org.openremote.manager.server.setup.AbstractKeycloakSetup;
-import rx.Observable;
 
 import java.util.List;
 import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.*;
-import static rx.Observable.fromCallable;
 
 public class KeycloakCleanSetup extends AbstractKeycloakSetup {
 
@@ -54,25 +52,21 @@ public class KeycloakCleanSetup extends AbstractKeycloakSetup {
         }
 
         // Find out if there is a client already present for this application, if so, delete it
-        fromCallable(masterClientsResource::findAll)
-            .flatMap(Observable::from)
+        masterClientsResource.findAll().stream()
             .filter(clientRepresentation -> clientRepresentation.getClientId().equals(KEYCLOAK_CLIENT_ID))
             .map(ClientRepresentation::getId)
-            .subscribe(clientObjectId -> {
+            .forEach(clientObjectId -> {
                 LOG.info("Deleting client: " + clientObjectId);
                 masterClientsResource.get(clientObjectId).remove();
             });
 
         // Find out if there are any users except the admin, delete them
-        fromCallable(() -> masterUsersResource.search(null, null, null))
-            .flatMap(Observable::from)
+        masterUsersResource.search(null, null, null).stream()
             .filter(userRepresentation -> !userRepresentation.getUsername().equals(MASTER_REALM_ADMIN_USER))
             .map(userRepresentation -> masterUsersResource.get(userRepresentation.getId()))
-            .subscribe(userResource -> {
+            .forEach(userResource -> {
                 LOG.info("Deleting user: " + userResource);
                 userResource.remove();
             });
-
-
     }
 }

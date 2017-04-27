@@ -75,12 +75,9 @@ import static org.openremote.model.asset.agent.AgentLink.isValidAgentLink;
  * Checks if attribute is {@link AssetAttribute#isRuleState} or {@link AssetAttribute#isRuleEvent}, and if
  * it does then the message is passed through the rule engines that are in scope for the asset.
  * <p>
- * Rules have the ability to change the processing status and new value of {@link AssetState} messages to either
- * prevent them from progressing through the processing chain (by setting {@link AssetState.ProcessingStatus#HANDLED)}
- * or changing the value that progresses through the processing chain. Rules can also set
- * {@link AssetState.ProcessingStatus#RULES_HANDLED}, which means that the message shouldn't be processed by any
- * more rule engines but it should continue through the processing chain and ultimately result in an update of the
- * asset database.
+ * For {@link AssetState} messages, the rules service keeps the facts and thus the state of each rules
+ * knowledge session in sync with the asset state changes that occur. If an asset attribute value changes,
+ * the {@link AssetState} in each rules session will be updated to reflect the change.
  * <p>
  * For {@link AssetEvent} messages, they are inserted in the rules sessions in scope
  * and expired automatically either by a) the rules session if no time-pattern can possibly match the event source
@@ -446,7 +443,9 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                         break processorLoop;
                     case ERROR:
                         // TODO Better error handling, not sure we need rewind?
-                        LOG.severe("!!! Asset update status is '" + assetState.getProcessingStatus() + "' cannot continue processing");
+                        LOG.severe(
+                            "!!! Asset update status is '" + assetState.getProcessingStatus() + "', cannot continue processing: " + assetState
+                        );
                         assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
                         throw new RuntimeException("Processor " + processor + " error: " + assetState, assetState.getError());
                 }

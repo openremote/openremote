@@ -27,13 +27,11 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.openremote.container.Container;
 import org.openremote.manager.server.setup.AbstractKeycloakSetup;
 import org.openremote.manager.shared.security.ClientRole;
-import rx.Observable;
 
 import java.util.Arrays;
 import java.util.logging.Logger;
 
-import static org.openremote.model.Constants.*;
-import static rx.Observable.fromCallable;
+import static org.openremote.model.Constants.MASTER_REALM_ADMIN_USER;
 
 public class KeycloakInitSetup extends AbstractKeycloakSetup {
 
@@ -69,10 +67,10 @@ public class KeycloakInitSetup extends AbstractKeycloakSetup {
         RoleRepresentation readRole = rolesResource.get(ClientRole.READ.getValue()).toRepresentation();
         RoleRepresentation writeRole = rolesResource.get(ClientRole.WRITE.getValue()).toRepresentation();
 
-        fromCallable(() -> masterUsersResource.search(MASTER_REALM_ADMIN_USER, null, null, null, null, null))
-            .flatMap(Observable::from)
+        masterUsersResource.search(MASTER_REALM_ADMIN_USER, null, null, null, null, null)
+            .stream()
             .map(userRepresentation -> masterUsersResource.get(userRepresentation.getId()))
-            .subscribe(adminUser -> {
+            .forEach(adminUser -> {
                     adminUser.roles().clientLevel(clientObjectId).add(Arrays.asList(
                         readRole,
                         writeRole

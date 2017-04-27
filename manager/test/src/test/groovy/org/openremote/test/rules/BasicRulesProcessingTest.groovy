@@ -3,6 +3,7 @@ package org.openremote.test.rules
 import elemental.json.Json
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
+import org.openremote.manager.server.asset.ServerAsset
 import org.openremote.manager.server.rules.RulesDeployment
 import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.rules.RulesetStorageService
@@ -10,9 +11,15 @@ import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.shared.rules.AssetRuleset
-import org.openremote.manager.shared.rules.GlobalRuleset
 import org.openremote.manager.shared.rules.Ruleset.DeploymentStatus
+import org.openremote.manager.shared.rules.TenantRuleset
 import org.openremote.model.AttributeEvent
+import org.openremote.model.AttributeType
+import org.openremote.model.Meta
+import org.openremote.model.MetaItem
+import org.openremote.model.asset.AssetAttribute
+import org.openremote.model.asset.AssetMeta
+import org.openremote.model.asset.AssetType
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -48,7 +55,6 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         assert apartment2EngineFiredRules.size() == 0
         assert apartment3EngineFiredRules.size() == 0
     }
-
 
     def "Check firing of rules"() {
         given: "expected conditions"
@@ -228,66 +234,40 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert apartment3EngineFiredRules.size() == 0
         }
 
-        when: "a RHS filtering test rule definition is loaded into the global rule engine"
-        assetRuleset = new GlobalRuleset(
-                "Some global test rules",
-                getClass().getResource("/org/openremote/test/rules/BasicSmartHomePreventAssetState.drl").text
-        )
-        rulesetStorageService.merge(assetRuleset)
+        cleanup: "the server should be stopped"
+        stopContainer(container)
+    }
 
-        then: "the global rule engine should have loaded the new rule definition and restarted"
-        conditions.eventually {
-            rulesImport.globalEngine = rulesService.globalDeployment
-            assert rulesImport.globalEngine != null
-            assert rulesImport.globalEngine.isRunning()
-            assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
-            assert rulesImport.globalEngine.allRulesets.length == 2
-            assert rulesImport.globalEngine.allRulesets[1].enabled
-            assert rulesImport.globalEngine.allRulesets[1].name == "Some global test rules"
-            assert rulesImport.globalEngine.allRulesets[1].deploymentStatus == DeploymentStatus.DEPLOYED
+    def "Handle asset create, update, delete"() {
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.5)
+
+        and: "the container is started"
+        def serverPort = findEphemeralPort()
+        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
+        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def rulesService = container.getService(RulesService.class)
+        def rulesetStorageService = container.getService(RulesetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+
+        and: "some test rulesets have been imported"
+        def rulesImport = new BasicRulesImport(rulesetStorageService, keycloakDemoSetup, managerDemoSetup)
+
+        expect: "the rules engines to be ready"
+        new PollingConditions(initialDelay: 3, timeout: 20, delay: 1).eventually {
+            rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
         }
 
-        when: "the engine counters are reset and the global engine logger is reattached"
-        resetRuleExecutionLoggers()
+        when: "rule execution loggers are attached to the engines"
         attachRuleExecutionLogger(rulesImport.globalEngine, globalEngineFiredRules)
+        attachRuleExecutionLogger(rulesImport.masterEngine, masterEngineFiredRules)
+        attachRuleExecutionLogger(rulesImport.customerAEngine, customerAEngineFiredRules)
+        attachRuleExecutionLogger(rulesImport.apartment1Engine, apartment1EngineFiredRules)
+        attachRuleExecutionLogger(rulesImport.apartment3Engine, apartment3EngineFiredRules)
 
-        and: "an apartment 1 living room thermostat attribute event occurs"
-        apartment1LivingRoomComfortTemperatureChange = new AttributeEvent(
-                managerDemoSetup.apartment1LivingroomThermostatId, "comfortTemperature", Json.create(20.3)
-        )
-        assetProcessingService.sendAttributeEvent(apartment1LivingRoomComfortTemperatureChange)
-
-        then: "after a few seconds only the global engine should have fired the All, All changed and Prevent Livingroom Thermostat Change rules"
-        conditions.eventually {
-            assert globalEngineFiredRules.size() == 3
-            assert globalEngineFiredRules.containsAll(["All", "All changed", "Prevent Livingroom Thermostat Change"])
-            assert customerAEngineFiredRules.size() == 0
-            assert smartHomeEngineFiredRules.size() == 0
-            assert apartment1EngineFiredRules.size() == 0
-            assert apartment3EngineFiredRules.size() == 0
-        }
-
-        when: "an apartment 3 living room attribute event occurs"
-        resetRuleExecutionLoggers()
-        apartment3LivingRoomPresenceDetectedChange = new AttributeEvent(
-                managerDemoSetup.apartment3LivingroomId, "presenceDetected", Json.create(false)
-        )
-        assetProcessingService.sendAttributeEvent(apartment3LivingRoomPresenceDetectedChange)
-
-        then: "all the engines in scope should have fired the matched rules"
-        conditions.eventually {
-            assert globalEngineFiredRules.size() == 2
-            assert globalEngineFiredRules.containsAll(["All", "All changed"])
-            assert customerAEngineFiredRules.size() == 2
-            assert customerAEngineFiredRules.containsAll(["All", "All changed"])
-            assert smartHomeEngineFiredRules.size() == 5
-            assert smartHomeEngineFiredRules.containsAll(["Living Room All", "Current Asset Update", "Parent Type Residence", "Asset Type Room", "Boolean Attributes"])
-            assert apartment3EngineFiredRules.size() == 2
-            assert apartment3EngineFiredRules.containsAll(["All", "All changed"])
-            assert apartment1EngineFiredRules.size() == 0
-        }
-/* TODO Update these tests when we are sure that "silent insertion" is no longer needed
-        when: "a Kitchen room asset is inserted into apartment 1 that contains a RULE_STATE = true meta flag"
+        and: "a Kitchen room asset is inserted into apartment 1 that contains a RULE_STATE = true meta flag"
         resetRuleExecutionLoggers()
         def apartment1 = assetStorageService.find(managerDemoSetup.apartment1Id)
         def asset = new ServerAsset(apartment1)
@@ -300,22 +280,26 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
                         .add(new MetaItem(AssetMeta.RULE_STATE, Json.create(true)))
                 )
         ]
-        asset.setAttributes(attributes)
+        asset.setAttributeList(attributes)
         asset = assetStorageService.merge(asset)
 
-        then: "after a few seconds the engines in scope should not have fired any rules but the facts should have been inserted"
+        then: "after a few seconds the engines in scope should have facts and rules should have fired"
         conditions.eventually {
-            assert rulesService.assetStates.size() == 9
-            assert rulesImport.globalEngine.assetStates.size() == 9
+            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
+            assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.masterEngine.assetStates.size() == 0
-            assert rulesImport.customerAEngine.assetStates.size() == 9
-            assert smartHomeEngine.assetStates.size() == 9
-            assert rulesImport.apartment1Engine.assetStates.size() == 5
-            assert rulesImport.apartment3Engine.assetStates.size() == 2
-            assert globalEngineFiredRules.size() == 0
-            assert customerAEngineFiredRules.size() == 0
+            assert rulesImport.customerAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A + 1
+            assert rulesImport.apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1 + 1
+            assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
+            def expectedFiredRules = ["All", "All changed"]
+            assert globalEngineFiredRules.size() == 2
+            assert globalEngineFiredRules.containsAll(expectedFiredRules)
+            assert masterEngineFiredRules.size() == 0
+            assert customerAEngineFiredRules.size() == 2
+            assert customerAEngineFiredRules.containsAll(expectedFiredRules)
             assert smartHomeEngineFiredRules.size() == 0
-            assert apartment1EngineFiredRules.size() == 0
+            assert apartment1EngineFiredRules.size() == 2
+            assert apartment1EngineFiredRules.containsAll(expectedFiredRules)
             assert apartment3EngineFiredRules.size() == 0
         }
 
@@ -329,18 +313,17 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
                 ),
                 new AssetAttribute("testInteger", AttributeType.INTEGER, Json.create(0))
         ]
-        asset.setAttributes(attributes)
+        asset.setAttributeList(attributes)
         asset = assetStorageService.merge(asset)
 
         then: "after a few seconds the fact count shouldn't change and no rules should have fired"
         new PollingConditions(initialDelay: 3).eventually {
-            assert rulesService.assetStates.size() == 9
-            assert rulesImport.globalEngine.assetStates.size() == 9
+            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
+            assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 1
             assert rulesImport.masterEngine.assetStates.size() == 0
-            assert rulesImport.customerAEngine.assetStates.size() == 9
-            assert smartHomeEngine.assetStates.size() == 9
-            assert rulesImport.apartment1Engine.assetStates.size() == 5
-            assert rulesImport.apartment3Engine.assetStates.size() == 2
+            assert rulesImport.customerAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A + 1
+            assert rulesImport.apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1 + 1
+            assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assert globalEngineFiredRules.size() == 0
             assert customerAEngineFiredRules.size() == 0
             assert smartHomeEngineFiredRules.size() == 0
@@ -357,18 +340,17 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
                 ),
                 new AssetAttribute("testInteger", AttributeType.INTEGER, Json.create(0))
         ]
-        asset.setAttributes(attributes)
+        asset.setAttributeList(attributes)
         asset = assetStorageService.merge(asset)
 
         then: "the facts should be removed from the rule engines and no rules should have fired"
         conditions.eventually {
-            assert rulesService.assetStates.size() == 8
-            assert rulesImport.globalEngine.assetStates.size() == 8
+            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL
+            assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.masterEngine.assetStates.size() == 0
-            assert rulesImport.customerAEngine.assetStates.size() == 8
-            assert smartHomeEngine.assetStates.size() == 8
-            assert rulesImport.apartment1Engine.assetStates.size() == 4
-            assert rulesImport.apartment3Engine.assetStates.size() == 2
+            assert rulesImport.customerAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            assert rulesImport.apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
+            assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assert globalEngineFiredRules.size() == 0
             assert customerAEngineFiredRules.size() == 0
             assert smartHomeEngineFiredRules.size() == 0
@@ -390,22 +372,26 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
                                 .add(new MetaItem(AssetMeta.RULE_STATE, Json.create(true)))
                 )
         ]
-        asset.setAttributes(attributes)
+        asset.setAttributeList(attributes)
         asset = assetStorageService.merge(asset)
 
-        then: "the facts should be added to the rule engines and no rules should have fired"
+        then: "the facts should be added to the rule engines and rules should have fired"
         conditions.eventually {
-            assert rulesService.assetStates.size() == 10
-            assert rulesImport.globalEngine.assetStates.size() == 10
+            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 2
+            assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL + 2
             assert rulesImport.masterEngine.assetStates.size() == 0
-            assert rulesImport.customerAEngine.assetStates.size() == 10
-            assert smartHomeEngine.assetStates.size() == 10
-            assert rulesImport.apartment1Engine.assetStates.size() == 6
-            assert rulesImport.apartment3Engine.assetStates.size() == 2
-            assert globalEngineFiredRules.size() == 0
-            assert customerAEngineFiredRules.size() == 0
+            assert rulesImport.customerAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A + 2
+            assert rulesImport.apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1 + 2
+            assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
+            def expectedFiredRules = ["All", "All changed"]
+            assert globalEngineFiredRules.size() == 4
+            assert globalEngineFiredRules.containsAll(expectedFiredRules)
+            assert masterEngineFiredRules.size() == 0
+            assert customerAEngineFiredRules.size() == 4
+            assert customerAEngineFiredRules.containsAll(expectedFiredRules)
             assert smartHomeEngineFiredRules.size() == 0
-            assert apartment1EngineFiredRules.size() == 0
+            assert apartment1EngineFiredRules.size() == 4
+            assert apartment1EngineFiredRules.containsAll(expectedFiredRules)
             assert apartment3EngineFiredRules.size() == 0
         }
 
@@ -415,20 +401,86 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         then: "the facts should be removed from the rule engines and no rules should have fired"
         conditions.eventually {
-            assert rulesService.assetStates.size() == 8
-            assert rulesImport.globalEngine.assetStates.size() == 8
+            assert rulesService.assetStates.size() == DEMO_RULE_STATES_GLOBAL
+            assert rulesImport.globalEngine.assetStates.size() == DEMO_RULE_STATES_GLOBAL
             assert rulesImport.masterEngine.assetStates.size() == 0
-            assert rulesImport.customerAEngine.assetStates.size() == 8
-            assert smartHomeEngine.assetStates.size() == 8
-            assert rulesImport.apartment1Engine.assetStates.size() == 4
-            assert rulesImport.apartment3Engine.assetStates.size() == 2
+            assert rulesImport.customerAEngine.assetStates.size() == DEMO_RULE_STATES_CUSTOMER_A
+            assert rulesImport.apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
+            assert rulesImport.apartment3Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_3
             assert globalEngineFiredRules.size() == 0
             assert customerAEngineFiredRules.size() == 0
             assert smartHomeEngineFiredRules.size() == 0
             assert apartment1EngineFiredRules.size() == 0
             assert apartment3EngineFiredRules.size() == 0
         }
-*/
+
+        cleanup: "the server should be stopped"
+        stopContainer(container)
+    }
+
+    def "Stop processing when engine in error state"() {
+        given: "expected conditions"
+        def conditions = new PollingConditions(timeout: 10, delay: 0.5)
+
+        and: "the container is started"
+        def serverPort = findEphemeralPort()
+        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
+        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
+        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
+        def rulesService = container.getService(RulesService.class)
+        def rulesetStorageService = container.getService(RulesetStorageService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
+        def assetStorageService = container.getService(AssetStorageService.class)
+
+        and: "some test rulesets have been imported"
+        def rulesImport = new BasicRulesImport(rulesetStorageService, keycloakDemoSetup, managerDemoSetup)
+
+        expect: "the rules engines to be ready"
+        new PollingConditions(initialDelay: 3, timeout: 20, delay: 1).eventually {
+            rulesImport.assertEnginesReady(rulesService, keycloakDemoSetup, managerDemoSetup)
+        }
+
+        when: "rule execution loggers are attached to the engines"
+        attachRuleExecutionLogger(rulesImport.globalEngine, globalEngineFiredRules)
+        attachRuleExecutionLogger(rulesImport.masterEngine, masterEngineFiredRules)
+        attachRuleExecutionLogger(rulesImport.customerAEngine, customerAEngineFiredRules)
+        attachRuleExecutionLogger(rulesImport.apartment1Engine, apartment1EngineFiredRules)
+        attachRuleExecutionLogger(rulesImport.apartment3Engine, apartment3EngineFiredRules)
+
+        and: "a broken RHS rule is loaded into the customerA engine"
+        def ruleset = new TenantRuleset(
+                "Some broken test rules",
+                keycloakDemoSetup.customerATenant.id,
+                getClass().getResource("/org/openremote/test/rules/BasicBrokenRules.drl").text
+        )
+        rulesetStorageService.merge(ruleset)
+
+        then: "the customerA engine should not run and the rule deployment status should indicate the issue"
+        conditions.eventually {
+            assert rulesImport.customerAEngine.allRulesets.length == 2
+            assert rulesImport.customerAEngine.running == false
+            assert rulesImport.customerAEngine.isError()
+            assert rulesImport.customerAEngine.error instanceof RuntimeException
+            assert rulesImport.customerAEngine.allRulesets[0].enabled
+            assert rulesImport.customerAEngine.allRulesets[0].name == "Some customerA tenant demo rules"
+            assert rulesImport.customerAEngine.allRulesets[0].deploymentStatus == DeploymentStatus.READY
+            assert rulesImport.customerAEngine.allRulesets[1].enabled
+            assert rulesImport.customerAEngine.allRulesets[1].name == "Some broken test rules"
+            assert rulesImport.customerAEngine.allRulesets[1].deploymentStatus == DeploymentStatus.FAILED
+        }
+
+        when: "an apartment 1 living room thermostat attribute event occurs"
+        def apartment1LivingRoomComfortTemperatureChange = new AttributeEvent(
+                managerDemoSetup.apartment1LivingroomThermostatId, "comfortTemperature", Json.create(20.3)
+        )
+        assetProcessingService.sendAttributeEvent(apartment1LivingRoomComfortTemperatureChange)
+
+        then: "the broken rules engine should prevent a database update"
+        new PollingConditions(initialDelay: 3).eventually {
+            def asset = assetStorageService.find(managerDemoSetup.apartment1LivingroomThermostatId, true)
+            assert asset.getAttribute("comfortTemperature").get().getValue() == Json.createNull()
+        }
+
         cleanup: "the server should be stopped"
         stopContainer(container)
     }

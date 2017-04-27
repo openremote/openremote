@@ -12,7 +12,6 @@ dependencies {
     compile "org.slf4j:jcl-over-slf4j:$slf4jVersion"
     compile "org.slf4j:log4j-over-slf4j:$slf4jVersion"
 
-    compile "io.reactivex:rxjava:$rxjavaVersion"
     compile "com.google.guava:guava:$guavaVersion"
 
     compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:$jacksonVersion"

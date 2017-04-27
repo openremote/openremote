@@ -14,9 +14,8 @@ when
     // Vacation days are more than zero, which means vacation mode is enabled
     AssetState($ref: attributeRef, attributeName == "vacationDays", type == AssetType.RESIDENCE, $val: value.asNumber() > 0 )
 then
-    LOG.info("Drools SessionClock() is: "+(new java.util.Date(drools.getWorkingMemory().getSessionClock().getCurrentTime())).toString());
     // Decrement the vacation days by one
-    assets.dispatch( new AttributeEvent($ref, Json.create($val - 1)) );
+    assets.dispatch( new AttributeEvent($ref, Json.create($val- 1)) );
 end
 
 rule "Set state to AWAY when on holidays"
@@ -34,10 +33,4 @@ when
     AssetState(attributeName == "lastScene", $ref: attributeRef, value.asString() != "HOME")
 then
     assets.dispatch( new AttributeEvent($ref, Json.create("HOME")) );
-end
-
-rule "Echo asset state" // to see what states are send to the engine
-salience 10
-when AssetState()
-then
 end

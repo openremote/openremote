@@ -12,11 +12,9 @@ import org.openremote.model.AttributeEvent
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
-import spock.lang.Ignore
 
 import static java.util.concurrent.TimeUnit.*
 import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_CUSTOMER_A
-import static org.openremote.test.RulesTestUtil.attachRuleExecutionLogger
 
 class ApartmentActionsTest extends Specification implements ManagerContainerTrait {
 
@@ -163,7 +161,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
 
         given: "the container environment is started"
         enablePseudoClock()
-        def conditions = new PollingConditions(timeout: 60, delay: 1)
+        def conditions = new PollingConditions(timeout: 15, delay: 1)
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
@@ -242,81 +240,4 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         disablePseudoClock()
         stopContainer(container)
     }
-
-    // The same behaviour is with the realtime and pseudo clock.
-    // TODO see below for explanation.
-    @Ignore
-    def "Test Custom Fact Clock Real"() {
-
-        given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 60, delay: 1)
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
-        def rulesService = container.getService(RulesService.class)
-        RulesDeployment customerBEngine
-        List<String> customerBEngineFiredRules = []
-
-        expect: "the rule engines to become available and be running"
-        conditions.eventually {
-            customerBEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerBTenant.id)
-            assert customerBEngine != null
-            assert customerBEngine.isRunning()
-        }
-
-        when: "check if the custom clock is running"
-        attachRuleExecutionLogger(customerBEngine, customerBEngineFiredRules)
-        Thread.sleep(16000)
-
-        then: "Check how many rules were triggered"
-        conditions.eventually {
-            assert customerBEngineFiredRules.size() >= 8 // The >= to be good even when we have slower machine
-        }
-
-        cleanup: "the server should be stopped"
-        stopContainer(container)
-    }
-
-    // This test shows a fundamental problem with current rule's engine. Custom facts inserted into the knowledge
-    // session are not detected on the current delta and dissapear. Only when a rule has the delay in form of timer(int: x)
-    // then they are triggered. This means that one must controll timing and racing by hand instead of Drools.
-    // TODO fix this otherwise impossible to work on rules
-    @Ignore
-    def "Test Custom Fact Clock Pseudo"() {
-
-        given: "the container environment is started"
-        enablePseudoClock()
-        def conditions = new PollingConditions(timeout: 60, delay: 1)
-        def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
-        def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
-        def rulesService = container.getService(RulesService.class)
-        def assetProcessingService = container.getService(AssetProcessingService.class)
-        def assetStorageService = container.getService(AssetStorageService.class)
-        RulesDeployment customerBEngine
-        List<String> customerBEngineFiredRules = []
-
-        expect: "the rule engines to become available and be running"
-        conditions.eventually {
-            customerBEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerBTenant.id)
-            assert customerBEngine != null
-            assert customerBEngine.isRunning()
-        }
-
-        when: "check if the custom clock is running"
-        attachRuleExecutionLogger(customerBEngine, customerBEngineFiredRules)
-        withClockOf(customerBEngine) { it.advanceTime(15, SECONDS) }
-        Thread.sleep(16000)
-
-        then: "Check how many rules were triggered"
-        conditions.eventually {
-            assert customerBEngineFiredRules.size() == 8
-        }
-
-        cleanup: "the server should be stopped"
-        disablePseudoClock()
-        stopContainer(container)
-    }
-
 }

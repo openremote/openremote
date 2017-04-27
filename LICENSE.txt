@@ -41,7 +41,6 @@ commons-io:commons-io: APACHE LICENSE, VERSION 2.0
 commons-httpclient:commons-httpclient: APACHE LICENSE, VERSION 2.0
 commons-logging:commons-logging: APACHE LICENSE, VERSION 2.0
 dom4j:dom4j: DOM4J BSD LICENSE
-io.reactivex:rxjava: APACHE LICENSE, VERSION 2.0
 io.netty:netty: APACHE LICENSE, VERSION 2.0
 io.undertow:*: APACHE LICENSE, VERSION 2.0
 javax.jmdns:jmdns: APACHE LICENSE, VERSION 2.0
