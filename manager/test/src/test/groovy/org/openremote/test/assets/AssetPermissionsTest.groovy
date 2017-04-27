@@ -203,7 +203,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
-        def conditions = new PollingConditions(delay: 1, timeout: 5)
+        def conditions = new PollingConditions(delay: 1, timeout: 10)
 
         and: "an authenticated test user"
         def accessToken = authenticate(
@@ -335,9 +335,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet", Json.create("Teststreet 123").toJson())
 
         then: "result should match"
-        def asset
         conditions.eventually {
-            asset = assetResource.get(null, managerDemoSetup.smartOfficeId)
+            def asset = assetResource.get(null, managerDemoSetup.smartOfficeId)
             assert asset.getAttribute("geoStreet").get().getValue().toJson() == Json.create("Teststreet 123").toJson()
         }
 

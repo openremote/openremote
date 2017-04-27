@@ -3,7 +3,7 @@ package org.openremote.test.rules
 import elemental.json.Json
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
-import org.openremote.manager.server.rules.RulesDeployment
+import org.openremote.manager.server.rules.RulesEngine
 import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
@@ -30,7 +30,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         def rulesService = container.getService(RulesService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
-        RulesDeployment customerAEngine
+        RulesEngine customerAEngine
 
         expect: "the rule engines to become available and be running"
         conditions.eventually {
@@ -50,9 +50,9 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         def livingRoomAsset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
         assert livingRoomAsset.getAttribute("lightSwitch").get().valueAsBoolean
 
-        when: "the ALL LIGHTS OFF switch is pressed for an apartment"
+        when: "the ALL LIGHTS OFF push-button is pressed for an apartment"
         def apartment1AllLightsOffChange = new AttributeEvent(
-                managerDemoSetup.apartment1Id, "allLightsOffSwitch", Json.create(false)
+                managerDemoSetup.apartment1Id, "allLightsOffSwitch", Json.create(true)
         )
         assetProcessingService.sendAttributeEvent(apartment1AllLightsOffChange)
 
@@ -88,7 +88,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         def rulesService = container.getService(RulesService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
-        RulesDeployment customerAEngine = null
+        RulesEngine customerAEngine = null
 
         expect: "the rule engines to become available and be running"
         conditions.eventually {
@@ -169,7 +169,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         def rulesService = container.getService(RulesService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
-        RulesDeployment customerAEngine
+        RulesEngine customerAEngine
 
         expect: "the rule engines to become available and be running"
         conditions.eventually {

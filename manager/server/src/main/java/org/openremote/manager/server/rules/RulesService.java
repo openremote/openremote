@@ -82,9 +82,9 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     protected AssetStorageService assetStorageService;
     protected NotificationService notificationService;
     protected AssetProcessingService assetProcessingService;
-    protected RulesDeployment<GlobalRuleset> globalDeployment;
-    protected final Map<String, RulesDeployment<TenantRuleset>> tenantDeployments = new HashMap<>();
-    protected final Map<String, RulesDeployment<AssetRuleset>> assetDeployments = new HashMap<>();
+    protected RulesEngine<GlobalRuleset> globalDeployment;
+    protected final Map<String, RulesEngine<TenantRuleset>> tenantDeployments = new HashMap<>();
+    protected final Map<String, RulesEngine<AssetRuleset>> assetDeployments = new HashMap<>();
     protected String[] activeTenantIds;
 
     // Keep global list of asset states that have been pushed to any engines
@@ -216,7 +216,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
         if (wasEnabled) {
             // Remove tenant deployment for this tenant if it exists
-            RulesDeployment<TenantRuleset> tenantDeployment = tenantDeployments.get(tenant.getId());
+            RulesEngine<TenantRuleset> tenantDeployment = tenantDeployments.get(tenant.getId());
             if (tenantDeployment != null) {
                 // Use a copy of the list to avoid concurrent modification problems in retract
                 new ArrayList<>(Arrays.asList(tenantDeployment.getAllRulesets()))
@@ -226,7 +226,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             // Remove any asset deployments for assets in this realm
             // Use a copy of the list to avoid concurrent modification problems in retract
             new ArrayList<>(assetDeployments.values()).stream().flatMap(
-                assetRulesDeployment -> Arrays.stream(assetRulesDeployment.getAllRulesets())
+                assetRulesEngine -> Arrays.stream(assetRulesEngine.getAllRulesets())
             ).filter(ruleset -> ruleset.getRealmId().equals(tenant.getId()))
                 .forEach(this::undeployAssetRuleset);
 
@@ -369,7 +369,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         } else {
             if (ruleset instanceof GlobalRuleset) {
 
-                RulesDeployment newEngine = deployGlobalRuleset((GlobalRuleset) ruleset);
+                RulesEngine newEngine = deployGlobalRuleset((GlobalRuleset) ruleset);
                 if (newEngine != null) {
                     // Push all existing facts into the engine
                     assetStates.forEach(newEngine::updateAssetState);
@@ -377,7 +377,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
             } else if (ruleset instanceof TenantRuleset) {
 
-                RulesDeployment newEngine = deployTenantRuleset((TenantRuleset) ruleset);
+                RulesEngine newEngine = deployTenantRuleset((TenantRuleset) ruleset);
                 if (newEngine != null) {
                     // Push all existing facts for this tenant into the engine
                     assetStates.forEach(assetState -> {
@@ -391,7 +391,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
                 // Must reload from the database, the ruleset might not be completely hydrated on INSERT or UPDATE
                 AssetRuleset assetRuleset = rulesetStorageService.findEnabledAssetRuleset(ruleset.getId());
-                RulesDeployment newEngine = deployAssetRuleset(assetRuleset);
+                RulesEngine newEngine = deployAssetRuleset(assetRuleset);
                 if (newEngine != null) {
                     // Push all existing facts for this asset (and it's children into the engine)
                     getAssetStatesInScope(((AssetRuleset) ruleset).getAssetId())
@@ -406,12 +406,12 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
      * Deploy the ruleset into the global engine creating the engine if necessary; if the engine was created then it
      * is returned from the method.
      */
-    protected synchronized RulesDeployment<GlobalRuleset> deployGlobalRuleset(GlobalRuleset ruleset) {
+    protected synchronized RulesEngine<GlobalRuleset> deployGlobalRuleset(GlobalRuleset ruleset) {
         boolean created = globalDeployment == null;
 
         // Global rules have access to everything in the system
         if (globalDeployment == null) {
-            globalDeployment = new RulesDeployment<>(
+            globalDeployment = new RulesEngine<>(
                 executorService,
                 assetStorageService,
                 notificationService,
@@ -437,14 +437,14 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         }
     }
 
-    protected synchronized RulesDeployment<TenantRuleset> deployTenantRuleset(TenantRuleset ruleset) {
+    protected synchronized RulesEngine<TenantRuleset> deployTenantRuleset(TenantRuleset ruleset) {
         final boolean[] created = {false};
 
         // Look for existing deployment for this tenant
-        RulesDeployment<TenantRuleset> deployment = tenantDeployments
+        RulesEngine<TenantRuleset> deployment = tenantDeployments
             .computeIfAbsent(ruleset.getRealmId(), (realmId) -> {
                 created[0] = true;
-                return new RulesDeployment<>(
+                return new RulesEngine<>(
                     executorService,
                     assetStorageService,
                     notificationService,
@@ -460,7 +460,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     }
 
     protected synchronized void undeployTenantRuleset(TenantRuleset ruleset) {
-        RulesDeployment<TenantRuleset> deployment = tenantDeployments.get(ruleset.getRealmId());
+        RulesEngine<TenantRuleset> deployment = tenantDeployments.get(ruleset.getRealmId());
         if (deployment == null) {
             return;
         }
@@ -500,14 +500,14 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             });
     }
 
-    protected synchronized RulesDeployment<AssetRuleset> deployAssetRuleset(AssetRuleset ruleset) {
+    protected synchronized RulesEngine<AssetRuleset> deployAssetRuleset(AssetRuleset ruleset) {
         final boolean[] created = {false};
 
         // Look for existing deployment for this asset
-        RulesDeployment<AssetRuleset> deployment = assetDeployments
+        RulesEngine<AssetRuleset> deployment = assetDeployments
             .computeIfAbsent(ruleset.getAssetId(), (assetId) -> {
                 created[0] = true;
-                return new RulesDeployment<>(
+                return new RulesEngine<>(
                     executorService,
                     assetStorageService,
                     notificationService,
@@ -522,7 +522,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     }
 
     protected synchronized void undeployAssetRuleset(AssetRuleset ruleset) {
-        RulesDeployment<AssetRuleset> deployment = assetDeployments.get(ruleset.getAssetId());
+        RulesEngine<AssetRuleset> deployment = assetDeployments.get(ruleset.getAssetId());
         if (deployment == null) {
             return;
         }
@@ -538,20 +538,20 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         // TODO: implement rules processing error state handling
 
         // Get the chain of rule engines that we need to pass through
-        List<RulesDeployment> rulesDeployments = getEnginesInScope(assetEvent.getRealmId(), assetEvent.getPathFromRoot());
+        List<RulesEngine> rulesEngines = getEnginesInScope(assetEvent.getRealmId(), assetEvent.getPathFromRoot());
 
-        if (rulesDeployments.size() == 0) {
-            LOG.fine("Ignoring asset event as there are no matching rules deployments: " + assetEvent);
+        if (rulesEngines.size() == 0) {
+            LOG.fine("Ignoring asset event as there are no matching rules engines: " + assetEvent);
         }
 
         // Check that all engines in the scope are not in ERROR state
-        if (rulesDeployments.stream().anyMatch(RulesDeployment::isError)) {
+        if (rulesEngines.stream().anyMatch(RulesEngine::isError)) {
             LOG.severe("At least one rule engine is in an error state so cannot process event:" + assetEvent);
             return;
         }
 
         // Pass through each engine and try and insert the fact
-        for (RulesDeployment deployment : rulesDeployments) {
+        for (RulesEngine deployment : rulesEngines) {
 
             // Any exceptions in rule RHS will bubble up and the engine would be marked as in ERROR so future
             // updates will be blocked
@@ -566,18 +566,18 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         // TODO: implement rules processing error state handling
 
         // Get the chain of rule engines that we need to pass through
-        List<RulesDeployment> rulesDeployments = getEnginesInScope(assetState.getRealmId(), assetState.getPathFromRoot());
+        List<RulesEngine> rulesEngines = getEnginesInScope(assetState.getRealmId(), assetState.getPathFromRoot());
 
-        if (rulesDeployments.size() == 0) {
-            LOG.fine("Ignoring as there are no matching rules deployments: " + assetState);
+        if (rulesEngines.size() == 0) {
+            LOG.fine("Ignoring as there are no matching rules engine: " + assetState);
         }
 
         if (!skipStatusCheck) {
             // Check that all engines in the scope are not in ERROR state
-            for (RulesDeployment rulesDeployment : rulesDeployments) {
-                if (rulesDeployment.isError()) {
+            for (RulesEngine rulesEngine : rulesEngines) {
+                if (rulesEngine.isError()) {
                     assetState.setProcessingStatus(AssetState.ProcessingStatus.ERROR);
-                    assetState.setError(rulesDeployment.getError());
+                    assetState.setError(rulesEngine.getError());
                     return;
                 }
             }
@@ -592,7 +592,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         assetStates.add(assetState);
 
         // Pass through each engine and try and insert the fact
-        for (RulesDeployment deployment : rulesDeployments) {
+        for (RulesEngine deployment : rulesEngines) {
             LOG.fine("@@@ On " + deployment + ", updating: " + assetState);
             deployment.updateAssetState(assetState);
         }
@@ -600,18 +600,18 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
     protected void retractAssetState(AssetState assetState) {
         // Get the chain of rule engines that we need to pass through
-        List<RulesDeployment> rulesDeployments = getEnginesInScope(assetState.getRealmId(), assetState.getPathFromRoot());
+        List<RulesEngine> rulesEngines = getEnginesInScope(assetState.getRealmId(), assetState.getPathFromRoot());
 
         if (!assetStates.remove(assetState)) {
             assetStates.removeIf(storedAssetState -> storedAssetState.attributeRefsEqual(assetState));
         }
 
-        if (rulesDeployments.size() == 0) {
-            LOG.fine("Ignoring as there are no matching rules deployments: " + assetState);
+        if (rulesEngines.size() == 0) {
+            LOG.fine("Ignoring as there are no matching rules engines: " + assetState);
         }
 
         // Pass through each engine and retract this fact
-        for (RulesDeployment deployment : rulesDeployments) {
+        for (RulesEngine deployment : rulesEngines) {
             LOG.fine("@@@ On " + deployment + ", retracting: " + assetState);
             deployment.retractAssetState(assetState);
         }
@@ -624,31 +624,31 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             .collect(Collectors.toList());
     }
 
-    protected List<RulesDeployment> getEnginesInScope(String assetRealmId, String[] assetPath) {
-        List<RulesDeployment> rulesDeployments = new ArrayList<>();
+    protected List<RulesEngine> getEnginesInScope(String assetRealmId, String[] assetPath) {
+        List<RulesEngine> rulesEngines = new ArrayList<>();
 
         // Add global engine (if it exists)
         if (globalDeployment != null) {
-            rulesDeployments.add(globalDeployment);
+            rulesEngines.add(globalDeployment);
         }
 
         // Add tenant engine (if it exists)
-        RulesDeployment tenantDeployment = tenantDeployments.get(assetRealmId);
+        RulesEngine tenantDeployment = tenantDeployments.get(assetRealmId);
 
         if (tenantDeployment != null) {
-            rulesDeployments.add(tenantDeployment);
+            rulesEngines.add(tenantDeployment);
         }
 
         // Add asset engines
         // Iterate through asset hierarchy using asset IDs from getPath
         for (String assetId : assetPath) {
-            RulesDeployment assetDeployment = assetDeployments.get(assetId);
+            RulesEngine assetDeployment = assetDeployments.get(assetId);
             if (assetDeployment != null) {
-                rulesDeployments.add(assetDeployment);
+                rulesEngines.add(assetDeployment);
             }
         }
 
-        return rulesDeployments;
+        return rulesEngines;
     }
 
     protected Stream<Pair<ServerAsset, Stream<AssetAttribute>>> findRuleStateAttributes() {

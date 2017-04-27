@@ -1,6 +1,6 @@
 package org.openremote.test.rules
 
-import org.openremote.manager.server.rules.RulesDeployment
+import org.openremote.manager.server.rules.RulesEngine
 import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.rules.RulesetStorageService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
@@ -16,11 +16,11 @@ class BasicRulesImport {
     Long customerBRulesetId
     Long apartment1RulesetId
 
-    RulesDeployment globalEngine
-    RulesDeployment masterEngine
-    RulesDeployment customerAEngine
-    RulesDeployment apartment1Engine
-    RulesDeployment apartment3Engine
+    RulesEngine globalEngine
+    RulesEngine masterEngine
+    RulesEngine customerAEngine
+    RulesEngine apartment1Engine
+    RulesEngine apartment3Engine
 
     BasicRulesImport(RulesetStorageService rulesetStorageService,
                      KeycloakDemoSetup keycloakDemoSetup,

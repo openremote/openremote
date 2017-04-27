@@ -9,6 +9,7 @@ import org.openremote.agent.sensor.SensorState;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 
 /**
@@ -17,6 +18,12 @@ import java.util.logging.Logger;
 public class RuleExecutionLogger extends DefaultAgendaEventListener {
 
     private static final Logger LOG = Logger.getLogger(RuleExecutionLogger.class.getName());
+
+    final protected Supplier<String> contextSupplier;
+
+    public RuleExecutionLogger(Supplier<String> contextSupplier) {
+        this.contextSupplier = contextSupplier;
+    }
 
     public static Logger getLOG() {
         return LOG;
@@ -53,20 +60,20 @@ public class RuleExecutionLogger extends DefaultAgendaEventListener {
         }
 
         if (ruleName.startsWith("\"--")) {
-            LOG.finest(String.format("rule %s\n" +
+            LOG.finest(String.format("*** On " + contextSupplier.get() + "\n\nRule %s\n" +
                     "\tDeclarations \n%s" +
                     "\tLHS objects(antecedents)\n%s", ruleName, declarationLog, objectLog));
             return;
         }
 
         if (ruleName.startsWith("\"-")) {
-            LOG.fine(String.format("rule %s\n" +
+            LOG.fine(String.format("*** On " + contextSupplier.get() + "\n\nRule %s\n" +
                     "\tDeclarations \n%s" +
                     "\tLHS objects(antecedents)\n%s", ruleName, declarationLog, objectLog));
             return;
         }
 
-        LOG.info(String.format("rule %s\n" +
+        LOG.info(String.format("*** On " + contextSupplier.get() + "\n\nRule %s\n" +
             "\tDeclarations \n%s" +
             "\tLHS objects(antecedents)\n%s", ruleName, declarationLog, objectLog));
     }

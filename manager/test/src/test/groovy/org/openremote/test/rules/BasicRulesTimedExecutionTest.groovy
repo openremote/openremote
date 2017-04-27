@@ -1,6 +1,6 @@
 package org.openremote.test.rules
 
-import org.openremote.manager.server.rules.RulesDeployment
+import org.openremote.manager.server.rules.RulesEngine
 import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.rules.RulesetStorageService
 import org.openremote.manager.shared.rules.GlobalRuleset
@@ -9,14 +9,13 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import static java.util.concurrent.TimeUnit.DAYS
 import static java.util.concurrent.TimeUnit.SECONDS
 import static org.openremote.test.RulesTestUtil.attachRuleExecutionLogger
 import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.*
 
 class BasicRulesTimedExecutionTest extends Specification implements ManagerContainerTrait {
 
-    RulesDeployment globalEngine
+    RulesEngine globalEngine
 
     List<String> globalEngineFiredRules = []
 

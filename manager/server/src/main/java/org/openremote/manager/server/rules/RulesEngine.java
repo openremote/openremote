@@ -70,9 +70,9 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class RulesDeployment<T extends Ruleset> {
+public class RulesEngine<T extends Ruleset> {
 
-    public static final Logger LOG = Logger.getLogger(RulesDeployment.class.getName());
+    public static final Logger LOG = Logger.getLogger(RulesEngine.class.getName());
 
     final protected ManagerExecutorService executorService;
     final protected NotificationService notificationService;
@@ -88,7 +88,6 @@ public class RulesDeployment<T extends Ruleset> {
     static final protected Util UTIL = new Util();
     protected final Map<Long, T> rulesets = new LinkedHashMap<>();
     protected String rulesetsDebug;
-    protected final RuleExecutionLogger ruleExecutionLogger = new RuleExecutionLogger();
     protected KieSession knowledgeSession;
     protected KieServices kieServices;
     protected KieFileSystem kfs;
@@ -100,11 +99,11 @@ public class RulesDeployment<T extends Ruleset> {
     final protected Map<AssetState, FactHandle> assetStates = new HashMap<>();
     protected ScheduledFuture startTimer;
 
-    public RulesDeployment(ManagerExecutorService executorService,
-                           AssetStorageService assetStorageService,
-                           NotificationService notificationService,
-                           AssetProcessingService assetProcessingService,
-                           Class<T> rulesetType, String id) {
+    public RulesEngine(ManagerExecutorService executorService,
+                       AssetStorageService assetStorageService,
+                       NotificationService notificationService,
+                       AssetProcessingService assetProcessingService,
+                       Class<T> rulesetType, String id) {
         this.executorService = executorService;
         this.assetStorageService = assetStorageService;
         this.notificationService = notificationService; // shouldBeUser service or Identity Service ?
@@ -215,7 +214,7 @@ public class RulesDeployment<T extends Ruleset> {
         boolean addSuccessful = false;
 
         try {
-            // ID will be unique within the scope of a rules deployment as ruleset will all be of same type
+            // ID will be unique within the scope of a rules engine as ruleset will all be of same type
             kfs.write("src/main/resources/" + ruleset.getId() + ".drl", ruleset.getRules());
             // Unload the rules string from the ruleset we don't need it anymore and don't want it using memory
             ruleset.setRules(null);
@@ -375,22 +374,22 @@ public class RulesDeployment<T extends Ruleset> {
             // TODO Still need this UTIL?
             setGlobal("util", UTIL);
 
-            knowledgeSession.addEventListener(ruleExecutionLogger);
+            knowledgeSession.addEventListener(new RuleExecutionLogger(this::toString));
 
             knowledgeSession.addEventListener(new RuleRuntimeEventListener() {
                 @Override
                 public void objectInserted(ObjectInsertedEvent event) {
-                    LOG.fine("+++ On " + RulesDeployment.this + ", object inserted: " + event.getObject());
+                    LOG.fine("+++ On " + RulesEngine.this + ", object inserted: " + event.getObject());
                 }
 
                 @Override
                 public void objectUpdated(ObjectUpdatedEvent event) {
-                    LOG.fine("^^^ On " + RulesDeployment.this + ", object updated: " + event.getObject());
+                    LOG.fine("^^^ On " + RulesEngine.this + ", object updated: " + event.getObject());
                 }
 
                 @Override
                 public void objectDeleted(ObjectDeletedEvent event) {
-                    LOG.fine("--- On " + RulesDeployment.this + ", object deleted: " + event.getOldObject());
+                    LOG.fine("--- On " + RulesEngine.this + ", object deleted: " + event.getOldObject());
                 }
             });
 
@@ -427,7 +426,7 @@ public class RulesDeployment<T extends Ruleset> {
                 knowledgeSession.fireUntilHalt();
             } catch (Exception ex) {
                 // Errors in rule RHS
-                LOG.log(Level.SEVERE, "On " + RulesDeployment.this + ", error firing rules", ex);
+                LOG.log(Level.SEVERE, "On " + RulesEngine.this + ", error firing rules", ex);
                 stoppedOnError = true;
             } finally {
                 if (stoppedOnError) {
@@ -593,7 +592,7 @@ public class RulesDeployment<T extends Ruleset> {
                         "Access to asset not allowed for this rule engine scope: " + event
                     );
                 }
-                LOG.fine("Dispatching on " + RulesDeployment.this + ": " + event);
+                LOG.fine("Dispatching on " + RulesEngine.this + ": " + event);
                 assetProcessingService.sendAttributeEvent(event);
             }
         };
@@ -672,8 +671,8 @@ public class RulesDeployment<T extends Ruleset> {
         }
         TimerJobInstance timerJobInstance = new DefaultTimerJobInstance(
             ctx -> {
-                LOG.fine("On " + RulesDeployment.this + ", fact expired, deleting: " + assetEvent);
-                synchronized (RulesDeployment.this) {
+                LOG.fine("On " + RulesEngine.this + ", fact expired, deleting: " + assetEvent);
+                synchronized (RulesEngine.this) {
                     knowledgeSession.delete(factHandle);
                 }
             },

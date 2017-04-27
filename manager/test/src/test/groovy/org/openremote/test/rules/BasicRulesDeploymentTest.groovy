@@ -135,7 +135,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         }
 
         when: "the enabled rule definition for customer B is disabled"
-        // TODO: Stop instances of rule definitions being passed around as rules deployment nulls the rules property
+        // TODO: Stop instances of rule definitions being passed around as rules engine nulls the rules property
         ruleset = rulesetStorageService.findById(TenantRuleset.class, rulesImport.customerBRulesetId)
         ruleset.setEnabled(false)
         rulesetStorageService.merge(ruleset)
@@ -171,7 +171,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         )
         ruleset = rulesetStorageService.merge(ruleset)
 
-        then: "the global rules engine should not run and the rule deployment status should indicate the issue"
+        then: "the global rules engine should not run and the rule engine status should indicate the issue"
         conditions.eventually {
             assert rulesService.globalDeployment.allRulesets.length == 3
             assert rulesService.globalDeployment.running == false

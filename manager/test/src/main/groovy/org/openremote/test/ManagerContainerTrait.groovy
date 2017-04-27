@@ -18,7 +18,7 @@ import org.openremote.manager.server.event.EventService
 import org.openremote.manager.server.i18n.I18NService
 import org.openremote.manager.server.map.MapService
 import org.openremote.manager.server.notification.NotificationService
-import org.openremote.manager.server.rules.RulesDeployment
+import org.openremote.manager.server.rules.RulesEngine
 import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.rules.RulesetStorageService
 import org.openremote.manager.server.security.ManagerIdentityService
@@ -68,17 +68,17 @@ trait ManagerContainerTrait extends ContainerTrait {
     }
 
     static void enablePseudoClock() {
-        RulesDeployment.DefaultClockType = ClockTypeOption.get("pseudo")
+        RulesEngine.DefaultClockType = ClockTypeOption.get("pseudo")
     }
 
     static void disablePseudoClock() {
-        RulesDeployment.DefaultClockType = null
+        RulesEngine.DefaultClockType = null
     }
 
     /**
      * Execute pseudo clock operations in Rules engine.
      */
-    static void withClockOf(RulesDeployment engine, Closure<PseudoClockScheduler> clockConsumer) {
+    static void withClockOf(RulesEngine engine, Closure<PseudoClockScheduler> clockConsumer) {
         clockConsumer.call(engine.sessionClock as PseudoClockScheduler)
     }
 

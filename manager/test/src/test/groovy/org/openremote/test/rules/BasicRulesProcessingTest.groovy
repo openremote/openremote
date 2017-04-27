@@ -4,7 +4,7 @@ import elemental.json.Json
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.asset.ServerAsset
-import org.openremote.manager.server.rules.RulesDeployment
+import org.openremote.manager.server.rules.RulesEngine
 import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.rules.RulesetStorageService
 import org.openremote.manager.server.setup.SetupService
@@ -170,7 +170,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
                 getClass().getResource("/org/openremote/test/rules/BasicSmartHomeMatchAllAssetStates.drl").text
         )
         rulesetStorageService.merge(assetRuleset)
-        RulesDeployment smartHomeEngine = null
+        RulesEngine smartHomeEngine = null
 
         then: "the smart home rule engine should have ben created, loaded the new rule definition and facts and started"
         conditions.eventually {
@@ -455,7 +455,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         )
         rulesetStorageService.merge(ruleset)
 
-        then: "the customerA engine should not run and the rule deployment status should indicate the issue"
+        then: "the customerA engine should not run and the rule engine status should indicate the issue"
         conditions.eventually {
             assert rulesImport.customerAEngine.allRulesets.length == 2
             assert rulesImport.customerAEngine.running == false
