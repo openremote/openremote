@@ -25,12 +25,12 @@
 
         .contentItemKeyLabel {
             font-size: 14px;
-            line-height: 14px;
+            line-height: 16px;
         }
 
         .contentItemValueLabel {
             font-size: 18px;
-            line-height: 18px;
+            line-height: 20px;
         }
     </ui:style>
 

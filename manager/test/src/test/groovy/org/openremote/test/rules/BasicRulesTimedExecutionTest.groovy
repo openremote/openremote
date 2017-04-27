@@ -96,7 +96,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
         }
 
         when: "the clock is advanced by a few seconds"
-        withClockOf(globalEngine) { it.advanceTime(8, SECONDS) }
+        withClockOf(globalEngine) { it.advanceTime(10, SECONDS) }
         // TODO Weird behavior of timer rules, pseudo clock, and active mode: More than 5 seconds is needed to fire rule twice
 
         then: "the rule engines should have fired the timed execution rule in the background"

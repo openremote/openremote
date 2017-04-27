@@ -96,8 +96,9 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         attachRuleExecutionLogger(rulesImport.apartment3Engine, apartment3EngineFiredRules)
 
         and: "an attribute event is pushed into the system for an attribute with RULE_STATE meta set to true"
+        def presenceDetectedTimestamp = System.currentTimeMillis()
         def apartment1LivingRoomPresenceDetectedChange = new AttributeEvent(
-                managerDemoSetup.apartment1LivingroomId, "presenceDetected", Json.create(true)
+                managerDemoSetup.apartment1LivingroomId, "presenceDetected", Json.create(presenceDetectedTimestamp)
         )
         assetProcessingService.sendAttributeEvent(apartment1LivingRoomPresenceDetectedChange)
 
@@ -145,7 +146,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "an attribute event with the same value as current value is pushed into the system"
         resetRuleExecutionLoggers()
         apartment1LivingRoomPresenceDetectedChange = new AttributeEvent(
-                managerDemoSetup.apartment1LivingroomId, "presenceDetected", Json.create(true)
+                managerDemoSetup.apartment1LivingroomId, "presenceDetected", Json.create(presenceDetectedTimestamp)
         )
         assetProcessingService.sendAttributeEvent(apartment1LivingRoomPresenceDetectedChange)
 
@@ -190,7 +191,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         and: "an apartment 3 living room attribute event occurs"
         def apartment3LivingRoomPresenceDetectedChange = new AttributeEvent(
-                managerDemoSetup.apartment3LivingroomId, "presenceDetected", Json.create(true)
+                managerDemoSetup.apartment3LivingroomId, "presenceDetected", Json.create(System.currentTimeMillis())
         )
         assetProcessingService.sendAttributeEvent(apartment3LivingRoomPresenceDetectedChange)
 
@@ -201,7 +202,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
             assert customerAEngineFiredRules.size() == 2
             assert customerAEngineFiredRules.containsAll(["All", "All changed"])
             assert smartHomeEngineFiredRules.size() == 5
-            assert smartHomeEngineFiredRules.containsAll(["Living Room All", "Current Asset Update", "Parent Type Residence", "Asset Type Room", "Boolean Attributes"])
+            assert smartHomeEngineFiredRules.containsAll(["Living Room All", "Current Asset Update", "Parent Type Residence", "Asset Type Room", "JSON Number value types"])
             assert apartment3EngineFiredRules.size() == 2
             assert apartment3EngineFiredRules.containsAll(["All", "All changed"])
             assert apartment1EngineFiredRules.size() == 0

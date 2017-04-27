@@ -392,18 +392,38 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment1Livingroom.setType(ROOM);
         List<AssetAttribute> apartment1LivingroomAttributes = Arrays.asList(
-            new AssetAttribute("presenceSensor", AttributeType.BOOLEAN, Json.create(false))
+            new AssetAttribute("motionSensor", AttributeType.BOOLEAN, Json.create(false))
                 .setMeta(
                     new Meta().add(
-                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Sensor"))
+                        new MetaItem(AssetMeta.LABEL, Json.create("Motion Sensor"))
+                    ).add(
+                        new MetaItem(AssetMeta.DESCRIPTION, Json.create(
+                            "PIR sensor that sends 'true' when motion is sensed"
+                        ))
                     ).add(
                         new MetaItem(AssetMeta.RULE_EVENT, Json.create(true))
                     )
                 ),
-            new AssetAttribute("presenceDetected", AttributeType.BOOLEAN, Json.create(false))
+            new AssetAttribute("motionCounter", AttributeType.INTEGER, Json.create(0))
                 .setMeta(
                     new Meta().add(
-                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Detected"))
+                        new MetaItem(AssetMeta.LABEL, Json.create("Motion Counter"))
+                    ).add(
+                        new MetaItem(AssetMeta.DESCRIPTION, Json.create(
+                            "Sensor that increments a counter when motion is sensed"
+                        ))
+                    ).add(
+                        new MetaItem(AssetMeta.RULE_EVENT, Json.create(true))
+                    )
+                ),
+            new AssetAttribute("presenceDetected", AttributeType.DECIMAL, Json.createNull())
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Detected Timestamp"))
+                    ).add(
+                        new MetaItem(AssetMeta.DESCRIPTION, Json.create(
+                            "Timestamp of last detected presence, empty if nobody is present"
+                        ))
                     ).add(
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
@@ -519,18 +539,38 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment2Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment2Livingroom.setType(ROOM);
         List<AssetAttribute> apartment2LivingroomAttributes = Arrays.asList(
-            new AssetAttribute("presenceSensor", AttributeType.BOOLEAN, Json.create(false))
+            new AssetAttribute("motionSensor", AttributeType.BOOLEAN, Json.create(false))
                 .setMeta(
                     new Meta().add(
-                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Sensor"))
+                        new MetaItem(AssetMeta.LABEL, Json.create("Motion Sensor"))
+                    ).add(
+                        new MetaItem(AssetMeta.DESCRIPTION, Json.create(
+                            "PIR sensor that sends 'true' when motion is sensed"
+                        ))
                     ).add(
                         new MetaItem(AssetMeta.RULE_EVENT, Json.create(true))
                     )
                 ),
-            new AssetAttribute("presenceDetected", AttributeType.BOOLEAN, Json.create(false))
+            new AssetAttribute("motionCounter", AttributeType.INTEGER, Json.create(0))
                 .setMeta(
                     new Meta().add(
-                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Detected"))
+                        new MetaItem(AssetMeta.LABEL, Json.create("Motion Counter"))
+                    ).add(
+                        new MetaItem(AssetMeta.DESCRIPTION, Json.create(
+                            "Sensor that increments a counter when motion is sensed"
+                        ))
+                    ).add(
+                        new MetaItem(AssetMeta.RULE_EVENT, Json.create(true))
+                    )
+                ),
+            new AssetAttribute("presenceDetected", AttributeType.DECIMAL, Json.createNull())
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Detected Timestamp"))
+                    ).add(
+                        new MetaItem(AssetMeta.DESCRIPTION, Json.create(
+                            "Timestamp of last detected presence, empty if nobody is present"
+                        ))
                     ).add(
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
@@ -579,18 +619,38 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment3Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment3Livingroom.setType(ROOM);
         List<AssetAttribute> apartment3LivingroomAttributes = Arrays.asList(
-            new AssetAttribute("presenceSensor", AttributeType.BOOLEAN, Json.create(false))
+            new AssetAttribute("motionSensor", AttributeType.BOOLEAN, Json.create(false))
                 .setMeta(
                     new Meta().add(
-                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Sensor"))
+                        new MetaItem(AssetMeta.LABEL, Json.create("Motion Sensor"))
+                    ).add(
+                        new MetaItem(AssetMeta.DESCRIPTION, Json.create(
+                            "PIR sensor that sends 'true' when motion is sensed"
+                        ))
                     ).add(
                         new MetaItem(AssetMeta.RULE_EVENT, Json.create(true))
                     )
                 ),
-            new AssetAttribute("presenceDetected", AttributeType.BOOLEAN, Json.create(false))
+            new AssetAttribute("motionCounter", AttributeType.INTEGER, Json.create(0))
                 .setMeta(
                     new Meta().add(
-                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Detected"))
+                        new MetaItem(AssetMeta.LABEL, Json.create("Motion Counter"))
+                    ).add(
+                        new MetaItem(AssetMeta.DESCRIPTION, Json.create(
+                            "Sensor that increments a counter when motion is sensed"
+                        ))
+                    ).add(
+                        new MetaItem(AssetMeta.RULE_EVENT, Json.create(true))
+                    )
+                ),
+            new AssetAttribute("presenceDetected", AttributeType.DECIMAL, Json.createNull())
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Detected Timestamp"))
+                    ).add(
+                        new MetaItem(AssetMeta.DESCRIPTION, Json.create(
+                            "Timestamp of last detected presence, empty if nobody is present"
+                        ))
                     ).add(
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )

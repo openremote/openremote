@@ -81,9 +81,9 @@ public class MapInfoPanel extends AbstractAppPanel {
     public void setItems(List<Pair<String, String>> infoItems) {
         contentPanel.clear();
 
-        int itemMaxFontSizePixels = 18;
+        int itemLineHeightPixels = 20;
         int itemMarginPixels = 8;
-        int itemHeightPixels = itemMaxFontSizePixels + (itemMarginPixels*2);
+        int itemHeightPixels = itemLineHeightPixels + (itemMarginPixels*2);
         int totalMaxHeight = itemHeightPixels * MAX_ITEMS_BEFORE_SCROLLING;
 
         for (Pair<String, String> infoItem : infoItems) {

@@ -19,6 +19,7 @@
  */
 package org.openremote.model.asset;
 
+import elemental.json.JsonType;
 import elemental.json.JsonValue;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeRef;
@@ -217,6 +218,10 @@ public abstract class AbstractAssetUpdate {
         return attribute.getValue();
     }
 
+    public boolean isValueNull() {
+        return attribute.getValue().getType() == JsonType.NULL;
+    }
+
     public String getAttributeName() {
         return attribute.getName();
     }
@@ -275,6 +280,7 @@ public abstract class AbstractAssetUpdate {
         return getClass().getSimpleName() + "{" +
             "id='" + getId() + '\'' +
             ", name='" + getName() + '\'' +
+            ", parentName='" + getParentName() + '\'' +
             ", typeString='" + getType() + '\'' +
             ", attributeName='" + getAttributeName() + '\'' +
             ", attributeType=" + getAttributeType() +

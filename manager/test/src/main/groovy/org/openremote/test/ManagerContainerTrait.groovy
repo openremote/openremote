@@ -82,4 +82,8 @@ trait ManagerContainerTrait extends ContainerTrait {
         clockConsumer.call(engine.sessionClock as PseudoClockScheduler)
     }
 
+    static long getClockTimeOf(RulesEngine engine) {
+        (engine.sessionClock as PseudoClockScheduler).currentTime
+    }
+
 }
