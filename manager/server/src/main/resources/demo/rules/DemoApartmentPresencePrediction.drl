@@ -8,6 +8,32 @@ global java.util.logging.Logger LOG;
 global org.openremote.model.rules.Assets assets;
 
 /*
+New:
+
+    // ROOM
+    presenceDetected                    // true/false
+    lastPresenceDetected                // Unix timestamp milliseconds
+
+    // RESIDENCE
+    presencePredication                 // true/false
+    vacationDays                        // 0..123
+
+    homeSceneStartMonday                // "17:30:00"
+    homeSceneStartTuesday               // "17:45:00"
+    ...
+    awaySceneStartMonday                // "08:30:00"
+    awaySceneStartTuesday               // "08:30:00"
+
+    rule "..."
+    when
+        $dayOfWeek : util.formatDate("DAY_OF_WEEK", drools.clock.currentTime)
+        AssetState(type == RESIDENCE, attributeName matches "homeSceneStart" + $dayOfWeek, valueChanged)
+    then
+        ...
+    end
+
+Old:
+
     SENSOR_PRESENCE                     // "on"
     PRESENCE_AS_INTEGER                 // 0, 1
     PRESENCE_LAST_DETECTED_TIME         // "-", hh:mm
