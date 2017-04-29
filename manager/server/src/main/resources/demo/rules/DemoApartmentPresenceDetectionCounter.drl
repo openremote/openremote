@@ -1,0 +1,52 @@
+package org.openremote.test.rules;
+
+import org.openremote.model.*;
+import org.openremote.model.asset.*
+import elemental.json.Json;
+
+global java.util.logging.Logger LOG;
+global org.openremote.model.rules.Assets assets;
+
+/*
+Calculate and set the "presenceDetected" flag and the "lastPresenceDetected" timestamp attributes
+of a ROOM when a motion counter is incremented several times within a time window. The flag will be
+removed if the motion counter has not been incremented within a time window. All time windows and
+the number of matches required can be configured.
+*/
+/* TODO This needs more work
+
+rule "Set presence detected timestamp if motion counter is incremented in time window"
+when
+    // The motion counter in a room is incremented more than 2 times in the last 15 minutes
+    $roomEvent : AssetEvent(type == AssetType.ROOM, attributeName == "motionCounter", $orgMC: value.asNumber > 0)
+    accumulate(
+        AssetEvent(id == $roomEvent.id, attributeName == "motionCounter", $newMC: value.asNumber > 0) over window:time(15m);
+        $count: count(1),
+        $maxMC: max($newMC);
+        $maxMC > $orgMC, $count > 2
+    )
+    // And the presence detected flag is not set already
+    AssetState(id == $roomEvent.getId(), attributeName == "presenceDetected", !value.asBoolean)
+then
+    // Set the presence detected flag and last presence detected timestamp of the room
+    long currentTime = drools.getWorkingMemory().getSessionClock().getCurrentTime();
+    assets.dispatch(
+            new AttributeEvent($roomEvent.getId(), "presenceDetected", Json.create(true)),
+            new AttributeEvent($roomEvent.getId(), "lastPresenceDetected", Json .create(currentTime))
+    );
+end
+
+rule "Clear presence detected timestamp if motion counter was not incremented in a while"
+when
+    // The motion counter in a room as not been incremented in the last 15 minutes
+    $roomEvent : AssetEvent(type == AssetType.ROOM, attributeName == "motionCounter", $orgMC: value.asNumber() > 0)
+    not(AssetEvent(id == $roomEvent.id, attributeName == "motionCounter", value.asNumber > $orgMC, this != $roomEvent, this after[0s,15m] $roomEvent ))
+    // And the presence detected flag is set
+    AssetState(id == $roomEvent.getId(), attributeName == "presenceDetected", value.asBoolean)
+then
+    // Clear the presence detected flag of the room
+    assets.dispatch(
+            new AttributeEvent($roomEvent.getId(), "presenceDetected", Json .create(false))
+    );
+end
+*/

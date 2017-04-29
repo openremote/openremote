@@ -25,6 +25,7 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
+import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.socket.WebsocketAuth;
 import org.openremote.container.web.socket.WebsocketConstants;
 import org.openremote.manager.server.concurrent.ManagerExecutorService;
@@ -105,7 +106,10 @@ public class EventService implements ContainerService {
     public void init(Container container) throws Exception {
         messageBrokerService = container.getService(MessageBrokerService.class);
 
-        eventSubscriptions = new EventSubscriptions(container.getService(ManagerExecutorService.class));
+        eventSubscriptions = new EventSubscriptions(
+            container.getService(TimerService.class),
+            container.getService(ManagerExecutorService.class)
+        );
 
         MessageBrokerSetupService messageBrokerSetupService = container.getService(MessageBrokerSetupService.class);
         messageBrokerSetupService.getContext().getTypeConverterRegistry().addTypeConverters(

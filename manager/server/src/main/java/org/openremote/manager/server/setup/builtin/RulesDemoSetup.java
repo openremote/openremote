@@ -22,6 +22,7 @@ package org.openremote.manager.server.setup.builtin;
 import org.apache.commons.io.IOUtils;
 import org.openremote.container.Container;
 import org.openremote.manager.server.setup.AbstractManagerSetup;
+import org.openremote.manager.shared.rules.AssetRuleset;
 import org.openremote.manager.shared.rules.Ruleset;
 import org.openremote.manager.shared.rules.TenantRuleset;
 
@@ -49,19 +50,27 @@ public class RulesDemoSetup extends AbstractManagerSetup {
 
         // ################################ Rules demo data ###################################
 
+        // See ApartmentActionsTest.groovy
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoApartmentAllLightsOff.drl")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
             Ruleset ruleset = new TenantRuleset("Demo Apartment - All Lights Off", keycloakDemoSetup.customerATenant.getId(), rules);
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
-        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoApartmentPresenceDetection.drl")) {
-            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
-            Ruleset ruleset = new TenantRuleset("Demo Apartment - Presence Detection", keycloakDemoSetup.customerATenant.getId(), rules);
-            apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
-        }
         try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoApartmentVacationMode.drl")) {
             String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
             Ruleset ruleset = new TenantRuleset("Demo Apartment - Vacation Mode", keycloakDemoSetup.customerATenant.getId(), rules);
+            apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+
+        // See ApartmentPresenceDetectionTest.groovy, these are conflicting rules and therefore we need two different apartments
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoApartmentPresenceDetectionPIR.drl")) {
+            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            Ruleset ruleset = new AssetRuleset("Demo Apartment - Presence Detection with motion PIR", managerDemoSetup.apartment1Id, rules);
+            apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
+        }
+        try (InputStream inputStream = RulesDemoSetup.class.getResourceAsStream("/demo/rules/DemoApartmentPresenceDetectionCounter.drl")) {
+            String rules = IOUtils.toString(inputStream, Charset.forName("utf-8"));
+            Ruleset ruleset = new AssetRuleset("Demo Apartment - Presence Detection with motion counter", managerDemoSetup.apartment2Id, rules);
             apartmentActionsRulesetId = rulesetStorageService.merge(ruleset).getId();
         }
     }

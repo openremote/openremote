@@ -54,7 +54,7 @@ public class NotificationService implements ContainerService {
 
         fcmKey = container.getConfig().get("FCM_KEY");
         if (fcmKey == null) {
-            LOG.severe("FCM_KEY not defined, notification service cannot send fcm notification");
+            LOG.info("FCM_KEY not defined, notification service cannot send fcm notification");
         }
         this.persistenceService = container.getService(PersistenceService.class);
 
@@ -104,25 +104,24 @@ public class NotificationService implements ContainerService {
         alertNotification.setDeliveryStatus(DeliveryStatus.PENDING);
         persistenceService.doTransaction((EntityManager entityManager) -> {
             entityManager.merge(alertNotification);
-            if (fcmKey != null) {
-                List<DeviceNotificationToken> allTokenForUser = findAllTokenForUser(userId);
-                for (DeviceNotificationToken notificationToken : allTokenForUser) {
-
-                    try {
-                        Invocation.Builder builder = target.request().header("Authorization", "key=" + fcmKey);
-                        Response response = builder.post(Entity.entity(new FCMMessage(notificationToken.getToken()), "application/json"));
-                        if (response.getStatus() != 200) {
-                            LOG.severe("Error send FCM notification status=[" + response.getStatus() + "], statusInformation=[" + response.getStatusInfo() + "]");
-                        }
-                        response.close();
-                    } catch (Exception e) {
-                        LOG.log(Level.SEVERE, "Error sending notiifcation to FCM", e);
+            if (fcmKey == null) {
+                LOG.info("No FCM key configured, can't send to '" + userId + "', not sending: " + alertNotification);
+                return;
+            }
+            List<DeviceNotificationToken> allTokenForUser = findAllTokenForUser(userId);
+            for (DeviceNotificationToken notificationToken : allTokenForUser) {
+                try {
+                    Invocation.Builder builder = target.request().header("Authorization", "key=" + fcmKey);
+                    Response response = builder.post(Entity.entity(new FCMMessage(notificationToken.getToken()), "application/json"));
+                    if (response.getStatus() != 200) {
+                        LOG.severe("Error send FCM notification status=[" + response.getStatus() + "], statusInformation=[" + response.getStatusInfo() + "]");
                     }
+                    response.close();
+                } catch (Exception e) {
+                    LOG.log(Level.SEVERE, "Error sending notification to FCM", e);
                 }
             }
         });
-
-
     }
 
     public List<AlertNotification> getPendingAlertForUserId(String userId) {

@@ -344,7 +344,7 @@ public abstract class IdentityService implements ContainerService {
 
         if (enableDirectAccess) {
             // We need direct access for integration tests
-            LOG.warning("### Allowing direct access grants for client app '" + appName + "', this must NOT be used in production! ###");
+            LOG.info("### Allowing direct access grants for client app '" + appName + "', this must NOT be used in production! ###");
             client.setDirectAccessGrantsEnabled(true);
         }
 

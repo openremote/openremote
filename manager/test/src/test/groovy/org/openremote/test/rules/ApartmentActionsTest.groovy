@@ -21,10 +21,9 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
     def "All Lights Off"() {
 
         given: "the container environment is started"
-        enablePseudoClock()
         def conditions = new PollingConditions(timeout: 10, delay: 1)
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
@@ -51,8 +50,9 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         assert livingRoomAsset.getAttribute("lightSwitch").get().valueAsBoolean
 
         when: "the ALL LIGHTS OFF push-button is pressed for an apartment"
+        setPseudoClocksToRealTime(container, customerAEngine)
         def apartment1AllLightsOffChange = new AttributeEvent(
-                managerDemoSetup.apartment1Id, "allLightsOffSwitch", Json.create(true)
+                managerDemoSetup.apartment1Id, "allLightsOffSwitch", Json.create(true), getClockTimeOf(container)
         )
         assetProcessingService.sendAttributeEvent(apartment1AllLightsOffChange)
 
@@ -64,7 +64,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         }
 
         when: "time advanced"
-        withClockOf(customerAEngine) { it.advanceTime(15, SECONDS) }
+        advancePseudoClocks(15, SECONDS, container, customerAEngine)
 
         then: "event expired"
         conditions.eventually {
@@ -72,17 +72,15 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         }
 
         cleanup: "stop the container"
-        disablePseudoClock()
         stopContainer(container)
     }
 
     def "Vacation Mode"() {
 
         given: "the container environment is started"
-        enablePseudoClock()
         def conditions = new PollingConditions(timeout: 15, delay: 1)
         def serverPort = findEphemeralPort()
-        def container = startContainer(defaultConfig(serverPort), defaultServices())
+        def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
@@ -105,8 +103,9 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         }
 
         when: "the vacation days are set to 5"
+        setPseudoClocksToRealTime(container, customerAEngine)
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
-                managerDemoSetup.apartment1Id, "vacationDays", Json.create(5)
+                managerDemoSetup.apartment1Id, "vacationDays", Json.create(5), getClockTimeOf(container)
         ))
 
         then: "that value should be stored"
@@ -117,7 +116,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         }
 
         when: "time advanced to the next day, which should trigger the cron rule"
-        withClockOf(customerAEngine) { it.advanceTime(24, HOURS) }
+        advancePseudoClocks(24, HOURS, container, customerAEngine)
 
         then: "the vacation days should be decremented"
         conditions.eventually {
@@ -127,7 +126,7 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
         }
 
         when: "time advanced again (to test that the rule only fires once per day)"
-        withClockOf(customerAEngine) { it.advanceTime(10, SECONDS) }
+        advancePseudoClocks(10, SECONDS, container, customerAEngine)
 
         then: "the vacation days should NOT be decremented"
         new PollingConditions(initialDelay: 2).eventually {
@@ -142,21 +141,22 @@ class ApartmentActionsTest extends Specification implements ManagerContainerTrai
 
             remainingDays--
 
-            withClockOf(customerAEngine) { it.advanceTime(1, DAYS) }
+            advancePseudoClocks(1, DAYS, container, customerAEngine)
             conditions.eventually {
                 def asset = assetStorageService.find(managerDemoSetup.apartment1Id, true)
                 assert asset.getAttribute("vacationDays").get().valueAsInteger == remainingDays
                 assert asset.getAttribute("lastScene").get().valueAsString == "AWAY"
             }
         }
-        withClockOf(customerAEngine) { it.advanceTime(8, HOURS) }
+
+        and: "after some more time to switch to HOME status"
+        advancePseudoClocks(8, HOURS, container, customerAEngine)
         conditions.eventually {
             def asset = assetStorageService.find(managerDemoSetup.apartment1Id, true)
             assert asset.getAttribute("lastScene").get().valueAsString == "HOME"
         }
 
         cleanup: "the server should be stopped"
-        disablePseudoClock()
         stopContainer(container)
     }
 }

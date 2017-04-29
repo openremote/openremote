@@ -29,6 +29,7 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.WebService;
 import org.openremote.container.web.socket.WebsocketAuth;
 import org.openremote.manager.server.event.EventService;
@@ -55,6 +56,7 @@ import static org.openremote.manager.server.event.EventService.*;
 public class AssetStorageService extends RouteBuilder implements ContainerService, Consumer<AssetState> {
 
     private static final Logger LOG = Logger.getLogger(AssetStorageService.class.getName());
+    protected TimerService timerService;
     protected PersistenceService persistenceService;
     protected ManagerIdentityService managerIdentityService;
     protected AssetProcessingService assetProcessingService;
@@ -62,6 +64,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
     @Override
     public void init(Container container) throws Exception {
+        timerService = container.getService(TimerService.class);
         persistenceService = container.getService(PersistenceService.class);
         managerIdentityService = container.getService(ManagerIdentityService.class);
         assetProcessingService = container.getService(AssetProcessingService.class);
@@ -124,7 +127,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         // Some sanity checking, of course the timestamp should never be -1 if we store updated attribute state
         long timestamp = assetState.getAttribute().getValueTimestamp();
         String valueTimestamp = Long.toString(
-            timestamp >= 0 ? timestamp : System.currentTimeMillis()
+            timestamp >= 0 ? timestamp : timerService.getCurrentTimeMillis()
         );
         if (!storeAttributeValue(assetId, attributeName, value, valueTimestamp)) {
             throw new RuntimeException("Database update failed, no rows updated");

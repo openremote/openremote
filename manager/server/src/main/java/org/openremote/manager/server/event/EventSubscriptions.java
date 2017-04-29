@@ -22,6 +22,7 @@ package org.openremote.manager.server.event;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.impl.DefaultMessage;
+import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.socket.WebsocketConstants;
 import org.openremote.manager.server.concurrent.ManagerExecutorService;
 import org.openremote.model.event.shared.CancelEventSubscription;
@@ -38,6 +39,7 @@ public class EventSubscriptions {
 
     private static final Logger LOG = Logger.getLogger(EventSubscriptions.class.getName());
 
+    final protected TimerService timerService;
     final protected Map<String, SessionSubscriptions> sessionSubscriptions = new HashMap<>();
 
     class SessionSubscriptions extends HashSet<SessionSubscription> {
@@ -46,7 +48,7 @@ public class EventSubscriptions {
                     boolean expired =
                         sessionSubscription.timestamp
                             + (EventSubscription.RENEWAL_PERIOD_SECONDS * 1000)
-                            < System.currentTimeMillis();
+                            < timerService.getCurrentTimeMillis();
                     if (expired) {
                         LOG.fine("Removing expired; " + sessionSubscription.subscription);
                     }
@@ -57,8 +59,7 @@ public class EventSubscriptions {
 
         public void update(EventSubscription eventSubscription) {
             cancel(eventSubscription.getEventType());
-            SessionSubscription sessionSubscription = new SessionSubscription(System.currentTimeMillis(), eventSubscription);
-            add(sessionSubscription);
+            add(new SessionSubscription(timerService.getCurrentTimeMillis(), eventSubscription));
         }
 
         public void cancel(String eventType) {
@@ -80,8 +81,9 @@ public class EventSubscriptions {
         }
     }
 
-    public EventSubscriptions(ManagerExecutorService executorService) {
+    public EventSubscriptions(TimerService timerService, ManagerExecutorService executorService) {
         LOG.info("Starting background task checking for expired event subscriptions from clients");
+        this.timerService = timerService;
         executorService.scheduleAtFixedRate(() -> {
             synchronized (this.sessionSubscriptions) {
                 for (SessionSubscriptions subscriptions : sessionSubscriptions.values()) {

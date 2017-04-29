@@ -26,6 +26,7 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
+import org.openremote.container.timer.TimerService;
 import org.openremote.container.web.socket.WebsocketAuth;
 import org.openremote.manager.server.agent.AgentService;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
@@ -38,6 +39,7 @@ import org.openremote.model.AttributeExecuteStatus;
 import org.openremote.model.asset.*;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -125,6 +127,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     // Message topic for communicating from client to asset/thing layer
     String ASSET_QUEUE = "seda://AssetQueue?waitForTaskToComplete=NEVER&purgeWhenStopping=true&discardIfNoConsumers=false&size=1000";
 
+    protected TimerService timerService;
     protected ManagerIdentityService managerIdentityService;
     protected RulesService rulesService;
     protected AgentService agentService;
@@ -137,6 +140,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     @Override
     public void init(Container container) throws Exception {
+        timerService = container.getService(TimerService.class);
         managerIdentityService = container.getService(ManagerIdentityService.class);
         rulesService = container.getService(RulesService.class);
         agentService = container.getService(AgentService.class);
@@ -389,9 +393,12 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         // Ensure timestamp of event is not in the future as that would essentially block access to
         // the attribute until after that time (maybe that is desirable behaviour)
         // Allow a leniency of 1s
-        if (attributeEvent.getTimestamp() - System.currentTimeMillis() > 1000) {
+        long currentMillis = timerService.getCurrentTimeMillis();
+        if (attributeEvent.getTimestamp() - currentMillis > 1000) {
             // TODO: Decide how to handle update events in the future - ignore or change timestamp
-            LOG.warning("Ignoring " + attributeEvent + ", event-time is in the future in:" + asset);
+            LOG.warning("Ignoring future " + attributeEvent
+                + ", current time: " + new Date(currentMillis) + "/" + currentMillis
+                + ", event time: " + new Date(attributeEvent.getTimestamp()) + "/" + attributeEvent.getTimestamp() + " in: " + asset);
             return;
         }
 
@@ -401,7 +408,10 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         // Check the last update timestamp of the attribute, ignoring any event that is older than last update
         // TODO: This means we drop out-of-sequence events, we might need better at-least-once handling
         if (lastStateEvent.getTimestamp() >= 0 && attributeEvent.getTimestamp() <= lastStateEvent.getTimestamp()) {
-            LOG.warning("Ignoring " + attributeEvent + ", event-time is older than attribute's last state " + lastStateEvent + " in: " + asset);
+            LOG.warning("Ignoring outdated " + attributeEvent
+                + ", last asset state time: " + new Date(lastStateEvent.getTimestamp()) + "/" + lastStateEvent.getTimestamp()
+                + ", event time: " + new Date(attributeEvent.getTimestamp()) + "/" + attributeEvent.getTimestamp() + " in: " + asset);
+
             return;
         }
 
@@ -425,14 +435,18 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
     protected void processUpdate(AssetState assetState) {
         try {
-            LOG.fine(">>> Processing start: " + assetState);
+            long currentMillis = timerService.getCurrentTimeMillis();
+            LOG.fine(">>> Processing start " +
+                "(event time: " + new Date(assetState.getValueTimestamp()) + "/" + assetState.getValueTimestamp() +
+                ", processing time: " + new Date(currentMillis) + "/" + currentMillis
+                + ") : " + assetState);
             processorLoop:
             for (Consumer<AssetState> processor : processors) {
                 try {
                     LOG.fine("==> Processor " + processor + " accepts: " + assetState);
                     processor.accept(assetState);
                 } catch (Throwable t) {
-                    LOG.log(Level.SEVERE, "Asset update consumer '" + processor + "' threw an exception whilst consuming the update:" + assetState, t);
+                    LOG.log(Level.SEVERE, "Asset update consumer '" + processor + "' threw an exception whilst consuming: " + assetState, t);
                     assetState.setProcessingStatus(AssetState.ProcessingStatus.ERROR);
                     assetState.setError(t);
                 }

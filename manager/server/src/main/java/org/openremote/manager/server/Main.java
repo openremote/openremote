@@ -25,6 +25,7 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.server.agent.AgentService;
 import org.openremote.manager.server.apps.ConsoleAppService;
 import org.openremote.manager.server.asset.AssetProcessingService;
@@ -52,6 +53,7 @@ public class Main {
         List<ContainerService> services = new ArrayList<ContainerService>() {
             {
                 addAll(Arrays.asList(
+                    new TimerService(),
                     new ManagerExecutorService(),
                     new I18NService(),
                     new PersistenceService(),

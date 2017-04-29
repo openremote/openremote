@@ -119,7 +119,8 @@ public enum AssetMeta {
     /**
      * Should attribute writes be processed by the rules engines as facts in knowledge sessions, with a lifecycle
      * that reflects the state of the asset attribute (the {@link AssetState} facts in the rules sessions are kept
-     * in sync with asset changes).
+     * in sync with asset changes). If you want two types of facts in your rules knowledge session for a single
+     * attribute, with state and event behavior, combine this with {@link #RULE_EVENT}.
      */
     RULE_STATE(ASSET_META_NAMESPACE + ":ruleState", new Access(true, false, true), JsonType.BOOLEAN),
 
@@ -127,7 +128,8 @@ public enum AssetMeta {
      * Should attribute writes be processed by the rules engines as events in knowledge sessions with limited
      * lifecycle that reflects how the event is processed (the {@link AssetEvent} facts
      * in the rules sessions are expired automatically after a certain time and/or if they can no longer be matched
-     * by time operations).
+     * by time operations). If you want two types of facts in your rules knowledge session for a single attribute,
+     * with state and event behavior, combine this with {@link #RULE_STATE\}.
      */
     RULE_EVENT(ASSET_META_NAMESPACE + ":ruleEvent", new Access(true, false, true), JsonType.BOOLEAN),
 

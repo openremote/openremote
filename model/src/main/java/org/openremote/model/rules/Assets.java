@@ -45,6 +45,6 @@ public abstract class Assets {
 
     abstract public RestrictedQuery query();
 
-    abstract public void dispatch(AttributeEvent event);
+    abstract public void dispatch(AttributeEvent... event);
 
 }

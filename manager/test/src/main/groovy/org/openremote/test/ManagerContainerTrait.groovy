@@ -9,6 +9,7 @@ import org.openremote.container.ContainerService
 import org.openremote.container.message.MessageBrokerService
 import org.openremote.container.message.MessageBrokerSetupService
 import org.openremote.container.persistence.PersistenceService
+import org.openremote.container.timer.TimerService
 import org.openremote.manager.server.agent.AgentService
 import org.openremote.manager.server.apps.ConsoleAppService
 import org.openremote.manager.server.asset.AssetProcessingService
@@ -26,12 +27,17 @@ import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.concurrent.ManagerExecutorService
 import org.openremote.manager.server.web.ManagerWebService
 
+import java.util.concurrent.TimeUnit
+
+import static org.openremote.container.timer.TimerService.Clock.PSEUDO
+import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
 import static org.openremote.manager.server.setup.builtin.BuiltinSetupTasks.SETUP_IMPORT_DEMO_RULES
 
 trait ManagerContainerTrait extends ContainerTrait {
 
     static Iterable<ContainerService> defaultServices(Iterable<ContainerService> additionalServices) {
         [
+                new TimerService(),
                 new ManagerExecutorService(),
                 new I18NService(),
                 new PersistenceService(),
@@ -67,12 +73,11 @@ trait ManagerContainerTrait extends ContainerTrait {
         startContainer(config << [(SETUP_IMPORT_DEMO_RULES): "false"], services)
     }
 
-    static void enablePseudoClock() {
-        RulesEngine.DefaultClockType = ClockTypeOption.get("pseudo")
-    }
-
-    static void disablePseudoClock() {
-        RulesEngine.DefaultClockType = null
+    /**
+     * Use pseudo clock instead of wall clock.
+     */
+    static Container startContainerWithPseudoClock(Map<String, String> config, Iterable<ContainerService> services) {
+        startContainer(config << [(TIMER_CLOCK_TYPE): PSEUDO.name()], services)
     }
 
     /**
@@ -84,6 +89,27 @@ trait ManagerContainerTrait extends ContainerTrait {
 
     static long getClockTimeOf(RulesEngine engine) {
         (engine.sessionClock as PseudoClockScheduler).currentTime
+    }
+
+    /**
+     * Execute pseudo clock operations in Container.
+     */
+    static void withClockOf(Container container, Closure<TimerService.Clock> clockConsumer) {
+        clockConsumer.call(container.getService(TimerService.class).getClock())
+    }
+
+    static long getClockTimeOf(Container container) {
+        container.getService(TimerService.class).getClock().getCurrentTimeMillis()
+    }
+
+    static void advancePseudoClocks(long amount, TimeUnit unit, Container container, RulesEngine[] engine) {
+        withClockOf(container) { it.advanceTime(amount, unit)}
+        engine.each { withClockOf(it) { it.advanceTime(amount, unit)} }
+    }
+
+    static void setPseudoClocksToRealTime(Container container, RulesEngine[] engine) {
+        withClockOf(container) { it.advanceTime(System.currentTimeMillis() - it.currentTimeMillis, TimeUnit.MILLISECONDS) }
+        engine.each { withClockOf(it) { it.advanceTime(System.currentTimeMillis() - it.currentTime, TimeUnit.MILLISECONDS)} }
     }
 
 }

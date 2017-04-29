@@ -27,6 +27,7 @@ import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.container.persistence.PersistenceService;
+import org.openremote.container.timer.TimerService;
 import org.openremote.manager.server.asset.AssetProcessingService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
@@ -75,6 +76,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     public static final String RULE_EVENT_EXPIRES = "RULE_EVENT_EXPIRES";
     public static final String RULE_EVENT_EXPIRES_DEFAULT = "1h";
 
+    protected TimerService timerService;
     protected ManagerExecutorService executorService;
     protected PersistenceService persistenceService;
     protected RulesetStorageService rulesetStorageService;
@@ -96,6 +98,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
     @Override
     public void init(Container container) throws Exception {
+        timerService = container.getService(TimerService.class);
         executorService = container.getService(ManagerExecutorService.class);
         persistenceService = container.getService(PersistenceService.class);
         rulesetStorageService = container.getService(RulesetStorageService.class);
@@ -194,12 +197,12 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
     @Override
     public void accept(AssetState assetState) {
+        // We might process two facts for a single attribute update, if that is what the user wants
         if (assetState.getAttribute().isRuleState()) {
             updateAssetState(assetState, false);
-        } else if (assetState.getAttribute().isRuleEvent()) {
+        }
+        if (assetState.getAttribute().isRuleEvent()) {
             process(new AssetEvent(assetState));
-        } else {
-            LOG.finest("Ignoring asset state as attribute is not a rules state or event: " + assetState);
         }
     }
 
@@ -412,6 +415,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         // Global rules have access to everything in the system
         if (globalDeployment == null) {
             globalDeployment = new RulesEngine<>(
+                timerService,
                 executorService,
                 assetStorageService,
                 notificationService,
@@ -445,6 +449,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             .computeIfAbsent(ruleset.getRealmId(), (realmId) -> {
                 created[0] = true;
                 return new RulesEngine<>(
+                    timerService,
                     executorService,
                     assetStorageService,
                     notificationService,
@@ -508,6 +513,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             .computeIfAbsent(ruleset.getAssetId(), (assetId) -> {
                 created[0] = true;
                 return new RulesEngine<>(
+                    timerService,
                     executorService,
                     assetStorageService,
                     notificationService,

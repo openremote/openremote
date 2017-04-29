@@ -34,6 +34,7 @@ import org.kie.api.builder.model.KieModuleModel;
 import org.kie.api.builder.model.KieSessionModel;
 import org.kie.api.conf.EqualityBehaviorOption;
 import org.kie.api.conf.EventProcessingOption;
+import org.kie.api.event.process.*;
 import org.kie.api.event.rule.ObjectDeletedEvent;
 import org.kie.api.event.rule.ObjectInsertedEvent;
 import org.kie.api.event.rule.ObjectUpdatedEvent;
@@ -44,6 +45,7 @@ import org.kie.api.runtime.KieSessionConfiguration;
 import org.kie.api.runtime.conf.ClockTypeOption;
 import org.kie.api.runtime.rule.FactHandle;
 import org.kie.api.time.SessionClock;
+import org.openremote.container.timer.TimerService;
 import org.openremote.container.util.Util;
 import org.openremote.manager.server.asset.AssetProcessingService;
 import org.openremote.manager.server.asset.AssetStorageService;
@@ -74,6 +76,7 @@ public class RulesEngine<T extends Ruleset> {
 
     public static final Logger LOG = Logger.getLogger(RulesEngine.class.getName());
 
+    final protected TimerService timerService;
     final protected ManagerExecutorService executorService;
     final protected NotificationService notificationService;
     final protected AssetStorageService assetStorageService;
@@ -81,8 +84,6 @@ public class RulesEngine<T extends Ruleset> {
     final protected Class<T> rulesetType;
     final protected String id;
 
-    // This is here so Clock Type can be set to pseudo from tests
-    protected static ClockTypeOption DefaultClockType;
     private static final int AUTO_START_DELAY_SECONDS = 2;
     private static Long counter = 1L;
     static final protected Util UTIL = new Util();
@@ -99,11 +100,13 @@ public class RulesEngine<T extends Ruleset> {
     final protected Map<AssetState, FactHandle> assetStates = new HashMap<>();
     protected ScheduledFuture startTimer;
 
-    public RulesEngine(ManagerExecutorService executorService,
+    public RulesEngine(TimerService timerService,
+                       ManagerExecutorService executorService,
                        AssetStorageService assetStorageService,
                        NotificationService notificationService,
                        AssetProcessingService assetProcessingService,
                        Class<T> rulesetType, String id) {
+        this.timerService = timerService;
         this.executorService = executorService;
         this.assetStorageService = assetStorageService;
         this.notificationService = notificationService; // shouldBeUser service or Identity Service ?
@@ -354,8 +357,13 @@ public class RulesEngine<T extends Ruleset> {
         KieSessionConfiguration kieSessionConfiguration = kieServices.newKieSessionConfiguration();
 
         // Which clock to use ("pseudo" for testing, "realtime" otherwise)
-        ClockTypeOption clockType = DefaultClockType != null ? DefaultClockType : ClockTypeOption.get("realtime");
-        kieSessionConfiguration.setOption(clockType);
+        switch (timerService.getClock()) {
+            case PSEUDO:
+                kieSessionConfiguration.setOption(ClockTypeOption.get("pseudo"));
+                break;
+            default:
+                kieSessionConfiguration.setOption(ClockTypeOption.get("realtime"));
+        }
 
         try {
             knowledgeSession = kieContainer.newKieSession(kieSessionConfiguration);
@@ -363,8 +371,9 @@ public class RulesEngine<T extends Ruleset> {
             // If the pseudo clock is enabled (we run a test environment?) then set current
             // time on startup of session, as real time is used in offset calculations for
             // automatic event expiration in Drools (probably a design mistake)
-            if (clockType.getClockType().equals("pseudo")) {
-                ((PseudoClockScheduler) knowledgeSession.getSessionClock()).setStartupTime(System.currentTimeMillis());
+            if (timerService.getClock() == TimerService.Clock.PSEUDO) {
+                ((PseudoClockScheduler) knowledgeSession.getSessionClock())
+                    .setStartupTime(timerService.getCurrentTimeMillis());
             }
 
             setGlobal("assets", createAssetsFacade());
@@ -503,7 +512,9 @@ public class RulesEngine<T extends Ruleset> {
 
     protected synchronized void insertAssetEvent(long expirationOffset, AssetEvent assetEvent) {
         FactHandle factHandle = insertIntoSession(assetEvent);
-        scheduleExpiration(assetEvent, factHandle, expirationOffset);
+        if (factHandle != null) {
+            scheduleExpiration(assetEvent, factHandle, expirationOffset);
+        }
     }
 
     protected synchronized FactHandle insertIntoSession(AbstractAssetUpdate update) {
@@ -511,7 +522,9 @@ public class RulesEngine<T extends Ruleset> {
             LOG.fine("On " + this + ", engine is in error state or not running, ignoring: " + update);
             return null;
         }
-        return knowledgeSession.insert(update);
+        FactHandle fh = knowledgeSession.insert(update);
+        LOG.fine("On " + this + ", fact count after insert: " + knowledgeSession.getFactCount());
+        return fh;
     }
 
     protected Assets createAssetsFacade() {
@@ -583,17 +596,23 @@ public class RulesEngine<T extends Ruleset> {
             }
 
             @Override
-            public void dispatch(AttributeEvent event) {
-                // Check if the asset ID of the event can be found in the original query
-                AssetQuery checkQuery = query();
-                checkQuery.id = event.getEntityId();
-                if (assetStorageService.find(checkQuery) == null) {
-                    throw new IllegalArgumentException(
-                        "Access to asset not allowed for this rule engine scope: " + event
-                    );
+            public void dispatch(AttributeEvent... events) {
+                if (events != null) {
+                    for (AttributeEvent event : events) {
+                        // Set event time to current container timer
+                        event.timestamp = timerService.getCurrentTimeMillis();
+                        // Check if the asset ID of the event can be found in the original query
+                        AssetQuery checkQuery = query();
+                        checkQuery.id = event.getEntityId();
+                        if (assetStorageService.find(checkQuery) == null) {
+                            throw new IllegalArgumentException(
+                                "Access to asset not allowed for this rule engine scope: " + event
+                            );
+                        }
+                        LOG.fine("Dispatching on " + RulesEngine.this + ": " + event);
+                        assetProcessingService.sendAttributeEvent(event);
+                    }
                 }
-                LOG.fine("Dispatching on " + RulesEngine.this + ": " + event);
-                assetProcessingService.sendAttributeEvent(event);
             }
         };
     }
@@ -649,6 +668,8 @@ public class RulesEngine<T extends Ruleset> {
      * Yes, this is a hack.
      */
     protected void scheduleExpiration(AssetEvent assetEvent, FactHandle factHandle, long expirationOffset) {
+        if (!isRunning())
+            return;
         InternalSchedulerService sessionScheduler = knowledgeSession.getSessionClock();
         JobHandle jobHandle = new JDKTimerService.JDKJobHandle(assetEvent.getId().hashCode());
         class AssetEventExpireJobContext implements JobContext {

@@ -60,20 +60,20 @@ public class RuleExecutionLogger extends DefaultAgendaEventListener {
         }
 
         if (ruleName.startsWith("\"--")) {
-            LOG.finest(String.format("*** On " + contextSupplier.get() + "\n\nRule %s\n" +
+            LOG.finest(String.format("*** On " + contextSupplier.get() + "\nRule %s\n" +
                     "\tDeclarations \n%s" +
                     "\tLHS objects(antecedents)\n%s", ruleName, declarationLog, objectLog));
             return;
         }
 
         if (ruleName.startsWith("\"-")) {
-            LOG.fine(String.format("*** On " + contextSupplier.get() + "\n\nRule %s\n" +
+            LOG.fine(String.format("*** On " + contextSupplier.get() + "\nRule %s\n" +
                     "\tDeclarations \n%s" +
                     "\tLHS objects(antecedents)\n%s", ruleName, declarationLog, objectLog));
             return;
         }
 
-        LOG.info(String.format("*** On " + contextSupplier.get() + "\n\nRule %s\n" +
+        LOG.info(String.format("*** On " + contextSupplier.get() + "\nRule %s\n" +
             "\tDeclarations \n%s" +
             "\tLHS objects(antecedents)\n%s", ruleName, declarationLog, objectLog));
     }

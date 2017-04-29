@@ -21,6 +21,7 @@ package org.openremote.container.message;
 
 import org.apache.camel.Processor;
 import org.apache.camel.builder.LoggingErrorHandlerBuilder;
+import org.apache.camel.impl.DefaultShutdownStrategy;
 import org.apache.camel.impl.DefaultStreamCachingStrategy;
 import org.apache.camel.spi.*;
 import org.apache.camel.util.ObjectHelper;
@@ -103,8 +104,9 @@ public class MessageBrokerSetupService implements ContainerService {
         // Don't use JMS, we do our own correlation
         context.setUseBreadcrumb(false);
 
-        // TODO: Wait 1 second before forcing a route to stop?
+        // Force a quick shutdown of routes with in-flight exchanges
         context.getShutdownStrategy().setTimeout(1);
+        context.getShutdownStrategy().setSuppressLoggingOnTimeout(true);
 
         context.setStreamCaching(true);
         StreamCachingStrategy streamCachingStrategy = new DefaultStreamCachingStrategy();

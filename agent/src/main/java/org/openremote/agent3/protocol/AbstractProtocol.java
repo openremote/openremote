@@ -26,6 +26,7 @@ import org.openremote.container.Container;
 import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
+import org.openremote.container.timer.TimerService;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.AttributeState;
@@ -52,11 +53,13 @@ public abstract class AbstractProtocol implements Protocol {
     final protected Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
     protected MessageBrokerContext messageBrokerContext;
     protected ProducerTemplate producerTemplate;
+    protected TimerService timerService;
     protected ProtocolExecutorService executorService;
 
     @Override
     public void init(Container container) throws Exception {
         LOG.info("Initializing protocol: " + getProtocolName());
+        timerService = container.getService(TimerService.class);
         executorService = container.getService(ProtocolExecutorService.class);
     }
 
@@ -141,7 +144,11 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     protected void sendAttributeEvent(AttributeState state) {
-        producerTemplate.sendBodyAndHeader(SENSOR_QUEUE, new AttributeEvent(state, System.currentTimeMillis()), "isSensorUpdate", false);
+        producerTemplate.sendBodyAndHeader(
+            SENSOR_QUEUE,
+            new AttributeEvent(state, timerService.getCurrentTimeMillis()),
+            "isSensorUpdate", false
+        );
     }
 
     protected void onSensorUpdate(AttributeState state, long timestamp) {
@@ -149,7 +156,7 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     protected void onSensorUpdate(AttributeState state) {
-        onSensorUpdate(state, System.currentTimeMillis());
+        onSensorUpdate(state, timerService.getCurrentTimeMillis());
     }
 
     @Override

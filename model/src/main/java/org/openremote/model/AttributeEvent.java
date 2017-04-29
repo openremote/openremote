@@ -99,6 +99,10 @@ public class AttributeEvent extends SharedEvent {
         this(new AttributeState(new AttributeRef(entityId, attributeName), value));
     }
 
+    public AttributeEvent(String entityId, String attributeName, JsonValue value, long timestamp) {
+        this(new AttributeState(new AttributeRef(entityId, attributeName), value), timestamp);
+    }
+
     public AttributeEvent(AttributeRef attributeRef, JsonValue value) {
         this(new AttributeState(attributeRef, value));
     }

@@ -27,12 +27,9 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
     def "Check processing of asset updates"() {
 
-        //region given: "expected conditions"
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 10, delay: 1)
-        //endregion
 
-        //region and: "a mock protocol"
         // TODO: Update this to use Simulator Protocol
         and: "a mock protocol"
         def mockProtocolName = Constants.PROTOCOL_NAMESPACE + ":mockProtocol"
@@ -73,9 +70,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
                 return mockProtocolName
             }
         }
-        //endregion
 
-        //region and: "a mock attribute event consumer"
         and: "a mock attribute event consumer"
         List<AssetState> updatesPassedStartOfProcessingChain = []
         List<AssetState> updatesReachedEndOfProcessingChain = []
@@ -87,9 +82,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         Consumer<AssetState> mockStartConsumer = { assetUpdate ->
             updatesPassedStartOfProcessingChain.add(assetUpdate)
         }
-        //endregion
 
-        //region and: "the container is started with the mock consumers and mock protocol"
         and: "the container is started with the mock consumers and mock protocol"
         def serverPort = findEphemeralPort()
         def container = startContainer(defaultConfig(serverPort), defaultServices(mockProtocol))
@@ -100,16 +93,14 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         assetProcessingService.processors.add(0, mockStartConsumer)
         assetProcessingService.processors.add(mockEndConsumer)
-        //endregion
 
         // The conditions here depend on how we handle the initial insert of facts into the rule engines
-        //expect: "the demo rule engine should start and trigger the 'Switch room lights off when apartment ALL LIGHTS OFF switch is off' rule and cause attribute events to go through the system"
         expect: "the demo rule engine should start and trigger the 'Switch room lights off when apartment ALL LIGHTS OFF switch is off' rule and cause attribute events to go through the system"
         conditions.eventually {
             def customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
             assert customerAEngine != null
             assert customerAEngine.isRunning()
-            assert customerAEngine.rulesets.size() == 3
+            assert customerAEngine.rulesets.size() == 2
             assert updatesPassedStartOfProcessingChain.size() == 0
             assert updatesReachedEndOfProcessingChain.size() == 0
         }
@@ -118,7 +109,6 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         updatesPassedStartOfProcessingChain.clear()
         updatesReachedEndOfProcessingChain.clear()
 
-        //region and: "a mock agent that uses the mock protocol is created"
         and: "a mock agent that uses the mock protocol is created"
         def mockAgent = new ServerAsset()
         mockAgent.setName("Mock Agent")
@@ -127,9 +117,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         mockAgent.setAttributeList(Collections.singletonList(mockProtocolConfig))
         mockAgent.setRealmId(keycloakDemoSetup.masterTenant.id)
         mockAgent = assetStorageService.merge(mockAgent)
-        //endregion
 
-        //region and: "a mock thing asset is created with a valid protocol attribute, an invalid protocol attribute and a plain attribute"
         and: "a mock thing asset is created with a valid protocol attribute, an invalid protocol attribute and a plain attribute"
         def mockThing = new ServerAsset(mockAgent)
         mockThing.setName("Mock Thing Asset")
@@ -171,8 +159,6 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         ]
         mockThing.setAttributeList(mockThingAttributes)
         mockThing = assetStorageService.merge(mockThing)
-        //endregion
-
 
         then: "the mock thing to be deployed to the protocol"
         conditions.eventually {

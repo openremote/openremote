@@ -10,6 +10,8 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import static java.util.concurrent.TimeUnit.SECONDS
+import static org.openremote.container.timer.TimerService.Clock.PSEUDO
+import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
 import static org.openremote.test.RulesTestUtil.attachRuleExecutionLogger
 import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.*
 
@@ -65,10 +67,9 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
     def "Check firing of timer rules with pseudo clock"() {
 
         given: "the container environment is started"
-        enablePseudoClock()
         def conditions = new PollingConditions(timeout: 10, delay: 1)
         def serverPort = findEphemeralPort()
-        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerWithoutDemoRules(defaultConfig(serverPort) << [(TIMER_CLOCK_TYPE): PSEUDO.name()], defaultServices())
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
 
@@ -96,7 +97,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
         }
 
         when: "the clock is advanced by a few seconds"
-        withClockOf(globalEngine) { it.advanceTime(10, SECONDS) }
+        advancePseudoClocks(10, SECONDS, container, globalEngine)
         // TODO Weird behavior of timer rules, pseudo clock, and active mode: More than 5 seconds is needed to fire rule twice
 
         then: "the rule engines should have fired the timed execution rule in the background"
@@ -107,7 +108,6 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
         }
 
         cleanup: "the server should be stopped"
-        disablePseudoClock()
         stopContainer(container)
     }
 }
