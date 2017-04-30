@@ -55,7 +55,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
      // Update these numbers whenever you change a RULE_STATE flag in test data
     public static final int DEMO_RULE_STATES_APARTMENT_1 = 8;
-    public static final int DEMO_RULE_STATES_APARTMENT_2 = 3;
+    public static final int DEMO_RULE_STATES_APARTMENT_2 = 4;
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 2;
     public static final int DEMO_RULE_STATES_SMART_HOME = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
     public static final int DEMO_RULE_STATES_CUSTOMER_A = DEMO_RULE_STATES_SMART_HOME;
@@ -549,6 +549,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.DESCRIPTION, Json.create(
                             "Sensor that increments a counter when motion is sensed"
                         ))
+                    ).add(
+                        new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     ).add(
                         new MetaItem(AssetMeta.RULE_EVENT, Json.create(true))
                     )

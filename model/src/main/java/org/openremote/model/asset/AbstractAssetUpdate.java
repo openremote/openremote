@@ -246,6 +246,12 @@ public abstract class AbstractAssetUpdate {
         return attribute.getReference();
     }
 
+    public boolean matches(AttributeEvent event) {
+        return event.getAttributeRef().equals(getAttributeRef())
+            && JsonUtil.equals(getValue(), event.getAttributeState().getValue())
+            && getValueTimestamp() == event.getTimestamp();
+    }
+
     /**
      * This is here because {@link #attribute} is not always publicly accessible
      */

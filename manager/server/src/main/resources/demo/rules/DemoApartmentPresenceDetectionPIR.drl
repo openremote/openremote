@@ -19,14 +19,14 @@ rule "Set presence detected flag if motion sensor is triggered in time window"
 when
     // A room has a motion sensor
     $room : AssetState(type == AssetType.ROOM, attributeName == "motionSensor")
+    // And the presence detected flag is not set already
+    AssetState(id == $room.id, attributeName == "presenceDetected", !value.asBoolean)
     // And at least 5 motion sensor triggers have been received in the last 10 minutes
     accumulate(
         AssetEvent(id == $room.id, attributeName == "motionSensor", value.asBoolean) over window:time(10m);
         $count: count(1);
         $count >= 5
     )
-    // And the presence detected flag is not set already
-    AssetState(id == $room.id, attributeName == "presenceDetected", !value.asBoolean)
 then
     // Set the presence detected flag of the room
     assets.dispatch(
@@ -39,11 +39,11 @@ when
     // The presence detected flag is set in a room
     $room: AssetState(type == AssetType.ROOM, attributeName == "presenceDetected", value.asBoolean)
     // And the motion sensor is triggered
-    $sensor: AssetState(id == $room.id, attributeName == "motionSensor", value.asBoolean)
+    $sensorState: AssetState(id == $room.id, attributeName == "motionSensor", value.asBoolean)
 then
     // Update the last presence detected timestamp of the room
     assets.dispatch(
-            new AttributeEvent($room.getId(), "lastPresenceDetected", Json.create($sensor.getValueTimestamp()))
+            new AttributeEvent($room.getId(), "lastPresenceDetected", Json.create($sensorState.getValueTimestamp()))
     );
 end
 

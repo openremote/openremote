@@ -34,7 +34,6 @@ import org.kie.api.builder.model.KieModuleModel;
 import org.kie.api.builder.model.KieSessionModel;
 import org.kie.api.conf.EqualityBehaviorOption;
 import org.kie.api.conf.EventProcessingOption;
-import org.kie.api.event.process.*;
 import org.kie.api.event.rule.ObjectDeletedEvent;
 import org.kie.api.event.rule.ObjectInsertedEvent;
 import org.kie.api.event.rule.ObjectUpdatedEvent;
@@ -98,6 +97,9 @@ public class RulesEngine<T extends Ruleset> {
     protected Future runningFuture;
     protected Throwable error;
     final protected Map<AssetState, FactHandle> assetStates = new HashMap<>();
+    // This consumer is useful in testing, as we can't have a reliable event fact
+    // count from Drools session (events are expired automatically))
+    protected Consumer<AssetEvent> assetEventsConsumer;
     protected ScheduledFuture startTimer;
 
     public RulesEngine(TimerService timerService,
@@ -156,6 +158,10 @@ public class RulesEngine<T extends Ruleset> {
 
     public synchronized boolean isEmpty() {
         return rulesets.isEmpty();
+    }
+
+    public void setAssetEventsConsumer(Consumer<AssetEvent> assetEventsConsumer) {
+        this.assetEventsConsumer = assetEventsConsumer;
     }
 
     protected void setGlobal(String identifier, Object object) {
@@ -515,6 +521,9 @@ public class RulesEngine<T extends Ruleset> {
         if (factHandle != null) {
             scheduleExpiration(assetEvent, factHandle, expirationOffset);
         }
+        if (assetEventsConsumer != null) {
+            assetEventsConsumer.accept(assetEvent);
+        }
     }
 
     protected synchronized FactHandle insertIntoSession(AbstractAssetUpdate update) {
@@ -597,21 +606,24 @@ public class RulesEngine<T extends Ruleset> {
 
             @Override
             public void dispatch(AttributeEvent... events) {
-                if (events != null) {
-                    for (AttributeEvent event : events) {
-                        // Set event time to current container timer
-                        event.timestamp = timerService.getCurrentTimeMillis();
-                        // Check if the asset ID of the event can be found in the original query
-                        AssetQuery checkQuery = query();
-                        checkQuery.id = event.getEntityId();
-                        if (assetStorageService.find(checkQuery) == null) {
-                            throw new IllegalArgumentException(
-                                "Access to asset not allowed for this rule engine scope: " + event
-                            );
-                        }
-                        LOG.fine("Dispatching on " + RulesEngine.this + ": " + event);
-                        assetProcessingService.sendAttributeEvent(event);
+                if (events == null)
+                    return;
+                for (AttributeEvent event : events) {
+
+                    // Set event source time to current container time
+                    event.timestamp = timerService.getCurrentTimeMillis();
+
+                    // Check if the asset ID of the event can be found in the original query
+                    AssetQuery checkQuery = query();
+                    checkQuery.id = event.getEntityId();
+                    if (assetStorageService.find(checkQuery) == null) {
+                        throw new IllegalArgumentException(
+                            "Access to asset not allowed for this rule engine scope: " + event
+                        );
                     }
+
+                    LOG.fine("Dispatching on " + RulesEngine.this + ": " + event);
+                    assetProcessingService.sendAttributeEvent(event);
                 }
             }
         };

@@ -7,29 +7,23 @@ import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.rules.RulesEngine
 import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.model.AttributeEvent
-import org.openremote.model.asset.AssetState
+import org.openremote.model.asset.AssetEvent
 import org.openremote.test.ManagerContainerTrait
-import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import java.util.function.Consumer
-
-import static java.util.concurrent.TimeUnit.HOURS
-import static java.util.concurrent.TimeUnit.MINUTES
-import static java.util.concurrent.TimeUnit.SECONDS
+import static java.util.concurrent.TimeUnit.*
 import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1
-import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_CUSTOMER_A
+import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_2
 
 class ApartmentPresenceDetectionTest extends Specification implements ManagerContainerTrait {
 
-    def "Set and clear presence detection timestamp depending on motion sensor"() {
+    def "Detect presence with motion sensor"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 5, delay: 0.2)
+        def conditions = new PollingConditions(timeout: 10, delay: 1)
         def serverPort = findEphemeralPort()
         def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
@@ -37,14 +31,6 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         RulesEngine apartment1Engine = null
-
-        and: "a mock attribute event consumer"
-        List<AssetState> updatesCompletedProcessing = []
-        Consumer<AssetState> assetProcessingCompleteConsumer = { assetUpdate ->
-            updatesCompletedProcessing.add(assetUpdate)
-        }
-        assetProcessingService.processors.add(assetProcessingCompleteConsumer)
-
 
         expect: "the rule engines to become available and be running"
         conditions.eventually {
@@ -59,8 +45,14 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         assert !livingRoomAsset.getAttribute("presenceDetected").get().valueAsBoolean
         assert livingRoomAsset.getAttribute("lastPresenceDetected").get().value.getType() == JsonType.NULL
 
-        when: "several motion sensor events are triggered in the room, but not enough for presence detection"
-        updatesCompletedProcessing = []
+        when: "we have an events consumer for collecting test data"
+        List<AssetEvent> insertedAssetEvents = []
+        apartment1Engine.assetEventsConsumer = { assetEvent->
+            insertedAssetEvents << assetEvent
+        }
+
+        and: "several motion sensor events are triggered in the room, but not enough for presence detection"
+        insertedAssetEvents = []
         setPseudoClocksToRealTime(container, apartment1Engine)
         // Send 5 triggers each 3 minutes apart
         for (i in 1..5) {
@@ -68,14 +60,14 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
                     managerDemoSetup.apartment1LivingroomId, "motionSensor", Json.create(true), getClockTimeOf(apartment1Engine)
             )
             assetProcessingService.sendAttributeEvent(motionSensorTrigger)
-            conditions.eventually {
-                assert updatesCompletedProcessing.findAll { it.attributeName == "motionSensor" }.size() == i
+            new PollingConditions(timeout: 3, initialDelay: 0.2, delay: 0.2).eventually {
+                assert insertedAssetEvents.any() { it.matches(motionSensorTrigger) }
             }
             advancePseudoClocks(3, MINUTES, container, apartment1Engine)
         }
 
         then: "presence should not be detected"
-        new PollingConditions(initialDelay: 5).eventually {
+        new PollingConditions(initialDelay: 3).eventually {
             def asset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
             assert !asset.getAttribute("presenceDetected").get().valueAsBoolean
             assert asset.getAttribute("lastPresenceDetected").get().value.getType() == JsonType.NULL
@@ -90,7 +82,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         }
 
         when: "several motion sensor events are triggered in the room, fast enough for presence detection"
-        updatesCompletedProcessing = []
+        insertedAssetEvents = []
         double expectedLastPresenceTimestamp = 0
         // Send 5 triggers each 1 minute apart
         for (i in 1..5) {
@@ -99,8 +91,8 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
             )
             expectedLastPresenceTimestamp = motionSensorTrigger.timestamp
             assetProcessingService.sendAttributeEvent(motionSensorTrigger)
-            conditions.eventually {
-                assert updatesCompletedProcessing.findAll { it.attributeName == "motionSensor" }.size() == i
+            new PollingConditions(timeout: 3, initialDelay: 0.2, delay: 0.2).eventually {
+                assert insertedAssetEvents.any() { it.matches(motionSensorTrigger) }
             }
             advancePseudoClocks(1, MINUTES, container, apartment1Engine)
         }
@@ -113,7 +105,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         }
 
         when: "time moves on and we keep triggering the motion sensor in short intervals "
-        updatesCompletedProcessing = []
+        insertedAssetEvents = []
         // Send 20 triggers each 90 seconds apart
         for (i in 1..20) {
             def motionSensorTrigger = new AttributeEvent(
@@ -121,10 +113,10 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
             )
             expectedLastPresenceTimestamp = motionSensorTrigger.timestamp
             assetProcessingService.sendAttributeEvent(motionSensorTrigger)
-            conditions.eventually {
-                assert updatesCompletedProcessing.findAll { it.attributeName == "motionSensor" }.size() == i
+            new PollingConditions(timeout: 3, initialDelay: 0.2, delay: 0.2).eventually {
+                assert insertedAssetEvents.any() { it.matches(motionSensorTrigger) }
             }
-            advancePseudoClocks(10, SECONDS, container, apartment1Engine)
+            advancePseudoClocks(90, SECONDS, container, apartment1Engine)
         }
 
         then: "presence should still be detected and the timestamp updated"
@@ -156,90 +148,128 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         stopContainer(container)
     }
 
-    // TODO This needs more work
-    @Ignore
-    def "Set and clear presence detection timestamp depending on motion counter"() {
+    def "Detect presence with motion counter"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 5, delay: 1)
+        def conditions = new PollingConditions(timeout: 10, delay: 1)
         def serverPort = findEphemeralPort()
         def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
-        def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
-        RulesEngine customerAEngine = null
+        RulesEngine apartment2Engine = null
 
         expect: "the rule engines to become available and be running"
         conditions.eventually {
-            customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
-            assert customerAEngine != null
-            assert customerAEngine.isRunning()
-            assert customerAEngine.knowledgeSession.factCount == DEMO_RULE_STATES_CUSTOMER_A
+            apartment2Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment2Id)
+            assert apartment2Engine != null
+            assert apartment2Engine.isRunning()
+            assert apartment2Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_2
         }
 
-        and: "the presence detected timestamp of the room should not be set"
-        def livingRoomAsset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
-        assert livingRoomAsset.getAttribute("presenceDetected").get().value.getType() == JsonType.NULL
+        and: "the presence detected flag and timestamp of the room should not be set"
+        def livingRoomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
+        assert !livingRoomAsset.getAttribute("presenceDetected").get().valueAsBoolean
+        assert livingRoomAsset.getAttribute("lastPresenceDetected").get().value.getType() == JsonType.NULL
 
-        and: "the presence detected timestamp of the other room should not be set"
-        def otherLivingRoomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
-        assert otherLivingRoomAsset.getAttribute("presenceDetected").get().value.getType() == JsonType.NULL
+        when: "we have an events consumer for collecting test data"
+        List<AssetEvent> insertedAssetEvents = []
+        apartment2Engine.assetEventsConsumer = { assetEvent->
+            insertedAssetEvents << assetEvent
+        }
 
-        when: "the motion counter sensor of the room is incremented"
-        double expectedPresenceTimestampStart = getClockTimeOf(customerAEngine)
-        for (i in 0..2) {
+        and: "several motion counter increments occur in the room, but not enough for presence detection"
+        insertedAssetEvents = []
+        setPseudoClocksToRealTime(container, apartment2Engine)
+        // Send 5 triggers each 3 minutes apart
+        for (i in 1..5) {
             def motionCounterIncrement = new AttributeEvent(
-                    managerDemoSetup.apartment1LivingroomId, "motionCounter", Json.create(i + 1)
+                    managerDemoSetup.apartment2LivingroomId, "motionCounter", Json.create(i), getClockTimeOf(apartment2Engine)
             )
             assetProcessingService.sendAttributeEvent(motionCounterIncrement)
-            conditions.eventually {
-                // Wait until we have the facts
-                assert customerAEngine.knowledgeSession.factCount == DEMO_RULE_STATES_CUSTOMER_A + 1 + i
+            new PollingConditions(timeout: 3, initialDelay: 0.2, delay: 0.2).eventually {
+                assert insertedAssetEvents.any() { it.matches(motionCounterIncrement) }
             }
-            withClockOf(customerAEngine) { it.advanceTime(2, MINUTES) }
+            advancePseudoClocks(3, MINUTES, container, apartment2Engine)
         }
-        double expectedPresenceTimestampEnd = getClockTimeOf(customerAEngine)
 
-        then: "the presence detected timestamp of the room should be set"
-        conditions.eventually {
+        then: "presence should not be detected"
+        new PollingConditions(initialDelay: 3).eventually {
             def asset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
-            def presenceDetectedTimestamp = asset.getAttribute("presenceDetected").get().value.asNumber()
-            assert presenceDetectedTimestamp > expectedPresenceTimestampStart && presenceDetectedTimestamp < expectedPresenceTimestampEnd
+            assert !asset.getAttribute("presenceDetected").get().valueAsBoolean
+            assert asset.getAttribute("lastPresenceDetected").get().value.getType() == JsonType.NULL
         }
 
-        when: "the motion counter sensor in the other room is incremented (but not enough to trigger 'detection')"
-        for (i in 0..2) {
-            def motionCounterIncrement = new AttributeEvent(
-                    managerDemoSetup.apartment2LivingroomId, "motionCounter", Json.create(i + 1)
-            )
-            assetProcessingService.sendAttributeEvent(motionCounterIncrement)
-            conditions.eventually {
-                // Wait until we have the facts
-                assert customerAEngine.knowledgeSession.factCount == DEMO_RULE_STATES_CUSTOMER_A + 4 + i
-            }
-            withClockOf(customerAEngine) { it.advanceTime(10, MINUTES) }
-        }
-
-        then: "the presence detected timestamp of the other room should NOT be set"
-        conditions.eventually {
-            def asset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
-            assert asset.getAttribute("presenceDetected").get().value.getType() == JsonType.NULL
-        }
-
-        and: "meanwhile presence detected timestamp of the first room should have been cleared"
-        conditions.eventually {
-            def asset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
-            assert asset.getAttribute("presenceDetected").get().value.getType() == JsonType.NULL
-        }
-
-        when: "time is advanced enough to trigger event expiration"
-        withClockOf(customerAEngine) { it.advanceTime(1, HOURS) }
+        when: "time is advanced enough for event expiration"
+        advancePseudoClocks(2, HOURS, container, apartment2Engine)
 
         then: "the events should have been expired and retracted automatically from the knowledge session"
         conditions.eventually {
-            assert customerAEngine.knowledgeSession.factCount == DEMO_RULE_STATES_CUSTOMER_A
+            assert apartment2Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_2
+        }
+
+        when: "several motion counter increments occur in the room, fast enough for presence detection"
+        insertedAssetEvents = []
+        double expectedLastPresenceTimestamp = 0
+        // Send 5 increments each 1 minute apart
+        for (i in 1..5) {
+            def motionCounterIncrement = new AttributeEvent(
+                    managerDemoSetup.apartment2LivingroomId, "motionCounter", Json.create(i), getClockTimeOf(apartment2Engine)
+            )
+            expectedLastPresenceTimestamp = motionCounterIncrement.timestamp
+            assetProcessingService.sendAttributeEvent(motionCounterIncrement)
+            new PollingConditions(timeout: 3, initialDelay: 0.2, delay: 0.2).eventually {
+                assert insertedAssetEvents.any() { it.matches(motionCounterIncrement) }
+            }
+            advancePseudoClocks(1, MINUTES, container, apartment2Engine)
+        }
+
+        then: "presence should be detected"
+        conditions.eventually {
+            def asset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
+            assert asset.getAttribute("presenceDetected").get().valueAsBoolean
+            assert asset.getAttribute("lastPresenceDetected").get().value.asNumber() == expectedLastPresenceTimestamp
+        }
+
+        when: "time moves on and we keep incrementing the motion counter in short intervals "
+        insertedAssetEvents = []
+        // Send 20 increments each 90 seconds apart
+        for (i in 1..20) {
+            def motionCounterIncrement = new AttributeEvent(
+                    managerDemoSetup.apartment2LivingroomId, "motionCounter", Json.create(i), getClockTimeOf(apartment2Engine)
+            )
+            expectedLastPresenceTimestamp = motionCounterIncrement.timestamp
+            assetProcessingService.sendAttributeEvent(motionCounterIncrement)
+            new PollingConditions(timeout: 3, initialDelay: 0.2, delay: 0.2).eventually {
+                assert insertedAssetEvents.any() { it.matches(motionCounterIncrement) }
+            }
+            advancePseudoClocks(90, SECONDS, container, apartment2Engine)
+        }
+
+        then: "presence should still be detected and the timestamp updated"
+        conditions.eventually {
+            def asset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
+            assert asset.getAttribute("presenceDetected").get().valueAsBoolean
+            assert asset.getAttribute("lastPresenceDetected").get().value.asNumber() == expectedLastPresenceTimestamp
+        }
+
+        when: "time moves on without the motion sensor being triggered"
+        advancePseudoClocks(20, MINUTES, container, apartment2Engine)
+
+        then: "presence should be gone but the last timestamp still available"
+        conditions.eventually {
+            def asset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
+            assert !asset.getAttribute("presenceDetected").get().valueAsBoolean
+            assert asset.getAttribute("lastPresenceDetected").get().value.asNumber() == expectedLastPresenceTimestamp
+        }
+
+        when: "time is advanced enough for event expiration"
+        advancePseudoClocks(2, HOURS, container, apartment2Engine)
+
+        then: "the events should have been expired and retracted automatically from the knowledge session"
+        conditions.eventually {
+            assert apartment2Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_2
         }
 
         cleanup: "the server should be stopped"
