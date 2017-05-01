@@ -119,18 +119,20 @@ class BasicRulesImport {
         assert customerAEngine.allRulesets[0].enabled
         assert customerAEngine.allRulesets[0].name == "Some customerA tenant demo rules"
         assert customerAEngine.allRulesets[0].deploymentStatus == DeploymentStatus.DEPLOYED
+        def customerBEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerBTenant.id)
+        assert customerBEngine == null
 
         assert rulesService.assetDeployments.size() == 2
         apartment1Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment1Id)
-        apartment2Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment2Id)
-        apartment3Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment3Id)
         assert apartment1Engine == null
+        apartment2Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment2Id)
         assert apartment2Engine != null
         assert apartment2Engine.isRunning()
         assert apartment2Engine.allRulesets.length == 1
         assert apartment2Engine.allRulesets[0].enabled
         assert apartment2Engine.allRulesets[0].name == "Some apartment 2 demo rules"
         assert apartment2Engine.allRulesets[0].deploymentStatus == DeploymentStatus.DEPLOYED
+        apartment3Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment3Id)
         assert apartment3Engine != null
         assert apartment3Engine.isRunning()
         assert apartment3Engine.allRulesets.length == 1

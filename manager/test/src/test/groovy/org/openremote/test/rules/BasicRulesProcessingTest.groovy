@@ -18,6 +18,7 @@ import org.openremote.model.AttributeType
 import org.openremote.model.Meta
 import org.openremote.model.MetaItem
 import org.openremote.model.asset.AssetAttribute
+import org.openremote.model.asset.AssetEvent
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetType
 import org.openremote.test.ManagerContainerTrait
@@ -38,6 +39,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
     def resetRuleExecutionLoggers() {
         globalEngineFiredRules.clear()
+        masterEngineFiredRules.clear()
         customerAEngineFiredRules.clear()
         smartHomeEngineFiredRules.clear()
         apartment2EngineFiredRules.clear()

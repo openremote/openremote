@@ -54,7 +54,7 @@ import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtoco
 public class ManagerDemoSetup extends AbstractManagerSetup {
 
     // Update these numbers whenever you change a RULE_STATE flag in test data
-    public static final int DEMO_RULE_STATES_APARTMENT_1 = 37;
+    public static final int DEMO_RULE_STATES_APARTMENT_1 = 38;
     public static final int DEMO_RULE_STATES_APARTMENT_2 = 3;
     public static final int DEMO_RULE_STATES_APARTMENT_3 = 0;
     public static final int DEMO_RULE_STATES_SMART_HOME = DEMO_RULE_STATES_APARTMENT_1 + DEMO_RULE_STATES_APARTMENT_2 + DEMO_RULE_STATES_APARTMENT_3;
@@ -351,6 +351,16 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment1.setType(RESIDENCE);
         List<AssetAttribute> apartment1Attributes = Arrays.asList(
+            new AssetAttribute("alarmEnabled", AttributeType.BOOLEAN, Json.create(false))
+                .setMeta(
+                    new Meta().add(
+                        new MetaItem(AssetMeta.LABEL, Json.create("Alarm Enabled"))
+                    ).add(
+                        new MetaItem(AssetMeta.DESCRIPTION, Json.create("Send notifications when presence is detected"))
+                    ).add(
+                        new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    )
+                ),
             new AssetAttribute("vacationDays", AttributeType.INTEGER, Json.createNull())
                 .setMeta(
                     new Meta().add(
@@ -361,12 +371,12 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("automaticSceneSchedule", AttributeType.BOOLEAN, Json.create(false))
+            new AssetAttribute("autoSceneSchedule", AttributeType.BOOLEAN, Json.create(false))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Automatic scene schedule"))
                     ).add(
-                        new MetaItem(AssetMeta.DESCRIPTION, Json.create("Predict presence and automatically adjust scene execution"))
+                        new MetaItem(AssetMeta.DESCRIPTION, Json.create("Predict presence and automatically adjust scene schedule"))
                     ).add(
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )

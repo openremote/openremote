@@ -60,7 +60,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
                     managerDemoSetup.apartment1LivingroomId, "motionCounter", Json.create(i), getClockTimeOf(apartment1Engine)
             )
             assetProcessingService.sendAttributeEvent(motionCounterIncrement)
-            new PollingConditions(timeout: 3, initialDelay: 0.2, delay: 0.2).eventually {
+            new PollingConditions(timeout: 5, initialDelay: 0.2, delay: 0.2).eventually {
                 assert insertedAssetEvents.any() { it.matches(motionCounterIncrement) }
             }
             advancePseudoClocks(3, MINUTES, container, apartment1Engine)
@@ -91,7 +91,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
             )
             expectedLastPresenceTimestamp = motionCounterIncrement.timestamp
             assetProcessingService.sendAttributeEvent(motionCounterIncrement)
-            new PollingConditions(timeout: 3, initialDelay: 0.2, delay: 0.2).eventually {
+            new PollingConditions(timeout: 5, initialDelay: 0.2, delay: 0.2).eventually {
                 assert insertedAssetEvents.any() { it.matches(motionCounterIncrement) }
             }
             advancePseudoClocks(1, MINUTES, container, apartment1Engine)
@@ -113,7 +113,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
             )
             expectedLastPresenceTimestamp = motionCounterIncrement.timestamp
             assetProcessingService.sendAttributeEvent(motionCounterIncrement)
-            new PollingConditions(timeout: 3, initialDelay: 0.2, delay: 0.2).eventually {
+            new PollingConditions(timeout: 5, initialDelay: 0.2, delay: 0.2).eventually {
                 assert insertedAssetEvents.any() { it.matches(motionCounterIncrement) }
             }
             advancePseudoClocks(90, SECONDS, container, apartment1Engine)
@@ -188,7 +188,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
                     managerDemoSetup.apartment2LivingroomId, "motionSensor", Json.create(true), getClockTimeOf(apartment2Engine)
             )
             assetProcessingService.sendAttributeEvent(motionSensorTrigger)
-            new PollingConditions(timeout: 3, initialDelay: 0.2, delay: 0.2).eventually {
+            new PollingConditions(timeout: 5, initialDelay: 0.2, delay: 0.2).eventually {
                 assert insertedAssetEvents.any() { it.matches(motionSensorTrigger) }
             }
             advancePseudoClocks(3, MINUTES, container, apartment2Engine)
@@ -219,7 +219,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
             )
             expectedLastPresenceTimestamp = motionSensorTrigger.timestamp
             assetProcessingService.sendAttributeEvent(motionSensorTrigger)
-            new PollingConditions(timeout: 3, initialDelay: 0.2, delay: 0.2).eventually {
+            new PollingConditions(timeout: 5, initialDelay: 0.2, delay: 0.2).eventually {
                 assert insertedAssetEvents.any() { it.matches(motionSensorTrigger) }
             }
             advancePseudoClocks(1, MINUTES, container, apartment2Engine)
@@ -241,7 +241,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
             )
             expectedLastPresenceTimestamp = motionSensorTrigger.timestamp
             assetProcessingService.sendAttributeEvent(motionSensorTrigger)
-            new PollingConditions(timeout: 3, initialDelay: 0.2, delay: 0.2).eventually {
+            new PollingConditions(timeout: 5, initialDelay: 0.2, delay: 0.2).eventually {
                 assert insertedAssetEvents.any() { it.matches(motionSensorTrigger) }
             }
             advancePseudoClocks(90, SECONDS, container, apartment2Engine)
