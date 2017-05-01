@@ -259,25 +259,31 @@ then
   commands.execute("PRESENCE_LAST_DETECTED_TIME","-");
 end
 
-rule "adjust estimated times at midnight"
-when
-  SensorState(attributeName=="TIME_DAY_NAME_IN_WEEK", $e: value)
-  $timer: SensorState(attributeName=="TIME_HH:MM:SS", value!="N/A", eval(value.toString().substring(0,5).equals("23:58"))) // more reliable than timer(cron: )
-  SensorState(attributeName matches ("UI_ESTIMATED_TIME_DEPARTURE."+$e), $ved:value, this before [1m] $timer) // Loop cut
-  SensorState(attributeName matches ("UI_ESTIMATED_TIME_ARRIVAL."+$e), $vea:value, this before [1m] $timer)
-  SensorState(attributeName=="ACTUAL_TIME_DEPARTURE", $vd:value, value!="-")
-  SensorState(attributeName=="ACTUAL_TIME_ARRIVAL", $va:value, value!="-")
-  SensorState(attributeName=="VACATION_DAYS", eval(Integer.parseInt(value.toString())==0))
-then
-  Double alpha = 2.0/(3+1); // 3 stays for 3 days exponential average
-  long nt = (long) (alpha*util.parseTimestamp($va) + (1-alpha)*util.parseTimestamp($vea));
-  commands.execute("UI_ESTIMATED_TIME_ARRIVAL."+$e.toString(), util.formatTimestamp(nt));
-  LOG.fine("EA="+$vea.toString()+" AA="+$va.toString()+" NA="+ util.formatTimestamp(nt));
-  nt = (long) (alpha*util.parseTimestamp($vd) + (1-alpha)*util.parseTimestamp($ved));
-  commands.execute("UI_ESTIMATED_TIME_DEPARTURE."+$e.toString(), util.formatTimestamp(nt));
-  LOG.fine("ED="+$ved.toString()+" AD="+$vd.toString()+" ND="+ util.formatTimestamp(nt));
-end
 */
+
+rule "adjust estimated times at next scene change"
+when
+    // Question: isn't AssetType checking relevant here? attributeName should be unique here or not?
+    // We are in the self learning mode
+    AssetState(attributeName == "selfLearning", type == AssetType.RESIDENCE, value.asBoolean)
+    // We don't do this when on Vacations
+    AssetState(attributeName == "vacationDays", type == AssetType.RESIDENCE, value.asNumber() > 0 )
+    // Let's get in which scene are we now
+    AssetState(attributeName == "currentScene", type == AssetType.RESIDENCE, $scene: value.asString )
+    // For which day of week are we calculating this?
+    $dayOfWeek : util.formatDate("DAY_OF_WEEK", drools.clock.currentTime)
+    // Take the current value from the scene table
+    AssetState($ref: attributeRef, type == AssetType.RESIDENCE, attributeName matches $scene + "SceneStart" + $dayOfWeek, $estimated_time: value.asNumber)
+    // Now take the lastPresenceDetected (TODO here we will need probably a different logic dependent on scene)
+    AssetState(attributeName == "lastPresenceDetected", type == AssetType.ROOM, $actual_time: value.asNumber > 0)
+then
+    // Take arbitrary coefficient which works good
+    Double alpha = 2.0/(3+1); // 3 stays for 3 days exponential average
+    // Calculate exponential moving average from the known formula
+    long new_estimated_time = (long) (alpha*util.parseTimestamp($actual_time) + (1-alpha)*util.parseTimestamp($estimated_time));
+    // Update value in the table
+    assets.dispatch( new AttributeEvent($ref, Json.create(new_estimated_time)) );
+end
 
 // ##########################################################################################################
 
