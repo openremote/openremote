@@ -1,4 +1,4 @@
-package org.openremote.test.rules
+package org.openremote.test.rules.apartment
 
 import elemental.json.Json
 import elemental.json.JsonType
@@ -20,7 +20,7 @@ import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_
 
 class ApartmentPresenceDetectionTest extends Specification implements ManagerContainerTrait {
 
-    def "Detect presence with motion sensor"() {
+    def "Detect presence with motion counter"() {
 
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 10, delay: 1)
@@ -51,17 +51,17 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
             insertedAssetEvents << assetEvent
         }
 
-        and: "several motion sensor events are triggered in the room, but not enough for presence detection"
+        and: "several motion counter increments occur in the room, but not enough for presence detection"
         insertedAssetEvents = []
         setPseudoClocksToRealTime(container, apartment1Engine)
         // Send 5 triggers each 3 minutes apart
         for (i in 1..5) {
-            def motionSensorTrigger = new AttributeEvent(
-                    managerDemoSetup.apartment1LivingroomId, "motionSensor", Json.create(true), getClockTimeOf(apartment1Engine)
+            def motionCounterIncrement = new AttributeEvent(
+                    managerDemoSetup.apartment1LivingroomId, "motionCounter", Json.create(i), getClockTimeOf(apartment1Engine)
             )
-            assetProcessingService.sendAttributeEvent(motionSensorTrigger)
+            assetProcessingService.sendAttributeEvent(motionCounterIncrement)
             new PollingConditions(timeout: 3, initialDelay: 0.2, delay: 0.2).eventually {
-                assert insertedAssetEvents.any() { it.matches(motionSensorTrigger) }
+                assert insertedAssetEvents.any() { it.matches(motionCounterIncrement) }
             }
             advancePseudoClocks(3, MINUTES, container, apartment1Engine)
         }
@@ -81,18 +81,18 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
             assert apartment1Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_1
         }
 
-        when: "several motion sensor events are triggered in the room, fast enough for presence detection"
+        when: "several motion counter increments occur in the room, fast enough for presence detection"
         insertedAssetEvents = []
         double expectedLastPresenceTimestamp = 0
-        // Send 5 triggers each 1 minute apart
+        // Send 5 increments each 1 minute apart
         for (i in 1..5) {
-            def motionSensorTrigger = new AttributeEvent(
-                    managerDemoSetup.apartment1LivingroomId, "motionSensor", Json.create(true), getClockTimeOf(apartment1Engine)
+            def motionCounterIncrement = new AttributeEvent(
+                    managerDemoSetup.apartment1LivingroomId, "motionCounter", Json.create(i), getClockTimeOf(apartment1Engine)
             )
-            expectedLastPresenceTimestamp = motionSensorTrigger.timestamp
-            assetProcessingService.sendAttributeEvent(motionSensorTrigger)
+            expectedLastPresenceTimestamp = motionCounterIncrement.timestamp
+            assetProcessingService.sendAttributeEvent(motionCounterIncrement)
             new PollingConditions(timeout: 3, initialDelay: 0.2, delay: 0.2).eventually {
-                assert insertedAssetEvents.any() { it.matches(motionSensorTrigger) }
+                assert insertedAssetEvents.any() { it.matches(motionCounterIncrement) }
             }
             advancePseudoClocks(1, MINUTES, container, apartment1Engine)
         }
@@ -104,17 +104,17 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
             assert asset.getAttribute("lastPresenceDetected").get().value.asNumber() == expectedLastPresenceTimestamp
         }
 
-        when: "time moves on and we keep triggering the motion sensor in short intervals "
+        when: "time moves on and we keep incrementing the motion counter in short intervals "
         insertedAssetEvents = []
-        // Send 20 triggers each 90 seconds apart
+        // Send 20 increments each 90 seconds apart
         for (i in 1..20) {
-            def motionSensorTrigger = new AttributeEvent(
-                    managerDemoSetup.apartment1LivingroomId, "motionSensor", Json.create(true), getClockTimeOf(apartment1Engine)
+            def motionCounterIncrement = new AttributeEvent(
+                    managerDemoSetup.apartment1LivingroomId, "motionCounter", Json.create(i), getClockTimeOf(apartment1Engine)
             )
-            expectedLastPresenceTimestamp = motionSensorTrigger.timestamp
-            assetProcessingService.sendAttributeEvent(motionSensorTrigger)
+            expectedLastPresenceTimestamp = motionCounterIncrement.timestamp
+            assetProcessingService.sendAttributeEvent(motionCounterIncrement)
             new PollingConditions(timeout: 3, initialDelay: 0.2, delay: 0.2).eventually {
-                assert insertedAssetEvents.any() { it.matches(motionSensorTrigger) }
+                assert insertedAssetEvents.any() { it.matches(motionCounterIncrement) }
             }
             advancePseudoClocks(90, SECONDS, container, apartment1Engine)
         }
@@ -148,7 +148,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         stopContainer(container)
     }
 
-    def "Detect presence with motion counter"() {
+    def "Detect presence with motion sensor"() {
 
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 10, delay: 1)
@@ -179,24 +179,24 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
             insertedAssetEvents << assetEvent
         }
 
-        and: "several motion counter increments occur in the room, but not enough for presence detection"
+        and: "several motion sensor events are triggered in the room, but not enough for presence detection"
         insertedAssetEvents = []
         setPseudoClocksToRealTime(container, apartment2Engine)
         // Send 5 triggers each 3 minutes apart
         for (i in 1..5) {
-            def motionCounterIncrement = new AttributeEvent(
-                    managerDemoSetup.apartment2LivingroomId, "motionCounter", Json.create(i), getClockTimeOf(apartment2Engine)
+            def motionSensorTrigger = new AttributeEvent(
+                    managerDemoSetup.apartment2LivingroomId, "motionSensor", Json.create(true), getClockTimeOf(apartment2Engine)
             )
-            assetProcessingService.sendAttributeEvent(motionCounterIncrement)
+            assetProcessingService.sendAttributeEvent(motionSensorTrigger)
             new PollingConditions(timeout: 3, initialDelay: 0.2, delay: 0.2).eventually {
-                assert insertedAssetEvents.any() { it.matches(motionCounterIncrement) }
+                assert insertedAssetEvents.any() { it.matches(motionSensorTrigger) }
             }
             advancePseudoClocks(3, MINUTES, container, apartment2Engine)
         }
 
         then: "presence should not be detected"
         new PollingConditions(initialDelay: 3).eventually {
-            def asset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
+            def asset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
             assert !asset.getAttribute("presenceDetected").get().valueAsBoolean
             assert asset.getAttribute("lastPresenceDetected").get().value.getType() == JsonType.NULL
         }
@@ -209,18 +209,18 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
             assert apartment2Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_2
         }
 
-        when: "several motion counter increments occur in the room, fast enough for presence detection"
+        when: "several motion sensor events are triggered in the room, fast enough for presence detection"
         insertedAssetEvents = []
         double expectedLastPresenceTimestamp = 0
-        // Send 5 increments each 1 minute apart
+        // Send 5 triggers each 1 minute apart
         for (i in 1..5) {
-            def motionCounterIncrement = new AttributeEvent(
-                    managerDemoSetup.apartment2LivingroomId, "motionCounter", Json.create(i), getClockTimeOf(apartment2Engine)
+            def motionSensorTrigger = new AttributeEvent(
+                    managerDemoSetup.apartment2LivingroomId, "motionSensor", Json.create(true), getClockTimeOf(apartment2Engine)
             )
-            expectedLastPresenceTimestamp = motionCounterIncrement.timestamp
-            assetProcessingService.sendAttributeEvent(motionCounterIncrement)
+            expectedLastPresenceTimestamp = motionSensorTrigger.timestamp
+            assetProcessingService.sendAttributeEvent(motionSensorTrigger)
             new PollingConditions(timeout: 3, initialDelay: 0.2, delay: 0.2).eventually {
-                assert insertedAssetEvents.any() { it.matches(motionCounterIncrement) }
+                assert insertedAssetEvents.any() { it.matches(motionSensorTrigger) }
             }
             advancePseudoClocks(1, MINUTES, container, apartment2Engine)
         }
@@ -232,17 +232,17 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
             assert asset.getAttribute("lastPresenceDetected").get().value.asNumber() == expectedLastPresenceTimestamp
         }
 
-        when: "time moves on and we keep incrementing the motion counter in short intervals "
+        when: "time moves on and we keep triggering the motion sensor in short intervals "
         insertedAssetEvents = []
-        // Send 20 increments each 90 seconds apart
+        // Send 20 triggers each 90 seconds apart
         for (i in 1..20) {
-            def motionCounterIncrement = new AttributeEvent(
-                    managerDemoSetup.apartment2LivingroomId, "motionCounter", Json.create(i), getClockTimeOf(apartment2Engine)
+            def motionSensorTrigger = new AttributeEvent(
+                    managerDemoSetup.apartment2LivingroomId, "motionSensor", Json.create(true), getClockTimeOf(apartment2Engine)
             )
-            expectedLastPresenceTimestamp = motionCounterIncrement.timestamp
-            assetProcessingService.sendAttributeEvent(motionCounterIncrement)
+            expectedLastPresenceTimestamp = motionSensorTrigger.timestamp
+            assetProcessingService.sendAttributeEvent(motionSensorTrigger)
             new PollingConditions(timeout: 3, initialDelay: 0.2, delay: 0.2).eventually {
-                assert insertedAssetEvents.any() { it.matches(motionCounterIncrement) }
+                assert insertedAssetEvents.any() { it.matches(motionSensorTrigger) }
             }
             advancePseudoClocks(90, SECONDS, container, apartment2Engine)
         }

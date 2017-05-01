@@ -17,20 +17,3 @@ then
     // Decrement the vacation days by one
     assets.dispatch( new AttributeEvent($ref, Json.create($val- 1)) );
 end
-
-rule "Set state to AWAY when on holidays"
-when
-    $a: AssetState(attributeName == "vacationDays", value.asNumber() > 0 )
-    AssetState(attributeName == "lastScene", $ref: attributeRef, value.asString() != "AWAY")
-then
-    assets.dispatch( new AttributeEvent($ref, Json.create("AWAY")) );
-end
-
-rule "Set state to HOME when not on holidays"
-timer(int: 7h) // At morning
-when
-    $a: AssetState(attributeName == "vacationDays", value.asNumber() == 0 )
-    AssetState(attributeName == "lastScene", $ref: attributeRef, value.asString() != "HOME")
-then
-    assets.dispatch( new AttributeEvent($ref, Json.create("HOME")) );
-end

@@ -94,22 +94,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         assetProcessingService.processors.add(0, mockStartConsumer)
         assetProcessingService.processors.add(mockEndConsumer)
 
-        // The conditions here depend on how we handle the initial insert of facts into the rule engines
-        expect: "the demo rule engine should start and trigger the 'Switch room lights off when apartment ALL LIGHTS OFF switch is off' rule and cause attribute events to go through the system"
-        conditions.eventually {
-            def customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
-            assert customerAEngine != null
-            assert customerAEngine.isRunning()
-            assert customerAEngine.rulesets.size() == 2
-            assert updatesPassedStartOfProcessingChain.size() == 0
-            assert updatesReachedEndOfProcessingChain.size() == 0
-        }
-
-        when: "the processing chain counters are reset"
-        updatesPassedStartOfProcessingChain.clear()
-        updatesReachedEndOfProcessingChain.clear()
-
-        and: "a mock agent that uses the mock protocol is created"
+        when: "a mock agent that uses the mock protocol is created"
         def mockAgent = new ServerAsset()
         mockAgent.setName("Mock Agent")
         mockAgent.setType(AssetType.AGENT)

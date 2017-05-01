@@ -214,6 +214,7 @@ public abstract class AttributesBrowser
         FormGroup formGroup = new FormGroup();
 
         FormLabel formLabel = new FormLabel(environment.getMessages().showLiveUpdates());
+        formLabel.addStyleName("larger");
         formGroup.addFormLabel(formLabel);
 
         FormField formField = new FormField();

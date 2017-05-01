@@ -151,15 +151,15 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
             assert customerBEngine.allRulesets[0].deploymentStatus == DeploymentStatus.DEPLOYED
         }
 
-        when: "the asset rule definition for apartment 1 is deleted"
-        rulesetStorageService.delete(AssetRuleset.class, rulesImport.apartment1RulesetId)
+        when: "the asset rule definition for apartment 2 is deleted"
+        rulesetStorageService.delete(AssetRuleset.class, rulesImport.apartment2RulesetId)
 
         then: "the apartment rules engine should be removed"
         conditions.eventually {
             assert rulesService.assetDeployments.size() == 1
-            def apartment1Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment1Id)
+            def apartment2Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment2Id)
             def apartment3Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment3Id)
-            assert apartment1Engine == null
+            assert apartment2Engine == null
             assert apartment3Engine != null
             assert apartment3Engine.isRunning()
         }

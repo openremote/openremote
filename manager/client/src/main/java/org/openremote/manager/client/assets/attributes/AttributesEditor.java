@@ -71,6 +71,7 @@ public class AttributesEditor
 
     protected FormLabel createAttributeLabel(AssetAttribute attribute) {
         FormLabel formLabel =  new FormLabel(TextUtil.ellipsize(getAttributeLabel(attribute), 30));
+        formLabel.setIcon("edit");
         formLabel.addStyleName("larger");
         return formLabel;
     }
@@ -158,6 +159,7 @@ public class AttributesEditor
         FormGroup formGroup = new FormGroup();
 
         FormLabel label = new FormLabel(environment.getMessages().newAttribute());
+        label.setIcon("plus-square");
         label.addStyleName("larger");
         formGroup.addFormLabel(label);
 

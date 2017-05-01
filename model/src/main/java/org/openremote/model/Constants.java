@@ -36,5 +36,7 @@ public interface Constants {
     String ASSET_NAMESPACE = NAMESPACE + ":asset";
     String ASSET_META_NAMESPACE = ASSET_NAMESPACE + ":meta";
     String DEFAULT_DATETIME_FORMAT ="dd. MMM yyyy HH:mm:ss zzz";
+    String DEFAULT_DATE_FORMAT ="dd. MMM yyyy";
+    String DEFAULT_TIME_FORMAT ="HH:mm:ss";
 
 }

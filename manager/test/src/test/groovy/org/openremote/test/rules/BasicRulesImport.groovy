@@ -13,13 +13,20 @@ import org.openremote.manager.shared.rules.TenantRuleset
 
 class BasicRulesImport {
 
-    Long customerBRulesetId
-    Long apartment1RulesetId
+    final Long globalRulesetId
+    final Long globalRuleset2Id
+    final Long masterRulesetId
+    final Long customerARulesetId
+    final Long customerBRulesetId
+    final Long apartment1RulesetId
+    final Long apartment2RulesetId
+    final Long apartment3RulesetId
 
     RulesEngine globalEngine
     RulesEngine masterEngine
     RulesEngine customerAEngine
     RulesEngine apartment1Engine
+    RulesEngine apartment2Engine
     RulesEngine apartment3Engine
 
     BasicRulesImport(RulesetStorageService rulesetStorageService,
@@ -30,28 +37,28 @@ class BasicRulesImport {
                 "Some global demo rules",
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.drl").text
         )
-        rulesetStorageService.merge(ruleset)
+        globalRulesetId = rulesetStorageService.merge(ruleset).id
 
         ruleset = new GlobalRuleset(
                 "Other global demo rules with a long name that should fill up space in UI",
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.drl").text
         )
         ruleset.setEnabled(false)
-        rulesetStorageService.merge(ruleset)
+        globalRuleset2Id = rulesetStorageService.merge(ruleset).id
 
         ruleset = new TenantRuleset(
                 "Some master tenant demo rules",
                 keycloakDemoSetup.masterTenant.id,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.drl").text
         )
-        rulesetStorageService.merge(ruleset)
+        masterRulesetId = rulesetStorageService.merge(ruleset).id
 
         ruleset = new TenantRuleset(
                 "Some customerA tenant demo rules",
                 keycloakDemoSetup.customerATenant.id,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.drl").text
         )
-        rulesetStorageService.merge(ruleset)
+        customerARulesetId = rulesetStorageService.merge(ruleset).id
 
         ruleset = new TenantRuleset(
                 "Some customerB tenant demo rules",
@@ -66,6 +73,7 @@ class BasicRulesImport {
                 managerDemoSetup.apartment1Id,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.drl").text
         )
+        ruleset.setEnabled(false)
         apartment1RulesetId = rulesetStorageService.merge(ruleset).id
 
         ruleset = new AssetRuleset(
@@ -73,15 +81,14 @@ class BasicRulesImport {
                 managerDemoSetup.apartment2Id,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.drl").text
         )
-        ruleset.setEnabled(false)
-        rulesetStorageService.merge(ruleset)
+        apartment2RulesetId = rulesetStorageService.merge(ruleset).id
 
         ruleset = new AssetRuleset(
                 "Some apartment 3 demo rules",
                 managerDemoSetup.apartment3Id,
                 getClass().getResource("/org/openremote/test/rules/BasicMatchAllAssetStates.drl").text
         )
-        rulesetStorageService.merge(ruleset)
+        apartment3RulesetId = rulesetStorageService.merge(ruleset).id
     }
 
     boolean assertEnginesReady(RulesService rulesService,
@@ -115,13 +122,15 @@ class BasicRulesImport {
 
         assert rulesService.assetDeployments.size() == 2
         apartment1Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment1Id)
+        apartment2Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment2Id)
         apartment3Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment3Id)
-        assert apartment1Engine != null
-        assert apartment1Engine.isRunning()
-        assert apartment1Engine.allRulesets.length == 1
-        assert apartment1Engine.allRulesets[0].enabled
-        assert apartment1Engine.allRulesets[0].name == "Some apartment 1 demo rules"
-        assert apartment1Engine.allRulesets[0].deploymentStatus == DeploymentStatus.DEPLOYED
+        assert apartment1Engine == null
+        assert apartment2Engine != null
+        assert apartment2Engine.isRunning()
+        assert apartment2Engine.allRulesets.length == 1
+        assert apartment2Engine.allRulesets[0].enabled
+        assert apartment2Engine.allRulesets[0].name == "Some apartment 2 demo rules"
+        assert apartment2Engine.allRulesets[0].deploymentStatus == DeploymentStatus.DEPLOYED
         assert apartment3Engine != null
         assert apartment3Engine.isRunning()
         assert apartment3Engine.allRulesets.length == 1

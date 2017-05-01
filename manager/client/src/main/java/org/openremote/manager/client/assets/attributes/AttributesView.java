@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.client.assets.attributes;
 
+import com.google.gwt.dom.client.Style;
 import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.InsertPanel;
@@ -67,13 +68,14 @@ public abstract class AttributesView<
     public interface AttributeEditor extends IsWidget {
     }
 
-    public static class TimestampLabel extends FormOutputText {
+    public static class TimestampLabel extends FlowPanel {
 
-        static protected DateTimeFormat dateTimeFormat = DateTimeFormat.getFormat(Constants.DEFAULT_DATETIME_FORMAT);
+        static protected DateTimeFormat dateFormat = DateTimeFormat.getFormat(Constants.DEFAULT_DATE_FORMAT);
+        static protected DateTimeFormat timeFormat = DateTimeFormat.getFormat(Constants.DEFAULT_TIME_FORMAT);
 
         public TimestampLabel(Long timestamp) {
             addStyleName("flex");
-            getElement().getStyle().setFontSize(0.8, com.google.gwt.dom.client.Style.Unit.EM);
+            getElement().getStyle().setFontSize(9, com.google.gwt.dom.client.Style.Unit.PX);
             getElement().getStyle().setTextAlign(com.google.gwt.dom.client.Style.TextAlign.RIGHT);
             if (timestamp != null) {
                 setTimestamp(timestamp);
@@ -81,7 +83,11 @@ public abstract class AttributesView<
         }
 
         public void setTimestamp(long timestamp) {
-            setText(timestamp > 0 ? dateTimeFormat.format(new Date(timestamp)) : "");
+            clear();
+            if (timestamp > 0) {
+                add(new FormOutputText(dateFormat.format(new Date(timestamp))));
+                add(new FormOutputText(timeFormat.format(new Date(timestamp))));
+            }
         }
     }
 
@@ -188,7 +194,9 @@ public abstract class AttributesView<
     }
 
     protected FormLabel createAttributeLabel(AssetAttribute attribute) {
-        return new FormLabel(TextUtil.ellipsize(getAttributeLabel(attribute), 100));
+        FormLabel formLabel =  new FormLabel(TextUtil.ellipsize(getAttributeLabel(attribute), 100));
+        formLabel.addStyleName("larger");
+        return formLabel;
     }
 
     protected String getAttributeLabel(AssetAttribute attribute) {
