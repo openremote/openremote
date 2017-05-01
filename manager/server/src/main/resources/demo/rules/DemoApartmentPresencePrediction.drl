@@ -121,30 +121,6 @@ end
 // ##########################################################################################################
 
 /*
-rule "Move ETA to ET at midnight"
-when
-  SensorState(attributeName=="TIME_DAY_NAME_IN_WEEK", $e:value)
-  SensorState(attributeName=="TIME_HH:MM:SS",$h:value,eval(util.parseTimestamp(value) >= util.parseTimestamp("00:02"))) // Wait 2 minutes to be sure that $e is OK
-  SensorState(attributeName matches ("UI_ESTIMATED_TIME_ARRIVAL."+$e), eval(util.parseTimestamp(value) > util.parseTimestamp($h)), $va:value)
-  SensorState(attributeName matches ("UI_ESTIMATED_TIME_DEPARTURE."+$e), $vd: value)
-  SensorState(attributeName=="currentScene", value=="-")
-  SensorState(attributeName=="VACATION_DAYS", eval(Integer.parseInt(value.toString())==0))
-then
-  commands.execute("UI_ESTIMATED_TIME_ARRIVAL", $va.toString());
-  commands.execute("UI_ESTIMATED_TIME_DEPARTURE", $vd.toString());
-  commands.execute("currentScene", "Arrive");
-end
-
-rule "Move ETA ETD for current day"
-when
-  SensorState(attributeName=="TIME_DAY_NAME_IN_WEEK", $e:value)
-  SensorState(attributeName matches ("UI_ESTIMATED_TIME_ARRIVAL."+$e), $va:value)
-  SensorState(attributeName matches ("UI_ESTIMATED_TIME_DEPARTURE."+$e), $vd: value)
-then
-  commands.execute("UI_ESTIMATED_TIME_ARRIVAL", $va.toString());
-  commands.execute("UI_ESTIMATED_TIME_DEPARTURE", $vd.toString());
-end
-
 rule "reset ACTUAL_TIME_ARRIVAL"
 when
   SensorState(attributeName=="currentScene", value=="Arrive")
@@ -157,13 +133,6 @@ when
   SensorState(attributeName=="ACTUAL_TIME_ARRIVAL",value=="-")
 then
   commands.execute("ACTUAL_TIME_DEPARTURE","-");
-end
-
-rule "reset action at midnight"
-when
-  SensorState(attributeName=="TIME_HH:MM:SS", value!="N/A", eval(value.toString().substring(0,5).equals("00:00"))) // more reliable than timer(cron: )
-then
-  commands.execute("currentScene", "-");
 end
 
 rule "Move ETD to ET at arrive init"
