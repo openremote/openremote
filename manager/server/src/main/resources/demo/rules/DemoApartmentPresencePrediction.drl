@@ -63,10 +63,10 @@ Old:
 // ##########################################################################################################
 
 // This rule converts any manufacturer dependent movement sensor into standardized PIR behaviour.
-// Here emulate PIR from motionCounter by Enervalis
+// Here emulate PIR from motionCount by Enervalis
 rule "person sense"
 when
-    AssetEvent(type == AssetType.ROOM, attributeName == "motionCounter", oldValue.asNumber < value.asNumber)
+    AssetEvent(type == AssetType.ROOM, attributeName == "motionCount", oldValue.asNumber < value.asNumber)
     AssetEvent($id: id, type == AssetType.ROOM, attributeName=="presenceDetectedInteger", value.asNumber!=1)
 then
     LOG.info("@"+(new java.util.Date(drools.getWorkingMemory().getSessionClock().getCurrentTime())).toString());
@@ -77,7 +77,7 @@ end
 rule "no person sense"
     timer(int: 2s)
 when
-    AssetEvent(type == AssetType.ROOM, attributeName == "motionCounter", oldValue.asNumber < value.asNumber)
+    AssetEvent(type == AssetType.ROOM, attributeName == "motionCount", oldValue.asNumber < value.asNumber)
     AssetEvent($id: id, type == AssetType.ROOM, $s:attributeName=="presenceDetectedInteger", value.asNumber!=0)
 then
     LOG.info("@"+(new java.util.Date(drools.getWorkingMemory().getSessionClock().getCurrentTime())).toString());

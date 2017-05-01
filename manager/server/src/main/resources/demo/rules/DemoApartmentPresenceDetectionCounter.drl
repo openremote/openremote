@@ -18,12 +18,12 @@ the number of matches required can be configured.
 rule "Set presence detected flag if motion counter is incremented in time window"
 when
     // A room has a motion counter
-    $room : AssetState(type == AssetType.ROOM, attributeName == "motionCounter")
+    $room : AssetState(type == AssetType.ROOM, attributeName == "motionCount")
     // And the presence detected flag is not set already
     AssetState(id == $room.id, attributeName == "presenceDetected", !value.asBoolean)
     // And at least 5 motion counter increments have been received in the last 10 minutes
     accumulate(
-        AssetEvent(id == $room.id, attributeName == "motionCounter", value.asNumber > 0) over window:time(10m);
+        AssetEvent(id == $room.id, attributeName == "motionCount", value.asNumber > 0) over window:time(10m);
         $count: count(1);
         $count >= 5
     )
@@ -37,12 +37,12 @@ end
 rule "Update the presence detected timestamp if motion counter is incremented and we have already detected presence"
 when
     // A room has a motion counter
-    $room : AssetState(type == AssetType.ROOM, attributeName == "motionCounter")
+    $room : AssetState(type == AssetType.ROOM, attributeName == "motionCount")
     // And the presence detected flag is set
     AssetState(id == $room.id, attributeName == "presenceDetected", value.asBoolean)
     // And at least 5 motion counter increments have been received in the last 10 minutes
     accumulate(
-        AssetEvent(id == $room.id, attributeName == "motionCounter", value.asNumber > 0, $ts: valueTimestamp) over window:time(10m);
+        AssetEvent(id == $room.id, attributeName == "motionCount", value.asNumber > 0, $ts: valueTimestamp) over window:time(10m);
         $count: count(1),
         $latestIncrementTimestamp: max($ts);
         $count >= 5
@@ -60,12 +60,12 @@ end
 rule "Clear presence detected timestamp if motion counter was not incremented in a while"
 when
     // A room has a motion counter
-    $room: AssetState(type == AssetType.ROOM, attributeName == "motionCounter")
+    $room: AssetState(type == AssetType.ROOM, attributeName == "motionCount")
     // And the presence detected flag is set
     AssetState(id == $room.id, attributeName == "presenceDetected", value.asBoolean)
     // And no motion counter increments have been received in the last 10 minutes
     accumulate(
-        AssetEvent(id == $room.id, attributeName == "motionCounter", value.asNumber > 0) over window:time(10m);
+        AssetEvent(id == $room.id, attributeName == "motionCount", value.asNumber > 0) over window:time(10m);
         $count: count(1);
         $count == 0
     )

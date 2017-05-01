@@ -56,12 +56,12 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         setPseudoClocksToRealTime(container, apartment1Engine)
         // Send 5 triggers each 3 minutes apart
         for (i in 1..5) {
-            def motionCounterIncrement = new AttributeEvent(
-                    managerDemoSetup.apartment1LivingroomId, "motionCounter", Json.create(i), getClockTimeOf(apartment1Engine)
+            def motionCountIncrement = new AttributeEvent(
+                    managerDemoSetup.apartment1LivingroomId, "motionCount", Json.create(i), getClockTimeOf(apartment1Engine)
             )
-            assetProcessingService.sendAttributeEvent(motionCounterIncrement)
+            assetProcessingService.sendAttributeEvent(motionCountIncrement)
             new PollingConditions(timeout: 5, initialDelay: 0.2, delay: 0.2).eventually {
-                assert insertedAssetEvents.any() { it.matches(motionCounterIncrement) }
+                assert insertedAssetEvents.any() { it.matches(motionCountIncrement) }
             }
             advancePseudoClocks(3, MINUTES, container, apartment1Engine)
         }
@@ -86,13 +86,13 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         double expectedLastPresenceTimestamp = 0
         // Send 5 increments each 1 minute apart
         for (i in 1..5) {
-            def motionCounterIncrement = new AttributeEvent(
-                    managerDemoSetup.apartment1LivingroomId, "motionCounter", Json.create(i), getClockTimeOf(apartment1Engine)
+            def motionCountIncrement = new AttributeEvent(
+                    managerDemoSetup.apartment1LivingroomId, "motionCount", Json.create(i), getClockTimeOf(apartment1Engine)
             )
-            expectedLastPresenceTimestamp = motionCounterIncrement.timestamp
-            assetProcessingService.sendAttributeEvent(motionCounterIncrement)
+            expectedLastPresenceTimestamp = motionCountIncrement.timestamp
+            assetProcessingService.sendAttributeEvent(motionCountIncrement)
             new PollingConditions(timeout: 5, initialDelay: 0.2, delay: 0.2).eventually {
-                assert insertedAssetEvents.any() { it.matches(motionCounterIncrement) }
+                assert insertedAssetEvents.any() { it.matches(motionCountIncrement) }
             }
             advancePseudoClocks(1, MINUTES, container, apartment1Engine)
         }
@@ -108,13 +108,13 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         insertedAssetEvents = []
         // Send 20 increments each 90 seconds apart
         for (i in 1..20) {
-            def motionCounterIncrement = new AttributeEvent(
-                    managerDemoSetup.apartment1LivingroomId, "motionCounter", Json.create(i), getClockTimeOf(apartment1Engine)
+            def motionCountIncrement = new AttributeEvent(
+                    managerDemoSetup.apartment1LivingroomId, "motionCount", Json.create(i), getClockTimeOf(apartment1Engine)
             )
-            expectedLastPresenceTimestamp = motionCounterIncrement.timestamp
-            assetProcessingService.sendAttributeEvent(motionCounterIncrement)
+            expectedLastPresenceTimestamp = motionCountIncrement.timestamp
+            assetProcessingService.sendAttributeEvent(motionCountIncrement)
             new PollingConditions(timeout: 5, initialDelay: 0.2, delay: 0.2).eventually {
-                assert insertedAssetEvents.any() { it.matches(motionCounterIncrement) }
+                assert insertedAssetEvents.any() { it.matches(motionCountIncrement) }
             }
             advancePseudoClocks(90, SECONDS, container, apartment1Engine)
         }

@@ -389,7 +389,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("homeSceneMonday", AttributeType.STRING, Json.create("06:45:00"))
+            new AssetAttribute("homeSceneMONDAY", AttributeType.STRING, Json.create("06:45:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Waking up on Monday"))
@@ -397,7 +397,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("awaySceneMonday", AttributeType.STRING, Json.create("08:00:00"))
+            new AssetAttribute("awaySceneMONDAY", AttributeType.STRING, Json.create("08:00:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Going to work on Monday"))
@@ -405,7 +405,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("eveningSceneMonday", AttributeType.STRING, Json.create("17:30:00"))
+            new AssetAttribute("eveningSceneMONDAY", AttributeType.STRING, Json.create("17:30:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Back from work on Monday"))
@@ -413,7 +413,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("nightSceneMonday", AttributeType.STRING, Json.create("22:00:00"))
+            new AssetAttribute("nightSceneMONDAY", AttributeType.STRING, Json.create("22:00:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Going to bed on Monday"))
@@ -421,7 +421,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("homeSceneTuesday", AttributeType.STRING, Json.create("06:45:00"))
+            new AssetAttribute("homeSceneTUESDAY", AttributeType.STRING, Json.create("06:45:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Waking up on Tuesday"))
@@ -429,7 +429,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("awaySceneTuesday", AttributeType.STRING, Json.create("08:00:00"))
+            new AssetAttribute("awaySceneTUESDAY", AttributeType.STRING, Json.create("08:00:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Going to work on Tuesday"))
@@ -437,7 +437,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("eveningSceneTuesday", AttributeType.STRING, Json.create("17:30:00"))
+            new AssetAttribute("eveningSceneTUESDAY", AttributeType.STRING, Json.create("17:30:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Back from work on Tuesday"))
@@ -445,7 +445,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("nightSceneTuesday", AttributeType.STRING, Json.create("22:00:00"))
+            new AssetAttribute("nightSceneTUESDAY", AttributeType.STRING, Json.create("22:00:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Going to bed on Tuesday"))
@@ -453,7 +453,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("homeSceneWednesday", AttributeType.STRING, Json.create("06:45:00"))
+            new AssetAttribute("homeSceneWEDNESDAY", AttributeType.STRING, Json.create("06:45:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Waking up on Wednesday"))
@@ -461,7 +461,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("awaySceneWednesday", AttributeType.STRING, Json.create("08:00:00"))
+            new AssetAttribute("awaySceneWEDNESDAY", AttributeType.STRING, Json.create("08:00:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Going to work on Wednesday"))
@@ -469,7 +469,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("eveningSceneWednesday", AttributeType.STRING, Json.create("17:30:00"))
+            new AssetAttribute("eveningSceneWEDNESDAY", AttributeType.STRING, Json.create("17:30:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Back from work on Wednesday"))
@@ -477,7 +477,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("nightSceneWednesday", AttributeType.STRING, Json.create("22:00:00"))
+            new AssetAttribute("nightSceneWEDNESDAY", AttributeType.STRING, Json.create("22:00:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Going to bed on Wednesday"))
@@ -485,7 +485,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("homeSceneThursday", AttributeType.STRING, Json.create("06:45:00"))
+            new AssetAttribute("homeSceneTHURSDAY", AttributeType.STRING, Json.create("06:45:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Waking up on Thursday"))
@@ -493,7 +493,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("awaySceneThursday", AttributeType.STRING, Json.create("08:00:00"))
+            new AssetAttribute("awaySceneTHURSDAY", AttributeType.STRING, Json.create("08:00:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Going to work on Thursday"))
@@ -501,7 +501,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("eveningSceneThursday", AttributeType.STRING, Json.create("17:30:00"))
+            new AssetAttribute("eveningSceneTHURSDAY", AttributeType.STRING, Json.create("17:30:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Back from work on Thursday"))
@@ -509,7 +509,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("nightSceneThursday", AttributeType.STRING, Json.create("22:00:00"))
+            new AssetAttribute("nightSceneTHURSDAY", AttributeType.STRING, Json.create("22:00:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Going to bed on Thursday"))
@@ -517,7 +517,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("homeSceneFriday", AttributeType.STRING, Json.create("06:45:00"))
+            new AssetAttribute("homeSceneFRIDAY", AttributeType.STRING, Json.create("06:45:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Waking up on Friday"))
@@ -525,7 +525,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("awaySceneFriday", AttributeType.STRING, Json.create("08:00:00"))
+            new AssetAttribute("awaySceneFRIDAY", AttributeType.STRING, Json.create("08:00:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Going to work on Friday"))
@@ -533,7 +533,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("eveningSceneFriday", AttributeType.STRING, Json.create("16:00:00"))
+            new AssetAttribute("eveningSceneFRIDAY", AttributeType.STRING, Json.create("16:00:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Back from work on Friday"))
@@ -541,7 +541,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("nightSceneFriday", AttributeType.STRING, Json.create("23:00:00"))
+            new AssetAttribute("nightSceneFRIDAY", AttributeType.STRING, Json.create("23:00:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Going to bed on Friday"))
@@ -549,7 +549,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("homeSceneSaturday", AttributeType.STRING, Json.create("07:30:00"))
+            new AssetAttribute("homeSceneSATURDAY", AttributeType.STRING, Json.create("07:30:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Waking up on Saturday"))
@@ -557,7 +557,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("awaySceneSaturday", AttributeType.STRING, Json.createNull())
+            new AssetAttribute("awaySceneSATURDAY", AttributeType.STRING, Json.createNull())
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Going to work on Saturday"))
@@ -565,7 +565,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("eveningSceneSaturday", AttributeType.STRING, Json.create("18:00:00"))
+            new AssetAttribute("eveningSceneSATURDAY", AttributeType.STRING, Json.create("18:00:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Back from work on Saturday"))
@@ -573,7 +573,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("nightSceneSaturday", AttributeType.STRING, Json.create("23:00:00"))
+            new AssetAttribute("nightSceneSATURDAY", AttributeType.STRING, Json.create("23:00:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Going to bed on Saturday"))
@@ -581,7 +581,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("homeSceneSunday", AttributeType.STRING, Json.create("08:00:00"))
+            new AssetAttribute("homeSceneSUNDAY", AttributeType.STRING, Json.create("08:00:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Waking up on Sunday"))
@@ -589,7 +589,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("awaySceneSunday", AttributeType.STRING, Json.createNull())
+            new AssetAttribute("awaySceneSUNDAY", AttributeType.STRING, Json.createNull())
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Going to work on Sunday"))
@@ -597,7 +597,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("eveningSceneSunday", AttributeType.STRING, Json.create("18:00:00"))
+            new AssetAttribute("eveningSceneSUNDAY", AttributeType.STRING, Json.create("18:00:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Back from work on Sunday"))
@@ -605,7 +605,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
                     )
                 ),
-            new AssetAttribute("nightSceneSunday", AttributeType.STRING, Json.create("22:00:00"))
+            new AssetAttribute("nightSceneSUNDAY", AttributeType.STRING, Json.create("22:00:00"))
                 .setMeta(
                     new Meta().add(
                         new MetaItem(AssetMeta.LABEL, Json.create("Going to bed on Sunday"))
@@ -623,13 +623,13 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment1Livingroom.setType(ROOM);
         List<AssetAttribute> apartment1LivingroomAttributes = Arrays.asList(
-            new AssetAttribute("motionCounter", AttributeType.INTEGER, Json.create(0))
+            new AssetAttribute("motionCount", AttributeType.INTEGER, Json.create(0))
                 .setMeta(
                     new Meta().add(
-                        new MetaItem(AssetMeta.LABEL, Json.create("Motion Counter"))
+                        new MetaItem(AssetMeta.LABEL, Json.create("Motion Count"))
                     ).add(
                         new MetaItem(AssetMeta.DESCRIPTION, Json.create(
-                            "Sensor that increments a counter when motion is sensed"
+                            "Sensor that increments a counter when motion is detected"
                         ))
                     ).add(
                         new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
