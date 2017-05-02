@@ -37,7 +37,7 @@ Old:
 
     presenceDetected                    // "on"
     presenceDetectedInteger             // 0, 1
-    PRESENCE_LAST_DETECTED_TIME         // "-", hh:mm
+    lastPresenceDetectedTimeStamp         // "-", hh:mm
     presenceDetectedUI                  // "Yes"/"No", Latches for 15mins; translates to somebody/nobody is in the office
 
     VACATION_DAYS                       // "0"
@@ -52,8 +52,8 @@ Old:
     UI_ESTIMATED_TIME_DEPARTURE.wed     // "17:00"
     ...
 
-    ACTUAL_TIME_ARRIVAL                 // "-"
-    ACTUAL_TIME_DEPARTURE               // "-"
+    homeActualSceneStartTime               // "-", e.g. "08:53"
+    awayActualSceneStartTime               // "-", e.g. "18:22"
 
     currentScene                          // "-", Possible values are "-", "Departure", "Arrive"
                                         // in blok61 it is "home", "away", "evening", "night"
@@ -89,7 +89,6 @@ rule "last move sense timestamp fetch"
 when
     AssetEvent($id: id, type == AssetType.ROOM, attributeName=="presenceDetectedInteger", value.asNumber==1, valueChanged)
 then
-    // commands.execute("PRESENCE_LAST_DETECTED_TIME", $h.toString());
     long currentTime = drools.getWorkingMemory().getSessionClock().getCurrentTime();
     LOG.info("Move sense on "+$id+" @"+(new java.util.Date(currentTime)).toString() );
     assets.dispatch(
@@ -120,115 +119,96 @@ end
 
 // ##########################################################################################################
 
-/*
-rule "reset ACTUAL_TIME_ARRIVAL"
+// The office hours starts from Arrival till Departure. This is comparable to Home or Evening scene in blok61.
+// The outside office hours are from Departure till the next day Arrival. Comparable to Away and Night.
+// There were 2 in memory variables (now AssetStates) which holds actual arrival and departure time. They need
+// to be reset before scene begins to fetch the actual time which is later used to correct the estimated time
+// in moving average calculations.
+// There are 4 rules below, one for each scene, the actual start time of a scene is reset when the preceding scene
+// starts. Perhaps we can use as a trigger one more preceding scene which give as less trouble with earlier
+// scene starting.
+
+rule "reset homeActualSceneStartTime"
 when
-  SensorState(attributeName=="currentScene", value=="Arrive")
+    AssetState(attributeName=="currentScene", type == AssetType.RESIDENCE, value.asString=="night")
+    AssetState($id, attributeName=="homeActualSceneStartTime", type == AssetType.RESIDENCE, value.asString != "-")
 then
-  commands.execute("ACTUAL_TIME_ARRIVAL","-");
+    assets.dispatch( new AttributeEvent($id, "homeActualSceneStartTime", Json .create("-")) );
 end
 
-rule "reset ACTUAL_TIME_DEPARTURE"
+rule "reset awayActualSceneStartTime"
 when
-  SensorState(attributeName=="ACTUAL_TIME_ARRIVAL",value=="-")
+    AssetState(attributeName=="currentScene", type == AssetType.RESIDENCE, value.asString=="home")
+    AssetState($id, attributeName=="awayActualSceneStartTime", type == AssetType.RESIDENCE, value.asString != "-")
 then
-  commands.execute("ACTUAL_TIME_DEPARTURE","-");
+    assets.dispatch( new AttributeEvent($id, "awayActualSceneStartTime", Json .create("-")) );
 end
 
-rule "Move ETD to ET at arrive init"
-// This one is needed for cases when system is restart after arrive time
+rule "reset eveningActualSceneStartTime"
 when
-  SensorState(attributeName=="TIME_DAY_NAME_IN_WEEK",$e:value)
-  SensorState(attributeName=="TIME_HH:MM:SS",$h:value)
-  SensorState(attributeName matches ("UI_ESTIMATED_TIME_ARRIVAL."+$e), eval(util.parseTimestamp(value) <= util.parseTimestamp($h)), eval(value.toString().length()==5))
-  SensorState(attributeName matches ("UI_ESTIMATED_TIME_DEPARTURE."+$e), $vd:value, eval(value.toString().length()==5))
-//  SensorState(attributeName=="currentScene", value=="-")
+    AssetState(attributeName=="currentScene", type == AssetType.RESIDENCE, value.asString=="away")
+    AssetState($id, attributeName=="eveningActualSceneStartTime", type == AssetType.RESIDENCE, value.asString != "-")
 then
-   commands.execute("UI_ESTIMATED_TIME_DEPARTURE", $vd.toString());
-   commands.execute("currentScene", "Departure");
+    assets.dispatch( new AttributeEvent($id, "eveningActualSceneStartTime", Json .create("-")) );
 end
 
-rule "Move ETD to ET at arrive"
+rule "reset nightActualSceneStartTime"
 when
-  SensorState(attributeName=="TIME_DAY_NAME_IN_WEEK",$e:value)
-  SensorState(attributeName=="TIME_HH:MM:SS",$h:value)
-  SensorState(attributeName=="currentScene", value=="Arrive")
-  SensorState(attributeName matches ("UI_ESTIMATED_TIME_DEPARTURE."+$e), $vd:value)
-  SensorState(attributeName=="UI_ESTIMATED_TIME_ARRIVAL", value != "-", value != ":--", value != "status")
-  SensorState(attributeName=="UI_ESTIMATED_TIME_ARRIVAL", eval(util.parseTimestamp(value) < util.parseTimestamp($h)))
-  SensorState(attributeName=="VACATION_DAYS", eval(Integer.parseInt(value.toString())==0))
+    AssetState(attributeName=="currentScene", type == AssetType.RESIDENCE, value.asString=="evening")
+    AssetState($id, attributeName=="nightActualSceneStartTime", type == AssetType.RESIDENCE, value.asString != "-")
 then
-   commands.execute("currentScene", "Departure");
+    assets.dispatch( new AttributeEvent($id, "nightActualSceneStartTime", Json .create("-")) );
 end
 
-rule "fetch actual arrival time"
+// Removed rules:
+// rule "Move ETD to ET at arrive init"
+// rule "Move ETD to ET at arrive"
+// because they were used for the old UI display.
+
+rule "fetch the actual scene start time"
 when
-  SensorState(attributeName=="TIME_HH:MM:SS", $h:value)
-  SensorState(attributeName=="ACTUAL_TIME_ARRIVAL", value == "-")
-  SensorState(attributeName=="currentScene", value=="Departure")
-    AssetEvent($id: id, type == AssetType.ROOM, $s:attributeName=="presenceDetectedInteger", value.asNumber==1)
+    $timestamp : util.formatTimestamp(drools.clock.currentTime)
+    AssetState(attributeName=="currentScene", type == AssetType.RESIDENCE, $scene: value.asString)
+    AssetState($id:id, $attributeName: attributeName==$scene."ActualSceneStartTime", value.asString == "-")
+    // TODO the actual arrive state was detected by presence sensor. Now we have 2 scenes when presence is
+    // detected and 2 when absence is detected
+    AssetEvent($id: id, type == AssetType.ROOM, attributeName=="presenceDetectedInteger", value.asNumber==1)
 then
-  commands.execute("ACTUAL_TIME_ARRIVAL", $h.toString().substring(0,5));
+    assets.dispatch( new AttributeEvent($id, $attributeName, $timestamp));
 end
 
-rule "fetch earlier actual arrival time up to 30 min v02"
+rule "fetch earlier actual home scene start time up to 30 min v02"
 when
-  SensorState(attributeName=="TIME_HH:MM:SS", $h:value, eval(util.parseTimestamp(value) >= util.parseTimestamp("04:30"))) // Earliest time of arrival is 4:30 AM
-  SensorState(attributeName=="ACTUAL_TIME_ARRIVAL", value == "-")
-  SensorState(attributeName=="currentScene", value=="Arrive")
-    AssetEvent($id: id, type == AssetType.ROOM, $s:attributeName=="presenceDetectedInteger", value.asNumber==1)
-  SensorState(attributeName=="UI_ESTIMATED_TIME_ARRIVAL", value != "-", value != ":--")
-  SensorState(attributeName=="UI_ESTIMATED_TIME_ARRIVAL", eval(util.parseTimestamp(util.shiftTime(value,-30)) <= util.parseTimestamp($h)))
+    // Earliest home scene start time is 4AM
+    $timestamp : util.formatTimestamp(drools.clock.currentTime) >= util.parseTimestamp("04:00")
+    AssetState($id:id, $attributeName: attributeName=="homeActualSceneStartTime", value.asString == "-")
+    AssetState(attributeName=="currentScene", type == AssetType.RESIDENCE, value.asString == "night")
+    AssetEvent($id: id, type == AssetType.ROOM, attributeName=="presenceDetectedInteger", value.asNumber==1)
+    $dayOfWeek : util.formatDate("DAY_OF_WEEK", drools.clock.currentTime)
+    // Take the current value from the scene table
+    AssetState($ref: attributeRef, type == AssetType.RESIDENCE, attributeName matches "homeSceneStart" + $dayOfWeek,
+               $estimated_time: value.asNumberutil.parseTimestamp(util.shiftTime($estimated_time,-30)) <= util.parseTimestamp($timestamp))
 then
-  commands.execute("ACTUAL_TIME_ARRIVAL", $h.toString().substring(0,5));
+    assets.dispatch( new AttributeEvent($id, "homeActualSceneStartTime", $timestamp));
 end
 
-rule "Move - to ET at end of work"
-timer(int: 1s) // avoid racing
-when
-  SensorState(attributeName=="TIME_HH:MM:SS",$h:value)
-  SensorState(attributeName=="UI_ESTIMATED_TIME_DEPARTURE", value != "-", value != ":--")
-  SensorState(attributeName=="UI_ESTIMATED_TIME_DEPARTURE", eval(util.parseTimestamp(value) < util.parseTimestamp($h)))
-  SensorState(attributeName=="currentScene", value=="Departure")
-then
-  commands.execute("currentScene", "-");
-end
+// Removed rule for switching scene after departure
+// rule "Move - to ET at end of work"
+// scenes are switched by timer protocol
 
-rule "Move - to ET on vacation"
-when
-  SensorState(attributeName=="VACATION_DAYS", eval(Integer.parseInt(value.toString())>0))
-then
-  commands.execute("currentScene", "-");
-end
+// Removed rule
+// rule "Move - to ET on vacation"
+// it was indication in UI that vacation are active
 
-rule "fetch actual departure time"
-when
-  SensorState(attributeName=="ACTUAL_TIME_ARRIVAL", value != "-")
-  SensorState(attributeName=="ACTUAL_TIME_DEPARTURE", value == "-")
-  SensorState(attributeName=="currentScene", value=="-")
-  SensorState(attributeName=="PRESENCE_LAST_DETECTED_TIME", $v:value, eval(value.toString().length()>4))
-then
-  commands.execute("ACTUAL_TIME_DEPARTURE", $v.toString().substring(0,5));
-  commands.execute("PRESENCE_LAST_DETECTED_TIME","-");
-end
+// Removed rules
+// rule "fetch actual departure time"
+// rule "fetch later departure time"
+// as "departure" is simply a start of a new scene and these should be covered by previous rules.
+// TODO scene switch could be earlier and later. Both cases need be tested for each scene.
+// As we have 2 presence scenes (home, evening) and 2 absence scenes (away, night) probably would be easier
+// to have 2 sets of rules, like in the office separate rules for Arrival adjustment time and Departure.
 
-rule "fetch later departure time"
-when
-  SensorState(attributeName=="TIME_DAY_NAME_IN_WEEK",$e:value)
-  SensorState(attributeName=="currentScene", value=="-")
-  SensorState(attributeName matches ("UI_ESTIMATED_TIME_DEPARTURE."+$e), $vd:value)
-  SensorState(attributeName=="ACTUAL_TIME_ARRIVAL", value != "-")
-  SensorState(attributeName=="ACTUAL_TIME_DEPARTURE", value != "-")
-  SensorState(attributeName=="PRESENCE_LAST_DETECTED_TIME", $v:value, eval(value.toString().length()>4),
-                                              eval(util.parseTimestamp(value)<=util.parseTimestamp(util.shiftTime($vd,15))), // Till 15 min after scheduled departure
-                                              eval(util.parseTimestamp(value)<=util.parseTimestamp("23:55"))) 	      	 // Till 23:55 - does	not wrap on midnight
-  SensorState(attributeName=="VACATION_DAYS", eval(Integer.parseInt(value.toString())==0))
-then
-  commands.execute("ACTUAL_TIME_DEPARTURE", $v.toString().substring(0,5));
-  commands.execute("PRESENCE_LAST_DETECTED_TIME","-");
-end
-
-*/
+// TODO special care must be taken for the Night scene as it can start before or after midnight.
 
 rule "adjust estimated times at next scene change"
 when
