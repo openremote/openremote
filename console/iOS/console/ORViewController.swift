@@ -32,21 +32,9 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     
     func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
         NSLog("error %@", message)
-        let error = NSError(domain: "", code: 0, userInfo:  [
-            NSLocalizedDescriptionKey :  NSLocalizedString("ErrorGettingLoginScreen", value: "Could not login, your access token probably expired", comment: "")
-            ])
-        let alertView = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: .alert)
-        let alertAction = UIAlertAction(title: "Done", style: .cancel) { (action) in
-            completionHandler()
-        }
-        let alertActionResetToken = UIAlertAction(title: "Reset Token", style: .destructive) { (action) in
-            TokenManager.sharedInstance.resetToken()
-            self.dismiss(animated: true, completion: nil)
-            completionHandler()
-        }
-        alertView.addAction(alertAction)
-        alertView.addAction(alertActionResetToken)
-        self.present(alertView, animated: true, completion: nil)
+        TokenManager.sharedInstance.resetToken()
+        self.dismiss(animated: true, completion: nil)
+        completionHandler()
     }
     
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
