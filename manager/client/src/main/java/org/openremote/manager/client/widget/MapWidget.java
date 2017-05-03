@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.client.widget;
 
+import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.user.client.ui.FlowPanel;
@@ -29,6 +30,7 @@ import elemental.json.JsonArray;
 import elemental.json.JsonObject;
 import org.openremote.manager.client.interop.mapbox.*;
 import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.value.ObjectValue;
 
 import java.util.logging.Logger;
 
@@ -140,7 +142,7 @@ public class MapWidget extends FlowPanel {
         return mapboxMap != null;
     }
 
-    public void initialise(JsonObject mapOptions, Runnable onReady) {
+    public void initialise(ObjectValue mapOptions, Runnable onReady) {
         if (mapOptions == null) {
             return;
         }
@@ -151,7 +153,7 @@ public class MapWidget extends FlowPanel {
 
         mapOptions.put("container", hostElementId);
         mapOptions.put("attributionControl", false);
-        mapboxMap = new MapboxMap(mapOptions);
+        mapboxMap = new MapboxMap((JavaScriptObject) mapOptions.toNative());
 
         mapboxMap.on(EventType.LOAD, eventData -> {
             initFeatureLayers();

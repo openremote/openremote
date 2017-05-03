@@ -1,26 +1,4 @@
 package org.openremote.test.map
-
-import com.google.gwt.place.shared.PlaceController
-import com.google.gwt.user.client.ui.AcceptsOneWidget
-import elemental.json.JsonObject
-import org.openremote.manager.client.assets.browser.AssetBrowser
-import org.openremote.model.event.bus.EventBus
-import org.openremote.manager.client.i18n.ManagerMessages
-import org.openremote.manager.client.interop.elemental.JsonObjectMapper
-import org.openremote.manager.client.map.MapActivity
-import org.openremote.manager.client.map.MapView
-import org.openremote.manager.client.service.RequestServiceImpl
-import org.openremote.manager.client.service.SecurityService
-import org.openremote.manager.shared.http.EntityReader
-import org.openremote.manager.shared.map.MapResource
-import org.openremote.test.ContainerTrait
-import org.openremote.test.GwtClientTrait
-import spock.lang.Ignore
-import spock.lang.Specification
-
-import static org.openremote.container.util.MapAccess.getString
-import static org.openremote.model.Constants.*;
-
 // TODO Fix this when we do Asset testing
 class MapActivityTest { /* extends Specification implements ContainerTrait, GwtClientTrait {
 

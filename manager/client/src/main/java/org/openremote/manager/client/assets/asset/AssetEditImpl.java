@@ -20,7 +20,6 @@
 package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.dom.client.Element;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.resources.client.CssResource;
@@ -30,7 +29,6 @@ import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.*;
 import com.google.inject.Provider;
-import elemental.json.JsonObject;
 import org.openremote.manager.client.app.dialog.ConfirmationDialog;
 import org.openremote.manager.client.assets.attributes.AttributesEditor;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
@@ -40,9 +38,10 @@ import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.widget.*;
 import org.openremote.manager.client.widget.Hyperlink;
 import org.openremote.manager.client.widget.PushButton;
-import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetType;
+import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.value.ObjectValue;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -61,6 +60,8 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
         String formMessages();
 
         String mapWidget();
+
+        String nameInput();
     }
 
     interface AttributesEditorStyle extends CssResource, AttributesEditor.Style {
@@ -255,8 +256,8 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
             mapWidget.resize();
         viewAssetLink.setVisible(
             viewAssetLink.getTargetHistoryToken() != null
-            && viewAssetLink.getTargetHistoryToken().length() > 0
-            && !busy
+                && viewAssetLink.getTargetHistoryToken().length() > 0
+                && !busy
         );
     }
 
@@ -304,7 +305,7 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     }
 
     @Override
-    public void initialiseMap(JsonObject mapOptions) {
+    public void initialiseMap(ObjectValue mapOptions) {
         mapWidget.initialise(mapOptions, () -> {
             mapWidget.addNavigationControl();
             mapWidget.setClickListener((lng, lat) -> {

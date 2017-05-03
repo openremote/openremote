@@ -20,9 +20,9 @@
 package org.openremote.manager.client.map;
 
 import com.google.gwt.user.client.ui.IsWidget;
-import elemental.json.JsonObject;
-import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.Pair;
+import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.value.ObjectValue;
 
 import java.util.List;
 
@@ -36,7 +36,7 @@ public interface MapView extends IsWidget {
 
     void setAssetViewHistoryToken(String token);
 
-    void initialiseMap(JsonObject mapOptions);
+    void initialiseMap(ObjectValue mapOptions);
 
     boolean isMapInitialised();
 

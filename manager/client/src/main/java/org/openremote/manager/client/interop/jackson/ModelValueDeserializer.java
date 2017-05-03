@@ -24,7 +24,6 @@ import com.github.nmorel.gwtjackson.client.JsonDeserializer;
 import com.github.nmorel.gwtjackson.client.JsonDeserializerParameters;
 import com.github.nmorel.gwtjackson.client.stream.JsonReader;
 import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueException;
 import org.openremote.model.value.Values;
 
 public class ModelValueDeserializer extends JsonDeserializer<Value> {
@@ -32,11 +31,7 @@ public class ModelValueDeserializer extends JsonDeserializer<Value> {
     @Override
     protected Value doDeserialize(JsonReader reader, JsonDeserializationContext ctx, JsonDeserializerParameters params) {
         if (reader.hasNext()) {
-            try {
-                return Values.parse(reader.nextValue());
-            } catch (ValueException ex) {
-                throw new RuntimeException(ex);
-            }
+            return Values.parse(reader.nextValue());
         }
         return null;
     }

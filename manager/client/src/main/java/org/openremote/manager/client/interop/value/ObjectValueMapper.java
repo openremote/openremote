@@ -17,22 +17,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.interop.elemental;
+package org.openremote.manager.client.interop.value;
 
-import elemental.json.Json;
-import elemental.json.JsonObject;
 import org.openremote.manager.shared.http.EntityReader;
 import org.openremote.manager.shared.http.EntityWriter;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Values;
 
-public class JsonObjectMapper implements EntityReader<JsonObject>, EntityWriter<JsonObject> {
+public class ObjectValueMapper implements EntityReader<ObjectValue>, EntityWriter<ObjectValue> {
 
     @Override
-    public JsonObject read(String value) {
-        return Json.parse(value);
+    public ObjectValue read(String value) {
+        return Values.parse(value);
     }
 
     @Override
-    public String write(JsonObject value) {
+    public String write(ObjectValue value) {
         return value.toJson();
     }
 }

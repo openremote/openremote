@@ -19,11 +19,11 @@
  */
 package org.openremote.manager.server.map;
 
-import elemental.json.JsonObject;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.map.MapResource;
+import org.openremote.model.value.ObjectValue;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
@@ -39,7 +39,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
     }
 
     @Override
-    public JsonObject getSettings(RequestParams requestParams) {
+    public ObjectValue getSettings(RequestParams requestParams) {
         return mapService.getMapSettings(getRealm(), identityService.getExternalServerUri().clone());
     }
 

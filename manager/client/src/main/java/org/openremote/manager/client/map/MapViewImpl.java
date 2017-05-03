@@ -34,6 +34,7 @@ import org.openremote.manager.client.widget.Hyperlink;
 import org.openremote.manager.client.widget.MapWidget;
 import org.openremote.model.Pair;
 import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.value.ObjectValue;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -110,7 +111,7 @@ public class MapViewImpl extends Composite implements MapView {
     }
 
     @Override
-    public void initialiseMap(JsonObject mapOptions) {
+    public void initialiseMap(ObjectValue mapOptions) {
         mapWidget.initialise(mapOptions, () -> {
             mapWidget.addNavigationControl();
             if (presenter != null)

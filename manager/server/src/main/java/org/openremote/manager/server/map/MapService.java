@@ -19,14 +19,14 @@
  */
 package org.openremote.manager.server.map;
 
-import elemental.json.Json;
-import elemental.json.JsonArray;
-import elemental.json.JsonObject;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebService;
+import org.openremote.model.value.ArrayValue;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Values;
 
 import javax.ws.rs.core.UriBuilder;
 import java.nio.file.Files;
@@ -93,18 +93,18 @@ public class MapService implements ContainerService {
         }
     }
 
-    public JsonObject getMapSettings(String realm, UriBuilder baseUriBuilder) {
-        JsonObject mapSettings;
+    public ObjectValue getMapSettings(String realm, UriBuilder baseUriBuilder) {
+        ObjectValue mapSettings;
 
         // Mix settings from file with database metadata, and some hardcoded magic
         try {
             String mapSettingsJson = new String(Files.readAllBytes(mapSettingsPath), "utf-8");
-            mapSettings = Json.parse(mapSettingsJson);
+            mapSettings = Values.parse(mapSettingsJson);
         } catch (Exception ex) {
             throw new RuntimeException("Error parsing map settings: " + mapSettingsPath.toAbsolutePath(), ex);
         }
 
-        JsonObject style = mapSettings.getObject("style");
+        ObjectValue style = mapSettings.getObject("style");
 
         style.put("version", 8);
 
@@ -123,10 +123,10 @@ public class MapService implements ContainerService {
             .build().toString() + "{fontstack}/{range}.pbf";
         style.put("glyphs", glyphsUri);
 
-        JsonObject sources = Json.createObject();
+        ObjectValue sources = Values.createObject();
         style.put("sources", sources);
 
-        JsonObject vectorTiles = Json.createObject();
+        ObjectValue vectorTiles = Values.createObject();
         sources.put("vector_tiles", vectorTiles);
 
         vectorTiles.put("type", "vector");
@@ -146,7 +146,7 @@ public class MapService implements ContainerService {
                 throw new RuntimeException("Missing JSON metadata in map database");
             }
 
-            JsonObject metadataJson = Json.parse(resultMap.get("json"));
+            ObjectValue metadataJson = Values.parse(resultMap.get("json"));
             vectorTiles.put("vector_layers", metadataJson.getArray("vector_layers"));
             vectorTiles.put("maxzoom", Integer.valueOf(resultMap.get("maxzoom")));
             vectorTiles.put("minzoom", Integer.valueOf(resultMap.get("minzoom")));
@@ -157,7 +157,7 @@ public class MapService implements ContainerService {
             closeQuietly(query, result);
         }
 
-        JsonArray tilesArray = Json.createArray();
+        ArrayValue tilesArray = Values.createArray();
         String tileUrl = baseUriBuilder.clone().replacePath(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
         tilesArray.set(0, tileUrl);
         mapSettings.getObject("style").getObject("sources").getObject("vector_tiles").put("tiles", tilesArray);

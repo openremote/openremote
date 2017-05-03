@@ -20,10 +20,10 @@
 package org.openremote.manager.client.assets.asset;
 
 import com.google.gwt.user.client.ui.IsWidget;
-import elemental.json.JsonObject;
 import org.openremote.manager.client.assets.attributes.AttributesBrowser;
 import org.openremote.manager.client.assets.browser.BrowserTreeNode;
 import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.value.ObjectValue;
 
 import java.util.Date;
 
@@ -48,7 +48,7 @@ public interface AssetView extends IsWidget {
 
     void setParentNode(BrowserTreeNode treeNode);
 
-    void initialiseMap(JsonObject mapOptions);
+    void initialiseMap(ObjectValue mapOptions);
 
     boolean isMapInitialised();
 

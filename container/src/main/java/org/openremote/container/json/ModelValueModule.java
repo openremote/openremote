@@ -42,7 +42,11 @@ public class ModelValueModule extends SimpleModule {
         @SuppressWarnings("unchecked")
         @Override
         public T deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException {
-            return (T) Values.instance().parse(jsonParser.getCodec().readTree(jsonParser).toString());
+            try {
+                return (T) Values.instance().parse(jsonParser.getCodec().readTree(jsonParser).toString());
+            } catch (ValueException ex) {
+                throw new IOException(ex);
+            }
         }
     }
 
@@ -54,7 +58,11 @@ public class ModelValueModule extends SimpleModule {
             if (value instanceof Null) {
                 gen.writeNull();
             } else {
-                gen.writeRawValue(value.toJson());
+                try {
+                    gen.writeRawValue(value.toJson());
+                } catch (ValueException ex) {
+                    throw new IOException(ex);
+                }
             }
         }
     }

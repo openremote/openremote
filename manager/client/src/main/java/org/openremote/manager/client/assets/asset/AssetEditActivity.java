@@ -28,7 +28,7 @@ import org.openremote.manager.client.assets.browser.*;
 import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
 import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowSuccessEvent;
-import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
+import org.openremote.manager.client.interop.value.ObjectValueMapper;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
@@ -54,7 +54,7 @@ public class AssetEditActivity
     final AssetResource assetResource;
     final AssetMapper assetMapper;
     final MapResource mapResource;
-    final JsonObjectMapper jsonObjectMapper;
+    final ObjectValueMapper objectValueMapper;
     final protected Consumer<ConstraintViolation[]> validationErrorHandler;
 
     double[] selectedCoordinates;
@@ -68,13 +68,13 @@ public class AssetEditActivity
                              AssetResource assetResource,
                              AssetMapper assetMapper,
                              MapResource mapResource,
-                             JsonObjectMapper jsonObjectMapper) {
+                             ObjectValueMapper objectValueMapper) {
         super(environment, currentTenant, assetBrowserPresenter);
         this.view = view;
         this.assetResource = assetResource;
         this.assetMapper = assetMapper;
         this.mapResource = mapResource;
-        this.jsonObjectMapper = jsonObjectMapper;
+        this.objectValueMapper = objectValueMapper;
 
         validationErrorHandler = violations -> {
             for (ConstraintViolation violation : violations) {
@@ -115,7 +115,7 @@ public class AssetEditActivity
 
         if (!view.isMapInitialised()) {
             environment.getRequestService().execute(
-                jsonObjectMapper,
+                objectValueMapper,
                 mapResource::getSettings,
                 200,
                 view::initialiseMap,

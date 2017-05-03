@@ -28,7 +28,7 @@ import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowserSelection;
 import org.openremote.manager.client.assets.browser.AssetTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
-import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
+import org.openremote.manager.client.interop.value.ObjectValueMapper;
 import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.map.MapResource;
@@ -40,7 +40,6 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.geo.GeoJSON;
-import org.openremote.model.util.TextUtil;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -60,7 +59,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
     final AssetResource assetResource;
     final AssetMapper assetMapper;
     final MapResource mapResource;
-    final JsonObjectMapper jsonObjectMapper;
+    final ObjectValueMapper objectValueMapper;
 
     String assetId;
     String realmId;
@@ -75,13 +74,13 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
                        AssetResource assetResource,
                        AssetMapper assetMapper,
                        MapResource mapResource,
-                       JsonObjectMapper jsonObjectMapper) {
+                       ObjectValueMapper objectValueMapper) {
         super(environment, currentTenant, assetBrowserPresenter);
         this.view = view;
         this.assetResource = assetResource;
         this.assetMapper = assetMapper;
         this.mapResource = mapResource;
-        this.jsonObjectMapper = jsonObjectMapper;
+        this.objectValueMapper = objectValueMapper;
     }
 
     @Override
@@ -132,7 +131,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
 
         if (!view.isMapInitialised()) {
             environment.getRequestService().execute(
-                jsonObjectMapper,
+                objectValueMapper,
                 mapResource::getSettings,
                 200,
                 view::initialiseMap,

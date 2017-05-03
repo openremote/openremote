@@ -29,7 +29,7 @@ import org.openremote.manager.client.assets.browser.AssetTreeNode;
 import org.openremote.manager.client.assets.browser.TenantTreeNode;
 import org.openremote.manager.client.assets.tenant.AssetsTenantPlace;
 import org.openremote.manager.client.datapoint.NumberDatapointArrayMapper;
-import org.openremote.manager.client.interop.elemental.JsonObjectMapper;
+import org.openremote.manager.client.interop.value.ObjectValueMapper;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.datapoint.AssetDatapointResource;
 import org.openremote.manager.shared.map.MapResource;
@@ -56,7 +56,7 @@ public class AssetViewActivity
     final AssetDatapointResource assetDatapointResource;
     final NumberDatapointArrayMapper numberDatapointArrayMapper;
     final MapResource mapResource;
-    final JsonObjectMapper jsonObjectMapper;
+    final ObjectValueMapper objectValueMapper;
 
     AttributesBrowser attributesBrowser;
 
@@ -70,7 +70,7 @@ public class AssetViewActivity
                              AssetDatapointResource assetDatapointResource,
                              NumberDatapointArrayMapper numberDatapointArrayMapper,
                              MapResource mapResource,
-                             JsonObjectMapper jsonObjectMapper) {
+                             ObjectValueMapper objectValueMapper) {
         super(environment, currentTenant, assetBrowserPresenter);
         this.view = view;
         this.assetResource = assetResource;
@@ -78,7 +78,7 @@ public class AssetViewActivity
         this.assetDatapointResource = assetDatapointResource;
         this.numberDatapointArrayMapper = numberDatapointArrayMapper;
         this.mapResource = mapResource;
-        this.jsonObjectMapper = jsonObjectMapper;
+        this.objectValueMapper = objectValueMapper;
     }
 
     @Override
@@ -104,7 +104,7 @@ public class AssetViewActivity
 
         if (!view.isMapInitialised()) {
             environment.getRequestService().execute(
-                jsonObjectMapper,
+                objectValueMapper,
                 mapResource::getSettings,
                 200,
                 view::initialiseMap,

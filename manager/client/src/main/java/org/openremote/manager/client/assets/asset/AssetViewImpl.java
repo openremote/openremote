@@ -31,7 +31,6 @@ import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.InsertPanel;
 import com.google.inject.Provider;
-import elemental.json.JsonObject;
 import org.openremote.manager.client.app.dialog.ConfirmationDialog;
 import org.openremote.manager.client.assets.attributes.AttributesBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
@@ -43,6 +42,7 @@ import org.openremote.manager.client.widget.*;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.value.ObjectValue;
 
 import javax.inject.Inject;
 import java.util.Date;
@@ -234,7 +234,7 @@ public class AssetViewImpl extends Composite implements AssetView {
     }
 
     @Override
-    public void initialiseMap(JsonObject mapOptions) {
+    public void initialiseMap(ObjectValue mapOptions) {
         mapWidget.initialise(mapOptions, () -> {
             mapWidget.addNavigationControl();
             if (presenter != null)

@@ -19,10 +19,10 @@
  */
 package org.openremote.manager.shared.map;
 
-import elemental.json.JsonObject;
 import jsinterop.annotations.JsType;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.http.SuccessStatusCode;
+import org.openremote.model.value.ObjectValue;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.*;
@@ -36,7 +36,7 @@ public interface MapResource {
     @Produces(MediaType.APPLICATION_JSON)
     @SuccessStatusCode(200)
     @RolesAllowed({"read:map"})
-    JsonObject getSettings(@BeanParam RequestParams requestParams);
+    ObjectValue getSettings(@BeanParam RequestParams requestParams);
 
     @GET
     @Produces("application/vnd.mapbox-vector-tile")

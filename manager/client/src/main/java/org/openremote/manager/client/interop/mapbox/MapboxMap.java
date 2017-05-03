@@ -35,8 +35,7 @@ public class MapboxMap {
     @JsProperty
     public boolean loaded;
 
-    // TODO: Get this to work with MapOptions JsType
-    public MapboxMap(JsonObject options) {}
+    public MapboxMap(JavaScriptObject options) {}
 
     public native MapboxMap addClass(String className);
     public native MapboxMap addClass(String className, JsonObject styleOptions);

@@ -15,15 +15,10 @@
  */
 package org.openremote.model.value;
 
-import java.io.IOException;
-
 /**
  * A exception representing an error in parsing or serializing values to/from JSON.
  */
-public class ValueException extends IOException {
-
-    public ValueException() {
-    }
+public class ValueException extends RuntimeException {
 
     public ValueException(String s) {
         super(s);
