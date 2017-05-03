@@ -15,6 +15,8 @@
  */
 package org.openremote.model.value;
 
+import java.util.Optional;
+
 /**
  * Factory interface for parsing and creating values.
  */
@@ -30,7 +32,5 @@ public interface ValueFactory {
 
     ObjectValue createObject();
 
-    Null createNull();
-
-    <T extends Value> T parse(String jsonString) throws ValueException;
+    <T extends Value> Optional<T> parse(String jsonString) throws ValueException;
 }

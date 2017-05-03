@@ -26,12 +26,14 @@ import com.github.nmorel.gwtjackson.client.stream.JsonReader;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
+import java.io.IOException;
+
 public class ModelValueDeserializer extends JsonDeserializer<Value> {
 
     @Override
     protected Value doDeserialize(JsonReader reader, JsonDeserializationContext ctx, JsonDeserializerParameters params) {
         if (reader.hasNext()) {
-            return Values.parse(reader.nextValue());
+            return Values.parse(reader.nextValue()).orElseThrow(() -> new RuntimeException("Empty JSON data"));
         }
         return null;
     }

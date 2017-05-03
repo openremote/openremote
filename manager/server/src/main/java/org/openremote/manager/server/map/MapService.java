@@ -26,6 +26,7 @@ import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebService;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.StringValue;
 import org.openremote.model.value.Values;
 
 import javax.ws.rs.core.UriBuilder;
@@ -38,6 +39,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 import static org.openremote.container.util.MapAccess.getString;
@@ -99,20 +101,29 @@ public class MapService implements ContainerService {
         // Mix settings from file with database metadata, and some hardcoded magic
         try {
             String mapSettingsJson = new String(Files.readAllBytes(mapSettingsPath), "utf-8");
-            mapSettings = Values.parse(mapSettingsJson);
+            mapSettings = Values.<ObjectValue>parse(mapSettingsJson).orElseThrow(() ->
+                new RuntimeException("Error parsing map settings: " + mapSettingsPath.toAbsolutePath())
+            );
         } catch (Exception ex) {
             throw new RuntimeException("Error parsing map settings: " + mapSettingsPath.toAbsolutePath(), ex);
         }
 
-        ObjectValue style = mapSettings.getObject("style");
+        ObjectValue style = mapSettings.<ObjectValue>get("style").orElseThrow(() ->
+            new RuntimeException("Missing 'style' field in map settings style: " + mapSettingsPath.toAbsolutePath())
+        );
 
         style.put("version", 8);
 
         if (style.hasKey("sprite")) {
+            // Rewrite path to sprite file to our external host
+            String spritePath =
+                style.<StringValue>get("sprite").orElseThrow(() ->
+                    new RuntimeException("Missing 'sprite' field in map settings style: " + mapSettingsPath.toAbsolutePath())
+                ).getString();
             String spriteUri =
                 baseUriBuilder.clone()
                     .replacePath(ManagerWebService.MANAGER_PATH)
-                    .path(style.getString("sprite"))
+                    .path(spritePath)
                     .build().toString();
             style.put("sprite", spriteUri);
         }
@@ -131,6 +142,11 @@ public class MapService implements ContainerService {
 
         vectorTiles.put("type", "vector");
 
+        ArrayValue tilesArray = Values.createArray();
+        String tileUrl = baseUriBuilder.clone().replacePath(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
+        tilesArray.set(0, tileUrl);
+        vectorTiles.put("tiles", tilesArray);
+
         PreparedStatement query = null;
         ResultSet result = null;
         try {
@@ -146,8 +162,13 @@ public class MapService implements ContainerService {
                 throw new RuntimeException("Missing JSON metadata in map database");
             }
 
-            ObjectValue metadataJson = Values.parse(resultMap.get("json"));
-            vectorTiles.put("vector_layers", metadataJson.getArray("vector_layers"));
+            ObjectValue metadataJson = Values.<ObjectValue>parse(resultMap.get("json")).orElseThrow(() ->
+                new RuntimeException("Error parsing JSON metadata from map database")
+            );
+            ArrayValue vectorLayers = metadataJson.<ArrayValue>get("vector_layers").orElseThrow(() ->
+                new RuntimeException("Missing 'vector_layers' field in metadata from map database")
+            );
+            vectorTiles.put("vector_layers", vectorLayers);
             vectorTiles.put("maxzoom", Integer.valueOf(resultMap.get("maxzoom")));
             vectorTiles.put("minzoom", Integer.valueOf(resultMap.get("minzoom")));
             vectorTiles.put("attribution", resultMap.get("attribution"));
@@ -156,11 +177,6 @@ public class MapService implements ContainerService {
         } finally {
             closeQuietly(query, result);
         }
-
-        ArrayValue tilesArray = Values.createArray();
-        String tileUrl = baseUriBuilder.clone().replacePath(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
-        tilesArray.set(0, tileUrl);
-        mapSettings.getObject("style").getObject("sources").getObject("vector_tiles").put("tiles", tilesArray);
 
         return mapSettings;
     }

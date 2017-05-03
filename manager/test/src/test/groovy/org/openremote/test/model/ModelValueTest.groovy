@@ -20,9 +20,10 @@ class ModelValueTest extends Specification {
         sampleArray1.set(3, 123.45)
         sampleArray1.set(4, sampleObject1)
 
-        String json = sampleArray1.toJson()
-        ArrayValue value = Values.parse(json)
-        value == sampleArray1
+        String rawValue = sampleArray1.toJson()
+        println rawValue
+        ArrayValue parsedValue = Values.<ArrayValue>parse(rawValue).get()
+        parsedValue == sampleArray1
     }
 
     def "Compare scalar values"() {
@@ -45,21 +46,6 @@ class ModelValueTest extends Specification {
         Values.create(1) != Values.create(true)
         Values.create(1).hashCode() != Values.create(true).hashCode()
 
-        Values.createNull() == Values.createNull()
-        Values.createNull().hashCode() == Values.createNull().hashCode()
-
-        Values.createNull() != Values.create(123)
-        Values.createNull().hashCode() != Values.create(123).hashCode()
-
-        Values.createNull() != Values.create(false)
-        Values.createNull().hashCode() != Values.create(false).hashCode()
-
-        Values.createNull() != Values.create(true)
-        Values.createNull().hashCode() != Values.create(true).hashCode()
-
-        Values.createNull() != Values.create("abc")
-        Values.createNull().hashCode() != Values.create("abc").hashCode()
-
         Values.create(123) == Values.create(123)
         Values.create(123).hashCode() == Values.create(123).hashCode()
 
@@ -80,9 +66,6 @@ class ModelValueTest extends Specification {
 
         Values.create("abc") != Values.create("abcd")
         Values.create("abc").hashCode() != Values.create("abcd").hashCode()
-
-        Values.create("abc") != Values.createNull()
-        Values.create("abc").hashCode() != Values.createNull().hashCode()
 
         Values.create("abc") != Values.create(123)
         Values.create("abc").hashCode() != Values.create(123).hashCode()
@@ -116,9 +99,6 @@ class ModelValueTest extends Specification {
         Values.createArray() == Values.createArray()
         Values.createArray().hashCode() == Values.createArray().hashCode()
 
-        Values.createArray() != Values.createNull()
-        Values.createArray().hashCode() != Values.createNull().hashCode()
-
         sampleArray1 == sampleArray1
         sampleArray1.hashCode() == sampleArray1.hashCode()
 
@@ -131,9 +111,6 @@ class ModelValueTest extends Specification {
         and: "Objects with no fields to be equal"
         Values.createObject() == Values.createObject()
         Values.createObject().hashCode() == Values.createObject().hashCode()
-
-        Values.createNull() != Values.createObject()
-        Values.createNull().hashCode() != Values.createObject().hashCode()
 
         Values.createArray() != Values.createObject()
         Values.createArray().hashCode() != Values.createObject().hashCode()

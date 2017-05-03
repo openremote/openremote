@@ -27,21 +27,6 @@ public class NumberValueImpl extends ValueImpl implements NumberValue {
     }
 
     @Override
-    public boolean asBoolean() {
-        return !(Double.isNaN(getNumber()) || Math.abs(getNumber()) == 0.0);
-    }
-
-    @Override
-    public double asNumber() {
-        return getNumber();
-    }
-
-    @Override
-    public String asString() {
-        return toJson();
-    }
-
-    @Override
     public double getNumber() {
         return number;
     }

@@ -17,6 +17,8 @@ package org.openremote.model.value.impl;
 
 import org.openremote.model.value.*;
 
+import java.util.Optional;
+
 /**
  * Implementation of parsing a JSON string into instances
  * of {@link org.openremote.model.value.Value}.
@@ -125,8 +127,7 @@ class ValueTokenizer {
                         case 'r':
                             buffer.append('\r');
                             break;
-                        // TODO(knorton): I'm not sure I should even support this escaping
-                        // mode since JSON is always UTF-8.
+                        // TODO(knorton): I'm not sure I should even support this escaping mode since JSON is always UTF-8.
                         case 'u':
                             buffer.append((char) Integer.parseInt(next(4), 16));
                             break;
@@ -158,19 +159,20 @@ class ValueTokenizer {
     }
 
     @SuppressWarnings("unchecked")
-    <T extends Value> T nextValue() throws ValueException {
+    <T extends Value> Optional<T> nextValue() throws ValueException {
         final int c = nextNonWhitespace();
         back(c);
         switch (c) {
             case '"':
             case '\'':
-                return (T) valueFactory.create(nextString(c));
+                String s = nextString(c);
+                return Optional.of((T)valueFactory.create(s));
             case '{':
-                return (T) parseObject();
+                return Optional.of( (T) parseObject());
             case '[':
-                return (T) parseArray();
+                return Optional.of((T) parseArray());
             default:
-                return (T) getValueForLiteral(nextUntilOneOf(STOPCHARS));
+                return (Optional<T>) getValueForLiteral(nextUntilOneOf(STOPCHARS));
         }
     }
 
@@ -185,7 +187,7 @@ class ValueTokenizer {
                     return array;
                 default:
                     back(c);
-                    array.set(array.length(), (Value) nextValue());
+                    nextValue().ifPresent(v -> array.set(array.length(), v));
                     final int d = nextNonWhitespace();
                     switch (d) {
                         case ']':
@@ -220,8 +222,7 @@ class ValueTokenizer {
                     if (nextNonWhitespace() != ':') {
                         throw new ValueException("Invalid object: expecting \":\"");
                     }
-                    // TODO(knorton): Make sure this key is not already set.
-                    object.put(key, (Value) nextValue());
+                    nextValue().ifPresent(v -> object.put(key, v));
                     switch (nextNonWhitespace()) {
                         case ',':
                             break;
@@ -249,8 +250,7 @@ class ValueTokenizer {
                         if (nextNonWhitespace() != ':') {
                             throw new ValueException("Invalid object: expecting \":\"");
                         }
-                        // TODO(knorton): Make sure this key is not already set.
-                        object.put(keyBuffer.toString(), (Value) nextValue());
+                        nextValue().ifPresent(v -> object.put(keyBuffer.toString(), v));
                         switch (nextNonWhitespace()) {
                             case ',':
                                 break;
@@ -276,26 +276,26 @@ class ValueTokenizer {
         }
     }
 
-    private Value getValueForLiteral(String literal) throws ValueException {
+    private Optional<Value> getValueForLiteral(String literal) throws ValueException {
         if ("".equals(literal)) {
             throw new ValueException("Missing value");
         }
 
         if ("null".equals(literal) || "undefined".equals(literal)) {
-            return valueFactory.createNull();
+            return Optional.empty();
         }
 
         if ("true".equals(literal)) {
-            return valueFactory.create(true);
+            return Optional.of(valueFactory.create(true));
         }
 
         if ("false".equals(literal)) {
-            return valueFactory.create(false);
+            return Optional.of(valueFactory.create(false));
         }
 
         final char c = literal.charAt(0);
         if (c == '-' || Character.isDigit(c)) {
-            return getNumberForLiteral(literal);
+            return Optional.of(getNumberForLiteral(literal));
         }
 
         throw new ValueException("Invalid literal: \"" + literal + "\"");

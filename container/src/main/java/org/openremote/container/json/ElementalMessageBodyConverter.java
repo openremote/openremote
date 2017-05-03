@@ -19,6 +19,7 @@
  */
 package org.openremote.container.json;
 
+import elemental.json.impl.JsonUtil;
 import org.jboss.resteasy.plugins.providers.ProviderHelper;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
@@ -46,7 +47,7 @@ public class ElementalMessageBodyConverter implements MessageBodyReader<Value>, 
     @Override
     public Value readFrom(Class<Value> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
         String str = ProviderHelper.readString(entityStream, mediaType);
-        return Values.parse(str);
+        return Values.parse(str).orElseThrow(() -> new IOException("Empty JSON data"));
     }
 
     @Override

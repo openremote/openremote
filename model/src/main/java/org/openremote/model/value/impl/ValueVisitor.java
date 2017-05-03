@@ -163,9 +163,4 @@ class ValueVisitor {
         return true;
     }
 
-    /**
-     * Called for nulls present in an object.
-     */
-    public void visitNull(ValueContext ctx) {
-    }
 }

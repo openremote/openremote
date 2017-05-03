@@ -27,21 +27,6 @@ public class BooleanValueImpl extends ValueImpl implements BooleanValue {
     }
 
     @Override
-    public boolean asBoolean() {
-        return getBoolean();
-    }
-
-    @Override
-    public double asNumber() {
-        return getBoolean() ? 1 : 0;
-    }
-
-    @Override
-    public String asString() {
-        return Boolean.toString(getBoolean());
-    }
-
-    @Override
     public boolean getBoolean() {
         return bool;
     }

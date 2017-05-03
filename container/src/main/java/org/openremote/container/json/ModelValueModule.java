@@ -43,7 +43,7 @@ public class ModelValueModule extends SimpleModule {
         @Override
         public T deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException {
             try {
-                return (T) Values.instance().parse(jsonParser.getCodec().readTree(jsonParser).toString());
+                return (T) Values.instance().parse(jsonParser.getCodec().readTree(jsonParser).toString()).orElse(null);
             } catch (ValueException ex) {
                 throw new IOException(ex);
             }
@@ -53,11 +53,7 @@ public class ModelValueModule extends SimpleModule {
     private static class ValueJsonSerializer extends JsonSerializer<Value> {
         @Override
         public void serialize(Value value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            if (value == null)
-                return;
-            if (value instanceof Null) {
-                gen.writeNull();
-            } else {
+            if (value != null) {
                 try {
                     gen.writeRawValue(value.toJson());
                 } catch (ValueException ex) {
@@ -75,7 +71,6 @@ public class ModelValueModule extends SimpleModule {
         this.addSerializer(Value.class, serializer);
         this.addDeserializer(ObjectValue.class, deserializer);
         this.addDeserializer(ArrayValue.class, deserializer);
-        this.addDeserializer(Null.class, deserializer);
         this.addDeserializer(StringValue.class, deserializer);
         this.addDeserializer(NumberValue.class, deserializer);
         this.addDeserializer(BooleanValue.class, deserializer);

@@ -15,70 +15,21 @@
  */
 package org.openremote.model.value;
 
+import java.util.Optional;
+
 public interface ArrayValue extends Value {
 
-    /**
-     * Return the ith element of the array.
-     */
-    <T extends Value> T get(int index);
+    <T extends Value> Optional<T> get(int index);
 
-    /**
-     * Return the ith element of the array (uncoerced). If the type is not an array,
-     * this can result in runtime errors.
-     */
-    ArrayValue getArray(int index);
-
-    /**
-     * Return the ith element of the array (uncoerced). If the type is not a boolean,
-     * this can result in runtime errors.
-     */
-    boolean getBoolean(int index);
-
-    /**
-     * Return the ith element of the array (uncoerced). If the type is not a number, this
-     * can result in runtime errors.
-     */
-    double getNumber(int index);
-
-    /**
-     * Return the ith element of the array (uncoerced). If the type is not an object,,
-     * this can result in runtime errors.
-     */
-    ObjectValue getObject(int index);
-
-    /**
-     * Return the ith element of the array (uncoerced). If the type is not a String, this
-     * can result in runtime errors.
-     */
-    String getString(int index);
-
-    /**
-     * Length of the array.
-     */
     int length();
 
-    /**
-     * Remove an element of the array at a particular index.
-     */
     void remove(int index);
 
-    /**
-     * Set the value at index to be a given value.
-     */
     void set(int index, Value value);
 
-    /**
-     * Set the value at index to be a String value.
-     */
     void set(int index, String string);
 
-    /**
-     * Set the value at index to be a number value.
-     */
     void set(int index, double number);
 
-    /**
-     * Set the value at index to be a boolean value.
-     */
     void set(int index, boolean bool);
 }

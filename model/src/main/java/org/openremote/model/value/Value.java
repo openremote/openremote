@@ -23,21 +23,6 @@ package org.openremote.model.value;
 public interface Value {
 
     /**
-     * Coerces underlying value to boolean according to the rules of Javascript coercion.
-     */
-    boolean asBoolean();
-
-    /**
-     * Coerces the underlying value to a number according to the rules of Javascript coercion.
-     */
-    double asNumber();
-
-    /**
-     * Coerces the underlying value to a String according to the rules of JavaScript coercion.
-     */
-    String asString();
-
-    /**
      * Returns an enumeration representing the fundamental type.
      */
     ValueType getType();

@@ -17,6 +17,8 @@ package org.openremote.model.value.impl;
 
 import org.openremote.model.value.*;
 
+import java.util.Optional;
+
 public class ValueFactoryImpl implements ValueFactory {
 
     public static final ValueFactoryImpl INSTANCE = new ValueFactoryImpl();
@@ -43,17 +45,12 @@ public class ValueFactoryImpl implements ValueFactory {
     }
 
     @Override
-    public Null createNull() {
-        return NullImpl.NULL_INSTANCE;
-    }
-
-    @Override
     public ObjectValue createObject() {
         return new ObjectValueImpl(this);
     }
 
     @Override
-    public <T extends Value> T parse(String jsonString) throws ValueException {
+    public <T extends Value> Optional<T> parse(String jsonString) throws ValueException {
         if (jsonString.startsWith("(") && jsonString.endsWith(")")) {
             // some clients send in (json) expecting an eval is required
             jsonString = jsonString.substring(1, jsonString.length() - 1);

@@ -15,6 +15,8 @@
  */
 package org.openremote.model.value;
 
+import java.util.Optional;
+
 /**
  * Object values can not have duplicate keys. For equality operations, objects
  * are equal if their key sets are equal and each key has the same value in both
@@ -22,75 +24,19 @@ package org.openremote.model.value;
  */
 public interface ObjectValue extends Value {
 
-    /**
-     * Return the element (uncoerced).
-     */
-    <T extends Value> T get(String key);
+    <T extends Value> Optional<T> get(String key);
 
-    /**
-     * Return the element (uncoerced) as a JsonArray. If the type is not an array,
-     * this can result in runtime errors.
-     */
-    ArrayValue getArray(String key);
-
-    /**
-     * Return the element (uncoerced) as a boolean. If the type is not a boolean,
-     * this can result in runtime errors.
-     */
-    boolean getBoolean(String key);
-
-    /**
-     * Return the element (uncoerced) as a number. If the type is not a number, this
-     * can result in runtime errors.
-     */
-    double getNumber(String key);
-
-    /**
-     * Return the element (uncoerced) as a JsonObject If the type is not an object,,
-     * this can result in runtime errors.
-     */
-    ObjectValue getObject(String key);
-
-    /**
-     * Return the element (uncoerced) as a String. If the type is not a String, this
-     * can result in runtime errors.
-     */
-    String getString(String key);
-
-    /**
-     * All keys of the object.
-     */
     String[] keys();
 
-    /**
-     * Set a given key to the given value.
-     */
     void put(String key, Value value);
 
-    /**
-     * Set a given key to the given String value.
-     */
     void put(String key, String value);
 
-    /**
-     * Set a given key to the given double value.
-     */
     void put(String key, double value);
 
-    /**
-     * Set a given key to the given boolean value.
-     */
     void put(String key, boolean bool);
 
-    /**
-     * Test whether a given key has present.
-     */
     boolean hasKey(String key);
 
-    /**
-     * Remove a given key and associated value from the object.
-     *
-     * @param key
-     */
     void remove(String key);
 }

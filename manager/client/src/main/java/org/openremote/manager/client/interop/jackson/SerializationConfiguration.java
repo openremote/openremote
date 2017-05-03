@@ -39,7 +39,6 @@ public class SerializationConfiguration extends AbstractConfiguration {
         type(Value.class).serializer(ModelValueSerializer.class).deserializer(ModelValueDeserializer.class);
         type(ObjectValue.class).serializer(ModelValueSerializer.class).deserializer(ModelValueDeserializer.class);
         type(ArrayValue.class).serializer(ModelValueSerializer.class).deserializer(ModelValueDeserializer.class);
-        type(Null.class).serializer(ModelValueSerializer.class).deserializer(ModelValueDeserializer.class);
         type(NumberValue.class).serializer(ModelValueSerializer.class).deserializer(ModelValueDeserializer.class);
         type(StringValue.class).serializer(ModelValueSerializer.class).deserializer(ModelValueDeserializer.class);
         type(BooleanValue.class).serializer(ModelValueSerializer.class).deserializer(ModelValueDeserializer.class);

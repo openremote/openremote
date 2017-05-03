@@ -28,7 +28,7 @@ public class ObjectValueMapper implements EntityReader<ObjectValue>, EntityWrite
 
     @Override
     public ObjectValue read(String value) {
-        return Values.parse(value);
+        return Values.<ObjectValue>parse(value).orElseThrow(() -> new RuntimeException("Empty JSON data"));
     }
 
     @Override

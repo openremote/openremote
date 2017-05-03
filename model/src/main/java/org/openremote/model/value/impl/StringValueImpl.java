@@ -28,29 +28,6 @@ public class StringValueImpl extends ValueImpl implements StringValue {
     }
 
     @Override
-    public boolean asBoolean() {
-        return !getString().isEmpty();
-    }
-
-    @Override
-    public double asNumber() {
-        try {
-            if (asString().isEmpty()) {
-                return 0.0;
-            } else {
-                return Double.parseDouble(asString());
-            }
-        } catch (NumberFormatException nfe) {
-            return Double.NaN;
-        }
-    }
-
-    @Override
-    public String asString() {
-        return getString();
-    }
-
-    @Override
     public String getObject() {
         return getString();
     }

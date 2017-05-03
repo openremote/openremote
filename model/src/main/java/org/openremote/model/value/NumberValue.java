@@ -18,4 +18,15 @@ package org.openremote.model.value;
 public interface NumberValue extends Value {
 
     double getNumber();
+
+    // Convenience coercion method
+    default String asString() {
+        return toJson();
+    }
+
+    // Convenience coercion method
+    static NumberValue fromString(String s) {
+        return Values.create(Double.valueOf(s));
+    }
+
 }

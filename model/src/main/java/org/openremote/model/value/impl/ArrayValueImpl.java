@@ -19,6 +19,7 @@ import org.openremote.model.value.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class ArrayValueImpl extends ValueImpl implements ArrayValue {
 
@@ -29,59 +30,10 @@ public class ArrayValueImpl extends ValueImpl implements ArrayValue {
         this.factory = factory;
     }
 
-    @Override
-    public boolean asBoolean() {
-        return true;
-    }
-
-    @Override
-    public double asNumber() {
-        switch (length()) {
-            case 0:
-                return 0;
-            case 1:
-                return get(0).asNumber();
-            default:
-                return Double.NaN;
-        }
-    }
-
-    @Override
-    public String asString() {
-        StringBuilder toReturn = new StringBuilder();
-        for (int i = 0; i < length(); i++) {
-            if (i > 0) {
-                toReturn.append(", ");
-            }
-            toReturn.append(get(i).asString());
-        }
-        return toReturn.toString();
-    }
-
     @SuppressWarnings("unchecked")
     @Override
-    public Value get(int index) {
-        return values.get(index);
-    }
-
-    @Override
-    public ArrayValue getArray(int index) {
-        return (ArrayValue) get(index);
-    }
-
-    @Override
-    public boolean getBoolean(int index) {
-        return ((BooleanValue) get(index)).getBoolean();
-    }
-
-    @Override
-    public double getNumber(int index) {
-        return ((NumberValue) get(index)).getNumber();
-    }
-
-    @Override
-    public ObjectValue getObject(int index) {
-        return (ObjectValue) get(index);
+    public <T extends Value> Optional<T> get(int index) {
+        return index >= 0 && values.size() > index ? Optional.of((T) values.get(index)) : Optional.empty();
     }
 
     @Override
@@ -91,11 +43,6 @@ public class ArrayValueImpl extends ValueImpl implements ArrayValue {
             objs.add(((ValueImpl) val).getObject());
         }
         return objs;
-    }
-
-    @Override
-    public String getString(int index) {
-        return ((StringValue) get(index)).getString();
     }
 
     @Override
@@ -115,10 +62,9 @@ public class ArrayValueImpl extends ValueImpl implements ArrayValue {
 
     @Override
     public void set(int index, Value value) {
-        if (value == null) {
-            value = factory.createNull();
-        }
-        if (index == values.size()) {
+        if (value == null && index >= 0 && index < values.size()) {
+            values.remove(index);
+        } else if (index == values.size()) {
             values.add(index, value);
         } else {
             values.set(index, value);
@@ -152,8 +98,11 @@ public class ArrayValueImpl extends ValueImpl implements ArrayValue {
             for (int i = 0; i < length(); i++) {
                 arrayCtx.setCurrentIndex(i);
                 if (visitor.visitIndex(arrayCtx.getCurrentIndex(), arrayCtx)) {
-                    visitor.accept(get(i), arrayCtx);
-                    arrayCtx.setFirst(false);
+                    Optional<Value> value = get(i);
+                    if (value.isPresent()) {
+                        visitor.accept(value.get(), arrayCtx);
+                        arrayCtx.setFirst(false);
+                    }
                 }
             }
         }

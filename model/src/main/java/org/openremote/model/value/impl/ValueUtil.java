@@ -15,7 +15,10 @@
  */
 package org.openremote.model.value.impl;
 
-import org.openremote.model.value.*;
+import org.openremote.model.value.ArrayValue;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueException;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -143,11 +146,6 @@ public class ValueUtil {
             return true;
         }
 
-        @Override
-        public void visitNull(ValueContext ctx) {
-            sb.append("null");
-        }
-
         private void checkCycle(Value value) throws ValueException {
             if (visited.contains(value)) {
                 throw new ValueException("Cycled detected during stringify");
@@ -189,10 +187,6 @@ public class ValueUtil {
             }
         }
         return toReturn.toString();
-    }
-
-    public static <T extends Value> T parse(String json) throws ValueException {
-        return Values.instance().parse(json);
     }
 
     /**

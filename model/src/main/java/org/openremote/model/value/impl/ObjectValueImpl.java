@@ -43,44 +43,10 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
         this.factory = factory;
     }
 
-    @Override
-    public boolean asBoolean() {
-        return true;
-    }
-
-    @Override
-    public double asNumber() {
-        return Double.NaN;
-    }
-
-    @Override
-    public String asString() {
-        return "[object Object]";
-    }
-
     @SuppressWarnings("unchecked")
-    public <T extends Value> T get(String key) {
-        return (T) map.get(key);
-    }
-
     @Override
-    public ArrayValue getArray(String key) {
-        return (ArrayValue) get(key);
-    }
-
-    @Override
-    public boolean getBoolean(String key) {
-        return ((BooleanValue) get(key)).getBoolean();
-    }
-
-    @Override
-    public double getNumber(String key) {
-        return ((NumberValue) get(key)).getNumber();
-    }
-
-    @Override
-    public ObjectValue getObject(String key) {
-        return (ObjectValue) get(key);
+    public <T extends Value> Optional<T> get(String key) {
+        return map.containsKey(key) ? Optional.of((T) map.get(key)) : Optional.empty();
     }
 
     @Override
@@ -90,11 +56,6 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
             obj.put(e.getKey(), ((ValueImpl) e.getValue()).getObject());
         }
         return obj;
-    }
-
-    @Override
-    public String getString(String key) {
-        return ((StringValue) get(key)).getString();
     }
 
     @Override
@@ -115,14 +76,19 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
     @Override
     public void put(String key, Value value) {
         if (value == null) {
-            value = factory.createNull();
+            map.remove(key);
+        } else {
+            map.put(key, value);
         }
-        map.put(key, value);
     }
 
     @Override
     public void put(String key, String value) {
-        put(key, factory.create(value));
+        if (value == null) {
+            remove(key);
+        } else {
+            put(key, factory.create(value));
+        }
     }
 
     @Override
@@ -140,10 +106,6 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
         map.remove(key);
     }
 
-    public void set(String key, Value value) {
-        put(key, value);
-    }
-
     @Override
     public String toJson() throws ValueException {
         return ValueUtil.stringify(this);
@@ -156,8 +118,11 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
             for (String key : stringifyOrder(keys())) {
                 objCtx.setCurrentKey(key);
                 if (visitor.visitKey(objCtx.getCurrentKey(), objCtx)) {
-                    visitor.accept(get(key), objCtx);
-                    objCtx.setFirst(false);
+                    Optional<Value> value = get(key);
+                    if (value.isPresent()) {
+                        visitor.accept(value.get(), objCtx);
+                        objCtx.setFirst(false);
+                    }
                 }
             }
         }

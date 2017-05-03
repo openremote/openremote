@@ -17,6 +17,8 @@ package org.openremote.model.value;
 
 import org.openremote.model.value.impl.ValueFactoryImpl;
 
+import java.util.Optional;
+
 /**
  * Vends out implementations of {@link Value} and {@link ValueFactory}.
  */
@@ -34,10 +36,6 @@ public class Values {
         return instance().createArray();
     }
 
-    public static Null createNull() {
-        return instance().createNull();
-    }
-
     public static NumberValue create(double number) {
         return instance().create(number);
     }
@@ -50,7 +48,7 @@ public class Values {
         return ValueFactoryImpl.INSTANCE;
     }
 
-    public static <T extends Value> T parse(String jsonString) throws ValueException {
+    public static <T extends Value> Optional<T> parse(String jsonString) throws ValueException {
         return instance().parse(jsonString);
     }
 }
