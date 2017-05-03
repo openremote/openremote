@@ -420,6 +420,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                 assetStorageService,
                 notificationService,
                 assetProcessingService,
+			    identityService,
                 GlobalRuleset.class,
                 "GLOBAL"
             );
@@ -454,6 +455,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     assetStorageService,
                     notificationService,
                     assetProcessingService,
+				    identityService,
                     TenantRuleset.class,
                     realmId
                 );
@@ -518,6 +520,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     assetStorageService,
                     notificationService,
                     assetProcessingService,
+					identityService,
                     AssetRuleset.class,
                     assetId
                 );
