@@ -36,6 +36,7 @@ import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.manager.shared.security.TenantEmailConfig;
+import org.openremote.manager.shared.security.User;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetTreeModifiedEvent;
 
@@ -229,6 +230,13 @@ public class ManagerIdentityService extends IdentityService {
             throw new IllegalArgumentException("User ID must be set on: " + userConfiguration);
         }
         return persistenceService.doReturningTransaction(em -> em.merge(userConfiguration));
+    }
+
+    public boolean isUserInTenant(String userId, String tenantId) {
+        return persistenceService.doReturningTransaction(em -> {
+            User user = em.find(User.class, userId);
+            return (user != null&& tenantId.equals(user.getRealmId()));
+        });
     }
 
     /**
