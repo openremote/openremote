@@ -24,7 +24,17 @@ import java.util.Optional;
  */
 public interface ObjectValue extends Value {
 
-    <T extends Value> Optional<T> get(String key);
+    Optional<Value> get(String key);
+
+    Optional<String> getString(String key);
+
+    Optional<Boolean> getBoolean(String key);
+
+    Optional<Double> getNumber(String key);
+
+    Optional<ArrayValue> getArray(String key);
+
+    Optional<ObjectValue> getObject(String key);
 
     String[] keys();
 

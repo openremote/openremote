@@ -19,45 +19,25 @@
  */
 package org.openremote.model.geo;
 
-import elemental.json.Json;
-import elemental.json.JsonArray;
-import elemental.json.JsonObject;
-import elemental.json.JsonType;
+import org.openremote.model.AbstractTypeHolder;
+import org.openremote.model.value.ArrayValue;
+import org.openremote.model.value.Values;
 
-public class GeoJSON {
+public class GeoJSON extends AbstractTypeHolder {
 
-    public static final GeoJSON EMPTY_FEATURE_COLLECTION = new GeoJSON().setType("FeatureCollection").setEmptyFeatures();
+    public static final GeoJSON EMPTY_FEATURE_COLLECTION = new GeoJSON("FeatureCollection").setEmptyFeatures();;
 
-    protected JsonObject jsonObject;
-
-    public GeoJSON() {
-        this(Json.createObject());
-    }
-
-    public GeoJSON(JsonObject jsonObject) {
-        this.jsonObject = jsonObject;
-    }
-
-    public JsonObject getJsonObject() {
-        return jsonObject;
-    }
-
-    public GeoJSON setType(String type) {
-        jsonObject.put("type", type);
-        return this;
-    }
-
-    public String getType() {
-        return jsonObject.hasKey("type") ? jsonObject.get("type").asString() : null;
+    public GeoJSON(String type) {
+        super(type);
     }
 
     public GeoJSON setFeatures(GeoJSONFeature... features) {
         if (features != null) {
             for (int i = 0; i < features.length; i++) {
                 GeoJSONFeature feature = features[i];
-                JsonArray array = Json.createArray();
-                array.set(i, feature.getJsonObject());
-                jsonObject.put("features", array);
+                ArrayValue array = Values.createArray();
+                array.set(i, feature.getObjectValue());
+                objectValue.put("features", array);
             }
         } else {
             return setEmptyFeatures();
@@ -66,25 +46,7 @@ public class GeoJSON {
     }
 
     public GeoJSON setEmptyFeatures() {
-        jsonObject.put("features", Json.createArray());
+        objectValue.put("features", Values.createArray());
         return this;
-    }
-
-    public GeoJSONFeature[] getFeatures() {
-        if (jsonObject.hasKey("features") && jsonObject.get("features").getType() == JsonType.ARRAY) {
-            JsonArray array = jsonObject.getArray("features");
-            GeoJSONFeature[] result = new GeoJSONFeature[array.length()];
-            for (int i = 0; i < array.length(); i++) {
-                result[i] = new GeoJSONFeature(array.getObject(i));
-            }
-            return result;
-        } else {
-            return new GeoJSONFeature[0];
-        }
-    }
-
-    @Override
-    public String toString() {
-        return jsonObject.toJson();
     }
 }

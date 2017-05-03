@@ -16,6 +16,7 @@
 package org.openremote.model.value.impl;
 
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsonUtils;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueException;
@@ -23,20 +24,20 @@ import org.openremote.model.value.ValueException;
 public abstract class ValueImpl implements Value {
 
     @Override
-    public Object toNative() throws ValueException {
+    public JavaScriptObject asNativeObject() throws ValueException {
         if (GWT.isClient())
             return JsonUtils.safeEval(this.toJson());
         else
-            return this;
+            throw new ValueException("Not a GWT/JavaScript runtime environment");
     }
 
     @Override
     public String toString() {
-        Object o = getObject();
+        Object o = asObject();
         return o != null ? o.toString() : "null";
     }
 
-    public abstract Object getObject();
+    public abstract Object asObject();
 
     public abstract void traverse(ValueVisitor visitor, ValueContext ctx) throws ValueException;
 

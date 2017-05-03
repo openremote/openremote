@@ -30,17 +30,51 @@ public class ArrayValueImpl extends ValueImpl implements ArrayValue {
         this.factory = factory;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public <T extends Value> Optional<T> get(int index) {
-        return index >= 0 && values.size() > index ? Optional.of((T) values.get(index)) : Optional.empty();
+    public Optional<Value> get(int index) {
+        return index >= 0 && values.size() > index ? Optional.of(values.get(index)) : Optional.empty();
     }
 
     @Override
-    public List<Object> getObject() {
+    public Optional<String> getString(int index) {
+        return get(index)
+            .filter(value -> value.getType() == ValueType.STRING && value instanceof StringValue)
+            .map(value -> ((StringValue)value).getString());
+    }
+
+    @Override
+    public Optional<Boolean> getBoolean(int index) {
+        return get(index)
+            .filter(value -> value.getType() == ValueType.BOOLEAN && value instanceof BooleanValue)
+            .map(value -> ((BooleanValue)value).getBoolean());
+    }
+
+    @Override
+    public Optional<Double> getNumber(int index) {
+        return get(index)
+            .filter(value -> value.getType() == ValueType.NUMBER && value instanceof NumberValue)
+            .map(value -> ((NumberValue)value).getNumber());
+    }
+
+    @Override
+    public Optional<ArrayValue> getArray(int index) {
+        return get(index)
+            .filter(value -> value.getType() == ValueType.ARRAY && value instanceof ArrayValue)
+            .map(value -> ((ArrayValue)value));
+    }
+
+    @Override
+    public Optional<ObjectValue> getObject(int index) {
+        return get(index)
+            .filter(value -> value.getType() == ValueType.OBJECT && value instanceof ObjectValue)
+            .map(value -> ((ObjectValue)value));
+    }
+
+    @Override
+    public List<Object> asObject() {
         List<Object> objs = new ArrayList<>();
         for (Value val : values) {
-            objs.add(((ValueImpl) val).getObject());
+            objs.add(((ValueImpl) val).asObject());
         }
         return objs;
     }

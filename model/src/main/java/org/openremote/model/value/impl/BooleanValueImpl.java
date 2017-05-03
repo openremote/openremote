@@ -32,7 +32,7 @@ public class BooleanValueImpl extends ValueImpl implements BooleanValue {
     }
 
     @Override
-    public Boolean getObject() {
+    public Boolean asObject() {
         return getBoolean();
     }
 

@@ -15,6 +15,8 @@
  */
 package org.openremote.model.value;
 
+import com.google.gwt.core.client.JavaScriptObject;
+
 /**
  * Base interface for all values. This is a Java API for a JSON model and instances
  * may be serialized into JSON text with {@link #toJson()} or parsed from JSON text
@@ -35,8 +37,8 @@ public interface Value {
     /**
      * If used in a GWT context, converts the object to a native
      * {@link com.google.gwt.core.client.JavaScriptObject} suitable for passing to
-     * native and {@link jsinterop.annotations.JsType} methods. Otherwise, returns
-     * the current object in other contexts, such as server-side use.
+     * native and {@link jsinterop.annotations.JsType} methods. Otherwise, throws
+     * {@link ValueException}.
      */
-    Object toNative() throws ValueException;
+    JavaScriptObject asNativeObject() throws ValueException;
 }

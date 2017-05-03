@@ -21,8 +21,6 @@ package org.openremote.manager.client.interop.mapbox;
 
 import com.google.gwt.core.client.JavaScriptObject;
 import elemental.dom.Node;
-import elemental.json.JsonArray;
-import elemental.json.JsonObject;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 
@@ -38,14 +36,14 @@ public class MapboxMap {
     public MapboxMap(JavaScriptObject options) {}
 
     public native MapboxMap addClass(String className);
-    public native MapboxMap addClass(String className, JsonObject styleOptions);
+    public native MapboxMap addClass(String className, JavaScriptObject styleOptions);
 
     public native MapboxMap addControl(Control control);
 
     public native MapboxMap addLayer(JavaScriptObject layer);
     public native MapboxMap addLayer(JavaScriptObject layer, String beforeLayerId);
 
-    public native MapboxMap addSource(String sourceId, JsonObject source);
+    public native MapboxMap addSource(String sourceId, JavaScriptObject source);
     public native GeoJSONSource getSource(String sourceId);
 
     // TODO: add batch method fucntionality to map
@@ -57,17 +55,17 @@ public class MapboxMap {
     public native MapboxMap easeTo(CameraOptions cameraOptions);
     public native MapboxMap easeTo(AnimationOptions animationOptions);
 
-    public native MapboxMap featuresAt(Point point, JsonObject options, FeaturesCallbackFn callbackFn);
+    public native MapboxMap featuresAt(Point point, JavaScriptObject options, FeaturesCallbackFn callbackFn);
 
-    public native MapboxMap featuresIn(JsonObject options, FeaturesCallbackFn callbackFn);
-    public native MapboxMap featuresIn(Point[] bounds, JsonObject options, FeaturesCallbackFn callbackFn);
+    public native MapboxMap featuresIn(JavaScriptObject options, FeaturesCallbackFn callbackFn);
+    public native MapboxMap featuresIn(Point[] bounds, JavaScriptObject options, FeaturesCallbackFn callbackFn);
 
-    public native MapboxMap fitBounds(LngLatBounds bounds, JsonObject options);
-    public native MapboxMap fitBounds(LngLatBounds bounds, JsonObject options, EventData eventData);
+    public native MapboxMap fitBounds(LngLatBounds bounds, JavaScriptObject options);
+    public native MapboxMap fitBounds(LngLatBounds bounds, JavaScriptObject options, EventData eventData);
 
-    public native MapboxMap flyTo(JsonObject options);
+    public native MapboxMap flyTo(JavaScriptObject options);
 
-    public native MapboxMap flyTo(JsonObject options, EventData eventData);
+    public native MapboxMap flyTo(JavaScriptObject options, EventData eventData);
 
     public native double getBearing();
 
@@ -83,7 +81,7 @@ public class MapboxMap {
 
     public native Node getContainer();
 
-    public native JsonArray getFilter(String layerId);
+    public native JavaScriptObject getFilter(String layerId);
 
     public native JavaScriptObject getLayer(String layerId);
 
@@ -95,7 +93,7 @@ public class MapboxMap {
 
     public native double getPitch();
 
-    public native JsonObject getStyle();
+    public native JavaScriptObject getStyle();
 
     public native int getZoom();
 
@@ -110,12 +108,12 @@ public class MapboxMap {
     public native MapboxMap panTo(LngLat lngLat, AnimationOptions options);
     public native MapboxMap panTo(LngLat lngLat, AnimationOptions options, EventData eventData);
 
-    public native JsonObject project(LngLat lngLat);
+    public native JavaScriptObject project(LngLat lngLat);
 
     public native void remove();
 
     public native MapboxMap removeClass(String className);
-    public native MapboxMap removeClass(String className, JsonObject options);
+    public native MapboxMap removeClass(String className, JavaScriptObject options);
 
     public native MapboxMap removeLayer(String layerId);
 
@@ -142,9 +140,9 @@ public class MapboxMap {
     public native MapboxMap setCenter(LngLat center, EventData eventData);
 
     public native MapboxMap setClasses(String[] classNames);
-    public native MapboxMap setClasses(String[] classNames, JsonObject options);
+    public native MapboxMap setClasses(String[] classNames, JavaScriptObject options);
 
-    public native MapboxMap setFilter(String layerId, JsonObject filter);
+    public native MapboxMap setFilter(String layerId, JavaScriptObject filter);
 
     public native MapboxMap setLayerZoomRange(String layerId, int minZoom, int maxZoom);
 
@@ -156,7 +154,7 @@ public class MapboxMap {
     public native MapboxMap setPitch(int pitch);
     public native MapboxMap setPitch(int pitch, EventData eventData);
 
-    public native MapboxMap setStyle(JsonObject style);
+    public native MapboxMap setStyle(JavaScriptObject style);
 
     public native MapboxMap setZoom(int zoom);
     public native MapboxMap setZoom(int zoom, EventData eventData);

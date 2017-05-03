@@ -16,10 +16,21 @@
 package org.openremote.model.value;
 
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public interface ArrayValue extends Value {
 
-    <T extends Value> Optional<T> get(int index);
+    Optional<Value> get(int index);
+
+    Optional<String> getString(int index);
+
+    Optional<Boolean> getBoolean(int index);
+
+    Optional<Double> getNumber(int index);
+
+    Optional<ArrayValue> getArray(int index);
+
+    Optional<ObjectValue> getObject(int index);
 
     int length();
 

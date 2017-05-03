@@ -32,7 +32,7 @@ public class NumberValueImpl extends ValueImpl implements NumberValue {
     }
 
     @Override
-    public Double getObject() {
+    public Double asObject() {
         return getNumber();
     }
 

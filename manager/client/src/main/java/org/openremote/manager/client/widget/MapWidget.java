@@ -21,16 +21,14 @@ package org.openremote.manager.client.widget;
 
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.dom.client.Document;
-import com.google.gwt.dom.client.Element;
 import com.google.gwt.user.client.ui.FlowPanel;
 import elemental.client.Browser;
 import elemental.js.util.*;
-import elemental.json.Json;
-import elemental.json.JsonArray;
-import elemental.json.JsonObject;
 import org.openremote.manager.client.interop.mapbox.*;
 import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Values;
 
 import java.util.logging.Logger;
 
@@ -153,7 +151,7 @@ public class MapWidget extends FlowPanel {
 
         mapOptions.put("container", hostElementId);
         mapOptions.put("attributionControl", false);
-        mapboxMap = new MapboxMap((JavaScriptObject) mapOptions.toNative());
+        mapboxMap = new MapboxMap(mapOptions.asNativeObject());
 
         mapboxMap.on(EventType.LOAD, eventData -> {
             initFeatureLayers();
@@ -199,10 +197,10 @@ public class MapWidget extends FlowPanel {
     public void showPopup(double lng, double lat, String text) {
         if (!isMapReady())
             throw new IllegalStateException("Map not ready");
-        JsonObject popupOptions = Json.createObject();
-        popupOptions.put("closeOnClick", Json.create(false));
-        popupOptions.put("closeButton", Json.create(false));
-        popup = new Popup(popupOptions);
+        ObjectValue popupOptions = Values.createObject();
+        popupOptions.put("closeOnClick", Values.create(false));
+        popupOptions.put("closeButton", Values.create(false));
+        popup = new Popup(popupOptions.asNativeObject());
         popup.setLngLat(new LngLat(lng, lat)).setText(text);
         popup.addTo(mapboxMap);
     }
@@ -220,7 +218,7 @@ public class MapWidget extends FlowPanel {
         if (mapboxMap.getSource(featureSourceId) == null)
             throw new IllegalArgumentException("Map has no such feature source: " + featureSourceId);
         LOG.fine("Showing feature on source '" + featureSourceId + "': " + geoFeature);
-        mapboxMap.getSource(featureSourceId).setData(geoFeature.getJsonObject());
+        mapboxMap.getSource(featureSourceId).setData(geoFeature.getObjectValue().asNativeObject());
     }
 
     public void flyTo(double[] coordinates) {
@@ -228,42 +226,39 @@ public class MapWidget extends FlowPanel {
             throw new IllegalStateException("Map not ready");
         if (coordinates == null || coordinates.length != 2)
             return;
-        JsonObject json = Json.createObject();
-        JsonArray center = Json.createArray();
+        ObjectValue options = Values.createObject();
+        ArrayValue center = Values.createArray();
         center.set(0, coordinates[0]);
         center.set(1, coordinates[1]);
-        json.put("center", center);
-        mapboxMap.flyTo(json);
+        options.put("center", center);
+        mapboxMap.flyTo(options.asNativeObject());
     }
 
     protected void initFeatureLayers() {
         LOG.fine("Adding GeoJSON feature sources and layers on map load");
 
-        JsonObject sourceOptionsSelection = prepareSourceOptions(FEATURE_SOURCE_DROPPED_PIN);
-        mapboxMap.addSource(FEATURE_SOURCE_DROPPED_PIN, sourceOptionsSelection);
+        ObjectValue sourceOptionsSelection = prepareSourceOptions(FEATURE_SOURCE_DROPPED_PIN);
+        mapboxMap.addSource(FEATURE_SOURCE_DROPPED_PIN, sourceOptionsSelection.asNativeObject());
         mapboxMap.addLayer(LAYER_DROPPED_PIN);
 
-        JsonObject sourceOptionsAll = prepareSourceOptions(FEATURE_SOURCE_CIRCLE);
-        sourceOptionsAll.put("maxzoom", Json.create(20));
-        sourceOptionsAll.put("buffer", Json.create(128));
-        sourceOptionsAll.put("tolerance", Json.create(0.375));
-        sourceOptionsAll.put("cluster", Json.create(false));
-        sourceOptionsAll.put("clusterRadius", Json.create(50));
-        sourceOptionsAll.put("clusterMaxZoom", Json.create(15));
+        ObjectValue sourceOptionsAll = prepareSourceOptions(FEATURE_SOURCE_CIRCLE);
+        sourceOptionsAll.put("maxzoom", Values.create(20));
+        sourceOptionsAll.put("buffer", Values.create(128));
+        sourceOptionsAll.put("tolerance", Values.create(0.375));
+        sourceOptionsAll.put("cluster", Values.create(false));
+        sourceOptionsAll.put("clusterRadius", Values.create(50));
+        sourceOptionsAll.put("clusterMaxZoom", Values.create(15));
 
-        // TODO something weird is going on with JS interop, this helps for now
-        sourceOptionsAll = Json.parse(sourceOptionsAll.toJson());
-
-        mapboxMap.addSource(FEATURE_SOURCE_CIRCLE, sourceOptionsAll);
+        mapboxMap.addSource(FEATURE_SOURCE_CIRCLE, sourceOptionsAll.asNativeObject());
         mapboxMap.addLayer(LAYER_CIRCLE, FEATURE_LAYER_DROPPED_PIN);
     }
 
-    protected JsonObject prepareSourceOptions(String featureSourceId) {
-        JsonObject sourceOptions = Json.createObject();
+    protected ObjectValue prepareSourceOptions(String featureSourceId) {
+        ObjectValue sourceOptions = Values.createObject();
         // Initialize with empty collection
-        JsonObject initialData = GeoJSON.EMPTY_FEATURE_COLLECTION.getJsonObject();
+        ObjectValue initialData = GeoJSON.EMPTY_FEATURE_COLLECTION.getObjectValue();
         LOG.fine("Preparing initial data on feature source: " + featureSourceId);
-        sourceOptions.put("type", Json.create("geojson"));
+        sourceOptions.put("type", Values.create("geojson"));
         sourceOptions.put("data", initialData);
         return sourceOptions;
     }

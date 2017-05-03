@@ -43,17 +43,51 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
         this.factory = factory;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public <T extends Value> Optional<T> get(String key) {
-        return map.containsKey(key) ? Optional.of((T) map.get(key)) : Optional.empty();
+    public Optional<Value> get(String key) {
+        return map.containsKey(key) ? Optional.of(map.get(key)) : Optional.empty();
     }
 
     @Override
-    public Map<String, Object> getObject() {
+    public Optional<String> getString(String key) {
+        return get(key)
+            .filter(value -> value.getType() == ValueType.STRING && value instanceof StringValue)
+            .map(value -> ((StringValue)value).getString());
+    }
+
+    @Override
+    public Optional<Boolean> getBoolean(String key) {
+        return get(key)
+            .filter(value -> value.getType() == ValueType.BOOLEAN && value instanceof BooleanValue)
+            .map(value -> ((BooleanValue)value).getBoolean());
+    }
+
+    @Override
+    public Optional<Double> getNumber(String key) {
+        return get(key)
+            .filter(value -> value.getType() == ValueType.NUMBER && value instanceof NumberValue)
+            .map(value -> ((NumberValue)value).getNumber());
+    }
+
+    @Override
+    public Optional<ArrayValue> getArray(String key) {
+        return get(key)
+            .filter(value -> value.getType() == ValueType.ARRAY && value instanceof ArrayValue)
+            .map(value -> ((ArrayValue)value));
+    }
+
+    @Override
+    public Optional<ObjectValue> getObject(String key) {
+        return get(key)
+            .filter(value -> value.getType() == ValueType.OBJECT && value instanceof ObjectValue)
+            .map(value -> ((ObjectValue)value));
+    }
+
+    @Override
+    public Map<String, Object> asObject() {
         Map<String, Object> obj = new HashMap<>();
         for (Map.Entry<String, Value> e : map.entrySet()) {
-            obj.put(e.getKey(), ((ValueImpl) e.getValue()).getObject());
+            obj.put(e.getKey(), ((ValueImpl) e.getValue()).asObject());
         }
         return obj;
     }
@@ -157,7 +191,7 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
     public int hashCode() {
         int result = 31;
         result = result * 3;
-        result = result * getObject().hashCode();
+        result = result * asObject().hashCode();
         return result;
     }
 

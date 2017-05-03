@@ -19,47 +19,25 @@
  */
 package org.openremote.model.geo;
 
-import elemental.json.Json;
-import elemental.json.JsonArray;
-import elemental.json.JsonObject;
+import org.openremote.model.AbstractTypeHolder;
+import org.openremote.model.value.ArrayValue;
+import org.openremote.model.value.Values;
 
-public class GeoJSONGeometry {
+public class GeoJSONGeometry extends AbstractTypeHolder {
 
-    protected JsonObject jsonObject;
-
-    public GeoJSONGeometry() {
-        this(Json.createObject());
+    public GeoJSONGeometry(String type) {
+        super(type);
     }
 
-    public GeoJSONGeometry(JsonObject jsonObject) {
-        this.jsonObject = jsonObject;
-    }
-
-    public JsonObject getJsonObject() {
-        return jsonObject;
-    }
-
-    public GeoJSONGeometry setType(String type) {
-        jsonObject.put("type", type);
-        return this;
-    }
-
-    public String getType() {
-        return jsonObject.hasKey("type") ? jsonObject.get("type").asString() : null;
-    }
-
-    public GeoJSONGeometry setPoint(double[] coordinates) {
-        setType("Point");
-        JsonArray array = Json.createArray();
+    /**
+     * Of type "Point".
+     */
+    public GeoJSONGeometry(double[] coordinates) {
+        this("Point");
+        ArrayValue array = Values.createArray();
         for (int i = 0; i < coordinates.length; i++) {
             array.set(i, coordinates[i]);
         }
-        jsonObject.put("coordinates", array);
-        return this;
-    }
-
-    @Override
-    public String toString() {
-        return jsonObject.toJson();
+        objectValue.put("coordinates", array);
     }
 }

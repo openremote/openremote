@@ -19,66 +19,35 @@
  */
 package org.openremote.model.geo;
 
-import elemental.json.Json;
-import elemental.json.JsonObject;
-import elemental.json.JsonValue;
+import org.openremote.model.AbstractTypeHolder;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
-public class GeoJSONFeature {
+public class GeoJSONFeature extends AbstractTypeHolder {
 
-    protected JsonObject jsonObject;
-
-    public GeoJSONFeature() {
-        this(Json.createObject());
-    }
-
-    public GeoJSONFeature(JsonObject jsonObject) {
-        this.jsonObject = jsonObject;
-    }
-
-    public JsonObject getJsonObject() {
-        return jsonObject;
-    }
-
-    public GeoJSONFeature setType(String type) {
-        jsonObject.put("type", type);
-        return this;
-    }
-
-    public String getType() {
-        return jsonObject.hasKey("type") ? jsonObject.get("type").asString() : null;
+    public GeoJSONFeature(String type) {
+        super(type);
     }
 
     public GeoJSONFeature setProperty(String name, String value) {
-        return setProperty(name, Json.create(value));
+        return setProperty(name, Values.create(value));
     }
 
-    public GeoJSONFeature setProperty(String name, double value) {
-        return setProperty(name, Json.create(value));
-    }
-
-    public GeoJSONFeature setProperty(String name, boolean value) {
-        return setProperty(name, Json.create(value));
-    }
-
-    protected GeoJSONFeature setProperty(String name, JsonValue value) {
-        JsonObject properties = jsonObject.hasKey("properties") ? jsonObject.getObject("properties") : Json.createObject();
+    protected GeoJSONFeature setProperty(String name, Value value) {
+        ObjectValue properties = objectValue.getObject("properties").orElse(Values.createObject());
         properties.put(name, value);
-        if (!jsonObject.hasKey("properties"))
-            jsonObject.put("properties", properties);
+        if (!objectValue.hasKey("properties"))
+            objectValue.put("properties", properties);
         return this;
     }
 
     public GeoJSONFeature setGeometry(GeoJSONGeometry geometry) {
         if (geometry != null) {
-            jsonObject.put("geometry", geometry.getJsonObject());
+            objectValue.put("geometry", geometry.getObjectValue());
         } else {
-            jsonObject.remove("geometry");
+            objectValue.remove("geometry");
         }
         return this;
-    }
-
-    @Override
-    public String toString() {
-        return jsonObject.toJson();
     }
 }

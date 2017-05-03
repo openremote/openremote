@@ -38,7 +38,7 @@ import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.Pair;
-import org.openremote.model.ReadAttributesEvent;
+import org.openremote.model.asset.ReadAssetAttributesEvent;
 import org.openremote.model.asset.*;
 import org.postgresql.util.PGobject;
 
@@ -145,12 +145,12 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         // React if a client wants to read attribute state
         from(INCOMING_EVENT_TOPIC)
-            .filter(body().isInstanceOf(ReadAttributesEvent.class))
+            .filter(body().isInstanceOf(ReadAssetAttributesEvent.class))
             .process(exchange -> {
-                ReadAttributesEvent event = exchange.getIn().getBody(ReadAttributesEvent.class);
+                ReadAssetAttributesEvent event = exchange.getIn().getBody(ReadAssetAttributesEvent.class);
                 LOG.fine("Handling from client: " + event);
 
-                if (event.getEntityId() == null || event.getEntityId().isEmpty())
+                if (event.getAssetId() == null || event.getAssetId().isEmpty())
                     return;
 
                 String sessionKey = getSessionKey(exchange);
@@ -158,7 +158,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
                 // Superuser can get all
                 if (auth.isSuperUser()) {
-                    ServerAsset asset = find(event.getEntityId(), true);
+                    ServerAsset asset = find(event.getAssetId(), true);
                     if (asset != null)
                         replyWithAttributeEvents(sessionKey, asset, event.getAttributeNames());
                     return;
@@ -170,7 +170,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 }
 
                 ServerAsset asset = find(
-                    event.getEntityId(),
+                    event.getAssetId(),
                     true,
                     managerIdentityService.isRestrictedUser(auth.getUserId()) // Restricted users get filtered state
                 );

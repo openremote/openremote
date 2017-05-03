@@ -19,12 +19,12 @@
  */
 package org.openremote.manager.client.interop.mapbox;
 
-import elemental.json.JsonObject;
+import com.google.gwt.core.client.JavaScriptObject;
 import jsinterop.annotations.JsType;
 
 @JsType(isNative = true, namespace = "mapboxgl")
 public interface GeoJSONSource {
 
-    void setData(JsonObject geoJson);
+    void setData(JavaScriptObject geoJson);
 
 }

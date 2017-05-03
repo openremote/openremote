@@ -28,7 +28,7 @@ public class StringValueImpl extends ValueImpl implements StringValue {
     }
 
     @Override
-    public String getObject() {
+    public String asObject() {
         return getString();
     }
 

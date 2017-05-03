@@ -26,7 +26,6 @@ import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebService;
 import org.openremote.model.value.ArrayValue;
 import org.openremote.model.value.ObjectValue;
-import org.openremote.model.value.StringValue;
 import org.openremote.model.value.Values;
 
 import javax.ws.rs.core.UriBuilder;
@@ -39,7 +38,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.logging.Logger;
 
 import static org.openremote.container.util.MapAccess.getString;
@@ -108,7 +106,7 @@ public class MapService implements ContainerService {
             throw new RuntimeException("Error parsing map settings: " + mapSettingsPath.toAbsolutePath(), ex);
         }
 
-        ObjectValue style = mapSettings.<ObjectValue>get("style").orElseThrow(() ->
+        ObjectValue style = mapSettings.getObject("style").orElseThrow(() ->
             new RuntimeException("Missing 'style' field in map settings style: " + mapSettingsPath.toAbsolutePath())
         );
 
@@ -117,9 +115,9 @@ public class MapService implements ContainerService {
         if (style.hasKey("sprite")) {
             // Rewrite path to sprite file to our external host
             String spritePath =
-                style.<StringValue>get("sprite").orElseThrow(() ->
+                style.getString("sprite").orElseThrow(() ->
                     new RuntimeException("Missing 'sprite' field in map settings style: " + mapSettingsPath.toAbsolutePath())
-                ).getString();
+                );
             String spriteUri =
                 baseUriBuilder.clone()
                     .replacePath(ManagerWebService.MANAGER_PATH)
@@ -165,7 +163,7 @@ public class MapService implements ContainerService {
             ObjectValue metadataJson = Values.<ObjectValue>parse(resultMap.get("json")).orElseThrow(() ->
                 new RuntimeException("Error parsing JSON metadata from map database")
             );
-            ArrayValue vectorLayers = metadataJson.<ArrayValue>get("vector_layers").orElseThrow(() ->
+            ArrayValue vectorLayers = metadataJson.getArray("vector_layers").orElseThrow(() ->
                 new RuntimeException("Missing 'vector_layers' field in metadata from map database")
             );
             vectorTiles.put("vector_layers", vectorLayers);

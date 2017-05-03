@@ -17,8 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model;
+package org.openremote.model.asset;
 
+import org.openremote.model.AttributeEvent;
 import org.openremote.model.event.shared.SharedEvent;
 
 import java.util.Arrays;
@@ -27,32 +28,32 @@ import java.util.Arrays;
  * A client sends this event to the server to refresh its attribute state, expecting
  * the server to answer "soon" with {@link AttributeEvent}s. If the server
  * decides that the client doesn't have the right permissions, or if anything
- * else is not in order (e.g. the entity doesn't exist), the server might not react
+ * else is not in order (e.g. the asset doesn't exist), the server might not react
  * at all.
  * <p>
- * If no attribute names and only an entity identifier are provided, all attributes
- * of the entity, accessible by the client, will be read/returned.
+ * If no attribute names and only an asset identifier are provided, all attributes
+ * of the asset, accessible by the client, will be read/returned.
  */
-public class ReadAttributesEvent extends SharedEvent {
+public class ReadAssetAttributesEvent extends SharedEvent {
 
-    protected String entityId;
+    protected String assetId;
 
     protected String[] attributeNames;
 
-    protected ReadAttributesEvent() {
+    protected ReadAssetAttributesEvent() {
     }
 
-    public ReadAttributesEvent(String entityId, String... attributeNames) {
-        this.entityId = entityId;
+    public ReadAssetAttributesEvent(String assetId, String... attributeNames) {
+        this.assetId = assetId;
         this.attributeNames = attributeNames;
     }
 
-    public String getEntityId() {
-        return entityId;
+    public String getAssetId() {
+        return assetId;
     }
 
-    public void setEntityId(String entityId) {
-        this.entityId = entityId;
+    public void setAssetId(String assetId) {
+        this.assetId = assetId;
     }
 
     public String[] getAttributeNames() {
@@ -66,7 +67,7 @@ public class ReadAttributesEvent extends SharedEvent {
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "entityId='" + entityId + '\'' +
+            "assetId='" + assetId + '\'' +
             ", attributeNames=" + Arrays.toString(attributeNames) +
             '}';
     }

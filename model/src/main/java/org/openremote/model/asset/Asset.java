@@ -33,7 +33,10 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -336,7 +339,6 @@ public class Asset implements IdentifiableEntity {
     }
 
 
-
     public void addAttribute(AssetAttribute attribute) throws IllegalArgumentException {
         if (getAttributesStream().anyMatch(attr -> isAttributeNameEqualTo(attr, attribute.getName().orElse(null)))) {
             throw new IllegalArgumentException("Attribute by this name already exists");
@@ -579,11 +581,11 @@ public class Asset implements IdentifiableEntity {
     public GeoJSON getGeoFeature(int maxNameLength) {
         if (!hasGeoFeature())
             return GeoJSON.EMPTY_FEATURE_COLLECTION;
-        return new GeoJSON().setType("FeatureCollection").setFeatures(
-            new GeoJSONFeature().setType("Feature")
+        return new GeoJSON("FeatureCollection").setFeatures(
+            new GeoJSONFeature("Feature")
                 .setProperty("id", getId())
                 .setProperty("title", TextUtil.ellipsize(getName(), maxNameLength))
-                .setGeometry(new GeoJSONGeometry().setPoint(getCoordinates()))
+                .setGeometry(new GeoJSONGeometry(getCoordinates()))
         );
     }
 

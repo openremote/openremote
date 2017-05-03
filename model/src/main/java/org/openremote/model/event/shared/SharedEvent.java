@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.openremote.model.AttributeEvent;
-import org.openremote.model.ReadAttributesEvent;
+import org.openremote.model.asset.ReadAssetAttributesEvent;
 import org.openremote.model.asset.AssetTreeModifiedEvent;
 import org.openremote.model.event.Event;
 
@@ -33,7 +33,7 @@ import org.openremote.model.event.Event;
 @JsonSubTypes({
     // Events used on client and server (serializable)
     @JsonSubTypes.Type(value = AttributeEvent.class, name = "attribute"),
-    @JsonSubTypes.Type(value = ReadAttributesEvent.class, name = "read-attributes"),
+    @JsonSubTypes.Type(value = ReadAssetAttributesEvent.class, name = "read-asset-attributes"),
     @JsonSubTypes.Type(value = AssetTreeModifiedEvent.class, name = "asset-tree-modified")
 })
 @JsonTypeInfo(

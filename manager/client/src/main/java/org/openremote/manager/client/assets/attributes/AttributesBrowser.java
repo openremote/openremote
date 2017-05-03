@@ -29,6 +29,7 @@ import org.openremote.manager.client.widget.*;
 import org.openremote.model.*;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.ReadAssetAttributesEvent;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
 import org.openremote.model.event.bus.EventRegistration;
@@ -262,14 +263,14 @@ public abstract class AttributesBrowser
 
     protected void readAllAttributeValues() {
         environment.getEventService().dispatch(
-            new ReadAttributesEvent(asset.getId())
+            new ReadAssetAttributesEvent(asset.getId())
         );
     }
 
     protected void readAttributeValue(AssetAttribute attribute) {
         attribute.getReference().ifPresent(attributeRef ->
             environment.getEventService().dispatch(
-                new ReadAttributesEvent(attributeRef.getEntityId(), attributeRef.getAttributeName())
+                new ReadAssetAttributesEvent(attributeRef.getEntityId(), attributeRef.getAttributeName())
             )
         );
     }
