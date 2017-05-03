@@ -1,0 +1,17 @@
+package org.openremote.test.rules;
+
+import org.openremote.model.*;
+import org.openremote.model.asset.*
+import elemental.json.Json;
+
+global java.util.logging.Logger LOG;
+global org.openremote.model.rules.Users users;
+global org.openremote.model.rules.Assets assets;
+
+rule "Send notification when alarm triggered in a room"
+when
+    $residence : AssetState(type == AssetType.RESIDENCE, attributeName == "alarmEnabled", value.asBoolean)
+    $room : AssetState(parentId == $residence.id, type == AssetType.ROOM, attributeName == "presenceDetected", value.asBoolean)
+then
+    // users.storeAndNotify("todo", );
+end
