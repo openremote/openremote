@@ -19,20 +19,47 @@
  */
 package org.openremote.manager.shared.security;
 
+import org.hibernate.annotations.Formula;
+import org.hibernate.annotations.Subselect;
 import org.hibernate.validator.constraints.Email;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
+/**
+ * This can be used (among other things) to query the Keycloak USER_ENTITY table in JPA queries.
+ */
+@Entity
+@Subselect("select * from USER_ENTITY") // Map this immutable to an SQL view, don't use/create table
 public class User {
 
+    @Formula("(select ra.VALUE from REALM_ATTRIBUTE ra where ra.REALM_ID = REALM_ID and ra.name = 'displayName')")
     protected String realm;
+
+    @Column(name = "REALM_ID")
+    protected String realmId;
+
+    @Id
     protected String id;
+
+    @Column(name = "USERNAME")
     protected String username;
+
+    @Column(name = "FIRST_NAME")
     protected String firstName;
+
+    @Column(name = "LAST_NAME")
     protected String lastName;
+
+    @Column(name = "EMAIL")
     protected String email;
+
+    @Column(name = "ENABLED")
     protected Boolean enabled;
 
     public User() {

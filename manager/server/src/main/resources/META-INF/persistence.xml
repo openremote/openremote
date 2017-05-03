@@ -17,6 +17,7 @@
         <class>org.openremote.model.datapoint.AssetDatapoint</class>
         <class>org.openremote.model.asset.UserAsset</class>
         <class>org.openremote.manager.shared.security.Tenant</class>
+        <class>org.openremote.manager.shared.security.User</class>
         <class>org.openremote.manager.shared.rules.GlobalRuleset</class>
         <class>org.openremote.manager.shared.rules.TenantRuleset</class>
         <class>org.openremote.manager.shared.rules.AssetRuleset</class>
