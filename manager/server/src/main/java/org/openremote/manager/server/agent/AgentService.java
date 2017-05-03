@@ -31,14 +31,16 @@ import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
 import org.openremote.model.AbstractValueTimestampHolder;
+import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.Pair;
 import org.openremote.model.asset.*;
+import org.openremote.model.asset.agent.AgentLink;
+import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.util.JsonUtil;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -49,11 +51,9 @@ import static org.openremote.agent3.protocol.Protocol.ACTUATOR_TOPIC;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForAssetType;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
-import static org.openremote.model.asset.AssetAttribute.Functions.getAssetAttributesFromJson;
+import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
 import static org.openremote.model.asset.AssetType.AGENT;
-import static org.openremote.model.asset.agent.AgentLink.*;
-import static org.openremote.model.asset.agent.ProtocolConfiguration.getProtocolName;
-import static org.openremote.model.asset.agent.ProtocolConfiguration.isProtocolConfiguration;
+import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
 
 /**
  * Finds all {@link AssetType#AGENT} and {@link AssetType#THING} assets and starts the protocols for them.
@@ -65,15 +65,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     protected AssetStorageService assetStorageService;
     protected AssetDatapointService assetDatapointService;
     protected MessageBrokerService messageBrokerService;
-    protected final Map<AttributeRef, AssetAttribute> protocolConfigurations = new HashMap<>();
-    protected Function<Optional<AttributeRef>, Optional<AssetAttribute>> protocolConfigurationResolver =
-        (Optional<AttributeRef> protocolRef) -> {
-            synchronized (protocolConfigurations) {
-                return Optional.ofNullable(
-                    protocolRef.isPresent() ? protocolConfigurations.get(protocolRef.get()) : null
-                );
-            }
-        };
+    protected static final Map<AttributeRef, AssetAttribute> protocolConfigurations = new HashMap<>();
 
     @Override
     public void init(Container container) throws Exception {
@@ -95,8 +87,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         /// For all agents, go through their protocol configurations and find
         // assets that are linked to them, to create the binding on startup
         for (Asset agent : agents) {
-            agent.getAttributeStream()
-                .filter(isProtocolConfiguration())
+            agent.getAttributesStream()
+                .filter(ProtocolConfiguration::isProtocolConfiguration)
                 .forEach(this::linkProtocol);
         }
     }
@@ -134,8 +126,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         switch (persistenceEvent.getCause()) {
             case INSERT:
 
-                agent.getAttributeStream()
-                    .filter(isProtocolConfiguration())
+                agent.getAttributesStream()
+                    .filter(ProtocolConfiguration::isProtocolConfiguration)
                     .forEach(this::linkProtocol);
 
                 break;
@@ -150,14 +142,19 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                 // Attributes have possibly changed so need to compare old and new state to determine
                 // which protocol configs are affected
                 List<AssetAttribute> oldProtocolConfigurations =
-                    getAssetAttributesFromJson(agent.getId()).apply(
-                        (JsonObject) persistenceEvent.getPreviousState()[attributesIndex]
-                    ).filter(isProtocolConfiguration())
+                    attributesFromJson(
+                        (JsonObject) persistenceEvent.getPreviousState()[attributesIndex],
+                        agent.getId()
+                    )
+                        .filter(ProtocolConfiguration::isProtocolConfiguration)
                         .collect(Collectors.toList());
+
                 List<AssetAttribute> newProtocolConfigurations =
-                    getAssetAttributesFromJson(agent.getId()).apply(
-                        (JsonObject) persistenceEvent.getCurrentState()[attributesIndex]
-                    ).filter(isProtocolConfiguration())
+                    attributesFromJson(
+                        (JsonObject) persistenceEvent.getCurrentState()[attributesIndex],
+                        agent.getId()
+                    )
+                        .filter(ProtocolConfiguration::isProtocolConfiguration)
                         .collect(Collectors.toList());
 
                 // Compare protocol configurations by JSON value
@@ -190,8 +187,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             case DELETE:
 
                 // Unlink any attributes that have an agent link to this agent
-                agent.getAttributeStream()
-                    .filter(isProtocolConfiguration())
+                agent.getAttributesStream()
+                    .filter(ProtocolConfiguration::isProtocolConfiguration)
                     .forEach(this::unlinkProtocol);
                 break;
         }
@@ -213,7 +210,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
                 // Link any AGENT_LINK attributes to the referenced protocol
                 Map<AssetAttribute, List<AssetAttribute>> groupedAgentLinksAttributes =
-                    getGroupedAgentLinkAttributes(asset.getAttributeStream(), attribute -> true);
+                    getGroupedAgentLinkAttributes(asset.getAttributesStream(), attribute -> true);
                 groupedAgentLinksAttributes.forEach(this::linkAttributes);
 
                 break;
@@ -228,14 +225,19 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                 // Attributes have possibly changed so need to compare old and new state to determine any changes to
                 // AGENT_LINK attributes
                 List<AssetAttribute> oldAgentLinkedAttributes =
-                    getAssetAttributesFromJson(asset.getId()).apply(
-                        (JsonObject) persistenceEvent.getPreviousState()[attributesIndex]
-                    ).filter(isAgentLink())
+                    attributesFromJson(
+                        (JsonObject) persistenceEvent.getPreviousState()[attributesIndex],
+                        asset.getId()
+                    )
+                        .filter(AgentLink::hasAgentLink)
                         .collect(Collectors.toList());
+
                 List<AssetAttribute> newAgentLinkedAttributes =
-                    getAssetAttributesFromJson(asset.getId()).apply(
-                        (JsonObject) persistenceEvent.getCurrentState()[attributesIndex]
-                    ).filter(isAgentLink())
+                    attributesFromJson(
+                        (JsonObject) persistenceEvent.getCurrentState()[attributesIndex],
+                        asset.getId()
+                    )
+                        .filter(AgentLink::hasAgentLink)
                         .collect(Collectors.toList());
 
                 // Unlink thing attributes that are in old but not in new
@@ -273,7 +275,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
                 // Unlink any AGENT_LINK attributes from the referenced protocol
                 Map<AssetAttribute, List<AssetAttribute>> groupedAgentLinkAndProtocolAttributes =
-                    getGroupedAgentLinkAttributes(asset.getAttributeStream(), attribute -> true);
+                    getGroupedAgentLinkAttributes(asset.getAttributesStream(), attribute -> true);
                 groupedAgentLinkAndProtocolAttributes
                     .forEach(
                         this::unlinkAttributes
@@ -286,7 +288,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     protected void linkProtocol(AssetAttribute protocolConfiguration) {
         LOG.finest("Linking all attributes that use protocol attribute: " + protocolConfiguration);
 
-        AttributeRef protocolAttributeRef = protocolConfiguration.getReference();
+        AttributeRef protocolAttributeRef = protocolConfiguration.getReferenceOrThrow();
 
         synchronized (protocolConfigurations) {
             // Store this protocol configuration for easy access later
@@ -309,8 +311,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         assets.forEach(
             asset ->
                 getGroupedAgentLinkAttributes(
-                    asset.getAttributeStream(),
-                    assetAttribute -> getAgentLink().apply(assetAttribute)
+                    asset.getAttributesStream(),
+                    assetAttribute -> getAgentLink(assetAttribute)
                         .map(attributeRef -> attributeRef.equals(protocolAttributeRef))
                         .orElse(false)
                 ).forEach(this::linkAttributes)
@@ -318,7 +320,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     }
 
     protected void unlinkProtocol(AssetAttribute protocolConfiguration) {
-        AttributeRef protocolAttributeRef = protocolConfiguration.getReference();
+        AttributeRef protocolAttributeRef = protocolConfiguration.getReferenceOrThrow();
 
         // Get all assets that have attributes that use this protocol configuration
         List<ServerAsset> assets = assetStorageService.findAll(
@@ -336,8 +338,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         assets.forEach(
             asset ->
                 getGroupedAgentLinkAttributes(
-                    asset.getAttributeStream(),
-                    assetAttribute -> getAgentLink().apply(assetAttribute)
+                    asset.getAttributesStream(),
+                    assetAttribute -> getAgentLink(assetAttribute)
                         .map(attributeRef -> attributeRef.equals(protocolAttributeRef))
                         .orElse(false)
                 ).forEach(this::unlinkAttributes)
@@ -355,7 +357,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             .filter(protocol -> {
                 if (protocol.getProtocolName() == null || protocol.getProtocolName().length() == 0)
                     throw new IllegalStateException("Protocol can't have empty name: " + protocol.getClass());
-                return protocol.getProtocolName().equals(getProtocolName().apply(protocolConfiguration));
+                return protocol.getProtocolName().equals(protocolConfiguration.getValueAsString().orElse(null));
             })
             .findFirst()
             .orElse(null);
@@ -411,49 +413,56 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             return;
         }
 
-        Optional<AttributeRef> agentLink = getAgentLink().apply(assetState.getAttribute());
+        AgentLink.getAgentLink(assetState.getAttribute())
+            .map(ref ->
+                getProtocolConfiguration(ref)
+                    .orElseGet(() -> {
+                        LOG.warning("Cannot process as agent link is invalid:" + assetState);
+                        assetState.setError(new RuntimeException("Attribute has an invalid agent link:" + assetState.getAttribute()));
+                        assetState.setProcessingStatus(AssetState.ProcessingStatus.ERROR);
+                        return null;
+                    })
+            )
+            .map(protocolConfiguration -> {
+                // Its' a send to actuator - push the update to the protocol
+                LOG.fine("Processing: " + assetState);
 
-        if (agentLink.isPresent()) {
-            // Check attribute is linked to an actual agent
-            AssetAttribute protocolConfiguration = protocolConfigurationResolver.apply(agentLink).orElse(null);
+                Optional<AttributeEvent> event = assetState
+                    .getAttribute()
+                    .getStateEvent();
 
-            if (protocolConfiguration == null) {
-                LOG.warning("Cannot process as agent link is invalid:" + assetState);
-                assetState.setError(new RuntimeException("Attribute has an invalid agent link:" + assetState.getAttribute()));
-                assetState.setProcessingStatus(AssetState.ProcessingStatus.ERROR);
-                return;
-            }
-        } else {
-            // This is just a non protocol attribute so allow the processing to continue
-            LOG.fine("Ignoring as it is not for an attribute linked to an agent:" + assetState);
-            return;
-        }
+                if (event.isPresent()) {
+                    messageBrokerService.getProducerTemplate().sendBody(
+                        ACTUATOR_TOPIC,
+                        event.get()
+                    );
+                } else {
+                    LOG.warning("Attribute doesn't have a valid attribute event: " + assetState);
+                }
 
-        // Its' a send to actuator - push the update to the protocol
-        LOG.fine("Processing: " + assetState);
-        messageBrokerService.getProducerTemplate().sendBody(
-            ACTUATOR_TOPIC,
-            assetState.getAttribute().getStateEvent()
-        );
-        assetState.setProcessingStatus(AssetState.ProcessingStatus.HANDLED);
-    }
-
-    public Function<Optional<AttributeRef>, Optional<AssetAttribute>> getProtocolConfigurationResolver() {
-        return protocolConfigurationResolver;
+                assetState.setProcessingStatus(AssetState.ProcessingStatus.HANDLED);
+                return protocolConfiguration;
+            })
+            .orElseGet(() -> {
+                // This is just a non protocol attribute so allow the processing to continue
+                LOG.fine("Ignoring as it is not for an attribute linked to an agent:" + assetState);
+                return null;
+            });
     }
 
     /**
      * Gets all agent link attributes and their linked protocol configuration and groups them by Protocol Configuration
      */
+    @SuppressWarnings("ConstantConditions")
     protected Map<AssetAttribute, List<AssetAttribute>> getGroupedAgentLinkAttributes(Stream<AssetAttribute> attributes,
                                                                                       Predicate<AssetAttribute> filter) {
         Map<AssetAttribute, List<AssetAttribute>> result = new HashMap<>();
         attributes
-            .filter(isValidAgentLink())
+            .filter(AgentLink::hasAgentLink)
             .filter(filter)
-            .map(attribute -> new Pair<>(attribute, getAgentLink().apply(attribute)))
+            .map(attribute -> new Pair<>(attribute, getAgentLink(attribute)))
             .filter(pair -> pair.value.isPresent())
-            .map(pair -> new Pair<>(pair.key, protocolConfigurationResolver.apply(pair.value)))
+            .map(pair -> new Pair<>(pair.key, getProtocolConfiguration(pair.value.get())))
             .filter(pair -> pair.value.isPresent())
             .forEach(pair -> result.computeIfAbsent(pair.value.get(), newProtocolConfiguration -> new ArrayList<>())
                 .add(pair.key)
@@ -464,5 +473,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     public String toString() {
         return getClass().getSimpleName() + "{" +
             '}';
+    }
+
+    public static Optional<AssetAttribute> getProtocolConfiguration(AttributeRef protocolRef) {
+        synchronized (protocolConfigurations) {
+            return Optional.ofNullable(protocolConfigurations.get(protocolRef));
+        }
     }
 }

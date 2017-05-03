@@ -3,6 +3,7 @@ package org.openremote.test.json
 import elemental.json.Json
 import elemental.json.JsonArray
 import elemental.json.JsonObject
+import elemental.json.JsonValue
 import spock.lang.Specification
 
 import org.openremote.model.util.JsonUtil
@@ -29,20 +30,20 @@ class JsonEqualityTest extends Specification {
         !JsonUtil.equals(Json.create(1), Json.create(true))
         JsonUtil.hashCode(Json.create(1)) != JsonUtil.hashCode(Json.create(true))
 
-        JsonUtil.equals(Json.createNull(), Json.createNull())
-        JsonUtil.hashCode(Json.createNull()) == JsonUtil.hashCode(Json.createNull())
+        JsonUtil.equals(null, null)
+        JsonUtil.hashCode(null) == JsonUtil.hashCode(null)
 
-        !JsonUtil.equals(Json.createNull(), Json.create(123))
-        JsonUtil.hashCode(Json.createNull()) != JsonUtil.hashCode(Json.create(123))
+        !JsonUtil.equals(null, Json.create(123))
+        JsonUtil.hashCode(null) != JsonUtil.hashCode(Json.create(123))
 
-        !JsonUtil.equals(Json.createNull(), Json.create(false))
-        JsonUtil.hashCode(Json.createNull()) != JsonUtil.hashCode(Json.create(false))
+        !JsonUtil.equals(null, Json.create(false))
+        JsonUtil.hashCode(null) != JsonUtil.hashCode(Json.create(false))
 
-        !JsonUtil.equals(Json.createNull(), Json.create(true))
-        JsonUtil.hashCode(Json.createNull()) != JsonUtil.hashCode(Json.create(true))
+        !JsonUtil.equals(null, Json.create(true))
+        JsonUtil.hashCode(null) != JsonUtil.hashCode(Json.create(true))
 
-        !JsonUtil.equals(Json.createNull(), Json.create("abc"))
-        JsonUtil.hashCode(Json.createNull()) != JsonUtil.hashCode(Json.create("abc"))
+        !JsonUtil.equals(null, Json.create("abc"))
+        JsonUtil.hashCode(null) != JsonUtil.hashCode(Json.create("abc"))
 
         JsonUtil.equals(Json.create(123), Json.create(123))
         JsonUtil.hashCode(Json.create(123)) == JsonUtil.hashCode(Json.create(123))
@@ -65,8 +66,8 @@ class JsonEqualityTest extends Specification {
         !JsonUtil.equals(Json.create("abc"), Json.create("abcd"))
         JsonUtil.hashCode(Json.create("abc")) != JsonUtil.hashCode(Json.create("abcd"))
 
-        !JsonUtil.equals(Json.create("abc"), Json.createNull())
-        JsonUtil.hashCode(Json.create("abc")) != JsonUtil.hashCode(Json.createNull())
+        !JsonUtil.equals(Json.create("abc"), null)
+        JsonUtil.hashCode(Json.create("abc")) != JsonUtil.hashCode(null)
 
         !JsonUtil.equals(Json.create("abc"), Json.create(123))
         JsonUtil.hashCode(Json.create("abc")) != JsonUtil.hashCode(Json.create(123))
@@ -100,8 +101,8 @@ class JsonEqualityTest extends Specification {
         JsonUtil.equals(Json.createArray(), Json.createArray())
         JsonUtil.hashCode(Json.createArray()) == JsonUtil.hashCode(Json.createArray())
 
-        !JsonUtil.equals(Json.createArray(), Json.createNull())
-        JsonUtil.hashCode(Json.createArray()) != JsonUtil.hashCode(Json.createNull())
+        !JsonUtil.equals(Json.createArray(), null)
+        JsonUtil.hashCode(Json.createArray()) != JsonUtil.hashCode(null)
 
         JsonUtil.equals(sampleArray1, sampleArray1)
         JsonUtil.hashCode(sampleArray1) == JsonUtil.hashCode(sampleArray1)
@@ -113,7 +114,6 @@ class JsonEqualityTest extends Specification {
         JsonUtil.hashCode(sampleArray1) != JsonUtil.hashCode(sampleArray2)
 
         and: "Objects with no fields to be equal"
-        JsonUtil.equals(null, null)
         JsonUtil.hashCode(null) == JsonUtil.hashCode(null)
 
         JsonUtil.equals(Json.createObject(), Json.createObject())
@@ -122,8 +122,8 @@ class JsonEqualityTest extends Specification {
         !JsonUtil.equals(null, Json.createObject())
         JsonUtil.hashCode(null) != JsonUtil.hashCode(Json.createObject())
 
-        !JsonUtil.equals(Json.createNull(), Json.createObject())
-        JsonUtil.hashCode(Json.createNull()) != JsonUtil.hashCode(Json.createObject())
+        !JsonUtil.equals(null, Json.createObject())
+        JsonUtil.hashCode(null) != JsonUtil.hashCode(Json.createObject())
 
         !JsonUtil.equals(Json.createArray(), Json.createObject())
         JsonUtil.hashCode(Json.createArray()) != JsonUtil.hashCode(Json.createObject())

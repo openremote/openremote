@@ -61,15 +61,15 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "the global rules engine should load this definition and restart successfully"
         conditions.eventually {
-            assert rulesService.globalDeployment != null
-            assert rulesService.globalDeployment.isRunning()
-            assert rulesService.globalDeployment.allRulesets.length == 2
-            assert rulesService.globalDeployment.allRulesets[0].enabled
-            assert rulesService.globalDeployment.allRulesets[0].name == "Some global demo rules"
-            assert rulesService.globalDeployment.allRulesets[0].deploymentStatus == DeploymentStatus.DEPLOYED
-            assert rulesService.globalDeployment.allRulesets[1].enabled
-            assert rulesService.globalDeployment.allRulesets[1].name == "Some more global rules"
-            assert rulesService.globalDeployment.allRulesets[1].deploymentStatus == DeploymentStatus.DEPLOYED
+            assert rulesService.globalEngine != null
+            assert rulesService.globalEngine.isRunning()
+            assert rulesService.globalEngine.allRulesets.length == 2
+            assert rulesService.globalEngine.allRulesets[0].enabled
+            assert rulesService.globalEngine.allRulesets[0].name == "Some global demo rules"
+            assert rulesService.globalEngine.allRulesets[0].deploymentStatus == DeploymentStatus.DEPLOYED
+            assert rulesService.globalEngine.allRulesets[1].enabled
+            assert rulesService.globalEngine.allRulesets[1].name == "Some more global rules"
+            assert rulesService.globalEngine.allRulesets[1].deploymentStatus == DeploymentStatus.DEPLOYED
         }
 
         when: "a new tenant rule definition is added to customer A"
@@ -82,7 +82,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "customer A rules engine should load this definition and restart successfully"
         conditions.eventually {
-            def customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
+            def customerAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.customerATenant.id)
             assert customerAEngine != null
             assert customerAEngine.isRunning()
             assert customerAEngine.allRulesets.length == 2
@@ -104,8 +104,8 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "a tenant rules engine should be created for customer B and load this definition and start successfully"
         conditions.eventually {
-            def customerBEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerBTenant.id)
-            assert rulesService.tenantDeployments.size() == 3
+            def customerBEngine = rulesService.tenantEngines.get(keycloakDemoSetup.customerBTenant.id)
+            assert rulesService.tenantEngines.size() == 3
             assert customerBEngine != null
             assert customerBEngine.isRunning()
             assert customerBEngine.allRulesets.length == 1
@@ -121,8 +121,8 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "customer B rule engine should load this definition and restart successfully"
         conditions.eventually {
-            def customerBEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerBTenant.id)
-            assert rulesService.tenantDeployments.size() == 3
+            def customerBEngine = rulesService.tenantEngines.get(keycloakDemoSetup.customerBTenant.id)
+            assert rulesService.tenantEngines.size() == 3
             assert customerBEngine != null
             assert customerBEngine.isRunning()
             assert customerBEngine.allRulesets.length == 2
@@ -142,7 +142,7 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "customer B rule engine should remove it again"
         conditions.eventually {
-            def customerBEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerBTenant.id)
+            def customerBEngine = rulesService.tenantEngines.get(keycloakDemoSetup.customerBTenant.id)
             assert customerBEngine != null
             assert customerBEngine.isRunning()
             assert customerBEngine.allRulesets.length == 1
@@ -156,9 +156,9 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "the apartment rules engine should be removed"
         conditions.eventually {
-            assert rulesService.assetDeployments.size() == 1
-            def apartment2Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment2Id)
-            def apartment3Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment3Id)
+            assert rulesService.assetEngines.size() == 1
+            def apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)
+            def apartment3Engine = rulesService.assetEngines.get(managerDemoSetup.apartment3Id)
             assert apartment2Engine == null
             assert apartment3Engine != null
             assert apartment3Engine.isRunning()
@@ -173,19 +173,19 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "the global rules engine should not run and the rule engine status should indicate the issue"
         conditions.eventually {
-            assert rulesService.globalDeployment.allRulesets.length == 3
-            assert rulesService.globalDeployment.running == false
-            assert rulesService.globalDeployment.isError()
-            assert rulesService.globalDeployment.error instanceof RuntimeException
-            assert rulesService.globalDeployment.allRulesets[0].enabled
-            assert rulesService.globalDeployment.allRulesets[0].name == "Some global demo rules"
-            assert rulesService.globalDeployment.allRulesets[0].deploymentStatus == DeploymentStatus.READY
-            assert rulesService.globalDeployment.allRulesets[1].enabled
-            assert rulesService.globalDeployment.allRulesets[1].name == "Some more global rules"
-            assert rulesService.globalDeployment.allRulesets[1].deploymentStatus == DeploymentStatus.READY
-            assert rulesService.globalDeployment.allRulesets[2].enabled
-            assert rulesService.globalDeployment.allRulesets[2].name == "Some broken global rules"
-            assert rulesService.globalDeployment.allRulesets[2].deploymentStatus == DeploymentStatus.FAILED
+            assert rulesService.globalEngine.allRulesets.length == 3
+            assert rulesService.globalEngine.running == false
+            assert rulesService.globalEngine.isError()
+            assert rulesService.globalEngine.error instanceof RuntimeException
+            assert rulesService.globalEngine.allRulesets[0].enabled
+            assert rulesService.globalEngine.allRulesets[0].name == "Some global demo rules"
+            assert rulesService.globalEngine.allRulesets[0].deploymentStatus == DeploymentStatus.READY
+            assert rulesService.globalEngine.allRulesets[1].enabled
+            assert rulesService.globalEngine.allRulesets[1].name == "Some more global rules"
+            assert rulesService.globalEngine.allRulesets[1].deploymentStatus == DeploymentStatus.READY
+            assert rulesService.globalEngine.allRulesets[2].enabled
+            assert rulesService.globalEngine.allRulesets[2].name == "Some broken global rules"
+            assert rulesService.globalEngine.allRulesets[2].deploymentStatus == DeploymentStatus.FAILED
         }
 
         when: "the broken rule definition is removed from the global engine"
@@ -193,20 +193,20 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "the global rules engine should restart"
         conditions.eventually {
-            assert rulesService.globalDeployment.allRulesets.length == 2
-            assert rulesService.globalDeployment.running == true
-            assert rulesService.globalDeployment.isError() == false
-            assert rulesService.globalDeployment.allRulesets[0].enabled
-            assert rulesService.globalDeployment.allRulesets[0].name == "Some global demo rules"
-            assert rulesService.globalDeployment.allRulesets[0].deploymentStatus == DeploymentStatus.DEPLOYED
-            assert rulesService.globalDeployment.allRulesets[1].enabled
-            assert rulesService.globalDeployment.allRulesets[1].name == "Some more global rules"
-            assert rulesService.globalDeployment.allRulesets[1].deploymentStatus == DeploymentStatus.DEPLOYED
+            assert rulesService.globalEngine.allRulesets.length == 2
+            assert rulesService.globalEngine.running == true
+            assert rulesService.globalEngine.isError() == false
+            assert rulesService.globalEngine.allRulesets[0].enabled
+            assert rulesService.globalEngine.allRulesets[0].name == "Some global demo rules"
+            assert rulesService.globalEngine.allRulesets[0].deploymentStatus == DeploymentStatus.DEPLOYED
+            assert rulesService.globalEngine.allRulesets[1].enabled
+            assert rulesService.globalEngine.allRulesets[1].name == "Some more global rules"
+            assert rulesService.globalEngine.allRulesets[1].deploymentStatus == DeploymentStatus.DEPLOYED
         }
 
         when: "a tenant is disabled"
-        def customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
-        def apartment3Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment3Id)
+        def customerAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.customerATenant.id)
+        def apartment3Engine = rulesService.assetEngines.get(managerDemoSetup.apartment3Id)
         def customerATenant = keycloakDemoSetup.customerATenant
         customerATenant.setEnabled(false)
         identityService.updateTenant(null, accessToken, customerATenant.getRealm(), customerATenant)
@@ -215,18 +215,18 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
         conditions.eventually {
             assert customerAEngine.isRunning() == false
             assert customerAEngine.allRulesets.length == 0
-            assert rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id) == null
+            assert rulesService.tenantEngines.get(keycloakDemoSetup.customerATenant.id) == null
             assert apartment3Engine.isRunning() == false
             assert apartment3Engine.allRulesets.length == 0
-            assert rulesService.assetDeployments.get(managerDemoSetup.apartment3Id) == null
+            assert rulesService.assetEngines.get(managerDemoSetup.apartment3Id) == null
         }
 
         and: "other rule engines should be unaffected"
         conditions.eventually {
-            assert rulesService.tenantDeployments.size() == 2
-            assert rulesService.assetDeployments.size() == 0
-            def masterEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.masterTenant.id)
-            def customerBEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerBTenant.id)
+            assert rulesService.tenantEngines.size() == 2
+            assert rulesService.assetEngines.size() == 0
+            def masterEngine = rulesService.tenantEngines.get(keycloakDemoSetup.masterTenant.id)
+            def customerBEngine = rulesService.tenantEngines.get(keycloakDemoSetup.customerBTenant.id)
             assert masterEngine != null
             assert masterEngine.isRunning()
             assert customerBEngine != null
@@ -239,10 +239,10 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 
         then: "the tenants rule engine should start and all asset rule engines from this realm should also start"
         conditions.eventually {
-            customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
-            apartment3Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment3Id)
-            assert rulesService.tenantDeployments.size() == 3
-            assert rulesService.assetDeployments.size() == 1
+            customerAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.customerATenant.id)
+            apartment3Engine = rulesService.assetEngines.get(managerDemoSetup.apartment3Id)
+            assert rulesService.tenantEngines.size() == 3
+            assert rulesService.assetEngines.size() == 1
             assert customerAEngine != null
             assert customerAEngine.isRunning()
             assert customerAEngine.allRulesets.length == 2
@@ -266,21 +266,21 @@ class BasicRulesDeploymentTest extends Specification implements ManagerContainer
 //        conditions.eventually {
 //            assert customerAEngine.isRunning() == false
 //            assert customerAEngine.allRulesets.length == 0
-//            assert rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id) == null
+//            assert rulesService.tenantEngines.get(keycloakDemoSetup.customerATenant.id) == null
 //            assert smartHomeEngine.isRunning() == false
 //            assert smartHomeEngine.allRulesets.length == 0
-//            assert rulesService.assetDeployments.get(managerDemoSetup.smartHomeId) == null
+//            assert rulesService.assetEngines.get(managerDemoSetup.smartHomeId) == null
 //            assert apartment3Engine.isRunning() == false
 //            assert apartment3Engine.allRulesets.length == 0
-//            assert rulesService.assetDeployments.get(managerDemoSetup.apartment3Id) == null
+//            assert rulesService.assetEngines.get(managerDemoSetup.apartment3Id) == null
 //        }
 //
 //        and: "other rule engines should be unaffected"
 //        conditions.eventually {
-//            assert rulesService.tenantDeployments.size() == 2
-//            assert rulesService.assetDeployments.size() == 0
-//            def masterEngine = rulesService.tenantDeployments.get(Constants.MASTER_REALM)
-//            def customerBEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerBTenant.id)
+//            assert rulesService.tenantEngines.size() == 2
+//            assert rulesService.assetEngines.size() == 0
+//            def masterEngine = rulesService.tenantEngines.get(Constants.MASTER_REALM)
+//            def customerBEngine = rulesService.tenantEngines.get(keycloakDemoSetup.customerBTenant.id)
 //            assert masterEngine != null
 //            assert masterEngine.isRunning()
 //            assert customerBEngine != null

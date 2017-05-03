@@ -56,9 +56,9 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetSt
 
     @Override
     public void accept(AssetState assetState) {
-        if (assetState.getAttribute().isStoreDatapoints()) {
+        if (assetState.getAttribute().isStoreDatapoints() && assetState.getAttribute().getStateEvent().isPresent()) {
             LOG.finest("Storing data point for: " + assetState);
-            AssetDatapoint assetDatapoint = new AssetDatapoint(assetState.getAttribute().getStateEvent());
+            AssetDatapoint assetDatapoint = new AssetDatapoint(assetState.getAttribute().getStateEvent().get());
             persistenceService.doTransaction(entityManager -> entityManager.persist(assetDatapoint));
         } else {
             LOG.finest("Ignoring as attribute is not a data point: " + assetState);

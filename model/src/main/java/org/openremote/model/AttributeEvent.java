@@ -23,6 +23,9 @@ import elemental.json.JsonValue;
 import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.SharedEvent;
 
+import java.util.Objects;
+import java.util.Optional;
+
 /**
  * A timestamped {@link AttributeState}.
  */
@@ -113,6 +116,7 @@ public class AttributeEvent extends SharedEvent {
 
     public AttributeEvent(AttributeState attributeState, long timestamp) {
         super(timestamp);
+        Objects.requireNonNull(attributeState);
         this.attributeState = attributeState;
     }
 
@@ -132,7 +136,7 @@ public class AttributeEvent extends SharedEvent {
         return getAttributeRef().getAttributeName();
     }
 
-    public JsonValue getValue() {
+    public Optional<JsonValue> getValue() {
         return getAttributeState().getValue();
     }
 

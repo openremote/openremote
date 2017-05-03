@@ -19,17 +19,16 @@
  */
 package org.openremote.model.asset.agent;
 
+import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.Attribute;
 import org.openremote.model.AttributeRef;
-import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.MetaItem;
 import org.openremote.model.asset.AssetMeta;
 
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
-import static org.openremote.model.Attribute.Functions.isValid;
-import static org.openremote.model.asset.AssetAttribute.Functions.*;
+import static org.openremote.model.MetaItem.isMetaNameEqualTo;
+import static org.openremote.model.MetaItem.replaceMetaByName;
 import static org.openremote.model.asset.AssetMeta.AGENT_LINK;
 
 /**
@@ -46,25 +45,36 @@ final public class AgentLink {
     private AgentLink() {
     }
 
-    public static <A extends Attribute> Predicate<A> isAgentLink() {
-        return attribute -> getAgentLink().apply(attribute).isPresent();
+    public static <A extends Attribute> boolean hasAgentLink(A attribute) {
+        return attribute != null && attribute.getMetaStream().anyMatch(isMetaNameEqualTo(AGENT_LINK));
     }
 
-    @SuppressWarnings("unchecked")
-    public static <A extends Attribute> Predicate<A> isValidAgentLink() {
-        return (Predicate<A>) isValid().and(isAgentLink());
+    public static boolean isAgentLink(MetaItem metaItem) {
+        return metaItem != null && isMetaNameEqualTo(metaItem, AGENT_LINK);
     }
 
-    @SuppressWarnings("unchecked")
-    public static <A extends Attribute> Function<A, Optional<AttributeRef>> getAgentLink() {
-        return (Function<A, Optional<AttributeRef>>) getAttributeLink(AGENT_LINK);
+    public static MetaItem asAgentLinkMetaItem(AttributeRef attributeRef) {
+        return new MetaItem(AGENT_LINK, attributeRef.toJsonValue());
     }
 
-    public static Function<AssetAttribute, AssetAttribute> setAgentLink(AttributeRef protocolConfigurationRef) {
-        return setAttributeLink(AGENT_LINK, protocolConfigurationRef);
+    public static <A extends Attribute> Optional<AttributeRef> getAgentLink(A attribute) {
+        return attribute == null ? Optional.empty() :
+            attribute.getMetaItem(AGENT_LINK)
+                .flatMap(AbstractValueHolder::getValue)
+                .flatMap(AttributeRef::fromJsonValue);
     }
 
-    public static Function<AssetAttribute, AssetAttribute> removeAgentLink() {
-        return removeAttributeLink(AGENT_LINK);
+    public static <A extends Attribute> void setAgentLink(A attribute, AttributeRef attributeRef) {
+        if (attribute == null)
+            return;
+
+        replaceMetaByName(attribute.getMeta(), AGENT_LINK, asAgentLinkMetaItem(attributeRef));
+    }
+
+    public static <A extends Attribute> void removeAgentLink(A attribute) {
+        if (attribute == null)
+            return;
+
+        attribute.getMeta().removeIf(isMetaNameEqualTo(AGENT_LINK));
     }
 }

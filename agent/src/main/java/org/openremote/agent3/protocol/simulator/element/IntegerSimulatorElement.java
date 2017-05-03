@@ -22,29 +22,31 @@ package org.openremote.agent3.protocol.simulator.element;
 import elemental.json.JsonValue;
 import org.openremote.model.AttributeType;
 
+import javax.persistence.criteria.CriteriaBuilder;
+
 public class IntegerSimulatorElement extends SimulatorElement {
 
     public static final String ELEMENT_NAME_INTEGER = "integer";
     public static final String ELEMENT_NAME_RANGE = "range";
 
-    final protected Double min;
-    final protected Double max;
+    final protected Integer min;
+    final protected Integer max;
 
     public IntegerSimulatorElement() {
         this(null, null);
     }
 
-    public IntegerSimulatorElement(Double min, Double max) {
+    public IntegerSimulatorElement(Integer min, Integer max) {
         super(AttributeType.INTEGER);
         this.min = min;
         this.max = max;
     }
 
-    public Double getMin() {
+    public Integer getMin() {
         return min;
     }
 
-    public Double getMax() {
+    public Integer getMax() {
         return max;
     }
 

@@ -54,7 +54,7 @@ import java.util.stream.Stream;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.container.util.MapAccess.getString;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
-import static org.openremote.model.asset.AssetAttribute.Functions.getAssetAttributesFromJson;
+import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
 
 /**
  * Responsible for creating Drools knowledge sessions for the rulesets
@@ -84,9 +84,9 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     protected AssetStorageService assetStorageService;
     protected NotificationService notificationService;
     protected AssetProcessingService assetProcessingService;
-    protected RulesEngine<GlobalRuleset> globalDeployment;
-    protected final Map<String, RulesEngine<TenantRuleset>> tenantDeployments = new HashMap<>();
-    protected final Map<String, RulesEngine<AssetRuleset>> assetDeployments = new HashMap<>();
+    protected RulesEngine<GlobalRuleset> globalEngine;
+    protected final Map<String, RulesEngine<TenantRuleset>> tenantEngines = new HashMap<>();
+    protected final Map<String, RulesEngine<AssetRuleset>> assetEngines = new HashMap<>();
     protected String[] activeTenantIds;
 
     // Keep global list of asset states that have been pushed to any engines
@@ -179,19 +179,19 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
     @Override
     public void stop(Container container) throws Exception {
-        synchronized (assetDeployments) {
-            assetDeployments.forEach((assetId, deployment) -> deployment.stop());
-            assetDeployments.clear();
+        synchronized (assetEngines) {
+            assetEngines.forEach((assetId, deployment) -> deployment.stop());
+            assetEngines.clear();
         }
 
-        synchronized (tenantDeployments) {
-            tenantDeployments.forEach((realm, deployment) -> deployment.stop());
-            tenantDeployments.clear();
+        synchronized (tenantEngines) {
+            tenantEngines.forEach((realm, deployment) -> deployment.stop());
+            tenantEngines.clear();
         }
 
-        if (globalDeployment != null) {
-            globalDeployment.stop();
-            globalDeployment = null;
+        if (globalEngine != null) {
+            globalEngine.stop();
+            globalEngine = null;
         }
     }
 
@@ -219,7 +219,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
         if (wasEnabled) {
             // Remove tenant deployment for this tenant if it exists
-            RulesEngine<TenantRuleset> tenantDeployment = tenantDeployments.get(tenant.getId());
+            RulesEngine<TenantRuleset> tenantDeployment = tenantEngines.get(tenant.getId());
             if (tenantDeployment != null) {
                 // Use a copy of the list to avoid concurrent modification problems in retract
                 new ArrayList<>(Arrays.asList(tenantDeployment.getAllRulesets()))
@@ -228,7 +228,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
             // Remove any asset deployments for assets in this realm
             // Use a copy of the list to avoid concurrent modification problems in retract
-            new ArrayList<>(assetDeployments.values()).stream().flatMap(
+            new ArrayList<>(assetEngines.values()).stream().flatMap(
                 assetRulesEngine -> Arrays.stream(assetRulesEngine.getAllRulesets())
             ).filter(ruleset -> ruleset.getRealmId().equals(tenant.getId()))
                 .forEach(this::undeployAssetRuleset);
@@ -249,19 +249,19 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         // We must load the asset from database (only when required), as the
         // persistence event might not contain a completely loaded asset
         BiFunction<Asset, AssetAttribute, AssetState> buildAssetState = (loadedAsset, attribute) ->
+
             new AssetState(loadedAsset,
-                new AssetAttribute(Optional.of(loadedAsset.getId()),
-                    attribute.getName(),
-                    attribute.getJsonObject())
+                attribute.copy()
             );
-        Asset loadedAsset = null;
+
+        Asset loadedAsset;
 
         switch (persistenceEvent.getCause()) {
             case INSERT:
 
                 // New asset has been created so get attributes that have RULE_STATE meta
                 List<AssetAttribute> ruleAttributes =
-                    asset.getAttributeStream().filter(AssetAttribute::isRuleState).collect(Collectors.toList());
+                    asset.getAttributesStream().filter(AssetAttribute::isRuleState).collect(Collectors.toList());
 
                 // Fully load the asset
                 loadedAsset = assetStorageService.find(asset.getId(), true);
@@ -290,15 +290,19 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                 // Attributes have possibly changed so need to compare old and new state to determine
                 // which facts to retract and which to insert
                 List<AssetAttribute> oldFactAttributes =
-                    getAssetAttributesFromJson(asset.getId()).apply(
-                        (JsonObject) persistenceEvent.getPreviousState()[attributesIndex]
-                    ).filter(AssetAttribute::isRuleState)
+                    attributesFromJson(
+                        (JsonObject) persistenceEvent.getPreviousState()[attributesIndex],
+                        asset.getId()
+                    )
+                        .filter(AssetAttribute::isRuleState)
                         .collect(Collectors.toList());
 
                 List<AssetAttribute> newFactAttributes =
-                    getAssetAttributesFromJson(asset.getId()).apply(
-                        (JsonObject) persistenceEvent.getCurrentState()[attributesIndex]
-                    ).filter(AssetAttribute::isRuleState)
+                    attributesFromJson(
+                        (JsonObject) persistenceEvent.getCurrentState()[attributesIndex],
+                        asset.getId()
+                    )
+                        .filter(AssetAttribute::isRuleState)
                         .collect(Collectors.toList());
 
                 // Compare attributes by JSON value
@@ -347,7 +351,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
             case DELETE:
                 // Retract any facts that were associated with this asset
-                asset.getAttributeStream()
+                asset.getAttributesStream()
                     .filter(AssetAttribute::isRuleState)
                     .forEach(attribute -> {
                         // We can't load the asset again (it was deleted), so don't use buildAssetState() and
@@ -410,11 +414,11 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
      * is returned from the method.
      */
     protected synchronized RulesEngine<GlobalRuleset> deployGlobalRuleset(GlobalRuleset ruleset) {
-        boolean created = globalDeployment == null;
+        boolean created = globalEngine == null;
 
         // Global rules have access to everything in the system
-        if (globalDeployment == null) {
-            globalDeployment = new RulesEngine<>(
+        if (globalEngine == null) {
+            globalEngine = new RulesEngine<>(
                 timerService,
                 executorService,
                 assetStorageService,
@@ -425,19 +429,19 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
             );
         }
 
-        globalDeployment.addRuleset(ruleset);
-        return created ? globalDeployment : null;
+        globalEngine.addRuleset(ruleset);
+        return created ? globalEngine : null;
     }
 
     protected synchronized void undeployGlobalRuleset(GlobalRuleset ruleset) {
-        if (globalDeployment == null) {
+        if (globalEngine == null) {
             return;
         }
 
-        globalDeployment.removeRuleset(ruleset);
+        globalEngine.removeRuleset(ruleset);
 
-        if (globalDeployment.isEmpty()) {
-            globalDeployment = null;
+        if (globalEngine.isEmpty()) {
+            globalEngine = null;
         }
     }
 
@@ -445,7 +449,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         final boolean[] created = {false};
 
         // Look for existing deployment for this tenant
-        RulesEngine<TenantRuleset> deployment = tenantDeployments
+        RulesEngine<TenantRuleset> deployment = tenantEngines
             .computeIfAbsent(ruleset.getRealmId(), (realmId) -> {
                 created[0] = true;
                 return new RulesEngine<>(
@@ -465,7 +469,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     }
 
     protected synchronized void undeployTenantRuleset(TenantRuleset ruleset) {
-        RulesEngine<TenantRuleset> deployment = tenantDeployments.get(ruleset.getRealmId());
+        RulesEngine<TenantRuleset> deployment = tenantEngines.get(ruleset.getRealmId());
         if (deployment == null) {
             return;
         }
@@ -473,7 +477,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         deployment.removeRuleset(ruleset);
 
         if (deployment.isEmpty()) {
-            tenantDeployments.remove(ruleset.getRealmId());
+            tenantEngines.remove(ruleset.getRealmId());
         }
     }
 
@@ -509,7 +513,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         final boolean[] created = {false};
 
         // Look for existing deployment for this asset
-        RulesEngine<AssetRuleset> deployment = assetDeployments
+        RulesEngine<AssetRuleset> deployment = assetEngines
             .computeIfAbsent(ruleset.getAssetId(), (assetId) -> {
                 created[0] = true;
                 return new RulesEngine<>(
@@ -528,7 +532,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     }
 
     protected synchronized void undeployAssetRuleset(AssetRuleset ruleset) {
-        RulesEngine<AssetRuleset> deployment = assetDeployments.get(ruleset.getAssetId());
+        RulesEngine<AssetRuleset> deployment = assetEngines.get(ruleset.getAssetId());
         if (deployment == null) {
             return;
         }
@@ -536,7 +540,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         deployment.removeRuleset(ruleset);
 
         if (deployment.isEmpty()) {
-            assetDeployments.remove(ruleset.getAssetId());
+            assetEngines.remove(ruleset.getAssetId());
         }
     }
 
@@ -634,12 +638,12 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         List<RulesEngine> rulesEngines = new ArrayList<>();
 
         // Add global engine (if it exists)
-        if (globalDeployment != null) {
-            rulesEngines.add(globalDeployment);
+        if (globalEngine != null) {
+            rulesEngines.add(globalEngine);
         }
 
         // Add tenant engine (if it exists)
-        RulesEngine tenantDeployment = tenantDeployments.get(assetRealmId);
+        RulesEngine tenantDeployment = tenantEngines.get(assetRealmId);
 
         if (tenantDeployment != null) {
             rulesEngines.add(tenantDeployment);
@@ -648,7 +652,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         // Add asset engines
         // Iterate through asset hierarchy using asset IDs from getPath
         for (String assetId : assetPath) {
-            RulesEngine assetDeployment = assetDeployments.get(assetId);
+            RulesEngine assetDeployment = assetEngines.get(assetId);
             if (assetDeployment != null) {
                 rulesEngines.add(assetDeployment);
             }
@@ -669,7 +673,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
         return assets.stream()
             .map((ServerAsset asset) ->
-                new Pair<>(asset, asset.getAttributeStream().filter(AssetAttribute::isRuleState))
+                new Pair<>(asset, asset.getAttributesStream().filter(AssetAttribute::isRuleState))
             );
     }
 

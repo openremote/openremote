@@ -50,6 +50,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
+import static org.openremote.model.Attribute.isAttributeNameEqualTo;
 
 public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapView.Presenter {
 
@@ -117,14 +118,20 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
             event -> {
                 if (asset == null
                     || !event.getEntityId().equals(asset.getId())
-                    || dashboardAttributes.stream().noneMatch(attribute -> attribute.getName().equals(event.getAttributeName())))
+                    || dashboardAttributes.stream().noneMatch(attribute -> isAttributeNameEqualTo(attribute, event.getAttributeName())))
                     return;
 
-                dashboardAttributes.stream()
-                    .filter(attribute -> attribute.getName().equals(event.getAttributeName())).findFirst().get()
-                    .setValueUnchecked(
-                        event.getValue(), event.getTimestamp()
-                    );
+                dashboardAttributes
+                    .stream()
+                    .filter(isAttributeNameEqualTo(event.getAttributeName()))
+                    .findFirst()
+                    .map(attribute -> {
+                        attribute.setValue(
+                            event.getValue(), event.getTimestamp()
+                        );
+                        return attribute;
+                    });
+
                 showAssetInfoItems();
             }
         ));
@@ -159,7 +166,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
         if (assetId != null) {
             assetBrowserPresenter.loadAsset(assetId, loadedAsset -> {
                 this.asset = loadedAsset;
-                this.dashboardAttributes = asset.getAttributeStream()
+                this.dashboardAttributes = asset.getAttributesStream()
                     .filter(AssetAttribute::isShowOnDashboard)
                     .collect(Collectors.toList());
                 assetBrowserPresenter.selectAsset(asset);
@@ -191,8 +198,8 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
     protected void showAssetInfoItems() {
         List<Pair<String, String>> infoItems = dashboardAttributes.stream()
             .map(attribute -> new Pair<>(
-                attribute.getLabel(),
-                format(attribute.getFormat().orElse(null), attribute.getValueAsString()))
+                attribute.getLabel().orElse(""),
+                format(attribute.getFormat().orElse(null), attribute.getValueAsString().orElse(null)))
             )
             .sorted(Comparator.comparing(pair -> pair.key))
             .collect(Collectors.toList());

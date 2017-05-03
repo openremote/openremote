@@ -26,10 +26,10 @@ import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.security.Tenant;
+import org.openremote.model.Attribute;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetQuery;
 
 import javax.ws.rs.WebApplicationException;
@@ -254,7 +254,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
             }
 
             // Check read-only
-            if (!isSuperUser() && asset.hasAttribute(attributeName, AssetAttribute::isReadOnly)) {
+            if (!isSuperUser() && asset.getAttributesStream().anyMatch(attribute -> Attribute.isAttributeNameEqualTo(attribute, attributeName) && attribute.isReadOnly())) {
                 throw new WebApplicationException(Response.Status.FORBIDDEN);
             }
 

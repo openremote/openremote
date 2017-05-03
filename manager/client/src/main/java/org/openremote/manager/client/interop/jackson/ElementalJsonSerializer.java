@@ -25,6 +25,8 @@ import com.github.nmorel.gwtjackson.client.JsonSerializerParameters;
 import com.github.nmorel.gwtjackson.client.stream.JsonWriter;
 import elemental.json.JsonValue;
 
+import static org.openremote.model.util.JsonUtil.sanitizeJsonValue;
+
 public class ElementalJsonSerializer extends JsonSerializer<Object> {
 
     @Override

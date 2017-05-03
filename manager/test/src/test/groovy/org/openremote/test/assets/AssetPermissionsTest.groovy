@@ -21,6 +21,7 @@ import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
+import static org.openremote.model.MetaItem.isMetaNameEqualTo
 
 class AssetPermissionsTest extends Specification implements ManagerContainerTrait {
 
@@ -105,7 +106,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         /* ############################################## WRITE ####################################### */
 
         when: "an asset is created in the authenticated realm"
-        def testAsset = new Asset(keycloakDemoSetup.masterTenant.id, "Test Room", AssetType.ROOM)
+        def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.masterTenant.id)
         testAsset.setId(IdentifierUtil.generateGlobalUniqueId())
         assetResource.create(null, testAsset)
         testAsset = assetResource.get(null, testAsset.getId())
@@ -166,7 +167,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         def asset
         conditions.eventually {
             asset = assetResource.get(null, managerDemoSetup.smartOfficeId)
-            assert asset.getAttribute("geoStreet").get().getValue().toJson() == Json.create("Teststreet 123").toJson()
+            assert asset.getAttribute("geoStreet").get().getValue().isPresent()
+            assert asset.getAttribute("geoStreet").get().getValue().get().toJson() == Json.create("Teststreet 123").toJson()
         }
 
         when: "an non-existent attribute is written in the authenticated realm"
@@ -189,7 +191,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "result should match"
         conditions.eventually {
             asset = assetResource.get(null, managerDemoSetup.smartHomeId)
-            assert asset.getAttribute("geoStreet").get().getValue().toJson() == Json.create("Teststreet 456").toJson()
+            assert asset.getAttribute("geoStreet").get().getValue().isPresent()
+            assert asset.getAttribute("geoStreet").get().getValue().get().toJson() == Json.create("Teststreet 456").toJson()
         }
 
         cleanup: "the server should be stopped"
@@ -227,7 +230,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assets[0].id == managerDemoSetup.smartOfficeId
         // Assets should not be completely loaded
         assets[0].path == null
-        assets[0].attributeList.size() == 0
+        assets[0].attributesList.size() == 0
 
         when: "the root assets of the authenticated realm are retrieved"
         assets = assetResource.getRoot(null, keycloakDemoSetup.masterTenant.id)
@@ -337,7 +340,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "result should match"
         conditions.eventually {
             def asset = assetResource.get(null, managerDemoSetup.smartOfficeId)
-            assert asset.getAttribute("geoStreet").get().getValue().toJson() == Json.create("Teststreet 123").toJson()
+            assert asset.getAttribute("geoStreet").get().getValue().isPresent()
+            assert asset.getAttribute("geoStreet").get().getValue().get().toJson() == Json.create("Teststreet 123").toJson()
         }
 
         when: "an asset attribute is written in a foreign realm"
@@ -380,7 +384,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         assets[0].id == managerDemoSetup.smartHomeId
         // Assets should not be completely loaded
         assets[0].path == null
-        assets[0].attributeList.size() == 0
+        assets[0].attributesList.size() == 0
 
         when: "the root assets of a foreign realm are retrieved"
         assets = assetResource.getRoot(null, keycloakDemoSetup.masterTenant.id)
@@ -424,7 +428,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         /* ############################################## WRITE ####################################### */
 
         when: "an asset is created in a foreign realm"
-        def testAsset = new Asset(keycloakDemoSetup.masterTenant.id, "Test Room", AssetType.ROOM)
+        def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.masterTenant.id)
         testAsset.setId(IdentifierUtil.generateGlobalUniqueId())
         assetResource.create(null, testAsset)
 
@@ -442,7 +446,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset is created in the authenticated realm"
-        testAsset = new Asset(keycloakDemoSetup.customerATenant.id, "Test Room", AssetType.ROOM)
+        testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.customerATenant.id)
         testAsset.setId(IdentifierUtil.generateGlobalUniqueId())
         assetResource.create(null, testAsset)
 
@@ -519,15 +523,15 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         apartment1.coordinates[0] == 5.470945d
         apartment1.coordinates[1] == 51.438d
         apartment1.path == null
-        apartment1.attributeList.size() == 0
+        apartment1.attributesList.size() == 0
 
         Asset apartment1Livingroom = assets[1]
         apartment1Livingroom.id == managerDemoSetup.apartment1LivingroomId
-        apartment1Livingroom.name == "Livingroom"
+        apartment1Livingroom.name == "Living Room"
 
         Asset apartment1LivingroomThermostat = assets[2]
         apartment1LivingroomThermostat.id == managerDemoSetup.apartment1LivingroomThermostatId
-        apartment1LivingroomThermostat.name == "Livingroom Thermostat"
+        apartment1LivingroomThermostat.name == "Living Room Thermostat"
 
         Asset apartment2 = assets[3]
         apartment2.id == managerDemoSetup.apartment2Id
@@ -581,17 +585,17 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         then: "the protected asset details should be available"
         apartment1LivingroomThermostat.id == managerDemoSetup.apartment1LivingroomThermostatId
-        apartment1LivingroomThermostat.name == "Livingroom Thermostat"
-        def protectedAttributes = apartment1LivingroomThermostat.getAttributeList()
+        apartment1LivingroomThermostat.name == "Living Room Thermostat"
+        def protectedAttributes = apartment1LivingroomThermostat.getAttributesList()
         protectedAttributes.size() == 2
-        def currentTemperature = apartment1LivingroomThermostat.getAttribute("currentTemperature")
-        currentTemperature.get().getType().get() == AttributeType.DECIMAL
-        currentTemperature.get().getValueAsDecimal() == null
-        Meta protectedMeta = currentTemperature.get().getMeta()
-        protectedMeta.getAll().size() == 3
-        protectedMeta.get(AssetMeta.LABEL).get().getValueAsString() == "Current Temperature"
-        protectedMeta.get(AssetMeta.READ_ONLY).get().getValueAsBoolean()
-        protectedMeta.get(AssetMeta.RULE_STATE).get().getValueAsBoolean()
+        def currentTemperature = apartment1LivingroomThermostat.getAttribute("currentTemperature").get()
+        currentTemperature.getType().get() == AttributeType.DECIMAL
+        !currentTemperature.getValueAsDecimal().isPresent()
+        Meta protectedMeta = currentTemperature.getMeta()
+        protectedMeta.size() == 3
+        protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.LABEL)).findFirst().get().getValueAsString().get() == "Current Temperature"
+        protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.READ_ONLY)).findFirst().get().getValueAsBoolean().get()
+        protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.RULE_STATE)).findFirst().get().getValueAsBoolean().get()
 
         when: "an asset is retrieved by ID in a foreign realm"
         assetResource.get(null, managerDemoSetup.thingId)
@@ -603,7 +607,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         /* ############################################## WRITE ####################################### */
 
         when: "an asset is created in a foreign realm"
-        def testAsset = new Asset(keycloakDemoSetup.masterTenant.id, "Test Room", AssetType.ROOM)
+        def testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.masterTenant.id)
         testAsset.setId(IdentifierUtil.generateGlobalUniqueId())
         assetResource.create(null, testAsset)
 
@@ -621,7 +625,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 500
 
         when: "an asset is created in the authenticated realm"
-        testAsset = new Asset(keycloakDemoSetup.customerATenant.id, "Test Room", AssetType.ROOM)
+        testAsset = new Asset("Test Room", AssetType.ROOM, null, keycloakDemoSetup.customerATenant.id)
         testAsset.setId(IdentifierUtil.generateGlobalUniqueId())
         assetResource.create(null, testAsset)
 
@@ -663,7 +667,8 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         then: "result should match"
         conditions.eventually {
             def asset = assetResource.get(null, managerDemoSetup.apartment1LivingroomThermostatId)
-            assert asset.getAttribute("comfortTemperature").get().getValue().toJson() == Json.create(22.123).toJson()
+            assert asset.getAttribute("comfortTemperature").get().getValue().isPresent()
+            assert asset.getAttribute("comfortTemperature").get().getValue().get().toJson() == Json.create(22.123).toJson()
         }
 
         when: "an attribute is written on a non-existent user asset"

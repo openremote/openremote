@@ -272,7 +272,9 @@ public class AssetViewImpl extends Composite implements AssetView {
     @Override
     public void setIconAndType(String icon, String type) {
         headline.setIcon(icon);
-        AssetType assetType = AssetType.getByValue(type);
+        // TODO: Should unknown/undefined asset type default to custom
+        AssetType assetType = AssetType.getByValue(type).orElse(AssetType.CUSTOM);
+
         if (assetType == AssetType.CUSTOM) {
             headline.setSub(type);
         } else {

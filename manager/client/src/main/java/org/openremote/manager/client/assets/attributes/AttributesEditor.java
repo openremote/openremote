@@ -27,11 +27,9 @@ import elemental.json.Json;
 import elemental.json.JsonType;
 import elemental.json.JsonValue;
 import org.openremote.manager.client.Environment;
-import org.openremote.manager.client.util.JsUtil;
 import org.openremote.manager.client.widget.*;
 import org.openremote.model.Attribute;
 import org.openremote.model.AttributeType;
-import org.openremote.model.Meta;
 import org.openremote.model.MetaItem;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
@@ -42,6 +40,8 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import static org.openremote.model.Attribute.ATTRIBUTE_NAME_VALIDATOR;
+import static org.openremote.model.util.JsonUtil.getJsonValueType;
+import static org.openremote.model.util.JsonUtil.sanitizeJsonValue;
 
 public class AttributesEditor
     extends AttributesView<AttributesEditor.Container, AttributesEditor.Style> {
@@ -78,7 +78,7 @@ public class AttributesEditor
 
     @Override
     protected String getAttributeLabel(AssetAttribute attribute) {
-        return attribute.getName();
+        return attribute.getName().orElse("");
     }
 
     @Override
@@ -104,7 +104,10 @@ public class AttributesEditor
         deleteButton.setIcon("remove");
         deleteButton.addClickHandler(clickEvent -> {
             removeAttribute(attribute);
-            showInfo(environment.getMessages().attributeDeleted(attribute.getName()));
+            attribute.getName()
+                .ifPresent(name ->
+                    showInfo(environment.getMessages().attributeDeleted(name))
+                );
         });
         formGroupActions.add(deleteButton);
     }
@@ -127,7 +130,7 @@ public class AttributesEditor
     /* ####################################################################### */
 
     protected FormGroup createNewAttributeEditor() {
-        AssetAttribute attribute = new AssetAttribute("");
+        AssetAttribute attribute = new AssetAttribute();
 
         FormGroup formGroup = createAttributeNameEditor(attribute);
 
@@ -139,10 +142,11 @@ public class AttributesEditor
             if (attribute.isValid()) {
                 formGroup.setError(false);
                 // TODO This is necessary because JSON elemental behavior is weird
-                AssetAttribute att2 =
-                    new AssetAttribute(attribute.getAssetId(), attribute.getName(), Json.parse(attribute.getJsonObject().toJson()));
+                AssetAttribute att2 = attribute.copy();
                 getAttributes().add(att2);
-                showInfo(environment.getMessages().attributeAdded(attribute.getName()));
+                if (attribute.hasName()) {
+                    showInfo(environment.getMessages().attributeAdded(attribute.getName().get()));
+                }
                 build();
             } else {
                 formGroup.setError(true);
@@ -200,13 +204,13 @@ public class AttributesEditor
 
     public class MetaEditor extends FlowPanel {
 
-        final protected Attribute attribute;
+        final protected AssetAttribute attribute;
         final protected FormSectionLabel itemListSectionLabel = new FormSectionLabel(environment.getMessages().metaItems());
         final protected FlowPanel itemListPanel = new FlowPanel();
         final protected FormSectionLabel itemEditorSectionLabel = new FormSectionLabel(environment.getMessages().newItem());
         final protected FlowPanel itemEditorPanel = new FlowPanel();
 
-        public MetaEditor(Attribute attribute) {
+        public MetaEditor(AssetAttribute attribute) {
             this.attribute = attribute;
 
             add(itemListSectionLabel);
@@ -221,39 +225,26 @@ public class AttributesEditor
         protected void buildItemList() {
             itemListPanel.clear();
 
-            if (!attribute.hasMeta() || !attribute.getMeta().any()) {
+            if (!attribute.hasMeta() || attribute.getMeta().isEmpty()) {
                 itemListSectionLabel.setVisible(false);
                 return;
             }
             itemListSectionLabel.setVisible(true);
 
-            List<MetaItem> items = attribute.getMeta().getAll();
+            List<MetaItem> items = attribute.getMeta();
             for (int i = 0; i < items.size(); i++) {
                 MetaItem item = items.get(i);
                 FormGroup formGroup = new FormGroup();
 
-                FormLabel label = new FormLabel(item.getName());
+                FormLabel label = new FormLabel(item.getName().orElse(null));
                 label.addStyleName("largest");
                 formGroup.addFormLabel(label);
 
                 FormField formField = new FormField();
 
                 // Determine editor based on JSON raw value type
-                JsonValue value = item.getValue();
-                JsonType valueType;
-                // TODO https://github.com/gwtproject/gwt/issues/9484
-                String jsType = JsUtil.typeOf(value);
-                switch (jsType) {
-                    case "number":
-                        valueType = JsonType.NUMBER;
-                        break;
-                    case "boolean":
-                        valueType = JsonType.BOOLEAN;
-                        break;
-                    default:
-                        valueType = value.getType();
-                        break;
-                }
+                JsonValue value = sanitizeJsonValue(item.getValue());
+                JsonType valueType = getJsonValueType(value);
                 formField.add(createEditor(item, valueType, false, formGroup));
                 formGroup.addFormField(formField);
 
@@ -297,9 +288,6 @@ public class AttributesEditor
                     itemValueEditorGroup.setError(false);
                     // TODO This is necessary because JSON elemental behavior is weird
                     MetaItem storedItem = new MetaItem(Json.parse(item.getJsonObject().toJson()));
-                    if (!attribute.hasMeta()) {
-                        attribute.setMeta(new Meta());
-                    }
                     attribute.getMeta().add(storedItem);
                     buildItemList();
                     buildItemEditor();
@@ -322,30 +310,30 @@ public class AttributesEditor
                 showValidationError(msg);
             };
             // For some meta items we know if we can edit them or not... custom items are always editable
-            Boolean isEditable = AssetMeta.isEditable(item.getName());
+            Boolean isEditable = AssetMeta.isEditable(item.getName().orElse(null));
 
             // TODO: We should support more JSON types, and have special editors for well-known meta items
             // Default to STRING editor if value is empty/no type available
             if (valueType == null || valueType.equals(JsonType.STRING)) {
-                String currentValue = item.getValueAsString();
+                String currentValue = item.getValueAsString().orElse(null);
                 Consumer<String> updateConsumer = isEditable == null || isEditable || forceEditable ? value -> {
                     formGroup.setError(false);
-                    item.setValueUnchecked(Json.create(value));
+                    item.setValue(Json.create(value));
                 } : null;
                 editor = createStringEditorWidget(style, currentValue, Optional.empty(), updateConsumer);
             } else if (valueType.equals(JsonType.NUMBER)) {
-                String currentValue = item.getValueAsString();
+                String currentValue = item.getValueAsString().orElse(null);
                 Consumer<String> updateConsumer = isEditable == null || isEditable || forceEditable ? value -> {
                     Double decimalValue = Double.valueOf(value);
                     formGroup.setError(false);
-                    item.setValueUnchecked(Json.create(decimalValue));
+                    item.setValue(Json.create(decimalValue));
                 } : null;
                 editor = createDecimalEditorWidget(style, currentValue, Optional.empty(), updateConsumer, errorConsumer);
             } else if (valueType.equals(JsonType.BOOLEAN)) {
-                Boolean currentValue = item.getValueAsBoolean();
+                Boolean currentValue = item.getValueAsBoolean().orElse(false);
                 Consumer<Boolean> updateConsumer = isEditable == null || isEditable || forceEditable ? value -> {
                     formGroup.setError(false);
-                    item.setValueUnchecked(Json.create(value));
+                    item.setValue(Json.create(value));
                 } : null;
                 editor = createBooleanEditorWidget(style, currentValue, Optional.empty(), updateConsumer);
             } else {
@@ -437,7 +425,7 @@ public class AttributesEditor
                 ? AssetMeta.EditableType.valueOf(typeListBox.getSelectedValue()).valueType
                 : JsonType.STRING;
             if (valueType == JsonType.BOOLEAN) {
-                item.setValueUnchecked(Json.create(false)); // Special case boolean editor, has an "initial" state, there is always a value
+                item.setValue(Json.create(false)); // Special case boolean editor, has an "initial" state, there is always a value
             }
             IsWidget editor = createEditor(item, valueType, true, formGroup);
             formField.add(editor);

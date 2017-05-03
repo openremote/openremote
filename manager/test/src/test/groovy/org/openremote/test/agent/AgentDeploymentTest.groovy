@@ -14,8 +14,6 @@ import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-import static org.openremote.model.Attribute.Functions.getAttribute
-
 class AgentDeploymentTest extends Specification implements ManagerContainerTrait {
 
     def "Check agent and thing deployment"() {
@@ -34,7 +32,7 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         then: "the simulator elements should have the initial state"
         conditions.eventually {
             assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Toggle").asBoolean()
-            assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Dimmer").getType() == JsonType.NULL
+            assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Dimmer") == null
             // No initial value!
             assert new ColorRGB(simulatorProtocol.getState(managerDemoSetup.thingId, "light1Color") as JsonArray) == new ColorRGB(88, 123, 88)
             assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1PowerConsumption").asNumber() == 12.345d
@@ -49,12 +47,14 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
 
         then: "the simulator state and thing attribute value should be updated (simulator reflects actuator write as sensor read)"
         conditions.eventually {
+            assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Dimmer") != null
             assert simulatorProtocol.getState(managerDemoSetup.thingId, "light1Dimmer").asNumber() == 66
             def thing = assetStorageService.find(managerDemoSetup.thingId, true)
-            def attributes = thing.getAttributeStream()
-            def attribute = getAttribute("light1Dimmer").apply(attributes)
-            assert attribute.get().getValue().getType() == JsonType.NUMBER
-            assert attribute.get().getValueAsInteger() == 66
+            def attribute = thing.getAttribute("light1Dimmer")
+            assert attribute.get().getValue().isPresent()
+            assert attribute.get().getValue().get().getType() == JsonType.NUMBER
+            assert attribute.get().getValueAsInteger().isPresent()
+            assert attribute.get().getValueAsInteger().get() == 66
         }
 
         when: "a simulated sensor changes its value"
@@ -64,10 +64,11 @@ class AgentDeploymentTest extends Specification implements ManagerContainerTrait
         then: "the thing attribute value should be updated"
         conditions.eventually {
             def thing = assetStorageService.find(managerDemoSetup.thingId, true)
-            def attributes = thing.getAttributeStream()
-            def attribute = getAttribute("light1Dimmer").apply(attributes)
-            assert attribute.get().getValue().getType() == JsonType.NUMBER
-            assert attribute.get().getValueAsInteger() == 77
+            def attribute = thing.getAttribute("light1Dimmer")
+            assert attribute.get().getValue().isPresent()
+            assert attribute.get().getValue().get().getType() == JsonType.NUMBER
+            assert attribute.get().getValueAsInteger().isPresent()
+            assert attribute.get().getValueAsInteger().get() == 77
         }
 
         cleanup: "the server should be stopped"

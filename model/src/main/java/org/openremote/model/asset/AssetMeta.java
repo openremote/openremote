@@ -20,8 +20,8 @@
 package org.openremote.model.asset;
 
 import elemental.json.JsonType;
-import elemental.json.JsonValue;
 import org.openremote.model.MetaItem;
+import org.openremote.model.HasMetaName;
 import org.openremote.model.units.AttributeUnits;
 
 import java.util.ArrayList;
@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 /**
  * Asset attribute meta item name is an arbitrary string. It should be URI. This enum contains
@@ -37,7 +38,7 @@ import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
  * <p>
  * TODO https://people.eecs.berkeley.edu/~arka/papers/buildsys2015_metadatasurvey.pdf
  */
-public enum AssetMeta {
+public enum AssetMeta implements HasMetaName {
 
     /**
      * Links the attribute to an agent's {@link org.openremote.model.asset.agent.ProtocolConfiguration}, connecting it
@@ -53,7 +54,7 @@ public enum AssetMeta {
     /**
      * If there is a dashboard, some kind of attribute overview, should this attribute be shown.
      */
-    SHOWN_ON_DASHBOARD(ASSET_META_NAMESPACE + ":showOnDashboard", new Access(true, true, true), JsonType.BOOLEAN),
+    SHOW_ON_DASHBOARD(ASSET_META_NAMESPACE + ":showOnDashboard", new Access(true, true, true), JsonType.BOOLEAN),
 
     /**
      * Format string that can be used to render the attribute value, see https://github.com/alexei/sprintf.js.
@@ -109,6 +110,7 @@ public enum AssetMeta {
      * Indicates the units (data sub-type) of the attribute value (should be a valid
      * {@link AttributeUnits} string representation).
      */
+    // TODO: Remove this
     UNITS(ASSET_META_NAMESPACE + ":units", new Access(true, false, true), JsonType.STRING),
 
     /**
@@ -148,7 +150,7 @@ public enum AssetMeta {
     /**
      * Marks an attribute as being executable so it then supports values of type {@link org.openremote.model.AttributeExecuteStatus}.
      */
-    EXECUTABLE(ASSET_META_NAMESPACE + ":command", new Access(true, false, true), JsonType.BOOLEAN);
+    EXECUTABLE(ASSET_META_NAMESPACE + ":executable", new Access(true, false, true), JsonType.BOOLEAN);
 
     final protected String urn;
     final protected Access access;
@@ -185,6 +187,10 @@ public enum AssetMeta {
     }
 
     public static Boolean isEditable(String urn) {
+        if (urn == null) {
+            return null;
+        }
+
         for (AssetMeta assetMeta : editable()) {
             if (assetMeta.getUrn().equals(urn))
                 return assetMeta.getAccess().editable;
@@ -192,7 +198,10 @@ public enum AssetMeta {
         return null;
     }
 
-    public static Optional<AssetMeta> getWellKnownAssetMeta(String urn) {
+    public static Optional<AssetMeta> getAssetMeta(String urn) {
+        if (isNullOrEmpty(urn))
+            return Optional.empty();
+
         for (AssetMeta assetMeta : values()) {
             if (assetMeta.getUrn().equals(urn))
                 return Optional.of(assetMeta);
@@ -200,8 +209,30 @@ public enum AssetMeta {
         return Optional.empty();
     }
 
-    public static MetaItem createMetaItem(AssetMeta assetMeta, JsonValue value) {
-        return new MetaItem(assetMeta.getUrn(), value);
+    public static boolean isAssetMeta(MetaItem metaItem) {
+        return metaItem != null && getAssetMeta(metaItem.getName().orElse(null)).isPresent();
+    }
+
+    /**
+     * Only well-known items can be protected readable.
+     *
+     * @see Access#protectedRead
+     */
+    public static boolean isMetaItemProtectedReadable(MetaItem metaItem) {
+        return getAssetMeta(metaItem.getName().orElse(null))
+            .map(meta -> meta.getAccess().protectedRead)
+            .orElse(false);
+    }
+
+    /**
+     * Only well-known items can be protected readable.
+     *
+     * @see Access#protectedWrite
+     */
+    public static boolean isMetaItemProtectedWritable(MetaItem metaItem) {
+        return getAssetMeta(metaItem.getName().orElse(null))
+            .map(meta -> meta.getAccess().protectedWrite)
+            .orElse(false);
     }
 
     /**
@@ -253,5 +284,6 @@ public enum AssetMeta {
             this.editable = editable;
         }
     }
+
 
 }

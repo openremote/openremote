@@ -26,15 +26,14 @@ import org.openremote.model.AttributeExecuteStatus;
 import org.openremote.model.AttributeRef;
 import org.openremote.model.AttributeState;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.util.JsonUtil;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import static org.openremote.agent3.protocol.macro.MacroConfiguration.getMacroActions;
+import static org.openremote.agent3.protocol.macro.MacroConfiguration.isValidMacroConfiguration;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 
 /**
@@ -126,7 +125,8 @@ public class MacroProtocol extends AbstractProtocol {
     }
 
     private static final Logger LOG = Logger.getLogger(MacroProtocol.class.getName());
-    protected final Map<AttributeRef, List<MacroAction>> actionMap = new HashMap<>();
+    protected final Map<AttributeRef, List<MacroAction>> macroMap = new HashMap<>();
+    protected final Map<AttributeRef, AttributeRef> macroAttributeMap = new HashMap<>();
     protected final Map<AttributeRef, MacroExecutionTask> executions = new HashMap<>();
 
     @Override
@@ -137,8 +137,9 @@ public class MacroProtocol extends AbstractProtocol {
     @Override
     protected void sendToActuator(AttributeEvent event) {
         // Asset processing service has already done sanity checks
-        JsonValue value = event.getValue();
-        AttributeExecuteStatus status = AttributeExecuteStatus.fromString(value.asString());
+        // Can be valid to pass null to
+        Optional<JsonValue> value = event.getValue();
+        AttributeExecuteStatus status = AttributeExecuteStatus.fromString(value.flatMap(JsonUtil::asString).orElse(null));
         AttributeRef attributeRef = event.getAttributeRef();
 
         // Check if it's a cancellation request
@@ -156,10 +157,20 @@ public class MacroProtocol extends AbstractProtocol {
             return;
         }
 
+        AttributeRef macroRef;
         List<MacroAction> actions;
 
-        synchronized (actionMap) {
-            actions = actionMap.get(attributeRef);
+        synchronized (macroAttributeMap) {
+            macroRef = macroAttributeMap.get(attributeRef);
+        }
+
+        if (macroRef == null) {
+            LOG.fine("Attribute is not linked to a macro: " + attributeRef);
+            return;
+        }
+
+        synchronized (macroMap) {
+            actions = macroMap.get(macroRef);
         }
 
         if (actions == null || actions.size() == 0) {
@@ -172,14 +183,28 @@ public class MacroProtocol extends AbstractProtocol {
 
     @Override
     protected void onAttributeAdded(AssetAttribute attribute, AssetAttribute macroConfiguration) {
-        // Protocol configuration is actually a Macro
+        // Protocol configuration is actually a Macro Configuration
+        AttributeRef macroRef = macroConfiguration.getReferenceOrThrow();
 
-        // Store the macro actions for later execution requests
-        AttributeRef reference = attribute.getReference();
-        List<MacroAction> actions = getMacroActions().apply(macroConfiguration).collect(Collectors.toList());
+        // Only process the macro configuration the first time it is encountered
+        synchronized (macroMap) {
+            if (!macroMap.containsKey(macroRef)) {
+                // Check macro configuration is valid
+                if (!isValidMacroConfiguration(macroConfiguration)) {
+                    LOG.fine("Macro configuration is not valid: " + macroConfiguration);
 
-        synchronized (actionMap) {
-            actionMap.put(reference, actions);
+                    // Put an empty list of actions against this macro
+                    macroMap.put(macroRef, Collections.emptyList());
+                } else {
+                    // Store the macro actions for later execution requests
+                    macroMap.put(macroRef, getMacroActions(macroConfiguration));
+                }
+            }
+        }
+
+        // Store link between attribute and configuration
+        synchronized (macroAttributeMap) {
+            macroAttributeMap.put(attribute.getReferenceOrThrow(), macroRef);
         }
     }
 
@@ -191,10 +216,10 @@ public class MacroProtocol extends AbstractProtocol {
     @Override
     protected void onAttributeRemoved(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         // Store the macro actions for later execution requests
-        AttributeRef reference = attribute.getReference();
+        AttributeRef reference = attribute.getReferenceOrThrow();
 
-        synchronized (actionMap) {
-            actionMap.remove(reference);
+        synchronized (macroAttributeMap) {
+            macroAttributeMap.remove(attribute.getReference());
         }
     }
 

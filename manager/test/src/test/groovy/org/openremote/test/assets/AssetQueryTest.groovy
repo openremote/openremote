@@ -15,7 +15,6 @@ import spock.lang.Specification
 import javax.persistence.EntityManager
 import java.util.function.Function
 
-import static org.openremote.model.asset.Asset.getAttribute
 import static org.openremote.model.asset.AssetQuery.*
 import static org.openremote.model.asset.AssetQuery.OrderBy.Property.NAME
 import static org.openremote.model.asset.AssetType.THING
@@ -55,7 +54,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.path.length == 2
         asset.path[0] == managerDemoSetup.apartment1Id
         asset.path[1] == managerDemoSetup.smartHomeId
-        asset.attributeList.size() > 0
+        asset.attributesList.size() > 0
 
         when: "a query is executed"
         asset = assetStorageService.find(
@@ -77,7 +76,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.tenantDisplayName == keycloakDemoSetup.masterTenant.displayName
         asset.coordinates.length == 2
         asset.path == null
-        asset.attributeList.size() == 0
+        asset.attributesList.size() == 0
 
         when: "a query is executed"
         asset = assetStorageService.find(
@@ -101,7 +100,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         asset.coordinates.length == 2
         asset.path.length == 1
         asset.path[0] == managerDemoSetup.smartOfficeId
-        asset.getAttribute("geoStreet").get().valueAsString == "Torenallee 20"
+        asset.getAttribute("geoStreet").get().getValueAsString().get() == "Torenallee 20"
 
         when: "a query is executed"
         def assets = assetStorageService.findAll(
@@ -125,7 +124,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).tenantDisplayName == keycloakDemoSetup.masterTenant.displayName
         assets.get(0).coordinates.length == 2
         assets.get(0).path == null
-        assets.get(0).attributeList.size() == 0
+        assets.get(0).attributesList.size() == 0
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -151,7 +150,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).coordinates.length == 2
         assets.get(0).path.length == 1
         assets.get(0).path[0] == managerDemoSetup.smartOfficeId
-        assets.get(0).getAttribute("geoStreet").get().valueAsString == "Torenallee 20"
+        assets.get(0).getAttribute("geoStreet").get().getValueAsString().get() == "Torenallee 20"
 
         when: "a query is executed"
         assets = assetStorageService.findAll(
@@ -174,7 +173,7 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).tenantDisplayName == keycloakDemoSetup.customerATenant.displayName
         assets.get(0).coordinates.length == 2
         assets.get(0).path == null
-        assets.get(0).attributeList.size() == 0
+        assets.get(0).attributesList.size() == 0
         assets.get(1).id == managerDemoSetup.apartment2Id
         assets.get(2).id == managerDemoSetup.apartment3Id
 
@@ -248,10 +247,10 @@ class AssetQueryTest extends Specification implements ManagerContainerTrait {
         assets.get(0).id == managerDemoSetup.apartment1Id
         assets.get(1).id == managerDemoSetup.apartment1LivingroomId
         assets.get(2).id == managerDemoSetup.apartment1LivingroomThermostatId
-        assets.get(2).getAttributeList().size() == 2
-        assets.get(2).getAttribute("currentTemperature").get().valueAsDecimal == null
+        assets.get(2).getAttributesList().size() == 2
+        !assets.get(2).getAttribute("currentTemperature").get().getValue().isPresent()
         assets.get(2).getAttribute("currentTemperature").get().meta.size() == 3
-        assets.get(2).getAttribute("comfortTemperature").get().valueAsDecimal == null
+        !assets.get(2).getAttribute("comfortTemperature").get().getValue().isPresent()
         assets.get(2).getAttribute("comfortTemperature").get().meta.size() == 2
         assets.get(3).id == managerDemoSetup.apartment2Id
 

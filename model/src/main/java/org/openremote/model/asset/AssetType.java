@@ -21,12 +21,9 @@ package org.openremote.model.asset;
 
 import elemental.json.Json;
 import org.openremote.model.AttributeType;
-import org.openremote.model.Meta;
+import org.openremote.model.MetaItem;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static org.openremote.model.AttributeType.INTEGER;
@@ -46,30 +43,30 @@ public enum AssetType {
 
     BUILDING(ASSET_NAMESPACE + ":building", "building", Arrays.asList(
         new AssetAttribute("area", INTEGER)
-            .setMeta(new Meta()
-            .add(createMetaItem(LABEL, Json.create("Surface area")))
-            .add(createMetaItem(DESCRIPTION, Json.create("Floor area of building measured in m²")))
-            .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/area")))
+            .setMeta(
+                new MetaItem(LABEL, Json.create("Surface area")),
+                new MetaItem(DESCRIPTION, Json.create("Floor area of building measured in m²")),
+                new MetaItem(ABOUT, Json.create("http://project-haystack.org/tag/area"))
         ),
         new AssetAttribute("geoStreet", STRING)
-            .setMeta(new Meta()
-            .add(createMetaItem(LABEL, Json.create("Street")))
-            .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoStreet")))
+            .setMeta(
+                new MetaItem(LABEL, Json.create("Street")),
+                new MetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoStreet"))
         ),
         new AssetAttribute("geoPostalCode", AttributeType.INTEGER)
-            .setMeta(new Meta()
-            .add(createMetaItem(LABEL, Json.create("Postal Code")))
-            .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoPostalCode")))
+            .setMeta(
+                new MetaItem(LABEL, Json.create("Postal Code")),
+                new MetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoPostalCode"))
         ),
         new AssetAttribute("geoCity", STRING)
-            .setMeta(new Meta()
-            .add(createMetaItem(LABEL, Json.create("City")))
-            .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCity")))
+            .setMeta(
+                new MetaItem(LABEL, Json.create("City")),
+                new MetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCity"))
         ),
         new AssetAttribute("geoCountry", STRING)
-            .setMeta(new Meta()
-            .add(createMetaItem(LABEL, Json.create("Country")))
-            .add(createMetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCountry")))
+            .setMeta(
+                new MetaItem(LABEL, Json.create("Country")),
+                new MetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCountry"))
         ))),
 
     FLOOR(ASSET_NAMESPACE + ":floor", "server", null),
@@ -121,13 +118,14 @@ public enum AssetType {
         return list.toArray(new AssetType[list.size()]);
     }
 
-    public static AssetType getByValue(String value) {
+    public static Optional<AssetType> getByValue(String value) {
         if (value == null)
-            return CUSTOM;
+            return Optional.empty();
+
         for (AssetType assetType : values()) {
             if (value.equals(assetType.getValue()))
-                return assetType;
+                return Optional.of(assetType);
         }
-        return CUSTOM;
+        return Optional.empty();
     }
 }

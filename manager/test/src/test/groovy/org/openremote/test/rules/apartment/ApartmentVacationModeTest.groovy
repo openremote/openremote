@@ -31,7 +31,7 @@ class ApartmentVacationModeTest extends Specification implements ManagerContaine
 
         expect: "the rule engines to become available and be running"
         conditions.eventually {
-            apartment1Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment1Id)
+            apartment1Engine = rulesService.assetEngines.get(managerDemoSetup.apartment1Id)
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
         }
@@ -51,7 +51,8 @@ class ApartmentVacationModeTest extends Specification implements ManagerContaine
         then: "that value should be stored"
         conditions.eventually {
             def asset = assetStorageService.find(managerDemoSetup.apartment1Id, true)
-            assert asset.getAttribute("vacationDays").get().valueAsInteger == 5
+            assert asset.getAttribute("vacationDays").get().getValueAsInteger().isPresent()
+            assert asset.getAttribute("vacationDays").get().getValueAsInteger().get() == 5
         }
 
         when: "time advanced to the next day, which should trigger the cron rule"
@@ -60,7 +61,8 @@ class ApartmentVacationModeTest extends Specification implements ManagerContaine
         then: "the vacation days should be decremented"
         conditions.eventually {
             def asset = assetStorageService.find(managerDemoSetup.apartment1Id, true)
-            assert asset.getAttribute("vacationDays").get().valueAsInteger == 4
+            assert asset.getAttribute("vacationDays").get().getValueAsInteger().isPresent()
+            assert asset.getAttribute("vacationDays").get().getValueAsInteger().get() == 4
         }
 
         when: "time advanced again (to test that the rule only fires once per day)"
@@ -69,7 +71,8 @@ class ApartmentVacationModeTest extends Specification implements ManagerContaine
         then: "the vacation days should NOT be decremented"
         new PollingConditions(initialDelay: 2).eventually {
             def asset = assetStorageService.find(managerDemoSetup.apartment1Id, true)
-            assert asset.getAttribute("vacationDays").get().valueAsInteger == 4
+            assert asset.getAttribute("vacationDays").get().getValueAsInteger().isPresent()
+            assert asset.getAttribute("vacationDays").get().getValueAsInteger().get() == 4
         }
 
         expect: "the remaining vacation days to be decremented with each passing day"
@@ -81,7 +84,7 @@ class ApartmentVacationModeTest extends Specification implements ManagerContaine
             advancePseudoClocks(1, DAYS, container, apartment1Engine)
             conditions.eventually {
                 def asset = assetStorageService.find(managerDemoSetup.apartment1Id, true)
-                assert asset.getAttribute("vacationDays").get().valueAsInteger == remainingDays
+                assert asset.getAttribute("vacationDays").get().getValueAsInteger().get() == remainingDays
             }
         }
 

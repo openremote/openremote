@@ -20,20 +20,15 @@
 package org.openremote.model.asset.agent;
 
 import elemental.json.Json;
-import org.openremote.model.Attribute;
 import org.openremote.model.AttributeType;
 import org.openremote.model.Constants;
 import org.openremote.model.Meta;
 import org.openremote.model.asset.AssetAttribute;
 
 import java.util.Locale;
-import java.util.function.Function;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
-
-import static org.openremote.model.Attribute.Functions.isOfType;
-import static org.openremote.model.Attribute.Functions.isValid;
-import static org.openremote.model.AttributeType.STRING;
 
 /**
  * Agent attributes can be named protocol configurations.
@@ -46,45 +41,66 @@ import static org.openremote.model.AttributeType.STRING;
  * Configuration details are managed as {@link Meta} of the attribute.
  */
 final public class ProtocolConfiguration {
+    public static final Predicate<String> PROTOCOL_NAME_VALIDATOR = value ->
+        value != null && value
+            .toLowerCase(Locale.ROOT)
+            .startsWith(Constants.PROTOCOL_NAMESPACE);
 
     private ProtocolConfiguration() {
     }
 
-    public static UnaryOperator<AssetAttribute> initProtocolConfiguration(String protocolName) {
-        return attribute -> {
-            attribute.setEnabled(true);
-            attribute.setType(AttributeType.STRING);
-            attribute.setValue(Json.create(protocolName));
-            return attribute;
-        };
+    public static AssetAttribute initProtocolConfiguration(AssetAttribute attribute, String protocolName) throws IllegalArgumentException {
+        if (attribute == null) {
+            return null;
+        }
+
+        isValidProtocolNameOrThrow(protocolName);
+        attribute.setEnabled(true);
+        attribute.setType(AttributeType.STRING);
+        attribute.setValue(Json.create(protocolName));
+        return attribute;
     }
 
-    public static <A extends Attribute> Predicate<A> isProtocolConfiguration() {
-        return attribute -> isProtocolUrn().test(attribute.getValueAsString());
+    public static UnaryOperator<AssetAttribute> initProtocolConfiguration(String protocolName) throws IllegalArgumentException {
+        return attribute -> initProtocolConfiguration(attribute, protocolName);
     }
 
-    @SuppressWarnings("unchecked")
-    public static <A extends Attribute> Predicate<A> isValidProtocolConfiguration() {
-        return (Predicate<A>) isValid()
-            .and(isOfType(STRING))
-            .and(isProtocolConfiguration());
+    public static boolean isValidProtocolName(String protocolName) {
+        return PROTOCOL_NAME_VALIDATOR.test(protocolName);
     }
 
-    public static Predicate<String> isProtocolUrn() {
-        return value -> value != null && value.toLowerCase(Locale.ROOT).startsWith(Constants.PROTOCOL_NAMESPACE);
+    public static void isValidProtocolNameOrThrow(String protocolName) throws IllegalArgumentException {
+        if (!isValidProtocolName(protocolName)) {
+            throw new IllegalArgumentException("Protocol name must start with the protocol URN prefix: " + Constants.PROTOCOL_NAMESPACE);
+        }
+    }
+
+    public static boolean isProtocolConfiguration(AssetAttribute attribute) {
+        return getProtocolName(attribute)
+            .isPresent();
+    }
+
+    // TODO: Should this be able to validate the protocol name
+    public static boolean isValidProtocolConfiguration(AssetAttribute attribute) {
+        return isProtocolConfiguration(attribute);
+    }
+
+    public static Optional<String> getProtocolName(AssetAttribute attribute) {
+        return attribute
+            .getValueAsString()
+            .map(name -> isValidProtocolName(name) ? name : null);
+    }
+
+    public static AssetAttribute setProtocolName(AssetAttribute attribute, String protocolName) throws IllegalArgumentException {
+        if (attribute == null) {
+            return null;
+        }
+        isValidProtocolNameOrThrow(protocolName);
+        attribute.setValue(Json.create(protocolName));
+        return attribute;
     }
 
     public static UnaryOperator<AssetAttribute> setProtocolName(String protocolName) throws IllegalArgumentException {
-        return attribute -> {
-            if (!isProtocolUrn().test(protocolName)) {
-                throw new IllegalArgumentException("Protocol configuration value should contain a protocol URN");
-            }
-            attribute.setValue(Json.create(protocolName));
-            return attribute;
-        };
-    }
-
-    public static Function<AssetAttribute, String> getProtocolName() {
-        return Attribute::getValueAsString;
+        return attribute -> setProtocolName(attribute, protocolName);
     }
 }

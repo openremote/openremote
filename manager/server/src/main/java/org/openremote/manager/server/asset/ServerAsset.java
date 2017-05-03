@@ -24,12 +24,15 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 import elemental.json.Json;
+import org.geolatte.geom.Geometry;
 import org.geolatte.geom.jts.JTS;
 import org.hibernate.annotations.Check;
 import org.hibernate.spatial.dialect.postgis.PGGeometryTypeDescriptor;
 import org.openremote.model.asset.Asset;
+import org.openremote.model.asset.AssetType;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 import java.sql.Array;
 import java.sql.SQLException;
 import java.util.Date;
@@ -101,6 +104,7 @@ public class ServerAsset extends Asset {
     public ServerAsset() {
     }
 
+    @SuppressWarnings("unchecked")
     public ServerAsset(boolean filterProtectedAttributes,
                        String id, long version, Date createdOn, String name, String type,
                        String parentId, String parentName, String parentType,
@@ -116,15 +120,40 @@ public class ServerAsset extends Asset {
             attributes != null && attributes.length() > 0 ? Json.instance().parse(attributes) : null
         );
 
-        setLocation(
-            location != null
-                ? (Point) JTS.to(PGGeometryTypeDescriptor.toGeometry(location))
-                : null
-        );
+        Point position = null;
+
+        if (location != null) {
+            Geometry geomPoint = PGGeometryTypeDescriptor.toGeometry(location);
+            if (geomPoint instanceof org.geolatte.geom.Point) {
+                position = (Point)JTS.to(geomPoint);
+            }
+        }
+
+        setLocation(position);
     }
 
-    public ServerAsset(Asset parent) {
-        super(parent);
+    public ServerAsset(@NotNull String name, @NotNull AssetType type) {
+        this(name, type, null, null);
+    }
+
+    public ServerAsset(@NotNull String name, @NotNull String type) {
+        this(name, type, null, null);
+    }
+
+    public ServerAsset(@NotNull String name, @NotNull AssetType type, Asset parent) {
+        this(name, type, parent, null);
+    }
+
+    public ServerAsset(@NotNull String name, @NotNull String type, Asset parent) {
+        this(name, type, parent, null);
+    }
+
+    public ServerAsset(@NotNull String name, @NotNull AssetType type, Asset parent, String realmId) {
+        super(name, type, parent, realmId);
+    }
+
+    public ServerAsset(@NotNull String name, @NotNull String type, Asset parent, String realmId) {
+        super(name, type, parent, realmId);
     }
 
     public Point getLocation() {

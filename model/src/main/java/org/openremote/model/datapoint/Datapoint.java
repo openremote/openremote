@@ -62,7 +62,7 @@ public abstract class Datapoint implements Serializable {
     }
 
     public Datapoint(AttributeState attributeState) {
-        this(attributeState.getAttributeRef(), attributeState.getValue());
+        this(attributeState.getAttributeRef(), attributeState.getValue().orElse(null));
     }
 
     public Datapoint(AttributeEvent stateEvent) {
@@ -70,7 +70,7 @@ public abstract class Datapoint implements Serializable {
     }
 
     public Datapoint(AttributeState attributeState, long timestamp) {
-        this(attributeState.getAttributeRef(), attributeState.getValue(), timestamp);
+        this(attributeState.getAttributeRef(), attributeState.getValue().orElse(null), timestamp);
     }
 
     public Datapoint(AttributeRef attributeRef, JsonValue value) {

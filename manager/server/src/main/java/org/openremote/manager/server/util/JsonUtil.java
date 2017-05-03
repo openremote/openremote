@@ -17,36 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.assets.browser;
+package org.openremote.manager.server.util;
 
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class AssetTreeNode extends BrowserTreeNode {
+import java.util.Map;
 
-    final protected Asset asset;
+public class JsonUtil {
 
-    public AssetTreeNode(Asset asset) {
-        super(asset.getName());
-        this.asset = asset;
-    }
+    protected JsonUtil() {}
 
-    @Override
-    public String getId() {
-        return asset.getId();
-    }
-
-    public Asset getAsset() {
-        return asset;
-    }
-
-    @Override
-    public boolean isLeaf() {
-        return Asset.isAssetTypeEqualTo(asset, AssetType.THING);
-    }
-
-    @Override
-    public String getIcon() {
-        return asset.getWellKnownType().getIcon();
+    /**
+     * For some reason the GWT compiler no longer likes this being in the {@link org.openremote.model.util.JsonUtil}
+     * class; no idea why as it used to compile fine with this in there???
+     */
+    // TODO: Figure out why this won't compile when located in the model JsonUtil class and then remove this class
+    @SuppressWarnings("unchecked")
+    public static <T> T convert(ObjectMapper objectMapper, Class<T> targetType, Object object) {
+        Map<String, Object> props = objectMapper.convertValue(object, Map.class);
+        return objectMapper.convertValue(props, targetType);
     }
 }

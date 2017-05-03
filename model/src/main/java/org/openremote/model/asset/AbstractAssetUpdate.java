@@ -19,7 +19,6 @@
  */
 package org.openremote.model.asset;
 
-import elemental.json.JsonType;
 import elemental.json.JsonValue;
 import org.openremote.model.AttributeEvent;
 import org.openremote.model.AttributeRef;
@@ -28,6 +27,8 @@ import org.openremote.model.AttributeType;
 import org.openremote.model.util.JsonUtil;
 
 import java.util.Date;
+
+import static org.openremote.model.asset.AssetType.CUSTOM;
 
 /**
  * An asset attribute value update, capturing that asset state at a point in time.
@@ -88,7 +89,7 @@ public abstract class AbstractAssetUpdate {
             asset.getParentId(),
             asset.getParentName(),
             asset.getParentType(),
-            asset.getParentType() != null ? AssetType.getByValue(asset.getParentType()) : null,
+            AssetType.getByValue(asset.getParentType()).orElse(CUSTOM),
             asset.getRealmId(),
             asset.getTenantRealm(),
             asset.getCoordinates(),
@@ -215,15 +216,15 @@ public abstract class AbstractAssetUpdate {
     }
 
     public JsonValue getValue() {
-        return attribute.getValue();
+        return attribute.getValue().orElse(null);
     }
 
     public boolean isValueNull() {
-        return attribute.getValue().getType() == JsonType.NULL;
+        return !attribute.getValue().isPresent();
     }
 
     public String getAttributeName() {
-        return attribute.getName();
+        return attribute.getName().orElse(null);
     }
 
     public long getValueTimestamp() {
@@ -239,16 +240,16 @@ public abstract class AbstractAssetUpdate {
     }
 
     public boolean isValueChanged() {
-        return !JsonUtil.equals(attribute.getValue(), oldValue);
+        return !JsonUtil.equals(attribute.getValue().orElse(null), oldValue);
     }
 
     public AttributeRef getAttributeRef() {
-        return attribute.getReference();
+        return attribute.getReferenceOrThrow();
     }
 
     public boolean matches(AttributeEvent event) {
         return event.getAttributeRef().equals(getAttributeRef())
-            && JsonUtil.equals(getValue(), event.getAttributeState().getValue())
+            && JsonUtil.equals(getValue(), event.getAttributeState().getValue().orElse(null))
             && getValueTimestamp() == event.getTimestamp();
     }
 
@@ -290,7 +291,7 @@ public abstract class AbstractAssetUpdate {
             ", typeString='" + getType() + '\'' +
             ", attributeName='" + getAttributeName() + '\'' +
             ", attributeType=" + getAttributeType() +
-            ", value='" + getValue().toJson() + '\'' +
+            ", value='" + (getValue() != null ? getValue().toJson() : "null") + '\'' +
             ", valueTimestamp=" + getValueTimestamp() +
             ", oldValue='" + (getOldValue() != null ? getOldValue().toJson() : "null") + '\'' +
             ", oldValueTimestamp=" + getOldValueTimestamp() +

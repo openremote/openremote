@@ -8,7 +8,7 @@ global java.util.logging.Logger LOG;
 
 rule "Living Room All"
 when
-  $e: AssetState(name == "Livingroom")
+  $e: AssetState(name == "Living Room")
 then
   return;
 end
@@ -29,21 +29,21 @@ end
 
 rule "Living Room Thermostat"
 when
-  $e: AssetState(name == "Livingroom Thermostat")
+  $e: AssetState(name == "Living Room Thermostat")
 then
   return;
 end
 
 rule "Living Room Comfort Temperature"
 when
-  $e: AssetState(name == "Livingroom Thermostat", attributeName == "comfortTemperature")
+  $e: AssetState(name == "Living Room Thermostat", attributeName == "comfortTemperature")
 then
   return;
 end
 
 rule "Living Room as Parent"
 when
-    AssetState(parentName == "Livingroom")
+    AssetState(parentName == "Living Room")
 then
     return;
 end
@@ -64,7 +64,7 @@ end
 
 rule "JSON Number value types"
 when
-    AssetState(value.type == JsonType.NUMBER)
+    AssetState(value != null, value.type == JsonType.NUMBER)
 then
     return;
 end

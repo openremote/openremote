@@ -30,7 +30,12 @@ public class JsUtil {
     }-*/;
 
     public native static String typeOf(Object o) /*-{
-        return typeof o;
+        var type = typeof o;
+        if (type == 'object') {
+            return typeof (o.valueOf());
+        } else {
+            return type;
+        }
     }-*/;
 
 }

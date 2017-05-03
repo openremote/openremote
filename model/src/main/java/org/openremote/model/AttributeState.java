@@ -19,51 +19,105 @@
  */
 package org.openremote.model;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import elemental.json.Json;
+import elemental.json.JsonArray;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
+import org.openremote.model.util.JsonUtil;
+
+import java.util.Objects;
+import java.util.Optional;
+
+import static org.openremote.model.util.JsonUtil.*;
 
 /**
  * The desired or current or past state of an {@link AttributeRef}.
  */
+@JsonAutoDetect(
+    fieldVisibility = JsonAutoDetect.Visibility.ANY,
+    creatorVisibility= JsonAutoDetect.Visibility.NONE,
+    getterVisibility= JsonAutoDetect.Visibility.NONE,
+    setterVisibility= JsonAutoDetect.Visibility.NONE,
+    isGetterVisibility= JsonAutoDetect.Visibility.NONE
+)
 public class AttributeState {
 
+    @JsonProperty
     protected AttributeRef attributeRef;
-    protected JsonValue value;
+    @JsonProperty
+    protected JsonValue jsonValue;
 
     protected AttributeState() {
     }
 
-    public AttributeState(JsonObject jsonObject) {
-        attributeRef = new AttributeRef(jsonObject.get("attributeRef"));
-        value = jsonObject.get("value");
+    public AttributeState(AttributeRef attributeRef) {
+        this(attributeRef, Optional.empty());
     }
 
-    public AttributeState(AttributeRef attributeRef, JsonValue value) {
+    public AttributeState(AttributeRef attributeRef, JsonValue jsonValue) {
+        this(attributeRef, Optional.ofNullable(jsonValue));
+    }
+
+    public AttributeState(AttributeRef attributeRef, Optional<JsonValue> jsonValue) {
+        Objects.requireNonNull(attributeRef);
         this.attributeRef = attributeRef;
-        this.value = value == null ? Json.createNull() : value;
+        this.jsonValue = sanitizeJsonValue(jsonValue);
     }
 
     public AttributeRef getAttributeRef() {
         return attributeRef;
     }
 
-    public JsonValue getValue() {
-        return value;
+    public Optional<JsonValue> getValue() {
+        return Optional.ofNullable(jsonValue);
     }
 
-    public JsonValue asJsonValue() {
+    public JsonValue toJsonValue() {
         JsonObject jsonObject = Json.createObject();
-        jsonObject.put("attributeRef", attributeRef != null ? attributeRef.asJsonValue() : Json.createNull());
-        jsonObject.put("value", value != null ? value : Json.createNull());
+        jsonObject.put("attributeRef", getAttributeRef().toJsonValue());
+        getValue().ifPresent(
+            jsonValue -> jsonObject.put("value", sanitizeJsonValue(jsonValue))
+        );
         return jsonObject;
     }
 
     @Override
     public String toString() {
+        JsonValue value = sanitizeJsonValue(getValue());
+
         return getClass().getSimpleName() + "{" +
             "attributeRef=" + attributeRef +
-            ", value=" + (value != null ? value.asString() : "null") +
+            ", value=" + (value != null ? value.toJson() : "null") +
             '}';
+    }
+
+    public static boolean isAttributeState(JsonValue jsonValue) {
+        return fromJsonValue(jsonValue) != null;
+    }
+
+    public static Optional<AttributeState> fromJsonValue(JsonValue jsonValue) {
+        Optional<JsonObject> jsonObject = asJsonObject(jsonValue);
+        Optional<JsonArray> jsonArray = jsonObject
+            .flatMap(jsonObj -> asJsonArray((JsonValue)jsonObj.get("attributeRef")));
+
+        if (!jsonObject.isPresent() || !jsonArray.isPresent() || !jsonObject.get().hasKey("value")) {
+            return Optional.empty();
+        }
+
+        //noinspection ConstantConditions
+        return jsonArray
+            .flatMap(AttributeRef::fromJsonValue)
+            .map(attributeRef ->
+                new AttributeState(
+                    attributeRef,
+                    sanitizeJsonValue((JsonValue)jsonObject.get().get("value"))
+                )
+            );
+    }
+
+    public static JsonValue toJsonValue(AttributeState attributeState) {
+        return attributeState.toJsonValue();
     }
 }

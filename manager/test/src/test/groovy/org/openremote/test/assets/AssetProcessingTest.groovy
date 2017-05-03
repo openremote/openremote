@@ -98,51 +98,45 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def mockAgent = new ServerAsset()
         mockAgent.setName("Mock Agent")
         mockAgent.setType(AssetType.AGENT)
-        def mockProtocolConfig = ProtocolConfiguration.initProtocolConfiguration(mockProtocolName).apply(new AssetAttribute("mock123"))
-        mockAgent.setAttributeList(Collections.singletonList(mockProtocolConfig))
+        mockAgent.setAttributes(
+                ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("mock123"), mockProtocolName)
+        )
         mockAgent.setRealmId(keycloakDemoSetup.masterTenant.id)
         mockAgent = assetStorageService.merge(mockAgent)
 
         and: "a mock thing asset is created with a valid protocol attribute, an invalid protocol attribute and a plain attribute"
-        def mockThing = new ServerAsset(mockAgent)
-        mockThing.setName("Mock Thing Asset")
-        mockThing.setType(AssetType.THING)
-        def mockThingAttributes = [
+        def mockThing = new ServerAsset("Mock Thing Asset", AssetType.THING, mockAgent)
+        mockThing.setAttributes(
                 new AssetAttribute("light1Toggle", AttributeType.BOOLEAN, Json.create(false))
-                        .setMeta(new Meta()
-                        .add(new MetaItem(
-                        AssetMeta.DESCRIPTION,
-                        Json.create("The switch for the light 1 in the living room"))
-                )
-
-                        .add(new MetaItem(
-                        AssetMeta.AGENT_LINK,
-                        new AttributeRef(mockAgent.getId(), "mock123").asJsonValue()
-                )
-                )
-                ),
+                    .setMeta(
+                        new MetaItem(
+                            AssetMeta.DESCRIPTION,
+                            Json.create("The switch for the light 1 in the living room")
+                        ),
+                        new MetaItem(
+                            AssetMeta.AGENT_LINK,
+                            new AttributeRef(mockAgent.getId(), "mock123").toJsonValue()
+                        )
+                    ),
                 new AssetAttribute("light2Toggle", AttributeType.BOOLEAN, Json.create(false))
-                        .setMeta(new Meta()
-                        .add(new MetaItem(
-                        AssetMeta.DESCRIPTION,
-                        Json.create("The switch for the light 2 in the living room"))
-                )
-
-                        .add(new MetaItem(
-                        AssetMeta.AGENT_LINK,
-                        new AttributeRef("INVALID AGENT ID", managerDemoSetup.agentProtocolConfigName).asJsonValue()
-                )
-                )
-                ),
+                    .setMeta(
+                        new MetaItem(
+                            AssetMeta.DESCRIPTION,
+                            Json.create("The switch for the light 2 in the living room")
+                        ),
+                        new MetaItem(
+                            AssetMeta.AGENT_LINK,
+                            new AttributeRef("INVALID AGENT ID", managerDemoSetup.agentProtocolConfigName).toJsonValue()
+                        )
+                    ),
                 new AssetAttribute("plainAttribute", AttributeType.STRING, Json.create("demo"))
-                        .setMeta(new Meta()
-                        .add(new MetaItem(
-                        AssetMeta.DESCRIPTION,
-                        Json.create("A plain string attribute for storing information"))
-                )
-                )
-        ]
-        mockThing.setAttributeList(mockThingAttributes)
+                    .setMeta(
+                        new MetaItem(
+                            AssetMeta.DESCRIPTION,
+                            Json.create("A plain string attribute for storing information")
+                        )
+                    )
+        )
         mockThing = assetStorageService.merge(mockThing)
 
         then: "the mock thing to be deployed to the protocol"

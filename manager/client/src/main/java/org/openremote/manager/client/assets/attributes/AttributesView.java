@@ -33,7 +33,10 @@ import org.openremote.manager.client.event.ShowSuccessEvent;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.util.CollectionsUtil;
 import org.openremote.manager.client.widget.*;
-import org.openremote.model.*;
+import org.openremote.model.AbstractValueHolder;
+import org.openremote.model.AttributeType;
+import org.openremote.model.Constants;
+import org.openremote.model.MetaItem;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.util.TextUtil;
@@ -189,7 +192,7 @@ public abstract class AttributesView<
 
         addAttributeExtensions(attribute, formGroup);
 
-        editors.put(attribute.getName(), attributeEditor);
+        editors.put(attribute.getName().orElse(null), attributeEditor);
         return formGroup;
     }
 
@@ -200,7 +203,9 @@ public abstract class AttributesView<
     }
 
     protected String getAttributeLabel(AssetAttribute attribute) {
-        return attribute.getLabel();
+        return attribute
+            .getLabel()
+            .orElse(attribute.getName().orElse(""));
     }
 
     protected Optional<String> getAttributeDescription(AssetAttribute attribute) {
@@ -208,7 +213,7 @@ public abstract class AttributesView<
     }
 
     protected AttributeEditor createEditor(AssetAttribute attribute, FormGroup formGroup) {
-        Optional<MetaItem> defaultValueItem = attribute.firstMetaItem(AssetMeta.DEFAULT);
+        Optional<MetaItem> defaultValueItem = attribute.getMetaItem(AssetMeta.DEFAULT);
         S style = container.getStyle();
 
         AttributeEditor attributeEditor;
@@ -238,12 +243,12 @@ public abstract class AttributesView<
     }
 
     protected AttributeEditor createStringEditor(AssetAttribute attribute, Optional<MetaItem> defaultValueItem, S style, FormGroup formGroup) {
-        String currentValue = attribute.getValueAsString();
-        Optional<String> defaultValue = defaultValueItem.map(AbstractValueHolder::getValueAsString);
+        String currentValue = attribute.getValueAsString().orElse(null);
+        Optional<String> defaultValue = defaultValueItem.flatMap(AbstractValueHolder::getValueAsString);
 
         Consumer<String> updateConsumer = isEditorReadOnly(attribute) ? null : value -> {
             formGroup.setError(false);
-            attribute.setValueUnchecked(Json.create(value));
+            attribute.setValue(Json.create(value));
         };
 
         FlowPanel panel = new FlowPanel();
@@ -283,12 +288,12 @@ public abstract class AttributesView<
     }
 
     protected AttributeEditor createIntegerEditor(AssetAttribute attribute, Optional<MetaItem> defaultValueItem, S style, FormGroup formGroup) {
-        String currentValue = attribute.getValueAsString();
-        Optional<String> defaultValue = defaultValueItem.map(AbstractValueHolder::getValueAsString);
+        String currentValue = attribute.getValueAsString().orElse(null);
+        Optional<String> defaultValue = defaultValueItem.flatMap(AbstractValueHolder::getValueAsString);
         Consumer<String> updateConsumer = isEditorReadOnly(attribute) ? null : value -> {
             Integer intValue = Integer.valueOf(value);
             formGroup.setError(false);
-            attribute.setValueUnchecked(Json.create(intValue));
+            attribute.setValue(Json.create(intValue));
         };
 
         Consumer<String> errorConsumer = msg -> {
@@ -338,12 +343,12 @@ public abstract class AttributesView<
     }
 
     protected AttributeEditor createDecimalEditor(AssetAttribute attribute, Optional<MetaItem> defaultValueItem, S style, FormGroup formGroup) {
-        String currentValue = attribute.getValueAsString();
-        Optional<String> defaultValue = defaultValueItem.map(AbstractValueHolder::getValueAsString);
+        String currentValue = attribute.getValueAsString().orElse(null);
+        Optional<String> defaultValue = defaultValueItem.flatMap(AbstractValueHolder::getValueAsString);
         Consumer<String> updateConsumer = isEditorReadOnly(attribute) ? null : value -> {
             Double decimalValue = Double.valueOf(value);
             formGroup.setError(false);
-            attribute.setValueUnchecked(Json.create(decimalValue));
+            attribute.setValue(Json.create(decimalValue));
         };
 
         Consumer<String> errorConsumer = msg -> {
@@ -393,11 +398,12 @@ public abstract class AttributesView<
     }
 
     protected AttributeEditor createBooleanEditor(AssetAttribute attribute, Optional<MetaItem> defaultValueItem, S style, FormGroup formGroup) {
-        Boolean currentValue = attribute.getValueAsBoolean();
-        Optional<Boolean> defaultValue = defaultValueItem.map(AbstractValueHolder::getValueAsBoolean);
+        // TODO: Should a boolean attribute with no value default to false?
+        boolean currentValue = attribute.getValueAsBoolean().orElse(false);
+        Optional<Boolean> defaultValue = defaultValueItem.flatMap(AbstractValueHolder::getValueAsBoolean);
         Consumer<Boolean> updateConsumer = isEditorReadOnly(attribute) ? null : value -> {
             formGroup.setError(false);
-            attribute.setValueUnchecked(Json.create(value));
+            attribute.setValue(Json.create(value));
         };
 
         FlowPanel panel = new FlowPanel();
@@ -469,8 +475,12 @@ public abstract class AttributesView<
     }
 
     protected void removeAttribute(AssetAttribute attribute) {
-        Attribute.Functions.removeAttribute(attributes, attribute.getName());
-        editors.remove(attribute.getName());
+        attributes.remove(attribute);
+
+        attribute
+            .getName()
+            .map(editors::remove);
+
         int attributeGroupIndex = container.getPanel().getWidgetIndex(attributeGroups.get(attribute));
         container.getPanel().remove(attributeGroupIndex);
         attributeGroups.remove(attribute);

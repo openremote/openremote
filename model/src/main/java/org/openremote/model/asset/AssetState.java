@@ -105,7 +105,7 @@ public class AssetState extends AbstractAssetUpdate {
 
     public void setValueUnchecked(JsonValue value) {
         if (!isCompleted()) {
-            attribute.setValueUnchecked(value);
+            attribute.setValue(value);
         } else {
             throw new IllegalStateException("Instance is immutable, processing status '" + getProcessingStatus() + "': " + this);
         }

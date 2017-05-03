@@ -20,6 +20,7 @@
 package org.openremote.model;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 public class Pair<K, V> implements Serializable {
     public K key;
@@ -43,7 +44,7 @@ public class Pair<K, V> implements Serializable {
 
     @Override
     public int hashCode() {
-        return key.hashCode() * 13 + (value == null ? 0 : value.hashCode());
+        return Objects.hash(key, value);
     }
 
     @Override

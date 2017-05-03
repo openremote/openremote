@@ -21,6 +21,7 @@ package org.openremote.model;
 
 import elemental.json.JsonType;
 import elemental.json.JsonValue;
+import org.openremote.model.util.JsonUtil;
 
 /**
  * The base type of an {@link Attribute}, how its {@link elemental.json.JsonValue} should be
@@ -32,7 +33,9 @@ import elemental.json.JsonValue;
  */
 public enum AttributeType {
 
-    //NULL("Null", JsonType.NULL), // TODO: Decide if 'Null' is a valid AttributeType
+    // TODO: Remove old attribute types
+
+    //NULL("Null", JsonType.NULL), // TODO: Decide if 'Null' is a valid AttributeType (i.e. doesn't accept a value)
     STRING("String", JsonType.STRING),
     OBJECT("Object", JsonType.OBJECT),
     INTEGER("Integer", JsonType.NUMBER),
@@ -61,8 +64,7 @@ public enum AttributeType {
     }
 
     public boolean isValid(JsonValue value) {
-        // NULL type is allowed for any value type in JSON - Don't allow literal nulls
-        return value != null && (value.getType().equals(JsonType.NULL) || value.getType().equals(getJsonType()));
+        return value != null && JsonUtil.isOfType(value, getJsonType());
     }
 
     public static AttributeType fromValue(String value) {

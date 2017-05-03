@@ -32,7 +32,7 @@ class ApartmentAllLightsOffTest extends Specification implements ManagerContaine
 
         expect: "the rule engines to become available and be running"
         conditions.eventually {
-            apartment2Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment2Id)
+            apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)
             assert apartment2Engine != null
             assert apartment2Engine.isRunning()
         }
@@ -58,7 +58,7 @@ class ApartmentAllLightsOffTest extends Specification implements ManagerContaine
         conditions.eventually {
             assert apartment2Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_2 + 1
             livingRoomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
-            assert !livingRoomAsset.getAttribute("lightSwitch").get().valueAsBoolean
+            assert !livingRoomAsset.getAttribute("lightSwitch").get().getValueAsBoolean().get()
         }
 
         when: "time advanced"

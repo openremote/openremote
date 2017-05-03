@@ -19,12 +19,16 @@
  */
 package org.openremote.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import elemental.json.Json;
 import elemental.json.JsonArray;
-import elemental.json.JsonType;
+import elemental.json.JsonValue;
 
-import java.util.function.Function;
-import java.util.function.Predicate;
+import java.util.Optional;
+
+import static org.openremote.model.util.JsonUtil.asJsonArray;
+import static org.openremote.model.util.JsonUtil.isOfTypeString;
 
 /**
  * A reference to an entity and an {@link Attribute}.
@@ -40,16 +44,14 @@ public class AttributeRef {
     protected String entityId;
     protected String attributeName;
 
-    protected AttributeRef() {
-    }
+    /**
+     * Needed for deserialisation
+     */
+    protected AttributeRef() {}
 
     public AttributeRef(String entityId, String attributeName) {
         this.entityId = entityId;
         this.attributeName = attributeName;
-    }
-
-    public AttributeRef(JsonArray array) {
-        this(array.get(0).asString(), array.get(1).asString());
     }
 
     public String getEntityId() {
@@ -58,13 +60,6 @@ public class AttributeRef {
 
     public String getAttributeName() {
         return attributeName;
-    }
-
-    public JsonArray asJsonValue() {
-        JsonArray jsonArray = Json.createArray();
-        jsonArray.set(0, Json.create(getEntityId()));
-        jsonArray.set(1, Json.create(getAttributeName()));
-        return jsonArray;
     }
 
     @Override
@@ -90,20 +85,40 @@ public class AttributeRef {
             '}';
     }
 
-    public static final <T extends AbstractValueHolder> Predicate<T> isAttributeRef() {
-        return abstractValueHolder -> {
-            return abstractValueHolder != null
-                && abstractValueHolder.getValue() != null
-                && abstractValueHolder.getValue().getType() == JsonType.ARRAY
-                && abstractValueHolder.getValueAsArray().length() == 2;
-        };
+    public JsonArray toJsonValue() {
+        JsonArray jsonArray = Json.createArray();
+        jsonArray.set(0, Json.create(getEntityId()));
+        jsonArray.set(1, Json.create(getAttributeName()));
+        return jsonArray;
     }
 
-    public static final Function<AbstractValueHolder, AttributeRef> getAttributeRef() {
-        return abstractValueHolder ->
-            isAttributeRef()
-                .test(abstractValueHolder)
-                ? new AttributeRef(abstractValueHolder.getValueAsArray())
-                : null;
+    public static boolean isAttributeRef(AbstractValueHolder valueHolder) {
+        return valueHolder != null && valueHolder.getValueAsJsonArray()
+            .map(AttributeRef::isAttributeRef)
+            .orElse(false);
+    }
+
+    public static boolean isAttributeRef(JsonValue jsonValue) {
+        return asJsonArray(jsonValue)
+            .map(jsonArray ->
+                jsonArray.length() == 2
+                    && isOfTypeString(jsonArray.get(0))
+                    && isOfTypeString(jsonArray.get(1))
+                    && !jsonArray.getString(0).isEmpty()
+                    && !jsonArray.getString(1).isEmpty()
+            )
+            .orElse(false);
+    }
+
+    public static Optional<AttributeRef> fromJsonValue(JsonValue jsonValue) {
+        return asJsonArray(jsonValue)
+            .map(jsonArray -> !isAttributeRef(jsonArray)
+                    ? null
+                    : new AttributeRef(jsonArray.getString(0), jsonArray.getString(1))
+            );
+    }
+
+    public static JsonValue toJsonValue(AttributeRef attributeRef) {
+        return attributeRef.toJsonValue();
     }
 }

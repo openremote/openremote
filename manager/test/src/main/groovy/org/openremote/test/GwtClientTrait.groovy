@@ -29,7 +29,6 @@ import com.google.gwt.user.client.ui.AcceptsOneWidget
 import com.google.web.bindery.event.shared.SimpleEventBus
 import elemental.json.JsonValue
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
-import org.openremote.manager.client.i18n.ManagerMessages
 import org.openremote.manager.client.mvp.AppActivityManager
 import org.openremote.manager.client.mvp.AppActivityMapper
 import org.openremote.manager.client.mvp.AppPlaceController
@@ -138,14 +137,14 @@ trait GwtClientTrait {
     }
 
     static PlaceHistoryHandler createPlaceHistoryHandler(AppPlaceController placeController, PlaceHistoryMapper placeHistoryMapper, Place defaultPlace) {
-        def placeHistoryHandler = new PlaceHistoryHandler(placeHistoryMapper, new MockHistorian());
-        placeHistoryHandler.register(placeController, placeController.getLegacyEventBus(), defaultPlace);
+        def placeHistoryHandler = new PlaceHistoryHandler(placeHistoryMapper, new MockHistorian())
+        placeHistoryHandler.register(placeController, placeController.getLegacyEventBus(), defaultPlace)
         return placeHistoryHandler
     }
 
     static void startActivityManager(AcceptsOneWidget activityDisplay, AppActivityMapper activityMapper, EventBus eventBus) {
         def activityManager = new AppActivityManager("Test ActivityManager", activityMapper, eventBus)
-        activityManager.setDisplay(activityDisplay);
+        activityManager.setDisplay(activityDisplay)
     }
 
     // This emulates how a GWT client calls a REST service, we intercept and route through Resteasy Client proxy

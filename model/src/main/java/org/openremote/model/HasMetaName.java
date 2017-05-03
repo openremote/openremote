@@ -17,36 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.assets.browser;
+package org.openremote.model;
 
-import org.openremote.model.asset.Asset;
-import org.openremote.model.asset.AssetType;
-
-public class AssetTreeNode extends BrowserTreeNode {
-
-    final protected Asset asset;
-
-    public AssetTreeNode(Asset asset) {
-        super(asset.getName());
-        this.asset = asset;
-    }
-
-    @Override
-    public String getId() {
-        return asset.getId();
-    }
-
-    public Asset getAsset() {
-        return asset;
-    }
-
-    @Override
-    public boolean isLeaf() {
-        return Asset.isAssetTypeEqualTo(asset, AssetType.THING);
-    }
-
-    @Override
-    public String getIcon() {
-        return asset.getWellKnownType().getIcon();
-    }
+/**
+ * This is an interface for indicating that a type
+ * provides a URN string.
+ */
+public interface HasMetaName {
+    String getUrn();
 }

@@ -39,11 +39,10 @@ import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toCollection;
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
 
 public class AssetEditActivity
@@ -329,8 +328,8 @@ public class AssetEditActivity
             environment,
             view.getAttributesEditorContainer(),
             assetId == null
-                ? asset.getWellKnownType().getDefaultAttributes().collect(toCollection(ArrayList::new))
-                : asset.getAttributeList(),
+                ? asset.getWellKnownType().getDefaultAttributes().collect(Collectors.toList())
+                : asset.getAttributesList(),
             assetId == null
         );
         view.setAttributesEditor(attributesEditor);
@@ -352,7 +351,7 @@ public class AssetEditActivity
         if (selectedCoordinates != null) {
             asset.setCoordinates(selectedCoordinates);
         }
-        asset.setAttributeList(
+        asset.setAttributes(
             attributesEditor != null ? attributesEditor.getAttributes() : null
         );
     }

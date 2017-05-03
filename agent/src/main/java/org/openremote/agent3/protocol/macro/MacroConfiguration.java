@@ -19,81 +19,97 @@
  */
 package org.openremote.agent3.protocol.macro;
 
-import elemental.json.Json;
-import org.openremote.model.Attribute;
-import org.openremote.model.AttributeType;
-import org.openremote.model.MetaItem;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.util.JsonUtil;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
-import java.util.function.Function;
-import java.util.function.Predicate;
+import java.util.Optional;
 import java.util.function.UnaryOperator;
-import java.util.stream.IntStream;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.openremote.model.Attribute.Functions.*;
-import static org.openremote.model.AttributeType.STRING;
-import static org.openremote.model.MetaItem.matches;
+import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
+import static org.openremote.model.MetaItem.isMetaNameEqualTo;
+import static org.openremote.model.asset.agent.ProtocolConfiguration.getProtocolName;
+import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
 
 /**
  * Agent attributes can be macro configurations.
  * <p>
- * A macro configuration attribute has {@link MacroAction#MACRO_ACTION} items attached to it, each
+ * A macro configuration attribute has {@link MacroConfiguration#META_MACRO_ACTION} items attached to it, each
  * item is a sequence of asset state changes to be executed.
  */
 final public class MacroConfiguration {
 
+    public static final String META_MACRO_ACTION = ASSET_META_NAMESPACE + ":macroAction";
+
     private MacroConfiguration() {
     }
 
-    public static UnaryOperator<AssetAttribute> initMacroConfiguration() {
-        return attribute -> {
-            attribute.setType(AttributeType.STRING);
-            attribute.setValue(Json.create(MacroProtocol.PROTOCOL_NAME));
-            return attribute;
-        };
+    public static AssetAttribute initMacroConfiguration(AssetAttribute attribute) {
+        return initProtocolConfiguration(attribute, MacroProtocol.PROTOCOL_NAME);
     }
 
-    public static <A extends Attribute> Predicate<A> isMacroConfiguration() {
-        return attribute -> {
-            String value = attribute.getValueAsString();
-            return value != null && value.equals(MacroProtocol.PROTOCOL_NAME);
-        };
+    public static boolean isMacroConfiguration(AssetAttribute attribute) {
+        return getProtocolName(attribute)
+            .map(MacroProtocol.PROTOCOL_NAME::equals)
+            .orElse(false);
     }
 
-    public static <A extends Attribute> Predicate<A> isValidMacroConfiguration() {
-        return (Predicate<A>) isValid()
-            .and(isOfType(STRING))
-            .and(isMacroConfiguration())
-            .and(hasMetaItem(MacroAction.MACRO_ACTION)); // Must have at least one macro action
+    public static boolean isValidMacroConfiguration(AssetAttribute attribute) {
+        return attribute != null
+            && isMacroConfiguration(attribute)
+            && attribute.getMetaItem(META_MACRO_ACTION).isPresent(); // Must have at least one macro action
     }
 
-    public static Function<AssetAttribute, Stream<MacroAction>> getMacroActions() {
-        return attribute -> attribute.getMetaItemStream()
-            .filter(matches(MacroAction.MACRO_ACTION))
-            .map(MacroAction.getMacroActionFromMetaItem());
+
+    public static Stream<MacroAction> getMacroActionsStream(AssetAttribute attribute) {
+        return attribute == null ? Stream.empty() :
+            attribute
+                .getMetaStream()
+                .filter(isMetaNameEqualTo(META_MACRO_ACTION))
+                .map(metaItem -> metaItem.getValue().orElse(null))
+                .map(MacroAction::fromJsonValue)
+                .filter(Optional::isPresent)
+                .map(Optional::get);
     }
 
-    public static UnaryOperator<AssetAttribute> addMacroAction(MacroAction action) {
-        return attribute -> attribute.setMeta(
-            attribute.getMeta().add(MacroAction.getMetaItemFromMacroAction().apply(action))
+    public static List<MacroAction> getMacroActions(AssetAttribute attribute) {
+        return getMacroActionsStream(attribute)
+            .collect(Collectors.toList());
+    }
+
+    public static AssetAttribute setMacroActions(AssetAttribute attribute, MacroAction... actions) {
+        return setMacroActions(attribute, Arrays.stream(actions));
+    }
+
+    public static UnaryOperator<AssetAttribute> setMacroActions(MacroAction... actions) {
+        return attribute -> setMacroActions(attribute, actions);
+    }
+
+    public static AssetAttribute setMacroActions(AssetAttribute attribute, Collection<MacroAction> actions) {
+        return setMacroActions(attribute, actions.stream());
+    }
+
+    public static UnaryOperator<AssetAttribute> setMacroActions(Collection<MacroAction> actions) {
+        return attribute -> setMacroActions(attribute, actions);
+    }
+
+    public static AssetAttribute setMacroActions(AssetAttribute attribute, Stream<MacroAction> actions) {
+        if (attribute == null)
+            return null;
+
+        attribute.getMeta().addAll(
+            actions
+                .map(action -> action.toMetaItem())
+                .collect(Collectors.toList())
         );
+
+        return attribute;
     }
 
-    public static UnaryOperator<AssetAttribute> removeMacroAction(MacroAction action) {
-        return attribute -> {
-            if (!attribute.hasMeta()) {
-                return attribute;
-            }
-            List<MetaItem> metaItems = attribute.getMeta().getAll();
-            IntStream.range(0, metaItems.size())
-                .filter(i -> matches(MacroAction.MACRO_ACTION).test(metaItems.get(i)))
-                .filter(i -> JsonUtil.equals(metaItems.get(i).getValueAsObject(), action.asJsonValue()))
-                .forEach(i -> attribute.getMeta().remove(i));
-
-            return attribute;
-        };
+    public static UnaryOperator<AssetAttribute> setMacroActions(Stream<MacroAction> actions) {
+        return attribute -> setMacroActions(attribute, actions);
     }
 }

@@ -95,7 +95,7 @@ class BasicRulesImport {
                                KeycloakDemoSetup keycloakDemoSetup,
                                ManagerDemoSetup managerDemoSetup) {
 
-        globalEngine = rulesService.globalDeployment
+        globalEngine = rulesService.globalEngine
         assert globalEngine != null
         assert globalEngine.isRunning()
         assert globalEngine != null
@@ -104,35 +104,35 @@ class BasicRulesImport {
         assert globalEngine.allRulesets[0].name == "Some global demo rules"
         assert globalEngine.allRulesets[0].deploymentStatus == DeploymentStatus.DEPLOYED
 
-        assert rulesService.tenantDeployments.size() == 2
-        masterEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.masterTenant.id)
+        assert rulesService.tenantEngines.size() == 2
+        masterEngine = rulesService.tenantEngines.get(keycloakDemoSetup.masterTenant.id)
         assert masterEngine != null
         assert masterEngine.isRunning()
         assert masterEngine.allRulesets.length == 1
         assert masterEngine.allRulesets[0].enabled
         assert masterEngine.allRulesets[0].name == "Some master tenant demo rules"
         assert masterEngine.allRulesets[0].deploymentStatus == DeploymentStatus.DEPLOYED
-        customerAEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerATenant.id)
+        customerAEngine = rulesService.tenantEngines.get(keycloakDemoSetup.customerATenant.id)
         assert customerAEngine != null
         assert customerAEngine.isRunning()
         assert customerAEngine.allRulesets.length == 1
         assert customerAEngine.allRulesets[0].enabled
         assert customerAEngine.allRulesets[0].name == "Some customerA tenant demo rules"
         assert customerAEngine.allRulesets[0].deploymentStatus == DeploymentStatus.DEPLOYED
-        def customerBEngine = rulesService.tenantDeployments.get(keycloakDemoSetup.customerBTenant.id)
+        def customerBEngine = rulesService.tenantEngines.get(keycloakDemoSetup.customerBTenant.id)
         assert customerBEngine == null
 
-        assert rulesService.assetDeployments.size() == 2
-        apartment1Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment1Id)
+        assert rulesService.assetEngines.size() == 2
+        apartment1Engine = rulesService.assetEngines.get(managerDemoSetup.apartment1Id)
         assert apartment1Engine == null
-        apartment2Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment2Id)
+        apartment2Engine = rulesService.assetEngines.get(managerDemoSetup.apartment2Id)
         assert apartment2Engine != null
         assert apartment2Engine.isRunning()
         assert apartment2Engine.allRulesets.length == 1
         assert apartment2Engine.allRulesets[0].enabled
         assert apartment2Engine.allRulesets[0].name == "Some apartment 2 demo rules"
         assert apartment2Engine.allRulesets[0].deploymentStatus == DeploymentStatus.DEPLOYED
-        apartment3Engine = rulesService.assetDeployments.get(managerDemoSetup.apartment3Id)
+        apartment3Engine = rulesService.assetEngines.get(managerDemoSetup.apartment3Id)
         assert apartment3Engine != null
         assert apartment3Engine.isRunning()
         assert apartment3Engine.allRulesets.length == 1

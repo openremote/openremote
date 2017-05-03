@@ -26,10 +26,7 @@ import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.datapoint.DatapointBrowser;
 import org.openremote.manager.client.util.CollectionsUtil;
 import org.openremote.manager.client.widget.*;
-import org.openremote.model.AttributeEvent;
-import org.openremote.model.AttributeExecuteStatus;
-import org.openremote.model.AttributeType;
-import org.openremote.model.ReadAttributesEvent;
+import org.openremote.model.*;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.datapoint.DatapointInterval;
@@ -40,6 +37,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.function.Consumer;
+
+import static org.openremote.model.Attribute.isAttributeTypeEqualTo;
 
 public abstract class AttributesBrowser
     extends AttributesView<AttributesBrowser.Container, AttributesBrowser.Style> {
@@ -59,15 +58,15 @@ public abstract class AttributesBrowser
     protected EventRegistration<AttributeEvent> eventRegistration;
 
     public AttributesBrowser(Environment environment, Container container, Asset asset) {
-        super(environment, container, asset.getAttributeList());
+        super(environment, container, asset.getAttributesList());
         this.asset = asset;
 
         eventRegistration = environment.getEventBus().register(
             AttributeEvent.class,
             event -> {
                 for (AssetAttribute assetAttribute : attributeGroups.keySet()) {
-                    if (assetAttribute.getReference().equals(event.getAttributeRef())) {
-                        assetAttribute.setValueUnchecked(event.getValue(), event.getTimestamp());
+                    if (assetAttribute.getReference().map(ref -> ref.equals(event.getAttributeRef())).orElse(false)) {
+                        assetAttribute.setValue(event.getValue(), event.getTimestamp());
                         refreshAttribute(assetAttribute);
                         break;
                     }
@@ -268,22 +267,29 @@ public abstract class AttributesBrowser
     }
 
     protected void readAttributeValue(AssetAttribute attribute) {
-        attribute.getAssetId().ifPresent(assetId ->
+        attribute.getReference().ifPresent(attributeRef ->
             environment.getEventService().dispatch(
-                new ReadAttributesEvent(assetId, attribute.getName())
+                new ReadAttributesEvent(attributeRef.getEntityId(), attributeRef.getAttributeName())
             )
         );
     }
 
     protected void writeAttributeValue(AssetAttribute attribute) {
-        environment.getEventService().dispatch(
-            new AttributeEvent(attribute.getState())
-        );
-        if (attribute.isExecutable()) {
-            showSuccess(container.getMessages().commandRequestSent(attribute.getName()));
-        } else {
-            showSuccess(container.getMessages().attributeWriteSent(attribute.getName()));
-        }
+        attribute
+            .getStateEvent()
+            .map(state -> {
+                environment.getEventService().dispatch(state);
+                if (attribute.isExecutable()) {
+                    showSuccess(container.getMessages().commandRequestSent(state.getAttributeName()));
+                } else {
+                    showSuccess(container.getMessages().attributeWriteSent(state.getAttributeName()));
+                }
+                return state;
+            })
+            .orElseGet(() -> {
+                showValidationError("Attribute is not valid");
+                return null;
+            });
     }
 
     protected void refreshAttribute(AssetAttribute attribute) {
@@ -323,19 +329,17 @@ public abstract class AttributesBrowser
     }
 
     protected DatapointBrowser createDatapointBrowser(AssetAttribute attribute) {
-        if (!attribute.isStoreDatapoints())
-            return null;
-        if (!attribute.getType().isPresent()
-            || !(attribute.getType().get() == AttributeType.DECIMAL || attribute.getType().get() == AttributeType.INTEGER))
-            return null;
-        return new DatapointBrowser(environment.getMessages(), 580, 220) {
-            @Override
-            protected void queryDatapoints(DatapointInterval interval,
-                                           long timestamp,
-                                           Consumer<NumberDatapoint[]> consumer) {
-                getNumberDatapoints(attribute, interval, timestamp, consumer);
-            }
-        };
+        if (attribute.isStoreDatapoints() && (isAttributeTypeEqualTo(attribute, AttributeType.DECIMAL) || isAttributeTypeEqualTo(attribute, AttributeType.INTEGER))) {
+            return new DatapointBrowser(environment.getMessages(), 580, 220) {
+                @Override
+                protected void queryDatapoints(DatapointInterval interval,
+                                               long timestamp,
+                                               Consumer<NumberDatapoint[]> consumer) {
+                    getNumberDatapoints(attribute, interval, timestamp, consumer);
+                }
+            };
+        }
+        return null;
     }
 
     /* ####################################################################### */

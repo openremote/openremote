@@ -45,7 +45,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import static org.openremote.model.Constants.*;
-import static org.openremote.model.util.JsonUtil.convert;
+import static org.openremote.manager.server.util.JsonUtil.convert;
 
 public class ManagerIdentityService extends IdentityService {
 

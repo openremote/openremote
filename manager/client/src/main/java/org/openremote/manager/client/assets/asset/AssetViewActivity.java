@@ -189,7 +189,7 @@ public class AssetViewActivity
                 environment.getRequestService().execute(
                     numberDatapointArrayMapper,
                     requestParams -> assetDatapointResource.getNumberDatapoints(
-                        requestParams, assetId, attribute.getName(), interval, timestamp
+                        requestParams, assetId, attribute.getName().orElse(null), interval, timestamp
                     ),
                     200,
                     consumer,

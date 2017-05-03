@@ -19,17 +19,24 @@
  */
 package org.openremote.model.units;
 
+import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueType;
+
+import java.util.function.Function;
+
 /**
  * The well-known attribute units (attribute sub-type) we can depend on
  * in our platform. Together with the {@link org.openremote.model.AttributeType}
  * of an {@link org.openremote.model.Attribute}, you can use units in attribute
  * metadata to discriminate rendering, testing, and editing of attribute values.
  */
+// TODO: Remove Attribute Units
 public enum AttributeUnits {
 
     /**
      * Unix epoch timestamp
      */
+    // TODO: Seconds or milliseconds
     TIMESTAMP,
 
     /**
@@ -122,5 +129,5 @@ public enum AttributeUnits {
     /**
      * Gallons per minute
      */
-    FLOW_GPM,
+    FLOW_GPM
 }

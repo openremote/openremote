@@ -19,16 +19,18 @@
  */
 package org.openremote.agent3.protocol.simulator.element;
 
-import elemental.json.Json;
-import elemental.json.JsonType;
 import elemental.json.JsonValue;
 import org.openremote.model.AttributeType;
+
+import java.util.Optional;
+
+import static org.openremote.model.util.JsonUtil.replaceJsonNull;
 
 public abstract class SimulatorElement<T> {
 
     final protected AttributeType expectedType;
 
-    protected JsonValue state = Json.createNull();
+    protected JsonValue state = null;
 
     public SimulatorElement(AttributeType expectedType) {
         this.expectedType = expectedType;
@@ -38,28 +40,33 @@ public abstract class SimulatorElement<T> {
         return state;
     }
 
-    public void setState(JsonValue state) {
-        if (state == null) {
-            this.state = Json.createNull();
-            return;
-        }
-        if (isValid(state)) {
-            this.state = state;
-        } else {
-            throw new IllegalArgumentException(
-                "Invalid state, expected JSON type '" + expectedType + "' but got '" + state.getType() + "' on: " + this
-            );
-        }
+    public void setState(Optional<JsonValue> state) {
+        // This is only used server side so JsonValue optional issue isn't a problem
+        state
+            .map(st -> {
+                st = replaceJsonNull(st);
+                if (!isValid(st)) {
+                    throw new IllegalArgumentException(
+                        "Invalid state, expected JSON type '" + expectedType + "' but got '" + st.getType() + "' on: " + this
+                    );
+                }
+                this.state = st;
+                return st;
+            })
+            .orElseGet(() -> {
+                this.state = null;
+                return null;
+            });
     }
 
     protected boolean isValid(JsonValue value) {
-        return value == null || value.getType() == JsonType.NULL || value.getType() == expectedType.getJsonType();
+        return value == null || value.getType() == expectedType.getJsonType();
     }
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-            "state=" + getState().asString() +
+            "state=" + (getState() != null ? getState().toJson() : "null") +
             "}";
     }
 }

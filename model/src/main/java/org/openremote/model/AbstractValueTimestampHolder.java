@@ -21,8 +21,9 @@ package org.openremote.model;
 
 import elemental.json.Json;
 import elemental.json.JsonObject;
-import elemental.json.JsonType;
 import elemental.json.JsonValue;
+
+import java.util.Optional;
 
 /**
  * Base class for all model classes which have to internally store data in a
@@ -39,14 +40,14 @@ public abstract class AbstractValueTimestampHolder extends AbstractValueHolder {
     }
 
     public boolean hasValueTimestamp() {
-        return jsonObject.hasKey(VALUE_TIMESTAMP_FIELD_NAME) && jsonObject.get(VALUE_TIMESTAMP_FIELD_NAME).getType() != JsonType.NULL;
+        return jsonObject.hasKey(VALUE_TIMESTAMP_FIELD_NAME);
     }
 
     /**
      * @return <code>-1</code> if there is no timestamp.
      */
     public long getValueTimestamp() {
-        return hasValueTimestamp() ? new Double(jsonObject.get(VALUE_TIMESTAMP_FIELD_NAME).asNumber()).longValue() : -1;
+        return hasValueTimestamp() ? new Double(jsonObject.getNumber(VALUE_TIMESTAMP_FIELD_NAME)).longValue() : -1L;
     }
 
     /**
@@ -82,20 +83,19 @@ public abstract class AbstractValueTimestampHolder extends AbstractValueHolder {
     }
 
     /**
-     * Sets the value and the timestamp to current system time.
+     * Sets the value and the timestamp to given time.
      */
-    @Override
-    public void setValue(JsonValue value) throws IllegalArgumentException {
-        super.setValue(value);
-        setValueTimestamp();
-    }
-
-    /**
-     * Use this in Javascript, can't do null checks on JsonValue.
-     */
-    public void setValueUnchecked(JsonValue value, long timestamp) {
-        jsonObject.put(VALUE_FIELD_NAME, value);
+    public void setValue(Optional<JsonValue> value, long timestamp) throws IllegalArgumentException {
+        setValue(value);
         setValueTimestamp(timestamp);
     }
 
+    /**
+     * Sets the value and the timestamp to current system time.
+     */
+    @Override
+    public void doSetValue(JsonValue value) throws IllegalArgumentException {
+        super.doSetValue(value);
+        setValueTimestamp();
+    }
 }

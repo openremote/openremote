@@ -39,7 +39,7 @@ public class AssetPredicates {
                 return false;
             PersistenceEvent persistenceEvent = exchange.getIn().getBody(PersistenceEvent.class);
             Asset asset = (Asset) persistenceEvent.getEntity();
-            return assetType.equals(asset.getWellKnownType());
+            return asset.getWellKnownType() == assetType;
         };
     }
 }

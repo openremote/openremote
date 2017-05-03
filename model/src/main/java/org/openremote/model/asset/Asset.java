@@ -19,10 +19,9 @@
  */
 package org.openremote.model.asset;
 
+import elemental.json.Json;
 import elemental.json.JsonObject;
-import elemental.json.JsonValue;
 import org.hibernate.annotations.Formula;
-import org.openremote.model.AttributeType;
 import org.openremote.model.IdentifiableEntity;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.geo.GeoJSONFeature;
@@ -39,10 +38,9 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.openremote.model.Attribute.Functions.isValueEqualTo;
 import static org.openremote.model.Constants.PERSISTENCE_JSON_OBJECT_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_UNIQUE_ID_GENERATOR;
-import static org.openremote.model.asset.AssetAttribute.Functions.*;
+import static org.openremote.model.asset.AssetAttribute.*;
 
 // @formatter:off
 /**
@@ -159,7 +157,7 @@ import static org.openremote.model.asset.AssetAttribute.Functions.*;
   "id": "W7GV_lFeQVyHLlgHgE3dEQ",
   "version": 0,
   "createdOn": 1489042784164,
-  "name": "Livingroom Thermostat",
+  "name": "Living Room Thermostat",
   "type": "urn:openremote:asset:thing",
   "parentId": "bzlRiJmSSMCl8HIUt9-lMg",
   "parentName": "Living Room",
@@ -277,17 +275,38 @@ public class Asset implements IdentifiableEntity {
     }
 
     public Asset(String name, AssetType type) {
-        this(null, name, type.getValue());
+        this(name, type, null, null);
     }
 
-    public Asset(String realm, String name, AssetType type) {
-        this(realm, name, type.getValue());
+    public Asset(String name, String type) {
+        this(name, type, null, null);
     }
 
-    public Asset(String realmId, String name, String type) {
-        this.realmId = realmId;
-        this.name = name;
-        this.type = type;
+    public Asset(@NotNull String name, @NotNull AssetType type, Asset parent) {
+        this(name, type.getValue(), parent);
+    }
+
+    public Asset(@NotNull String name, @NotNull String type, Asset parent) {
+        this(name, type, parent, null);
+    }
+
+    public Asset(@NotNull String name, @NotNull AssetType type, Asset parent, @NotNull String realmId) {
+        this(name, type.getValue(), parent, realmId);
+    }
+
+    public Asset(@NotNull String name, @NotNull String type, Asset parent, @NotNull String realmId) {
+        setRealmId(realmId);
+        setName(name);
+        setType(type);
+        setParent(parent);
+
+        // Initialise realm from parent
+        // TODO: Need to look at this - can child have a different realm to the parent?
+        if (parent != null) {
+            this.realmId = parent.getRealmId();
+            this.tenantRealm = parent.getTenantRealm();
+            this.tenantDisplayName = parent.getTenantDisplayName();
+        }
     }
 
     public Asset(boolean filterProtectedAttributes,
@@ -295,36 +314,47 @@ public class Asset implements IdentifiableEntity {
                  String parentId, String parentName, String parentType,
                  String realmId, String tenantRealm, String tenantDisplayName,
                  String[] path, JsonObject attributes) {
+        this(name, type, null, realmId);
         this.id = id;
         this.version = version;
         this.createdOn = createdOn;
-        this.name = name;
-        this.type = type;
         this.parentId = parentId;
         this.parentName = parentName;
         this.parentType = parentType;
-        this.realmId = realmId;
         this.tenantRealm = tenantRealm;
         this.tenantDisplayName = tenantDisplayName;
         this.path = path;
 
-        if (filterProtectedAttributes) {
-            this.attributes = getAssetAttributesFromJson(id)
-                .andThen(filterProtectedAssetAttribute())
-                .andThen(getAssetAttributesAsJson())
-                .apply(attributes).orElse(null);
+        if (filterProtectedAttributes && attributes != null) {
+            this.attributes = attributesToJson(
+                filterProtectedAttributes(attributesFromJson(attributes, id))
+                    .collect(Collectors.toList())
+            ).orElse(Json.createObject());
         } else {
             this.attributes = attributes;
         }
     }
 
-    public Asset(Asset parent) {
-        this.parentId = parent.getId();
-        this.parentName = parent.getName();
-        this.parentType = parent.getType();
-        this.realmId = parent.getRealmId();
-        this.tenantRealm = parent.getTenantRealm();
-        this.tenantDisplayName = parent.getTenantDisplayName();
+
+
+    public void addAttribute(AssetAttribute attribute) throws IllegalArgumentException {
+        if (getAttributesStream().anyMatch(attr -> isAttributeNameEqualTo(attr, attribute.getName().orElse(null)))) {
+            throw new IllegalArgumentException("Attribute by this name already exists");
+        }
+
+        replaceAttribute(attribute);
+    }
+
+    public void replaceAttribute(AssetAttribute attribute) throws IllegalArgumentException {
+        if (attribute == null || !attribute.getName().isPresent() || !attribute.getType().isPresent())
+            throw new IllegalArgumentException("Attribute cannot be null and must have a name and type");
+
+        attribute.assetId = getId();
+        attributes.put(attribute.getName().get(), attribute.getJsonObject());
+    }
+
+    public void removeAttribute(String name) {
+        attributes.remove(name);
     }
 
     public String getId() {
@@ -351,7 +381,10 @@ public class Asset implements IdentifiableEntity {
         return name;
     }
 
-    public void setName(String name) {
+    public void setName(@NotNull String name) throws IllegalArgumentException {
+        if (name == null || name.isEmpty()) {
+            throw new IllegalArgumentException("Asset name is required");
+        }
         this.name = name;
     }
 
@@ -359,20 +392,36 @@ public class Asset implements IdentifiableEntity {
         return type;
     }
 
+    public boolean hasTypeWellKnown() {
+        return AssetType.getByValue(getType()).isPresent();
+    }
+
     public AssetType getWellKnownType() {
-        return AssetType.getByValue(getType());
+        return AssetType.getByValue(getType()).orElse(AssetType.CUSTOM);
     }
 
-    public boolean isWellKnownType(AssetType assetType) {
-        return assetType.equals(getWellKnownType());
-    }
+    public void setType(@NotNull String type) throws IllegalArgumentException {
+        if (type == null || type.isEmpty()) {
+            throw new IllegalArgumentException("Asset type is required");
+        }
 
-    public void setType(String type) {
         this.type = type;
     }
 
     public void setType(AssetType type) {
         setType(type != null ? type.getValue() : null);
+    }
+
+    public void setParent(Asset parent) {
+        if (parent == null) {
+            parentId = null;
+            parentName = null;
+            parentType = null;
+        } else {
+            parentId = parent.id;
+            parentName = parent.name;
+            parentType = parent.type;
+        }
     }
 
     public String getParentId() {
@@ -435,16 +484,16 @@ public class Asset implements IdentifiableEntity {
         this.tenantDisplayName = tenantDisplayName;
     }
 
+    public boolean hasCoordinates() {
+        return getCoordinates() != null && getCoordinates().length > 0;
+    }
+
     public double[] getCoordinates() {
         return coordinates;
     }
 
     public void setCoordinates(double... coordinates) {
         this.coordinates = coordinates;
-    }
-
-    public boolean hasCoordinates() {
-        return getCoordinates() != null && getCoordinates().length > 0;
     }
 
     /**
@@ -484,24 +533,32 @@ public class Asset implements IdentifiableEntity {
         return attributes;
     }
 
-    public void setAttributes(JsonObject attributes) {
+    public Stream<AssetAttribute> getAttributesStream() {
+        return attributesFromJson(attributes, id);
+    }
+
+    public List<AssetAttribute> getAttributesList() {
+        return getAttributesStream().collect(Collectors.toList());
+    }
+
+    public boolean hasAttribute(String name) {
+        return attributes.hasKey(name);
+    }
+
+    public Optional<AssetAttribute> getAttribute(String name) {
+        return AssetAttribute.attributeFromJson(attributes.getObject(name), id, name);
+    }
+
+    protected void setAttributes(JsonObject attributes) {
         this.attributes = attributes;
     }
 
-    public Stream<AssetAttribute> getAttributeStream() {
-        return getAssetAttributesFromJson(id).apply(getAttributes());
+    public void setAttributes(List<AssetAttribute> attributes) {
+        this.attributes = attributesToJson(attributes).orElse(Json.createObject());
     }
 
-    public void setAttributeStream(Stream<AssetAttribute> attributeStream) {
-        setAttributes(getAssetAttributesAsJson().apply(attributeStream).orElse(null));
-    }
-
-    public List<AssetAttribute> getAttributeList() {
-        return getAttributeStream().collect(Collectors.toCollection(ArrayList::new));
-    }
-
-    public void setAttributeList(List<AssetAttribute> attributes) {
-        setAttributeStream(attributes.stream());
+    public void setAttributes(AssetAttribute... attributes) {
+        setAttributes(Arrays.asList(attributes));
     }
 
     /**
@@ -530,30 +587,6 @@ public class Asset implements IdentifiableEntity {
         );
     }
 
-    public Optional<AssetAttribute> getAttribute(String name) {
-        return getFromJson(id, name).apply(getAttributes());
-    }
-
-    public boolean hasAttribute(String name) {
-        return getAttribute(name).isPresent();
-    }
-
-    public boolean hasAttribute(String name, AttributeType type) {
-        return getFromJson(id, name, type).apply(getAttributes()).isPresent();
-    }
-
-    public boolean hasAttribute(String name, JsonValue value) {
-        return getAttribute(name)
-            .map(isValueEqualTo(value)::test)
-            .orElse(false);
-    }
-
-    public boolean hasAttribute(String name, Predicate<AssetAttribute> predicate) {
-        return getAttribute(name)
-            .map(predicate::test)
-            .orElse(false);
-    }
-
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
@@ -580,5 +613,32 @@ public class Asset implements IdentifiableEntity {
             ", path=" + Arrays.toString(path) +
             ", attributes=" + attributes +
             '}';
+    }
+
+//    ---------------------------------------------------
+//    FUNCTIONAL METHODS BELOW
+//    ---------------------------------------------------
+
+    public static boolean isAssetNameEqualTo(Asset asset, String name) {
+        return asset != null && asset.getName().equals(name);
+    }
+
+    public static boolean isAssetTypeEqualTo(Asset asset, String assetType) {
+        return asset != null
+            && asset.getType() != null
+            && asset.getType().equals(assetType);
+    }
+
+    public static boolean isAssetTypeEqualTo(Asset asset, AssetType assetType) {
+        return asset != null && asset.getWellKnownType() == assetType;
+    }
+
+    public static void removeAttributes(Asset asset, Predicate<AssetAttribute> filter) {
+        if (asset == null)
+            return;
+
+        List<AssetAttribute> attributes = asset.getAttributesList();
+        attributes.removeIf(filter);
+        asset.setAttributes(attributes);
     }
 }

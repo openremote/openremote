@@ -21,6 +21,11 @@ package org.openremote.model;
 
 import elemental.json.*;
 
+import java.util.Objects;
+import java.util.Optional;
+
+import static org.openremote.model.util.JsonUtil.*;
+
 /**
  * Base class for all model classes which have to internally store data in a
  * {@link JsonObject} that has a <code>value</code> field that accepts any
@@ -33,118 +38,112 @@ public abstract class AbstractValueHolder {
     final protected JsonObject jsonObject;
 
     public AbstractValueHolder(JsonObject jsonObject) {
+        Objects.requireNonNull(jsonObject);
         this.jsonObject = jsonObject;
     }
 
     public boolean hasValue() {
-        return jsonObject.hasKey(VALUE_FIELD_NAME) && jsonObject.get(VALUE_FIELD_NAME).getType() != JsonType.NULL;
+        return getValue().isPresent();
     }
 
-    public String getValueAsString() {
-        return hasValue() ? getValue().asString() : null;
+    public Optional<String> getValueAsString() {
+        return asString(getValue());
     }
 
-    public Integer getValueAsInteger() {
-        return hasValue() ? Integer.valueOf(getValue().asString()) : null;
+    public Optional<Integer> getValueAsInteger() {
+        return asInteger(getValue());
     }
 
-    public Double getValueAsDecimal() {
-        return hasValue() ? getValue().asNumber() : null;
+    public Optional<Double> getValueAsDecimal() {
+        return asDecimal(getValue());
     }
 
-    public Boolean getValueAsBoolean() {
-        // TODO This is also broken somehow...
-        // return hasValue() ? getValue_TODO_BUG_IN_JAVASCRIPT().asBoolean() : null;
-        return hasValue() ? jsonObject.getBoolean(VALUE_FIELD_NAME) : null;
+    public Optional<Boolean> getValueAsBoolean() {
+        return asBoolean(getValue());
     }
 
-    public JsonObject getValueAsObject() {
-        return hasValue() ? jsonObject.getObject(VALUE_FIELD_NAME) : null;
+    public Optional<JsonObject> getValueAsJsonObject() {
+        return asJsonObject(getValue());
     }
 
-    public JsonArray getValueAsArray() {
-        return hasValue() ? jsonObject.getArray(VALUE_FIELD_NAME) : null;
-    }
-
-    public boolean isValueTrue() {
-        return getValueAsBoolean() != null && getValueAsBoolean();
-    }
-
-    public boolean isValueFalse() {
-        return getValueAsBoolean() != null && !getValueAsBoolean();
+    public Optional<JsonArray> getValueAsJsonArray() {
+        return asJsonArray(getValue());
     }
 
     public void clearValue() {
         jsonObject.remove(VALUE_FIELD_NAME);
     }
 
-    public void setValueAsString(String value) {
-        setValue(value == null ? Json.createNull() : Json.create(value));
+    public void setValue(String value) {
+        doSetValue(asJsonValue(value));
     }
 
-    public void setValueAsInteger(Integer value) {
-        setValue(value == null ? Json.createNull() : Json.create(value));
+    public void setValue(Integer value) {
+        setValue(asJsonValue(value));
     }
 
-    public void setValueAsDecimal(Double value) {
-        setValue(value == null ? Json.createNull() : Json.create(value));
+    public void setValue(Double value) {
+        doSetValue(asJsonValue(value));
     }
 
-    public void setValueAsBoolean(Boolean value) {
-        setValue(value == null ? Json.createNull() : Json.create(value));
-    }
-
-    public void setValueAsObject(JsonObject value) {
-        setValue(value == null ? Json.createNull() : value);
-    }
-
-    public void setValueAsArray(JsonArray value) {
-        setValue(value == null ? Json.createNull() : value);
-    }
-
-    /**
-     * You can NOT perform null-checks on whatever is returned here!
-     * <p>
-     * TODO https://github.com/gwtproject/gwt/issues/9484
-     */
-    public JsonValue getValue() {
-        return hasValue() ? jsonObject.get(VALUE_FIELD_NAME) : Json.createNull();
+    public void setValue(Boolean value) {
+        doSetValue(asJsonValue(value));
     }
 
     /**
      * @throws IllegalArgumentException if the given value is invalid and failed constraint checking.
      */
-    @SuppressWarnings("unchecked")
     public void setValue(JsonValue value) throws IllegalArgumentException {
-
-        if (value == null) {
-            value = Json.createNull();
-        } else if (value.getType() != JsonType.NULL){
-            // TODO Avoid unboxing problems by parsing again https://github.com/gwtproject/gwt/issues/9484
-            value = Json.instance().parse(value.toJson());
-        }
-
-        if (!isValidValue(value)) {
-            String typeString = value != null ? value.getType().name() : "null";
-            String valueString = value != null ? value.toJson() : "null";
-            throw new IllegalArgumentException("Invalid value of type " + typeString + ": " + valueString);
-        }
-
-        jsonObject.put(VALUE_FIELD_NAME, value);
+        doSetValue(sanitizeJsonValue(value));
     }
 
     /**
-     * Use this in Javascript, can't do null checks on JsonValue.
+     * @throws IllegalArgumentException if the given value is invalid and failed constraint checking.
      */
-    public void setValueUnchecked(JsonValue value) {
-        jsonObject.put(VALUE_FIELD_NAME, value);
+    public void setValue(Optional<JsonValue> value) {
+        doSetValue(sanitizeJsonValue(value));
+    }
+
+    protected void doSetValue(JsonValue jsonValue) throws IllegalArgumentException {
+        if (!isValidValue(jsonValue)) {
+            throw new IllegalArgumentException("Invalid value: " + (jsonValue != null ? jsonValue.toJson() : "null"));
+        }
+
+        if (jsonValue != null) {
+            jsonObject.put(VALUE_FIELD_NAME, jsonValue);
+        } else {
+            clearValue();
+        }
+
+//        value = JsonUtil.replaceJsonNull(value)
+//            .map(
+//
+//                val -> Json.instance().parse(val.toJson())
+//            )
+//            .map(val -> {
+//                if (!isValidValue(val)) {
+//                    //noinspection ConstantConditions
+//                    throw new IllegalArgumentException("Invalid value of type " + val.getType() + ": " + val.toJson());
+//                }
+//                return val;
+//            });
+//
+//        if (value.isPresent()) {
+//            jsonObject.put(VALUE_FIELD_NAME, value.get());
+//        } else {
+//            clearValue();
+//        }
+    }
+
+    public Optional<JsonValue> getValue() {
+        return Optional.ofNullable(sanitizeJsonValue((JsonValue)jsonObject.get(VALUE_FIELD_NAME)));
     }
 
     /**
      * Override to implement constraints.
      */
-    protected boolean isValidValue(JsonValue value) {
-        return value != null; // Don't allow literal nulls
+    public boolean isValidValue(JsonValue value) {
+        return true;
     }
 
     /**
@@ -158,5 +157,9 @@ public abstract class AbstractValueHolder {
     @Override
     public String toString() {
         return jsonObject.toJson();
+    }
+
+    public JsonObject getJsonObject() {
+        return jsonObject;
     }
 }

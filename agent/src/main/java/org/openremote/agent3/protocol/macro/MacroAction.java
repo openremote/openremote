@@ -24,10 +24,12 @@ import elemental.json.JsonObject;
 import elemental.json.JsonValue;
 import org.openremote.model.AttributeState;
 import org.openremote.model.MetaItem;
+import org.openremote.model.util.JsonUtil;
 
-import java.util.function.Function;
+import java.util.Objects;
+import java.util.Optional;
 
-import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
+import static org.openremote.agent3.protocol.macro.MacroConfiguration.META_MACRO_ACTION;
 
 /**
  * A desired {@link AttributeState} and a delay in milli seconds before that state
@@ -35,27 +37,17 @@ import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
  */
 public class MacroAction {
 
-    public static final String MACRO_ACTION = ASSET_META_NAMESPACE + ":macroAction";
-
     protected AttributeState attributeState;
     protected int delayMilliseconds;
 
-    static Function<MetaItem, MacroAction> getMacroActionFromMetaItem() {
-        return metaItem -> new MacroAction(metaItem.getValueAsObject());
-    }
-
-    static Function<MacroAction, MetaItem> getMetaItemFromMacroAction() {
-        return macroAction -> new MetaItem(MACRO_ACTION, macroAction.asJsonValue());
-    }
-
-    public MacroAction(JsonObject jsonObject) {
-        attributeState = new AttributeState(jsonObject.getObject("attributeState"));
-        delayMilliseconds = new Double(jsonObject.getNumber("delay")).intValue();
+    public MacroAction(AttributeState attributeState) {
+        Objects.requireNonNull(attributeState);
+        this.attributeState = attributeState;
     }
 
     public MacroAction(AttributeState attributeState, int delayMilliseconds) {
-        this.attributeState = attributeState;
-        this.delayMilliseconds = delayMilliseconds;
+        this(attributeState);
+        setDelayMilliseconds(delayMilliseconds);
     }
 
     public AttributeState getAttributeState() {
@@ -71,14 +63,18 @@ public class MacroAction {
     }
 
     public void setDelayMilliseconds(int delayMilliseconds) {
-        this.delayMilliseconds = delayMilliseconds;
+        this.delayMilliseconds = Math.max(0, delayMilliseconds);
     }
 
-    public JsonValue asJsonValue() {
+    public JsonValue toJsonValue() {
         JsonObject jsonObect = Json.createObject();
-        jsonObect.put("attributeState", attributeState != null ? attributeState.asJsonValue() : Json.create(null));
+        jsonObect.put("attributeState", attributeState != null ? attributeState.toJsonValue() : Json.create(null));
         jsonObect.put("delay", Json.create(delayMilliseconds));
         return jsonObect;
+    }
+
+    public MetaItem toMetaItem() {
+        return new MetaItem(META_MACRO_ACTION, toJsonValue());
     }
 
     @Override
@@ -87,5 +83,18 @@ public class MacroAction {
             "attributeState='" + attributeState + '\'' +
             ", delay='" + delayMilliseconds + '\'' +
             '}';
+    }
+
+    public static Optional<MacroAction> fromJsonValue(JsonValue jsonValue) {
+        return JsonUtil.asJsonObject(jsonValue)
+            .map(jsonObject -> {
+
+                Optional<AttributeState> state = AttributeState.fromJsonValue(jsonObject.get("attributeState"));
+                Optional<Integer> delay = JsonUtil.asInteger((JsonValue)jsonObject.get("delay"));
+
+                return state
+                    .map(attributeState -> new MacroAction(attributeState, delay.orElse(0)))
+                    .orElse(null);
+            });
     }
 }

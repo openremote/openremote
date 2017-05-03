@@ -6,11 +6,22 @@ import org.openremote.manager.server.rules.RulesEngine
 
 class RulesTestUtil {
 
-    static attachRuleExecutionLogger(RulesEngine ruleEngine, List<String> executedRules) {
+    static boolean attachRuleExecutionLogger(RulesEngine ruleEngine, List<String> executedRules) {
+        if (ruleEngine == null)
+            return false
+
         def session = ruleEngine.getKnowledgeSession()
-        if (session == null) {
-            return
+        def counter = 0
+        while (session == null && counter < 20) {
+            Thread.sleep(100)
+            session = ruleEngine.getKnowledgeSession()
+            counter++
         }
+
+        if (session == null) {
+            return false
+        }
+
         session.addEventListener(new DefaultAgendaEventListener() {
             @Override
             void afterMatchFired(AfterMatchFiredEvent event) {
@@ -19,6 +30,8 @@ class RulesTestUtil {
                 executedRules.add(ruleName)
             }
         })
+
+        return true
     }
 
 }

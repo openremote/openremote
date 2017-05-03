@@ -122,8 +122,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     @Override
     public void accept(AssetState assetState) {
         String assetId = assetState.getId();
-        String attributeName = assetState.getAttribute().getName();
-        JsonValue value = assetState.getAttribute().getValue();
+        String attributeName = assetState.getAttribute().getName()
+            .orElseThrow(() -> new IllegalStateException("Cannot store asset state for attribute with no name"));
+        JsonValue value = assetState.getAttribute().getValue().orElse(null);
         // Some sanity checking, of course the timestamp should never be -1 if we store updated attribute state
         long timestamp = assetState.getAttribute().getValueTimestamp();
         String valueTimestamp = Long.toString(
@@ -240,7 +241,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
 
             // Validate attributes
-            if (!asset.getAttributeStream().allMatch(AssetAttribute::isValid)) {
+            if (!asset.getAttributesStream().allMatch(AssetAttribute::isValid)) {
                 throw new IllegalStateException("One or more attributes are not valid");
             }
 
@@ -682,14 +683,14 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     protected void replyWithAttributeEvents(String sessionKey, ServerAsset asset, String[] attributeNames) {
-        List<String> names = attributeNames != null && attributeNames.length > 0
-            ? Arrays.asList(attributeNames)
-            : Collections.EMPTY_LIST;
+        List<String> names = attributeNames == null ? Collections.emptyList() : Arrays.asList(attributeNames);
 
         // Client may want to read a subset or all attributes of the asset
-        List<AttributeEvent> events = asset.getAttributeStream()
-            .filter(attribute -> names.isEmpty() || names.contains(attribute.getName()))
+        List<AttributeEvent> events = asset.getAttributesStream()
+            .filter(AssetAttribute::hasName)
+            .filter(attribute -> names.isEmpty() || names.contains(attribute.getName().get()))
             .map(AssetAttribute::getStateEvent)
+            .map(Optional::get)
             .collect(Collectors.toList());
 
         eventService.sendToSession(sessionKey, events.toArray(new AttributeEvent[events.size()]));

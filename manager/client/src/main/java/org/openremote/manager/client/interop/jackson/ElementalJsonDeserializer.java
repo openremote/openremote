@@ -25,6 +25,9 @@ import com.github.nmorel.gwtjackson.client.JsonDeserializerParameters;
 import com.github.nmorel.gwtjackson.client.stream.JsonReader;
 import elemental.json.Json;
 import elemental.json.JsonValue;
+import org.openremote.model.util.JsonUtil;
+
+import static org.openremote.model.util.JsonUtil.sanitizeJsonValue;
 
 public class ElementalJsonDeserializer extends JsonDeserializer<JsonValue> {
 
@@ -33,17 +36,9 @@ public class ElementalJsonDeserializer extends JsonDeserializer<JsonValue> {
         if (reader.hasNext()) {
             String nextValue = reader.nextValue();
             JsonValue value = Json.instance().parse(nextValue);
-            value = makeCastableToJavaScriptObject(value);
+            value = sanitizeJsonValue(value);
             return value;
         }
         return null;
     }
-
-    static native JsonValue makeCastableToJavaScriptObject(JsonValue value) /*-{
-        // If it's a primitive, wrap in Object
-        if (value === null || typeof value == 'object') {
-            return value;
-        }
-        return Object(value);
-    }-*/;
 }

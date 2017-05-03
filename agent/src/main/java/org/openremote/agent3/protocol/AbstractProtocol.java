@@ -102,14 +102,14 @@ public abstract class AbstractProtocol implements Protocol {
     public void linkAttributes(Collection<AssetAttribute> attributes, AssetAttribute protocolConfiguration) throws Exception {
         synchronized (linkedAttributes) {
             attributes.forEach(attribute -> {
-                if (linkedAttributes.containsKey(attribute.getReference())) {
+                if (linkedAttributes.containsKey(attribute.getReferenceOrThrow())) {
                     LOG.fine("Attribute updated on '" + getProtocolName() + "': " + attribute);
                     onAttributeUpdated(attribute, protocolConfiguration);
-                    linkedAttributes.put(attribute.getReference(), attribute);
+                    linkedAttributes.put(attribute.getReferenceOrThrow(), attribute);
                 } else {
                     LOG.fine("Attribute added on '" + getProtocolName() + "': " + attribute);
                     onAttributeAdded(attribute, protocolConfiguration);
-                    linkedAttributes.put(attribute.getReference(), attribute);
+                    linkedAttributes.put(attribute.getReferenceOrThrow(), attribute);
                 }
             });
         }
@@ -124,11 +124,11 @@ public abstract class AbstractProtocol implements Protocol {
                     .stream()
                     .anyMatch(linkedAttribute ->
                         linkedAttribute
-                            .getReference()
-                            .equals(attribute.getReference()))
+                            .getReferenceOrThrow()
+                            .equals(attribute.getReferenceOrThrow()))
                 )
                 .forEach(attributeToRemove -> {
-                    AttributeRef agentLinkedAttributeRef = attributeToRemove.getReference();
+                    AttributeRef agentLinkedAttributeRef = attributeToRemove.getReferenceOrThrow();
 
                     linkedAttributes.remove(agentLinkedAttributeRef);
                     LOG.fine("Attribute removed on '" + getProtocolName() + "': " + attributeToRemove);
@@ -144,11 +144,9 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     protected void sendAttributeEvent(AttributeState state) {
-        producerTemplate.sendBodyAndHeader(
-            SENSOR_QUEUE,
-            new AttributeEvent(state, timerService.getCurrentTimeMillis()),
-            "isSensorUpdate", false
-        );
+        AttributeEvent event = new AttributeEvent(state, timerService.getCurrentTimeMillis());
+        LOG.info("Sending attribute event: " + event);
+        producerTemplate.sendBodyAndHeader(SENSOR_QUEUE, event, "isSensorUpdate", false);
     }
 
     protected void onSensorUpdate(AttributeState state, long timestamp) {

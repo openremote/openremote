@@ -21,131 +21,26 @@ package org.openremote.model;
 
 import com.google.gwt.regexp.shared.RegExp;
 import elemental.json.Json;
+import elemental.json.JsonArray;
 import elemental.json.JsonObject;
-import elemental.json.JsonType;
 import elemental.json.JsonValue;
 import org.openremote.model.util.JsonUtil;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
+
+import static org.openremote.model.MetaItem.isMetaNameEqualTo;
+import static org.openremote.model.util.JsonUtil.asJsonArray;
+import static org.openremote.model.util.JsonUtil.getJsonValueType;
+import static org.openremote.model.util.JsonUtil.sanitizeJsonValue;
+import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
 
 /**
  * Convenience overlay API for {@link JsonObject}.
  */
 public abstract class Attribute extends AbstractValueTimestampHolder {
-
-    public static final class Functions {
-
-        private Functions() {}
-
-        public static <A extends Attribute> List<A> removeAttribute(List<A> attributes, String name) {
-            attributes.removeIf(attribute -> attribute.getName().equals(name));
-            return attributes;
-        }
-
-        public static <A extends Attribute> Optional<A> getAttribute(List<A> attributes, String name) {
-            return attributes
-                .stream()
-                .filter(attribute -> attribute.getName().equals(name))
-                .findFirst();
-        }
-
-        public static Function<Stream<? extends Attribute>, Optional<? extends Attribute>> getAttribute(String name) {
-            return attributeStream -> attributeStream
-                .filter(attribute -> attribute.getName().equals(name))
-                .findFirst();
-        }
-
-        public static <A extends Attribute> Function<A, Optional<AttributeRef>> getAttributeLink(String metaName) {
-            return attribute -> attribute.getMetaItem(metaName)
-                .filter(item -> item.getValue().getType() == JsonType.ARRAY)
-                .map(AbstractValueHolder::getValueAsArray)
-                .map(AttributeRef::new);
-        }
-
-        @SuppressWarnings("unchecked")
-        public static <A extends Attribute> UnaryOperator<A> setAttributeLink(String metaName, AttributeRef attributeRef) {
-            return attribute -> {
-                if (attributeRef == null) {
-                    throw new IllegalArgumentException(
-                        "Attribute reference cannot be null for '" + metaName + "' on: " + attribute
-                    );
-                }
-                return (A)attribute.setMeta(
-                    attribute.getMeta().replace(metaName, new MetaItem(metaName, attributeRef.asJsonValue()))
-                );
-            };
-        }
-
-        @SuppressWarnings("unchecked")
-        public static <A extends Attribute> UnaryOperator<A> removeAttributeLink(String metaName) {
-            return attribute -> (A)attribute.setMeta(attribute.getMeta().removeAll(metaName));
-        }
-
-        public static <A extends Attribute> Predicate<A> isAttributeLink(String metaName) {
-            return attribute -> getAttributeLink(metaName)
-                .apply(attribute)
-                .isPresent();
-        }
-
-        public static <A extends Attribute> Predicate<A> isValid() {
-            return A::isValid;
-        }
-
-        public static <A extends Attribute> Predicate<A> notValid() {
-            return attribute -> !attribute.isValid();
-        }
-
-        public static <A extends Attribute> Predicate<A> isOfType(AttributeType attributeType) {
-            return attribute -> attribute.getType().equals(attributeType);
-        }
-
-        public static <A extends Attribute> Predicate<A> isValueEqualTo(JsonValue value) {
-            return attribute -> JsonUtil.equals(attribute.getValue(), value);
-        }
-
-        public static <A extends Attribute> Predicate<A> hasMetaItem(String metaName) {
-            return attribute -> attribute.hasMetaItem(metaName);
-        }
-
-        public static <A extends Attribute> Predicate<A> hasMetaItem(String metaName, JsonValue value) {
-            return attribute -> attribute.hasMetaItem(metaName, value);
-        }
-
-        public static <A extends Attribute, T extends JsonValue> Predicate<A> hasMetaItem(String metaName, Class<T> clazz) {
-            return attribute -> attribute.hasMetaItem(metaName, clazz);
-        }
-
-        public static <A extends Attribute> Function<A, Optional<MetaItem>> getMetaItem(String metaName) {
-            return attribute -> attribute.getMetaItem(metaName);
-        }
-
-        public static <A extends Attribute> Function<A, Optional<MetaItem>> getMetaItem(String metaName, JsonValue value) {
-            return attribute -> attribute.getMetaItem(metaName, value);
-        }
-
-        public static <A extends Attribute, T extends JsonValue> Function<A, Optional<MetaItem>> getMetaItem(String metaName, Class<T> clazz) {
-            return attribute -> attribute.getMetaItem(metaName, clazz);
-        }
-
-        public static <A extends Attribute> Function<A, List<MetaItem>> getMetaItems(String metaName) {
-            return attribute -> attribute.getMetaItems(metaName);
-        }
-
-        public static <A extends Attribute> Function<A, List<MetaItem>> getMetaItems(String metaName, JsonValue value) {
-            return attribute -> attribute.getMetaItems(metaName, value);
-        }
-
-        public static <A extends Attribute, T extends JsonValue> Function<A, List<MetaItem>> getMetaItems(String metaName, Class<T> clazz) {
-            return attribute -> attribute.getMetaItems(metaName, clazz);
-        }
-    }
 
     /**
      * Attribute names should be very simple, as we use them in SQL path
@@ -161,19 +56,19 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
 
     protected String name;
 
+    protected Attribute(JsonObject jsonObject) {
+        super(jsonObject);
+    }
+
     protected Attribute(String name) {
-        this(name, Json.createObject());
+        this(Json.createObject());
+        setName(name);
     }
 
     protected Attribute(String name, AttributeType type) {
-        super(Json.createObject());
+        this(name);
         setName(name);
         setType(type);
-    }
-
-    protected Attribute(String name, JsonObject jsonObject) {
-        super(jsonObject);
-        setName(name);
     }
 
     protected Attribute(String name, AttributeType type, JsonValue value) {
@@ -181,42 +76,31 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
         setValue(value);
     }
 
-    protected Attribute(Attribute attribute) {
-        this(attribute.getName(), attribute.getType().orElse(null), attribute.getJsonObject());
+    public boolean hasName() {
+        return getName().isPresent();
     }
 
-    @Override
-    protected boolean isValidValue(JsonValue value) {
-        return getType().isPresent()
-            ? getType().get().isValid(value)
-            : super.isValidValue(value);
+    public Optional<String> getName() {
+        return Optional.ofNullable(name);
     }
 
     public void setName(String name) {
-        if (name == null)
-            throw new NullPointerException("Attribute name is required");
+        requireNonNullAndNonEmpty(name);
         this.name = name;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public JsonObject getJsonObject() {
-        return jsonObject;
+    public boolean hasType() {
+        return jsonObject.hasKey(TYPE_FIELD_NAME) && JsonUtil.isOfTypeString(jsonObject.get(TYPE_FIELD_NAME));
     }
 
     public Optional<AttributeType> getType() {
-        String typeName = jsonObject.hasKey(TYPE_FIELD_NAME) ? jsonObject.get(TYPE_FIELD_NAME).asString() : null;
-        return Optional.ofNullable(typeName != null ? AttributeType.fromValue(typeName) : null);
+        return Optional.ofNullable(hasType() ? AttributeType.fromValue(jsonObject.getString(TYPE_FIELD_NAME)) : null);
     }
 
     public void setType(AttributeType type) {
-        if (type == null) {
-            return;
-        }
+        Objects.requireNonNull(type);
 
-        if (getType().isPresent() && getType().get() == type) {
+        if (getType().orElse(null) == type) {
             return;
         }
 
@@ -224,186 +108,140 @@ public abstract class Attribute extends AbstractValueTimestampHolder {
 
         // Remove the old value and timestamp
         jsonObject.remove(VALUE_TIMESTAMP_FIELD_NAME);
-        setValueUnchecked(Json.createNull());
+        clearValue();
     }
 
     public boolean hasMeta() {
-        return jsonObject.hasKey(META_FIELD_NAME);
+        return asJsonArray(jsonObject.getArray(META_FIELD_NAME))
+            .map(jsonArray -> jsonArray.length() > 0)
+            .orElse(false);
     }
 
     public Meta getMeta() {
-        return hasMeta() ? new Meta(jsonObject.getArray(META_FIELD_NAME)) : new Meta();
-    }
-
-    @SuppressWarnings("unchecked")
-    public Attribute setMeta(Meta meta) {
-        if (meta != null) {
-            jsonObject.put(META_FIELD_NAME, meta.getJsonArray());
-        } else if (jsonObject.hasKey(META_FIELD_NAME)) {
-            jsonObject.remove(META_FIELD_NAME);
+        if (!hasMeta()) {
+            // Create array object so don't have to call setMeta
+            // can just update the collection like normal POJO behaviour
+            JsonArray metaArray = Json.createArray();
+            jsonObject.put(META_FIELD_NAME, metaArray);
         }
-        return this;
+
+        return new Meta(jsonObject.getArray(META_FIELD_NAME));
     }
 
-    public Stream<MetaItem> getMetaItemStream() {
+    public Stream<MetaItem> getMetaStream() {
         return getMeta().stream();
     }
 
-    public List<MetaItem> getMetaItems(String name) {
-        return hasMeta() ? getMeta().getAll(name) : Collections.emptyList();
+    public boolean hasMetaItem(String metaName) {
+        return getMetaItem(metaName).isPresent();
     }
 
-    public List<MetaItem> getMetaItems(String name, JsonValue value) {
-        return hasMeta() ? getMeta().getAll(name, value) : Collections.emptyList();
+    public boolean hasMetaItem(HasMetaName hasMetaName) {
+        return getMetaItem(hasMetaName).isPresent();
     }
 
-    public <T extends JsonValue> List<MetaItem> getMetaItems(String name, Class<T> clazz) {
-        return hasMeta() ? getMeta().getAll(name, clazz) : Collections.emptyList();
+    public Optional<MetaItem> getMetaItem(String metaName) {
+        return getMetaStream()
+            .filter(isMetaNameEqualTo(metaName))
+            .findFirst();
     }
 
-    public List<MetaItem> getMetaItems(Predicate<MetaItem> filter) {
-        return hasMeta() ? getMeta().getAll(filter) : Collections.emptyList();
+    public Optional<MetaItem> getMetaItem(HasMetaName hasMetaName) {
+        return getMetaItem(hasMetaName.getUrn());
     }
 
-    public Optional<MetaItem> getMetaItem(int index) {
-        return hasMeta() ? getMeta().get(index) : Optional.empty();
-    }
-
-    public Optional<MetaItem> getMetaItem(String name) {
-        return hasMeta() ? getMeta().get(name) : Optional.empty();
-    }
-
-    public Optional<MetaItem> getMetaItem(String name, int startIndex) {
-        return hasMeta() ? getMeta().get(name, startIndex) : Optional.empty();
-    }
-
-    public Optional<MetaItem> getMetaItem(String name, JsonValue value) {
-        return hasMeta() ? getMeta().get(name, value) : Optional.empty();
-    }
-
-    public Optional<MetaItem> getMetaItem(String name, JsonValue value, int startIndex) {
-        return hasMeta() ? getMeta().get(name, value, startIndex) : Optional.empty();
-    }
-
-    public <T extends JsonValue> Optional<MetaItem> getMetaItem(String name, Class<T> clazz) {
-        return hasMeta() ? getMeta().get(name, clazz) : Optional.empty();
-    }
-
-    public <T extends JsonValue> Optional<MetaItem> getMetaItem(String name, Class<T> clazz, int startIndex) {
-        return hasMeta() ? getMeta().get(name, clazz, startIndex) : Optional.empty();
-    }
-
-    public MetaItem getMetaItemOrThrow(int index) throws NoSuchElementException {
-        MetaItem item = getMetaItem(index).orElse(null);
-
-        if (item == null) {
-            throw new NoSuchElementException("Missing item: " + index);
-        }
-
-        return item;
-    }
-
-    public MetaItem getMetaItemOrThrow(MetaItem item) throws NoSuchElementException {
-        return getMetaItemOrThrow(item.getName(), item.getValue(), 0);
-    }
-
-    public MetaItem getMetaItemOrThrow(MetaItem item, int startIndex) throws NoSuchElementException {
-        return getMetaItemOrThrow(item.getName(), item.getValue(), startIndex);
-    }
-
-    public MetaItem getMetaItemOrThrow(String name) throws NoSuchElementException {
-        return getMetaItemOrThrow(name, 0);
-    }
-
-    public MetaItem getMetaItemOrThrow(String name, int startIndex) throws NoSuchElementException {
-        MetaItem item = getMetaItem(name, startIndex).orElse(null);
-
-        if (item == null) {
-            throw new NoSuchElementException("Missing item: " + name);
-        }
-
-        return item;
-    }
-
-    public MetaItem getMetaItemOrThrow(String name, JsonValue value) throws NoSuchElementException {
-        return getMetaItemOrThrow(name, value, 0);
-    }
-
-    public MetaItem getMetaItemOrThrow(String name, JsonValue value, int startIndex) throws NoSuchElementException {
-        MetaItem item = getMetaItem(name, value, startIndex).orElse(null);
-
-        if (item == null) {
-            throw new NoSuchElementException("Missing item: " + name);
-        }
-
-        return item;
-    }
-
-    public <T extends JsonValue> MetaItem getMetaItemOrThrow(String name, Class<T> clazz) throws NoSuchElementException {
-        return getMetaItemOrThrow(name, clazz, 0);
-    }
-
-    public <T extends JsonValue> MetaItem getMetaItemOrThrow(String name, Class<T> clazz, int startIndex) throws NoSuchElementException {
-        MetaItem item = getMetaItem(name, clazz, startIndex).orElse(null);
-
-        if (item == null) {
-            throw new NoSuchElementException("Missing item: " + name);
-        }
-
-        return item;
-    }
-
-    public boolean hasMetaItem(MetaItem item) {
-        return hasMeta() && getMeta().contains(item);
-    }
-
-    public boolean hasMetaItem(String name) {
-        return hasMeta() && getMeta().contains(name);
-    }
-
-    public boolean hasMetaItem(String name, JsonValue value) {
-        return hasMeta() && getMeta().contains(name, value);
-    }
-
-    public <T extends JsonValue> boolean hasMetaItem(String name, Class<T> clazz) {
-        return hasMeta() && getMeta().contains(name, clazz);
-    }
-
-    public int indexOfMetaItem(MetaItem item) {
-        return indexOfMetaItem(item, 0);
-    }
-
-    public int indexOfMetaItem(MetaItem item, int startIndex) {
-        return hasMeta() ? getMeta().indexOf(item) : -1;
-    }
-
-    public int indexOfMetaItem(String name) {
-        return indexOfMetaItem(name, 0);
-    }
-
-    public int indexOfMetaItem(String name, int startIndex) {
-        return hasMeta() ? getMeta().indexOf(name) : -1;
-    }
-
-    public int indexOfMetaItem(String name, JsonValue value) {
-        return indexOfMetaItem(name, value, 0);
-    }
-
-    public int indexOfMetaItem(String name, JsonValue value, int startIndex) {
-        return hasMeta() ? getMeta().indexOf(name, value, startIndex) : -1;
-    }
-
-    public <T extends JsonValue> int indexOfMetaItem(String name, Class<T> clazz) {
-        return indexOfMetaItem(name, clazz, 0);
-    }
-
-    public <T extends JsonValue> int indexOfMetaItem(String name, Class<T> clazz, int startIndex) {
-        return hasMeta() ? getMeta().indexOf(name, clazz, startIndex) : -1;
-    }
+    // The below methods cause weird behaviour where things will compile
+    // but will fail at runtime - some weird generics issue
+//    public <A extends Attribute> A setMeta(List<MetaItem> meta) {
+//        if (meta != null) {
+//            Meta metaObj;
+//            if (meta instanceof Meta) {
+//                metaObj = (Meta)meta;
+//            } else {
+//                metaObj = new Meta();
+//                metaObj.addAll(meta);
+//            }
+//            jsonObject.put(META_FIELD_NAME, metaObj.getJsonArray());
+//        } else {
+//            jsonObject.remove(META_FIELD_NAME);
+//        }
+//
+//        return (A)this;
+//    }
+//
+//    @SuppressWarnings("unchecked")
+//    public <A extends Attribute> A setMeta(Meta meta) {
+//        setMeta((List<MetaItem>)meta);
+//        return (A)this;
+//    }
+//
+//    @SuppressWarnings("unchecked")
+//    public <A extends Attribute> A setMeta(MetaItem... meta) {
+//        setMeta(Arrays.asList(meta));
+//        return (A)this;
+//    }
 
     @Override
     public boolean isValid() {
         // TODO: Should value validity be part of the isValid check?
-        return super.isValid() && ATTRIBUTE_NAME_VALIDATOR.test(name) && getType().isPresent();
+        return super.isValid()
+            && hasName() && ATTRIBUTE_NAME_VALIDATOR.test(name)
+            && getType()
+            .isPresent();
+    }
+
+    @Override
+    public boolean isValidValue(JsonValue value) {
+        JsonValue sanitizedValue = sanitizeJsonValue(value);
+
+        return super.isValidValue(sanitizedValue)
+            && (sanitizedValue == null ||
+             getType()
+                .map(type -> type.getJsonType() == getJsonValueType(sanitizedValue))
+                .orElse(false));
+    }
+
+    //    ---------------------------------------------------
+//    FUNCTIONAL METHODS BELOW
+//    ---------------------------------------------------
+
+    public static <A extends Attribute> boolean equals(A attribute1, A attribute2) {
+        if (attribute1 == null && attribute2 == null)
+            return true;
+
+        if (attribute1 == null || attribute2 == null)
+            return false;
+
+        Optional<String> name = attribute2.getName();
+        return isAttributeNameEqualTo(attribute1, name.orElse(null))
+            && JsonUtil.equals(attribute1.getValue().orElse(null), attribute2.getValue().orElse(null));
+    }
+
+    public static <A extends Attribute> boolean isAttributeNameEqualTo(A attribute, String name) {
+        if (attribute == null)
+            return false;
+
+        return attribute
+            .getName()
+            .map(attributeName -> attributeName.equals(name))
+            .orElse(name == null);
+    }
+
+    public static <A extends Attribute> Predicate<A> isAttributeNameEqualTo(String name) {
+        return attribute -> isAttributeNameEqualTo(attribute, name);
+    }
+
+    public static <A extends Attribute> boolean isAttributeTypeEqualTo(A attribute, AttributeType type) {
+        if (attribute == null)
+            return false;
+
+        return attribute
+            .getType()
+            .map(attributeType -> attributeType == type)
+            .orElse(type == null);
+    }
+
+    public static <A extends Attribute> Predicate<A> isAttributeTypeEqualTo(AttributeType type) {
+        return attribute -> isAttributeTypeEqualTo(attribute, type);
     }
 }

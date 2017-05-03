@@ -20,6 +20,7 @@
 package org.openremote.model;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 public class Triplet<A, B, C> implements Serializable {
     public A value1;
@@ -58,7 +59,7 @@ public class Triplet<A, B, C> implements Serializable {
 
     @Override
     public int hashCode() {
-        return 13 + (value1 == null ? 0 : value1.hashCode()) + (value2 == null ? 0 : value2.hashCode()) + (value3 == null ? 0 : value3.hashCode());
+        return Objects.hash(value1, value2, value3);
     }
 
     @Override

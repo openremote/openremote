@@ -23,7 +23,7 @@ when
     AssetState(id == $room.id, attributeName == "presenceDetected", !value.asBoolean)
     // And at least 5 motion counter increments have been received in the last 10 minutes
     accumulate(
-        AssetEvent(id == $room.id, attributeName == "motionCount", value.asNumber > 0) over window:time(10m);
+        AssetEvent(id == $room.id, attributeName == "motionCount", value != null, value.asNumber > 0) over window:time(10m);
         $count: count(1);
         $count >= 5
     )
@@ -42,13 +42,13 @@ when
     AssetState(id == $room.id, attributeName == "presenceDetected", value.asBoolean)
     // And at least 5 motion counter increments have been received in the last 10 minutes
     accumulate(
-        AssetEvent(id == $room.id, attributeName == "motionCount", value.asNumber > 0, $ts: valueTimestamp) over window:time(10m);
+        AssetEvent(id == $room.id, attributeName == "motionCount", value != null, value.asNumber > 0, $ts: valueTimestamp) over window:time(10m);
         $count: count(1),
         $latestIncrementTimestamp: max($ts);
         $count >= 5
     )
     // And the latest counter increment event is newer than the recorded last presence detected time
-    AssetState(id == $room.id, attributeName == "lastPresenceDetected", $latestIncrementTimestamp > value.asNumber)
+    AssetState(id == $room.id, attributeName == "lastPresenceDetected", value != null, $latestIncrementTimestamp > value.asNumber)
 then
     // Update the last presence detected timestamp to the latest counter increment event
     assets.dispatch(
@@ -65,7 +65,7 @@ when
     AssetState(id == $room.id, attributeName == "presenceDetected", value.asBoolean)
     // And no motion counter increments have been received in the last 10 minutes
     accumulate(
-        AssetEvent(id == $room.id, attributeName == "motionCount", value.asNumber > 0) over window:time(10m);
+        AssetEvent(id == $room.id, attributeName == "motionCount", value != null, value.asNumber > 0) over window:time(10m);
         $count: count(1);
         $count == 0
     )

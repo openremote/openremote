@@ -26,13 +26,14 @@ import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.datapoint.AssetDatapointResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.model.AttributeRef;
-import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
 
 import javax.ws.rs.BeanParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
+
+import static org.openremote.model.Attribute.isAttributeNameEqualTo;
 
 public class AssetDatapointResourceImpl extends ManagerWebResource implements AssetDatapointResource {
 
@@ -57,7 +58,11 @@ public class AssetDatapointResourceImpl extends ManagerWebResource implements As
             // TODO Security etc.
             ServerAsset asset = assetStorageService.find(assetId, true);
 
-            if (!asset.hasAttribute(attributeName, AssetAttribute::isStoreDatapoints)) {
+            if (asset == null || asset
+                .getAttributesStream()
+                .noneMatch(
+                    attribute -> isAttributeNameEqualTo(attribute, attributeName) && attribute.isStoreDatapoints()
+                )) {
                 throw new WebApplicationException(Response.Status.NOT_FOUND);
             }
 

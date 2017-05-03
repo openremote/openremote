@@ -19,8 +19,6 @@
  */
 package org.openremote.manager.server.asset;
 
-import elemental.json.JsonString;
-import elemental.json.JsonValue;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
@@ -49,9 +47,8 @@ import java.util.logging.Logger;
 import static org.openremote.agent3.protocol.Protocol.SENSOR_QUEUE;
 import static org.openremote.manager.server.event.EventService.INCOMING_EVENT_TOPIC;
 import static org.openremote.manager.server.event.EventService.getWebsocketAuth;
-import static org.openremote.model.asset.AssetAttribute.Functions.matches;
 import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
-import static org.openremote.model.asset.agent.AgentLink.isValidAgentLink;
+import static org.openremote.model.util.JsonUtil.asString;
 
 /**
  * Receives {@link AttributeEvent}s and processes them.
@@ -267,7 +264,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                     return;
 
                 // Attribute must exist
-                if (!asset.hasAttribute(event.getAttributeName()))
+                if (!asset.getAttribute(event.getAttributeName()).isPresent())
                     return;
 
                 // Regular users can only write attribute events for assets in their realm
@@ -334,10 +331,11 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
         // If attribute is marked as executable and not from northbound only allow write AttributeExecuteStatus to be sent
         if (!fromProtocol && attribute.get().isExecutable()) {
-            JsonValue value = attributeEvent.getValue();
-            AttributeExecuteStatus status;
+            AttributeExecuteStatus status = asString(attributeEvent.getValue())
+                .map(AttributeExecuteStatus::fromString)
+                .orElse(null);
 
-            if (value == null || !(value instanceof JsonString) || (status = AttributeExecuteStatus.fromString(value.asString())) == null) {
+            if (status == null) {
                 LOG.warning("Attribute event doesn't contain a valid AttributeExecuteStatus value: " + attributeEvent);
                 return;
             }
@@ -357,17 +355,18 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     protected void processSensorUpdate(AttributeEvent attributeEvent) {
         ServerAsset asset = assetStorageService.find(attributeEvent.getEntityId(), true);
 
+        if (asset == null) {
+            LOG.warning("Sensor update received for an asset that cannot be found: " + attributeEvent.getEntityId());
+            return;
+        }
+
         LOG.fine("Processing sensor " + attributeEvent + " for asset: " + asset);
 
         // Get the attribute and check it is actually linked to an agent (although the
         // event comes from a Protocol, we can not assume that the attribute is still linked,
         // consider a protocol that receives a batch of messages because a gateway was offline
         // for a day)
-        AssetAttribute attribute = asset.getAttributeStream()
-            .filter(matches(attributeEvent))
-            .filter(isValidAgentLink())
-            .findFirst()
-            .orElse(null);
+        AssetAttribute attribute = asset.getAttribute(attributeEvent.getAttributeName()).orElse(null);
 
         if (attribute == null) {
             LOG.warning("Processing sensor update failed, no attribute or not linked to an agent: " + attributeEvent);
@@ -375,7 +374,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         }
 
         Optional<AssetAttribute> protocolConfiguration =
-            getAgentLink().andThen(agentService.getProtocolConfigurationResolver()).apply(attribute);
+            getAgentLink(attribute)
+                .flatMap(AgentService::getProtocolConfiguration);
 
         if (!protocolConfiguration.isPresent()) {
             LOG.warning("Processing sensor update failed, linked agent protocol configuration not found: " + attributeEvent);
@@ -403,13 +403,13 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         }
 
         // Hold on to existing attribute state so we can use it during processing
-        AttributeEvent lastStateEvent = attribute.getStateEvent();
+        Optional<AttributeEvent> lastStateEvent = attribute.getStateEvent();
 
         // Check the last update timestamp of the attribute, ignoring any event that is older than last update
         // TODO: This means we drop out-of-sequence events, we might need better at-least-once handling
-        if (lastStateEvent.getTimestamp() >= 0 && attributeEvent.getTimestamp() <= lastStateEvent.getTimestamp()) {
+        if (lastStateEvent.isPresent() && lastStateEvent.get().getTimestamp() >= 0 && attributeEvent.getTimestamp() <= lastStateEvent.get().getTimestamp()) {
             LOG.warning("Ignoring outdated " + attributeEvent
-                + ", last asset state time: " + new Date(lastStateEvent.getTimestamp()) + "/" + lastStateEvent.getTimestamp()
+                + ", last asset state time: " + lastStateEvent.map(event -> new Date(event.getTimestamp()).toString()).orElse("-1") + "/" + lastStateEvent.map(AttributeEvent::getTimestamp).orElse(-1L)
                 + ", event time: " + new Date(attributeEvent.getTimestamp()) + "/" + attributeEvent.getTimestamp() + " in: " + asset);
 
             return;
@@ -427,8 +427,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             new AssetState(
                 asset,
                 attribute,
-                lastStateEvent.getValue(),
-                lastStateEvent.getTimestamp(),
+                lastStateEvent.flatMap(AttributeEvent::getValue).orElse(null),
+                lastStateEvent.map(AttributeEvent::getTimestamp).orElse(-1L),
                 northbound)
         );
     }

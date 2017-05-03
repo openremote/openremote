@@ -20,6 +20,8 @@
 package org.openremote.model.util;
 
 import java.util.Locale;
+import java.util.Objects;
+import java.util.Optional;
 
 public class TextUtil {
 
@@ -167,5 +169,23 @@ public class TextUtil {
         return alignRight
             ? s.substring(s.length() - maxLength, s.length())
             : s.substring(0, maxLength);
+    }
+
+    public static boolean isNullOrEmpty(String str) {
+        return str == null || str.trim().isEmpty();
+    }
+
+    public static Optional<String> asNonNullAndNonEmpty(String str) {
+        return isNullOrEmpty(str) ? Optional.empty() : Optional.of(str);
+    }
+
+    public static String requireNonNullAndNonEmpty(String str) {
+        Objects.requireNonNull(str);
+
+        if (isNullOrEmpty(str)) {
+            throw new IllegalArgumentException("String cannot be empty");
+        }
+
+        return str;
     }
 }
