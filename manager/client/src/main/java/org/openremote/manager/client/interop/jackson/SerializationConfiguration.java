@@ -22,7 +22,11 @@ package org.openremote.manager.client.interop.jackson;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.github.nmorel.gwtjackson.client.AbstractConfiguration;
 import elemental.json.*;
+import org.openremote.model.value.*;
 
+/**
+ * Restart super-dev server after modifying this class!
+ */
 public class SerializationConfiguration extends AbstractConfiguration {
 
     @Override
@@ -32,6 +36,15 @@ public class SerializationConfiguration extends AbstractConfiguration {
         setterVisibility(JsonAutoDetect.Visibility.NONE);
         isGetterVisibility(JsonAutoDetect.Visibility.NONE);
         creatorVisibility(JsonAutoDetect.Visibility.NONE);
+        type(Value.class).serializer(ModelValueSerializer.class).deserializer(ModelValueDeserializer.class);
+        type(ObjectValue.class).serializer(ModelValueSerializer.class).deserializer(ModelValueDeserializer.class);
+        type(ArrayValue.class).serializer(ModelValueSerializer.class).deserializer(ModelValueDeserializer.class);
+        type(Null.class).serializer(ModelValueSerializer.class).deserializer(ModelValueDeserializer.class);
+        type(NumberValue.class).serializer(ModelValueSerializer.class).deserializer(ModelValueDeserializer.class);
+        type(StringValue.class).serializer(ModelValueSerializer.class).deserializer(ModelValueDeserializer.class);
+        type(BooleanValue.class).serializer(ModelValueSerializer.class).deserializer(ModelValueDeserializer.class);
+
+        // TODO remove elemental json
         type(JsonObject.class).serializer(ElementalJsonSerializer.class).deserializer(ElementalJsonDeserializer.class);
         type(JsonArray.class).serializer(ElementalJsonSerializer.class).deserializer(ElementalJsonDeserializer.class);
         type(JsonValue.class).serializer(ElementalJsonSerializer.class).deserializer(ElementalJsonDeserializer.class);
@@ -39,5 +52,6 @@ public class SerializationConfiguration extends AbstractConfiguration {
         type(JsonNumber.class).serializer(ElementalJsonSerializer.class).deserializer(ElementalJsonDeserializer.class);
         type(JsonString.class).serializer(ElementalJsonSerializer.class).deserializer(ElementalJsonDeserializer.class);
         type(JsonBoolean.class).serializer(ElementalJsonSerializer.class).deserializer(ElementalJsonDeserializer.class);
+
     }
 }

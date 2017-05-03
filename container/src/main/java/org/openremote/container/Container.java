@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.openremote.container.json.ElementalJsonModule;
 import org.openremote.container.concurrent.ContainerThreads;
+import org.openremote.container.json.ModelValueModule;
 import org.openremote.container.util.LogUtil;
 
 import java.util.*;
@@ -68,6 +69,7 @@ public class Container {
         .setVisibility(PropertyAccessor.SETTER, JsonAutoDetect.Visibility.NONE)
         .setVisibility(PropertyAccessor.IS_GETTER, JsonAutoDetect.Visibility.NONE)
         .setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.NONE)
+        .registerModule(new ModelValueModule())
         .registerModule(new ElementalJsonModule());
 
     protected final Map<String, String> config = new HashMap<>();
