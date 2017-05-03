@@ -73,6 +73,14 @@ public class User {
         this.realm = realm;
     }
 
+    public String getRealmId() {
+        return realmId;
+    }
+
+    public void setRealmId(String realmId) {
+        this.realmId = realmId;
+    }
+
     public String getId() {
         return id;
     }
