@@ -9,6 +9,7 @@ dependencies {
     compile "org.drools:drools-decisiontables:$droolsVersion"
 
     compile "com.luckycatlabs:SunriseSunsetCalculator:$sunriseSunsetCalculatorVersion"
+    compile "org.quartz-scheduler:quartz:$quartzVersion"
 
     testCompile "junit:junit:$junitVersion"
     testCompile "org.spockframework:spock-core:$spockVersion"
