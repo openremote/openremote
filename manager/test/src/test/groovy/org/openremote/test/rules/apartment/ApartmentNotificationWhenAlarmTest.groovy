@@ -41,8 +41,9 @@ class ApartmentNotificationWhenAlarmTest  extends Specification implements Manag
         }
 
         and: "the alarm enabled, presence detected flag and timestamp of the room should not be set"
+        def apartment1Asset = assetStorageService.find(managerDemoSetup.apartment1Id, true)
+        assert !apartment1Asset.getAttribute("alarmEnabled").get().valueAsBoolean
         def livingRoomAsset = assetStorageService.find(managerDemoSetup.apartment1LivingroomId, true)
-        assert !livingRoomAsset.getAttribute("alarmEnabled").get().valueAsBoolean
         assert !livingRoomAsset.getAttribute("presenceDetected").get().valueAsBoolean
         assert livingRoomAsset.getAttribute("lastPresenceDetected").get().value.getType() == JsonType.NULL
 
@@ -55,7 +56,7 @@ class ApartmentNotificationWhenAlarmTest  extends Specification implements Manag
         then: "that value should be stored"
         conditions.eventually {
             def asset = assetStorageService.find(managerDemoSetup.apartment1Id, true)
-            assert asset.getAttribute("alarmEnabled").get().valueAsBoolean()
+            assert asset.getAttribute("alarmEnabled").get().valueAsBoolean
         }
 
         cleanup: "the server should be stopped"
