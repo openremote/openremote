@@ -50,6 +50,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     
     // just for testing purpose (ask backend to get list of notifications or send a notification to device)
     func apiCall() {
+        UIApplication.shared.isNetworkActivityIndicatorVisible = true
         TokenManager.sharedInstance.getAccessToken { (accessTokenResult) in
             switch accessTokenResult {
             case .Failure(let error) :
@@ -65,6 +66,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
             let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue : nil)
             let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
                 DispatchQueue.main.async {
+                    UIApplication.shared.isNetworkActivityIndicatorVisible = false
                     if (error != nil) {
                         NSLog("error %@", (error! as NSError).localizedDescription)
                         let error = NSError(domain: "", code: 0, userInfo:  [
@@ -84,11 +86,13 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     
     func login() {
         guard let request = URL(string: String(format:"https://%@/%@",Server.hostURL,Server.initialPath)) else { return }
+        UIApplication.shared.isNetworkActivityIndicatorVisible = true
         _ = self.myWebView?.load(URLRequest(url: request))
     }
     
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         NSLog("error %@", error.localizedDescription)
+        UIApplication.shared.isNetworkActivityIndicatorVisible = false
         ErrorManager.showError(error: NSError(domain: "networkError", code: 0, userInfo:[
             NSLocalizedDescriptionKey :  NSLocalizedString("FailedLoadingPage", value: "Could not load page", comment: "")
             ]))
@@ -105,6 +109,9 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
         }
     }
     
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        UIApplication.shared.isNetworkActivityIndicatorVisible = false
+    }
     func urlSession(_ session: URLSession, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         if (challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust) {
             if challenge.protectionSpace.host == Server.hostURL {
@@ -145,10 +152,12 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
     }
     
     func loadURL(url : URL) {
+        UIApplication.shared.isNetworkActivityIndicatorVisible = true
         _ = self.myWebView?.load(URLRequest(url:url))
     }
     
     func updateAssetAttribute(assetId : String, attributeName : String, rawJson : String) {
+        UIApplication.shared.isNetworkActivityIndicatorVisible = true
         TokenManager.sharedInstance.getAccessToken { (accessTokenResult) in
             switch accessTokenResult {
             case .Failure(let error) :
@@ -165,6 +174,7 @@ class ORViewcontroller : UIViewController, URLSessionDelegate, WKScriptMessageHa
             let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue : nil)
             let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
                 DispatchQueue.main.async {
+                    UIApplication.shared.isNetworkActivityIndicatorVisible = false
                     if (error != nil) {
                         NSLog("error %@", (error! as NSError).localizedDescription)
                         let error = NSError(domain: "", code: 0, userInfo:  [

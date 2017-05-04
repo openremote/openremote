@@ -48,6 +48,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     
     func authenticate() {
         NSLog("authenticate")
+        UIApplication.shared.isNetworkActivityIndicatorVisible = true
         let defaults = UserDefaults(suiteName: AppGroup.entitlement)
         let webCfg:WKWebViewConfiguration = WKWebViewConfiguration()
         if (!didLogOut) {
@@ -123,6 +124,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         }
         if (offlineToken != nil && refreshToken != nil && idToken != nil && !didLogOut) {
             self.hasToken = true
+            UIApplication.shared.isNetworkActivityIndicatorVisible = false
             self.viewController.dismiss(animated: true, completion: {
                 let notificationName = Notification.Name(NotificationsNames.isAuthenticated)
                 NotificationCenter.default.post(name: notificationName, object: nil)
@@ -142,6 +144,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         NSLog("error %@", error.localizedDescription)
+        UIApplication.shared.isNetworkActivityIndicatorVisible = false
         ErrorManager.showError(error: NSError(domain: "networkError", code: 0, userInfo:[
             NSLocalizedDescriptionKey :  NSLocalizedString("FailedLoadingPage", value: "Could not load page", comment: "")
             ]))
@@ -160,6 +163,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         let errorCode = (error as NSError).code
+        UIApplication.shared.isNetworkActivityIndicatorVisible = false
         if errorCode != NSURLErrorCancelled {
             NSLog("error %@", error.localizedDescription)
             ErrorManager.showError(error: NSError(domain: "navigationError", code: 0, userInfo:[
@@ -180,6 +184,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
     
     func sendDeviceId() {
         print("Device Id : -------------> ",deviceId ?? "")
+        UIApplication.shared.isNetworkActivityIndicatorVisible = true
         self.getAccessToken { (accessTokenResult) in
             switch accessTokenResult {
             case .Failure(let error) :
@@ -196,6 +201,7 @@ class TokenManager:NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
             let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: nil)
             let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
                 DispatchQueue.main.async {
+                    UIApplication.shared.isNetworkActivityIndicatorVisible = false
                     if (error != nil) {
                         NSLog("error %@", (error! as NSError).localizedDescription)
                         let error = NSError(domain: "", code: 0, userInfo:  [

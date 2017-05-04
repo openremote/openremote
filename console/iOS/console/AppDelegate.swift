@@ -19,6 +19,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     var reachabilityAlert : UIAlertController?
     var reachabilityAlertShown = false
     let internetReachability = Reachability.forInternetConnection()
+     
     
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
@@ -109,6 +110,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         var assetId : String = ""
         var attributeName : String = ""
         var rawJson : String = ""
+        UIApplication.shared.isNetworkActivityIndicatorVisible = true
         switch response.actionIdentifier {
         case ActionType.ACTION_DEEP_LINK :
             // open url
@@ -133,6 +135,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         TokenManager.sharedInstance.getAccessToken { (accessTokenResult) in
             switch accessTokenResult {
             case .Failure(let error) :
+                UIApplication.shared.isNetworkActivityIndicatorVisible = false
                 ErrorManager.showError(error: error!)
             case .Success(let accessToken) :
                 guard let urlRequest = URL(string: String(format:"%@%i", Server.deleteNotifiedAlertResource, alertId as! Int)) else { return }
@@ -146,6 +149,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
                 let session = URLSession(configuration: sessionConfiguration, delegate: self, delegateQueue: nil)
                 let reqDataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) in
                     DispatchQueue.main.async {
+                        UIApplication.shared.isNetworkActivityIndicatorVisible = false
                         if (error != nil) {
                             NSLog("error %@", (error! as NSError).localizedDescription)
                             let error = NSError(domain: "", code: 0, userInfo:  [
