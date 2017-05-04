@@ -23,18 +23,25 @@ class ViewController: UIViewController {
 
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        if isInError {
+            loginButton.isHidden = true
+        } else {
+            loginButton.isHidden = false
+        }
+    }
+    
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         if (!isInError) {
             showLoginPage()
         } else {
-            let loginButton = UIButton(type: .roundedRect)
             loginButton.setTitle("Login", for: .normal)
             loginButton.addTarget(self, action: #selector(login), for: .touchUpInside)
             loginButton.frame = self.view.frame
             self.view.addSubview(loginButton)
         }
-        
     }
     
     override func didReceiveMemoryWarning() {
