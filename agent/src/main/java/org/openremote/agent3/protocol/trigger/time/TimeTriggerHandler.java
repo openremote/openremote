@@ -19,13 +19,13 @@
  */
 package org.openremote.agent3.protocol.trigger.time;
 
-import elemental.json.Json;
-import elemental.json.JsonValue;
 import org.openremote.agent3.protocol.trigger.AbstractTriggerHandler;
-import org.openremote.model.AttributeEvent;
-import org.openremote.model.AttributeRef;
-import org.openremote.model.AttributeState;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 import org.quartz.CronExpression;
 
 import javax.ws.rs.NotSupportedException;
@@ -37,10 +37,10 @@ import java.util.logging.Logger;
 
 import static java.util.logging.Level.FINER;
 import static org.openremote.agent3.protocol.trigger.time.CronExpressionParser.parseNumberExpression;
-import static org.openremote.model.util.JsonUtil.asString;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class TimeTriggerHandler extends AbstractTriggerHandler {
+
     private static final Logger LOG = Logger.getLogger(TimeTriggerHandler.class.getName());
     public static final String TIME_TRIGGER_HANDLER_NAME = "Time Trigger Handler";
     protected final Map<AttributeRef, CronExpressionParser> cronExpressionMap = new HashMap<>();
@@ -52,13 +52,13 @@ public class TimeTriggerHandler extends AbstractTriggerHandler {
     }
 
     @Override
-    protected boolean isValidValue(JsonValue triggerValue) {
-        return isValidCronExpression(asString(triggerValue).orElse(null));
+    protected boolean isValidValue(Value triggerValue) {
+        return Values.getString(triggerValue).filter(TimeTriggerHandler::isValidCronExpression).isPresent();
     }
 
     @Override
-    protected void registerTrigger(AttributeRef triggerRef, JsonValue value, boolean isEnabled) {
-        Optional<String> expression = asString(value).flatMap(TextUtil::asNonNullAndNonEmpty);
+    protected void registerTrigger(AttributeRef triggerRef, Value value, boolean isEnabled) {
+        Optional<String> expression = Values.getString(value).flatMap(TextUtil::asNonNullAndNonEmpty);
         CronExpressionParser cronExpressionParser = null;
 
         if (expression.isPresent()) {
@@ -84,7 +84,7 @@ public class TimeTriggerHandler extends AbstractTriggerHandler {
     }
 
     @Override
-    protected void updateTrigger(AttributeRef triggerRef, JsonValue value, boolean isEnabled) {
+    protected void updateTrigger(AttributeRef triggerRef, Value value, boolean isEnabled) {
         unregisterTrigger(triggerRef);
         registerTrigger(triggerRef, value, isEnabled);
     }
@@ -111,11 +111,11 @@ public class TimeTriggerHandler extends AbstractTriggerHandler {
         switch (property) {
             case CRON_EXPRESSION:
                 // Pass the entire cron expression through to the attribute
-                updateAttributeValue(new AttributeState(attributeRef, Json.create(parser.buildCronExpression())));
+                updateAttributeValue(new AttributeState(attributeRef, Values.create(parser.buildCronExpression())));
                 break;
             case TIME:
                 // Pass the 24h formatted time
-                updateAttributeValue(new AttributeState(attributeRef, Json.create(parser.getFormattedTime())));
+                updateAttributeValue(new AttributeState(attributeRef, Values.create(parser.getFormattedTime())));
                 break;
         }
     }
@@ -140,7 +140,7 @@ public class TimeTriggerHandler extends AbstractTriggerHandler {
 
         // Don't remove or alter any running trigger just push update back through the system
         // and wait for add, remove or update trigger call
-        Optional<String> writeValue = asString(event.getValue()).flatMap(TextUtil::asNonNullAndNonEmpty);
+        Optional<String> writeValue = event.getValue().flatMap(Values::getString).flatMap(TextUtil::asNonNullAndNonEmpty);
 
         if (!writeValue.isPresent()) {
             LOG.warning("Send to actuator value for time trigger must be a non empty string");
@@ -153,7 +153,7 @@ public class TimeTriggerHandler extends AbstractTriggerHandler {
             case CRON_EXPRESSION:
                 // Allow writing invalid cron expressions; mean that the trigger will stop working
                 // but that is handled gracefully
-                updateTriggerValue(new AttributeState(triggerRef, Json.create(value)));
+                updateTriggerValue(new AttributeState(triggerRef, Values.create(value)));
                 break;
             case TIME:
                 CronExpressionParser parser = getCronExpressionParser(triggerRef);
@@ -176,7 +176,7 @@ public class TimeTriggerHandler extends AbstractTriggerHandler {
                 }
 
                 parser.setTime(hours, minutes, seconds);
-                updateTriggerValue(new AttributeState(triggerRef, Json.create(parser.buildCronExpression())));
+                updateTriggerValue(new AttributeState(triggerRef, Values.create(parser.buildCronExpression())));
                 break;
             default:
                 throw new NotSupportedException("Unsupported trigger property");

@@ -19,10 +19,10 @@
  */
 package org.openremote.model.datapoint;
 
-import elemental.json.JsonValue;
-import org.openremote.model.AttributeEvent;
-import org.openremote.model.AttributeRef;
-import org.openremote.model.AttributeState;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.value.Value;
 
 import javax.persistence.Column;
 import javax.persistence.Id;
@@ -56,13 +56,13 @@ public abstract class Datapoint implements Serializable {
     @Id
     @Column(name = "VALUE", columnDefinition = "jsonb", nullable = false)
     @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_VALUE_TYPE)
-    protected JsonValue value;
+    protected Value value;
 
     public Datapoint() {
     }
 
     public Datapoint(AttributeState attributeState) {
-        this(attributeState.getAttributeRef(), attributeState.getValue().orElse(null));
+        this(attributeState.getAttributeRef(), attributeState.getCurrentValue().orElse(null));
     }
 
     public Datapoint(AttributeEvent stateEvent) {
@@ -70,22 +70,22 @@ public abstract class Datapoint implements Serializable {
     }
 
     public Datapoint(AttributeState attributeState, long timestamp) {
-        this(attributeState.getAttributeRef(), attributeState.getValue().orElse(null), timestamp);
+        this(attributeState.getAttributeRef(), attributeState.getCurrentValue().orElse(null), timestamp);
     }
 
-    public Datapoint(AttributeRef attributeRef, JsonValue value) {
+    public Datapoint(AttributeRef attributeRef, Value value) {
         this(attributeRef.getEntityId(), attributeRef.getAttributeName(), value);
     }
 
-    public Datapoint(AttributeRef attributeRef, JsonValue value, long timestamp) {
+    public Datapoint(AttributeRef attributeRef, Value value, long timestamp) {
         this(attributeRef.getEntityId(), attributeRef.getAttributeName(), value, timestamp);
     }
 
-    public Datapoint(String entityId, String attributeName, JsonValue value) {
+    public Datapoint(String entityId, String attributeName, Value value) {
         this(entityId, attributeName, value, System.currentTimeMillis());
     }
 
-    public Datapoint(String entityId, String attributeName, JsonValue value, long timestamp) {
+    public Datapoint(String entityId, String attributeName, Value value, long timestamp) {
         this.entityId = entityId;
         this.attributeName = attributeName;
         this.timestamp = timestamp;
@@ -116,11 +116,11 @@ public abstract class Datapoint implements Serializable {
         this.timestamp = timestamp;
     }
 
-    public JsonValue getValue() {
+    public Value getValue() {
         return value;
     }
 
-    public void setValue(JsonValue value) {
+    public void setValue(Value value) {
         this.value = value;
     }
 

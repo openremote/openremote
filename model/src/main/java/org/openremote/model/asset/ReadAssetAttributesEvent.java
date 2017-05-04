@@ -19,7 +19,7 @@
  */
 package org.openremote.model.asset;
 
-import org.openremote.model.AttributeEvent;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.shared.SharedEvent;
 
 import java.util.Arrays;

@@ -16,7 +16,6 @@
 package org.openremote.model.value;
 
 import java.util.Optional;
-import java.util.stream.Stream;
 
 public interface ArrayValue extends Value {
 
@@ -34,13 +33,21 @@ public interface ArrayValue extends Value {
 
     int length();
 
-    void remove(int index);
+    ArrayValue remove(int index);
 
-    void set(int index, Value value);
+    ArrayValue set(int index, Value value);
 
-    void set(int index, String string);
+    ArrayValue set(int index, String string);
 
-    void set(int index, double number);
+    ArrayValue set(int index, double number);
 
-    void set(int index, boolean bool);
+    ArrayValue set(int index, boolean bool);
+
+    ArrayValue add(Value value);
+
+    ArrayValue add(int index, Value value);
+
+    ArrayValue addAll(Value... values);
+
+    ArrayValue deepCopy();
 }

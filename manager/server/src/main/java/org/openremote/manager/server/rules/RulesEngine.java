@@ -55,7 +55,7 @@ import org.openremote.manager.shared.rules.AssetRuleset;
 import org.openremote.manager.shared.rules.GlobalRuleset;
 import org.openremote.manager.shared.rules.Ruleset;
 import org.openremote.manager.shared.rules.TenantRuleset;
-import org.openremote.model.AttributeEvent;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.asset.AbstractAssetUpdate;
 import org.openremote.model.asset.AssetEvent;
 import org.openremote.model.asset.AssetQuery;

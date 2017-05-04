@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.server.agent;
 
-import elemental.json.JsonObject;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.agent3.protocol.Protocol;
 import org.openremote.container.Container;
@@ -31,13 +30,13 @@ import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
 import org.openremote.model.AbstractValueTimestampHolder;
-import org.openremote.model.AttributeEvent;
-import org.openremote.model.AttributeRef;
-import org.openremote.model.Pair;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
-import org.openremote.model.util.JsonUtil;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.util.Pair;
+import org.openremote.model.value.ObjectValue;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -143,7 +142,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                 // which protocol configs are affected
                 List<AssetAttribute> oldProtocolConfigurations =
                     attributesFromJson(
-                        (JsonObject) persistenceEvent.getPreviousState()[attributesIndex],
+                        (ObjectValue) persistenceEvent.getPreviousState()[attributesIndex],
                         agent.getId()
                     )
                         .filter(ProtocolConfiguration::isProtocolConfiguration)
@@ -151,7 +150,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
                 List<AssetAttribute> newProtocolConfigurations =
                     attributesFromJson(
-                        (JsonObject) persistenceEvent.getCurrentState()[attributesIndex],
+                        (ObjectValue) persistenceEvent.getCurrentState()[attributesIndex],
                         agent.getId()
                     )
                         .filter(ProtocolConfiguration::isProtocolConfiguration)
@@ -163,9 +162,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                     .stream()
                     .filter(oldProtocolAttribute -> newProtocolConfigurations
                         .stream()
-                        .noneMatch(newProtocolAttribute -> JsonUtil.equals(
-                            oldProtocolAttribute.getJsonObject(),
-                            newProtocolAttribute.getJsonObject())
+                        .noneMatch(newProtocolAttribute ->
+                            oldProtocolAttribute.getObjectValue().equals(newProtocolAttribute.getObjectValue())
                         )
                     )
                     .forEach(this::unlinkProtocol);
@@ -176,10 +174,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                     .filter(newProtocolAttribute -> oldProtocolConfigurations
                         .stream()
                         .noneMatch(oldProtocolAttribute ->
-                            JsonUtil.equals(
-                                oldProtocolAttribute.getJsonObject(),
-                                newProtocolAttribute.getJsonObject()
-                            )
+                            oldProtocolAttribute.getObjectValue().equals(newProtocolAttribute.getObjectValue())
                         )
                     ).forEach(this::linkProtocol);
 
@@ -226,7 +221,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                 // AGENT_LINK attributes
                 List<AssetAttribute> oldAgentLinkedAttributes =
                     attributesFromJson(
-                        (JsonObject) persistenceEvent.getPreviousState()[attributesIndex],
+                        (ObjectValue) persistenceEvent.getPreviousState()[attributesIndex],
                         asset.getId()
                     )
                         .filter(AgentLink::hasAgentLink)
@@ -234,7 +229,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
                 List<AssetAttribute> newAgentLinkedAttributes =
                     attributesFromJson(
-                        (JsonObject) persistenceEvent.getCurrentState()[attributesIndex],
+                        (ObjectValue) persistenceEvent.getCurrentState()[attributesIndex],
                         asset.getId()
                     )
                         .filter(AgentLink::hasAgentLink)
@@ -245,10 +240,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                     .stream()
                     .filter(oldAgentLinkedAttribute -> newAgentLinkedAttributes
                         .stream()
-                        .noneMatch(newAgentLinkedAttribute -> JsonUtil.equals( // Ignore the timestamp in comparison
-                            oldAgentLinkedAttribute.getJsonObject(),
-                            newAgentLinkedAttribute.getJsonObject(),
-                            Collections.singletonList(AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME))
+                        .noneMatch(newAgentLinkedAttribute ->
+                            oldAgentLinkedAttribute.getObjectValue().equalsIgnoreKeys(
+                                newAgentLinkedAttribute.getObjectValue(),
+                                AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME
+                            )
                         )
                     );
 
@@ -260,10 +256,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                     .stream()
                     .filter(newThingAttribute -> oldAgentLinkedAttributes
                         .stream()
-                        .noneMatch(oldThingAttribute -> JsonUtil.equals( // Ignore the timestamp in comparison
-                            oldThingAttribute.getJsonObject(),
-                            newThingAttribute.getJsonObject(),
-                            Collections.singletonList(AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME))
+                        .noneMatch(oldThingAttribute ->
+                            oldThingAttribute.getObjectValue().equalsIgnoreKeys(
+                                newThingAttribute.getObjectValue(),
+                                AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME
+                            )
                         )
                     );
 
@@ -409,7 +406,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     public void accept(AssetState assetState) {
         // If update was initiated by a protocol ignore it
         if (assetState.isNorthbound()) {
-            LOG.fine("Ignoring as it came from a protocol:" + assetState);
+            LOG.fine("Ignoring as it came from a protocol: " + assetState);
             return;
         }
 

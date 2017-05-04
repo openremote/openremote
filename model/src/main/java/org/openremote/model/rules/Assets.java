@@ -19,7 +19,7 @@
  */
 package org.openremote.model.rules;
 
-import org.openremote.model.AttributeEvent;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.asset.AssetQuery;
 
 import java.util.List;

@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
-import static org.openremote.model.MetaItem.isMetaNameEqualTo;
+import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.getProtocolName;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
 
@@ -70,7 +70,7 @@ final public class MacroConfiguration {
                 .getMetaStream()
                 .filter(isMetaNameEqualTo(META_MACRO_ACTION))
                 .map(metaItem -> metaItem.getValue().orElse(null))
-                .map(MacroAction::fromJsonValue)
+                .map(MacroAction::fromValue)
                 .filter(Optional::isPresent)
                 .map(Optional::get);
     }

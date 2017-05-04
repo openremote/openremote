@@ -19,10 +19,9 @@
  */
 package org.openremote.agent3.protocol.simulator.element;
 
-import elemental.json.JsonValue;
-import org.openremote.model.AttributeType;
-
-import javax.persistence.criteria.CriteriaBuilder;
+import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
 public class IntegerSimulatorElement extends SimulatorElement {
 
@@ -51,12 +50,12 @@ public class IntegerSimulatorElement extends SimulatorElement {
     }
 
     @Override
-    protected boolean isValid(JsonValue value) {
+    protected boolean isValid(Value value) {
         boolean valid = super.isValid(value);
         return valid && (
             value == null || (
-                (getMin() == null || value.asNumber() >= getMin())
-                    && (getMax() == null || value.asNumber() <= getMax())
+                (getMin() == null || Values.getNumber(value).filter(v -> v >= getMin()).isPresent())
+                    && (getMax() == null || Values.getNumber(value).filter(v -> v <= getMax()).isPresent())
             )
         );
     }

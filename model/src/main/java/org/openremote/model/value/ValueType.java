@@ -19,5 +19,20 @@ package org.openremote.model.value;
  * Represents the type of the underlying value, the same as in JSON.
  */
 public enum ValueType {
-    OBJECT, ARRAY, STRING, NUMBER, BOOLEAN;
+
+    OBJECT(ObjectValue.class),
+    ARRAY(ArrayValue.class),
+    STRING(StringValue.class),
+    NUMBER(NumberValue.class),
+    BOOLEAN(BooleanValue.class);
+
+    protected final Class<? extends Value> modelType;
+
+    ValueType(Class<? extends Value> type) {
+        this.modelType = type;
+    }
+
+    public Class getModelType() {
+        return modelType;
+    }
 }

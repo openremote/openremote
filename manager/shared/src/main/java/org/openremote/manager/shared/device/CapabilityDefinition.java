@@ -1,6 +1,6 @@
 package org.openremote.manager.shared.device;
 
-import org.openremote.model.Attribute;
+import org.openremote.model.attribute.Attribute;
 
 import java.util.List;
 

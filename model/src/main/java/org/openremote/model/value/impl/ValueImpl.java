@@ -31,14 +31,6 @@ public abstract class ValueImpl implements Value {
             throw new ValueException("Not a GWT/JavaScript runtime environment");
     }
 
-    @Override
-    public String toString() {
-        Object o = asObject();
-        return o != null ? o.toString() : "null";
-    }
-
-    public abstract Object asObject();
-
     public abstract void traverse(ValueVisitor visitor, ValueContext ctx) throws ValueException;
 
 }

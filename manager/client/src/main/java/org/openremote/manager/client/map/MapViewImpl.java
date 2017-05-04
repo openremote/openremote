@@ -26,13 +26,12 @@ import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.inject.Provider;
 import elemental.client.Browser;
-import elemental.json.JsonObject;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.FlexSplitPanel;
 import org.openremote.manager.client.widget.Hyperlink;
 import org.openremote.manager.client.widget.MapWidget;
-import org.openremote.model.Pair;
+import org.openremote.model.util.Pair;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.value.ObjectValue;
 

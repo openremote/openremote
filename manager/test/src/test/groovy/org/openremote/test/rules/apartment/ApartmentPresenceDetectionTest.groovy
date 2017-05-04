@@ -1,13 +1,13 @@
 package org.openremote.test.rules.apartment
 
-import elemental.json.Json
+import org.openremote.model.value.Values
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.rules.RulesEngine
 import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
-import org.openremote.model.AttributeEvent
+import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.asset.AssetEvent
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Ignore
@@ -60,7 +60,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         // Send 5 triggers each 3 minutes apart
         for (i in 1..5) {
             def motionCountIncrement = new AttributeEvent(
-                    managerDemoSetup.apartment1LivingroomId, "motionCount", Json.create(i), getClockTimeOf(apartment1Engine)
+                    managerDemoSetup.apartment1LivingroomId, "motionCount", Values.create(i), getClockTimeOf(apartment1Engine)
             )
             assetProcessingService.sendAttributeEvent(motionCountIncrement)
             new PollingConditions(timeout: 5, initialDelay: 0.2, delay: 0.2).eventually {
@@ -90,7 +90,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         // Send 5 increments each 1 minute apart
         for (i in 1..5) {
             def motionCountIncrement = new AttributeEvent(
-                    managerDemoSetup.apartment1LivingroomId, "motionCount", Json.create(i), getClockTimeOf(apartment1Engine)
+                    managerDemoSetup.apartment1LivingroomId, "motionCount", Values.create(i), getClockTimeOf(apartment1Engine)
             )
             expectedLastPresenceTimestamp = motionCountIncrement.timestamp
             assetProcessingService.sendAttributeEvent(motionCountIncrement)
@@ -113,7 +113,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         // Send 20 increments each 90 seconds apart
         for (i in 1..20) {
             def motionCountIncrement = new AttributeEvent(
-                    managerDemoSetup.apartment1LivingroomId, "motionCount", Json.create(i), getClockTimeOf(apartment1Engine)
+                    managerDemoSetup.apartment1LivingroomId, "motionCount", Values.create(i), getClockTimeOf(apartment1Engine)
             )
             expectedLastPresenceTimestamp = motionCountIncrement.timestamp
             assetProcessingService.sendAttributeEvent(motionCountIncrement)
@@ -193,7 +193,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         // Send 5 triggers each 3 minutes apart
         for (i in 1..5) {
             def motionSensorTrigger = new AttributeEvent(
-                    managerDemoSetup.apartment2LivingroomId, "motionSensor", Json.create(true), getClockTimeOf(apartment2Engine)
+                    managerDemoSetup.apartment2LivingroomId, "motionSensor", Values.create(true), getClockTimeOf(apartment2Engine)
             )
             assetProcessingService.sendAttributeEvent(motionSensorTrigger)
             new PollingConditions(timeout: 5, initialDelay: 0.2, delay: 0.2).eventually {
@@ -223,7 +223,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         // Send 5 triggers each 1 minute apart
         for (i in 1..5) {
             def motionSensorTrigger = new AttributeEvent(
-                    managerDemoSetup.apartment2LivingroomId, "motionSensor", Json.create(true), getClockTimeOf(apartment2Engine)
+                    managerDemoSetup.apartment2LivingroomId, "motionSensor", Values.create(true), getClockTimeOf(apartment2Engine)
             )
             expectedLastPresenceTimestamp = motionSensorTrigger.timestamp
             assetProcessingService.sendAttributeEvent(motionSensorTrigger)
@@ -246,7 +246,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         // Send 20 triggers each 90 seconds apart
         for (i in 1..20) {
             def motionSensorTrigger = new AttributeEvent(
-                    managerDemoSetup.apartment2LivingroomId, "motionSensor", Json.create(true), getClockTimeOf(apartment2Engine)
+                    managerDemoSetup.apartment2LivingroomId, "motionSensor", Values.create(true), getClockTimeOf(apartment2Engine)
             )
             expectedLastPresenceTimestamp = motionSensorTrigger.timestamp
             assetProcessingService.sendAttributeEvent(motionSensorTrigger)

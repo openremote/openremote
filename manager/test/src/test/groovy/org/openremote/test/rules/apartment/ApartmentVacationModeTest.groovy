@@ -1,13 +1,13 @@
 package org.openremote.test.rules.apartment
 
-import elemental.json.Json
+import org.openremote.model.value.Values
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.rules.RulesEngine
 import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
-import org.openremote.model.AttributeEvent
+import org.openremote.model.attribute.AttributeEvent
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -45,7 +45,7 @@ class ApartmentVacationModeTest extends Specification implements ManagerContaine
         when: "the vacation days are set to 5"
         setPseudoClocksToRealTime(container, apartment1Engine)
         assetProcessingService.sendAttributeEvent(new AttributeEvent(
-                managerDemoSetup.apartment1Id, "vacationDays", Json.create(5), getClockTimeOf(container)
+                managerDemoSetup.apartment1Id, "vacationDays", Values.create(5), getClockTimeOf(container)
         ))
 
         then: "that value should be stored"

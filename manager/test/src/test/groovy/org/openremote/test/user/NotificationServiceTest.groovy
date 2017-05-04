@@ -1,19 +1,17 @@
 package org.openremote.test.user
 
+import org.openremote.manager.server.notification.NotificationService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
-import org.openremote.manager.server.notification.NotificationService
+import org.openremote.manager.shared.notification.NotificationResource
 import org.openremote.model.notification.ActionType
 import org.openremote.model.notification.AlertAction
 import org.openremote.model.notification.AlertNotification
-import org.openremote.manager.shared.notification.NotificationResource
 import org.openremote.test.ManagerContainerTrait
-import spock.lang.Ignore
 import spock.lang.Specification
 
 import static org.openremote.model.Constants.KEYCLOAK_CLIENT_ID
 import static org.openremote.model.Constants.MASTER_REALM
-
 
 class NotificationServiceTest extends Specification implements ManagerContainerTrait {
 
@@ -41,10 +39,10 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
                 message: "Message",
         )
 
-        def alertAction = new AlertAction();
+        def alertAction = new AlertAction()
 
         alertAction.setTitle("TEST_ACTION")
-        alertAction.setType(ActionType.ACTUATOR)
+        alertAction.setActionType(ActionType.ACTUATOR)
         notificationAlert.addAction(alertAction)
 
         and: "the notification resource"

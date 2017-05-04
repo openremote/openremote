@@ -19,7 +19,7 @@
  */
 package org.openremote.agent3.protocol.simulator.element;
 
-import org.openremote.model.AttributeType;
+import org.openremote.model.attribute.AttributeType;
 
 public class SwitchSimulatorElement extends SimulatorElement {
 

@@ -28,11 +28,6 @@ public class StringValueImpl extends ValueImpl implements StringValue {
     }
 
     @Override
-    public String asObject() {
-        return getString();
-    }
-
-    @Override
     public String getString() {
         return string;
     }
@@ -66,5 +61,10 @@ public class StringValueImpl extends ValueImpl implements StringValue {
         int result = 31;
         result = result * 13 + getString().hashCode();
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return getString();
     }
 }

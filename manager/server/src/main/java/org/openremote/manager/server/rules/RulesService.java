@@ -19,7 +19,6 @@
  */
 package org.openremote.manager.server.rules;
 
-import elemental.json.JsonObject;
 import org.apache.camel.builder.RouteBuilder;
 import org.drools.core.base.evaluators.TimeIntervalParser;
 import org.openremote.container.Container;
@@ -31,18 +30,18 @@ import org.openremote.container.timer.TimerService;
 import org.openremote.manager.server.asset.AssetProcessingService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
+import org.openremote.manager.server.concurrent.ManagerExecutorService;
 import org.openremote.manager.server.notification.NotificationService;
 import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.manager.server.concurrent.ManagerExecutorService;
 import org.openremote.manager.shared.rules.AssetRuleset;
 import org.openremote.manager.shared.rules.GlobalRuleset;
 import org.openremote.manager.shared.rules.Ruleset;
 import org.openremote.manager.shared.rules.TenantRuleset;
 import org.openremote.manager.shared.security.Tenant;
 import org.openremote.model.AbstractValueTimestampHolder;
-import org.openremote.model.Pair;
 import org.openremote.model.asset.*;
-import org.openremote.model.util.JsonUtil;
+import org.openremote.model.util.Pair;
+import org.openremote.model.value.ObjectValue;
 
 import java.util.*;
 import java.util.function.BiFunction;
@@ -251,7 +250,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
         BiFunction<Asset, AssetAttribute, AssetState> buildAssetState = (loadedAsset, attribute) ->
 
             new AssetState(loadedAsset,
-                attribute.copy()
+                attribute.deepCopy()
             );
 
         Asset loadedAsset;
@@ -291,7 +290,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                 // which facts to retract and which to insert
                 List<AssetAttribute> oldFactAttributes =
                     attributesFromJson(
-                        (JsonObject) persistenceEvent.getPreviousState()[attributesIndex],
+                        (ObjectValue) persistenceEvent.getPreviousState()[attributesIndex],
                         asset.getId()
                     )
                         .filter(AssetAttribute::isRuleState)
@@ -299,7 +298,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
 
                 List<AssetAttribute> newFactAttributes =
                     attributesFromJson(
-                        (JsonObject) persistenceEvent.getCurrentState()[attributesIndex],
+                        (ObjectValue) persistenceEvent.getCurrentState()[attributesIndex],
                         asset.getId()
                     )
                         .filter(AssetAttribute::isRuleState)
@@ -311,10 +310,11 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     .stream()
                     .filter(oldFactAttribute -> newFactAttributes
                         .stream()
-                        .noneMatch(newFactAttribute -> JsonUtil.equals( // Ignore the timestamp in comparison
-                            oldFactAttribute.getJsonObject(),
-                            newFactAttribute.getJsonObject(),
-                            Collections.singletonList(AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME))
+                        .noneMatch(newFactAttribute ->
+                            oldFactAttribute.getObjectValue().equalsIgnoreKeys(
+                                newFactAttribute.getObjectValue(),
+                                AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME
+                            )
                         )
                     );
 
@@ -331,10 +331,9 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     .filter(newFactAttribute -> oldFactAttributes
                         .stream()
                         .noneMatch(oldFactAttribute ->
-                            JsonUtil.equals( // Ignore the timestamp in comparison
-                                oldFactAttribute.getJsonObject(),
-                                newFactAttribute.getJsonObject(),
-                                Collections.singletonList(AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME)
+                            oldFactAttribute.getObjectValue().equalsIgnoreKeys(
+                                newFactAttribute.getObjectValue(),
+                                AbstractValueTimestampHolder.VALUE_TIMESTAMP_FIELD_NAME
                             )
                         )
                     );

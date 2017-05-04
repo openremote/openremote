@@ -19,14 +19,14 @@
  */
 package org.openremote.agent3.protocol.macro;
 
-import elemental.json.JsonValue;
 import org.openremote.agent3.protocol.AbstractProtocol;
-import org.openremote.model.AttributeEvent;
-import org.openremote.model.AttributeExecuteStatus;
-import org.openremote.model.AttributeRef;
-import org.openremote.model.AttributeState;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.util.JsonUtil;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeExecuteStatus;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
@@ -67,7 +67,7 @@ public class MacroProtocol extends AbstractProtocol {
             }
 
             // Update the command Status of this attribute
-            onSensorUpdate(new AttributeState(attributeRef, AttributeExecuteStatus.RUNNING.asJsonValue()));
+            onSensorUpdate(new AttributeState(attributeRef, AttributeExecuteStatus.RUNNING.asValue()));
             run();
         }
 
@@ -80,7 +80,7 @@ public class MacroProtocol extends AbstractProtocol {
             }
 
             // Update the command Status of this attribute
-            onSensorUpdate(new AttributeState(attributeRef, AttributeExecuteStatus.CANCELLED.asJsonValue()));
+            onSensorUpdate(new AttributeState(attributeRef, AttributeExecuteStatus.CANCELLED.asValue()));
         }
 
         private void run() {
@@ -112,7 +112,7 @@ public class MacroProtocol extends AbstractProtocol {
                 }
 
                 // Update the command Status of this attribute
-                onSensorUpdate(new AttributeState(attributeRef, AttributeExecuteStatus.COMPLETED.asJsonValue()));
+                onSensorUpdate(new AttributeState(attributeRef, AttributeExecuteStatus.COMPLETED.asValue()));
                 return;
             }
 
@@ -138,8 +138,11 @@ public class MacroProtocol extends AbstractProtocol {
     protected void sendToActuator(AttributeEvent event) {
         // Asset processing service has already done sanity checks
         // Can be valid to pass null to
-        Optional<JsonValue> value = event.getValue();
-        AttributeExecuteStatus status = AttributeExecuteStatus.fromString(value.flatMap(JsonUtil::asString).orElse(null));
+        Optional<Value> value = event.getValue();
+        AttributeExecuteStatus status = event.getValue()
+            .flatMap(Values::getString)
+            .flatMap(AttributeExecuteStatus::fromString)
+            .orElse(null);
         AttributeRef attributeRef = event.getAttributeRef();
 
         // Check if it's a cancellation request

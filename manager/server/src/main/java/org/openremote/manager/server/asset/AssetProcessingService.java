@@ -32,9 +32,10 @@ import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.rules.RulesService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.security.ClientRole;
-import org.openremote.model.AttributeEvent;
-import org.openremote.model.AttributeExecuteStatus;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.asset.*;
+import org.openremote.model.value.Values;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -48,7 +49,6 @@ import static org.openremote.agent3.protocol.Protocol.SENSOR_QUEUE;
 import static org.openremote.manager.server.event.EventService.INCOMING_EVENT_TOPIC;
 import static org.openremote.manager.server.event.EventService.getWebsocketAuth;
 import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
-import static org.openremote.model.util.JsonUtil.asString;
 
 /**
  * Receives {@link AttributeEvent}s and processes them.
@@ -331,16 +331,16 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
         // If attribute is marked as executable and not from northbound only allow write AttributeExecuteStatus to be sent
         if (!fromProtocol && attribute.get().isExecutable()) {
-            AttributeExecuteStatus status = asString(attributeEvent.getValue())
-                .map(AttributeExecuteStatus::fromString)
-                .orElse(null);
+            Optional<AttributeExecuteStatus> status = attributeEvent.getValue()
+                .flatMap(Values::getString)
+                .flatMap(AttributeExecuteStatus::fromString);
 
-            if (status == null) {
+            if (!status.isPresent()) {
                 LOG.warning("Attribute event doesn't contain a valid AttributeExecuteStatus value: " + attributeEvent);
                 return;
             }
 
-            if (!status.isWrite()) {
+            if (!status.get().isWrite()) {
                 LOG.warning("Only AttributeExecuteStatus write value can be written to an attribute: " + attributeEvent);
                 return;
             }
@@ -417,7 +417,7 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
         // Set new value and event timestamp on attribute, thus validating any attribute constraints
         try {
-            attribute.setValue(attributeEvent.getAttributeState().getValue(), attributeEvent.getTimestamp());
+            attribute.setValue(attributeEvent.getValue().orElse(null), attributeEvent.getTimestamp());
         } catch (IllegalArgumentException ex) {
             LOG.log(Level.WARNING, "Ignoring " + attributeEvent + ", attribute constraint violation in: " + asset, ex);
             return;

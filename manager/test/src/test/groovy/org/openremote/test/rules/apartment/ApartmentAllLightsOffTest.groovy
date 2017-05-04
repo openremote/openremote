@@ -1,14 +1,13 @@
 package org.openremote.test.rules.apartment
 
-import elemental.json.Json
+import org.openremote.model.value.Values
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.rules.RulesEngine
 import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
-import org.openremote.model.AttributeEvent
+import org.openremote.model.attribute.AttributeEvent
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -50,7 +49,7 @@ class ApartmentAllLightsOffTest extends Specification implements ManagerContaine
         when: "the ALL LIGHTS OFF push-button is pressed for an apartment"
         setPseudoClocksToRealTime(container, apartment2Engine)
         def lightsOffEvent = new AttributeEvent(
-                managerDemoSetup.apartment2Id, "allLightsOffSwitch", Json.create(true), getClockTimeOf(container)
+                managerDemoSetup.apartment2Id, "allLightsOffSwitch", Values.create(true), getClockTimeOf(container)
         )
         assetProcessingService.sendAttributeEvent(lightsOffEvent)
 

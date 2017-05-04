@@ -19,48 +19,38 @@
  */
 package org.openremote.agent3.protocol.simulator.element;
 
-import elemental.json.JsonValue;
-import org.openremote.model.AttributeType;
-
-import java.util.Optional;
-
-import static org.openremote.model.util.JsonUtil.replaceJsonNull;
+import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.value.Value;
 
 public abstract class SimulatorElement<T> {
 
     final protected AttributeType expectedType;
 
-    protected JsonValue state = null;
+    protected Value state = null;
 
     public SimulatorElement(AttributeType expectedType) {
         this.expectedType = expectedType;
     }
 
-    public JsonValue getState() {
+    public Value getState() {
         return state;
     }
 
-    public void setState(Optional<JsonValue> state) {
-        // This is only used server side so JsonValue optional issue isn't a problem
-        state
-            .map(st -> {
-                st = replaceJsonNull(st);
-                if (!isValid(st)) {
-                    throw new IllegalArgumentException(
-                        "Invalid state, expected JSON type '" + expectedType + "' but got '" + st.getType() + "' on: " + this
-                    );
-                }
-                this.state = st;
-                return st;
-            })
-            .orElseGet(() -> {
-                this.state = null;
-                return null;
-            });
+    public void setState(Value value) {
+        if (value != null) {
+            if (!isValid(value)) {
+                throw new IllegalArgumentException(
+                    "Invalid state, expected JSON type '" + expectedType + "' but got '" + value.getType() + "' on: " + this
+                );
+            }
+            this.state = value;
+        } else {
+            this.state = null;
+        }
     }
 
-    protected boolean isValid(JsonValue value) {
-        return value == null || value.getType() == expectedType.getJsonType();
+    protected boolean isValid(Value value) {
+        return value == null || value.getType() == expectedType.getValueType();
     }
 
     @Override

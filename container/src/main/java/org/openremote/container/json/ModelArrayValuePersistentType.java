@@ -19,26 +19,27 @@
  */
 package org.openremote.container.json;
 
-import elemental.json.JsonValue;
 import org.hibernate.HibernateException;
+import org.openremote.model.value.ArrayValue;
+import org.openremote.model.value.Values;
 
 import java.io.Serializable;
 
-public class ElementalJsonValueType extends PostgreSQLJsonType {
+public class ModelArrayValuePersistentType extends PostgreSQLJsonType {
 
     @Override
     public Serializable disassemble(Object value) throws HibernateException {
-        return value == null ? null : ((JsonValue) value).toJson();
+        return value == null ? null : ((ArrayValue) value).toJson();
     }
 
     @Override
-    public Object assemble(Serializable cached, Object owner) throws HibernateException {
-        return cached == null ? null : elemental.json.impl.JsonUtil.parse(cached.toString());
+    public ArrayValue assemble(Serializable cached, Object owner) throws HibernateException {
+        return cached == null ? null : Values.<ArrayValue>parse(cached.toString()).orElseThrow(() -> new HibernateException("Empty JSON data"));
     }
 
     @Override
     public Class returnedClass() {
-        return JsonValue.class;
+        return ArrayValue.class;
     }
 
 }

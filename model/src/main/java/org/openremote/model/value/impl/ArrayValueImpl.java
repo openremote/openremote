@@ -18,7 +18,6 @@ package org.openremote.model.value.impl;
 import org.openremote.model.value.*;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 public class ArrayValueImpl extends ValueImpl implements ArrayValue {
@@ -39,44 +38,35 @@ public class ArrayValueImpl extends ValueImpl implements ArrayValue {
     public Optional<String> getString(int index) {
         return get(index)
             .filter(value -> value.getType() == ValueType.STRING && value instanceof StringValue)
-            .map(value -> ((StringValue)value).getString());
+            .map(value -> ((StringValue) value).getString());
     }
 
     @Override
     public Optional<Boolean> getBoolean(int index) {
         return get(index)
             .filter(value -> value.getType() == ValueType.BOOLEAN && value instanceof BooleanValue)
-            .map(value -> ((BooleanValue)value).getBoolean());
+            .map(value -> ((BooleanValue) value).getBoolean());
     }
 
     @Override
     public Optional<Double> getNumber(int index) {
         return get(index)
             .filter(value -> value.getType() == ValueType.NUMBER && value instanceof NumberValue)
-            .map(value -> ((NumberValue)value).getNumber());
+            .map(value -> ((NumberValue) value).getNumber());
     }
 
     @Override
     public Optional<ArrayValue> getArray(int index) {
         return get(index)
             .filter(value -> value.getType() == ValueType.ARRAY && value instanceof ArrayValue)
-            .map(value -> ((ArrayValue)value));
+            .map(value -> ((ArrayValue) value));
     }
 
     @Override
     public Optional<ObjectValue> getObject(int index) {
         return get(index)
             .filter(value -> value.getType() == ValueType.OBJECT && value instanceof ObjectValue)
-            .map(value -> ((ObjectValue)value));
-    }
-
-    @Override
-    public List<Object> asObject() {
-        List<Object> objs = new ArrayList<>();
-        for (Value val : values) {
-            objs.add(((ValueImpl) val).asObject());
-        }
-        return objs;
+            .map(value -> ((ObjectValue) value));
     }
 
     @Override
@@ -90,34 +80,66 @@ public class ArrayValueImpl extends ValueImpl implements ArrayValue {
     }
 
     @Override
-    public void remove(int index) {
+    public ArrayValue remove(int index) {
         values.remove(index);
+        return this;
     }
 
     @Override
-    public void set(int index, Value value) {
+    public ArrayValue set(int index, Value value) {
         if (value == null && index >= 0 && index < values.size()) {
             values.remove(index);
         } else if (index == values.size()) {
-            values.add(index, value);
+            values.add(value);
         } else {
             values.set(index, value);
         }
+        return this;
     }
 
     @Override
-    public void set(int index, String string) {
+    public ArrayValue set(int index, String string) {
         set(index, factory.create(string));
+        return this;
     }
 
     @Override
-    public void set(int index, double number) {
+    public ArrayValue set(int index, double number) {
         set(index, factory.create(number));
+        return this;
     }
 
     @Override
-    public void set(int index, boolean bool) {
+    public ArrayValue set(int index, boolean bool) {
         set(index, factory.create(bool));
+        return this;
+    }
+
+    @Override
+    public ArrayValue add(Value value) {
+        values.add(value);
+        return this;
+    }
+
+    @Override
+    public ArrayValue add(int index, Value value) {
+        values.add(index, value);
+        return this;
+    }
+
+    @Override
+    public ArrayValue addAll(Value... values) {
+        if (values != null) {
+            for (Value value : values) {
+                set(length(), value);
+            }
+        }
+        return this;
+    }
+
+    @Override
+    public ArrayValue deepCopy() {
+        return Values.<ArrayValue>parse(toJson()).orElseThrow(() -> new IllegalStateException("Error copying array value"));
     }
 
     @Override
@@ -170,4 +192,8 @@ public class ArrayValueImpl extends ValueImpl implements ArrayValue {
         return result;
     }
 
+    @Override
+    public String toString() {
+        return toJson();
+    }
 }

@@ -17,18 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model;
+package org.openremote.model.attribute;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import elemental.json.Json;
-import elemental.json.JsonArray;
-import elemental.json.JsonValue;
+import org.openremote.model.AbstractValueHolder;
+import org.openremote.model.value.ArrayValue;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
 import java.util.Optional;
-
-import static org.openremote.model.util.JsonUtil.asJsonArray;
-import static org.openremote.model.util.JsonUtil.isOfTypeString;
 
 /**
  * A reference to an entity and an {@link Attribute}.
@@ -44,10 +40,8 @@ public class AttributeRef {
     protected String entityId;
     protected String attributeName;
 
-    /**
-     * Needed for deserialisation
-     */
-    protected AttributeRef() {}
+    protected AttributeRef() {
+    }
 
     public AttributeRef(String entityId, String attributeName) {
         this.entityId = entityId;
@@ -85,40 +79,32 @@ public class AttributeRef {
             '}';
     }
 
-    public JsonArray toJsonValue() {
-        JsonArray jsonArray = Json.createArray();
-        jsonArray.set(0, Json.create(getEntityId()));
-        jsonArray.set(1, Json.create(getAttributeName()));
-        return jsonArray;
+    public ArrayValue toArrayValue() {
+        ArrayValue arrayValue = Values.createArray();
+        arrayValue.set(0, Values.create(getEntityId()));
+        arrayValue.set(1, Values.create(getAttributeName()));
+        return arrayValue;
     }
 
     public static boolean isAttributeRef(AbstractValueHolder valueHolder) {
-        return valueHolder != null && valueHolder.getValueAsJsonArray()
-            .map(AttributeRef::isAttributeRef)
-            .orElse(false);
+        return valueHolder != null
+            && valueHolder.getValueAsArray().filter(AttributeRef::isAttributeRef).isPresent();
     }
 
-    public static boolean isAttributeRef(JsonValue jsonValue) {
-        return asJsonArray(jsonValue)
-            .map(jsonArray ->
-                jsonArray.length() == 2
-                    && isOfTypeString(jsonArray.get(0))
-                    && isOfTypeString(jsonArray.get(1))
-                    && !jsonArray.getString(0).isEmpty()
-                    && !jsonArray.getString(1).isEmpty()
-            )
-            .orElse(false);
+    public static boolean isAttributeRef(Value value) {
+        return Values.getArray(value)
+            .filter(arrayValue ->
+                arrayValue.length() == 2
+                    && arrayValue.getString(0).filter(s -> !s.isEmpty()).isPresent()
+                    && arrayValue.getString(1).filter(s -> !s.isEmpty()).isPresent()
+            ).isPresent();
     }
 
-    public static Optional<AttributeRef> fromJsonValue(JsonValue jsonValue) {
-        return asJsonArray(jsonValue)
-            .map(jsonArray -> !isAttributeRef(jsonArray)
-                    ? null
-                    : new AttributeRef(jsonArray.getString(0), jsonArray.getString(1))
+    public static Optional<AttributeRef> fromValue(Value value) {
+        return Values.getArray(value)
+            .filter(AttributeRef::isAttributeRef)
+            .map(arrayValue ->
+                new AttributeRef(arrayValue.getString(0).get(), arrayValue.getString(1).get())
             );
-    }
-
-    public static JsonValue toJsonValue(AttributeRef attributeRef) {
-        return attributeRef.toJsonValue();
     }
 }

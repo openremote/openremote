@@ -1,6 +1,6 @@
 package org.openremote.test.assets
 
-import elemental.json.Json
+import org.openremote.model.value.Values
 import org.openremote.agent3.protocol.AbstractProtocol
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
@@ -15,6 +15,11 @@ import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetState
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.ProtocolConfiguration
+import org.openremote.model.attribute.AttributeEvent
+import org.openremote.model.attribute.AttributeRef
+import org.openremote.model.attribute.AttributeState
+import org.openremote.model.attribute.AttributeType
+import org.openremote.model.attribute.MetaItem
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
@@ -107,33 +112,33 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         and: "a mock thing asset is created with a valid protocol attribute, an invalid protocol attribute and a plain attribute"
         def mockThing = new ServerAsset("Mock Thing Asset", AssetType.THING, mockAgent)
         mockThing.setAttributes(
-                new AssetAttribute("light1Toggle", AttributeType.BOOLEAN, Json.create(false))
+                new AssetAttribute("light1Toggle", AttributeType.BOOLEAN, Values.create(false))
                     .setMeta(
                         new MetaItem(
                             AssetMeta.DESCRIPTION,
-                            Json.create("The switch for the light 1 in the living room")
+                            Values.create("The switch for the light 1 in the living room")
                         ),
                         new MetaItem(
                             AssetMeta.AGENT_LINK,
-                            new AttributeRef(mockAgent.getId(), "mock123").toJsonValue()
+                            new AttributeRef(mockAgent.getId(), "mock123").toArrayValue()
                         )
                     ),
-                new AssetAttribute("light2Toggle", AttributeType.BOOLEAN, Json.create(false))
+                new AssetAttribute("light2Toggle", AttributeType.BOOLEAN, Values.create(false))
                     .setMeta(
                         new MetaItem(
                             AssetMeta.DESCRIPTION,
-                            Json.create("The switch for the light 2 in the living room")
+                            Values.create("The switch for the light 2 in the living room")
                         ),
                         new MetaItem(
                             AssetMeta.AGENT_LINK,
-                            new AttributeRef("INVALID AGENT ID", managerDemoSetup.agentProtocolConfigName).toJsonValue()
+                            new AttributeRef("INVALID AGENT ID", managerDemoSetup.agentProtocolConfigName).toArrayValue()
                         )
                     ),
-                new AssetAttribute("plainAttribute", AttributeType.STRING, Json.create("demo"))
+                new AssetAttribute("plainAttribute", AttributeType.STRING, Values.create("demo"))
                     .setMeta(
                         new MetaItem(
                             AssetMeta.DESCRIPTION,
-                            Json.create("A plain string attribute for storing information")
+                            Values.create("A plain string attribute for storing information")
                         )
                     )
         )
@@ -146,7 +151,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
         when: "an attribute event occurs for the valid protocol attribute"
         def light1toggleOn = new AttributeEvent(
-                new AttributeState(new AttributeRef(mockThing.getId(), "light1Toggle"), Json.create(true))
+                new AttributeState(new AttributeRef(mockThing.getId(), "light1Toggle"), Values.create(true))
         )
         assetProcessingService.sendAttributeEvent(light1toggleOn)
 
@@ -157,7 +162,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert sendToActuatorEvents.size() == 1
             assert sendToActuatorEvents[0].entityId == mockThing.id
             assert sendToActuatorEvents[0].attributeName == "light1Toggle"
-            assert sendToActuatorEvents[0].attributeState.value.asBoolean() == true
+            assert Values.getBoolean(sendToActuatorEvents[0].attributeState.currentValue.orElse(null)).orElse(null) == true
             assert updatesPassedStartOfProcessingChain[0].processingStatus == AssetState.ProcessingStatus.COMPLETED
         }
 
@@ -172,8 +177,8 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert updatesReachedEndOfProcessingChain.size() == 1
             assert updatesReachedEndOfProcessingChain[0].name == "Mock Thing Asset"
             assert updatesReachedEndOfProcessingChain[0].attributeName == "light1Toggle"
-            assert updatesReachedEndOfProcessingChain[0].oldValue.asBoolean() == false
-            assert updatesReachedEndOfProcessingChain[0].value.asBoolean() == true
+            assert Values.getBoolean(updatesReachedEndOfProcessingChain[0].oldValue).orElse(null) == false
+            assert Values.getBoolean(updatesReachedEndOfProcessingChain[0].value).orElse(null) == true
             assert updatesReachedEndOfProcessingChain[0].processingStatus == AssetState.ProcessingStatus.COMPLETED
         }
         //endregion
@@ -183,7 +188,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         updatesReachedEndOfProcessingChain.clear()
         sendToActuatorEvents.clear()
         def light2toggleOn = new AttributeEvent(
-                new AttributeState(new AttributeRef(mockThing.getId(), "light2Toggle"), Json.create(true))
+                new AttributeState(new AttributeRef(mockThing.getId(), "light2Toggle"), Values.create(true))
         )
         assetProcessingService.sendAttributeEvent(light2toggleOn)
 
@@ -204,7 +209,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         updatesReachedEndOfProcessingChain.clear()
         sendToActuatorEvents.clear()
         def plainAttributeTest = new AttributeEvent(
-                new AttributeState(new AttributeRef(mockThing.getId(), "plainAttribute"), Json.create("test"))
+                new AttributeState(new AttributeRef(mockThing.getId(), "plainAttribute"), Values.create("test"))
         )
         assetProcessingService.sendAttributeEvent(plainAttributeTest)
 
@@ -215,8 +220,8 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert updatesReachedEndOfProcessingChain.size() == 1
             assert updatesReachedEndOfProcessingChain[0].name == "Mock Thing Asset"
             assert updatesReachedEndOfProcessingChain[0].attributeName == "plainAttribute"
-            assert updatesReachedEndOfProcessingChain[0].oldValue.asString() == "demo"
-            assert updatesReachedEndOfProcessingChain[0].value.asString() == "test"
+            assert Values.getString(updatesReachedEndOfProcessingChain[0].oldValue).orElse(null) == "demo"
+            assert Values.getString(updatesReachedEndOfProcessingChain[0].value).orElse(null) == "test"
             assert updatesReachedEndOfProcessingChain[0].error == null
             assert updatesReachedEndOfProcessingChain[0].processingStatus == AssetState.ProcessingStatus.COMPLETED
         }

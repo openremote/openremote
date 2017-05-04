@@ -17,47 +17,45 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model;
+package org.openremote.model.attribute;
 
-import elemental.json.Json;
-import elemental.json.JsonObject;
-import elemental.json.JsonValue;
-import org.openremote.model.util.JsonUtil;
+import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import static org.openremote.model.util.JsonUtil.sanitizeJsonValue;
-
 /**
- * A named arbitrary {@link JsonValue}.
+ * A named arbitrary {@link Value}.
  * <p>
  * Name should be a URI, thus avoiding collisions and representing "ownership" of the meta item.
  */
 public class MetaItem extends AbstractValueHolder {
 
     public MetaItem() {
-        this(Json.createObject());
+        this(Values.createObject());
     }
 
-    public MetaItem(JsonObject jsonObject) {
-        super(jsonObject);
+    public MetaItem(ObjectValue objectValue) {
+        super(objectValue);
     }
 
     public MetaItem(String name) {
         this(name, null);
     }
 
-    public MetaItem(String name, JsonValue value) {
-        super(Json.createObject());
+    public MetaItem(String name, Value value) {
+        super(Values.createObject());
         setName(name);
         setValue(value);
     }
 
-    public MetaItem(HasMetaName hasMetaName, JsonValue value) {
+    public MetaItem(HasMetaName hasMetaName, Value value) {
         this(hasMetaName.getUrn(), value);
     }
 
@@ -66,18 +64,11 @@ public class MetaItem extends AbstractValueHolder {
     }
 
     public Optional<String> getName() {
-        if (jsonObject == null) {
-            return Optional.empty();
-        }
-
-        return JsonUtil
-            .asString((JsonValue)jsonObject.get("name"))
-            .map(str -> str.isEmpty() ? null : str);
+        return getObjectValue().getString("name");
     }
 
     public void setName(String name) {
-        TextUtil.requireNonNullAndNonEmpty(name);
-        jsonObject.put("name", name);
+        getObjectValue().put("name", TextUtil.requireNonNullAndNonEmpty(name));
     }
 
     @Override
@@ -86,7 +77,7 @@ public class MetaItem extends AbstractValueHolder {
     }
 
     public MetaItem copy() {
-        return new MetaItem(Json.parse(getJsonObject().toJson()));
+        return new MetaItem(getObjectValue().deepCopy());
     }
 
     @Override
@@ -102,31 +93,20 @@ public class MetaItem extends AbstractValueHolder {
         }
 
         MetaItem metaItem = (MetaItem) o;
-        return Objects.equals(getName(), metaItem.getName()) &&
-            JsonUtil.equals(getValue().orElse(null), metaItem.getValue().orElse(null));
+        return Objects.equals(getName(), metaItem.getName())
+            && getValue().equals(metaItem.getValue());
     }
 
     @Override
     public String toString() {
-        return "MetaItem{" +
-            jsonObject.toJson() +
+        return getClass().getSimpleName() + "{" +
+            getObjectValue().toJson() +
             '}';
     }
 
-//    ---------------------------------------------------
-//    FUNCTIONAL METHODS BELOW
-//    ---------------------------------------------------
-
-    public static boolean equals(MetaItem item1, MetaItem item2) {
-        if (item1 == null && item2 == null)
-            return true;
-
-        if (item1 == null || item2 == null)
-            return false;
-
-        Optional<String> name = item2.getName();
-        return isMetaNameEqualTo(item1, name.orElse(null)) && JsonUtil.equals(item1.getValue().orElse(null), item2.getValue().orElse(null));
-    }
+    //    ---------------------------------------------------
+    //    FUNCTIONAL METHODS BELOW
+    //    ---------------------------------------------------
 
     public static boolean isMetaNameEqualTo(MetaItem item, String name) {
         if (item == null)
@@ -148,14 +128,14 @@ public class MetaItem extends AbstractValueHolder {
         return metaItem -> isMetaNameEqualTo(metaItem, hasMetaName);
     }
 
-// STREAM AND COLLECTION METHODS BELOW
+    // STREAM AND COLLECTION METHODS BELOW
 
     public static <T extends Collection<MetaItem>> void replaceMetaByName(T metaItems, String name, MetaItem newMetaItem) {
         metaItems.removeIf(isMetaNameEqualTo(name));
         metaItems.add(newMetaItem);
     }
 
-    public static <T extends Collection<MetaItem>> void replaceMetaByName(T metaItems, String name, JsonValue newValue) {
+    public static <T extends Collection<MetaItem>> void replaceMetaByName(T metaItems, String name, Value newValue) {
         metaItems.removeIf(isMetaNameEqualTo(name));
         metaItems.add(new MetaItem(name, newValue));
     }
@@ -165,7 +145,7 @@ public class MetaItem extends AbstractValueHolder {
         metaItems.addAll(newMetaItems);
     }
 
-    public static <T extends Collection<MetaItem>, V extends Collection<JsonValue>> void replaceMetaByNameWithValues(T metaItems, String name, V newValues) {
+    public static <T extends Collection<MetaItem>, V extends Collection<Value>> void replaceMetaByNameWithValues(T metaItems, String name, V newValues) {
         metaItems.removeIf(isMetaNameEqualTo(name));
         newValues
             .stream()
@@ -177,7 +157,7 @@ public class MetaItem extends AbstractValueHolder {
         replaceMetaByName(metaItems, hasMetaName.getUrn(), newMetaItem);
     }
 
-    public static <T extends Collection<MetaItem>> void replaceMetaByName(T metaItems, HasMetaName hasMetaName, JsonValue newValue) {
+    public static <T extends Collection<MetaItem>> void replaceMetaByName(T metaItems, HasMetaName hasMetaName, Value newValue) {
         replaceMetaByName(metaItems, hasMetaName.getUrn(), newValue);
     }
 
@@ -185,7 +165,7 @@ public class MetaItem extends AbstractValueHolder {
         replaceMetaByName(metaItems, hasMetaName.getUrn(), newMetaItems);
     }
 
-    public static <T extends Collection<MetaItem>, V extends Collection<JsonValue>> void replaceMetaByNameWithValues(T metaItems, HasMetaName hasMetaName, V newValues) {
+    public static <T extends Collection<MetaItem>, V extends Collection<Value>> void replaceMetaByNameWithValues(T metaItems, HasMetaName hasMetaName, V newValues) {
         replaceMetaByNameWithValues(metaItems, hasMetaName.getUrn(), newValues);
     }
 }

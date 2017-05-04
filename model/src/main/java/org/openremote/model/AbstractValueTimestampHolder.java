@@ -19,42 +19,33 @@
  */
 package org.openremote.model;
 
-import elemental.json.Json;
-import elemental.json.JsonObject;
-import elemental.json.JsonValue;
-
-import java.util.Optional;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
 /**
- * Base class for all model classes which have to internally store data in a
- * {@link JsonObject} that has a <code>value</code> field that accepts any
- * {@link JsonValue} and a <code>valueTimestamp</code> timestamp field, in
+ * Base class for all model classes which have to internally store data in an
+ * {@link ObjectValue} that has a <code>value</code> field that accepts any
+ * {@link Value} and a <code>valueTimestamp</code> timestamp field, in
  * milliseconds since the Unix epoch, of the most recent value change.
  */
 public abstract class AbstractValueTimestampHolder extends AbstractValueHolder {
 
     public static final String VALUE_TIMESTAMP_FIELD_NAME = "valueTimestamp";
 
-    public AbstractValueTimestampHolder(JsonObject jsonObject) {
-        super(jsonObject);
+    public AbstractValueTimestampHolder(ObjectValue objectValue) {
+        super(objectValue);
     }
 
     public boolean hasValueTimestamp() {
-        return jsonObject.hasKey(VALUE_TIMESTAMP_FIELD_NAME);
+        return getObjectValue().hasKey(VALUE_TIMESTAMP_FIELD_NAME);
     }
 
     /**
      * @return <code>-1</code> if there is no timestamp.
      */
     public long getValueTimestamp() {
-        return hasValueTimestamp() ? new Double(jsonObject.getNumber(VALUE_TIMESTAMP_FIELD_NAME)).longValue() : -1L;
-    }
-
-    /**
-     * Sets the value timestamp to current system time.
-     */
-    public void setValueTimestamp() {
-        setValueTimestamp(System.currentTimeMillis());
+        return getObjectValue().getNumber(VALUE_TIMESTAMP_FIELD_NAME).map(Double::longValue).orElse(-1L);
     }
 
     /**
@@ -62,7 +53,14 @@ public abstract class AbstractValueTimestampHolder extends AbstractValueHolder {
      */
     @SuppressWarnings("unchecked")
     public void setValueTimestamp(long timestamp) {
-        jsonObject.put(VALUE_TIMESTAMP_FIELD_NAME, Json.create(timestamp));
+        getObjectValue().put(VALUE_TIMESTAMP_FIELD_NAME, Values.create(timestamp));
+    }
+
+    /**
+     * Sets the value timestamp to current system time.
+     */
+    public void setValueTimestamp() {
+        setValueTimestamp(System.currentTimeMillis());
     }
 
     /**
@@ -75,27 +73,19 @@ public abstract class AbstractValueTimestampHolder extends AbstractValueHolder {
     }
 
     /**
-     * Sets the value and the timestamp to given time.
-     */
-    public void setValue(JsonValue value, long timestamp) throws IllegalArgumentException {
-        setValue(value);
-        setValueTimestamp(timestamp);
-    }
-
-    /**
-     * Sets the value and the timestamp to given time.
-     */
-    public void setValue(Optional<JsonValue> value, long timestamp) throws IllegalArgumentException {
-        setValue(value);
-        setValueTimestamp(timestamp);
-    }
-
-    /**
-     * Sets the value and the timestamp to current system time.
+     * Sets the value and the timestamp to system time.
      */
     @Override
-    public void doSetValue(JsonValue value) throws IllegalArgumentException {
-        super.doSetValue(value);
+    public void setValue(Value value) throws IllegalArgumentException {
+        super.setValue(value);
         setValueTimestamp();
+    }
+
+    /**
+     * Sets the value and the timestamp to given time.
+     */
+    public void setValue(Value value, long timestamp) throws IllegalArgumentException {
+        setValue(value);
+        setValueTimestamp(timestamp);
     }
 }

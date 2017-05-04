@@ -19,12 +19,12 @@
  */
 package org.openremote.agent3.protocol.trigger;
 
-import elemental.json.JsonValue;
 import org.openremote.agent3.protocol.AbstractProtocol;
 import org.openremote.container.Container;
-import org.openremote.model.AttributeEvent;
-import org.openremote.model.AttributeRef;
-import org.openremote.model.AttributeState;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.value.Value;
 
 public abstract class AbstractTriggerHandler {
 
@@ -32,11 +32,11 @@ public abstract class AbstractTriggerHandler {
 
     protected abstract String getName();
 
-    protected abstract boolean isValidValue(JsonValue triggerValue);
+    protected abstract boolean isValidValue(Value triggerValue);
 
-    protected abstract void registerTrigger(AttributeRef triggerRef, JsonValue value, boolean isEnabled);
+    protected abstract void registerTrigger(AttributeRef triggerRef, Value value, boolean isEnabled);
 
-    protected abstract void updateTrigger(AttributeRef triggerRef, JsonValue value, boolean isEnabled);
+    protected abstract void updateTrigger(AttributeRef triggerRef, Value value, boolean isEnabled);
 
     protected abstract void unregisterTrigger(AttributeRef triggerRef);
 

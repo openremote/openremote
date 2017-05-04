@@ -27,7 +27,6 @@ import com.google.gwt.place.shared.PlaceHistoryHandler.Historian
 import com.google.gwt.user.client.Window
 import com.google.gwt.user.client.ui.AcceptsOneWidget
 import com.google.web.bindery.event.shared.SimpleEventBus
-import elemental.json.JsonValue
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget
 import org.openremote.manager.client.mvp.AppActivityManager
 import org.openremote.manager.client.mvp.AppActivityMapper
@@ -40,6 +39,7 @@ import org.openremote.model.event.Event
 import org.openremote.model.event.bus.EventBus
 import org.openremote.model.event.bus.EventListener
 import org.openremote.model.event.shared.SharedEvent
+import org.openremote.model.value.Value
 import org.spockframework.mock.IMockMethod
 
 import javax.ws.rs.ClientErrorException
@@ -198,9 +198,9 @@ trait GwtClientTrait {
                     && producesAnnotation != null
                     && Arrays.asList(producesAnnotation.value()).contains(APPLICATION_JSON)) {
                 // Handle elemental JsonValue special, don't use Jackson
-                if (result instanceof JsonValue) {
-                    JsonValue jsonValue = (JsonValue) result
-                    responseText = jsonValue.toJson()
+                if (result instanceof Value) {
+                    Value value = (Value) result
+                    responseText = value.toJson()
                 } else {
                     responseText = jsonMapper.writeValueAsString(result)
                 }

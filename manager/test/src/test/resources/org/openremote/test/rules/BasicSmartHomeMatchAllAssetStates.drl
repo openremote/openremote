@@ -1,8 +1,8 @@
 package org.openremote.test.rules;
 
 import org.openremote.model.*;
+import org.openremote.model.value.ValueType;
 import org.openremote.model.asset.*;
-import elemental.json.*;
 
 global java.util.logging.Logger LOG;
 
@@ -64,7 +64,7 @@ end
 
 rule "JSON Number value types"
 when
-    AssetState(value != null, value.type == JsonType.NUMBER)
+    AssetState(value != null, value.type == ValueType.NUMBER)
 then
     return;
 end

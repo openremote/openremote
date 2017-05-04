@@ -20,7 +20,6 @@
 package org.openremote.manager.server.setup.builtin;
 
 import com.vividsolutions.jts.geom.Coordinate;
-import elemental.json.Json;
 import org.openremote.agent3.protocol.simulator.SimulatorProtocol;
 import org.openremote.agent3.protocol.simulator.element.ColorSimulatorElement;
 import org.openremote.agent3.protocol.simulator.element.DecimalSimulatorElement;
@@ -30,12 +29,12 @@ import org.openremote.container.Container;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.setup.AbstractManagerSetup;
 import org.openremote.manager.shared.security.Tenant;
-import org.openremote.model.*;
+import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.AssetState;
-import org.openremote.model.units.AttributeUnits;
-import org.openremote.model.units.ColorRGB;
+import org.openremote.model.attribute.*;
+import org.openremote.model.value.Values;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -43,11 +42,11 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.openremote.model.AttributeType.*;
 import static org.openremote.model.asset.AssetMeta.ABOUT;
 import static org.openremote.model.asset.AssetMeta.LABEL;
 import static org.openremote.model.asset.AssetType.*;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.initProtocolConfiguration;
+import static org.openremote.model.attribute.AttributeType.*;
 
 public class ManagerDemoSetup extends AbstractManagerSetup {
 
@@ -94,25 +93,25 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         smartOffice.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         smartOffice.setType(BUILDING);
         List<AssetAttribute> smartOfficeAttributes = Arrays.asList(
-            new AssetAttribute("geoStreet", STRING, Json.create("Torenallee 20"))
+            new AssetAttribute("geoStreet", STRING, Values.create("Torenallee 20"))
                 .setMeta(
-                    new MetaItem(LABEL, Json.create("Street")),
-                    new MetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoStreet"))
+                    new MetaItem(LABEL, Values.create("Street")),
+                    new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoStreet"))
                 ),
-            new AssetAttribute("geoPostalCode", AttributeType.INTEGER, Json.create(5617))
+            new AssetAttribute("geoPostalCode", AttributeType.INTEGER, Values.create(5617))
                 .setMeta(
-                    new MetaItem(LABEL, Json.create("Postal Code")),
-                    new MetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoPostalCode"))
+                    new MetaItem(LABEL, Values.create("Postal Code")),
+                    new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoPostalCode"))
                 ),
-            new AssetAttribute("geoCity", STRING, Json.create("Eindhoven"))
+            new AssetAttribute("geoCity", STRING, Values.create("Eindhoven"))
                 .setMeta(
-                    new MetaItem(LABEL, Json.create("City")),
-                    new MetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCity"))
+                    new MetaItem(LABEL, Values.create("City")),
+                    new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoCity"))
                 ),
-            new AssetAttribute("geoCountry", STRING, Json.create("Netherlands"))
+            new AssetAttribute("geoCountry", STRING, Values.create("Netherlands"))
                 .setMeta(
-                    new MetaItem(LABEL, Json.create("Country")),
-                    new MetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCountry"))
+                    new MetaItem(LABEL, Values.create("Country")),
+                    new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoCountry"))
                 )
         );
 
@@ -137,11 +136,11 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 .setMeta(
                     new MetaItem(
                         SimulatorProtocol.CONFIG_MODE,
-                        Json.create(SimulatorProtocol.Mode.WRITE_THROUGH_DELAYED.toString())
+                        Values.create(SimulatorProtocol.Mode.WRITE_THROUGH_DELAYED.toString())
                     ),
                     new MetaItem(
                         SimulatorProtocol.CONFIG_WRITE_DELAY_MILLISECONDS,
-                        Json.create(500)
+                        Values.create(500)
                     ))
             );
 
@@ -151,74 +150,68 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         ServerAsset thing = new ServerAsset("Demo Thing", THING, agent);
         thing.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         thing.setAttributes(
-            new AssetAttribute("light1Toggle", BOOLEAN, Json.create(true))
+            new AssetAttribute("light1Toggle", BOOLEAN, Values.create(true))
                 .setMeta(new Meta(
                     new MetaItem(
                         AssetMeta.DESCRIPTION,
-                        Json.create("The switch for the light in the living room")),
+                        Values.create("The switch for the light in the living room")),
                     new MetaItem(
                         AssetMeta.AGENT_LINK,
-                        new AttributeRef(agent.getId(), agentProtocolConfigName).toJsonValue()),
+                        new AttributeRef(agent.getId(), agentProtocolConfigName).toArrayValue()),
                     new MetaItem(
-                        SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(SwitchSimulatorElement.ELEMENT_NAME)
+                        SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(SwitchSimulatorElement.ELEMENT_NAME)
                     ))
                 ),
             new AssetAttribute("light1Dimmer", INTEGER) // No initial value!
                 .setMeta(new Meta(
                     new MetaItem(
                         AssetMeta.DESCRIPTION,
-                        Json.create("The dimmer for the light in the living room")),
+                        Values.create("The dimmer for the light in the living room")),
                     new MetaItem(
                         AssetMeta.RANGE_MIN,
-                        Json.create(0)),
+                        Values.create(0)),
                     new MetaItem(
                         AssetMeta.RANGE_MAX,
-                        Json.create(100)),
+                        Values.create(100)),
                     new MetaItem(
                         AssetMeta.AGENT_LINK,
-                        new AttributeRef(agent.getId(), agentProtocolConfigName).toJsonValue()),
+                        new AttributeRef(agent.getId(), agentProtocolConfigName).toArrayValue()),
                     new MetaItem(
-                        SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(IntegerSimulatorElement.ELEMENT_NAME_RANGE)),
+                        SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(IntegerSimulatorElement.ELEMENT_NAME_RANGE)),
                     new MetaItem(
-                        SimulatorProtocol.CONFIG_MODE, Json.create(true))
+                        SimulatorProtocol.CONFIG_MODE, Values.create(true))
                     )
                 ),
-            new AssetAttribute("light1Color", INTEGER_ARRAY, new ColorRGB(88, 123, 88).asJsonValue())
-                .setMeta(new Meta(
-                    new MetaItem(
-                        AssetMeta.UNITS,
-                        Json.create(AttributeUnits.COLOR_RGB.toString())),
-                    new MetaItem(
-                        AssetMeta.DESCRIPTION,
-                        Json.create("The color of the living room light")),
-                    new MetaItem(
-                        AssetMeta.AGENT_LINK,
-                        new AttributeRef(agent.getId(), agentProtocolConfigName).toJsonValue()),
-                    new MetaItem(
-                        SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(ColorSimulatorElement.ELEMENT_NAME))
-                    )
-                ),
-            new AssetAttribute("light1PowerConsumption", DECIMAL, Json.create(12.345))
+            new AssetAttribute("light1Color", COLOR_RGB, new ColorRGB(88, 123, 88).asArrayValue())
                 .setMeta(new Meta(
                     new MetaItem(
                         AssetMeta.DESCRIPTION,
-                        Json.create("The total power consumption of the living room light")),
+                        Values.create("The color of the living room light")),
+                    new MetaItem(
+                        AssetMeta.AGENT_LINK,
+                        new AttributeRef(agent.getId(), agentProtocolConfigName).toArrayValue()),
+                    new MetaItem(
+                        SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(ColorSimulatorElement.ELEMENT_NAME))
+                    )
+                ),
+            new AssetAttribute("light1PowerConsumption", ENERGY_KWH, Values.create(12.345))
+                .setMeta(new Meta(
+                    new MetaItem(
+                        AssetMeta.DESCRIPTION,
+                        Values.create("The total power consumption of the living room light")),
                     new MetaItem(
                         AssetMeta.READ_ONLY,
-                        Json.create(true)),
+                        Values.create(true)),
                     new MetaItem(
                         AssetMeta.FORMAT,
-                        Json.create("%3d kWh")),
-                    new MetaItem(
-                        AssetMeta.UNITS,
-                        Json.create(AttributeUnits.ENERGY_KWH.name())),
+                        Values.create("%3d kWh")),
                     new MetaItem(
                         AssetMeta.AGENT_LINK,
-                        new AttributeRef(agent.getId(), agentProtocolConfigName).toJsonValue()),
+                        new AttributeRef(agent.getId(), agentProtocolConfigName).toArrayValue()),
                     new MetaItem(
-                        SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(DecimalSimulatorElement.ELEMENT_NAME)),
+                        SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(DecimalSimulatorElement.ELEMENT_NAME)),
                     new MetaItem(
-                        AssetMeta.STORE_DATA_POINTS.getUrn(), Json.create(true))
+                        AssetMeta.STORE_DATA_POINTS.getUrn(), Values.create(true))
                     )
                 )
         );
@@ -229,55 +222,56 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         thing = assetStorageService.find(thingId, true);
         ZonedDateTime now = LocalDateTime.now().atZone(ZoneId.systemDefault());
 
-        AssetAttribute light1PowerConsumptionAttribute = thing.getAttribute("light1PowerConsumption").get();
+        AssetAttribute light1PowerConsumptionAttribute = thing.getAttribute("light1PowerConsumption")
+            .orElseThrow(() -> new RuntimeException("Invalid test data"));
 
         assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute));
 
-        light1PowerConsumptionAttribute.setValue(Json.create(0.11), now.minusDays(80).toEpochSecond() * 1000);
+        light1PowerConsumptionAttribute.setValue(Values.create(0.11), now.minusDays(80).toEpochSecond() * 1000);
         assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute));
 
-        light1PowerConsumptionAttribute.setValue(Json.create(1.22), now.minusDays(40).toEpochSecond() * 1000);
+        light1PowerConsumptionAttribute.setValue(Values.create(1.22), now.minusDays(40).toEpochSecond() * 1000);
         assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute));
 
-        light1PowerConsumptionAttribute.setValue(Json.create(2.33), now.minusDays(20).toEpochSecond() * 1000);
+        light1PowerConsumptionAttribute.setValue(Values.create(2.33), now.minusDays(20).toEpochSecond() * 1000);
         assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute));
 
-        light1PowerConsumptionAttribute.setValue(Json.create(3.44), now.minusDays(10).toEpochSecond() * 1000);
+        light1PowerConsumptionAttribute.setValue(Values.create(3.44), now.minusDays(10).toEpochSecond() * 1000);
         assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute));
 
-        light1PowerConsumptionAttribute.setValue(Json.create(4.55), now.minusDays(8).toEpochSecond() * 1000);
+        light1PowerConsumptionAttribute.setValue(Values.create(4.55), now.minusDays(8).toEpochSecond() * 1000);
 
-        light1PowerConsumptionAttribute.setValue(Json.create(5.66), now.minusDays(6).toEpochSecond() * 1000);
+        light1PowerConsumptionAttribute.setValue(Values.create(5.66), now.minusDays(6).toEpochSecond() * 1000);
         assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute));
 
-        light1PowerConsumptionAttribute.setValue(Json.create(6.77), now.minusDays(3).toEpochSecond() * 1000);
+        light1PowerConsumptionAttribute.setValue(Values.create(6.77), now.minusDays(3).toEpochSecond() * 1000);
         assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute));
 
-        light1PowerConsumptionAttribute.setValue(Json.create(7.88), now.minusDays(1).toEpochSecond() * 1000);
+        light1PowerConsumptionAttribute.setValue(Values.create(7.88), now.minusDays(1).toEpochSecond() * 1000);
         assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute));
 
-        light1PowerConsumptionAttribute.setValue(Json.create(8.99), now.minusHours(10).toEpochSecond() * 1000);
+        light1PowerConsumptionAttribute.setValue(Values.create(8.99), now.minusHours(10).toEpochSecond() * 1000);
         assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute));
 
-        light1PowerConsumptionAttribute.setValue(Json.create(9.11), now.minusHours(5).toEpochSecond() * 1000);
+        light1PowerConsumptionAttribute.setValue(Values.create(9.11), now.minusHours(5).toEpochSecond() * 1000);
         assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute));
 
-        light1PowerConsumptionAttribute.setValue(Json.create(10.22), now.minusHours(2).toEpochSecond() * 1000);
+        light1PowerConsumptionAttribute.setValue(Values.create(10.22), now.minusHours(2).toEpochSecond() * 1000);
         assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute));
 
-        light1PowerConsumptionAttribute.setValue(Json.create(11.33), now.minusHours(1).toEpochSecond() * 1000);
+        light1PowerConsumptionAttribute.setValue(Values.create(11.33), now.minusHours(1).toEpochSecond() * 1000);
         assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute));
 
-        light1PowerConsumptionAttribute.setValue(Json.create(11.44), now.minusMinutes(30).toEpochSecond() * 1000);
+        light1PowerConsumptionAttribute.setValue(Values.create(11.44), now.minusMinutes(30).toEpochSecond() * 1000);
         assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute));
 
-        light1PowerConsumptionAttribute.setValue(Json.create(12.00), now.minusMinutes(5).toEpochSecond() * 1000);
+        light1PowerConsumptionAttribute.setValue(Values.create(12.00), now.minusMinutes(5).toEpochSecond() * 1000);
         assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute));
 
-        light1PowerConsumptionAttribute.setValue(Json.create(12.11), now.minusSeconds(5).toEpochSecond() * 1000);
+        light1PowerConsumptionAttribute.setValue(Values.create(12.11), now.minusSeconds(5).toEpochSecond() * 1000);
         assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute));
 
-        light1PowerConsumptionAttribute.setValue(Json.create(12.22), now.minusSeconds(1).toEpochSecond() * 1000);
+        light1PowerConsumptionAttribute.setValue(Values.create(12.22), now.minusSeconds(1).toEpochSecond() * 1000);
         assetDatapointService.accept(new AssetState(thing, light1PowerConsumptionAttribute));
 
         // ################################ Demo assets for 'customerA' realm ###################################
@@ -288,25 +282,25 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         smartHome.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         smartHome.setType(BUILDING);
         smartHome.setAttributes(
-            new AssetAttribute("geoStreet", STRING, Json.create("Wilhelminaplein 21C"))
+            new AssetAttribute("geoStreet", STRING, Values.create("Wilhelminaplein 21C"))
                 .setMeta(
-                    new MetaItem(LABEL, Json.create("Street")),
-                    new MetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoStreet"))
+                    new MetaItem(LABEL, Values.create("Street")),
+                    new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoStreet"))
                 ),
-            new AssetAttribute("geoPostalCode", AttributeType.INTEGER, Json.create(5611))
+            new AssetAttribute("geoPostalCode", AttributeType.INTEGER, Values.create(5611))
                 .setMeta(
-                    new MetaItem(LABEL, Json.create("Postal Code")),
-                    new MetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoPostalCode"))
+                    new MetaItem(LABEL, Values.create("Postal Code")),
+                    new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoPostalCode"))
                 ),
-            new AssetAttribute("geoCity", STRING, Json.create("Eindhoven"))
+            new AssetAttribute("geoCity", STRING, Values.create("Eindhoven"))
                 .setMeta(
-                    new MetaItem(LABEL, Json.create("City")),
-                    new MetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCity"))
+                    new MetaItem(LABEL, Values.create("City")),
+                    new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoCity"))
                 ),
-            new AssetAttribute("geoCountry", STRING, Json.create("Netherlands"))
+            new AssetAttribute("geoCountry", STRING, Values.create("Netherlands"))
                 .setMeta(
-                    new MetaItem(LABEL, Json.create("Country")),
-                    new MetaItem(ABOUT, Json.create("http://project-haystack.org/tag/geoCountry"))
+                    new MetaItem(LABEL, Values.create("Country")),
+                    new MetaItem(ABOUT, Values.create("http://project-haystack.org/tag/geoCountry"))
                 )
         );
         smartHome = assetStorageService.merge(smartHome);
@@ -315,169 +309,169 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         ServerAsset apartment1 = new ServerAsset("Apartment 1", RESIDENCE, smartHome);
         apartment1.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment1.setAttributes(
-            new AssetAttribute("alarmEnabled", AttributeType.BOOLEAN, Json.create(false))
+            new AssetAttribute("alarmEnabled", AttributeType.BOOLEAN, Values.create(false))
                 .setMeta(new Meta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Alarm Enabled")),
-                    new MetaItem(AssetMeta.DESCRIPTION, Json.create("Send notifications when presence is detected")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Alarm Enabled")),
+                    new MetaItem(AssetMeta.DESCRIPTION, Values.create("Send notifications when presence is detected")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 )),
             new AssetAttribute("vacationDays", AttributeType.INTEGER, null)
                 .setMeta(new Meta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Vacation Days")),
-                    new MetaItem(AssetMeta.DESCRIPTION, Json.create("Enable vacation mode for given days")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Vacation Days")),
+                    new MetaItem(AssetMeta.DESCRIPTION, Values.create("Enable vacation mode for given days")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 )),
-            new AssetAttribute("autoSceneSchedule", AttributeType.BOOLEAN, Json.create(false))
+            new AssetAttribute("autoSceneSchedule", AttributeType.BOOLEAN, Values.create(false))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Automatic scene schedule")),
-                    new MetaItem(AssetMeta.DESCRIPTION, Json.create("Predict presence and automatically adjust scene schedule")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Automatic scene schedule")),
+                    new MetaItem(AssetMeta.DESCRIPTION, Values.create("Predict presence and automatically adjust scene schedule")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("lastExecutedScene", AttributeType.STRING, Json.create("HOME"))
+            new AssetAttribute("lastExecutedScene", AttributeType.STRING, Values.create("HOME"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Last executed scene")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Last executed scene")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("homeSceneMONDAY", AttributeType.STRING, Json.create("06:45:00"))
+            new AssetAttribute("homeSceneMONDAY", AttributeType.STRING, Values.create("06:45:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Waking up on Monday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Waking up on Monday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("awaySceneMONDAY", AttributeType.STRING, Json.create("08:00:00"))
+            new AssetAttribute("awaySceneMONDAY", AttributeType.STRING, Values.create("08:00:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Going to work on Monday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Going to work on Monday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("eveningSceneMONDAY", AttributeType.STRING, Json.create("17:30:00"))
+            new AssetAttribute("eveningSceneMONDAY", AttributeType.STRING, Values.create("17:30:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Back from work on Monday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Back from work on Monday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("nightSceneMONDAY", AttributeType.STRING, Json.create("22:00:00"))
+            new AssetAttribute("nightSceneMONDAY", AttributeType.STRING, Values.create("22:00:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Going to bed on Monday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Going to bed on Monday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("homeSceneTUESDAY", AttributeType.STRING, Json.create("06:45:00"))
+            new AssetAttribute("homeSceneTUESDAY", AttributeType.STRING, Values.create("06:45:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Waking up on Tuesday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Waking up on Tuesday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("awaySceneTUESDAY", AttributeType.STRING, Json.create("08:00:00"))
+            new AssetAttribute("awaySceneTUESDAY", AttributeType.STRING, Values.create("08:00:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Going to work on Tuesday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Going to work on Tuesday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("eveningSceneTUESDAY", AttributeType.STRING, Json.create("17:30:00"))
+            new AssetAttribute("eveningSceneTUESDAY", AttributeType.STRING, Values.create("17:30:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Back from work on Tuesday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Back from work on Tuesday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("nightSceneTUESDAY", AttributeType.STRING, Json.create("22:00:00"))
+            new AssetAttribute("nightSceneTUESDAY", AttributeType.STRING, Values.create("22:00:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Going to bed on Tuesday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Going to bed on Tuesday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("homeSceneWEDNESDAY", AttributeType.STRING, Json.create("06:45:00"))
+            new AssetAttribute("homeSceneWEDNESDAY", AttributeType.STRING, Values.create("06:45:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Waking up on Wednesday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Waking up on Wednesday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("awaySceneWEDNESDAY", AttributeType.STRING, Json.create("08:00:00"))
+            new AssetAttribute("awaySceneWEDNESDAY", AttributeType.STRING, Values.create("08:00:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Going to work on Wednesday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Going to work on Wednesday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("eveningSceneWEDNESDAY", AttributeType.STRING, Json.create("17:30:00"))
+            new AssetAttribute("eveningSceneWEDNESDAY", AttributeType.STRING, Values.create("17:30:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Back from work on Wednesday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Back from work on Wednesday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("nightSceneWEDNESDAY", AttributeType.STRING, Json.create("22:00:00"))
+            new AssetAttribute("nightSceneWEDNESDAY", AttributeType.STRING, Values.create("22:00:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Going to bed on Wednesday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Going to bed on Wednesday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("homeSceneTHURSDAY", AttributeType.STRING, Json.create("06:45:00"))
+            new AssetAttribute("homeSceneTHURSDAY", AttributeType.STRING, Values.create("06:45:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Waking up on Thursday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Waking up on Thursday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("awaySceneTHURSDAY", AttributeType.STRING, Json.create("08:00:00"))
+            new AssetAttribute("awaySceneTHURSDAY", AttributeType.STRING, Values.create("08:00:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Going to work on Thursday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Going to work on Thursday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("eveningSceneTHURSDAY", AttributeType.STRING, Json.create("17:30:00"))
+            new AssetAttribute("eveningSceneTHURSDAY", AttributeType.STRING, Values.create("17:30:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Back from work on Thursday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Back from work on Thursday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
 
                 ),
-            new AssetAttribute("nightSceneTHURSDAY", AttributeType.STRING, Json.create("22:00:00"))
+            new AssetAttribute("nightSceneTHURSDAY", AttributeType.STRING, Values.create("22:00:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Going to bed on Thursday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Going to bed on Thursday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("homeSceneFRIDAY", AttributeType.STRING, Json.create("06:45:00"))
+            new AssetAttribute("homeSceneFRIDAY", AttributeType.STRING, Values.create("06:45:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Waking up on Friday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Waking up on Friday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("awaySceneFRIDAY", AttributeType.STRING, Json.create("08:00:00"))
+            new AssetAttribute("awaySceneFRIDAY", AttributeType.STRING, Values.create("08:00:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Going to work on Friday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Going to work on Friday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("eveningSceneFRIDAY", AttributeType.STRING, Json.create("16:00:00"))
+            new AssetAttribute("eveningSceneFRIDAY", AttributeType.STRING, Values.create("16:00:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Back from work on Friday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Back from work on Friday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("nightSceneFRIDAY", AttributeType.STRING, Json.create("23:00:00"))
+            new AssetAttribute("nightSceneFRIDAY", AttributeType.STRING, Values.create("23:00:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Going to bed on Friday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Going to bed on Friday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("homeSceneSATURDAY", AttributeType.STRING, Json.create("07:30:00"))
+            new AssetAttribute("homeSceneSATURDAY", AttributeType.STRING, Values.create("07:30:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Waking up on Saturday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Waking up on Saturday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("awaySceneSATURDAY", AttributeType.STRING, Json.createNull())
+            new AssetAttribute("awaySceneSATURDAY", AttributeType.STRING, null)
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Going to work on Saturday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Going to work on Saturday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("eveningSceneSATURDAY", AttributeType.STRING, Json.create("18:00:00"))
+            new AssetAttribute("eveningSceneSATURDAY", AttributeType.STRING, Values.create("18:00:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Back from work on Saturday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Back from work on Saturday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("nightSceneSATURDAY", AttributeType.STRING, Json.create("23:00:00"))
+            new AssetAttribute("nightSceneSATURDAY", AttributeType.STRING, Values.create("23:00:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Going to bed on Saturday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Going to bed on Saturday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("homeSceneSUNDAY", AttributeType.STRING, Json.create("08:00:00"))
+            new AssetAttribute("homeSceneSUNDAY", AttributeType.STRING, Values.create("08:00:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Waking up on Sunday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Waking up on Sunday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("awaySceneSUNDAY", AttributeType.STRING, Json.createNull())
+            new AssetAttribute("awaySceneSUNDAY", AttributeType.STRING, null)
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Going to work on Sunday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Going to work on Sunday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("eveningSceneSUNDAY", AttributeType.STRING, Json.create("18:00:00"))
+            new AssetAttribute("eveningSceneSUNDAY", AttributeType.STRING, Values.create("18:00:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Back from work on Sunday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Back from work on Sunday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("nightSceneSUNDAY", AttributeType.STRING, Json.create("22:00:00"))
+            new AssetAttribute("nightSceneSUNDAY", AttributeType.STRING, Values.create("22:00:00"))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Going to bed on Sunday")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Going to bed on Sunday")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 )
         );
         apartment1 = assetStorageService.merge(apartment1);
@@ -486,29 +480,29 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         ServerAsset apartment1Livingroom = new ServerAsset("Living Room", ROOM, apartment1);
         apartment1Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment1Livingroom.setAttributes(
-            new AssetAttribute("motionCount", AttributeType.INTEGER, Json.create(0))
+            new AssetAttribute("motionCount", AttributeType.INTEGER, Values.create(0))
                 .setMeta(new Meta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Motion Count")),
-                    new MetaItem(AssetMeta.DESCRIPTION, Json.create("Sensor that increments a counter when motion is detected")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true)),
-                    new MetaItem(AssetMeta.RULE_EVENT, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Motion Count")),
+                    new MetaItem(AssetMeta.DESCRIPTION, Values.create("Sensor that increments a counter when motion is detected")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true)),
+                    new MetaItem(AssetMeta.RULE_EVENT, Values.create(true))
                 )),
-            new AssetAttribute("presenceDetected", AttributeType.BOOLEAN, Json.create(false))
+            new AssetAttribute("presenceDetected", AttributeType.BOOLEAN, Values.create(false))
                 .setMeta(new Meta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Presence Detected")),
-                    new MetaItem(AssetMeta.DESCRIPTION, Json.create("Someone is currently present in the room")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Presence Detected")),
+                    new MetaItem(AssetMeta.DESCRIPTION, Values.create("Someone is currently present in the room")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 )),
             new AssetAttribute("lastPresenceDetected", AttributeType.DECIMAL, null)
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Last Presence Timestamp")),
-                    new MetaItem(AssetMeta.DESCRIPTION, Json.create("Timestamp of last detected presence")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Last Presence Timestamp")),
+                    new MetaItem(AssetMeta.DESCRIPTION, Values.create("Timestamp of last detected presence")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("co2Level", AttributeType.DECIMAL, Json.create(450))
+            new AssetAttribute("co2Level", AttributeType.DECIMAL, Values.create(450))
                 .setMeta(new Meta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("CO2 Level")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("CO2 Level")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ))
         );
         apartment1Livingroom = assetStorageService.merge(apartment1Livingroom);
@@ -520,38 +514,38 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                 .setMeta(
                     new MetaItem(
                         AssetMeta.LABEL,
-                        Json.create("Current Temperature")),
+                        Values.create("Current Temperature")),
                     new MetaItem(
                         AssetMeta.RULE_STATE,
-                        Json.create(true)),
+                        Values.create(true)),
                     new MetaItem(
                         AssetMeta.PROTECTED,
-                        Json.create(true)),
+                        Values.create(true)),
                     new MetaItem(
                         AssetMeta.READ_ONLY,
-                        Json.create(true)),
+                        Values.create(true)),
                     new MetaItem(
-                        Constants.NAMESPACE + ":foo:bar", Json.create("FOO")),
+                        Constants.NAMESPACE + ":foo:bar", Values.create("FOO")),
                     new MetaItem(
-                        "urn:thirdparty:bar", Json.create("BAR"))
+                        "urn:thirdparty:bar", Values.create("BAR"))
                 ),
             new AssetAttribute("comfortTemperature", DECIMAL, null)
                 .setMeta(
                     new MetaItem(
                         AssetMeta.LABEL,
-                        Json.create("Comfort Temperature")),
+                        Values.create("Comfort Temperature")),
                     new MetaItem(
                         AssetMeta.RULE_STATE,
-                        Json.create(true)),
+                        Values.create(true)),
                     new MetaItem(
                         AssetMeta.PROTECTED,
-                        Json.create(true)),
+                        Values.create(true)),
                     new MetaItem(
-                        Constants.NAMESPACE + ":foo:bar", Json.create("FOO")),
+                        Constants.NAMESPACE + ":foo:bar", Values.create("FOO")),
                     new MetaItem(
-                        "urn:thirdparty:bar", Json.create("BAR")),
+                        "urn:thirdparty:bar", Values.create("BAR")),
                     new MetaItem(
-                        SimulatorProtocol.SIMULATOR_ELEMENT, Json.create(DecimalSimulatorElement.ELEMENT_NAME)
+                        SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(DecimalSimulatorElement.ELEMENT_NAME)
                     )
                 )
         );
@@ -561,12 +555,12 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         ServerAsset apartment2 = new ServerAsset("Apartment 2", RESIDENCE, smartHome);
         apartment2.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment2.setAttributes(
-            new AssetAttribute("allLightsOffSwitch", AttributeType.BOOLEAN, Json.create(true))
+            new AssetAttribute("allLightsOffSwitch", AttributeType.BOOLEAN, Values.create(true))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("All Lights Off Switch")),
-                    new MetaItem(AssetMeta.DESCRIPTION, Json.create("When triggered, turns all lights in the apartment off")),
-                    new MetaItem(AssetMeta.RULE_EVENT, Json.create(true)),
-                    new MetaItem(AssetMeta.RULE_EVENT_EXPIRES, Json.create("10s"))
+                    new MetaItem(AssetMeta.LABEL, Values.create("All Lights Off Switch")),
+                    new MetaItem(AssetMeta.DESCRIPTION, Values.create("When triggered, turns all lights in the apartment off")),
+                    new MetaItem(AssetMeta.RULE_EVENT, Values.create(true)),
+                    new MetaItem(AssetMeta.RULE_EVENT_EXPIRES, Values.create("10s"))
                 )
         );
         apartment2 = assetStorageService.merge(apartment2);
@@ -575,37 +569,37 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         ServerAsset apartment2Livingroom = new ServerAsset("Living Room", ROOM, apartment2);
         apartment2Livingroom.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment2Livingroom.setAttributes(
-            new AssetAttribute("motionSensor", AttributeType.BOOLEAN, Json.create(false))
+            new AssetAttribute("motionSensor", AttributeType.BOOLEAN, Values.create(false))
                 .setMeta(
-                    new MetaItem(AssetMeta.LABEL, Json.create("Motion Sensor")),
-                    new MetaItem(AssetMeta.DESCRIPTION, Json.create("PIR sensor that sends 'true' when motion is sensed")),
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true)),
-                    new MetaItem(AssetMeta.RULE_EVENT, Json.create(true))
+                    new MetaItem(AssetMeta.LABEL, Values.create("Motion Sensor")),
+                    new MetaItem(AssetMeta.DESCRIPTION, Values.create("PIR sensor that sends 'true' when motion is sensed")),
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true)),
+                    new MetaItem(AssetMeta.RULE_EVENT, Values.create(true))
                 ),
-            new AssetAttribute("presenceDetected", AttributeType.BOOLEAN, Json.create(false))
+            new AssetAttribute("presenceDetected", AttributeType.BOOLEAN, Values.create(false))
                 .setMeta(
-                        new MetaItem(AssetMeta.LABEL, Json.create("Presence Detected")),
-                        new MetaItem(AssetMeta.DESCRIPTION, Json.create(
+                        new MetaItem(AssetMeta.LABEL, Values.create("Presence Detected")),
+                        new MetaItem(AssetMeta.DESCRIPTION, Values.create(
                             "Someone is currently present in the room"
                         )),
-                        new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                        new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
             new AssetAttribute("lastPresenceDetected", AttributeType.DECIMAL, null)
                 .setMeta(
-                        new MetaItem(AssetMeta.LABEL, Json.create("Last Presence Timestamp")),
-                        new MetaItem(AssetMeta.DESCRIPTION, Json.create(
+                        new MetaItem(AssetMeta.LABEL, Values.create("Last Presence Timestamp")),
+                        new MetaItem(AssetMeta.DESCRIPTION, Values.create(
                             "Timestamp of last detected presence"
                         )),
-                        new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                        new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Json.create(true))
+            new AssetAttribute("lightSwitch", AttributeType.BOOLEAN, Values.create(true))
                 .setMeta(
-                        new MetaItem(AssetMeta.LABEL, Json.create("Light Switch")),
-                        new MetaItem(AssetMeta.RULE_STATE, Json.create(false))
+                        new MetaItem(AssetMeta.LABEL, Values.create("Light Switch")),
+                        new MetaItem(AssetMeta.RULE_STATE, Values.create(false))
                 ),
-            new AssetAttribute("windowOpen", AttributeType.BOOLEAN, Json.create(false))
+            new AssetAttribute("windowOpen", AttributeType.BOOLEAN, Values.create(false))
                 .setMeta(
-                        new MetaItem(AssetMeta.LABEL, Json.create("Window Open"))
+                        new MetaItem(AssetMeta.LABEL, Values.create("Window Open"))
                 )
         );
         apartment2Livingroom = assetStorageService.merge(apartment2Livingroom);

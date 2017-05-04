@@ -19,12 +19,12 @@
  */
 package org.openremote.agent3.protocol.macro;
 
-import elemental.json.Json;
-import elemental.json.JsonObject;
-import elemental.json.JsonValue;
-import org.openremote.model.AttributeState;
-import org.openremote.model.MetaItem;
-import org.openremote.model.util.JsonUtil;
+import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.util.Pair;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -55,7 +55,7 @@ public class MacroAction {
     }
 
     public void setAttributeState(AttributeState attributeState) {
-        this.attributeState = attributeState;
+        this.attributeState = Objects.requireNonNull(attributeState);
     }
 
     public int getDelayMilliseconds() {
@@ -66,15 +66,15 @@ public class MacroAction {
         this.delayMilliseconds = Math.max(0, delayMilliseconds);
     }
 
-    public JsonValue toJsonValue() {
-        JsonObject jsonObect = Json.createObject();
-        jsonObect.put("attributeState", attributeState != null ? attributeState.toJsonValue() : Json.create(null));
-        jsonObect.put("delay", Json.create(delayMilliseconds));
-        return jsonObect;
+    public ObjectValue toObjectValue() {
+        ObjectValue objectValue = Values.createObject();
+        objectValue.put("attributeState", attributeState.toObjectValue());
+        objectValue.put("delay", Values.create(delayMilliseconds));
+        return objectValue;
     }
 
     public MetaItem toMetaItem() {
-        return new MetaItem(META_MACRO_ACTION, toJsonValue());
+        return new MetaItem(META_MACRO_ACTION, toObjectValue());
     }
 
     @Override
@@ -85,16 +85,13 @@ public class MacroAction {
             '}';
     }
 
-    public static Optional<MacroAction> fromJsonValue(JsonValue jsonValue) {
-        return JsonUtil.asJsonObject(jsonValue)
-            .map(jsonObject -> {
-
-                Optional<AttributeState> state = AttributeState.fromJsonValue(jsonObject.get("attributeState"));
-                Optional<Integer> delay = JsonUtil.asInteger((JsonValue)jsonObject.get("delay"));
-
-                return state
-                    .map(attributeState -> new MacroAction(attributeState, delay.orElse(0)))
-                    .orElse(null);
-            });
+    public static Optional<MacroAction> fromValue(Value value) {
+        return Values.getObject(value)
+            .map(objectValue -> new Pair<>(
+                    AttributeState.fromValue(objectValue.get("attributeState").get()),
+                    objectValue.getNumber("delay").orElse(0d)
+                )
+            ).filter(pair -> pair.key.isPresent())
+            .map(pair -> new MacroAction(pair.key.get(), pair.value.intValue()));
     }
 }

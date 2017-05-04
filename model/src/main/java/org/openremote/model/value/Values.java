@@ -51,4 +51,32 @@ public class Values {
     public static <T extends Value> Optional<T> parse(String jsonString) throws ValueException {
         return instance().parse(jsonString);
     }
+
+    @SuppressWarnings("unchecked")
+    public static <T extends Value> Optional<T> cast(Class<T> type, Value value) {
+        return value != null && value.getType().getModelType() == type
+            ? Optional.of((T) value)
+            : Optional.empty();
+    }
+
+    public static Optional<String> getString(Value value) {
+        return cast(StringValue.class, value).map(StringValue::getString);
+    }
+
+    public static Optional<Double> getNumber(Value value) {
+        return cast(NumberValue.class, value).map(NumberValue::getNumber);
+    }
+
+    public static Optional<Boolean> getBoolean(Value value) {
+        return cast(BooleanValue.class, value).map(BooleanValue::getBoolean);
+    }
+
+    public static Optional<ObjectValue> getObject(Value value) {
+        return cast(ObjectValue.class, value);
+    }
+
+    public static Optional<ArrayValue> getArray(Value value) {
+        return cast(ArrayValue.class, value);
+    }
+
 }

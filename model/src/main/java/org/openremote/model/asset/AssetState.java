@@ -19,7 +19,7 @@
  */
 package org.openremote.model.asset;
 
-import elemental.json.JsonValue;
+import org.openremote.model.value.Value;
 
 /**
  * An asset attribute value update, capturing that asset state at a point in time.
@@ -65,7 +65,7 @@ public class AssetState extends AbstractAssetUpdate {
         super(asset, attribute);
     }
 
-    public AssetState(Asset asset, AssetAttribute attribute, JsonValue oldValue, long oldValueTimestamp, boolean northbound) {
+    public AssetState(Asset asset, AssetAttribute attribute, Value oldValue, long oldValueTimestamp, boolean northbound) {
         super(asset, attribute, oldValue, oldValueTimestamp, northbound);
     }
 
@@ -88,22 +88,7 @@ public class AssetState extends AbstractAssetUpdate {
     // GETTERS AND SETTERS BELOW CAN ONLY BE USED WHEN STATUS IS NOT COMPLETED
     /////////////////////////////////////////////////////////////////
 
-    public AssetAttribute getAttribute() {
-        if (!isCompleted()) {
-            return attribute;
-        }
-        throw new IllegalStateException("Instance is immutable, processing status '" + getProcessingStatus() + "': " + this);
-    }
-
-    public void setValue(JsonValue value) {
-        if (!isCompleted()) {
-            attribute.setValue(value);
-        } else {
-            throw new IllegalStateException("Instance is immutable, processing status '" + getProcessingStatus() + "': " + this);
-        }
-    }
-
-    public void setValueUnchecked(JsonValue value) {
+    public void setValue(Value value) {
         if (!isCompleted()) {
             attribute.setValue(value);
         } else {

@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.units;
+package org.openremote.model.attribute;
 
-import elemental.json.Json;
-import elemental.json.JsonArray;
+import org.openremote.model.value.ArrayValue;
+import org.openremote.model.value.Values;
 
 public class ColorRGB {
 
@@ -34,11 +34,15 @@ public class ColorRGB {
         this.blue = blue;
     }
 
-    public ColorRGB(JsonArray jsonArray) {
+    public ColorRGB(double red, double green, double blue) {
+        this(new Double(red).intValue(), new Double(green).intValue(), new Double(blue).intValue());
+    }
+
+    public ColorRGB(ArrayValue arrayValue) {
         this(
-            (int)jsonArray.get(0).asNumber(),
-            (int)jsonArray.get(1).asNumber(),
-            (int)jsonArray.get(2).asNumber()
+            arrayValue.getNumber(0).orElseThrow(() -> new IllegalArgumentException("Element 0 must be a number")),
+            arrayValue.getNumber(1).orElseThrow(() -> new IllegalArgumentException("Element 1 must be a number")),
+            arrayValue.getNumber(2).orElseThrow(() -> new IllegalArgumentException("Element 2 must be a number"))
         );
     }
 
@@ -54,11 +58,11 @@ public class ColorRGB {
         return blue;
     }
 
-    public JsonArray asJsonValue() {
-        JsonArray array = Json.createArray();
-        array.set(0, Json.create(getRed()));
-        array.set(1, Json.create(getGreen()));
-        array.set(2, Json.create(getBlue()));
+    public ArrayValue asArrayValue() {
+        ArrayValue array = Values.createArray();
+        array.set(0, Values.create(getRed()));
+        array.set(1, Values.create(getGreen()));
+        array.set(2, Values.create(getBlue()));
         return array;
     }
 

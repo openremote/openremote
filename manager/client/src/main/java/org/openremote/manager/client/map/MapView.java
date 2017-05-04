@@ -20,7 +20,7 @@
 package org.openremote.manager.client.map;
 
 import com.google.gwt.user.client.ui.IsWidget;
-import org.openremote.model.Pair;
+import org.openremote.model.util.Pair;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.value.ObjectValue;
 

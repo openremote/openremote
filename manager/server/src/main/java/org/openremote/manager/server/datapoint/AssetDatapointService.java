@@ -8,7 +8,7 @@ import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.security.ManagerIdentityService;
-import org.openremote.model.AttributeRef;
+import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.asset.AssetState;
 import org.openremote.model.datapoint.AssetDatapoint;
 import org.openremote.model.datapoint.DatapointInterval;

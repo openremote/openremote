@@ -3,8 +3,6 @@
 
 <module rename-to="Model">
 
-    <inherits name="elemental.Elemental"/>
-
     <source path=""/>
 
 </module>

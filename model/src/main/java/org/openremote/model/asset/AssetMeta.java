@@ -19,10 +19,10 @@
  */
 package org.openremote.model.asset;
 
-import elemental.json.JsonType;
-import org.openremote.model.MetaItem;
-import org.openremote.model.HasMetaName;
-import org.openremote.model.units.AttributeUnits;
+import org.openremote.model.attribute.AttributeExecuteStatus;
+import org.openremote.model.attribute.HasMetaName;
+import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.value.ValueType;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -44,79 +44,72 @@ public enum AssetMeta implements HasMetaName {
      * Links the attribute to an agent's {@link org.openremote.model.asset.agent.ProtocolConfiguration}, connecting it
      * to a sensor and/or actuator.
      */
-    AGENT_LINK(ASSET_META_NAMESPACE + ":agentLink", new Access(false, false, true), JsonType.ARRAY),
+    AGENT_LINK(ASSET_META_NAMESPACE + ":agentLink", new Access(false, false, true), ValueType.ARRAY),
 
     /**
      * A human-friendly string that can be displayed in UI instead of the raw attribute name.
      */
-    LABEL(ASSET_META_NAMESPACE + ":label", new Access(true, true, true), JsonType.STRING),
+    LABEL(ASSET_META_NAMESPACE + ":label", new Access(true, true, true), ValueType.STRING),
 
     /**
      * If there is a dashboard, some kind of attribute overview, should this attribute be shown.
      */
-    SHOW_ON_DASHBOARD(ASSET_META_NAMESPACE + ":showOnDashboard", new Access(true, true, true), JsonType.BOOLEAN),
+    SHOW_ON_DASHBOARD(ASSET_META_NAMESPACE + ":showOnDashboard", new Access(true, true, true), ValueType.BOOLEAN),
 
     /**
      * Format string that can be used to render the attribute value, see https://github.com/alexei/sprintf.js.
      */
-    FORMAT(ASSET_META_NAMESPACE + ":format", new Access(true, false, true), JsonType.STRING),
+    FORMAT(ASSET_META_NAMESPACE + ":format", new Access(true, false, true), ValueType.STRING),
 
     /**
      * A human-friendly string describing the purpose of an attribute, useful when rendering editors.
      */
-    DESCRIPTION(ASSET_META_NAMESPACE + ":description", new Access(true, false, true), JsonType.STRING),
+    DESCRIPTION(ASSET_META_NAMESPACE + ":description", new Access(true, false, true), ValueType.STRING),
 
     /**
      * Points to semantic description of the attribute, typically a URI.
      */
-    ABOUT(ASSET_META_NAMESPACE + ":about", new Access(true, false, true), JsonType.STRING),
+    ABOUT(ASSET_META_NAMESPACE + ":about", new Access(true, false, true), ValueType.STRING),
 
     /**
      * Marks the attribute as read-only.
      */
-    READ_ONLY(ASSET_META_NAMESPACE + ":readOnly", new Access(true, false, true), JsonType.BOOLEAN),
+    READ_ONLY(ASSET_META_NAMESPACE + ":readOnly", new Access(true, false, true), ValueType.BOOLEAN),
 
     /**
      * Marks the attribute as protected and accessible to restricted users, see {@link UserAsset}.
      */
-    PROTECTED(ASSET_META_NAMESPACE + ":protected", new Access(false, false, true), JsonType.BOOLEAN),
+    PROTECTED(ASSET_META_NAMESPACE + ":protected", new Access(false, false, true), ValueType.BOOLEAN),
 
     /**
      * Default value that might be used when editing an attribute.
      */
-    DEFAULT(ASSET_META_NAMESPACE + ":default", new Access(false, false, false), JsonType.STRING),
+    DEFAULT(ASSET_META_NAMESPACE + ":default", new Access(false, false, false), ValueType.STRING),
 
     /**
      * Minimum range constraint for numeric attribute values.
      */
-    RANGE_MIN(ASSET_META_NAMESPACE + ":rangeMin", new Access(true, false, true), JsonType.NUMBER),
+    RANGE_MIN(ASSET_META_NAMESPACE + ":rangeMin", new Access(true, false, true), ValueType.NUMBER),
 
     /**
      * Maximum range constraint for numeric attribute values.
      */
-    RANGE_MAX(ASSET_META_NAMESPACE + ":rangeMax", new Access(true, false, true), JsonType.NUMBER),
+    RANGE_MAX(ASSET_META_NAMESPACE + ":rangeMax", new Access(true, false, true), ValueType.NUMBER),
 
     /**
      * Step increment/decrement constraint for numeric attribute values.
      */
-    STEP(ASSET_META_NAMESPACE + ":step", new Access(true, false, true), JsonType.NUMBER),
+    STEP(ASSET_META_NAMESPACE + ":step", new Access(true, false, true), ValueType.NUMBER),
 
     /**
      * Regex (Java syntax) constraint for string attribute values.
      */
-    PATTERN(ASSET_META_NAMESPACE + ":pattern", new Access(true, false, true), JsonType.STRING),
-
-    /**
-     * Indicates the units (data sub-type) of the attribute value (should be a valid
-     * {@link AttributeUnits} string representation).
-     */
-    // TODO: Remove this
-    UNITS(ASSET_META_NAMESPACE + ":units", new Access(true, false, true), JsonType.STRING),
+    PATTERN(ASSET_META_NAMESPACE + ":pattern", new Access(true, false, true), ValueType.STRING),
 
     /**
      * Should attribute values be stored in time series database
      */
-    STORE_DATA_POINTS(ASSET_META_NAMESPACE + ":storeDataPoints", new Access(true, false, true), JsonType.BOOLEAN),
+    STORE_DATA_POINTS(ASSET_META_NAMESPACE + ":storeDataPoints", new Access(true, false, true), ValueType.BOOLEAN),
 
     /**
      * Should attribute writes be processed by the rules engines as facts in knowledge sessions, with a lifecycle
@@ -124,7 +117,7 @@ public enum AssetMeta implements HasMetaName {
      * in sync with asset changes). If you want two types of facts in your rules knowledge session for a single
      * attribute, with state and event behavior, combine this with {@link #RULE_EVENT}.
      */
-    RULE_STATE(ASSET_META_NAMESPACE + ":ruleState", new Access(true, false, true), JsonType.BOOLEAN),
+    RULE_STATE(ASSET_META_NAMESPACE + ":ruleState", new Access(true, false, true), ValueType.BOOLEAN),
 
     /**
      * Should attribute writes be processed by the rules engines as events in knowledge sessions with limited
@@ -133,30 +126,30 @@ public enum AssetMeta implements HasMetaName {
      * by time operations). If you want two types of facts in your rules knowledge session for a single attribute,
      * with state and event behavior, combine this with {@link #RULE_STATE\}.
      */
-    RULE_EVENT(ASSET_META_NAMESPACE + ":ruleEvent", new Access(true, false, true), JsonType.BOOLEAN),
+    RULE_EVENT(ASSET_META_NAMESPACE + ":ruleEvent", new Access(true, false, true), ValueType.BOOLEAN),
 
     /**
      * Override rules event expiration, for example "1h30m". Remove {@link AssetEvent}
      * facts from the rules sessions if they are older than this value (using event source timestamp, not event
      * processing time).
      */
-    RULE_EVENT_EXPIRES(ASSET_META_NAMESPACE + ":ruleEventExpires", new Access(true, false, true), JsonType.STRING),
+    RULE_EVENT_EXPIRES(ASSET_META_NAMESPACE + ":ruleEventExpires", new Access(true, false, true), ValueType.STRING),
 
     /**
      * Enable flag to be used by asset attributes that could require this functionality (e.g. {@link org.openremote.model.asset.agent.ProtocolConfiguration})
      */
-    ENABLED(ASSET_META_NAMESPACE + ":enabled", new Access(true, false, true), JsonType.BOOLEAN),
+    ENABLED(ASSET_META_NAMESPACE + ":enabled", new Access(true, false, true), ValueType.BOOLEAN),
 
     /**
-     * Marks an attribute as being executable so it then supports values of type {@link org.openremote.model.AttributeExecuteStatus}.
+     * Marks an attribute as being executable so it then supports values of type {@link AttributeExecuteStatus}.
      */
-    EXECUTABLE(ASSET_META_NAMESPACE + ":executable", new Access(true, false, true), JsonType.BOOLEAN);
+    EXECUTABLE(ASSET_META_NAMESPACE + ":executable", new Access(true, false, true), ValueType.BOOLEAN);
 
     final protected String urn;
     final protected Access access;
-    final protected JsonType valueType;
+    final protected ValueType valueType;
 
-    AssetMeta(String urn, Access access, JsonType valueType) {
+    AssetMeta(String urn, Access access, ValueType valueType) {
         this.urn = urn;
         this.access = access;
         this.valueType = valueType;
@@ -170,7 +163,7 @@ public enum AssetMeta implements HasMetaName {
         return access;
     }
 
-    public JsonType getValueType() {
+    public ValueType getValueType() {
         return valueType;
     }
 
@@ -240,19 +233,19 @@ public enum AssetMeta implements HasMetaName {
      * types we can edit/have editor UI for. We inspect the actual JSON value and
      */
     public enum EditableType {
-        STRING("String", JsonType.STRING),
-        NUMBER("Number", JsonType.NUMBER),
-        BOOLEAN("Boolean", JsonType.BOOLEAN);
+        STRING("String", ValueType.STRING),
+        NUMBER("Number", ValueType.NUMBER),
+        BOOLEAN("Boolean", ValueType.BOOLEAN);
 
-        EditableType(String label, JsonType valueType) {
+        EditableType(String label, ValueType valueType) {
             this.label = label;
             this.valueType = valueType;
         }
 
         public final String label;
-        public final JsonType valueType;
+        public final ValueType valueType;
 
-        public static EditableType byValueType(JsonType valueType) {
+        public static EditableType byValueType(ValueType valueType) {
             for (EditableType vt : values()) {
                 if (vt.valueType == valueType)
                     return vt;

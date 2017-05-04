@@ -19,12 +19,13 @@
  */
 package org.openremote.agent3.protocol.trigger.attribute;
 
-import elemental.json.JsonValue;
 import org.openremote.agent3.protocol.trigger.AbstractTriggerHandler;
-import org.openremote.model.AttributeEvent;
-import org.openremote.model.AttributeRef;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.value.Value;
 
 public class AttributeTriggerHandler extends AbstractTriggerHandler {
+
     public static final String ATTRIBUTE_TRIGGER_HANDLER_NAME = "Attribute Event Trigger Handler";
 
     @Override
@@ -33,17 +34,17 @@ public class AttributeTriggerHandler extends AbstractTriggerHandler {
     }
 
     @Override
-    protected boolean isValidValue(JsonValue triggerValue) {
+    protected boolean isValidValue(Value triggerValue) {
         return false;
     }
 
     @Override
-    protected void registerTrigger(AttributeRef triggerRef, JsonValue value, boolean isEnabled) {
+    protected void registerTrigger(AttributeRef triggerRef, Value value, boolean isEnabled) {
 
     }
 
     @Override
-    protected void updateTrigger(AttributeRef triggerRef, JsonValue value, boolean isEnabled) {
+    protected void updateTrigger(AttributeRef triggerRef, Value value, boolean isEnabled) {
 
     }
 

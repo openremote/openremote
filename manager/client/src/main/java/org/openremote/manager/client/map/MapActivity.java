@@ -33,13 +33,13 @@ import org.openremote.manager.client.mvp.AppActivity;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.map.MapResource;
 import org.openremote.manager.shared.security.Tenant;
-import org.openremote.model.AttributeEvent;
-import org.openremote.model.Pair;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.event.bus.EventBus;
 import org.openremote.model.event.bus.EventRegistration;
 import org.openremote.model.geo.GeoJSON;
+import org.openremote.model.util.Pair;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
@@ -50,7 +50,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static org.openremote.manager.client.http.RequestExceptionHandler.handleRequestException;
-import static org.openremote.model.Attribute.isAttributeNameEqualTo;
+import static org.openremote.model.attribute.Attribute.isAttributeNameEqualTo;
 
 public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapView.Presenter {
 
@@ -126,9 +126,7 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
                     .filter(isAttributeNameEqualTo(event.getAttributeName()))
                     .findFirst()
                     .map(attribute -> {
-                        attribute.setValue(
-                            event.getValue(), event.getTimestamp()
-                        );
+                        attribute.setValue(event.getValue().orElse(null), event.getTimestamp());
                         return attribute;
                     });
 
@@ -198,8 +196,12 @@ public class MapActivity extends AssetBrowsingActivity<MapPlace> implements MapV
     protected void showAssetInfoItems() {
         List<Pair<String, String>> infoItems = dashboardAttributes.stream()
             .map(attribute -> new Pair<>(
-                attribute.getLabel().orElse(""),
-                format(attribute.getFormat().orElse(null), attribute.getValueAsString().orElse(null)))
+                    attribute.getLabel().orElse(""),
+                    format(
+                        attribute.getFormat().orElse(null),
+                        attribute.getValue().map(Object::toString).orElse(null)
+                    )
+                )
             )
             .sorted(Comparator.comparing(pair -> pair.key))
             .collect(Collectors.toList());

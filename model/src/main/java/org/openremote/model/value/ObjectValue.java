@@ -15,7 +15,10 @@
  */
 package org.openremote.model.value;
 
+import org.openremote.model.util.Pair;
+
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Object values can not have duplicate keys. For equality operations, objects
@@ -26,27 +29,48 @@ public interface ObjectValue extends Value {
 
     Optional<Value> get(String key);
 
+    /**
+     * A <code>String</code> or if the value type is not {@link ValueType#STRING}, an empty {@link Optional}.
+     */
     Optional<String> getString(String key);
 
+    /**
+     * A <code>String</code> or if the value type is not {@link ValueType#BOOLEAN}, an empty {@link Optional}.
+     */
     Optional<Boolean> getBoolean(String key);
 
+    /**
+     * A <code>Double</code> or if the value type is not {@link ValueType#NUMBER}, an empty {@link Optional}.
+     */
     Optional<Double> getNumber(String key);
 
+    /**
+     * An <code>ArrayValue</code> or if the value type is not {@link ValueType#ARRAY}, an empty {@link Optional}.
+     */
     Optional<ArrayValue> getArray(String key);
 
+    /**
+     * An <code>ObjectValue</code> or if the value type is not {@link ValueType#OBJECT}, an empty {@link Optional}.
+     */
     Optional<ObjectValue> getObject(String key);
 
     String[] keys();
 
-    void put(String key, Value value);
-
-    void put(String key, String value);
-
-    void put(String key, double value);
-
-    void put(String key, boolean bool);
+    Stream<Pair<String, Value>> stream();
 
     boolean hasKey(String key);
 
-    void remove(String key);
+    ObjectValue put(String key, Value value);
+
+    ObjectValue put(String key, String value);
+
+    ObjectValue put(String key, double value);
+
+    ObjectValue put(String key, boolean bool);
+
+    ObjectValue remove(String key);
+
+    ObjectValue deepCopy();
+
+    boolean equalsIgnoreKeys(ObjectValue that, String... ignoreKeys);
 }

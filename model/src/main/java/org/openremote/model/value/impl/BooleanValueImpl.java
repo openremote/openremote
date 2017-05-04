@@ -32,11 +32,6 @@ public class BooleanValueImpl extends ValueImpl implements BooleanValue {
     }
 
     @Override
-    public Boolean asObject() {
-        return getBoolean();
-    }
-
-    @Override
     public ValueType getType() {
         return ValueType.BOOLEAN;
     }
@@ -66,5 +61,10 @@ public class BooleanValueImpl extends ValueImpl implements BooleanValue {
         int result = 31;
         result = result * 7 + (getBoolean() ? 1 : 0);
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return toJson();
     }
 }

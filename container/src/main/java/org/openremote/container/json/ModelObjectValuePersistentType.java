@@ -17,15 +17,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.agent3.protocol.simulator.element;
+package org.openremote.container.json;
 
-import org.openremote.model.attribute.AttributeType;
+import org.hibernate.HibernateException;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Values;
 
-public class DecimalSimulatorElement extends SimulatorElement {
+import java.io.Serializable;
 
-    public static final String ELEMENT_NAME = "decimal";
+public class ModelObjectValuePersistentType extends PostgreSQLJsonType {
 
-    public DecimalSimulatorElement() {
-        super(AttributeType.DECIMAL);
+    @Override
+    public Serializable disassemble(Object value) throws HibernateException {
+        return value == null ? null : ((ObjectValue) value).toJson();
     }
+
+    @Override
+    public ObjectValue assemble(Serializable cached, Object owner) throws HibernateException {
+        return cached == null ? null : Values.<ObjectValue>parse(cached.toString()).orElseThrow(() -> new HibernateException("Empty JSON data"));
+    }
+
+    @Override
+    public Class returnedClass() {
+        return ObjectValue.class;
+    }
+
 }
+

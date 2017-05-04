@@ -23,25 +23,22 @@ import com.google.gwt.dom.client.Document;
 import com.google.gwt.event.dom.client.DomEvent;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.IsWidget;
-import elemental.json.Json;
-import elemental.json.JsonType;
-import elemental.json.JsonValue;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.widget.*;
-import org.openremote.model.Attribute;
-import org.openremote.model.AttributeType;
-import org.openremote.model.MetaItem;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.ValueType;
+import org.openremote.model.value.Values;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-import static org.openremote.model.Attribute.ATTRIBUTE_NAME_VALIDATOR;
-import static org.openremote.model.util.JsonUtil.getJsonValueType;
-import static org.openremote.model.util.JsonUtil.sanitizeJsonValue;
+import static org.openremote.model.attribute.Attribute.ATTRIBUTE_NAME_VALIDATOR;
 
 public class AttributesEditor
     extends AttributesView<AttributesEditor.Container, AttributesEditor.Style> {
@@ -141,12 +138,8 @@ public class AttributesEditor
         addButton.addClickHandler(clickEvent -> {
             if (attribute.isValid()) {
                 formGroup.setError(false);
-                // TODO This is necessary because JSON elemental behavior is weird
-                AssetAttribute att2 = attribute.copy();
-                getAttributes().add(att2);
-                if (attribute.hasName()) {
-                    showInfo(environment.getMessages().attributeAdded(attribute.getName().get()));
-                }
+                getAttributes().add(attribute);
+                showInfo(environment.getMessages().attributeAdded(attribute.getName().get()));
                 build();
             } else {
                 formGroup.setError(true);
@@ -186,14 +179,14 @@ public class AttributesEditor
         FormListBox typeListBox = new FormListBox();
         typeListBox.addItem(environment.getMessages().selectType());
         for (AttributeType attributeType : AttributeType.values()) {
-            typeListBox.addItem(attributeType.getValue());
+            typeListBox.addItem(attributeType.getDisplayName());
         }
         typeListBox.addChangeHandler(event -> {
             AttributeType attributeType =
                 typeListBox.getSelectedIndex() > 0
                     ? AttributeType.values()[typeListBox.getSelectedIndex() - 1]
                     : null;
-            attribute.setType(attributeType);
+            attribute.setTypeAndClearValue(attributeType);
         });
         formField.add(typeListBox);
 
@@ -225,7 +218,7 @@ public class AttributesEditor
         protected void buildItemList() {
             itemListPanel.clear();
 
-            if (!attribute.hasMeta() || attribute.getMeta().isEmpty()) {
+            if (attribute.getMeta().isEmpty()) {
                 itemListSectionLabel.setVisible(false);
                 return;
             }
@@ -242,9 +235,10 @@ public class AttributesEditor
 
                 FormField formField = new FormField();
 
-                // Determine editor based on JSON raw value type
-                JsonValue value = sanitizeJsonValue(item.getValue());
-                JsonType valueType = getJsonValueType(value);
+                // Determine editor based on value type
+                if (!item.getValue().isPresent())
+                    continue;
+                ValueType valueType = item.getValue().get().getType();
                 formField.add(createEditor(item, valueType, false, formGroup));
                 formGroup.addFormField(formField);
 
@@ -286,9 +280,7 @@ public class AttributesEditor
                 if (item.isValid()) {
                     itemNameEditorGroup.setError(false);
                     itemValueEditorGroup.setError(false);
-                    // TODO This is necessary because JSON elemental behavior is weird
-                    MetaItem storedItem = new MetaItem(Json.parse(item.getJsonObject().toJson()));
-                    attribute.getMeta().add(storedItem);
+                    attribute.getMeta().add(item);
                     buildItemList();
                     buildItemEditor();
                 } else {
@@ -301,7 +293,7 @@ public class AttributesEditor
             itemValueEditorGroup.addFormGroupActions(formGroupActions);
         }
 
-        protected IsWidget createEditor(MetaItem item, JsonType valueType, boolean forceEditable, FormGroup formGroup) {
+        protected IsWidget createEditor(MetaItem item, ValueType valueType, boolean forceEditable, FormGroup formGroup) {
             IsWidget editor;
 
             AttributesEditor.Style style = container.getStyle();
@@ -314,26 +306,26 @@ public class AttributesEditor
 
             // TODO: We should support more JSON types, and have special editors for well-known meta items
             // Default to STRING editor if value is empty/no type available
-            if (valueType == null || valueType.equals(JsonType.STRING)) {
-                String currentValue = item.getValueAsString().orElse(null);
+            if (valueType == null || valueType.equals(ValueType.STRING)) {
+                String currentValue = item.getValue().map(Object::toString).orElse(null);
                 Consumer<String> updateConsumer = isEditable == null || isEditable || forceEditable ? value -> {
                     formGroup.setError(false);
-                    item.setValue(Json.create(value));
+                    item.setValue(Values.create(value));
                 } : null;
                 editor = createStringEditorWidget(style, currentValue, Optional.empty(), updateConsumer);
-            } else if (valueType.equals(JsonType.NUMBER)) {
-                String currentValue = item.getValueAsString().orElse(null);
+            } else if (valueType.equals(ValueType.NUMBER)) {
+                String currentValue = item.getValue().map(Object::toString).orElse(null);
                 Consumer<String> updateConsumer = isEditable == null || isEditable || forceEditable ? value -> {
                     Double decimalValue = Double.valueOf(value);
                     formGroup.setError(false);
-                    item.setValue(Json.create(decimalValue));
+                    item.setValue(Values.create(decimalValue));
                 } : null;
                 editor = createDecimalEditorWidget(style, currentValue, Optional.empty(), updateConsumer, errorConsumer);
-            } else if (valueType.equals(JsonType.BOOLEAN)) {
+            } else if (valueType.equals(ValueType.BOOLEAN)) {
                 Boolean currentValue = item.getValueAsBoolean().orElse(false);
                 Consumer<Boolean> updateConsumer = isEditable == null || isEditable || forceEditable ? value -> {
                     formGroup.setError(false);
-                    item.setValue(Json.create(value));
+                    item.setValue(Values.create(value));
                 } : null;
                 editor = createBooleanEditorWidget(style, currentValue, Optional.empty(), updateConsumer);
             } else {
@@ -421,11 +413,11 @@ public class AttributesEditor
 
             // Create and add new editor, default to empty STRING
             item.clearValue();
-            JsonType valueType = typeListBox.getSelectedIndex() > 0
+            ValueType valueType = typeListBox.getSelectedIndex() > 0
                 ? AssetMeta.EditableType.valueOf(typeListBox.getSelectedValue()).valueType
-                : JsonType.STRING;
-            if (valueType == JsonType.BOOLEAN) {
-                item.setValue(Json.create(false)); // Special case boolean editor, has an "initial" state, there is always a value
+                : ValueType.STRING;
+            if (valueType == ValueType.BOOLEAN) {
+                item.setValue(Values.create(false)); // Special case boolean editor, has an "initial" state, there is always a value
             }
             IsWidget editor = createEditor(item, valueType, true, formGroup);
             formField.add(editor);

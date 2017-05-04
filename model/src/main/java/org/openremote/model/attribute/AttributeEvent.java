@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model;
+package org.openremote.model.attribute;
 
-import elemental.json.JsonValue;
 import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.SharedEvent;
+import org.openremote.model.value.Value;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -98,15 +98,15 @@ public class AttributeEvent extends SharedEvent {
     protected AttributeEvent() {
     }
 
-    public AttributeEvent(String entityId, String attributeName, JsonValue value) {
+    public AttributeEvent(String entityId, String attributeName, Value value) {
         this(new AttributeState(new AttributeRef(entityId, attributeName), value));
     }
 
-    public AttributeEvent(String entityId, String attributeName, JsonValue value, long timestamp) {
+    public AttributeEvent(String entityId, String attributeName, Value value, long timestamp) {
         this(new AttributeState(new AttributeRef(entityId, attributeName), value), timestamp);
     }
 
-    public AttributeEvent(AttributeRef attributeRef, JsonValue value) {
+    public AttributeEvent(AttributeRef attributeRef, Value value) {
         this(new AttributeState(attributeRef, value));
     }
 
@@ -136,8 +136,8 @@ public class AttributeEvent extends SharedEvent {
         return getAttributeRef().getAttributeName();
     }
 
-    public Optional<JsonValue> getValue() {
-        return getAttributeState().getValue();
+    public Optional<Value> getValue() {
+        return getAttributeState().getCurrentValue();
     }
 
     @Override

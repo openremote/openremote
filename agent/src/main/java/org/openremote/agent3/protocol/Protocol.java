@@ -20,7 +20,7 @@
 package org.openremote.agent3.protocol;
 
 import org.openremote.container.ContainerService;
-import org.openremote.model.AttributeEvent;
+import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetAttribute;
 

@@ -19,8 +19,9 @@
  */
 package org.openremote.manager.client.interop.keycloak;
 
-import elemental.json.JsonArray;
-import elemental.json.JsonObject;
+import com.google.gwt.core.client.JavaScriptObject;
+import com.google.gwt.json.client.JSONArray;
+import com.google.gwt.json.client.JSONObject;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import org.openremote.manager.client.interop.Runnable;
@@ -51,19 +52,19 @@ public class Keycloak {
     public String idToken;
 
     @JsProperty
-    public JsonObject idTokenParsed;
+    public JavaScriptObject idTokenParsed;
 
     @JsProperty
-    public JsonArray realmAceess;
+    public JavaScriptObject realmAccess;
 
     @JsProperty
-    public JsonArray resourceAccess;
+    public JavaScriptObject resourceAccess;
 
     @JsProperty
     public String refreshToken;
 
     @JsProperty
-    public JsonObject refreshTokenParsed;
+    public JavaScriptObject refreshTokenParsed;
 
     @JsProperty
     public int timeSkew;

@@ -20,15 +20,15 @@
 package org.openremote.model.asset.agent;
 
 import org.openremote.model.AbstractValueHolder;
-import org.openremote.model.Attribute;
-import org.openremote.model.AttributeRef;
-import org.openremote.model.MetaItem;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.asset.AssetMeta;
 
 import java.util.Optional;
 
-import static org.openremote.model.MetaItem.isMetaNameEqualTo;
-import static org.openremote.model.MetaItem.replaceMetaByName;
+import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
+import static org.openremote.model.attribute.MetaItem.replaceMetaByName;
 import static org.openremote.model.asset.AssetMeta.AGENT_LINK;
 
 /**
@@ -54,14 +54,14 @@ final public class AgentLink {
     }
 
     public static MetaItem asAgentLinkMetaItem(AttributeRef attributeRef) {
-        return new MetaItem(AGENT_LINK, attributeRef.toJsonValue());
+        return new MetaItem(AGENT_LINK, attributeRef.toArrayValue());
     }
 
     public static <A extends Attribute> Optional<AttributeRef> getAgentLink(A attribute) {
         return attribute == null ? Optional.empty() :
             attribute.getMetaItem(AGENT_LINK)
                 .flatMap(AbstractValueHolder::getValue)
-                .flatMap(AttributeRef::fromJsonValue);
+                .flatMap(AttributeRef::fromValue);
     }
 
     public static <A extends Attribute> void setAgentLink(A attribute, AttributeRef attributeRef) {

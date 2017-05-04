@@ -1,13 +1,10 @@
 package org.openremote.model.notification;
 
-import elemental.json.Json;
-import elemental.json.JsonArray;
+import org.openremote.model.value.ArrayValue;
+import org.openremote.model.value.Values;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.openremote.model.Constants.PERSISTENCE_JSON_ARRAY_TYPE;
 import static org.openremote.model.Constants.PERSISTENCE_SEQUENCE_ID_GENERATOR;
@@ -31,7 +28,7 @@ public class AlertNotification {
 
     @Column(name = "ACTIONS", columnDefinition = "jsonb")
     @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_ARRAY_TYPE)
-    private JsonArray actions = Json.createArray();
+    private ArrayValue actions = Values.createArray();
 
     @NotNull
     @Column(name = "APP_URL", nullable = false)
@@ -72,27 +69,16 @@ public class AlertNotification {
         this.message = message;
     }
 
-    public void setActions(JsonArray  actions) {
+    public void setActions(ArrayValue actions) {
         this.actions = actions;
     }
 
-    public JsonArray getActions() {
-
-        return actions;
-    }
-
-    public List<AlertAction> getActionsAsList() {
-        List actions = new ArrayList<>(this.actions.length());
-        for (int i = 0; i < actions.size(); i++) {
-            actions.add(this.actions.get(i).toNative());
-
-        }
-
+    public ArrayValue getActions() {
         return actions;
     }
 
     public void addAction(AlertAction action) {
-        this.actions.set(this.actions.length(), action.getValue());
+        this.actions.set(this.actions.length(), action.getObjectValue());
     }
 
     public String getAppUrl() {

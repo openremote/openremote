@@ -2,7 +2,8 @@ package org.openremote.test.rules;
 
 import org.openremote.model.*;
 import org.openremote.model.asset.*
-import elemental.json.Json;
+import org.openremote.model.value.Values
+import org.openremote.model.attribute.AttributeEvent;
 
 global java.util.logging.Logger LOG;
 global org.openremote.model.rules.Assets assets;
@@ -12,8 +13,8 @@ rule "Decrement vacation days every day 1 minute after midnight until vacation i
     timer (cron: 0 1 0 1/1 * ? *)
 when
     // Vacation days are more than zero, which means vacation mode is enabled
-    AssetState($ref: attributeRef, attributeName == "vacationDays", type == AssetType.RESIDENCE, value != null, $val: value.asNumber() > 0 )
+    AssetState($ref: attributeRef, attributeName == "vacationDays", type == AssetType.RESIDENCE, $val: valueAsNumber > 0 )
 then
     // Decrement the vacation days by one
-    assets.dispatch( new AttributeEvent($ref, Json.create($val- 1)) );
+    assets.dispatch( new AttributeEvent($ref, Values.create($val - 1)) );
 end

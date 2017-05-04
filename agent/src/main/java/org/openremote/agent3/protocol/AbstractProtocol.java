@@ -27,9 +27,9 @@ import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.timer.TimerService;
-import org.openremote.model.AttributeEvent;
-import org.openremote.model.AttributeRef;
-import org.openremote.model.AttributeState;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.asset.AssetAttribute;
 
 import java.util.Collection;
@@ -145,12 +145,14 @@ public abstract class AbstractProtocol implements Protocol {
 
     protected void sendAttributeEvent(AttributeState state) {
         AttributeEvent event = new AttributeEvent(state, timerService.getCurrentTimeMillis());
-        LOG.info("Sending attribute event: " + event);
+        LOG.info("Sending on sensor queue: " + event);
         producerTemplate.sendBodyAndHeader(SENSOR_QUEUE, event, "isSensorUpdate", false);
     }
 
     protected void onSensorUpdate(AttributeState state, long timestamp) {
-        producerTemplate.sendBody(SENSOR_QUEUE, new AttributeEvent(state, timestamp));
+        AttributeEvent event = new AttributeEvent(state, timestamp);
+        LOG.fine("Sending on sensor queue: " + event);
+        producerTemplate.sendBody(SENSOR_QUEUE, event);
     }
 
     protected void onSensorUpdate(AttributeState state) {

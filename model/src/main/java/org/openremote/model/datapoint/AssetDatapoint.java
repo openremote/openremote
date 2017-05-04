@@ -19,10 +19,10 @@
  */
 package org.openremote.model.datapoint;
 
-import elemental.json.JsonValue;
-import org.openremote.model.AttributeEvent;
-import org.openremote.model.AttributeRef;
-import org.openremote.model.AttributeState;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.value.Value;
 
 import javax.persistence.Entity;
 import javax.persistence.Table;
@@ -47,19 +47,19 @@ public class AssetDatapoint extends Datapoint {
         super(attributeState, timestamp);
     }
 
-    public AssetDatapoint(AttributeRef attributeRef, JsonValue value) {
+    public AssetDatapoint(AttributeRef attributeRef, Value value) {
         super(attributeRef, value);
     }
 
-    public AssetDatapoint(AttributeRef attributeRef, JsonValue value, long timestamp) {
+    public AssetDatapoint(AttributeRef attributeRef, Value value, long timestamp) {
         super(attributeRef, value, timestamp);
     }
 
-    public AssetDatapoint(String entityId, String attributeName, JsonValue value) {
+    public AssetDatapoint(String entityId, String attributeName, Value value) {
         super(entityId, attributeName, value);
     }
 
-    public AssetDatapoint(String entityId, String attributeName, JsonValue value, long timestamp) {
+    public AssetDatapoint(String entityId, String attributeName, Value value, long timestamp) {
         super(entityId, attributeName, value, timestamp);
     }
 }

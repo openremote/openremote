@@ -1,6 +1,6 @@
 package org.openremote.test.rules
 
-import elemental.json.Json
+import org.openremote.model.value.Values
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.asset.ServerAsset
@@ -13,12 +13,11 @@ import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.shared.rules.AssetRuleset
 import org.openremote.manager.shared.rules.Ruleset.DeploymentStatus
 import org.openremote.manager.shared.rules.TenantRuleset
-import org.openremote.model.AttributeEvent
-import org.openremote.model.AttributeType
-import org.openremote.model.Meta
-import org.openremote.model.MetaItem
+import org.openremote.model.attribute.AttributeEvent
+import org.openremote.model.attribute.AttributeType
+import org.openremote.model.attribute.Meta
+import org.openremote.model.attribute.MetaItem
 import org.openremote.model.asset.AssetAttribute
-import org.openremote.model.asset.AssetEvent
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetType
 import org.openremote.test.ManagerContainerTrait
@@ -98,7 +97,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         and: "an attribute event is pushed into the system for an attribute with RULE_STATE meta set to true"
         def apartment2LivingRoomPresenceDetectedChange = new AttributeEvent(
-                managerDemoSetup.apartment2LivingroomId, "presenceDetected", Json.create(true)
+                managerDemoSetup.apartment2LivingroomId, "presenceDetected", Values.create(true)
         )
         assetProcessingService.sendAttributeEvent(apartment2LivingRoomPresenceDetectedChange)
 
@@ -119,7 +118,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "an attribute event is pushed into the system for an attribute with RULE_STATE meta set to false"
         resetRuleExecutionLoggers()
         def apartment2LivingroomLightSwitchChange = new AttributeEvent(
-                managerDemoSetup.apartment2LivingroomId, "lightSwitch", Json.create(false)
+                managerDemoSetup.apartment2LivingroomId, "lightSwitch", Values.create(false)
         )
         assetProcessingService.sendAttributeEvent(apartment2LivingroomLightSwitchChange)
 
@@ -129,7 +128,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "an attribute event is pushed into the system for an attribute with no RULE_STATE meta"
         resetRuleExecutionLoggers()
         def apartment2LivingRoomWindowOpenChange = new AttributeEvent(
-                managerDemoSetup.apartment2LivingroomId, "windowOpen", Json.create(true)
+                managerDemoSetup.apartment2LivingroomId, "windowOpen", Values.create(true)
         )
         assetProcessingService.sendAttributeEvent(apartment2LivingRoomWindowOpenChange)
 
@@ -146,7 +145,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "an attribute event with the same value as current value is pushed into the system"
         resetRuleExecutionLoggers()
         apartment2LivingRoomPresenceDetectedChange = new AttributeEvent(
-                managerDemoSetup.apartment2LivingroomId, "presenceDetected", Json.create(true)
+                managerDemoSetup.apartment2LivingroomId, "presenceDetected", Values.create(true)
         )
         assetProcessingService.sendAttributeEvent(apartment2LivingRoomPresenceDetectedChange)
 
@@ -197,7 +196,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         and: "an attribute event occurs"
         apartment2LivingRoomPresenceDetectedChange = new AttributeEvent(
-                managerDemoSetup.apartment2LivingroomId, "presenceDetected", Json.create(false)
+                managerDemoSetup.apartment2LivingroomId, "presenceDetected", Values.create(false)
         )
         assetProcessingService.sendAttributeEvent(apartment2LivingRoomPresenceDetectedChange)
 
@@ -252,9 +251,9 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         def asset = new ServerAsset("Kitchen", AssetType.ROOM, apartment2)
         asset.setRealmId(keycloakDemoSetup.customerATenant.getId())
         def attributes = [
-            new AssetAttribute("testString", AttributeType.STRING, Json.create("test"))
+            new AssetAttribute("testString", AttributeType.STRING, Values.create("test"))
                 .setMeta(new Meta(
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true)))
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true)))
                 )
         ]
         asset.setAttributes(attributes)
@@ -283,11 +282,11 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "the Kitchen room asset is modified to add a new attribute but RULE_STATE = true meta is not changed"
         resetRuleExecutionLoggers()
         attributes = [
-                new AssetAttribute("testString", AttributeType.STRING, Json.create("test"))
+                new AssetAttribute("testString", AttributeType.STRING, Values.create("test"))
                         .setMeta(
-                            new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                            new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                         ),
-                new AssetAttribute("testInteger", AttributeType.INTEGER, Json.create(0))
+                new AssetAttribute("testInteger", AttributeType.INTEGER, Values.create(0))
         ]
         asset.setAttributes(attributes)
         asset = assetStorageService.merge(asset)
@@ -309,11 +308,11 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         when: "the Kitchen room asset is modified to set the RULE_STATE to false"
         attributes = [
-            new AssetAttribute("testString", AttributeType.STRING, Json.create("test"))
+            new AssetAttribute("testString", AttributeType.STRING, Values.create("test"))
                 .setMeta(
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(false))
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(false))
                 ),
-            new AssetAttribute("testInteger", AttributeType.INTEGER, Json.create(0))
+            new AssetAttribute("testInteger", AttributeType.INTEGER, Values.create(0))
         ]
         asset.setAttributes(attributes)
         asset = assetStorageService.merge(asset)
@@ -336,13 +335,13 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
         when: "the Kitchen room asset is modified to set all attributes to RULE_STATE = true"
         resetRuleExecutionLoggers()
         attributes = [
-            new AssetAttribute("testString", AttributeType.STRING, Json.create("test"))
+            new AssetAttribute("testString", AttributeType.STRING, Values.create("test"))
                 .setMeta(
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("testInteger", AttributeType.INTEGER, Json.create(0))
+            new AssetAttribute("testInteger", AttributeType.INTEGER, Values.create(0))
                 .setMeta(
-                    new MetaItem(AssetMeta.RULE_STATE, Json.create(true))
+                    new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 )
         ]
         asset.setAttributes(attributes)
@@ -444,7 +443,7 @@ class BasicRulesProcessingTest extends Specification implements ManagerContainer
 
         when: "an attribute event occurs"
         def apartment2LivingRoomPresenceDetectedChange = new AttributeEvent(
-                managerDemoSetup.apartment2LivingroomId, "presenceDetected", Json.create(true)
+                managerDemoSetup.apartment2LivingroomId, "presenceDetected", Values.create(true)
         )
         assetProcessingService.sendAttributeEvent(apartment2LivingRoomPresenceDetectedChange)
 

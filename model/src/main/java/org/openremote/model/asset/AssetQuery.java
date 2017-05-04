@@ -19,7 +19,7 @@
  */
 package org.openremote.model.asset;
 
-import org.openremote.model.AttributeRef;
+import org.openremote.model.attribute.AttributeRef;
 
 import java.util.Locale;
 

@@ -15,9 +15,11 @@
  */
 package org.openremote.model.value.impl;
 
+import org.openremote.model.util.Pair;
 import org.openremote.model.value.*;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 public class ObjectValueImpl extends ValueImpl implements ObjectValue {
 
@@ -50,46 +52,27 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
 
     @Override
     public Optional<String> getString(String key) {
-        return get(key)
-            .filter(value -> value.getType() == ValueType.STRING && value instanceof StringValue)
-            .map(value -> ((StringValue)value).getString());
+        return get(key).flatMap(Values::getString);
     }
 
     @Override
     public Optional<Boolean> getBoolean(String key) {
-        return get(key)
-            .filter(value -> value.getType() == ValueType.BOOLEAN && value instanceof BooleanValue)
-            .map(value -> ((BooleanValue)value).getBoolean());
+        return get(key).flatMap(Values::getBoolean);
     }
 
     @Override
     public Optional<Double> getNumber(String key) {
-        return get(key)
-            .filter(value -> value.getType() == ValueType.NUMBER && value instanceof NumberValue)
-            .map(value -> ((NumberValue)value).getNumber());
+        return get(key).flatMap(Values::getNumber);
     }
 
     @Override
     public Optional<ArrayValue> getArray(String key) {
-        return get(key)
-            .filter(value -> value.getType() == ValueType.ARRAY && value instanceof ArrayValue)
-            .map(value -> ((ArrayValue)value));
+        return get(key).flatMap(Values::getArray);
     }
 
     @Override
     public Optional<ObjectValue> getObject(String key) {
-        return get(key)
-            .filter(value -> value.getType() == ValueType.OBJECT && value instanceof ObjectValue)
-            .map(value -> ((ObjectValue)value));
-    }
-
-    @Override
-    public Map<String, Object> asObject() {
-        Map<String, Object> obj = new HashMap<>();
-        for (Map.Entry<String, Value> e : map.entrySet()) {
-            obj.put(e.getKey(), ((ValueImpl) e.getValue()).asObject());
-        }
-        return obj;
+        return get(key).flatMap(Values::getObject);
     }
 
     @Override
@@ -98,46 +81,61 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
     }
 
     @Override
-    public boolean hasKey(String key) {
-        return map.containsKey(key);
-    }
-
-    @Override
     public String[] keys() {
         return map.keySet().toArray(new String[map.size()]);
     }
 
     @Override
-    public void put(String key, Value value) {
+    public Stream<Pair<String, Value>> stream() {
+        return Arrays.stream(keys()).map(key -> new Pair<>(key, get(key).get()));
+    }
+
+    @Override
+    public boolean hasKey(String key) {
+        return map.containsKey(key);
+    }
+
+    @Override
+    public ObjectValue put(String key, Value value) {
         if (value == null) {
             map.remove(key);
         } else {
             map.put(key, value);
         }
+        return this;
     }
 
     @Override
-    public void put(String key, String value) {
+    public ObjectValue put(String key, String value) {
         if (value == null) {
             remove(key);
         } else {
             put(key, factory.create(value));
         }
+        return this;
     }
 
     @Override
-    public void put(String key, double value) {
+    public ObjectValue put(String key, double value) {
         put(key, factory.create(value));
+        return this;
     }
 
     @Override
-    public void put(String key, boolean bool) {
+    public ObjectValue put(String key, boolean bool) {
         put(key, factory.create(bool));
+        return this;
     }
 
     @Override
-    public void remove(String key) {
+    public ObjectValue remove(String key) {
         map.remove(key);
+        return this;
+    }
+
+    @Override
+    public ObjectValue deepCopy() {
+        return Values.<ObjectValue>parse(toJson()).orElseThrow(() -> new IllegalStateException("Error copying object value"));
     }
 
     @Override
@@ -173,13 +171,31 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
         if (!(o instanceof ObjectValueImpl))
             return false;
         ObjectValueImpl that = (ObjectValueImpl) o;
+        return equalsIgnoreKeys(that);
+    }
 
-        if (!this.map.keySet().equals(that.map.keySet()))
+    @Override
+    public int hashCode() {
+        int result = 31;
+        result = result * 3;
+        result = result * map.hashCode();
+        return result;
+    }
+
+    @Override
+    public boolean equalsIgnoreKeys(ObjectValue that, String... ignoreKeys) {
+        if (!(that instanceof ObjectValueImpl))
+            return false;
+        ObjectValueImpl objectValueImpl = (ObjectValueImpl)that;
+
+        if (!this.map.keySet().equals(objectValueImpl.map.keySet()))
             return false;
 
         for (Map.Entry<String, Value> entry : this.map.entrySet()) {
+            if (Arrays.asList(ignoreKeys).contains(entry.getKey()))
+                continue;
             Value mapAValue = entry.getValue();
-            Value mapBValue = that.map.get(entry.getKey());
+            Value mapBValue = objectValueImpl.map.get(entry.getKey());
             if (!mapAValue.equals(mapBValue)) {
                 return false;
             }
@@ -188,11 +204,7 @@ public class ObjectValueImpl extends ValueImpl implements ObjectValue {
     }
 
     @Override
-    public int hashCode() {
-        int result = 31;
-        result = result * 3;
-        result = result * asObject().hashCode();
-        return result;
+    public String toString() {
+        return toJson();
     }
-
 }

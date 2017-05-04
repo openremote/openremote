@@ -19,11 +19,11 @@
  */
 package org.openremote.model.asset.agent;
 
-import elemental.json.Json;
-import org.openremote.model.AttributeType;
 import org.openremote.model.Constants;
-import org.openremote.model.Meta;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.Meta;
+import org.openremote.model.value.Values;
 
 import java.util.Locale;
 import java.util.Optional;
@@ -56,8 +56,8 @@ final public class ProtocolConfiguration {
 
         isValidProtocolNameOrThrow(protocolName);
         attribute.setEnabled(true);
-        attribute.setType(AttributeType.STRING);
-        attribute.setValue(Json.create(protocolName));
+        attribute.setTypeAndClearValue(AttributeType.STRING);
+        attribute.setValue(Values.create(protocolName));
         return attribute;
     }
 
@@ -96,7 +96,7 @@ final public class ProtocolConfiguration {
             return null;
         }
         isValidProtocolNameOrThrow(protocolName);
-        attribute.setValue(Json.create(protocolName));
+        attribute.setValue(Values.create(protocolName));
         return attribute;
     }
 

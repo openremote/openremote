@@ -17,10 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model;
+package org.openremote.model.attribute;
 
-import elemental.json.Json;
-import elemental.json.JsonValue;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
+
+import java.util.Optional;
 
 public enum AttributeExecuteStatus {
 
@@ -67,19 +69,19 @@ public enum AttributeExecuteStatus {
         this.write = write;
     }
 
-    public JsonValue asJsonValue() {
-        return Json.create(this.toString());
+    public Value asValue() {
+        return Values.create(this.toString());
     }
 
     public boolean isWrite() {
         return write;
     }
 
-    public static AttributeExecuteStatus fromString(String value) {
+    public static Optional<AttributeExecuteStatus> fromString(String value) {
         for (AttributeExecuteStatus status : copyOfValues) {
             if (status.name().equalsIgnoreCase(value))
-                return status;
+                return Optional.of(status);
         }
-        return null;
+        return Optional.empty();
     }
 }

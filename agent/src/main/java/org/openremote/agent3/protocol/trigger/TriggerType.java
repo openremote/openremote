@@ -19,24 +19,24 @@
  */
 package org.openremote.agent3.protocol.trigger;
 
-import elemental.json.Json;
-import elemental.json.JsonValue;
 import org.openremote.agent3.protocol.trigger.attribute.AttributeTriggerHandler;
 import org.openremote.agent3.protocol.trigger.time.TimeTriggerHandler;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
 import java.util.Objects;
 import java.util.Optional;
 
-import static org.openremote.model.util.JsonUtil.asString;
-
 public enum TriggerType implements TriggerHandlerProducer {
+
     /**
      * For cron based triggers
      */
     TIME(new TimeTriggerHandler()),
 
     /**
-     * For {@link org.openremote.model.AttributeEvent} triggers
+     * For {@link AttributeEvent} triggers
      */
     ATTRIBUTE(new AttributeTriggerHandler());
 
@@ -66,13 +66,11 @@ public enum TriggerType implements TriggerHandlerProducer {
         return triggerType.toString();
     }
 
-    public static TriggerType fromJsonValue(JsonValue value) {
-        return asString(value)
-            .flatMap(TriggerType::fromString)
-            .orElse(null);
+    public static Optional<TriggerType> fromValue(Value value) {
+        return Values.getString(value).flatMap(TriggerType::fromString);
     }
 
-    public static JsonValue toJsonValue(TriggerType triggerType) {
-        return Json.create(toString(triggerType));
+    public static Value toValue(TriggerType triggerType) {
+        return Values.create(toString(triggerType));
     }
 }

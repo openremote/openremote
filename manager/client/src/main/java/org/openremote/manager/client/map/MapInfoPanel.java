@@ -32,7 +32,7 @@ import org.openremote.manager.client.style.WidgetStyle;
 import org.openremote.manager.client.widget.AbstractAppPanel;
 import org.openremote.manager.client.widget.FormLabel;
 import org.openremote.manager.client.widget.PopupPanel;
-import org.openremote.model.Pair;
+import org.openremote.model.util.Pair;
 import org.openremote.model.util.TextUtil;
 
 import java.util.List;

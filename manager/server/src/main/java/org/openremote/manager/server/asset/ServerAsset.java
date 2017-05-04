@@ -23,13 +23,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
-import elemental.json.Json;
 import org.geolatte.geom.Geometry;
 import org.geolatte.geom.jts.JTS;
 import org.hibernate.annotations.Check;
 import org.hibernate.spatial.dialect.postgis.PGGeometryTypeDescriptor;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetType;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Values;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -117,7 +118,9 @@ public class ServerAsset extends Asset {
             parentId, parentName, parentType,
             realmId, tenantRealm, tenantDisplayName,
             path != null ? (String[]) path.getArray() : null,
-            attributes != null && attributes.length() > 0 ? Json.instance().parse(attributes) : null
+            attributes != null && attributes.length() > 0
+                ? Values.instance().<ObjectValue>parse(attributes).orElse(null)
+                : null
         );
 
         Point position = null;

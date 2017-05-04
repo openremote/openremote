@@ -32,11 +32,6 @@ public class NumberValueImpl extends ValueImpl implements NumberValue {
     }
 
     @Override
-    public Double asObject() {
-        return getNumber();
-    }
-
-    @Override
     public ValueType getType() {
         return ValueType.NUMBER;
     }
@@ -73,5 +68,10 @@ public class NumberValueImpl extends ValueImpl implements NumberValue {
         int result = 31;
         result = result * 11 + Double.hashCode(getNumber());
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return toJson();
     }
 }

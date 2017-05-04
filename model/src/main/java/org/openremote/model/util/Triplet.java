@@ -17,38 +17,53 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model;
+package org.openremote.model.util;
 
 import java.io.Serializable;
 import java.util.Objects;
 
-public class Pair<K, V> implements Serializable {
-    public K key;
-    public V value;
+public class Triplet<A, B, C> implements Serializable {
+    public A value1;
+    public B value2;
+    public C value3;
 
-    public Pair(K key, V value) {
-        this.key = key;
-        this.value = value;
+    public Triplet(A value1, B value2, C value3) {
+        this.value1 = value1;
+        this.value2 = value2;
+        this.value3 = value3;
+    }
+
+    public A getValue1() {
+        return value1;
+    }
+
+    public B getValue2() {
+        return value2;
+    }
+
+    public C getValue3() {
+        return value3;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o instanceof Pair) {
-            Pair pair = (Pair) o;
-            return (key != null ? key.equals(pair.key) : pair.key == null)
-                    && (value != null ? value.equals(pair.value) : pair.value == null);
+        if (o instanceof Triplet) {
+            Triplet pair = (Triplet) o;
+            return (value1 != null ? value1.equals(pair.value1) : pair.value1 == null)
+                    && (value2 != null ? value2.equals(pair.value2) : pair.value2 == null)
+                    && (value3 != null ? value3.equals(pair.value3) : pair.value3 == null);
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(key, value);
+        return Objects.hash(value1, value2, value3);
     }
 
     @Override
     public String toString() {
-        return key + "=" + value;
+        return value1 + ":" + value2 + ":" + value3;
     }
 }

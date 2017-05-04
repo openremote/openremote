@@ -2,7 +2,7 @@ package org.openremote.test.rules;
 
 import org.openremote.model.*;
 import org.openremote.model.asset.*
-import elemental.json.Json;
+import org.openremote.model.value.Values;
 
 global java.util.logging.Logger LOG;
 global org.openremote.model.rules.Assets assets;

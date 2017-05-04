@@ -19,13 +19,13 @@
  */
 package org.openremote.manager.client.interop.mapbox;
 
-import elemental.json.JsonArray;
-import elemental.json.JsonObject;
+import com.google.gwt.core.client.JavaScriptObject;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 
 @JsType
  public class MapOptions {
+
     @JsProperty
     public boolean touchZoomRotate;
 
@@ -39,7 +39,7 @@ import jsinterop.annotations.JsType;
     public int maxZoom;
 
     @JsProperty
-    public JsonObject style;
+    public JavaScriptObject style;
 
     @JsProperty
     public boolean hash;
@@ -51,7 +51,7 @@ import jsinterop.annotations.JsType;
     public int bearingSnap;
 
     @JsProperty
-    public JsonArray classes;
+    public JavaScriptObject classes;
 
     @JsProperty
     public boolean attributionControl;

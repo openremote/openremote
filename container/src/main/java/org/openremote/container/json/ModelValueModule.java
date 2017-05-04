@@ -43,7 +43,8 @@ public class ModelValueModule extends SimpleModule {
         @Override
         public T deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException {
             try {
-                return (T) Values.instance().parse(jsonParser.getCodec().readTree(jsonParser).toString()).orElse(null);
+                return (T) Values.instance().parse(jsonParser.getCodec().readTree(jsonParser).toString()).
+                    orElseThrow(() -> new IOException("Empty JSON data"));
             } catch (ValueException ex) {
                 throw new IOException(ex);
             }
@@ -69,6 +70,7 @@ public class ModelValueModule extends SimpleModule {
         ValueJsonSerializer serializer = new ValueJsonSerializer();
         ValueJsonDeserializer deserializer = new ValueJsonDeserializer();
         this.addSerializer(Value.class, serializer);
+        this.addDeserializer(Value.class, deserializer);
         this.addDeserializer(ObjectValue.class, deserializer);
         this.addDeserializer(ArrayValue.class, deserializer);
         this.addDeserializer(StringValue.class, deserializer);

@@ -19,22 +19,21 @@
  */
 package org.openremote.agent3.protocol.trigger;
 
-import elemental.json.Json;
-import elemental.json.JsonValue;
 import org.openremote.model.AbstractValueHolder;
-import org.openremote.model.AttributeState;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.util.JsonUtil;
+import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
 import java.util.Optional;
 import java.util.function.Function;
 
 import static org.openremote.agent3.protocol.trigger.TriggerProtocol.*;
-import static org.openremote.agent3.protocol.trigger.TriggerType.toJsonValue;
-import static org.openremote.model.AttributeType.STRING;
-import static org.openremote.model.MetaItem.isMetaNameEqualTo;
-import static org.openremote.model.MetaItem.replaceMetaByName;
+import static org.openremote.agent3.protocol.trigger.TriggerType.toValue;
 import static org.openremote.model.asset.agent.ProtocolConfiguration.getProtocolName;
+import static org.openremote.model.attribute.AttributeType.STRING;
+import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
+import static org.openremote.model.attribute.MetaItem.replaceMetaByName;
 
 /**
  * Utility functions for working with trigger attributes for the {@link TriggerProtocol}
@@ -46,8 +45,8 @@ final public class TriggerConfiguration {
 
     public static Function<AssetAttribute, AssetAttribute> initTriggerConfiguration() {
         return attribute -> {
-            attribute.setType(STRING);
-            attribute.setValue(Json.create(TriggerProtocol.PROTOCOL_NAME));
+            attribute.setTypeAndClearValue(STRING);
+            attribute.setValue(Values.create(TriggerProtocol.PROTOCOL_NAME));
             return attribute;
         };
     }
@@ -85,7 +84,7 @@ final public class TriggerConfiguration {
         if (attribute == null)
             return;
 
-        replaceMetaByName(attribute.getMeta(), META_TRIGGER_TYPE, toJsonValue(triggerType));
+        replaceMetaByName(attribute.getMeta(), META_TRIGGER_TYPE, toValue(triggerType));
     }
 
     public static Optional<AbstractTriggerHandler> getTriggerTypeHandler(AssetAttribute attribute) {
@@ -98,7 +97,7 @@ final public class TriggerConfiguration {
     }
 
     public static boolean isTriggerTypeAndValueValid(AssetAttribute attribute) {
-        Optional<JsonValue> triggerValue = getTriggerValue(attribute);
+        Optional<Value> triggerValue = getTriggerValue(attribute);
         Optional<AbstractTriggerHandler> handler = getTriggerTypeHandler(attribute);
         return triggerValue.isPresent() && handler
             .map(h ->
@@ -109,17 +108,17 @@ final public class TriggerConfiguration {
             .orElse(false);
     }
 
-    public static boolean isTriggerValueValid(AbstractTriggerHandler handler, JsonValue value) {
+    public static boolean isTriggerValueValid(AbstractTriggerHandler handler, Value value) {
         return handler != null && value != null && handler.isValidValue(value);
     }
 
-    public static Optional<JsonValue> getTriggerValue(AssetAttribute attribute) {
+    public static Optional<Value> getTriggerValue(AssetAttribute attribute) {
         return attribute == null ? Optional.empty() : attribute
             .getMetaItem(META_TRIGGER_VALUE)
             .flatMap(AbstractValueHolder::getValue);
     }
 
-    public static void setTriggerValue(AssetAttribute attribute, JsonValue value) {
+    public static void setTriggerValue(AssetAttribute attribute, Value value) {
         if (attribute == null)
             return;
 
@@ -140,15 +139,14 @@ final public class TriggerConfiguration {
     public static Optional<AttributeState> getTriggerAction(AssetAttribute attribute) {
         return attribute == null ? Optional.empty() : attribute
             .getMetaItem(META_TRIGGER_ACTION)
-            .flatMap(AbstractValueHolder::getValueAsJsonObject)
-            .flatMap(AttributeState::fromJsonValue);
+            .flatMap(AbstractValueHolder::getValueAsObject)
+            .flatMap(AttributeState::fromValue);
     }
 
     public static void setTriggerAction(AssetAttribute attribute, AttributeState action) {
         if (attribute == null)
             return;
-
-        replaceMetaByName(attribute.getMeta(), META_TRIGGER_ACTION, AttributeState.toJsonValue(action));
+        replaceMetaByName(attribute.getMeta(), META_TRIGGER_ACTION, action.toObjectValue());
     }
 
     public static void removeTrigger(AssetAttribute attribute) {
@@ -161,15 +159,7 @@ final public class TriggerConfiguration {
                 isMetaNameEqualTo(META_TRIGGER_TYPE)
                     .or(isMetaNameEqualTo(META_TRIGGER_VALUE))
                     .or(isMetaNameEqualTo(META_TRIGGER_ACTION))
-        );
-    }
-
-    public static boolean hasTriggerProperty(AssetAttribute attribute) {
-        return attribute != null && attribute
-            .getMetaItem(META_TRIGGER_PROPERTY)
-            .flatMap(AbstractValueHolder::getValue)
-            .map(JsonUtil::isOfTypeString)
-            .orElse(false);
+            );
     }
 
     public static Optional<String> getTriggerProperty(AssetAttribute attribute) {

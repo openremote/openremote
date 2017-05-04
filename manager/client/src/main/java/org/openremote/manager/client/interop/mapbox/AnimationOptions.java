@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.client.interop.mapbox;
 
-import elemental.json.JsonArray;
+import com.google.gwt.core.client.JavaScriptObject;
 import jsinterop.annotations.JsProperty;
 
 public class AnimationOptions {
@@ -30,7 +30,7 @@ public class AnimationOptions {
     public EasingFn easing;
 
     @JsProperty
-    public JsonArray offset;
+    public JavaScriptObject offset;
 
     @JsProperty
     public boolean animate;

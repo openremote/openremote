@@ -19,14 +19,15 @@
  */
 package org.openremote.model.asset;
 
-import elemental.json.Json;
-import elemental.json.JsonObject;
 import org.hibernate.annotations.Formula;
 import org.openremote.model.IdentifiableEntity;
+import org.openremote.model.attribute.Attribute;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.geo.GeoJSONFeature;
 import org.openremote.model.geo.GeoJSONGeometry;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Values;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -77,9 +78,8 @@ import static org.openremote.model.asset.AssetAttribute.*;
  * The {@link #coordinates} are a pair of LNG/LAT values with the location of the asset.
  * <p>
  * An asset may have dynamically-typed {@link #attributes} with an underlying
- * {@link elemental.json.JsonObject} model. Use the {@link org.openremote.model.Attribute}
- * etc. class to work with this API. This property can be empty when certain optimized loading
- * operations are used.
+ * {@link ObjectValue} model. Use the {@link Attribute} etc. class to work with this API.
+ * This property can be empty when certain optimized loading operations are used.
  * <p>
  * Constructors can filter attributes of an asset as to only contain protected attributes,
  * and their protected metadata (see {@link AssetMeta#PROTECTED}, {@link AssetMeta.Access}).
@@ -272,7 +272,7 @@ public class Asset implements IdentifiableEntity {
 
     @Column(name = "ATTRIBUTES", columnDefinition = "jsonb")
     @org.hibernate.annotations.Type(type = PERSISTENCE_JSON_OBJECT_TYPE)
-    public JsonObject attributes;
+    public ObjectValue attributes;
 
     public Asset() {
     }
@@ -316,7 +316,7 @@ public class Asset implements IdentifiableEntity {
                  String id, long version, Date createdOn, String name, String type,
                  String parentId, String parentName, String parentType,
                  String realmId, String tenantRealm, String tenantDisplayName,
-                 String[] path, JsonObject attributes) {
+                 String[] path, ObjectValue attributes) {
         this(name, type, null, realmId);
         this.id = id;
         this.version = version;
@@ -332,7 +332,7 @@ public class Asset implements IdentifiableEntity {
             this.attributes = attributesToJson(
                 filterProtectedAttributes(attributesFromJson(attributes, id))
                     .collect(Collectors.toList())
-            ).orElse(Json.createObject());
+            ).orElse(Values.createObject());
         } else {
             this.attributes = attributes;
         }
@@ -352,7 +352,7 @@ public class Asset implements IdentifiableEntity {
             throw new IllegalArgumentException("Attribute cannot be null and must have a name and type");
 
         attribute.assetId = getId();
-        attributes.put(attribute.getName().get(), attribute.getJsonObject());
+        attributes.put(attribute.getName().get(), attribute.getObjectValue());
     }
 
     public void removeAttribute(String name) {
@@ -531,7 +531,7 @@ public class Asset implements IdentifiableEntity {
         return path != null && Arrays.asList(getPath()).contains(assetId);
     }
 
-    public JsonObject getAttributes() {
+    public ObjectValue getAttributes() {
         return attributes;
     }
 
@@ -548,15 +548,16 @@ public class Asset implements IdentifiableEntity {
     }
 
     public Optional<AssetAttribute> getAttribute(String name) {
-        return AssetAttribute.attributeFromJson(attributes.getObject(name), id, name);
+        return attributes.getObject(name)
+            .flatMap(objectValue -> AssetAttribute.attributeFromJson(objectValue, id, name));
     }
 
-    protected void setAttributes(JsonObject attributes) {
+    protected void setAttributes(ObjectValue attributes) {
         this.attributes = attributes;
     }
 
     public void setAttributes(List<AssetAttribute> attributes) {
-        this.attributes = attributesToJson(attributes).orElse(Json.createObject());
+        this.attributes = attributesToJson(attributes).orElse(Values.createObject());
     }
 
     public void setAttributes(AssetAttribute... attributes) {

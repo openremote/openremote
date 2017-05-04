@@ -1,13 +1,13 @@
 package org.openremote.test.assets
 
-import elemental.json.Json
+import org.openremote.model.value.Values
 import org.openremote.container.util.IdentifierUtil
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.shared.asset.AssetResource
-import org.openremote.model.AttributeType
-import org.openremote.model.Meta
+import org.openremote.model.attribute.AttributeType
+import org.openremote.model.attribute.Meta
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetType
@@ -21,7 +21,7 @@ import static org.openremote.container.util.MapAccess.getString
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD
 import static org.openremote.manager.server.setup.AbstractKeycloakSetup.SETUP_KEYCLOAK_ADMIN_PASSWORD_DEFAULT
 import static org.openremote.model.Constants.*
-import static org.openremote.model.MetaItem.isMetaNameEqualTo
+import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo
 
 class AssetPermissionsTest extends Specification implements ManagerContainerTrait {
 
@@ -161,38 +161,38 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 404
 
         when: "an asset attribute is written in the authenticated realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet", Json.create("Teststreet 123").toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet", Values.create("Teststreet 123").toJson())
 
         then: "result should match"
         def asset
         conditions.eventually {
             asset = assetResource.get(null, managerDemoSetup.smartOfficeId)
             assert asset.getAttribute("geoStreet").get().getValue().isPresent()
-            assert asset.getAttribute("geoStreet").get().getValue().get().toJson() == Json.create("Teststreet 123").toJson()
+            assert asset.getAttribute("geoStreet").get().getValue().get().toJson() == Values.create("Teststreet 123").toJson()
         }
 
         when: "an non-existent attribute is written in the authenticated realm"
-        assetResource.writeAttributeValue(null, "doesnotexist", "geoStreet", Json.create("Teststreet 123").toJson())
+        assetResource.writeAttributeValue(null, "doesnotexist", "geoStreet", Values.create("Teststreet 123").toJson())
 
         then: "the attribute should be not found"
         ex = thrown()
         ex.response.status == 404
 
         when: "an non-existent attribute is written in the authenticated realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "doesnotexist", Json.create("Teststreet 123").toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "doesnotexist", Values.create("Teststreet 123").toJson())
 
         then: "the attribute should be not found"
         ex = thrown()
         ex.response.status == 404
 
         when: "an asset attribute is written in a foreign realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartHomeId, "geoStreet", Json.create("Teststreet 456").toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartHomeId, "geoStreet", Values.create("Teststreet 456").toJson())
 
         then: "result should match"
         conditions.eventually {
             asset = assetResource.get(null, managerDemoSetup.smartHomeId)
             assert asset.getAttribute("geoStreet").get().getValue().isPresent()
-            assert asset.getAttribute("geoStreet").get().getValue().get().toJson() == Json.create("Teststreet 456").toJson()
+            assert asset.getAttribute("geoStreet").get().getValue().get().toJson() == Values.create("Teststreet 456").toJson()
         }
 
         cleanup: "the server should be stopped"
@@ -335,17 +335,17 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset attribute is written in the authenticated realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet", Json.create("Teststreet 123").toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet", Values.create("Teststreet 123").toJson())
 
         then: "result should match"
         conditions.eventually {
             def asset = assetResource.get(null, managerDemoSetup.smartOfficeId)
             assert asset.getAttribute("geoStreet").get().getValue().isPresent()
-            assert asset.getAttribute("geoStreet").get().getValue().get().toJson() == Json.create("Teststreet 123").toJson()
+            assert asset.getAttribute("geoStreet").get().getValue().get().toJson() == Values.create("Teststreet 123").toJson()
         }
 
         when: "an asset attribute is written in a foreign realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartHomeId, "geoStreet", Json.create("Teststreet 456").toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartHomeId, "geoStreet", Values.create("Teststreet 456").toJson())
 
         then: "access should be forbidden"
         ex = thrown()
@@ -469,14 +469,14 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "an asset attribute is written in the authenticated realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartHomeId, "geoStreet", Json.create("Teststreet 123").toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartHomeId, "geoStreet", Values.create("Teststreet 123").toJson())
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "an asset attribute is written in a foreign realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet", Json.create("Teststreet 456").toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet", Values.create("Teststreet 456").toJson())
 
         then: "access should be forbidden"
         ex = thrown()
@@ -590,7 +590,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         protectedAttributes.size() == 2
         def currentTemperature = apartment1LivingroomThermostat.getAttribute("currentTemperature").get()
         currentTemperature.getType().get() == AttributeType.DECIMAL
-        !currentTemperature.getValueAsDecimal().isPresent()
+        !currentTemperature.getValue().isPresent()
         Meta protectedMeta = currentTemperature.getMeta()
         protectedMeta.size() == 3
         protectedMeta.stream().filter(isMetaNameEqualTo(AssetMeta.LABEL)).findFirst().get().getValueAsString().get() == "Current Temperature"
@@ -648,52 +648,52 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "a private asset attribute is written on a user asset"
-        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomId, "lightSwitch", Json.create(false).toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomId, "lightSwitch", Values.create(false).toJson())
 
         then: "the attribute should be not found"
         ex = thrown()
         ex.response.status == 404
 
         when: "a protected read-only asset attribute is written on a user asset"
-        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomThermostatId, "currentTemperature", Json.create(22.123).toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomThermostatId, "currentTemperature", Values.create(22.123).toJson())
 
         then: "the request should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "a protected asset attribute is written on a user asset"
-        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomThermostatId, "comfortTemperature", Json.create(22.123).toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomThermostatId, "comfortTemperature", Values.create(22.123).toJson())
 
         then: "result should match"
         conditions.eventually {
             def asset = assetResource.get(null, managerDemoSetup.apartment1LivingroomThermostatId)
             assert asset.getAttribute("comfortTemperature").get().getValue().isPresent()
-            assert asset.getAttribute("comfortTemperature").get().getValue().get().toJson() == Json.create(22.123).toJson()
+            assert asset.getAttribute("comfortTemperature").get().getValue().get().toJson() == Values.create(22.123).toJson()
         }
 
         when: "an attribute is written on a non-existent user asset"
-        assetResource.writeAttributeValue(null, "doesnotexist", "lightSwitch", Json.create(false).toJson())
+        assetResource.writeAttributeValue(null, "doesnotexist", "lightSwitch", Values.create(false).toJson())
 
         then: "the attribute should be not found"
         ex = thrown()
         ex.response.status == 404
 
         when: "an non-existent attribute is written on a user asset"
-        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomId, "doesnotexist", Json.create("foo").toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomId, "doesnotexist", Values.create("foo").toJson())
 
         then: "the attribute should be not found"
         ex = thrown()
         ex.response.status == 404
 
         when: "an asset attribute is written on a non-user asset"
-        assetResource.writeAttributeValue(null, managerDemoSetup.apartment3LivingroomId, "lightSwitch", Json.create(false).toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.apartment3LivingroomId, "lightSwitch", Values.create(false).toJson())
 
         then: "access should be forbidden"
         ex = thrown()
         ex.response.status == 403
 
         when: "an asset attribute is written in a foreign realm"
-        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet", Json.create("Teststreet 123").toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.smartOfficeId, "geoStreet", Values.create("Teststreet 123").toJson())
 
         then: "access should be forbidden"
         ex = thrown()

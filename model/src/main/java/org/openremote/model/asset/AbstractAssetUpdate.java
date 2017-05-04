@@ -19,14 +19,15 @@
  */
 package org.openremote.model.asset;
 
-import elemental.json.JsonValue;
-import org.openremote.model.AttributeEvent;
-import org.openremote.model.AttributeRef;
-import org.openremote.model.AttributeState;
-import org.openremote.model.AttributeType;
-import org.openremote.model.util.JsonUtil;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.value.ArrayValue;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Value;
 
 import java.util.Date;
+import java.util.Optional;
 
 import static org.openremote.model.asset.AssetType.CUSTOM;
 
@@ -66,7 +67,7 @@ public abstract class AbstractAssetUpdate {
 
     final protected double[] coordinates;
 
-    final protected JsonValue oldValue;
+    final protected Value oldValue;
 
     final protected long oldValueTimestamp;
 
@@ -77,7 +78,7 @@ public abstract class AbstractAssetUpdate {
         this(asset, attribute, null, 0, false);
     }
 
-    public AbstractAssetUpdate(Asset asset, AssetAttribute attribute, JsonValue oldValue, long oldValueTimestamp, boolean northbound) {
+    public AbstractAssetUpdate(Asset asset, AssetAttribute attribute, Value oldValue, long oldValueTimestamp, boolean northbound) {
         this(
             attribute,
             asset.getCreatedOn(),
@@ -126,7 +127,7 @@ public abstract class AbstractAssetUpdate {
                                   String[] pathFromRoot, String parentId, String parentName, String parentTypeString, AssetType parentType,
                                   String realmId, String tenantRealm,
                                   double[] coordinates,
-                                  JsonValue oldValue,
+                                  Value oldValue,
                                   long oldValueTimestamp,
                                   boolean northbound) {
         this.attribute = attribute;
@@ -203,7 +204,7 @@ public abstract class AbstractAssetUpdate {
         return coordinates;
     }
 
-    public JsonValue getOldValue() {
+    public Value getOldValue() {
         return oldValue;
     }
 
@@ -215,12 +216,32 @@ public abstract class AbstractAssetUpdate {
         return northbound;
     }
 
-    public JsonValue getValue() {
+    public Value getValue() {
         return attribute.getValue().orElse(null);
     }
 
-    public boolean isValueNull() {
-        return !attribute.getValue().isPresent();
+    public Boolean getValueAsBoolean() {
+        return attribute.getValueAsBoolean().orElse(null);
+    }
+
+    public Double getValueAsNumber() {
+        return attribute.getValueAsNumber().orElse(null);
+    }
+
+    public String getValueAsString() {
+        return attribute.getValueAsString().orElse(null);
+    }
+
+    public ObjectValue getValueAsObject() {
+        return attribute.getValueAsObject().orElse(null);
+    }
+
+    public ArrayValue getValueAsArray() {
+        return attribute.getValueAsArray().orElse(null);
+    }
+
+    public AssetAttribute getAttribute() {
+        return attribute;
     }
 
     public String getAttributeName() {
@@ -235,12 +256,8 @@ public abstract class AbstractAssetUpdate {
         return attribute.getType().orElse(null);
     }
 
-    public AttributeEvent getStateEvent() {
-        return new AttributeEvent(new AttributeState(getAttributeRef(), attribute.getValue()), attribute.getValueTimestamp());
-    }
-
     public boolean isValueChanged() {
-        return !JsonUtil.equals(attribute.getValue().orElse(null), oldValue);
+        return !attribute.getValue().equals(Optional.ofNullable(oldValue));
     }
 
     public AttributeRef getAttributeRef() {
@@ -249,7 +266,7 @@ public abstract class AbstractAssetUpdate {
 
     public boolean matches(AttributeEvent event) {
         return event.getAttributeRef().equals(getAttributeRef())
-            && JsonUtil.equals(getValue(), event.getAttributeState().getValue().orElse(null))
+            && Optional.ofNullable(getValue()).equals(event.getAttributeState().getCurrentValue())
             && getValueTimestamp() == event.getTimestamp();
     }
 
@@ -267,19 +284,22 @@ public abstract class AbstractAssetUpdate {
 
         AbstractAssetUpdate that = (AbstractAssetUpdate) o;
 
-        return id.equals(that.id) &&
-            getAttributeName().equalsIgnoreCase(that.getAttributeName()) &&
-            JsonUtil.equals(getValue(), that.getValue()) &&
+        return getId().equals(that.getId()) &&
+            getAttribute().getName().equals(that.getAttribute().getName()) &&
+            getAttribute().getValue().equals(that.getAttribute().getValue()) &&
             getValueTimestamp() == that.getValueTimestamp() &&
-            ((oldValue == null && that.oldValue == null) || (oldValue != null && JsonUtil.equals(oldValue, that.oldValue))) &&
-            oldValueTimestamp == that.oldValueTimestamp;
+            Optional.ofNullable(getOldValue()).equals(Optional.ofNullable(that.getOldValue())) &&
+            getOldValueTimestamp() == that.getOldValueTimestamp();
     }
 
     @Override
     public int hashCode() {
-        return id.hashCode() + getAttributeName().hashCode() + JsonUtil.hashCode(getValue())
+        return getId().hashCode()
+            + getAttributeName().hashCode()
+            + getAttribute().getValue().hashCode()
             + Long.hashCode(getValueTimestamp())
-            + (oldValue != null ? JsonUtil.hashCode(oldValue) : 0) + Long.hashCode(oldValueTimestamp);
+            + Optional.ofNullable(getOldValue()).hashCode()
+            + Long.hashCode(getOldValueTimestamp());
     }
 
     @Override

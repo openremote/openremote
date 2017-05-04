@@ -23,7 +23,6 @@ import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.user.client.ui.FlowPanel;
 import elemental.client.Browser;
-import elemental.js.util.*;
 import org.openremote.manager.client.interop.mapbox.*;
 import org.openremote.model.geo.GeoJSON;
 import org.openremote.model.value.ArrayValue;
@@ -31,6 +30,8 @@ import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Values;
 
 import java.util.logging.Logger;
+
+import static org.openremote.model.value.Values.create;
 
 public class MapWidget extends FlowPanel {
 
@@ -47,19 +48,17 @@ public class MapWidget extends FlowPanel {
     public static final String FEATURE_LAYER_DROPPED_PIN = "feature-layer-dropped-pin";
 
     // Render a circle on location
-    @SuppressWarnings("GwtInconsistentSerializableClass")
-    static final public JsMapFromStringTo<Object> LAYER_CIRCLE = JsMapFromStringTo.create();
+    static final public ObjectValue LAYER_CIRCLE = Values.createObject();
 
     // Render a dropped pin and feature title on location
-    @SuppressWarnings("GwtInconsistentSerializableClass")
-    static final public JsMapFromStringTo<Object> LAYER_DROPPED_PIN = JsMapFromStringTo.create();
+    static final public ObjectValue LAYER_DROPPED_PIN = Values.createObject();
 
     static {
         {
-            JsMapFromStringTo<Object> layout = JsMapFromStringTo.create();
+            ObjectValue layout = Values.createObject();
             layout.put("visibility", "visible");
 
-            JsMapFromStringTo<Object> paint = JsMapFromStringTo.create();
+            ObjectValue paint = Values.createObject();
             paint.put("circle-radius", 12.0); // This MUST be double!
             paint.put("circle-opacity", 0.5);
             // TODO Add color to theme settings
@@ -72,38 +71,33 @@ public class MapWidget extends FlowPanel {
             LAYER_CIRCLE.put("paint", paint);
         }
         {
-            JsMapFromStringTo<Object> layout = JsMapFromStringTo.create();
+            ObjectValue layout = Values.createObject();;
             layout.put("visibility", "visible");
 
             layout.put("text-field", "{title}");
-            JsArrayOfString textFont = JsArrayOfString.create();
-            textFont.push("Open Sans Semibold");
+            ArrayValue textFont = Values.createArray();
+            textFont.add(create("Open Sans Semibold"));
             layout.put("text-font", textFont);
-            JsMapFromStringTo<Object> textSize = JsMapFromStringTo.create();
-            JsArrayOfInt stop1 = JsArrayOfInt.create();
-            stop1.push(3);
-            stop1.push(8);
-            JsArrayOfInt stop2 = JsArrayOfInt.create();
-            stop2.push(10);
-            stop2.push(20);
-            JsArrayOf<JsArrayOfInt> stops = JsArrayOf.create();
-            stops.push(stop1);
-            stops.push(stop2);
+            ObjectValue textSize = Values.createObject();
+            ArrayValue stop1 = Values.createArray();
+            stop1.addAll(create(3), create(8));
+            ArrayValue stop2 = Values.createArray();
+            stop2.addAll(create(10), create(20));
+            ArrayValue stops = Values.createArray();
+            stops.addAll(stop1, stop2);
             textSize.put("stops", stops);
             layout.put("text-size", textSize);
             layout.put("text-allow-overlap", true);
-            JsArrayOfNumber offset = JsArrayOfNumber.create();
-            offset.push(0);
-            offset.push(0.8);
+            ArrayValue offset = Values.createArray();
+            offset.addAll(create(0), create(0.8));
             layout.put("text-offset", offset);
 
             layout.put("icon-image", "marker-15");
-            offset = JsArrayOfNumber.create();
-            offset.push(0);
-            offset.push(-4);
+            offset = Values.createArray();
+            offset.addAll(create(0), create(-4));
             layout.put("icon-offset", offset);
 
-            JsMapFromStringTo<Object> paint = JsMapFromStringTo.create();
+            ObjectValue paint = Values.createObject();
             // TODO Add color to theme settings
             //paint.put("icon-color", "rgb(193, 215, 47)");
             paint.put("text-color", "#000");
@@ -198,8 +192,8 @@ public class MapWidget extends FlowPanel {
         if (!isMapReady())
             throw new IllegalStateException("Map not ready");
         ObjectValue popupOptions = Values.createObject();
-        popupOptions.put("closeOnClick", Values.create(false));
-        popupOptions.put("closeButton", Values.create(false));
+        popupOptions.put("closeOnClick", create(false));
+        popupOptions.put("closeButton", create(false));
         popup = new Popup(popupOptions.asNativeObject());
         popup.setLngLat(new LngLat(lng, lat)).setText(text);
         popup.addTo(mapboxMap);
@@ -239,18 +233,18 @@ public class MapWidget extends FlowPanel {
 
         ObjectValue sourceOptionsSelection = prepareSourceOptions(FEATURE_SOURCE_DROPPED_PIN);
         mapboxMap.addSource(FEATURE_SOURCE_DROPPED_PIN, sourceOptionsSelection.asNativeObject());
-        mapboxMap.addLayer(LAYER_DROPPED_PIN);
+        mapboxMap.addLayer(LAYER_DROPPED_PIN.asNativeObject());
 
         ObjectValue sourceOptionsAll = prepareSourceOptions(FEATURE_SOURCE_CIRCLE);
-        sourceOptionsAll.put("maxzoom", Values.create(20));
-        sourceOptionsAll.put("buffer", Values.create(128));
-        sourceOptionsAll.put("tolerance", Values.create(0.375));
-        sourceOptionsAll.put("cluster", Values.create(false));
-        sourceOptionsAll.put("clusterRadius", Values.create(50));
-        sourceOptionsAll.put("clusterMaxZoom", Values.create(15));
+        sourceOptionsAll.put("maxzoom", create(20));
+        sourceOptionsAll.put("buffer", create(128));
+        sourceOptionsAll.put("tolerance", create(0.375));
+        sourceOptionsAll.put("cluster", create(false));
+        sourceOptionsAll.put("clusterRadius", create(50));
+        sourceOptionsAll.put("clusterMaxZoom", create(15));
 
         mapboxMap.addSource(FEATURE_SOURCE_CIRCLE, sourceOptionsAll.asNativeObject());
-        mapboxMap.addLayer(LAYER_CIRCLE, FEATURE_LAYER_DROPPED_PIN);
+        mapboxMap.addLayer(LAYER_CIRCLE.asNativeObject(), FEATURE_LAYER_DROPPED_PIN);
     }
 
     protected ObjectValue prepareSourceOptions(String featureSourceId) {
@@ -258,7 +252,7 @@ public class MapWidget extends FlowPanel {
         // Initialize with empty collection
         ObjectValue initialData = GeoJSON.EMPTY_FEATURE_COLLECTION.getObjectValue();
         LOG.fine("Preparing initial data on feature source: " + featureSourceId);
-        sourceOptions.put("type", Values.create("geojson"));
+        sourceOptions.put("type", create("geojson"));
         sourceOptions.put("data", initialData);
         return sourceOptions;
     }

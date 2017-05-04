@@ -19,147 +19,112 @@
  */
 package org.openremote.model;
 
-import elemental.json.*;
+import org.openremote.model.value.ArrayValue;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
 import java.util.Objects;
 import java.util.Optional;
 
-import static org.openremote.model.util.JsonUtil.*;
-
 /**
- * Base class for all model classes which have to internally store data in a
- * {@link JsonObject} that has a <code>value</code> field that accepts any
- * {@link JsonValue}.
+ * Base class for all model classes which have to internally store data in an
+ * {@link ObjectValue} that has a <code>value</code> field that accepts any
+ * {@link Value}.
  */
 public abstract class AbstractValueHolder {
-    
+
     protected static final String VALUE_FIELD_NAME = "value";
 
-    final protected JsonObject jsonObject;
+    final protected ObjectValue objectValue;
 
-    public AbstractValueHolder(JsonObject jsonObject) {
-        Objects.requireNonNull(jsonObject);
-        this.jsonObject = jsonObject;
+    public AbstractValueHolder(ObjectValue objectValue) {
+        this.objectValue = Objects.requireNonNull(objectValue);
+    }
+
+    public ObjectValue getObjectValue() {
+        return objectValue;
+    }
+
+    public void clearValue() {
+        objectValue.remove(VALUE_FIELD_NAME);
+    }
+
+    public Optional<Value> getValue() {
+        return objectValue.get(VALUE_FIELD_NAME);
+    }
+
+    public Optional<String> getValueAsString() {
+        return objectValue.getString(VALUE_FIELD_NAME);
+    }
+
+    public Optional<Double> getValueAsNumber() {
+        return objectValue.getNumber(VALUE_FIELD_NAME);
+    }
+
+    public Optional<Integer> getValueAsInteger() {
+        return objectValue.getNumber(VALUE_FIELD_NAME).map(Double::intValue);
+    }
+
+    public Optional<Boolean> getValueAsBoolean() {
+        return objectValue.getBoolean(VALUE_FIELD_NAME);
+    }
+
+    public Optional<ObjectValue> getValueAsObject() {
+        return objectValue.getObject(VALUE_FIELD_NAME);
+    }
+
+    public Optional<ArrayValue> getValueAsArray() {
+        return objectValue.getArray(VALUE_FIELD_NAME);
+    }
+
+    /**
+     * @throws IllegalArgumentException if the given value is invalid and failed constraint checking.
+     */
+    public void setValue(Value value) throws IllegalArgumentException {
+        if (!isValidValue(value)) {
+            throw new IllegalArgumentException("Invalid value: " + (value != null ? value.toJson() : "null"));
+        }
+        if (value != null) {
+            objectValue.put(VALUE_FIELD_NAME, value);
+        } else {
+            clearValue();
+        }
+    }
+
+    public void setValue(Value... values) throws IllegalArgumentException {
+        setValue(Values.createArray().addAll(values));
+    }
+
+    public void setValue(String string) throws IllegalArgumentException {
+        setValue(Values.create(string));
+    }
+
+    public void setValue(Double number) throws IllegalArgumentException {
+        setValue(Values.create(number));
+    }
+
+    public void setValue(Boolean b) throws IllegalArgumentException {
+        setValue(Values.create(b));
+    }
+
+    /**
+     * Override to implement constraints.
+     */
+    public boolean isValidValue(Value value) {
+        return true;
     }
 
     public boolean hasValue() {
         return getValue().isPresent();
     }
 
-    public Optional<String> getValueAsString() {
-        return asString(getValue());
-    }
-
-    public Optional<Integer> getValueAsInteger() {
-        return asInteger(getValue());
-    }
-
-    public Optional<Double> getValueAsDecimal() {
-        return asDecimal(getValue());
-    }
-
-    public Optional<Boolean> getValueAsBoolean() {
-        return asBoolean(getValue());
-    }
-
-    public Optional<JsonObject> getValueAsJsonObject() {
-        return asJsonObject(getValue());
-    }
-
-    public Optional<JsonArray> getValueAsJsonArray() {
-        return asJsonArray(getValue());
-    }
-
-    public void clearValue() {
-        jsonObject.remove(VALUE_FIELD_NAME);
-    }
-
-    public void setValue(String value) {
-        doSetValue(asJsonValue(value));
-    }
-
-    public void setValue(Integer value) {
-        setValue(asJsonValue(value));
-    }
-
-    public void setValue(Double value) {
-        doSetValue(asJsonValue(value));
-    }
-
-    public void setValue(Boolean value) {
-        doSetValue(asJsonValue(value));
-    }
-
-    /**
-     * @throws IllegalArgumentException if the given value is invalid and failed constraint checking.
-     */
-    public void setValue(JsonValue value) throws IllegalArgumentException {
-        doSetValue(sanitizeJsonValue(value));
-    }
-
-    /**
-     * @throws IllegalArgumentException if the given value is invalid and failed constraint checking.
-     */
-    public void setValue(Optional<JsonValue> value) {
-        doSetValue(sanitizeJsonValue(value));
-    }
-
-    protected void doSetValue(JsonValue jsonValue) throws IllegalArgumentException {
-        if (!isValidValue(jsonValue)) {
-            throw new IllegalArgumentException("Invalid value: " + (jsonValue != null ? jsonValue.toJson() : "null"));
-        }
-
-        if (jsonValue != null) {
-            jsonObject.put(VALUE_FIELD_NAME, jsonValue);
-        } else {
-            clearValue();
-        }
-
-//        value = JsonUtil.replaceJsonNull(value)
-//            .map(
-//
-//                val -> Json.instance().parse(val.toJson())
-//            )
-//            .map(val -> {
-//                if (!isValidValue(val)) {
-//                    //noinspection ConstantConditions
-//                    throw new IllegalArgumentException("Invalid value of type " + val.getType() + ": " + val.toJson());
-//                }
-//                return val;
-//            });
-//
-//        if (value.isPresent()) {
-//            jsonObject.put(VALUE_FIELD_NAME, value.get());
-//        } else {
-//            clearValue();
-//        }
-    }
-
-    public Optional<JsonValue> getValue() {
-        return Optional.ofNullable(sanitizeJsonValue((JsonValue)jsonObject.get(VALUE_FIELD_NAME)));
-    }
-
-    /**
-     * Override to implement constraints.
-     */
-    public boolean isValidValue(JsonValue value) {
-        return true;
-    }
-
-    /**
-     * Indicate that the jsonObject contains the mandatory data for this type of attribute
-     * override in attribute sub classes as required
-     */
     public boolean isValid() {
         return true;
     }
 
     @Override
     public String toString() {
-        return jsonObject.toJson();
-    }
-
-    public JsonObject getJsonObject() {
-        return jsonObject;
+        return objectValue.toJson();
     }
 }

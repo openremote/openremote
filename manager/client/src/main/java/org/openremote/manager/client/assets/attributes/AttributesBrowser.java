@@ -26,10 +26,12 @@ import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.datapoint.DatapointBrowser;
 import org.openremote.manager.client.util.CollectionsUtil;
 import org.openremote.manager.client.widget.*;
-import org.openremote.model.*;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.ReadAssetAttributesEvent;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeExecuteStatus;
+import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
 import org.openremote.model.event.bus.EventRegistration;
@@ -39,7 +41,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.function.Consumer;
 
-import static org.openremote.model.Attribute.isAttributeTypeEqualTo;
+import static org.openremote.model.attribute.Attribute.isAttributeTypeEqualTo;
 
 public abstract class AttributesBrowser
     extends AttributesView<AttributesBrowser.Container, AttributesBrowser.Style> {
@@ -67,7 +69,7 @@ public abstract class AttributesBrowser
             event -> {
                 for (AssetAttribute assetAttribute : attributeGroups.keySet()) {
                     if (assetAttribute.getReference().map(ref -> ref.equals(event.getAttributeRef())).orElse(false)) {
-                        assetAttribute.setValue(event.getValue(), event.getTimestamp());
+                        assetAttribute.setValue(event.getValue().orElse(null), event.getTimestamp());
                         refreshAttribute(assetAttribute);
                         break;
                     }
@@ -141,7 +143,7 @@ public abstract class AttributesBrowser
                 startButton.setPrimary(true);
                 startButton.setIcon("play-circle");
                 startButton.addClickHandler(clickEvent -> {
-                    attribute.setValue(AttributeExecuteStatus.REQUEST_START.asJsonValue());
+                    attribute.setValue(AttributeExecuteStatus.REQUEST_START.asValue());
                     writeAttributeValue(attribute);
                 });
                 formGroupActions.add(startButton);
@@ -152,7 +154,7 @@ public abstract class AttributesBrowser
                 repeatButton.setPrimary(true);
                 repeatButton.setIcon("repeat");
                 repeatButton.addClickHandler(clickEvent -> {
-                    attribute.setValue(AttributeExecuteStatus.REQUEST_REPEATING.asJsonValue());
+                    attribute.setValue(AttributeExecuteStatus.REQUEST_REPEATING.asValue());
                     writeAttributeValue(attribute);
                 });
                 formGroupActions.add(repeatButton);
@@ -163,7 +165,7 @@ public abstract class AttributesBrowser
                 cancelButton.setPrimary(true);
                 cancelButton.setIcon("stop-circle");
                 cancelButton.addClickHandler(clickEvent -> {
-                    attribute.setValue(AttributeExecuteStatus.REQUEST_CANCEL.asJsonValue());
+                    attribute.setValue(AttributeExecuteStatus.REQUEST_CANCEL.asValue());
                     writeAttributeValue(attribute);
                 });
                 formGroupActions.add(cancelButton);

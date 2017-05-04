@@ -19,18 +19,18 @@
  */
 package org.openremote.manager.server.asset;
 
-import elemental.json.Json;
-import elemental.json.JsonValue;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.server.web.ManagerWebResource;
 import org.openremote.manager.shared.asset.AssetResource;
 import org.openremote.manager.shared.http.RequestParams;
 import org.openremote.manager.shared.security.Tenant;
-import org.openremote.model.Attribute;
-import org.openremote.model.AttributeEvent;
-import org.openremote.model.AttributeRef;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetQuery;
+import org.openremote.model.attribute.Attribute;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
@@ -260,7 +260,9 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
 
             // Process update
             try {
-                JsonValue value = Json.instance().parse(rawJson);
+                Value value = Values.instance()
+                    .parse(rawJson)
+                    .orElse(null); // When parsing literal JSON "null"
                 assetProcessingService.sendAttributeEvent(
                     new AttributeEvent(new AttributeRef(assetId, attributeName), value)
                 );

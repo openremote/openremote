@@ -3,7 +3,8 @@ package org.openremote.test.rules;
 import java.util.ArrayList;
 import org.openremote.model.*;
 import org.openremote.model.asset.*
-import elemental.json.Json;
+import org.openremote.model.value.Values
+import org.openremote.model.attribute.AttributeEvent;
 
 global java.util.logging.Logger LOG;
 global org.openremote.model.rules.Assets assets;
@@ -20,17 +21,17 @@ when
     // A room has a motion counter
     $room : AssetState(type == AssetType.ROOM, attributeName == "motionCount")
     // And the presence detected flag is not set already
-    AssetState(id == $room.id, attributeName == "presenceDetected", !value.asBoolean)
+    AssetState(id == $room.id, attributeName == "presenceDetected", !valueAsBoolean)
     // And at least 5 motion counter increments have been received in the last 10 minutes
     accumulate(
-        AssetEvent(id == $room.id, attributeName == "motionCount", value != null, value.asNumber > 0) over window:time(10m);
+        AssetEvent(id == $room.id, attributeName == "motionCount", valueAsNumber > 0) over window:time(10m);
         $count: count(1);
         $count >= 5
     )
 then
     // Set the presence detected flag of the room
     assets.dispatch(
-            new AttributeEvent($room.getId(), "presenceDetected", Json.create(true))
+            new AttributeEvent($room.getId(), "presenceDetected", Values.create(true))
     );
 end
 
@@ -39,20 +40,20 @@ when
     // A room has a motion counter
     $room : AssetState(type == AssetType.ROOM, attributeName == "motionCount")
     // And the presence detected flag is set
-    AssetState(id == $room.id, attributeName == "presenceDetected", value.asBoolean)
+    AssetState(id == $room.id, attributeName == "presenceDetected", valueAsBoolean)
     // And at least 5 motion counter increments have been received in the last 10 minutes
     accumulate(
-        AssetEvent(id == $room.id, attributeName == "motionCount", value != null, value.asNumber > 0, $ts: valueTimestamp) over window:time(10m);
+        AssetEvent(id == $room.id, attributeName == "motionCount", valueAsNumber > 0, $ts: valueTimestamp) over window:time(10m);
         $count: count(1),
         $latestIncrementTimestamp: max($ts);
         $count >= 5
     )
     // And the latest counter increment event is newer than the recorded last presence detected time
-    AssetState(id == $room.id, attributeName == "lastPresenceDetected", value != null, $latestIncrementTimestamp > value.asNumber)
+    AssetState(id == $room.id, attributeName == "lastPresenceDetected", $latestIncrementTimestamp > valueAsNumber)
 then
     // Update the last presence detected timestamp to the latest counter increment event
     assets.dispatch(
-            new AttributeEvent($room.getId(), "lastPresenceDetected", Json.create($latestIncrementTimestamp))
+            new AttributeEvent($room.getId(), "lastPresenceDetected", Values.create($latestIncrementTimestamp))
     );
 end
 
@@ -62,16 +63,16 @@ when
     // A room has a motion counter
     $room: AssetState(type == AssetType.ROOM, attributeName == "motionCount")
     // And the presence detected flag is set
-    AssetState(id == $room.id, attributeName == "presenceDetected", value.asBoolean)
+    AssetState(id == $room.id, attributeName == "presenceDetected", valueAsBoolean)
     // And no motion counter increments have been received in the last 10 minutes
     accumulate(
-        AssetEvent(id == $room.id, attributeName == "motionCount", value != null, value.asNumber > 0) over window:time(10m);
+        AssetEvent(id == $room.id, attributeName == "motionCount", valueAsNumber > 0) over window:time(10m);
         $count: count(1);
         $count == 0
     )
 then
     // Clear the presence detected flag of the room
     assets.dispatch(
-            new AttributeEvent($room.getId(), "presenceDetected", Json.create(false))
+            new AttributeEvent($room.getId(), "presenceDetected", Values.create(false))
     );
 end

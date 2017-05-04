@@ -19,8 +19,6 @@
  */
 package org.openremote.manager.server.asset;
 
-import elemental.json.JsonType;
-import elemental.json.JsonValue;
 import org.apache.camel.builder.RouteBuilder;
 import org.hibernate.Session;
 import org.hibernate.jdbc.AbstractReturningWork;
@@ -36,10 +34,10 @@ import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
-import org.openremote.model.AttributeEvent;
-import org.openremote.model.Pair;
-import org.openremote.model.asset.ReadAssetAttributesEvent;
 import org.openremote.model.asset.*;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.util.Pair;
+import org.openremote.model.value.Value;
 import org.postgresql.util.PGobject;
 
 import javax.persistence.EntityManager;
@@ -124,7 +122,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         String assetId = assetState.getId();
         String attributeName = assetState.getAttribute().getName()
             .orElseThrow(() -> new IllegalStateException("Cannot store asset state for attribute with no name"));
-        JsonValue value = assetState.getAttribute().getValue().orElse(null);
+        Value value = assetState.getAttribute().getValue().orElse(null);
         // Some sanity checking, of course the timestamp should never be -1 if we store updated attribute state
         long timestamp = assetState.getAttribute().getValueTimestamp();
         String valueTimestamp = Long.toString(
@@ -580,7 +578,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         );
     }
 
-    protected boolean storeAttributeValue(String assetId, String attributeName, JsonValue value, String timestamp) {
+    protected boolean storeAttributeValue(String assetId, String attributeName, Value value, String timestamp) {
         return persistenceService.doReturningTransaction(entityManager ->
             entityManager.unwrap(Session.class).doReturningWork(connection -> {
 
@@ -607,7 +605,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                     PGobject pgJsonValue = new PGobject();
                     pgJsonValue.setType("jsonb");
                     // Careful, do not set Java null (as returned by value.toJson()) here! It will erase your whole SQL column!
-                    pgJsonValue.setValue(value == null || value.getType() == JsonType.NULL ? "null" : value.toJson());
+                    pgJsonValue.setValue(value == null ? "null" : value.toJson());
                     statement.setObject(2, pgJsonValue);
 
                     // Bind the value timestamp
@@ -687,9 +685,9 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
 
         // Client may want to read a subset or all attributes of the asset
         List<AttributeEvent> events = asset.getAttributesStream()
-            .filter(AssetAttribute::hasName)
-            .filter(attribute -> names.isEmpty() || names.contains(attribute.getName().get()))
+            .filter(attribute -> names.isEmpty() || attribute.getName().filter(names::contains).isPresent())
             .map(AssetAttribute::getStateEvent)
+            .filter(Optional::isPresent)
             .map(Optional::get)
             .collect(Collectors.toList());
 

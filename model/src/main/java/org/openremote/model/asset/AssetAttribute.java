@@ -19,18 +19,22 @@
  */
 package org.openremote.model.asset;
 
-import elemental.json.Json;
-import elemental.json.JsonObject;
-import elemental.json.JsonValue;
-import org.openremote.model.*;
+import org.openremote.model.AbstractValueHolder;
+import org.openremote.model.attribute.*;
+import org.openremote.model.util.Pair;
+import org.openremote.model.value.ObjectValue;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.Values;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static org.openremote.model.MetaItem.isMetaNameEqualTo;
-import static org.openremote.model.MetaItem.replaceMetaByName;
 import static org.openremote.model.asset.AssetMeta.*;
+import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
+import static org.openremote.model.attribute.MetaItem.replaceMetaByName;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
 
@@ -39,11 +43,11 @@ public class AssetAttribute extends Attribute {
     protected String assetId;
 
     public AssetAttribute() {
-        super(Json.createObject());
+        super(Values.createObject());
     }
 
-    protected AssetAttribute(JsonObject jsonObject) {
-        super(jsonObject);
+    protected AssetAttribute(ObjectValue objectValue) {
+        super(objectValue);
     }
 
     public AssetAttribute(String name) {
@@ -54,7 +58,7 @@ public class AssetAttribute extends Attribute {
         super(name, type);
     }
 
-    public AssetAttribute(String name, AttributeType type, JsonValue value) {
+    public AssetAttribute(String name, AttributeType type, Value value) {
         super(name, type, value);
     }
 
@@ -68,13 +72,9 @@ public class AssetAttribute extends Attribute {
         setAssetId(assetId);
     }
 
-    public AssetAttribute(String assetId, String name, AttributeType type, JsonValue value) {
+    public AssetAttribute(String assetId, String name, AttributeType type, Value value) {
         super(name, type, value);
         setAssetId(assetId);
-    }
-
-    public boolean hasAssetId() {
-        return assetId != null;
     }
 
     public Optional<String> getAssetId() {
@@ -86,11 +86,12 @@ public class AssetAttribute extends Attribute {
         this.assetId = assetId;
     }
 
-    @SuppressWarnings("ConstantConditions")
     public Optional<AttributeRef> getReference() {
-        return Optional.ofNullable(hasAssetId() && hasName()
-            ? new AttributeRef(getAssetId().get(), getName().get())
-            : null);
+        return Optional.ofNullable(
+            getAssetId().isPresent() && getName().isPresent()
+                ? new AttributeRef(getAssetId().get(), getName().get())
+                : null
+        );
     }
 
     /**
@@ -98,39 +99,22 @@ public class AssetAttribute extends Attribute {
      * with a standardised exception message.
      */
     public AttributeRef getReferenceOrThrow() {
-        return getReference()
-            .orElseThrow(() -> new IllegalStateException("Attribute doesn't have an attribute ref"));
+        return getReference().orElseThrow(() -> new IllegalStateException("Attribute doesn't have an attribute ref"));
     }
 
     public Optional<AttributeState> getState() {
-        return getReference()
-            .map(ref -> new AttributeState(ref, getValue()));
+        return getReference().map(ref -> new AttributeState(ref, getValue().orElse(null)));
     }
 
-    public AssetAttribute setMeta(List<MetaItem> meta) {
-        if (meta != null) {
-            Meta metaObj;
-            if (meta instanceof Meta) {
-                metaObj = (Meta)meta;
-            } else {
-                metaObj = new Meta();
-                metaObj.addAll(meta);
-            }
-            jsonObject.put(META_FIELD_NAME, metaObj.getJsonArray());
-        } else {
-            jsonObject.remove(META_FIELD_NAME);
-        }
-
-        return this;
-    }
-
+    @Override
     public AssetAttribute setMeta(Meta meta) {
-        setMeta((List<MetaItem>)meta);
+        super.setMeta(meta);
         return this;
     }
 
+    @Override
     public AssetAttribute setMeta(MetaItem... meta) {
-        setMeta(Arrays.asList(meta));
+        super.setMeta(meta);
         return this;
     }
 
@@ -138,8 +122,7 @@ public class AssetAttribute extends Attribute {
      * @return The current value and its timestamp represented as an attribute event.
      */
     public Optional<AttributeEvent> getStateEvent() {
-        return getState()
-            .map(state -> new AttributeEvent(state, getValueTimestamp()));
+        return getState().map(state -> new AttributeEvent(state, getValueTimestamp()));
     }
 
     public boolean hasLabel() {
@@ -156,7 +139,7 @@ public class AssetAttribute extends Attribute {
 
     public void setLabel(String label) {
         if (!isNullOrEmpty(label)) {
-            replaceMetaByName(getMeta(), LABEL, Json.create(label));
+            replaceMetaByName(getMeta(), LABEL, Values.create(label));
         } else {
             getMeta().removeIf(isMetaNameEqualTo(LABEL));
         }
@@ -172,7 +155,7 @@ public class AssetAttribute extends Attribute {
 
     public void setExecutable(boolean executable) {
         if (executable) {
-            replaceMetaByName(getMeta(), EXECUTABLE, Json.create(true));
+            replaceMetaByName(getMeta(), EXECUTABLE, Values.create(true));
         } else {
             getMeta().removeIf(isMetaNameEqualTo(EXECUTABLE));
         }
@@ -188,7 +171,7 @@ public class AssetAttribute extends Attribute {
 
     public void setShowOnDashboard(boolean show) {
         if (show) {
-            replaceMetaByName(getMeta(), SHOW_ON_DASHBOARD, Json.create(true));
+            replaceMetaByName(getMeta(), SHOW_ON_DASHBOARD, Values.create(true));
         } else {
             getMeta().removeIf(isMetaNameEqualTo(SHOW_ON_DASHBOARD));
         }
@@ -207,7 +190,7 @@ public class AssetAttribute extends Attribute {
 
     public void setFormat(String format) {
         if (!isNullOrEmpty(format)) {
-            replaceMetaByName(getMeta(), FORMAT, Json.create(format));
+            replaceMetaByName(getMeta(), FORMAT, Values.create(format));
         } else {
             getMeta().removeIf(isMetaNameEqualTo(FORMAT));
         }
@@ -226,7 +209,7 @@ public class AssetAttribute extends Attribute {
 
     public void setDescription(String description) {
         if (!isNullOrEmpty(description)) {
-            replaceMetaByName(getMeta(), DESCRIPTION, Json.create(description));
+            replaceMetaByName(getMeta(), DESCRIPTION, Values.create(description));
         } else {
             getMeta().removeIf(isMetaNameEqualTo(DESCRIPTION));
         }
@@ -245,7 +228,7 @@ public class AssetAttribute extends Attribute {
 
     public void setEnabled(boolean enabled) {
         if (!enabled) {
-            replaceMetaByName(getMeta(), ENABLED, Json.create(false));
+            replaceMetaByName(getMeta(), ENABLED, Values.create(false));
         } else {
             getMeta().removeIf(isMetaNameEqualTo(ENABLED));
         }
@@ -261,7 +244,7 @@ public class AssetAttribute extends Attribute {
 
     public void setProtected(boolean protect) {
         if (protect) {
-            replaceMetaByName(getMeta(), PROTECTED, Json.create(true));
+            replaceMetaByName(getMeta(), PROTECTED, Values.create(true));
         } else {
             getMeta().removeIf(isMetaNameEqualTo(PROTECTED));
         }
@@ -277,7 +260,7 @@ public class AssetAttribute extends Attribute {
 
     public void setReadOnly(boolean readOnly) {
         if (readOnly) {
-            replaceMetaByName(getMeta(), READ_ONLY, Json.create(true));
+            replaceMetaByName(getMeta(), READ_ONLY, Values.create(true));
         } else {
             getMeta().removeIf(isMetaNameEqualTo(READ_ONLY));
         }
@@ -293,7 +276,7 @@ public class AssetAttribute extends Attribute {
 
     public void setStoreDatapoints(boolean storeDatapoints) {
         if (storeDatapoints) {
-            replaceMetaByName(getMeta(), STORE_DATA_POINTS, Json.create(true));
+            replaceMetaByName(getMeta(), STORE_DATA_POINTS, Values.create(true));
         } else {
             getMeta().removeIf(isMetaNameEqualTo(STORE_DATA_POINTS));
         }
@@ -309,7 +292,7 @@ public class AssetAttribute extends Attribute {
 
     public void setRuleState(boolean ruleState) {
         if (ruleState) {
-            replaceMetaByName(getMeta(), RULE_STATE, Json.create(true));
+            replaceMetaByName(getMeta(), RULE_STATE, Values.create(true));
         } else {
             getMeta().removeIf(isMetaNameEqualTo(RULE_STATE));
         }
@@ -325,7 +308,7 @@ public class AssetAttribute extends Attribute {
 
     public void setRuleEvent(boolean ruleEvent) {
         if (ruleEvent) {
-            replaceMetaByName(getMeta(), RULE_EVENT, Json.create(true));
+            replaceMetaByName(getMeta(), RULE_EVENT, Values.create(true));
         } else {
             getMeta().removeIf(isMetaNameEqualTo(RULE_EVENT));
         }
@@ -340,16 +323,14 @@ public class AssetAttribute extends Attribute {
 
     public void setRuleEventExpires(String expiry) {
         if (!isNullOrEmpty(expiry)) {
-            replaceMetaByName(getMeta(), RULE_EVENT_EXPIRES, Json.create(expiry));
+            replaceMetaByName(getMeta(), RULE_EVENT_EXPIRES, Values.create(expiry));
         } else {
             getMeta().removeIf(isMetaNameEqualTo(RULE_EVENT_EXPIRES));
         }
     }
 
-    public AssetAttribute copy() {
-        AssetAttribute copy = new AssetAttribute(
-            Json.parse(getJsonObject().toJson())
-        );
+    public AssetAttribute deepCopy() {
+        AssetAttribute copy = new AssetAttribute(getObjectValue().deepCopy());
         copy.assetId = assetId;
         copy.name = name;
         return copy;
@@ -368,47 +349,48 @@ public class AssetAttribute extends Attribute {
     public static Stream<AssetAttribute> filterProtectedAttributes(Stream<AssetAttribute> attributes) {
         return attributes == null ? Stream.empty() : attributes
             .filter(AssetAttribute::isProtected)
-            .map(AssetAttribute::copy)
-            .peek(attribute -> attribute.getMeta().removeIf(((Predicate<MetaItem>)AssetMeta::isMetaItemProtectedReadable).negate()));
+            .map(AssetAttribute::deepCopy)
+            .peek(attribute -> attribute.getMeta().removeIf(((Predicate<MetaItem>) AssetMeta::isMetaItemProtectedReadable).negate()));
     }
 
-    public static Optional<AssetAttribute> attributeFromJson(JsonObject jsonObject, String assetId, String name) {
-        if (jsonObject == null || jsonObject.keys().length == 0 || isNullOrEmpty(assetId) || isNullOrEmpty(name)) {
+    public static Optional<AssetAttribute> attributeFromJson(ObjectValue objectValue, String assetId, String name) {
+        if (objectValue == null || objectValue.keys().length == 0 || isNullOrEmpty(assetId) || isNullOrEmpty(name)) {
             return Optional.empty();
         }
 
-        AssetAttribute attribute = new AssetAttribute(jsonObject);
+        AssetAttribute attribute = new AssetAttribute(objectValue);
         attribute.setAssetId(assetId);
         attribute.setName(name);
         return Optional.of(attribute);
     }
 
-    public static Stream<AssetAttribute> attributesFromJson(JsonObject jsonObject, String assetId) {
-        if (jsonObject == null || jsonObject.keys().length == 0 || isNullOrEmpty(assetId)) {
+    public static Stream<AssetAttribute> attributesFromJson(ObjectValue objectValue, String assetId) {
+        if (objectValue == null || objectValue.keys().length == 0 || isNullOrEmpty(assetId)) {
             return Stream.empty();
         }
-
         return Arrays
-            .stream(jsonObject.keys())
-            .map(key -> attributeFromJson(jsonObject.getObject(key), assetId, key))
+            .stream(objectValue.keys())
+            .map(key -> new Pair<>(key, objectValue.getObject(key)))
+            .filter(pair -> pair.value.isPresent())
+            .map(pair -> attributeFromJson(pair.value.get(), assetId, pair.key))
             .filter(Optional::isPresent)
             .map(Optional::get);
     }
 
     /**
-     * Maps the attribute stream to a {@link JsonObject}, duplicate attribute names are not
-     * allowed (internally this is a hash map in Elemental, thus not allowing duplicate
-     * JSON object property names).
+     * Maps the attribute stream to a {@link ObjectValue}, duplicate attribute names are not
+     * allowed (internally this is a hash map, thus not allowing duplicate JSON object property
+     * names).
      */
-    public static <A extends Attribute> Optional<JsonObject> attributesToJson(Collection<A> attributes) {
+    public static <A extends Attribute> Optional<ObjectValue> attributesToJson(Collection<A> attributes) {
         if (attributes.size() == 0)
             return Optional.empty();
-        JsonObject jsonObject = Json.createObject();
+        ObjectValue objectValue = Values.createObject();
 
         for (A attribute : attributes) {
             if (attribute.getName().isPresent())
-                jsonObject.put(attribute.getName().get(), attribute.getJsonObject());
+                objectValue.put(attribute.getName().get(), attribute.getObjectValue());
         }
-        return Optional.of(jsonObject);
+        return Optional.of(objectValue);
     }
 }

@@ -1,12 +1,12 @@
 package org.openremote.test.assets
 
-import elemental.json.Json
+import org.openremote.model.value.Values
 import org.openremote.container.util.IdentifierUtil
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
 import org.openremote.manager.shared.asset.AssetResource
-import org.openremote.model.AttributeType
+import org.openremote.model.attribute.AttributeType
 import org.openremote.model.asset.Asset
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetType
@@ -70,7 +70,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         when: "an asset is stored with a non-empty attribute value"
         testAsset = assetResource.get(null, testAsset.getId())
         testAsset.setAttributes(
-                new AssetAttribute("foo", AttributeType.STRING, Json.create("bar"))
+                new AssetAttribute("foo", AttributeType.STRING, Values.create("bar"))
         )
         assetResource.update(null, testAsset.id, testAsset)
         testAsset = assetResource.get(null, testAsset.getId())

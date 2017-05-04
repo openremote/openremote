@@ -19,14 +19,14 @@
  */
 package org.openremote.agent3.protocol.simulator;
 
-import elemental.json.JsonValue;
 import org.openremote.agent3.protocol.AbstractProtocol;
 import org.openremote.agent3.protocol.simulator.element.*;
 import org.openremote.model.AbstractValueHolder;
-import org.openremote.model.AttributeEvent;
-import org.openremote.model.AttributeRef;
-import org.openremote.model.AttributeState;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeRef;
+import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.value.Value;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -155,10 +155,12 @@ public class SimulatorProtocol extends AbstractProtocol {
         }
 
         SimulatorElement element = createElement(elementType, attribute);
-        try {
-            element.setState(attribute.getValue());
-        } catch (IllegalArgumentException ex) {
-            throw new RuntimeException("Error setting initial state of: " + attribute, ex);
+        if (attribute.getValue().isPresent()) {
+            try {
+                element.setState(attribute.getValue().get());
+            } catch (IllegalArgumentException ex) {
+                throw new RuntimeException("Error setting initial state of: " + attribute, ex);
+            }
         }
 
         LOG.info("Putting element '" + element + "' for: " + attribute);
@@ -220,7 +222,7 @@ public class SimulatorProtocol extends AbstractProtocol {
      * Call this to simulate a sensor update after the specified delay (it uses the last value supplied from send to actuator).
      */
     public void updateSensor(AttributeRef attributeRef, int updateSensorDelayMilliseconds) {
-        JsonValue value = getState(attributeRef);
+        Value value = getState(attributeRef);
         final AttributeState state = new AttributeState(attributeRef, value);
 
         if (updateSensorDelayMilliseconds <= 0) {
@@ -233,14 +235,14 @@ public class SimulatorProtocol extends AbstractProtocol {
     /**
      * Call this to simulate a send to actuator.
      */
-    public void putState(String entityId, String attributeName, JsonValue value) {
+    public void putState(String entityId, String attributeName, Value value) {
         putState(new AttributeState(new AttributeRef(entityId, attributeName), value));
     }
 
     /**
      * Call this to simulate a send to actuator.
      */
-    public void putState(AttributeRef attributeRef, JsonValue value) {
+    public void putState(AttributeRef attributeRef, Value value) {
         putState(new AttributeState(attributeRef, value));
     }
 
@@ -279,7 +281,7 @@ public class SimulatorProtocol extends AbstractProtocol {
                 throw new IllegalArgumentException("No simulated element for: " + attributeRef);
             }
 
-            element.setState(attributeState.getValue());
+            element.setState(attributeState.getCurrentValue().orElse(null));
         }
 
         if (instance.getMode() != Mode.MANUAL) {
@@ -290,14 +292,14 @@ public class SimulatorProtocol extends AbstractProtocol {
     /**
      * Call this to get the current value of an attribute.
      */
-    public JsonValue getState(String entityId, String attributeName) {
+    public Value getState(String entityId, String attributeName) {
         return getState(new AttributeRef(entityId, attributeName));
     }
 
     /**
      * Call this to get the current value of an attribute.
      */
-    public JsonValue getState(AttributeRef attributeRef) {
+    public Value getState(AttributeRef attributeRef) {
         synchronized (elements) {
             SimulatorElement element = elements.get(attributeRef);
             if (element == null)
@@ -328,6 +330,6 @@ public class SimulatorProtocol extends AbstractProtocol {
     public static Optional<String> getElementType(AssetAttribute attribute) {
         return
             attribute.getMetaItem(SIMULATOR_ELEMENT)
-            .flatMap(AbstractValueHolder::getValueAsString);
+                .flatMap(AbstractValueHolder::getValueAsString);
     }
 }

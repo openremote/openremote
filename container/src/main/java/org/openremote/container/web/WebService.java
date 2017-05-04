@@ -35,8 +35,8 @@ import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.keycloak.adapters.KeycloakConfigResolver;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
-import org.openremote.container.json.ElementalMessageBodyConverter;
 import org.openremote.container.json.JacksonConfig;
+import org.openremote.container.json.ModelValueMessageBodyConverter;
 import org.openremote.container.security.AuthOverloadHandler;
 import org.openremote.container.security.CORSFilter;
 import org.openremote.container.security.IdentityService;
@@ -343,7 +343,7 @@ public abstract class WebService implements ContainerService {
         resteasyDeployment.getProviders().add(new WebServiceExceptions.ForbiddenResteasyExceptionMapper(devMode));
         resteasyDeployment.getProviders().add(new JacksonConfig());
         resteasyDeployment.getProviders().add(new CORSFilter());
-        resteasyDeployment.getActualProviderClasses().add(ElementalMessageBodyConverter.class);
+        resteasyDeployment.getActualProviderClasses().add(ModelValueMessageBodyConverter.class);
         resteasyDeployment.getActualProviderClasses().add(AlreadyGzippedWriterInterceptor.class);
         resteasyDeployment.getActualProviderClasses().add(ClientErrorExceptionHandler.class);
 
