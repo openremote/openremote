@@ -51,6 +51,7 @@ import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.concurrent.ManagerExecutorService;
 import org.openremote.manager.server.notification.NotificationService;
+import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.rules.AssetRuleset;
 import org.openremote.manager.shared.rules.GlobalRuleset;
 import org.openremote.manager.shared.rules.Ruleset;
@@ -80,6 +81,7 @@ public class RulesEngine<T extends Ruleset> {
     final protected NotificationService notificationService;
     final protected AssetStorageService assetStorageService;
     final protected AssetProcessingService assetProcessingService;
+    final protected ManagerIdentityService identityService;
     final protected Class<T> rulesetType;
     final protected String id;
 
@@ -107,12 +109,14 @@ public class RulesEngine<T extends Ruleset> {
                        AssetStorageService assetStorageService,
                        NotificationService notificationService,
                        AssetProcessingService assetProcessingService,
+                       ManagerIdentityService identityService,
                        Class<T> rulesetType, String id) {
         this.timerService = timerService;
         this.executorService = executorService;
         this.assetStorageService = assetStorageService;
         this.notificationService = notificationService; // shouldBeUser service or Identity Service ?
         this.assetProcessingService = assetProcessingService;
+        this.identityService = identityService;
         this.rulesetType = rulesetType;
         this.id = id;
     }
@@ -641,7 +645,6 @@ public class RulesEngine<T extends Ruleset> {
                         if (assetId != null) {
                             return notificationService.findAllUsersWithTokenForAsset(assetId);
                         } else {
-
                             return notificationService.findAllUsersWithToken();
                         }
                     }
@@ -670,6 +673,19 @@ public class RulesEngine<T extends Ruleset> {
 
             @Override
             public void storeAndNotify(String userId, AlertNotification alert) {
+                if (TenantRuleset.class.isAssignableFrom(rulesetType)) {
+                    boolean userIsInTenant = identityService.isUserInTenant(userId, id);
+                    if (!userIsInTenant) {
+                        throw new IllegalArgumentException("User not in tenant: " + id);
+                    }
+                 }
+                if (AssetRuleset.class.isAssignableFrom(rulesetType)) {
+                    boolean userIsLinkedToAsset = assetStorageService.isUserAsset(userId, id);
+                    if (!userIsLinkedToAsset) {
+                        throw new IllegalArgumentException("User not linked to asset: " + id);
+                    }
+                }
+
                 notificationService.storeAndNotify(userId, alert);
             }
         };
