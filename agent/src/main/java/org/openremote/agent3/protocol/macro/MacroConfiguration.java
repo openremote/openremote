@@ -102,14 +102,10 @@ final public class MacroConfiguration {
 
         attribute.getMeta().addAll(
             actions
-                .map(action -> action.toMetaItem())
+                .map(MacroAction::toMetaItem)
                 .collect(Collectors.toList())
         );
 
         return attribute;
-    }
-
-    public static UnaryOperator<AssetAttribute> setMacroActions(Stream<MacroAction> actions) {
-        return attribute -> setMacroActions(attribute, actions);
     }
 }

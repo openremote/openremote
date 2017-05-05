@@ -42,6 +42,11 @@ public enum AttributeExecuteStatus {
     REQUEST_CANCEL(true),
 
     /**
+     * Ready to be executed
+     */
+    READY(false),
+
+    /**
      * Execution completed
      */
     COMPLETED(false),
@@ -59,7 +64,12 @@ public enum AttributeExecuteStatus {
     /**
      * Command produced an error
      */
-    ERROR(false);
+    ERROR(false),
+
+    /**
+     * Execution has been disabled
+     */
+    DISABLED(false);
 
     private boolean write;
     // Prevents cloning of values each time fromString is called

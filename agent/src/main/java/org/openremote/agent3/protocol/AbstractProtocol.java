@@ -27,14 +27,16 @@ import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.timer.TimerService;
+import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
-import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.util.Pair;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 public abstract class AbstractProtocol implements Protocol {
@@ -51,16 +53,19 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     final protected Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
+    final protected Map<AttributeRef, Pair<AssetAttribute, Consumer<DeploymentStatus>>> linkedProtocolConfigurations = new HashMap<>();
     protected MessageBrokerContext messageBrokerContext;
     protected ProducerTemplate producerTemplate;
     protected TimerService timerService;
     protected ProtocolExecutorService executorService;
+    protected ProtocolAssetService assetService;
 
     @Override
     public void init(Container container) throws Exception {
         LOG.info("Initializing protocol: " + getProtocolName());
         timerService = container.getService(TimerService.class);
         executorService = container.getService(ProtocolExecutorService.class);
+        assetService = container.getService(ProtocolAssetService.class);
     }
 
     @Override
@@ -76,11 +81,17 @@ public abstract class AbstractProtocol implements Protocol {
                     from(ACTUATOR_TOPIC)
                         .routeId("Actuator-" + getProtocolName())
                         .process(exchange -> {
-                            // TODO Use read/write lock for link/unlink attributes synchronization and additional optional exclusive lock for single-threaded implementors
-                            synchronized (linkedAttributes) {
-                                // TODO This could be optimized, we must avoid inspecting all messages (maybe tag with protocol name in header?)
-                                if (isAttributeStateForAny(linkedAttributes.keySet()).matches(exchange)) {
-                                    sendToActuator(exchange.getIn().getBody(AttributeEvent.class));
+                            String protocolName = exchange.getIn().getHeader("Protocol", String.class);
+                            if (getProtocolName().equals(protocolName)) {
+                                // TODO Use read/write lock for link/unlink attributes synchronization and additional optional exclusive lock for single-threaded implementors
+                                synchronized (linkedAttributes) {
+                                    AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
+                                    AssetAttribute attribute = linkedAttributes.get(event.getAttributeRef());
+                                    if (attribute == null) {
+                                        LOG.warning("Attribute doesn't exist on this protocol: " + event.getAttributeRef());
+                                    } else {
+                                        processLinkedAttributeWrite(event, attribute);
+                                    }
                                 }
                             }
                         });
@@ -99,18 +110,33 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     @Override
-    public void linkAttributes(Collection<AssetAttribute> attributes, AssetAttribute protocolConfiguration) throws Exception {
+    public void linkProtocolConfiguration(AssetAttribute protocolConfiguration, Consumer<DeploymentStatus> deploymentStatusConsumer) {
+        synchronized (linkedProtocolConfigurations) {
+            LOG.finer("Linking protocol configuration to protocol '" + getProtocolName() + "': " + protocolConfiguration);
+            linkedProtocolConfigurations.put(
+                protocolConfiguration.getReferenceOrThrow(),
+                new Pair<>(protocolConfiguration, deploymentStatusConsumer)
+            );
+            doLinkProtocolConfiguration(protocolConfiguration);
+        }
+    }
+
+    @Override
+    public void unlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+        synchronized (linkedProtocolConfigurations) {
+            LOG.finer("Unlinking protocol configuration from protocol '" + getProtocolName() + "': " + protocolConfiguration);
+            doUnlinkProtocolConfiguration(protocolConfiguration);
+            linkedProtocolConfigurations.remove(protocolConfiguration.getReferenceOrThrow());
+        }
+    }
+
+    @Override
+    public void linkAttributes(Collection<AssetAttribute> attributes, AssetAttribute protocolConfiguration) {
         synchronized (linkedAttributes) {
             attributes.forEach(attribute -> {
-                if (linkedAttributes.containsKey(attribute.getReferenceOrThrow())) {
-                    LOG.fine("Attribute updated on '" + getProtocolName() + "': " + attribute);
-                    onAttributeUpdated(attribute, protocolConfiguration);
-                    linkedAttributes.put(attribute.getReferenceOrThrow(), attribute);
-                } else {
-                    LOG.fine("Attribute added on '" + getProtocolName() + "': " + attribute);
-                    onAttributeAdded(attribute, protocolConfiguration);
-                    linkedAttributes.put(attribute.getReferenceOrThrow(), attribute);
-                }
+                LOG.fine("Linking attribute to '" + getProtocolName() + "': " + attribute);
+                linkedAttributes.put(attribute.getReferenceOrThrow(), attribute);
+                doLinkAttribute(attribute, protocolConfiguration);
             });
         }
     }
@@ -118,45 +144,87 @@ public abstract class AbstractProtocol implements Protocol {
     @Override
     public void unlinkAttributes(Collection<AssetAttribute> attributes, AssetAttribute protocolConfiguration) throws Exception {
         synchronized (linkedAttributes) {
-            attributes
-                .stream()
-                .filter(attribute -> linkedAttributes.values()
-                    .stream()
-                    .anyMatch(linkedAttribute ->
-                        linkedAttribute
-                            .getReferenceOrThrow()
-                            .equals(attribute.getReferenceOrThrow()))
-                )
-                .forEach(attributeToRemove -> {
-                    AttributeRef agentLinkedAttributeRef = attributeToRemove.getReferenceOrThrow();
-
-                    linkedAttributes.remove(agentLinkedAttributeRef);
-                    LOG.fine("Attribute removed on '" + getProtocolName() + "': " + attributeToRemove);
-                    onAttributeRemoved(attributeToRemove, protocolConfiguration);
-                });
+            attributes.forEach(attribute -> {
+                LOG.fine("Unlinking attribute on '" + getProtocolName() + "': " + attribute);
+                doUnlinkAttribute(attribute, protocolConfiguration);
+                linkedAttributes.remove(attribute.getReferenceOrThrow());
+            });
         }
     }
 
+    /**
+     * Gets a linked attribute by its attribute ref
+     */
     protected AssetAttribute getLinkedAttribute(AttributeRef attributeRef) {
         synchronized (linkedAttributes) {
             return linkedAttributes.get(attributeRef);
         }
     }
 
-    protected void sendAttributeEvent(AttributeState state) {
-        AttributeEvent event = new AttributeEvent(state, timerService.getCurrentTimeMillis());
-        LOG.info("Sending on sensor queue: " + event);
-        producerTemplate.sendBodyAndHeader(SENSOR_QUEUE, event, "isSensorUpdate", false);
+    /**
+     * Get the deployment status consumer for a given protocol configuration
+     */
+    protected Consumer<DeploymentStatus> getDeploymentStatusConsumer(AssetAttribute protocolConfiguration) {
+        return getDeploymentStatusConsumer(protocolConfiguration.getReferenceOrThrow());
     }
 
-    protected void onSensorUpdate(AttributeState state, long timestamp) {
+    /**
+     * Get the deployment status consumer for a given protocol configurations attribute ref
+     */
+    protected Consumer<DeploymentStatus> getDeploymentStatusConsumer(AttributeRef protocolRef) {
+        synchronized (linkedProtocolConfigurations) {
+            return linkedProtocolConfigurations.containsKey(protocolRef)
+                ? linkedProtocolConfigurations.get(protocolRef).value
+                : null;
+        }
+    }
+
+    /**
+     * Send an arbitrary {@link AttributeState} through the processing chain
+     * using the current system time as the timestamp.
+     */
+    protected void sendAttributeEvent(AttributeState state) {
+        AttributeEvent event = new AttributeEvent(state, timerService.getCurrentTimeMillis());
+        LOG.info("Sending attribute event from protocol '" + getProtocolName() + "': " + event);
+        assetService.sendAttributeEvent(event);
+    }
+
+    /**
+     * Send an arbitrary {@link AttributeEvent} through the processing chain.
+     */
+    protected void sendAttributeEvent(AttributeEvent attributeEvent) {
+        LOG.info("Sending attribute event: " + attributeEvent);
+        assetService.sendAttributeEvent(attributeEvent);
+    }
+
+    /**
+     * Update the value of a linked attribute.
+     */
+    protected void updateLinkedAttribute(AttributeState state, long timestamp) {
         AttributeEvent event = new AttributeEvent(state, timestamp);
         LOG.fine("Sending on sensor queue: " + event);
         producerTemplate.sendBody(SENSOR_QUEUE, event);
     }
 
-    protected void onSensorUpdate(AttributeState state) {
-        onSensorUpdate(state, timerService.getCurrentTimeMillis());
+    /**
+     * Update the value of a linked attribute.
+     */
+    protected void updateLinkedAttribute(AttributeState state) {
+        updateLinkedAttribute(state, timerService.getCurrentTimeMillis());
+    }
+
+    /**
+     * Update the deployment status of a protocol configuration by its attribute ref
+     */
+    protected void updateDeploymentStatus(AttributeRef protocolRef, DeploymentStatus deploymentStatus) {
+        synchronized (linkedProtocolConfigurations) {
+            linkedProtocolConfigurations.computeIfPresent(protocolRef,
+                (ref, pair) -> {
+                    pair.value.accept(deploymentStatus);
+                    return pair;
+                }
+            );
+        }
     }
 
     @Override
@@ -165,11 +233,29 @@ public abstract class AbstractProtocol implements Protocol {
             '}';
     }
 
-    abstract protected void sendToActuator(AttributeEvent event);
+    /**
+     * Link the protocol configuration.
+     */
+    abstract protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration);
 
-    abstract protected void onAttributeAdded(AssetAttribute attribute, AssetAttribute protocolConfiguration);
+    /**
+     * Unlink the protocol configuration.
+     */
+    abstract protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration);
 
-    abstract protected void onAttributeUpdated(AssetAttribute attribute, AssetAttribute protocolConfiguration);
+    /**
+     * Link an attribute to its linked protocol configuration.
+     */
+    abstract protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration);
 
-    abstract protected void onAttributeRemoved(AssetAttribute attribute, AssetAttribute protocolConfiguration);
+    /**
+     * Unlink an attribute from its linked protocol configuration.
+     */
+    abstract protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration);
+
+    /**
+     * Attribute event (write) has been requested for an attribute linked to the specified
+     * protocol configuration.
+     */
+    abstract protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration);
 }

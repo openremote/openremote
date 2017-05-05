@@ -100,8 +100,6 @@ public class TriggerProtocol extends AbstractProtocol {
     public void init(Container container) throws Exception {
         super.init(container);
 
-        // TODO: Wire up AssetStorageService so we can push trigger configuration updates
-        //container.getService(AssetStorageService.class);
         // Push static protocol reference so trigger handlers can call doTriggerAction
         AbstractTriggerHandler.protocol = this;
 
@@ -113,7 +111,41 @@ public class TriggerProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void sendToActuator(AttributeEvent event) {
+    protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+        // The protocol configuration is actually a Trigger Configuration
+        AssetAttribute initialisedProtocolConfiguration;
+
+        synchronized (protocolConfigMap) {
+            initialisedProtocolConfiguration = protocolConfigMap.computeIfAbsent(protocolConfiguration.getReferenceOrThrow(), protocolConfigRef ->
+            {
+                // Verify that this is a valid Trigger Configuration
+                if (!isValidTriggerConfiguration(protocolConfiguration)) {
+                    LOG.warning("Trigger Configuration is not valid so it will be ignored: " + protocolConfigRef);
+                    updateDeploymentStatus(protocolConfigRef, DeploymentStatus.ERROR);
+                    return null;
+                }
+
+                // Register the trigger with its handler
+                TriggerType type = getTriggerType(protocolConfiguration).get();
+                AbstractTriggerHandler handler = getTriggerTypeHandler(protocolConfiguration).get();
+                Value value = getTriggerValue(protocolConfiguration).get();
+                handler.registerTrigger(protocolConfigRef, value, protocolConfiguration.isEnabled());
+                updateDeploymentStatus(protocolConfigRef, protocolConfiguration.isEnabled() ? DeploymentStatus.LINKED_ENABLED : DeploymentStatus.LINKED_DISABLED);
+
+                return protocolConfiguration;
+            });
+        }
+    }
+
+    @Override
+    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+        synchronized (protocolConfigMap) {
+            protocolConfigMap.remove(protocolConfiguration.getReferenceOrThrow());
+        }
+    }
+
+    @Override
+    protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
         LOG.fine("Request to send to actuator");
 
         // Send to actuator means that the trigger wants to be updated
@@ -147,78 +179,15 @@ public class TriggerProtocol extends AbstractProtocol {
             });
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Override
-    protected void onAttributeAdded(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-
-        // The protocol configuration is actually a Trigger Configuration
-        // TODO: Initialise triggers even if they don't have linked attributes
-        AssetAttribute initialisedProtocolConfiguration;
-
-        synchronized (protocolConfigMap) {
-            initialisedProtocolConfiguration = protocolConfigMap.computeIfAbsent(protocolConfiguration.getReferenceOrThrow(), protocolConfigRef ->
-            {
-                // Verify that this is a valid Trigger Configuration
-                if (!isValidTriggerConfiguration(protocolConfiguration)) {
-                    LOG.warning("Trigger Configuration is not valid so it will be ignored: " + protocolConfigRef);
-                    return null;
-                }
-
-                // Register the trigger with its handler
-                TriggerType type = getTriggerType(protocolConfiguration).get();
-                AbstractTriggerHandler handler = getTriggerTypeHandler(protocolConfiguration).get();
-                Value value = getTriggerValue(protocolConfiguration).get();
-                handler.registerTrigger(protocolConfigRef, value, protocolConfiguration.isEnabled());
-
-                return protocolConfiguration;
-            });
-        }
-
-        // Do nothing if protocol configuration is not valid
-        if (initialisedProtocolConfiguration == null) {
-            LOG.warning("The Trigger Configuration linked to by the attribute is invalid so cannot use it");
-            return;
-        }
-
+    protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         // Wire up the attribute
         TriggerConfiguration.getTriggerTypeHandler(protocolConfiguration)
             .ifPresent(handler -> registerAttributeWithTriggerHandler(attribute, protocolConfiguration, handler));
     }
 
     @Override
-    protected void onAttributeUpdated(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-        // Check if this attribute is already linked to a handler and that it is the same
-        AbstractTriggerHandler oldHandler;
-        AbstractTriggerHandler newHandler;
-        AttributeRef attributeRef = attribute.getReferenceOrThrow();
-
-        synchronized (attributeTriggerHandlerMap) {
-            oldHandler = attributeTriggerHandlerMap.get(attributeRef);
-        }
-
-        newHandler = getTriggerTypeHandler(protocolConfiguration).orElse(null);
-
-        if (oldHandler == null && newHandler == null) {
-            LOG.finer("Both old and new handlers are null so nothing to do here");
-            return;
-        }
-
-        if (newHandler == oldHandler) {
-            updateAttributeWithTriggerHandler(attribute, protocolConfiguration, oldHandler);
-            return;
-        }
-
-        if (oldHandler != null) {
-            unRegisterAttributeWithTriggerHandler(attributeRef, protocolConfiguration.getReferenceOrThrow(), oldHandler);
-        }
-
-        if (newHandler != null) {
-            registerAttributeWithTriggerHandler(attribute, protocolConfiguration, newHandler);
-        }
-    }
-
-    @Override
-    protected void onAttributeRemoved(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
+    protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         AbstractTriggerHandler oldHandler;
         AttributeRef attributeRef = attribute.getReferenceOrThrow();
 
@@ -242,7 +211,7 @@ public class TriggerProtocol extends AbstractProtocol {
                     AttributeState state = new AttributeState(attributeRef, Values.create(triggerConfiguration.isEnabled()));
                     // Push current value of enabled status into the attribute
                     LOG.info("Updating attribute value with trigger enabled status: " + state);
-                    onSensorUpdate(state);
+                    updateLinkedAttribute(state);
                 } else {
                     LOG.info("Registering attribute '" + attributeRef + "' on trigger handler '" + handler.getName() + "'");
                     synchronized (attributeTriggerHandlerMap) {
@@ -267,7 +236,7 @@ public class TriggerProtocol extends AbstractProtocol {
                     LOG.info("Registering attribute for trigger enabled status: " + attributeRef);
 
                     // Push current value of enabled status into the attribute
-                    onSensorUpdate(new AttributeState(attributeRef, Values.create(triggerConfiguration.isEnabled())));
+                    updateLinkedAttribute(new AttributeState(attributeRef, Values.create(triggerConfiguration.isEnabled())));
                 } else {
                     LOG.info("Updating attribute '" + attributeRef + "' on trigger handler '" + handler.getName() + "'");
                     handler.updateAttribute(attributeRef, triggerConfiguration.getReferenceOrThrow(), propertyName);
@@ -291,7 +260,7 @@ public class TriggerProtocol extends AbstractProtocol {
      * Updates the value of an attribute linked to a trigger handler
      */
     void updateAttribute(AttributeState state) {
-        onSensorUpdate(state);
+        updateLinkedAttribute(state);
     }
 
     /**

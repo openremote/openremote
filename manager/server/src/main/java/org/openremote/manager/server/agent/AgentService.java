@@ -29,7 +29,7 @@ import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
-import org.openremote.model.AbstractValueTimestampHolder;
+import org.openremote.model.*;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
@@ -47,12 +47,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.openremote.agent3.protocol.Protocol.ACTUATOR_TOPIC;
+import static org.openremote.agent3.protocol.Protocol.DeploymentStatus.*;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForAssetType;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;
 import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
 import static org.openremote.model.asset.AssetType.AGENT;
 import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
+import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 /**
  * Finds all {@link AssetType#AGENT} and {@link AssetType#THING} assets and starts the protocols for them.
@@ -64,7 +66,8 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     protected AssetStorageService assetStorageService;
     protected AssetDatapointService assetDatapointService;
     protected MessageBrokerService messageBrokerService;
-    protected static final Map<AttributeRef, AssetAttribute> protocolConfigurations = new HashMap<>();
+    protected final Map<AttributeRef, Pair<AssetAttribute, Protocol.DeploymentStatus>> protocolConfigurations = new HashMap<>();
+    protected final Map<String, Protocol> protocols = new HashMap<>();
 
     @Override
     public void init(Container container) throws Exception {
@@ -78,6 +81,22 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     public void start(Container container) throws Exception {
         container.getService(MessageBrokerSetupService.class).getContext().addRoutes(this);
 
+        // Load all protocol instances and fail hard and fast when a duplicate is found
+        Collection<Protocol> discoveredProtocols = container.getServices(Protocol.class);
+
+        discoveredProtocols
+            .forEach(
+                discoveredProtocol -> {
+                    if (isNullOrEmpty(discoveredProtocol.getProtocolName()) || !discoveredProtocol.getProtocolName().startsWith(Constants.PROTOCOL_NAMESPACE))
+                        throw new IllegalStateException("Protocol name is invalid it must start with '" + Constants.PROTOCOL_NAMESPACE + "': " + discoveredProtocol.getClass());
+
+                    if (protocols.containsKey(discoveredProtocol.getProtocolName()))
+                        throw new IllegalStateException("A protocol with the name '" + discoveredProtocol.getProtocolName() + "' has already been loaded: " + discoveredProtocol.getClass());
+
+                    protocols.put(discoveredProtocol.getProtocolName(), discoveredProtocol);
+                }
+            );
+
         List<ServerAsset> agents = assetStorageService.findAll(new AssetQuery()
             .select(new AssetQuery.Select(true, false))
             .type(AssetType.AGENT));
@@ -88,7 +107,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         for (Asset agent : agents) {
             agent.getAttributesStream()
                 .filter(ProtocolConfiguration::isProtocolConfiguration)
-                .forEach(this::linkProtocol);
+                .forEach(this::linkProtocolConfiguration);
         }
     }
 
@@ -96,7 +115,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     public void stop(Container container) throws Exception {
         synchronized (protocolConfigurations) {
             new ArrayList<>(protocolConfigurations.values())
-                .forEach(this::unlinkProtocol);
+                .forEach(protocolConfigAndConsumer -> unlinkProtocolConfiguration(protocolConfigAndConsumer.key));
         }
     }
 
@@ -127,7 +146,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
                 agent.getAttributesStream()
                     .filter(ProtocolConfiguration::isProtocolConfiguration)
-                    .forEach(this::linkProtocol);
+                    .forEach(this::linkProtocolConfiguration);
 
                 break;
             case UPDATE:
@@ -166,7 +185,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                             oldProtocolAttribute.getObjectValue().equals(newProtocolAttribute.getObjectValue())
                         )
                     )
-                    .forEach(this::unlinkProtocol);
+                    .forEach(this::unlinkProtocolConfiguration);
 
                 // Link protocols that are in newConfigs but not in oldConfigs
                 newProtocolConfigurations
@@ -176,7 +195,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                         .noneMatch(oldProtocolAttribute ->
                             oldProtocolAttribute.getObjectValue().equals(newProtocolAttribute.getObjectValue())
                         )
-                    ).forEach(this::linkProtocol);
+                    ).forEach(this::linkProtocolConfiguration);
 
                 break;
             case DELETE:
@@ -184,7 +203,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                 // Unlink any attributes that have an agent link to this agent
                 agent.getAttributesStream()
                     .filter(ProtocolConfiguration::isProtocolConfiguration)
-                    .forEach(this::unlinkProtocol);
+                    .forEach(this::unlinkProtocolConfiguration);
                 break;
         }
     }
@@ -282,14 +301,40 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         }
     }
 
-    protected void linkProtocol(AssetAttribute protocolConfiguration) {
+    protected void linkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         LOG.finest("Linking all attributes that use protocol attribute: " + protocolConfiguration);
-
         AttributeRef protocolAttributeRef = protocolConfiguration.getReferenceOrThrow();
+        Protocol protocol = getProtocol(protocolConfiguration);
+
+        if (protocol == null) {
+            LOG.warning("Cannot find protocol that attribute is linked to: " + protocolAttributeRef);
+            return;
+        }
 
         synchronized (protocolConfigurations) {
-            // Store this protocol configuration for easy access later
-            protocolConfigurations.put(protocolAttributeRef, protocolConfiguration);
+            // Create a consumer callback for deployment status updates
+            Consumer<Protocol.DeploymentStatus> deploymentStatusConsumer = status ->
+                publishProtocolDeploymentStatus(protocolAttributeRef, status);
+
+            // Store the info
+            protocolConfigurations.put(
+                protocolAttributeRef,
+                new Pair<>(protocolConfiguration, LINKING)
+            );
+
+            // Set status to linking
+            publishProtocolDeploymentStatus(protocolAttributeRef, LINKING);
+
+            // Link the protocol configuration to the protocol
+            try {
+                protocol.linkProtocolConfiguration(protocolConfiguration, deploymentStatusConsumer);
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Protocol threw an exception during protocol configuration linking", e);
+                // Set status to error
+                publishProtocolDeploymentStatus(protocolAttributeRef, ERROR);
+                // Cannot continue to link attributes;
+                return;
+            }
         }
 
         // Get all assets that have attributes that use this protocol configuration
@@ -316,7 +361,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         );
     }
 
-    protected void unlinkProtocol(AssetAttribute protocolConfiguration) {
+    protected void unlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         AttributeRef protocolAttributeRef = protocolConfiguration.getReferenceOrThrow();
 
         // Get all assets that have attributes that use this protocol configuration
@@ -343,21 +388,34 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         );
 
         synchronized (protocolConfigurations) {
+            Protocol protocol = getProtocol(protocolConfiguration);
+
+            // Unlink the protocol configuration from the protocol
+            try {
+                protocol.unlinkProtocolConfiguration(protocolConfiguration);
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Protocol threw an exception during protocol configuration unlinking", e);
+            }
+
+            // Set status to error
+            publishProtocolDeploymentStatus(protocolAttributeRef, UNLINKED);
             protocolConfigurations.remove(protocolAttributeRef);
         }
     }
 
+    // TODO: Implement mechanism for publishing/subscribing to protocolconfiguration deployment status
+    protected void publishProtocolDeploymentStatus(AttributeRef protocolRef, Protocol.DeploymentStatus status) {
+        LOG.fine("Protocol status updated to '" + status + "': " + protocolRef);
+        synchronized (protocolConfigurations) {
+            Pair<AssetAttribute, Protocol.DeploymentStatus> protocolDeploymentInfo = protocolConfigurations.get(protocolRef);
+            if (protocolDeploymentInfo != null) {
+                protocolDeploymentInfo.value = status;
+            }
+        }
+    }
+
     protected Protocol getProtocol(AssetAttribute protocolConfiguration) {
-        Collection<Protocol> protocols = container.getServices(Protocol.class);
-        return protocols
-            .stream()
-            .filter(protocol -> {
-                if (protocol.getProtocolName() == null || protocol.getProtocolName().length() == 0)
-                    throw new IllegalStateException("Protocol can't have empty name: " + protocol.getClass());
-                return protocol.getProtocolName().equals(protocolConfiguration.getValueAsString().orElse(null));
-            })
-            .findFirst()
-            .orElse(null);
+        return protocols.get(protocolConfiguration.getValueAsString().orElse(null));
     }
 
     protected void linkAttributes(AssetAttribute protocolConfiguration, Collection<AssetAttribute> attributes) {
@@ -372,8 +430,9 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             LOG.finest("Linking protocol attributes to: " + protocol.getProtocolName());
             protocol.linkAttributes(attributes, protocolConfiguration);
         } catch (Exception ex) {
-            // TODO: Better error handling?
-            LOG.log(Level.WARNING, "Ignoring error on linking attributes to protocol: " + protocol.getProtocolName(), ex);
+            LOG.log(Level.SEVERE, "Ignoring error on linking attributes to protocol: " + protocol.getProtocolName(), ex);
+            // Update the status of this protocol configuration to error
+            publishProtocolDeploymentStatus(protocolConfiguration.getReferenceOrThrow(), ERROR);
         }
     }
 
@@ -389,8 +448,9 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             LOG.finest("Unlinking protocol attributes form: " + protocol.getProtocolName());
             protocol.unlinkAttributes(attributes, protocolConfiguration);
         } catch (Exception ex) {
-            // TODO: Better error handling?
-            LOG.log(Level.WARNING, "Ignoring error on unlinking attributes from protocol: " + protocol.getProtocolName(), ex);
+            LOG.log(Level.SEVERE, "Ignoring error on unlinking attributes from protocol: " + protocol.getProtocolName(), ex);
+            // Update the status of this protocol configuration to error
+            publishProtocolDeploymentStatus(protocolConfiguration.getReferenceOrThrow(), ERROR);
         }
     }
 
@@ -429,9 +489,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                     .getStateEvent();
 
                 if (event.isPresent()) {
-                    messageBrokerService.getProducerTemplate().sendBody(
+                    messageBrokerService.getProducerTemplate().sendBodyAndHeader(
                         ACTUATOR_TOPIC,
-                        event.get()
+                        event.get(),
+                        "Protocol",
+                        protocolConfiguration.getValueAsString().orElse("")
                     );
                 } else {
                     LOG.warning("Attribute doesn't have a valid attribute event: " + assetState);
@@ -472,9 +534,10 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             '}';
     }
 
-    public static Optional<AssetAttribute> getProtocolConfiguration(AttributeRef protocolRef) {
+    public Optional<AssetAttribute> getProtocolConfiguration(AttributeRef protocolRef) {
         synchronized (protocolConfigurations) {
-            return Optional.ofNullable(protocolConfigurations.get(protocolRef));
+            Pair<AssetAttribute, Protocol.DeploymentStatus> deploymentStatusPair = protocolConfigurations.get(protocolRef);
+            return deploymentStatusPair == null ? Optional.empty() : Optional.of(deploymentStatusPair.key);
         }
     }
 }

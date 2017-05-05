@@ -45,29 +45,34 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
                 // Assume we've pushed the update to the actual device and it responded with OK
                 // so now we want to cause a sensor update that will go through the processing
                 // chain.
-                onSensorUpdate(sendToActuatorEvents.last().getAttributeState())
+                updateLinkedAttribute(sendToActuatorEvents.last().getAttributeState())
             }
 
             @Override
-            protected void sendToActuator(AttributeEvent event) {
-                LOG.info("Mock Protocol: sendToActuator")
-                sendToActuatorEvents.add(event)
+            protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+                LOG.info("Mock Protocol: linkProtocol")
             }
 
             @Override
-            protected void onAttributeAdded(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
+            protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+                LOG.info("Mock Protocol: unlinkProtocol")
+            }
+
+            @Override
+            protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
                 protocolDeployed = true
-                LOG.info("Mock Protocol: onAttributeAdded")
+                LOG.info("Mock Protocol: linkAttribute")
             }
 
             @Override
-            protected void onAttributeUpdated(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-                LOG.info("Mock Protocol: onAttributeUpdated")
+            protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
+                LOG.info("Mock Protocol: unlinkAttribute")
             }
 
             @Override
-            protected void onAttributeRemoved(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-                LOG.info("Mock Protocol: onAttributeRemoved")
+            protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
+                LOG.info("Mock Protocol: processLinkedAttributeWrite")
+                sendToActuatorEvents.add(event)
             }
 
             @Override
@@ -162,7 +167,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert sendToActuatorEvents.size() == 1
             assert sendToActuatorEvents[0].entityId == mockThing.id
             assert sendToActuatorEvents[0].attributeName == "light1Toggle"
-            assert Values.getBoolean(sendToActuatorEvents[0].attributeState.currentValue.orElse(null)).orElse(null) == true
+            assert Values.getBoolean(sendToActuatorEvents[0].attributeState.currentValue.orElse(null)).orElse(null)
             assert updatesPassedStartOfProcessingChain[0].processingStatus == AssetState.ProcessingStatus.COMPLETED
         }
 
@@ -177,8 +182,8 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert updatesReachedEndOfProcessingChain.size() == 1
             assert updatesReachedEndOfProcessingChain[0].name == "Mock Thing Asset"
             assert updatesReachedEndOfProcessingChain[0].attributeName == "light1Toggle"
-            assert Values.getBoolean(updatesReachedEndOfProcessingChain[0].oldValue).orElse(null) == false
-            assert Values.getBoolean(updatesReachedEndOfProcessingChain[0].value).orElse(null) == true
+            assert !Values.getBoolean(updatesReachedEndOfProcessingChain[0].oldValue).orElse(null)
+            assert Values.getBoolean(updatesReachedEndOfProcessingChain[0].value).orElse(null)
             assert updatesReachedEndOfProcessingChain[0].processingStatus == AssetState.ProcessingStatus.COMPLETED
         }
         //endregion

@@ -21,6 +21,7 @@ package org.openremote.agent3.protocol.trigger;
 
 import org.openremote.agent3.protocol.AbstractProtocol;
 import org.openremote.container.Container;
+import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
@@ -56,7 +57,7 @@ public abstract class AbstractTriggerHandler {
     protected abstract void unregisterAttribute(AttributeRef attributeRef, AttributeRef triggerRef);
 
     /**
-     * A {@link AbstractProtocol#sendToActuator(AttributeEvent)} has occurred on the protocol.
+     * A {@link AbstractProtocol#processLinkedAttributeWrite(AttributeEvent, AssetAttribute)} has occurred on the protocol.
      *
      * The {@link AbstractTriggerHandler} implementation should override this method
      * to handle the request based on the propertyName and the {@link AttributeEvent}.

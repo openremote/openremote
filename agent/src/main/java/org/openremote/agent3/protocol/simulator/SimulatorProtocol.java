@@ -38,7 +38,6 @@ import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 import static org.openremote.model.asset.AssetMeta.RANGE_MAX;
 import static org.openremote.model.asset.AssetMeta.RANGE_MIN;
 
-// TODO: Should putState be allowed or should users be forced to go through the AssetProcessingService processing chain
 public class SimulatorProtocol extends AbstractProtocol {
 
     /**
@@ -61,8 +60,10 @@ public class SimulatorProtocol extends AbstractProtocol {
     public static class Instance {
         protected Mode mode;
         protected int delayMilliseconds;
+        protected boolean enabled;
 
-        public Instance(Mode mode, int delayMilliseconds) {
+        public Instance(Mode mode, int delayMilliseconds, boolean enabled) {
+            this.enabled = enabled;
             this.mode = mode;
             this.delayMilliseconds = delayMilliseconds;
         }
@@ -73,6 +74,10 @@ public class SimulatorProtocol extends AbstractProtocol {
 
         public int getDelayMilliseconds() {
             return delayMilliseconds;
+        }
+
+        public boolean isEnabled() {
+            return enabled;
         }
     }
 
@@ -110,24 +115,13 @@ public class SimulatorProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void onAttributeAdded(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-
-        // Get element type from the attribute meta
-        String elementType = getElementType(attribute)
-            .orElseThrow(
-                () -> new IllegalArgumentException(
-                    "Can't configure simulator, missing " + SIMULATOR_ELEMENT + " meta item on: " + attribute
-                )
-            );
-
-        // Look for existing instance for this protocol configuration or create if needed
-        AttributeRef configRef = protocolConfiguration.getReferenceOrThrow();
-        AttributeRef attributeRef = attribute.getReferenceOrThrow();
+    protected void doLinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+        AttributeRef protocolRef = protocolConfiguration.getReferenceOrThrow();
 
         synchronized (instances) {
             instances
                 .computeIfAbsent(
-                    configRef,
+                    protocolRef,
                     ref -> {
                         Mode mode = protocolConfiguration
                             .getMetaItem(CONFIG_MODE)
@@ -149,10 +143,35 @@ public class SimulatorProtocol extends AbstractProtocol {
                             .flatMap(AbstractValueHolder::getValueAsInteger)
                             .orElse(DEFAULT_WRITE_DELAY);
 
-                        return new Instance(mode, writeDelay);
+                        updateDeploymentStatus(protocolRef, protocolConfiguration.isEnabled() ? DeploymentStatus.LINKED_ENABLED : DeploymentStatus.LINKED_DISABLED);
+                        return new Instance(mode, writeDelay, protocolConfiguration.isEnabled());
                     }
                 );
         }
+    }
+
+    @Override
+    protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+        AttributeRef configRef = protocolConfiguration.getReferenceOrThrow();
+
+        synchronized (instances) {
+            instances.remove(configRef);
+        }
+    }
+
+    @Override
+    protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
+
+        // Get element type from the attribute meta
+        String elementType = getElementType(attribute)
+            .orElseThrow(
+                () -> new IllegalArgumentException(
+                    "Can't configure simulator, missing " + SIMULATOR_ELEMENT + " meta item on: " + attribute
+                )
+            );
+
+        AttributeRef configRef = protocolConfiguration.getReferenceOrThrow();
+        AttributeRef attributeRef = attribute.getReferenceOrThrow();
 
         SimulatorElement element = createElement(elementType, attribute);
         if (attribute.getValue().isPresent()) {
@@ -175,12 +194,7 @@ public class SimulatorProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void onAttributeUpdated(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
-        onAttributeAdded(attribute, protocolConfiguration);
-    }
-
-    @Override
-    protected void onAttributeRemoved(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
+    protected void doUnlinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         AttributeRef attributeRef = attribute.getReferenceOrThrow();
 
         synchronized (elements) {
@@ -193,7 +207,7 @@ public class SimulatorProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void sendToActuator(AttributeEvent event) {
+    protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
         putState(event.getAttributeState());
     }
 
@@ -224,39 +238,59 @@ public class SimulatorProtocol extends AbstractProtocol {
     public void updateSensor(AttributeRef attributeRef, int updateSensorDelayMilliseconds) {
         Value value = getState(attributeRef);
         final AttributeState state = new AttributeState(attributeRef, value);
+        AttributeRef instanceRef = attributeInstanceMap.get(attributeRef);
+
+        if (instanceRef == null) {
+            throw new IllegalArgumentException("Attribute is not referenced by an instance:" + attributeRef);
+        }
+
+        Instance instance;
+
+        synchronized (instances) {
+            instance = instances.get(instanceRef);
+        }
+
+        if (instance == null) {
+            throw new IllegalArgumentException("No instance found by name '" + instanceRef + "'");
+        }
+
+        if (!instance.isEnabled()) {
+            LOG.fine("Simulator protocol configuration is disabled so cannot process request");
+            return;
+        }
 
         if (updateSensorDelayMilliseconds <= 0) {
-            onSensorUpdate(state);
+            updateLinkedAttribute(state);
         } else {
-            executorService.schedule(() -> onSensorUpdate(state), updateSensorDelayMilliseconds);
+            executorService.schedule(() -> updateLinkedAttribute(state), updateSensorDelayMilliseconds);
         }
     }
 
     /**
      * Call this to simulate a send to actuator.
      */
-    public void putState(String entityId, String attributeName, Value value) {
+    protected void putState(String entityId, String attributeName, Value value) {
         putState(new AttributeState(new AttributeRef(entityId, attributeName), value));
     }
 
     /**
      * Call this to simulate a send to actuator.
      */
-    public void putState(AttributeRef attributeRef, Value value) {
+    protected void putState(AttributeRef attributeRef, Value value) {
         putState(new AttributeState(attributeRef, value));
     }
 
     /**
      * Call this to simulate a send to actuator.
      */
-    public void putState(AttributeEvent event) {
+    protected void putState(AttributeEvent event) {
         putState(event.getAttributeState());
     }
 
     /**
      * Call this to simulate a send to actuator.
      */
-    public void putState(AttributeState attributeState) {
+    protected void putState(AttributeState attributeState) {
         AttributeRef attributeRef = attributeState.getAttributeRef();
         AttributeRef instanceRef = attributeInstanceMap.get(attributeRef);
 
@@ -272,6 +306,11 @@ public class SimulatorProtocol extends AbstractProtocol {
 
         if (instance == null) {
             throw new IllegalArgumentException("No instance found by name '" + instanceRef + "'");
+        }
+
+        if (!instance.isEnabled()) {
+            LOG.fine("Simulator protocol configuration is disabled so cannot process request");
+            return;
         }
 
         synchronized (elements) {
