@@ -21,7 +21,7 @@ when
     // A room has a motion counter
     $room : AssetState(type == AssetType.ROOM, attributeName == "motionCount")
     // And the presence detected flag is not set already
-    AssetState(id == $room.id, attributeName == "presenceDetected", !valueAsBoolean)
+    AssetState(id == $room.id, attributeName == "presenceDetected", valueAsBoolean != true)
     // And at least 5 motion counter increments have been received in the last 10 minutes
     accumulate(
         AssetEvent(id == $room.id, attributeName == "motionCount", valueAsNumber > 0) over window:time(10m);
@@ -40,7 +40,7 @@ when
     // A room has a motion counter
     $room : AssetState(type == AssetType.ROOM, attributeName == "motionCount")
     // And the presence detected flag is set
-    AssetState(id == $room.id, attributeName == "presenceDetected", valueAsBoolean)
+    AssetState(id == $room.id, attributeName == "presenceDetected", valueAsBoolean == true)
     // And at least 5 motion counter increments have been received in the last 10 minutes
     accumulate(
         AssetEvent(id == $room.id, attributeName == "motionCount", valueAsNumber > 0, $ts: valueTimestamp) over window:time(10m);
@@ -63,7 +63,7 @@ when
     // A room has a motion counter
     $room: AssetState(type == AssetType.ROOM, attributeName == "motionCount")
     // And the presence detected flag is set
-    AssetState(id == $room.id, attributeName == "presenceDetected", valueAsBoolean)
+    AssetState(id == $room.id, attributeName == "presenceDetected", valueAsBoolean == true)
     // And no motion counter increments have been received in the last 10 minutes
     accumulate(
         AssetEvent(id == $room.id, attributeName == "motionCount", valueAsNumber > 0) over window:time(10m);

@@ -18,10 +18,9 @@ import static java.util.concurrent.TimeUnit.*
 import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_1
 import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_APARTMENT_2
 
-// TODO: Fix this test, it doesn't work with null initial value on lastPresenceDetected attribute
-
 class ApartmentPresenceDetectionTest extends Specification implements ManagerContainerTrait {
 
+    // TODO: Rewrite with co2 level confirmation rules
     @Ignore
     def "Detect presence with motion counter"() {
 
@@ -154,7 +153,6 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         stopContainer(container)
     }
 
-    @Ignore
     def "Detect presence with motion sensor"() {
 
         given: "the container environment is started"
@@ -178,8 +176,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         and: "the presence detected flag and timestamp of the room should not be set"
         def livingRoomAsset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
         assert !livingRoomAsset.getAttribute("presenceDetected").get().getValueAsBoolean().get()
-        assert livingRoomAsset.getAttribute("lastPresenceDetected").get().getValueAsDecimal().isPresent()
-        assert !livingRoomAsset.getAttribute("lastPresenceDetected").get().getValueAsDecimal().isPresent()
+        assert !livingRoomAsset.getAttribute("lastPresenceDetected").get().getValueAsNumber().isPresent()
 
         when: "we have an events consumer for collecting test data"
         List<AssetEvent> insertedAssetEvents = []
@@ -237,8 +234,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         conditions.eventually {
             def asset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
             assert asset.getAttribute("presenceDetected").get().getValueAsBoolean().get()
-            assert asset.getAttribute("lastPresenceDetected").get().getValueAsDecimal().isPresent()
-            assert asset.getAttribute("lastPresenceDetected").get().getValueAsDecimal().get() == expectedLastPresenceTimestamp
+            assert asset.getAttribute("lastPresenceDetected").get().getValueAsNumber().orElse(null) == expectedLastPresenceTimestamp
         }
 
         when: "time moves on and we keep triggering the motion sensor in short intervals "
@@ -260,8 +256,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         conditions.eventually {
             def asset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
             assert asset.getAttribute("presenceDetected").get().getValueAsBoolean().get()
-            assert asset.getAttribute("lastPresenceDetected").get().getValueAsDecimal().isPresent()
-            assert asset.getAttribute("lastPresenceDetected").get().getValueAsDecimal().get() == expectedLastPresenceTimestamp
+            assert asset.getAttribute("lastPresenceDetected").get().getValueAsNumber().orElse(null) == expectedLastPresenceTimestamp
         }
 
         when: "time moves on without the motion sensor being triggered"
@@ -271,7 +266,7 @@ class ApartmentPresenceDetectionTest extends Specification implements ManagerCon
         conditions.eventually {
             def asset = assetStorageService.find(managerDemoSetup.apartment2LivingroomId, true)
             assert !asset.getAttribute("presenceDetected").get().getValueAsBoolean().get()
-            assert asset.getAttribute("lastPresenceDetected").get().getValueAsDecimal().get() == expectedLastPresenceTimestamp
+            assert asset.getAttribute("lastPresenceDetected").get().getValueAsNumber().orElse(null) == expectedLastPresenceTimestamp
         }
 
         when: "time is advanced enough for event expiration"

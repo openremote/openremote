@@ -315,7 +315,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new MetaItem(AssetMeta.DESCRIPTION, Values.create("Send notifications when presence is detected")),
                     new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 )),
-            new AssetAttribute("vacationDays", AttributeType.INTEGER, null)
+            new AssetAttribute("vacationDays", AttributeType.INTEGER)
                 .setMeta(new Meta(
                     new MetaItem(AssetMeta.LABEL, Values.create("Vacation Days")),
                     new MetaItem(AssetMeta.DESCRIPTION, Values.create("Enable vacation mode for given days")),
@@ -438,7 +438,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new MetaItem(AssetMeta.LABEL, Values.create("Waking up on Saturday")),
                     new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("awaySceneSATURDAY", AttributeType.STRING, null)
+            new AssetAttribute("awaySceneSATURDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(AssetMeta.LABEL, Values.create("Going to work on Saturday")),
                     new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
@@ -458,7 +458,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new MetaItem(AssetMeta.LABEL, Values.create("Waking up on Sunday")),
                     new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("awaySceneSUNDAY", AttributeType.STRING, null)
+            new AssetAttribute("awaySceneSUNDAY", AttributeType.STRING)
                 .setMeta(
                     new MetaItem(AssetMeta.LABEL, Values.create("Going to work on Sunday")),
                     new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
@@ -487,13 +487,13 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new MetaItem(AssetMeta.RULE_STATE, Values.create(true)),
                     new MetaItem(AssetMeta.RULE_EVENT, Values.create(true))
                 )),
-            new AssetAttribute("presenceDetected", AttributeType.BOOLEAN, Values.create(false))
+            new AssetAttribute("presenceDetected", AttributeType.BOOLEAN)
                 .setMeta(new Meta(
                     new MetaItem(AssetMeta.LABEL, Values.create("Presence Detected")),
                     new MetaItem(AssetMeta.DESCRIPTION, Values.create("Someone is currently present in the room")),
                     new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 )),
-            new AssetAttribute("lastPresenceDetected", AttributeType.DECIMAL, null)
+            new AssetAttribute("lastPresenceDetected", AttributeType.DECIMAL)
                 .setMeta(
                     new MetaItem(AssetMeta.LABEL, Values.create("Last Presence Timestamp")),
                     new MetaItem(AssetMeta.DESCRIPTION, Values.create("Timestamp of last detected presence")),
@@ -510,7 +510,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
 
         ServerAsset apartment1LivingroomThermostat = new ServerAsset("Living Room Thermostat", THING, apartment1Livingroom);
         apartment1LivingroomThermostat.setAttributes(
-            new AssetAttribute("currentTemperature", DECIMAL, null)
+            new AssetAttribute("currentTemperature", DECIMAL)
                 .setMeta(
                     new MetaItem(
                         AssetMeta.LABEL,
@@ -529,7 +529,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new MetaItem(
                         "urn:thirdparty:bar", Values.create("BAR"))
                 ),
-            new AssetAttribute("comfortTemperature", DECIMAL, null)
+            new AssetAttribute("comfortTemperature", DECIMAL)
                 .setMeta(
                     new MetaItem(
                         AssetMeta.LABEL,
@@ -584,7 +584,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         )),
                         new MetaItem(AssetMeta.RULE_STATE, Values.create(true))
                 ),
-            new AssetAttribute("lastPresenceDetected", AttributeType.DECIMAL, null)
+            new AssetAttribute("lastPresenceDetected", AttributeType.DECIMAL)
                 .setMeta(
                         new MetaItem(AssetMeta.LABEL, Values.create("Last Presence Timestamp")),
                         new MetaItem(AssetMeta.DESCRIPTION, Values.create(

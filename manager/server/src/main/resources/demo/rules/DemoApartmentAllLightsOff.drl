@@ -11,7 +11,7 @@ global org.openremote.model.rules.Assets assets;
 rule "Switch room lights off when apartment ALL LIGHTS OFF push-button is pressed"
 when
     // In an asset of type RESIDENCE the All Lights Off push-button is pressed, which sends a 'true' value
-    $e: AssetEvent(attributeName == "allLightsOffSwitch", type == AssetType.RESIDENCE, valueAsBoolean )
+    $e: AssetEvent(attributeName == "allLightsOffSwitch", type == AssetType.RESIDENCE, valueAsBoolean == true)
 then
     assets.query() // Execute a query to get "other" assets
         .parent($e.getId()) // Where parent is the apartment in LHS

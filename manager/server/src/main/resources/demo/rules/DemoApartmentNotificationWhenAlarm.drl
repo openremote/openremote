@@ -9,8 +9,8 @@ global org.openremote.model.rules.Assets assets;
 
 rule "Send notification when alarm triggered in a room"
 when
-    $residence : AssetState(type == AssetType.RESIDENCE, attributeName == "alarmEnabled", valueAsBoolean)
-    $room : AssetState(parentId == $residence.id, type == AssetType.ROOM, attributeName == "presenceDetected", valueAsBoolean)
+    $residence : AssetState(type == AssetType.RESIDENCE, attributeName == "alarmEnabled", valueAsBoolean == true)
+    $room : AssetState(parentId == $residence.id, type == AssetType.ROOM, attributeName == "presenceDetected", valueAsBoolean == true)
 then
     // users.storeAndNotify("todo", );
 end

@@ -21,10 +21,10 @@ when
     // A room has a motion sensor
     $room : AssetState(type == AssetType.ROOM, attributeName == "motionSensor")
     // And the presence detected flag is not set already
-    AssetState(id == $room.id, attributeName == "presenceDetected", !valueAsBoolean)
+    AssetState(id == $room.id, attributeName == "presenceDetected", valueAsBoolean != true)
     // And at least 5 motion sensor triggers have been received in the last 10 minutes
     accumulate(
-        AssetEvent(id == $room.id, attributeName == "motionSensor", valueAsBoolean) over window:time(10m);
+        AssetEvent(id == $room.id, attributeName == "motionSensor", valueAsBoolean == true) over window:time(10m);
         $count: count(1);
         $count >= 5
     )
@@ -38,9 +38,9 @@ end
 rule "Update the presence detected timestamp if motion sensor is triggered and we have already detected presence"
 when
     // The presence detected flag is set in a room
-    $room: AssetState(type == AssetType.ROOM, attributeName == "presenceDetected", valueAsBoolean)
+    $room: AssetState(type == AssetType.ROOM, attributeName == "presenceDetected", valueAsBoolean == true)
     // And the motion sensor is triggered
-    $sensorState: AssetState(id == $room.id, attributeName == "motionSensor", valueAsBoolean)
+    $sensorState: AssetState(id == $room.id, attributeName == "motionSensor", valueAsBoolean == true)
 then
     // Update the last presence detected timestamp of the room
     assets.dispatch(
@@ -53,10 +53,10 @@ when
     // A room has a motion sensor
     $room: AssetState(type == AssetType.ROOM, attributeName == "motionSensor")
     // And the presence detected flag is set
-    AssetState(id == $room.id, attributeName == "presenceDetected", valueAsBoolean)
+    AssetState(id == $room.id, attributeName == "presenceDetected", valueAsBoolean == true)
     // And no motion sensor triggers have been received in the last 10 minutes
     accumulate(
-        AssetEvent(id == $room.id, attributeName == "motionSensor", valueAsBoolean) over window:time(10m);
+        AssetEvent(id == $room.id, attributeName == "motionSensor", valueAsBoolean == true) over window:time(10m);
         $count: count(1);
         $count == 0
     )
