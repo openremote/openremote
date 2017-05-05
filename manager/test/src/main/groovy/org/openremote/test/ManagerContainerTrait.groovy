@@ -2,7 +2,6 @@ package org.openremote.test
 
 import com.google.common.collect.Lists
 import org.drools.core.time.impl.PseudoClockScheduler
-import org.kie.api.runtime.conf.ClockTypeOption
 import org.openremote.agent3.protocol.Protocol
 import org.openremote.container.Container
 import org.openremote.container.ContainerService
@@ -14,6 +13,7 @@ import org.openremote.manager.server.agent.AgentService
 import org.openremote.manager.server.apps.ConsoleAppService
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
+import org.openremote.manager.server.concurrent.ManagerExecutorService
 import org.openremote.manager.server.datapoint.AssetDatapointService
 import org.openremote.manager.server.event.EventService
 import org.openremote.manager.server.i18n.I18NService
@@ -24,14 +24,13 @@ import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.rules.RulesetStorageService
 import org.openremote.manager.server.security.ManagerIdentityService
 import org.openremote.manager.server.setup.SetupService
-import org.openremote.manager.server.concurrent.ManagerExecutorService
 import org.openremote.manager.server.web.ManagerWebService
 
 import java.util.concurrent.TimeUnit
 
 import static org.openremote.container.timer.TimerService.Clock.PSEUDO
 import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
-import static org.openremote.manager.server.setup.builtin.BuiltinSetupTasks.SETUP_IMPORT_DEMO_RULES
+import static org.openremote.manager.server.setup.builtin.BuiltinSetupTasks.*
 
 trait ManagerContainerTrait extends ContainerTrait {
 
@@ -67,10 +66,29 @@ trait ManagerContainerTrait extends ContainerTrait {
     }
 
     /**
-     * Faster startup if you don't need to test rules.
+     * Faster startup - Start a container with no demo rules
      */
-    static Container startContainerWithoutDemoRules(Map<String, String> config, Iterable<ContainerService> services) {
+    static Container startContainerNoDemoRules(Map<String, String> config, Iterable<ContainerService> services) {
         startContainer(config << [(SETUP_IMPORT_DEMO_RULES): "false"], services)
+    }
+
+    /**
+     * Faster startup - Start a container with no demo assets or rules
+     */
+    static Container startContainerNoDemoRulesOrAssets(Map<String, String> config, Iterable<ContainerService> services) {
+        config << [(SETUP_IMPORT_DEMO_ASSETS): "false"]
+        config << [(SETUP_IMPORT_DEMO_RULES): "false"]
+        startContainer(config, services);
+    }
+
+    /**
+     * Faster startup - Start a container with no demo users, assets or rules
+     */
+    static Container startContainerMinimal(Map<String, String> config, Iterable<ContainerService> services) {
+        config << [(SETUP_IMPORT_DEMO_USERS): "false"]
+        config << [(SETUP_IMPORT_DEMO_ASSETS): "false"]
+        config << [(SETUP_IMPORT_DEMO_RULES): "false"]
+        startContainer(config, services);
     }
 
     /**

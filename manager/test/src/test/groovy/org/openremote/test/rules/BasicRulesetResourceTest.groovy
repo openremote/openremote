@@ -25,7 +25,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
     def "Access rules as superuser"() {
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def rulesService = container.getService(RulesService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -295,7 +295,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def rulesService = container.getService(RulesService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -525,7 +525,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def rulesService = container.getService(RulesService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
@@ -673,7 +673,7 @@ class BasicRulesetResourceTest extends Specification implements ManagerContainer
 
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
         def rulesetStorageService = container.getService(RulesetStorageService.class)
         def rulesService = container.getService(RulesService.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)

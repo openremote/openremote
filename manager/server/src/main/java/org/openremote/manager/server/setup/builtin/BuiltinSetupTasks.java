@@ -30,62 +30,58 @@ import static org.openremote.container.util.MapAccess.getBoolean;
 /**
  * Builtin setup tasks.
  * <p>
- * When developer mode is enabled, all builtin setup tasks will be executed
- * regardless of other configuration options. With developer mode disabled,
- * builtin tasks can be selectively enabled (they are disabled by default), see:
- * <ul>
+ * All setup tasks are configurable.
+ * <p>
+ * When developer mode is enabled all setup tasks default to enabled.
+ * When developer mode is disabled all setup tasks default to false.
+ * <p>
+ * Some setup tasks require other setup tasks so if a dependent task
+ * is requested to be disabled it will be overridden and enabled anyway
+ * (see list of config options for details)
+ * <p>
+ * Setup tasks are configured via the config hash map supplied in the
+ * {@link Container} constructor. Available config options are:
+  * <ul>
  * <li>{@link #SETUP_INIT_CLEAN_DATABASE}</li>
- * <li>{@link #SETUP_IMPORT_DEMO_DATA}</li>
+ * <li>{@link #SETUP_IMPORT_DEMO_ASSETS} depends on {@link #SETUP_IMPORT_DEMO_USERS}</li>
+ * <li>{@link #SETUP_IMPORT_DEMO_USERS}</li>
+ * <li>{@link #SETUP_IMPORT_DEMO_RULES} depends on {@link #SETUP_IMPORT_DEMO_ASSETS}</li>
  * </ul>
  */
 public class BuiltinSetupTasks extends AbstractSetupTasks {
 
     public static final String SETUP_INIT_CLEAN_DATABASE = "SETUP_INIT_CLEAN_DATABASE";
-    public static final boolean SETUP_INIT_CLEAN_DATABASE_DEFAULT = false;
-
-    public static final String SETUP_IMPORT_DEMO_DATA = "SETUP_IMPORT_DEMO_DATA";
-    public static final boolean SETUP_IMPORT_DEMO_DATA_DEFAULT = false;
-
+    public static final String SETUP_IMPORT_DEMO_USERS = "SETUP_IMPORT_DEMO_USERS";
+    public static final String SETUP_IMPORT_DEMO_ASSETS = "SETUP_IMPORT_DEMO_ASSETS";
     public static final String SETUP_IMPORT_DEMO_RULES = "SETUP_IMPORT_DEMO_RULES";
-    public static final boolean SETUP_IMPORT_DEMO_RULES_DEFAULT = true;
 
     @Override
     public List<Setup> createTasks(Container container) {
 
-        if (container.isDevMode()) {
+        boolean cleanDatabase = getBoolean(container.getConfig(), SETUP_INIT_CLEAN_DATABASE, container.isDevMode());
+        boolean importDemoRules = getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_RULES, container.isDevMode());
+        // If importing demo rules we have to import demo assets
+        boolean importDemoAssets = importDemoRules || getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_ASSETS, container.isDevMode());
+        // If importing demo assets we have to import demo users
+        boolean importDemoUsers = importDemoAssets || getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_USERS, container.isDevMode());
 
+
+        if (cleanDatabase) {
             addTask(new ManagerCleanSetup(container));
             addTask(new KeycloakCleanSetup(container));
             addTask(new KeycloakInitSetup(container));
             addTask(new ManagerInitSetup(container));
-
-            addTask(new KeycloakDemoSetup(container));
-            addTask(new ManagerDemoSetup(container));
-
-        } else {
-
-            if (getBoolean(container.getConfig(), SETUP_INIT_CLEAN_DATABASE, SETUP_INIT_CLEAN_DATABASE_DEFAULT)) {
-                addTask(new ManagerCleanSetup(container));
-                addTask(new KeycloakCleanSetup(container));
-                addTask(new KeycloakInitSetup(container));
-                addTask(new ManagerInitSetup(container));
-            }
-
-            if (getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_DATA, SETUP_IMPORT_DEMO_DATA_DEFAULT)) {
-                addTask(new KeycloakDemoSetup(container));
-                addTask(new ManagerDemoSetup(container));
-            }
-
         }
 
-        // We want to import demo rules when either
-        //
-        // - dev mode is on and demo rules import is not disabled (some tests need other rules)
-        // - production mode is on and both demo data import and demo rules import is enabled
-        //
-        if (container.isDevMode() && getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_RULES, SETUP_IMPORT_DEMO_RULES_DEFAULT)
-            || (getBoolean(container.getConfig(), SETUP_INIT_CLEAN_DATABASE, SETUP_INIT_CLEAN_DATABASE_DEFAULT) &&
-            getBoolean(container.getConfig(), SETUP_IMPORT_DEMO_RULES, SETUP_IMPORT_DEMO_RULES_DEFAULT))) {
+        if (importDemoUsers) {
+            addTask(new KeycloakDemoSetup(container));
+        }
+
+        if (importDemoAssets) {
+            addTask(new ManagerDemoSetup(container));
+        }
+
+        if (importDemoRules) {
             addTask(new RulesDemoSetup(container));
         }
 

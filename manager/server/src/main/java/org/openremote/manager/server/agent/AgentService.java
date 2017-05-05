@@ -414,6 +414,14 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         }
     }
 
+    public Protocol.DeploymentStatus getProtocolDeploymentStatus(AttributeRef protocolRef) {
+        synchronized (protocolConfigurations) {
+            return Optional.ofNullable(protocolConfigurations.get(protocolRef))
+                .map(pair -> pair.value)
+                .orElse(null);
+        }
+    }
+
     protected Protocol getProtocol(AssetAttribute protocolConfiguration) {
         return protocols.get(protocolConfiguration.getValueAsString().orElse(null));
     }

@@ -31,7 +31,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
 
         and: "the container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
 
@@ -73,7 +73,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
         given: "the container environment is started"
         def conditions = new PollingConditions(timeout: 10, delay: 1)
         def serverPort = findEphemeralPort()
-        def container = startContainerWithoutDemoRules(defaultConfig(serverPort) << [(TIMER_CLOCK_TYPE): PSEUDO.name()], defaultServices())
+        def container = startContainerNoDemoRules(defaultConfig(serverPort) << [(TIMER_CLOCK_TYPE): PSEUDO.name()], defaultServices())
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
 

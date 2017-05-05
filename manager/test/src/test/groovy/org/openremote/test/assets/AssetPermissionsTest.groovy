@@ -28,7 +28,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     def "Access assets as superuser"() {
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def conditions = new PollingConditions(delay: 1, timeout: 5)
@@ -203,7 +203,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
 
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def conditions = new PollingConditions(delay: 1, timeout: 10)
@@ -358,7 +358,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     def "Access assets as testuser2"() {
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
@@ -489,7 +489,7 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
     def "Access assets as testuser3"() {
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def conditions = new PollingConditions(delay: 1, timeout: 5)
@@ -662,13 +662,13 @@ class AssetPermissionsTest extends Specification implements ManagerContainerTrai
         ex.response.status == 403
 
         when: "a protected asset attribute is written on a user asset"
-        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomThermostatId, "comfortTemperature", Values.create(22.123).toJson())
+        assetResource.writeAttributeValue(null, managerDemoSetup.apartment1LivingroomThermostatId, "targetTemperature", Values.create(22.123).toJson())
 
         then: "result should match"
         conditions.eventually {
             def asset = assetResource.get(null, managerDemoSetup.apartment1LivingroomThermostatId)
-            assert asset.getAttribute("comfortTemperature").get().getValue().isPresent()
-            assert asset.getAttribute("comfortTemperature").get().getValue().get().toJson() == Values.create(22.123).toJson()
+            assert asset.getAttribute("targetTemperature").get().getValue().isPresent()
+            assert asset.getAttribute("targetTemperature").get().getValue().get().toJson() == Values.create(22.123).toJson()
         }
 
         when: "an attribute is written on a non-existent user asset"

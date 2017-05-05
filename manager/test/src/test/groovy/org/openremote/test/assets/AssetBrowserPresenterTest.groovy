@@ -43,7 +43,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
 
         given: "The server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
         def identityService = container.getService(ManagerIdentityService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
@@ -212,7 +212,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
 
         given: "The server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
         def identityService = container.getService(ManagerIdentityService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
@@ -390,7 +390,7 @@ class AssetBrowserPresenterTest extends Specification implements ManagerContaine
 
         given: "The server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
         def identityService = container.getService(ManagerIdentityService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)

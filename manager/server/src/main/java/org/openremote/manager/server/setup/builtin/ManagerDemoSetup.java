@@ -20,6 +20,8 @@
 package org.openremote.manager.server.setup.builtin;
 
 import com.vividsolutions.jts.geom.Coordinate;
+import org.openremote.agent3.protocol.macro.MacroAction;
+import org.openremote.agent3.protocol.macro.MacroProtocol;
 import org.openremote.agent3.protocol.simulator.SimulatorProtocol;
 import org.openremote.agent3.protocol.simulator.element.ColorSimulatorElement;
 import org.openremote.agent3.protocol.simulator.element.DecimalSimulatorElement;
@@ -66,12 +68,15 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
     public String thingId;
     public String smartHomeId;
     public String apartment1Id;
+    public String apartment1SceneAgentId;
     public String apartment1LivingroomId;
     public String apartment1LivingroomThermostatId;
     public String apartment2Id;
     public String apartment3Id;
     public String apartment2LivingroomId;
     public String apartment3LivingroomId;
+    public String masterRealmId;
+    public String customerARealmId;
 
     public ManagerDemoSetup(Container container) {
         super(container);
@@ -83,6 +88,8 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         KeycloakDemoSetup keycloakDemoSetup = setupService.getTaskOfType(KeycloakDemoSetup.class);
         Tenant masterTenant = keycloakDemoSetup.masterTenant;
         Tenant customerATenant = keycloakDemoSetup.customerATenant;
+        masterRealmId = masterTenant.getId();
+        customerARealmId = customerATenant.getId();
 
         // ################################ Demo assets for 'master' realm ###################################
 
@@ -529,11 +536,11 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                     new MetaItem(
                         "urn:thirdparty:bar", Values.create("BAR"))
                 ),
-            new AssetAttribute("comfortTemperature", DECIMAL)
+            new AssetAttribute("targetTemperature", DECIMAL)
                 .setMeta(
                     new MetaItem(
                         AssetMeta.LABEL,
-                        Values.create("Comfort Temperature")),
+                        Values.create("Target Temperature")),
                     new MetaItem(
                         AssetMeta.RULE_STATE,
                         Values.create(true)),
@@ -551,6 +558,77 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         );
         apartment1LivingroomThermostat = assetStorageService.merge(apartment1LivingroomThermostat);
         apartment1LivingroomThermostatId = apartment1LivingroomThermostat.getId();
+
+        // Create scene agent
+        ServerAsset apartment1Scenes = new ServerAsset("Scenes", AGENT, apartment1);
+        apartment1Scenes.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
+        apartment1Scenes.setAttributes(
+            initProtocolConfiguration(new AssetAttribute("homeScene"), MacroProtocol.PROTOCOL_NAME)
+                .setMeta(
+                    new MacroAction(new AttributeState(new AttributeRef(apartment1Id, "alarmEnabled"), Values.create(false))).toMetaItem(),
+                    new MacroAction(new AttributeState(new AttributeRef(apartment1Id, "lastExecutedScene"), Values.create("HOME"))).toMetaItem(),
+                    new MacroAction(new AttributeState(new AttributeRef(apartment1LivingroomThermostatId, "targetTemperature"), Values.create(21d))).toMetaItem()
+                ),
+            initProtocolConfiguration(new AssetAttribute("awayScene"), MacroProtocol.PROTOCOL_NAME)
+                .setMeta(
+                    new MacroAction(new AttributeState(new AttributeRef(apartment1Id, "alarmEnabled"), Values.create(true))).toMetaItem(),
+                    new MacroAction(new AttributeState(new AttributeRef(apartment1Id, "lastExecutedScene"), Values.create("AWAY"))).toMetaItem(),
+                    new MacroAction(new AttributeState(new AttributeRef(apartment1LivingroomThermostatId, "targetTemperature"), Values.create(15d))).toMetaItem()
+                ),
+            initProtocolConfiguration(new AssetAttribute("eveningScene"), MacroProtocol.PROTOCOL_NAME)
+                .setMeta(
+                    new MacroAction(new AttributeState(new AttributeRef(apartment1Id, "alarmEnabled"), Values.create(false))).toMetaItem(),
+                    new MacroAction(new AttributeState(new AttributeRef(apartment1Id, "lastExecutedScene"), Values.create("EVENING"))).toMetaItem(),
+                    new MacroAction(new AttributeState(new AttributeRef(apartment1LivingroomThermostatId, "targetTemperature"), Values.create(22d))).toMetaItem()
+                ),
+            initProtocolConfiguration(new AssetAttribute("nightScene"), MacroProtocol.PROTOCOL_NAME)
+                .setMeta(
+                    new MacroAction(new AttributeState(new AttributeRef(apartment1Id, "alarmEnabled"), Values.create(true))).toMetaItem(),
+                    new MacroAction(new AttributeState(new AttributeRef(apartment1Id, "lastExecutedScene"), Values.create("NIGHT"))).toMetaItem(),
+                    new MacroAction(new AttributeState(new AttributeRef(apartment1LivingroomThermostatId, "targetTemperature"), Values.create(19d))).toMetaItem()
+                )
+        );
+        apartment1Scenes = assetStorageService.merge(apartment1Scenes);
+        apartment1SceneAgentId = apartment1Scenes.getId();
+
+        // Update apartment 1 with scenes
+        apartment1.addAttribute(
+            new AssetAttribute("homeScene", AttributeType.STRING)
+                .setMeta(
+                    new MetaItem(AssetMeta.LABEL, Values.create("Execute Home Scene")),
+                    new MetaItem(AssetMeta.EXECUTABLE, Values.create(true)),
+                    new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "homeScene").toArrayValue())
+                )
+        );
+
+        apartment1.addAttribute(
+            new AssetAttribute("awayScene", AttributeType.STRING)
+                .setMeta(
+                    new MetaItem(AssetMeta.LABEL, Values.create("Execute Away Scene")),
+                    new MetaItem(AssetMeta.EXECUTABLE, Values.create(true)),
+                    new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "awayScene").toArrayValue())
+                )
+        );
+
+        apartment1.addAttribute(
+            new AssetAttribute("eveningScene", AttributeType.STRING)
+                .setMeta(
+                    new MetaItem(AssetMeta.LABEL, Values.create("Execute Evening Scene")),
+                    new MetaItem(AssetMeta.EXECUTABLE, Values.create(true)),
+                    new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "eveningScene").toArrayValue())
+                )
+        );
+
+        apartment1.addAttribute(
+            new AssetAttribute("nightScene", AttributeType.STRING)
+                .setMeta(
+                    new MetaItem(AssetMeta.LABEL, Values.create("Execute Night Scene")),
+                    new MetaItem(AssetMeta.EXECUTABLE, Values.create(true)),
+                    new MetaItem(AssetMeta.AGENT_LINK, new AttributeRef(apartment1SceneAgentId, "nightScene").toArrayValue())
+                )
+        );
+
+        apartment1 = assetStorageService.merge(apartment1);
 
         ServerAsset apartment2 = new ServerAsset("Apartment 2", RESIDENCE, smartHome);
         apartment2.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));

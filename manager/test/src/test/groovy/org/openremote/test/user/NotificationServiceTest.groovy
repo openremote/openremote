@@ -19,7 +19,7 @@ class NotificationServiceTest extends Specification implements ManagerContainerT
 
         given: "the server container is started"
         def serverPort = findEphemeralPort()
-        def container = startContainerWithoutDemoRules(defaultConfig(serverPort), defaultServices())
+        def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices())
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
         def notificationService = container.getService(NotificationService.class)
 

@@ -36,7 +36,7 @@ end
 
 rule "Living Room Comfort Temperature"
 when
-  $e: AssetState(name == "Living Room Thermostat", attributeName == "comfortTemperature")
+  $e: AssetState(name == "Living Room Thermostat", attributeName == "targetTemperature")
 then
   return;
 end
