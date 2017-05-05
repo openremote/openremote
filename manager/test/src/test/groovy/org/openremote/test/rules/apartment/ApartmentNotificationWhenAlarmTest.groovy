@@ -18,20 +18,25 @@ class ApartmentNotificationWhenAlarmTest  extends Specification implements Manag
     def "Trigger notification when presence is detected and alarm is set"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 10, delay: 1)
+        def conditions = new PollingConditions(timeout: 15, delay: 1)
         def serverPort = findEphemeralPort()
         def container = startContainerWithPseudoClock(defaultConfig(serverPort), defaultServices())
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def rulesService = container.getService(RulesService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
         def assetStorageService = container.getService(AssetStorageService.class)
-        RulesEngine apartment1Engine = null
+        RulesEngine apartment1Engine
 
         expect: "the rule engines to become available and be running"
         conditions.eventually {
             apartment1Engine = rulesService.assetEngines.get(managerDemoSetup.apartment1Id)
             assert apartment1Engine != null
             assert apartment1Engine.isRunning()
+        }
+
+        and: "the demo attributes marked with RULE_STATE = true meta should be inserted into the engines"
+        conditions.eventually {
+            assert apartment1Engine.assetStates.size() == DEMO_RULE_STATES_APARTMENT_1
             assert apartment1Engine.knowledgeSession.factCount == DEMO_RULE_STATES_APARTMENT_1
         }
 
