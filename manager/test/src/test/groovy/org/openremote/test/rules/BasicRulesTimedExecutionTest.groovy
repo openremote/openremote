@@ -12,8 +12,8 @@ import spock.util.concurrent.PollingConditions
 import static java.util.concurrent.TimeUnit.SECONDS
 import static org.openremote.container.timer.TimerService.Clock.PSEUDO
 import static org.openremote.container.timer.TimerService.TIMER_CLOCK_TYPE
-import static org.openremote.test.RulesTestUtil.attachRuleExecutionLogger
-import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.*
+import static org.openremote.manager.server.setup.builtin.ManagerDemoSetup.DEMO_RULE_STATES_GLOBAL
+import static org.openremote.test.RulesTestUtil.createRulesExecutionListener
 
 class BasicRulesTimedExecutionTest extends Specification implements ManagerContainerTrait {
 
@@ -35,6 +35,13 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
 
+        and: "registered rules execution listeners"
+        rulesService.rulesEngineListeners = { rulesEngine ->
+            if (rulesEngine.id == RulesService.ID_GLOBAL_RULES_ENGINE) {
+                return createRulesExecutionListener(globalEngineFiredRules)
+            }
+        }
+
         and: "some test rulesets have been imported"
         Ruleset ruleset = new GlobalRuleset(
                 "Some timer rules",
@@ -50,10 +57,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
             assert globalEngine.knowledgeSession.factCount == DEMO_RULE_STATES_GLOBAL
         }
 
-        when: "the execution logger is attached"
-        attachRuleExecutionLogger(globalEngine, globalEngineFiredRules)
-
-        then: "after a few seconds the rule engines should have fired the timed execution rule in the background"
+        and: "after a few seconds the rule engines should have fired the timed execution rule in the background"
         new PollingConditions(initialDelay: 5).eventually {
             def expectedFiredRules = ["Log something every 2 seconds"]
             assert globalEngineFiredRules.size() > 1
@@ -73,6 +77,13 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
         def rulesService = container.getService(RulesService.class)
         def rulesetStorageService = container.getService(RulesetStorageService.class)
 
+        and: "registered rules execution listeners"
+        rulesService.rulesEngineListeners = { rulesEngine ->
+            if (rulesEngine.id == RulesService.ID_GLOBAL_RULES_ENGINE) {
+                return createRulesExecutionListener(globalEngineFiredRules)
+            }
+        }
+
         and: "some test rulesets have been imported"
         Ruleset ruleset = new GlobalRuleset(
                 "Some timer rules",
@@ -88,10 +99,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
             assert globalEngine.knowledgeSession.factCount == DEMO_RULE_STATES_GLOBAL
         }
 
-        when: "the execution logger is attached"
-        attachRuleExecutionLogger(globalEngine, globalEngineFiredRules)
-
-        then: "after a few seconds the rule engines should not have fired any rules"
+        and: "after a few seconds the rule engines should not have fired any rules"
         new PollingConditions(initialDelay: 3).eventually {
             assert globalEngineFiredRules.size() == 0
         }

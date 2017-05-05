@@ -21,6 +21,7 @@ package org.openremote.manager.server.rules;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.drools.core.base.evaluators.TimeIntervalParser;
+import org.kie.api.event.rule.AgendaEventListener;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerSetupService;
@@ -46,6 +47,7 @@ import org.openremote.model.value.ObjectValue;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -75,6 +77,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     public static final String RULE_EVENT_EXPIRES = "RULE_EVENT_EXPIRES";
     public static final String RULE_EVENT_EXPIRES_DEFAULT = "1h";
 
+    public static final String ID_GLOBAL_RULES_ENGINE = "GLOBAL";
+
     protected TimerService timerService;
     protected ManagerExecutorService executorService;
     protected PersistenceService persistenceService;
@@ -87,6 +91,7 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
     protected final Map<String, RulesEngine<TenantRuleset>> tenantEngines = new HashMap<>();
     protected final Map<String, RulesEngine<AssetRuleset>> assetEngines = new HashMap<>();
     protected String[] activeTenantIds;
+    protected Function<RulesEngine, AgendaEventListener> rulesEngineListeners;
 
     // Keep global list of asset states that have been pushed to any engines
     // The objects are already in memory inside the rule engines but keeping them
@@ -425,7 +430,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                 assetProcessingService,
 			    identityService,
                 GlobalRuleset.class,
-                "GLOBAL"
+                ID_GLOBAL_RULES_ENGINE,
+                rulesEngineListeners
             );
         }
 
@@ -460,7 +466,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     assetProcessingService,
 				    identityService,
                     TenantRuleset.class,
-                    realmId
+                    realmId,
+                    rulesEngineListeners
                 );
             });
 
@@ -525,7 +532,8 @@ public class RulesService extends RouteBuilder implements ContainerService, Cons
                     assetProcessingService,
 					identityService,
                     AssetRuleset.class,
-                    assetId
+                    assetId,
+                    rulesEngineListeners
                 );
             });
 

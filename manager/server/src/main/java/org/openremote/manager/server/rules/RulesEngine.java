@@ -34,10 +34,7 @@ import org.kie.api.builder.model.KieModuleModel;
 import org.kie.api.builder.model.KieSessionModel;
 import org.kie.api.conf.EqualityBehaviorOption;
 import org.kie.api.conf.EventProcessingOption;
-import org.kie.api.event.rule.ObjectDeletedEvent;
-import org.kie.api.event.rule.ObjectInsertedEvent;
-import org.kie.api.event.rule.ObjectUpdatedEvent;
-import org.kie.api.event.rule.RuleRuntimeEventListener;
+import org.kie.api.event.rule.*;
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
 import org.kie.api.runtime.KieSessionConfiguration;
@@ -69,12 +66,18 @@ import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class RulesEngine<T extends Ruleset> {
 
     public static final Logger LOG = Logger.getLogger(RulesEngine.class.getName());
+
+    private static final int AUTO_START_DELAY_SECONDS = 2;
+    private static Long counter = 1L;
+
+    static final protected Util UTIL = new Util();
 
     final protected TimerService timerService;
     final protected ManagerExecutorService executorService;
@@ -84,10 +87,8 @@ public class RulesEngine<T extends Ruleset> {
     final protected ManagerIdentityService identityService;
     final protected Class<T> rulesetType;
     final protected String id;
+    final protected Function<RulesEngine, AgendaEventListener> rulesEngineListeners;
 
-    private static final int AUTO_START_DELAY_SECONDS = 2;
-    private static Long counter = 1L;
-    static final protected Util UTIL = new Util();
     protected final Map<Long, T> rulesets = new LinkedHashMap<>();
     protected String rulesetsDebug;
     protected KieSession knowledgeSession;
@@ -110,7 +111,9 @@ public class RulesEngine<T extends Ruleset> {
                        NotificationService notificationService,
                        AssetProcessingService assetProcessingService,
                        ManagerIdentityService identityService,
-                       Class<T> rulesetType, String id) {
+                       Class<T> rulesetType,
+                       String id,
+                       Function<RulesEngine, AgendaEventListener> rulesEngineListeners) {
         this.timerService = timerService;
         this.executorService = executorService;
         this.assetStorageService = assetStorageService;
@@ -119,6 +122,7 @@ public class RulesEngine<T extends Ruleset> {
         this.identityService = identityService;
         this.rulesetType = rulesetType;
         this.id = id;
+        this.rulesEngineListeners = rulesEngineListeners;
     }
 
     protected synchronized static Long getNextCounter() {
@@ -394,6 +398,11 @@ public class RulesEngine<T extends Ruleset> {
             setGlobal("util", UTIL);
 
             knowledgeSession.addEventListener(new RuleExecutionLogger(this::toString));
+
+            AgendaEventListener eventListener = rulesEngineListeners != null ? rulesEngineListeners.apply(this) : null;
+            if (eventListener != null) {
+                knowledgeSession.addEventListener(eventListener);
+            }
 
             knowledgeSession.addEventListener(new RuleRuntimeEventListener() {
                 @Override
