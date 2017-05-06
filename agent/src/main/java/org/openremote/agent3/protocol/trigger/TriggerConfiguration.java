@@ -21,6 +21,7 @@ package org.openremote.agent3.protocol.trigger;
 
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
@@ -164,7 +165,7 @@ final public class TriggerConfiguration {
 
     public static Optional<String> getTriggerProperty(AssetAttribute attribute) {
         return attribute == null ? Optional.empty() : attribute
-            .getMetaItem(META_TRIGGER_PROPERTY)
+            .getMetaItem(AssetMeta.PROTOCOL_PROPERTY)
             .flatMap(AbstractValueHolder::getValueAsString);
     }
 }

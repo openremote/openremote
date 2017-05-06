@@ -20,6 +20,7 @@
 package org.openremote.agent3.protocol.trigger.time;
 
 import org.openremote.agent3.protocol.trigger.AbstractTriggerHandler;
+import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
@@ -84,12 +85,6 @@ public class TimeTriggerHandler extends AbstractTriggerHandler {
     }
 
     @Override
-    protected void updateTrigger(AttributeRef triggerRef, Value value, boolean isEnabled) {
-        unregisterTrigger(triggerRef);
-        registerTrigger(triggerRef, value, isEnabled);
-    }
-
-    @Override
     protected void unregisterTrigger(AttributeRef triggerRef) {
         getCronScheduler().removeJob(getTriggerId(triggerRef));
     }
@@ -121,20 +116,15 @@ public class TimeTriggerHandler extends AbstractTriggerHandler {
     }
 
     @Override
-    protected void updateAttribute(AttributeRef attributeRef, AttributeRef triggerRef, String propertyName) {
-        registerAttribute(attributeRef, triggerRef, propertyName);
-    }
-
-    @Override
     protected void unregisterAttribute(AttributeRef attributeRef, AttributeRef triggerRef) {
 
     }
 
     @Override
-    protected void processAttributeWrite(AttributeRef attributeRef, AttributeRef triggerRef, String propertyName, AttributeEvent event) {
+    protected void processAttributeWrite(AssetAttribute attribute, AssetAttribute protocolConfiguration, String propertyName, AttributeEvent event) {
         TimeTriggerProperty triggerProperty = TimeTriggerProperty.fromString(propertyName);
         if (triggerProperty == null) {
-            LOG.warning("Attribute is using an invalid trigger property name '" + propertyName + "': " + attributeRef);
+            LOG.warning("Attribute is using an invalid trigger property name '" + propertyName + "': " + attribute.getReferenceOrThrow());
             return;
         }
 
@@ -153,10 +143,10 @@ public class TimeTriggerHandler extends AbstractTriggerHandler {
             case CRON_EXPRESSION:
                 // Allow writing invalid cron expressions; mean that the trigger will stop working
                 // but that is handled gracefully
-                updateTriggerValue(new AttributeState(triggerRef, Values.create(value)));
+                updateTriggerValue(new AttributeState(protocolConfiguration.getReferenceOrThrow(), Values.create(value)));
                 break;
             case TIME:
-                CronExpressionParser parser = getCronExpressionParser(triggerRef);
+                CronExpressionParser parser = getCronExpressionParser(protocolConfiguration.getReferenceOrThrow());
                 if (parser == null) {
                     LOG.info("Ignoring trigger update because current cron expression is invalid");
                     return;
@@ -176,7 +166,7 @@ public class TimeTriggerHandler extends AbstractTriggerHandler {
                 }
 
                 parser.setTime(hours, minutes, seconds);
-                updateTriggerValue(new AttributeState(triggerRef, Values.create(parser.buildCronExpression())));
+                updateTriggerValue(new AttributeState(protocolConfiguration.getReferenceOrThrow(), Values.create(parser.buildCronExpression())));
                 break;
             default:
                 throw new NotSupportedException("Unsupported trigger property");

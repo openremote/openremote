@@ -20,6 +20,7 @@
 package org.openremote.agent3.protocol.trigger.attribute;
 
 import org.openremote.agent3.protocol.trigger.AbstractTriggerHandler;
+import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.value.Value;
@@ -44,11 +45,6 @@ public class AttributeTriggerHandler extends AbstractTriggerHandler {
     }
 
     @Override
-    protected void updateTrigger(AttributeRef triggerRef, Value value, boolean isEnabled) {
-
-    }
-
-    @Override
     protected void unregisterTrigger(AttributeRef triggerRef) {
 
     }
@@ -58,10 +54,6 @@ public class AttributeTriggerHandler extends AbstractTriggerHandler {
 
     }
 
-    @Override
-    protected void updateAttribute(AttributeRef attributeRef, AttributeRef triggerRef, String propertyName) {
-
-    }
 
     @Override
     protected void unregisterAttribute(AttributeRef attributeRef, AttributeRef triggerRef) {
@@ -69,7 +61,7 @@ public class AttributeTriggerHandler extends AbstractTriggerHandler {
     }
 
     @Override
-    protected void processAttributeWrite(AttributeRef attributeRef, AttributeRef triggerRef, String propertyName, AttributeEvent event) {
-        // This trigger handler doesn't support updates for now
+    protected void processAttributeWrite(AssetAttribute attribute, AssetAttribute protocolConfiguration, String propertyName, AttributeEvent event) {
+
     }
 }

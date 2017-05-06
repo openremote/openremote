@@ -22,6 +22,7 @@ package org.openremote.test.protocol
 import org.openremote.agent3.protocol.AbstractProtocol
 import org.openremote.agent3.protocol.Protocol
 import org.openremote.manager.server.agent.AgentService
+import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.asset.ServerAsset
 import org.openremote.model.Constants
@@ -29,10 +30,7 @@ import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetType
 import org.openremote.model.asset.agent.ProtocolConfiguration
-import org.openremote.model.attribute.AttributeEvent
-import org.openremote.model.attribute.AttributeRef
-import org.openremote.model.attribute.AttributeType
-import org.openremote.model.attribute.MetaItem
+import org.openremote.model.attribute.*
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
 import spock.lang.Specification
@@ -63,14 +61,18 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         protocolLinkedAttributes['mockConfig2'] = []
         protocolLinkedAttributes['mockConfig3'] = []
         protocolLinkedAttributes['mockConfig4'] = []
-        List<AttributeEvent> protocolWriteAttributes = []
+        List<AttributeEvent> protocolWriteAttributeEvents = []
         List<String> protocolMethodCalls = []
         def mockProtocol = new AbstractProtocol() {
             protected void responseReceived() {
                 // Assume we've pushed the update to the actual device and it responded with OK
                 // so now we want to cause a sensor update that will go through the processing
                 // chain.
-                updateLinkedAttribute(protocolWriteAttributes.last().getAttributeState())
+                updateLinkedAttribute(protocolWriteAttributeEvents.last().getAttributeState())
+            }
+
+            protected void updateAttribute(AttributeState state) {
+                sendAttributeEvent(state)
             }
 
             @Override
@@ -103,6 +105,18 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
                     throw new IllegalStateException("Attribute is not valid");
                 }
                 protocolLinkedAttributes[protocolConfiguration.getName().orElse("")] << attribute
+
+                def deploymentStatus = getDeploymentStatus(protocolConfiguration);
+                if (deploymentStatus == Protocol.DeploymentStatus.LINKED_ENABLED) {
+                    String attributeName = attribute.getName().orElse("");
+                    if (attributeName.startsWith("lightToggle")) {
+                        // Set all lights to on
+                        updateLinkedAttribute(new AttributeState(attribute.getReferenceOrThrow(), Values.create(true)))
+                    } else if (attributeName.startsWith("tempTarget")) {
+                        // Set target temps to 25.5
+                        updateLinkedAttribute(new AttributeState(attribute.getReferenceOrThrow(), Values.create(25.5)))
+                    }
+                }
             }
 
             @Override
@@ -119,7 +133,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
                         .any {it.getReferenceOrThrow().equals(event.attributeRef)}) {
                     throw new IllegalStateException("Attribute is not linked")
                 }
-                protocolWriteAttributes.add(event)
+                protocolWriteAttributeEvents.add(event)
             }
 
             @Override
@@ -133,6 +147,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         def container = startContainerMinimal(defaultConfig(serverPort), defaultServices(mockProtocol))
         def assetStorageService = container.getService(AssetStorageService.class)
         def agentService = container.getService(AgentService.class)
+        def assetProcessingService = container.getService(AssetProcessingService.class)
 
         when: "a mock agent that uses the mock protocol is created with a valid protocol configuration"
         def mockAgent = new ServerAsset()
@@ -177,7 +192,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         when: "a mock thing asset is created that links to the mock protocol configurations"
         def mockThing = new ServerAsset("Mock Thing Asset", AssetType.THING, mockAgent)
         mockThing.setAttributes(
-                new AssetAttribute("light1Toggle", AttributeType.BOOLEAN, Values.create(false))
+                new AssetAttribute("lightToggle1", AttributeType.BOOLEAN)
                     .setMeta(
                         new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META"),
                         new MetaItem(
@@ -185,7 +200,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
                             new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                         )
                     ),
-                new AssetAttribute("temp1Target", AttributeType.BOOLEAN)
+                new AssetAttribute("tempTarget1", AttributeType.DECIMAL)
                     .setMeta(
                         new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META"),
                         new MetaItem(
@@ -193,14 +208,14 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
                             new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                         )
                     ),
-                new AssetAttribute("invalid1Toggle", AttributeType.BOOLEAN, Values.create(false))
+                new AssetAttribute("invalidToggle1", AttributeType.BOOLEAN)
                     .setMeta(
                         new MetaItem(
                             AssetMeta.AGENT_LINK,
                             new AttributeRef(mockAgent.getId(), "mockConfig1").toArrayValue()
                         )
                     ),
-                new AssetAttribute("light2Toggle", AttributeType.BOOLEAN, Values.create(false))
+                new AssetAttribute("lightToggle2", AttributeType.BOOLEAN)
                         .setMeta(
                         new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META"),
                         new MetaItem(
@@ -208,7 +223,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
                                 new AttributeRef(mockAgent.getId(), "mockConfig2").toArrayValue()
                         )
                 ),
-                new AssetAttribute("temp2Target", AttributeType.BOOLEAN)
+                new AssetAttribute("tempTarget2", AttributeType.DECIMAL)
                         .setMeta(
                         new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META"),
                         new MetaItem(
@@ -216,7 +231,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
                                 new AttributeRef(mockAgent.getId(), "mockConfig2").toArrayValue()
                         )
                 ),
-                new AssetAttribute("light3Toggle", AttributeType.BOOLEAN, Values.create(false))
+                new AssetAttribute("lightToggle3", AttributeType.BOOLEAN)
                         .setMeta(
                         new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META"),
                         new MetaItem(
@@ -224,7 +239,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
                                 new AttributeRef(mockAgent.getId(), "mockConfig3").toArrayValue()
                         )
                 ),
-                new AssetAttribute("temp3Target", AttributeType.BOOLEAN)
+                new AssetAttribute("tempTarget3", AttributeType.DECIMAL)
                         .setMeta(
                         new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META"),
                         new MetaItem(
@@ -232,7 +247,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
                                 new AttributeRef(mockAgent.getId(), "mockConfig3").toArrayValue()
                         )
                 ),
-                new AssetAttribute("light4Toggle", AttributeType.BOOLEAN, Values.create(false))
+                new AssetAttribute("lightToggle4", AttributeType.BOOLEAN)
                         .setMeta(
                         new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META"),
                         new MetaItem(
@@ -240,7 +255,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
                                 new AttributeRef(mockAgent.getId(), "mockConfig4").toArrayValue()
                         )
                 ),
-                new AssetAttribute("temp4Target", AttributeType.BOOLEAN)
+                new AssetAttribute("tempTarget4", AttributeType.DECIMAL)
                         .setMeta(
                         new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META"),
                         new MetaItem(
@@ -248,7 +263,18 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
                                 new AttributeRef(mockAgent.getId(), "mockConfig4").toArrayValue()
                         )
                 ),
-                new AssetAttribute("invalid5Toggle", AttributeType.BOOLEAN, Values.create(false))
+                // The below attribute is handled by abstract protocol and won't reach the mock
+                // protocol link/unlink attribute method
+                new AssetAttribute("protocolEnabled", AttributeType.BOOLEAN)
+                        .setMeta(
+                        new MetaItem("MOCK_ATTRIBUTE_REQUIRED_META"),
+                        new MetaItem(AssetMeta.PROTOCOL_PROPERTY, Values.create("ENABLED")),
+                        new MetaItem(
+                                AssetMeta.AGENT_LINK,
+                                new AttributeRef(mockAgent.getId(), "mockConfig4").toArrayValue()
+                        )
+                ),
+                new AssetAttribute("invalidToggle5", AttributeType.BOOLEAN, Values.create(false))
                     .setMeta(
                         new MetaItem(
                             AssetMeta.AGENT_LINK,
@@ -289,9 +315,25 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         assert protocolMethodCalls[11] == "LINK_ATTRIBUTE"
         assert protocolMethodCalls[12] == "LINK_ATTRIBUTE"
 
+        when: "the mock thing is retrieved from the DB"
+        mockThing = assetStorageService.find(mockThing.getId(), true)
+
+        then: "the linked attributes values should have been updated by the protocol"
+        // Check all valid linked attributes have the new values
+        assert mockThing.getAttribute("lightToggle1").get().getValueAsBoolean().orElse(false)
+        assert mockThing.getAttribute("tempTarget1").get().getValueAsNumber().orElse(0d) == 25.5d
+        // Check disabled linked attributes don't have the new values
+        assert !mockThing.getAttribute("lightToggle4").get().getValue().isPresent()
+        assert !mockThing.getAttribute("tempTarget4").get().getValue().isPresent()
+        // Check invalid attributes don't have the new values
+        assert !mockThing.getAttribute("lightToggle2").get().getValue().isPresent()
+        assert !mockThing.getAttribute("tempTarget2").get().getValue().isPresent()
+        assert !mockThing.getAttribute("lightToggle3").get().getValue().isPresent()
+        assert !mockThing.getAttribute("tempTarget3").get().getValue().isPresent()
+
         when: "a linked attribute is removed"
         protocolMethodCalls.clear()
-        mockThing.removeAttribute("temp3Target")
+        mockThing.removeAttribute("tempTarget3")
         mockThing = assetStorageService.merge(mockThing)
 
         then: "the protocol should not be unlinked"
@@ -303,18 +345,72 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
 
         when: "a protocol configuration is removed"
         protocolMethodCalls.clear()
-        mockAgent.removeAttribute("mockConfig4")
+        mockAgent.removeAttribute("mockConfig3")
         mockAgent = assetStorageService.merge(mockAgent)
 
         then: "the attributes should be unlinked then the protocol configuration"
         conditions.eventually {
-            assert protocolLinkedAttributes["mockConfig4"].size() == 0
-            assert protocolMethodCalls.size() == 3
+            assert protocolLinkedAttributes["mockConfig3"].size() == 0
+            assert protocolMethodCalls.size() == 2
+            assert protocolMethodCalls[0] == "UNLINK_ATTRIBUTE"
+            assert protocolMethodCalls[1] == "UNLINK_PROTOCOL"
+        }
+
+        when: "a disabled protocol configuration is enabled"
+        protocolMethodCalls.clear()
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(mockThing.getId(),"protocolEnabled", Values.create(true)))
+
+        then: "the protocol configuration should be relinked"
+        conditions.eventually {
+            assert protocolLinkedAttributes['mockConfig4'].size() == 2
+            assert protocolMethodCalls.size() == 6
             assert protocolMethodCalls[0] == "UNLINK_ATTRIBUTE"
             assert protocolMethodCalls[1] == "UNLINK_ATTRIBUTE"
             assert protocolMethodCalls[2] == "UNLINK_PROTOCOL"
+            assert protocolMethodCalls[3] == "LINK_PROTOCOL"
+            assert protocolMethodCalls[4] == "LINK_ATTRIBUTE"
+            assert protocolMethodCalls[5] == "LINK_ATTRIBUTE"
         }
 
-        // TODO: Extend this test
+        and: "the deployment status of the relinked protocol configuration should now be LINKED_ENABLED"
+        def config4 = protocolLinkedConfigurations.find { it.getName().orElse("").equals("mockConfig4") }
+        assert config4 != null
+        assert agentService.getProtocolDeploymentStatus(config4.getReferenceOrThrow()) == Protocol.DeploymentStatus.LINKED_ENABLED
+
+        when: "the mock thing is retrieved from the DB"
+        mockThing = assetStorageService.find(mockThing.getId(), true)
+
+        then: "the linked attribute values should have been updated by the protocol"
+        assert mockThing.getAttribute("lightToggle4").get().getValueAsBoolean().orElse(false)
+        assert mockThing.getAttribute("tempTarget4").get().getValueAsNumber().orElse(0d) == 25.5d
+
+        when: "the mock protocol tries to update the plain attribute"
+        mockProtocol.updateAttribute(new AttributeState(mockThing.getId(),"plainAttribute", Values.create("UPDATE")))
+
+        then: "the plain attributes value should be updated"
+        conditions.eventually {
+            mockThing = assetStorageService.find(mockThing.getId(), true)
+            assert mockThing.getAttribute("plainAttribute").get().getValueAsString().orElse("") == "UPDATE"
+        }
+
+        when: "a target temp linked attribute value is updated it should reach the protocol"
+        assetProcessingService.sendAttributeEvent(new AttributeEvent(mockThing.getId(), "tempTarget1", Values.create(30d)))
+
+        then: "the update should reach the protocol as an attribute write request"
+        conditions.eventually {
+            protocolWriteAttributeEvents.size() == 1
+            protocolWriteAttributeEvents[0].attributeName == "tempTarget1"
+            protocolWriteAttributeEvents[0].attributeRef.entityId == mockThing.getId()
+            Values.getNumber(protocolWriteAttributeEvents[0].value.orElse(null)).orElse(0d) == 30d
+        }
+
+        when: "the protocol has finished processing the attribute write"
+        mockProtocol.responseReceived()
+
+        then: "the target temp attributes value should be updated"
+        conditions.eventually {
+            mockThing = assetStorageService.find(mockThing.getId(), true)
+            assert mockThing.getAttribute("tempTarget1").get().getValueAsNumber().orElse(0d) == 30d
+        }
     }
 }

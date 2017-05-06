@@ -151,7 +151,14 @@ public enum AssetMeta implements HasMetaName {
     /**
      * Marks an attribute as being executable so it then supports values of type {@link AttributeExecuteStatus}.
      */
-    EXECUTABLE(ASSET_META_NAMESPACE + ":executable", new Access(true, false, true), ValueType.BOOLEAN);
+    EXECUTABLE(ASSET_META_NAMESPACE + ":executable", new Access(true, false, true), ValueType.BOOLEAN),
+
+    /**
+     * Marks an agent linked attribute as being linked to a property of the linked protocol (e.g. an attribute
+     * linked to the {@link #ENABLED} status of a protocol configuration) should use this meta with a value of
+     * "ENABLED"; other supported values are protocol dependent.
+     */
+    PROTOCOL_PROPERTY(ASSET_META_NAMESPACE + ":protocolProperty", new Access(true, false, true), ValueType.STRING);
 
     final protected String urn;
     final protected Access access;

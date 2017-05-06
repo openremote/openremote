@@ -37,8 +37,6 @@ public abstract class AbstractTriggerHandler {
 
     protected abstract void registerTrigger(AttributeRef triggerRef, Value value, boolean isEnabled);
 
-    protected abstract void updateTrigger(AttributeRef triggerRef, Value value, boolean isEnabled);
-
     protected abstract void unregisterTrigger(AttributeRef triggerRef);
 
     /**
@@ -52,8 +50,6 @@ public abstract class AbstractTriggerHandler {
      */
     protected abstract void registerAttribute(AttributeRef attributeRef, AttributeRef triggerRef, String propertyName);
 
-    protected abstract void updateAttribute(AttributeRef attributeRef, AttributeRef triggerRef, String propertyName);
-
     protected abstract void unregisterAttribute(AttributeRef attributeRef, AttributeRef triggerRef);
 
     /**
@@ -62,15 +58,11 @@ public abstract class AbstractTriggerHandler {
      * The {@link AbstractTriggerHandler} implementation should override this method
      * to handle the request based on the propertyName and the {@link AttributeEvent}.
      *
-     * {@link TriggerProtocol#TRIGGER_PROPERTY_ENABLED} writes are handled here and are
-     * applicable for all trigger types (implementations can override but should still
-     * call this super method).
-     *
      * If the handler wishes to alter the trigger's value as a result of the request
      * (e.g. request was to adjust the time of a TimeTrigger) then the handler
      * should call {@link #updateTriggerValue(AttributeState)} with the new desired value.
      */
-    protected abstract void processAttributeWrite(AttributeRef attributeRef, AttributeRef triggerRef, String propertyName, AttributeEvent event);
+    protected abstract void processAttributeWrite(AssetAttribute attribute, AssetAttribute protocolConfiguration, String propertyName, AttributeEvent event);
 
     /**
      * Called by the protocol init

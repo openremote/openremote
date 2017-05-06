@@ -19,7 +19,6 @@
  */
 package org.openremote.agent3.protocol;
 
-import org.apache.camel.Predicate;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.container.Container;
@@ -27,11 +26,16 @@ import org.openremote.container.message.MessageBrokerContext;
 import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.timer.TimerService;
+import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.AssetAttribute;
+import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
-import org.openremote.model.util.Pair;
+import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.util.Triplet;
+import org.openremote.model.value.Values;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -42,18 +46,8 @@ import java.util.logging.Logger;
 public abstract class AbstractProtocol implements Protocol {
 
     private static final Logger LOG = Logger.getLogger(AbstractProtocol.class.getName());
-
-    static Predicate isAttributeStateForAny(Collection<AttributeRef> attributeRefs) {
-        return exchange -> {
-            if (!(exchange.getIn().getBody() instanceof AttributeEvent))
-                return false;
-            AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
-            return attributeRefs.contains(event.getAttributeRef());
-        };
-    }
-
-    final protected Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
-    final protected Map<AttributeRef, Pair<AssetAttribute, Consumer<DeploymentStatus>>> linkedProtocolConfigurations = new HashMap<>();
+    protected final Map<AttributeRef, AssetAttribute> linkedAttributes = new HashMap<>();
+    protected final Map<AttributeRef, Triplet<AssetAttribute, Consumer<DeploymentStatus>, DeploymentStatus>> linkedProtocolConfigurations = new HashMap<>();
     protected MessageBrokerContext messageBrokerContext;
     protected ProducerTemplate producerTemplate;
     protected TimerService timerService;
@@ -90,7 +84,31 @@ public abstract class AbstractProtocol implements Protocol {
                                     if (attribute == null) {
                                         LOG.warning("Attribute doesn't exist on this protocol: " + event.getAttributeRef());
                                     } else {
-                                        processLinkedAttributeWrite(event, attribute);
+                                        AssetAttribute protocolConfiguration = getLinkedProtocolConfiguration(attribute);
+
+                                        // If attribute is linked to protocol's enabled status handle here
+                                        boolean isLinkedToEnabledStatus = attribute
+                                            .getMetaItem(AssetMeta.PROTOCOL_PROPERTY)
+                                            .flatMap(AbstractValueHolder::getValueAsString)
+                                            .map(property -> property.equals("ENABLED"))
+                                            .orElse(false);
+
+                                        if (isLinkedToEnabledStatus) {
+                                            LOG.fine("Attribute is linked to protocol's enabled property so handling write here");
+
+                                            // check event value is a boolean
+                                            boolean enabled = Values.getBoolean(event.getValue()
+                                                .orElse(null))
+                                                .orElseThrow(() -> new IllegalStateException("Writing to protocol configuration ENABLED property requires a boolean value"));
+
+                                            if (enabled == protocolConfiguration.isEnabled()) {
+                                                LOG.finer("Protocol configuration enabled status is already: " + enabled);
+                                            } else {
+                                                updateLinkedProtocolConfiguration(protocolConfiguration, new MetaItem(AssetMeta.ENABLED, Values.create(enabled)));
+                                            }
+                                        } else {
+                                            processLinkedAttributeWrite(event, protocolConfiguration);
+                                        }
                                     }
                                 }
                             }
@@ -115,7 +133,7 @@ public abstract class AbstractProtocol implements Protocol {
             LOG.finer("Linking protocol configuration to protocol '" + getProtocolName() + "': " + protocolConfiguration);
             linkedProtocolConfigurations.put(
                 protocolConfiguration.getReferenceOrThrow(),
-                new Pair<>(protocolConfiguration, deploymentStatusConsumer)
+                new Triplet<>(protocolConfiguration, deploymentStatusConsumer, DeploymentStatus.LINKING)
             );
             doLinkProtocolConfiguration(protocolConfiguration);
         }
@@ -135,8 +153,23 @@ public abstract class AbstractProtocol implements Protocol {
         synchronized (linkedAttributes) {
             attributes.forEach(attribute -> {
                 LOG.fine("Linking attribute to '" + getProtocolName() + "': " + attribute);
-                linkedAttributes.put(attribute.getReferenceOrThrow(), attribute);
-                doLinkAttribute(attribute, protocolConfiguration);
+
+                // If attribute is linked to protocol configuration enabled status handle here
+                boolean isLinkedToEnabledStatus = attribute
+                    .getMetaItem(AssetMeta.PROTOCOL_PROPERTY)
+                    .flatMap(AbstractValueHolder::getValueAsString)
+                    .map(property -> property.equals("ENABLED"))
+                    .orElse(false);
+
+                AttributeRef attributeRef = attribute.getReferenceOrThrow();
+                linkedAttributes.put(attributeRef, attribute);
+
+                if (isLinkedToEnabledStatus) {
+                    LOG.fine("Attribute is linked to protocol's enabled property so handling here");
+                    updateLinkedAttribute(new AttributeState(attributeRef, Values.create(protocolConfiguration.isEnabled())));
+                } else {
+                    doLinkAttribute(attribute, protocolConfiguration);
+                }
             });
         }
     }
@@ -146,7 +179,18 @@ public abstract class AbstractProtocol implements Protocol {
         synchronized (linkedAttributes) {
             attributes.forEach(attribute -> {
                 LOG.fine("Unlinking attribute on '" + getProtocolName() + "': " + attribute);
-                doUnlinkAttribute(attribute, protocolConfiguration);
+
+                // If attribute is linked to protocol's enabled status handle here
+                boolean isLinkedToEnabledStatus = attribute
+                    .getMetaItem(AssetMeta.PROTOCOL_PROPERTY)
+                    .flatMap(AbstractValueHolder::getValueAsString)
+                    .map(property -> property.equals("ENABLED"))
+                    .orElse(false);
+
+                if (!isLinkedToEnabledStatus) {
+                    // Only pass to the protocol if it is not linked to enabled status
+                    doUnlinkAttribute(attribute, protocolConfiguration);
+                }
                 linkedAttributes.remove(attribute.getReferenceOrThrow());
             });
         }
@@ -162,20 +206,19 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     /**
-     * Get the deployment status consumer for a given protocol configuration
+     * Get the protocol configuration that this attribute links to.
      */
-    protected Consumer<DeploymentStatus> getDeploymentStatusConsumer(AssetAttribute protocolConfiguration) {
-        return getDeploymentStatusConsumer(protocolConfiguration.getReferenceOrThrow());
+    protected AssetAttribute getLinkedProtocolConfiguration(AssetAttribute attribute) {
+        AttributeRef protocolConfigRef = AgentLink.getAgentLink(attribute).orElseThrow(() -> new IllegalStateException("Attribute is not linked to a protocol"));
+        return getLinkedProtocolConfiguration(protocolConfigRef);
     }
 
-    /**
-     * Get the deployment status consumer for a given protocol configurations attribute ref
-     */
-    protected Consumer<DeploymentStatus> getDeploymentStatusConsumer(AttributeRef protocolRef) {
+    protected AssetAttribute getLinkedProtocolConfiguration(AttributeRef protocolConfigurationRef) {
         synchronized (linkedProtocolConfigurations) {
-            return linkedProtocolConfigurations.containsKey(protocolRef)
-                ? linkedProtocolConfigurations.get(protocolRef).value
-                : null;
+            Triplet<AssetAttribute, Consumer<DeploymentStatus>, DeploymentStatus> assetAttributeConsumerInfo = linkedProtocolConfigurations.get(protocolConfigurationRef);
+            // Don't bother with null check if someone calls here with an attribute not linked to this protocol
+            // then they're doing something wrong so fail hard and fast
+            return assetAttributeConsumerInfo.getValue1();
         }
     }
 
@@ -184,16 +227,14 @@ public abstract class AbstractProtocol implements Protocol {
      * using the current system time as the timestamp.
      */
     protected void sendAttributeEvent(AttributeState state) {
-        AttributeEvent event = new AttributeEvent(state, timerService.getCurrentTimeMillis());
-        LOG.info("Sending attribute event from protocol '" + getProtocolName() + "': " + event);
-        assetService.sendAttributeEvent(event);
+        sendAttributeEvent(new AttributeEvent(state, timerService.getCurrentTimeMillis()));
     }
 
     /**
      * Send an arbitrary {@link AttributeEvent} through the processing chain.
      */
     protected void sendAttributeEvent(AttributeEvent attributeEvent) {
-        LOG.info("Sending attribute event: " + attributeEvent);
+        LOG.info("Sending attribute event from protocol '" + getProtocolName() + "': " + attributeEvent);
         assetService.sendAttributeEvent(attributeEvent);
     }
 
@@ -214,16 +255,38 @@ public abstract class AbstractProtocol implements Protocol {
     }
 
     /**
+     * Update a linked protocol configuration; allows protocols to reconfigure their
+     * own protocol configurations to persist changing data e.g. authorization tokens.
+     */
+    protected void updateLinkedProtocolConfiguration(AssetAttribute protocolConfiguration, MetaItem newMetaItem) {
+        // Clone the protocol configuration rather than modify this one
+        AssetAttribute modifiedProtocolConfiguration = protocolConfiguration.deepCopy();
+        MetaItem.replaceMetaByName(modifiedProtocolConfiguration.getMeta(), AssetMeta.ENABLED, newMetaItem);
+        assetService.updateProtocolConfiguration(modifiedProtocolConfiguration);
+    }
+
+    /**
      * Update the deployment status of a protocol configuration by its attribute ref
      */
     protected void updateDeploymentStatus(AttributeRef protocolRef, DeploymentStatus deploymentStatus) {
         synchronized (linkedProtocolConfigurations) {
             linkedProtocolConfigurations.computeIfPresent(protocolRef,
                 (ref, pair) -> {
-                    pair.value.accept(deploymentStatus);
+                    pair.getValue2().accept(deploymentStatus);
+                    pair.value3 = deploymentStatus;
                     return pair;
                 }
             );
+        }
+    }
+
+    /**
+     * Gets the current deployment status of a protocol configuration.
+     */
+    protected DeploymentStatus getDeploymentStatus(AssetAttribute protocolConfiguration) {
+        synchronized (linkedProtocolConfigurations) {
+            Triplet<AssetAttribute, Consumer<DeploymentStatus>, DeploymentStatus> assetAttributeConsumerInfo = linkedProtocolConfigurations.get(protocolConfiguration.getReferenceOrThrow());
+            return assetAttributeConsumerInfo.getValue3();
         }
     }
 

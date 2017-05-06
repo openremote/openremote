@@ -25,8 +25,8 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.value.Value;
-import org.openremote.model.value.Values;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,8 +36,6 @@ import java.util.logging.Logger;
 import static org.openremote.agent3.protocol.trigger.TriggerConfiguration.*;
 import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
-import static org.openremote.model.asset.AssetMeta.ENABLED;
-import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
 
 /**
  * This protocol can be used to trigger {@link AttributeEvent} using a trigger type:
@@ -52,10 +50,11 @@ import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
  * {@link AssetAttribute}s can link to time triggers to read/write the trigger time and/or enable/disable
  * the trigger.
  * <p>
- * The {@link #META_TRIGGER_PROPERTY} meta should be used on linked attributes to indicate what property
- * of the trigger the attribute should read/write. The content of the meta should be a string that is
- * specific to the trigger type handler. The only globally recognised value is {@link #TRIGGER_PROPERTY_ENABLED}
- * which reads/writes the trigger's {@link org.openremote.model.asset.AssetMeta#ENABLED} meta item.
+ * The {@link org.openremote.model.asset.AssetMeta#PROTOCOL_PROPERTY} meta should be used on linked attributes to
+ * indicate what property of the trigger the attribute should read/write. The content of the meta should be a string
+ * that is specific to the trigger type handler. The only globally recognised value is "ENABLED"
+ * which reads/writes the trigger's {@link org.openremote.model.asset.AssetMeta#ENABLED} meta item and is handled by
+ * the {@link AbstractProtocol} super class.
  */
 public class TriggerProtocol extends AbstractProtocol {
 
@@ -63,8 +62,6 @@ public class TriggerProtocol extends AbstractProtocol {
     public static final String META_TRIGGER_VALUE = ASSET_META_NAMESPACE + ":triggerValue";
     public static final String META_TRIGGER_TYPE = ASSET_META_NAMESPACE + ":triggerType";
     public static final String META_TRIGGER_ACTION = ASSET_META_NAMESPACE + ":triggerAction";
-    public static final String META_TRIGGER_PROPERTY = ASSET_META_NAMESPACE + ":triggerProperty";
-    public static final String TRIGGER_PROPERTY_ENABLED = "ENABLED";
     private static final Logger LOG = Logger.getLogger(TriggerProtocol.class.getName());
     protected final Map<AttributeRef, AssetAttribute> protocolConfigMap = new HashMap<>();
     protected final Map<AttributeRef, AbstractTriggerHandler> attributeTriggerHandlerMap = new HashMap<>();
@@ -152,28 +149,14 @@ public class TriggerProtocol extends AbstractProtocol {
         // if the attributes' META_TRIGGER_PROPERTY value is TRIGGER_PROPERTY_ENABLED
         // then handle the request here, otherwise delegate to the trigger handler
         AssetAttribute attribute = getLinkedAttribute(event.getAttributeRef());
-        AttributeRef triggerRef = getAgentLink(attribute)
-            .orElseThrow(() -> new IllegalStateException("Trigger configuration link cannot be found on attribute: " + event.getAttributeRef()));
 
         TriggerConfiguration.getTriggerProperty(attribute)
             .ifPresent(propertyName -> {
-                if (TRIGGER_PROPERTY_ENABLED.equals(propertyName)) {
-                    // Check that event contains a boolean
-                    event.getValue()
-                        .flatMap(Values::getBoolean)
-                        .ifPresent(enabled -> {
-                                // We update the trigger configuration and wait for it to come back through the processing
-                                // chain as an update to the protocol configuration in the agent service
-                                updateTriggerMeta(new AttributeState(triggerRef, Values.create(enabled)), ENABLED.getUrn());
-                            }
-                        );
-                } else {
-                    synchronized (attributeTriggerHandlerMap) {
-                        AbstractTriggerHandler handler = attributeTriggerHandlerMap.get(event.getAttributeRef());
-                        if (handler != null) {
-                            LOG.info("Passing attribute write request to trigger handler '" + handler.getName() + "'");
-                            handler.processAttributeWrite(event.getAttributeRef(), triggerRef, propertyName, event);
-                        }
+                synchronized (attributeTriggerHandlerMap) {
+                    AbstractTriggerHandler handler = attributeTriggerHandlerMap.get(event.getAttributeRef());
+                    if (handler != null) {
+                        LOG.info("Passing attribute write request to trigger handler '" + handler.getName() + "'");
+                        handler.processAttributeWrite(attribute, protocolConfiguration, propertyName, event);
                     }
                 }
             });
@@ -206,41 +189,11 @@ public class TriggerProtocol extends AbstractProtocol {
         TriggerConfiguration.getTriggerProperty(attribute)
             .ifPresent(propertyName -> {
                 AttributeRef attributeRef = attribute.getReferenceOrThrow();
-
-                if (TRIGGER_PROPERTY_ENABLED.equals(propertyName)) {
-                    AttributeState state = new AttributeState(attributeRef, Values.create(triggerConfiguration.isEnabled()));
-                    // Push current value of enabled status into the attribute
-                    LOG.info("Updating attribute value with trigger enabled status: " + state);
-                    updateLinkedAttribute(state);
-                } else {
-                    LOG.info("Registering attribute '" + attributeRef + "' on trigger handler '" + handler.getName() + "'");
-                    synchronized (attributeTriggerHandlerMap) {
-                        attributeTriggerHandlerMap.put(attribute.getReferenceOrThrow(), handler);
-                    }
-                    handler.registerAttribute(attributeRef, triggerConfiguration.getReferenceOrThrow(), propertyName);
+                LOG.info("Registering attribute '" + attributeRef + "' on trigger handler '" + handler.getName() + "'");
+                synchronized (attributeTriggerHandlerMap) {
+                    attributeTriggerHandlerMap.put(attribute.getReferenceOrThrow(), handler);
                 }
-            });
-    }
-
-    protected void updateAttributeWithTriggerHandler(AssetAttribute attribute, AssetAttribute triggerConfiguration, AbstractTriggerHandler handler) {
-        LOG.fine("Request to update attribute with trigger handler");
-
-        TriggerConfiguration.getTriggerProperty(attribute)
-            .ifPresent(propertyName -> {
-                AttributeRef attributeRef = attribute.getReferenceOrThrow();
-
-                if (TRIGGER_PROPERTY_ENABLED.equals(propertyName)) {
-                    // META_TRIGGER_PROPERTY has changed must not have been using TRIGGER_ENABLED value before
-                    unRegisterAttributeWithTriggerHandler(attributeRef, triggerConfiguration.getReferenceOrThrow(), handler);
-
-                    LOG.info("Registering attribute for trigger enabled status: " + attributeRef);
-
-                    // Push current value of enabled status into the attribute
-                    updateLinkedAttribute(new AttributeState(attributeRef, Values.create(triggerConfiguration.isEnabled())));
-                } else {
-                    LOG.info("Updating attribute '" + attributeRef + "' on trigger handler '" + handler.getName() + "'");
-                    handler.updateAttribute(attributeRef, triggerConfiguration.getReferenceOrThrow(), propertyName);
-                }
+                handler.registerAttribute(attributeRef, triggerConfiguration.getReferenceOrThrow(), propertyName);
             });
     }
 
@@ -282,26 +235,11 @@ public class TriggerProtocol extends AbstractProtocol {
      * Update the trigger's {@link #META_TRIGGER_VALUE}
      */
     void updateTriggerValue(AttributeState state) {
-        updateTriggerMeta(state, META_TRIGGER_VALUE);
-    }
+        LOG.fine("Updating the trigger value: " + state);
 
-    /**
-     * Updates the trigger configuration on the owning agent
-     */
-    // TODO: Implement trigger meta update
-    protected void updateTriggerMeta(AttributeState state, String metaName) {
-        LOG.info("Updating trigger meta '" + metaName + "': " + state.getAttributeRef());
-
-        synchronized (protocolConfigMap) {
-            Optional.ofNullable(protocolConfigMap.get(state.getAttributeRef()))
-                .ifPresent(triggerConfiguration ->
-                        LOG.info("Updating trigger configuration")
-                    // Set the trigger Configuration meta and update the agent
-                    //replaceMetaByName(triggerConfiguration, metaName, state.getValue());
-                    //Asset agent = assetStorageService.get(triggerConfiguration.getAssetId(), true);
-                    //agent.replaceAttribute(triggerConfiguration);
-                    //assetStorageService.merge(agent);
-                );
-        }
+        updateLinkedProtocolConfiguration(
+            getLinkedProtocolConfiguration(state.getAttributeRef()),
+            new MetaItem(META_TRIGGER_VALUE, state.getCurrentValue().orElse(null))
+        );
     }
 }

@@ -27,6 +27,8 @@ import org.openremote.model.value.Values;
 import java.util.Objects;
 import java.util.Optional;
 
+import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
+
 /**
  * The desired or current or past state of an {@link AttributeRef}.
  */
@@ -36,6 +38,12 @@ public class AttributeState {
     protected Value value;
 
     protected AttributeState() {
+    }
+
+    public AttributeState(String entityId, String attributeName, Value value) {
+        this(new AttributeRef(entityId, attributeName), value);
+        requireNonNullAndNonEmpty(entityId);
+        requireNonNullAndNonEmpty(attributeName);
     }
 
     /**

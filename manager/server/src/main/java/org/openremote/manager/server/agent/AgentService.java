@@ -453,12 +453,12 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         Protocol protocol = getProtocol(protocolConfiguration);
 
         if (protocol == null) {
-            LOG.severe("Cannot link protocol attributes as protocol is null");
+            LOG.severe("Cannot unlink protocol attributes as protocol is null");
             return;
         }
 
         try {
-            LOG.finest("Unlinking protocol attributes form: " + protocol.getProtocolName());
+            LOG.finest("Unlinking protocol attributes from: " + protocol.getProtocolName());
             protocol.unlinkAttributes(attributes, protocolConfiguration);
         } catch (Exception ex) {
             LOG.log(Level.SEVERE, "Ignoring error on unlinking attributes from protocol: " + protocol.getProtocolName(), ex);

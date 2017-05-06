@@ -14,7 +14,7 @@ class MacroProtocolTest extends Specification implements ManagerContainerTrait {
     def "Check macro agent and device asset deployment"() {
 
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10, initialDelay: 0)
+        def conditions = new PollingConditions(timeout: 15, initialDelay: 0)
 
         when: "the container starts"
         def serverPort = findEphemeralPort()
