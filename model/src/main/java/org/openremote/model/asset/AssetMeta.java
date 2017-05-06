@@ -22,6 +22,7 @@ package org.openremote.model.asset;
 import org.openremote.model.attribute.AttributeExecuteStatus;
 import org.openremote.model.attribute.HasMetaName;
 import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 
 import java.util.ArrayList;
@@ -39,6 +40,12 @@ import static org.openremote.model.util.TextUtil.isNullOrEmpty;
  * TODO https://people.eecs.berkeley.edu/~arka/papers/buildsys2015_metadatasurvey.pdf
  */
 public enum AssetMeta implements HasMetaName {
+
+    /**
+     * Marks an attribute of an agent asset as a {@link org.openremote.model.asset.agent.ProtocolConfiguration}.
+     * The attribute value is a protocol URN.
+     */
+    PROTOCOL_CONFIGURATION(ASSET_META_NAMESPACE + ":protocolConfiguration", new Access(false, false, true), ValueType.BOOLEAN),
 
     /**
      * Links the attribute to an agent's {@link org.openremote.model.asset.agent.ProtocolConfiguration}, connecting it
@@ -112,26 +119,27 @@ public enum AssetMeta implements HasMetaName {
     STORE_DATA_POINTS(ASSET_META_NAMESPACE + ":storeDataPoints", new Access(true, false, true), ValueType.BOOLEAN),
 
     /**
-     * Should attribute writes be processed by the rules engines as facts in knowledge sessions, with a lifecycle
-     * that reflects the state of the asset attribute (the {@link AssetState} facts in the rules sessions are kept
-     * in sync with asset changes). If you want two types of facts in your rules knowledge session for a single
+     * Should attribute writes be processed by the rules engines as {@link AssetState} facts in knowledge sessions,
+     * with a lifecycle that reflects the state of the asset attribute. The state facts in the rules sessions are kept
+     * in sync with asset changes: For an attribute there will always be a single fact that is updated
+     * when the attribute is updated. If you want two types of facts in your rules knowledge session for a single
      * attribute, with state and event behavior, combine this with {@link #RULE_EVENT}.
      */
     RULE_STATE(ASSET_META_NAMESPACE + ":ruleState", new Access(true, false, true), ValueType.BOOLEAN),
 
     /**
-     * Should attribute writes be processed by the rules engines as events in knowledge sessions with limited
-     * lifecycle that reflects how the event is processed (the {@link AssetEvent} facts
-     * in the rules sessions are expired automatically after a certain time and/or if they can no longer be matched
-     * by time operations). If you want two types of facts in your rules knowledge session for a single attribute,
-     * with state and event behavior, combine this with {@link #RULE_STATE\}.
+     * Should attribute writes be processed by the rules engines as events in knowledge sessions. Any attribute
+     * update will be inserted as an {@link AssetEvent} fact in the rules sessions, these events are expired
+     * automatically after a defined time and/or if they can no longer be matched by rule LHS time constraints.
+     * If you want two types of facts in your rules knowledge session for a single attribute, with state and event
+     * behavior, combine this with {@link #RULE_STATE}.
      */
     RULE_EVENT(ASSET_META_NAMESPACE + ":ruleEvent", new Access(true, false, true), ValueType.BOOLEAN),
 
     /**
-     * Override rules event expiration, for example "1h30m". Remove {@link AssetEvent}
-     * facts from the rules sessions if they are older than this value (using event source timestamp, not event
-     * processing time).
+     * Set maximum lifetime of {@link AssetEvent} facts in knowledge sessions, for example "1h30m". The rules
+     * engine will remove {@link AssetEvent} facts from the rules sessions if they are older than this value
+     * (using event source timestamp, not event processing time).
      */
     RULE_EVENT_EXPIRES(ASSET_META_NAMESPACE + ":ruleEventExpires", new Access(true, false, true), ValueType.STRING),
 
@@ -229,8 +237,8 @@ public enum AssetMeta implements HasMetaName {
     }
 
     /**
-     * In theory, meta item values can be of any JSON type. In practice, these are the
-     * types we can edit/have editor UI for. We inspect the actual JSON value and
+     * In theory, meta item values can be of any {@link ValueType}. In practice, these
+     * are the types we can edit/have editor UI for.
      */
     public enum EditableType {
         STRING("String", ValueType.STRING),

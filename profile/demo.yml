@@ -57,7 +57,9 @@ services:
       # these tasks will clean and populate Keycloak and the Manager database with demo data!
       SETUP_INIT_CLEAN_DATABASE: 'true'
       SETUP_KEYCLOAK_ADMIN_PASSWORD: secret
-      SETUP_IMPORT_DEMO_DATA: 'true'
+      SETUP_IMPORT_DEMO_USERS: 'true'
+      SETUP_IMPORT_DEMO_ASSETS: 'true'
+      SETUP_IMPORT_DEMO_RULES: 'true'
 
       # The public host name of this OpenRemote installation. This name is used in bearer tokens
       # and must be the name you access the web services under. If you are using Docker Toolbox,

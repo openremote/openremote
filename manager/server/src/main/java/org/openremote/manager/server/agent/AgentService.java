@@ -29,7 +29,7 @@ import org.openremote.container.persistence.PersistenceEvent;
 import org.openremote.manager.server.asset.AssetStorageService;
 import org.openremote.manager.server.asset.ServerAsset;
 import org.openremote.manager.server.datapoint.AssetDatapointService;
-import org.openremote.model.*;
+import org.openremote.model.AbstractValueTimestampHolder;
 import org.openremote.model.asset.*;
 import org.openremote.model.asset.agent.AgentLink;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
@@ -55,6 +55,7 @@ import static org.openremote.model.asset.AssetAttribute.attributesFromJson;
 import static org.openremote.model.asset.AssetType.AGENT;
 import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
+import static org.openremote.model.util.TextUtil.isValidURN;
 
 /**
  * Finds all {@link AssetType#AGENT} and {@link AssetType#THING} assets and starts the protocols for them.
@@ -87,12 +88,16 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         discoveredProtocols
             .forEach(
                 discoveredProtocol -> {
-                    if (isNullOrEmpty(discoveredProtocol.getProtocolName()) || !discoveredProtocol.getProtocolName().startsWith(Constants.PROTOCOL_NAMESPACE))
-                        throw new IllegalStateException("Protocol name is invalid it must start with '" + Constants.PROTOCOL_NAMESPACE + "': " + discoveredProtocol.getClass());
-
+                    if (isNullOrEmpty(discoveredProtocol.getProtocolName())
+                        || !isValidURN(discoveredProtocol.getProtocolName()))
+                        throw new IllegalStateException(
+                            "Protocol name is not a valid URN: " + discoveredProtocol.getClass()
+                        );
                     if (protocols.containsKey(discoveredProtocol.getProtocolName()))
-                        throw new IllegalStateException("A protocol with the name '" + discoveredProtocol.getProtocolName() + "' has already been loaded: " + discoveredProtocol.getClass());
-
+                        throw new IllegalStateException(
+                            "A protocol with the name '" + discoveredProtocol.getProtocolName()
+                                + "' has already been loaded: " + discoveredProtocol.getClass()
+                        );
                     protocols.put(discoveredProtocol.getProtocolName(), discoveredProtocol);
                 }
             );
@@ -500,7 +505,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                     messageBrokerService.getProducerTemplate().sendBodyAndHeader(
                         ACTUATOR_TOPIC,
                         event.get(),
-                        "Protocol",
+                        Protocol.ACTUATOR_TOPIC_TARGET_PROTOCOL,
                         protocolConfiguration.getValueAsString().orElse("")
                     );
                 } else {

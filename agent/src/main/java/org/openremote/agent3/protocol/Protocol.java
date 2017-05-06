@@ -20,98 +20,103 @@
 package org.openremote.agent3.protocol;
 
 import org.openremote.container.ContainerService;
-import org.openremote.model.Constants;
 import org.openremote.model.asset.Asset;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.AssetType;
 import org.openremote.model.asset.agent.ProtocolConfiguration;
 import org.openremote.model.attribute.AttributeEvent;
+import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.value.ValueType;
 
 import java.util.Collection;
 import java.util.function.Consumer;
 
 /**
- * A Protocol implementation must have a unique name in a VM.
+ * A protocol is a thread-safe singleton {@link ContainerService} that connects devices and
+ * services to the context broker. Each protocol implementation must have a unique
+ * resource name (RfC 2141 URN) in a VM.
+ * <h3>Configuring protocol instances</h3>
+ * A protocol implementation must support multiple protocol configurations and therefore
+ * support multiple logical instances. A protocol 'instance' can be defined by an
+ * attribute on an {@link Asset} that has a type of {@link AssetType#AGENT}; the
+ * attribute must conform to {@link ProtocolConfiguration}.
  * <p>
- * All protocol names must be in the {@link Constants#PROTOCOL_NAMESPACE}.
+ * When a protocol configuration is loaded/created for a protocol then the
+ * {@link #linkProtocolConfiguration(AssetAttribute, Consumer)} method will be called.
+ * The protocol should check the {@link AssetAttribute#isEnabled()} status of the protocol
+ * configuration to determine whether or not the logical instance should be running or stopped.
  * <p>
- * Protocols are singletons and 'instances' are defined by an attribute on an
- * {@link Asset} that has a type of {@link AssetType#AGENT}; the attribute must
- * conform to {@link ProtocolConfiguration}.
+ * The protocol is responsible for calling the provided consumer whenever the status of the
+ * logical instance changes (e.g. if the configuration is not valid then the protocol should
+ * call the consumer with a value of {@link DeploymentStatus#ERROR} and it should provide
+ * sensible logging to allow fault finding).
+ * <h3>Connecting attributes to actuators and sensors</h3>
+ * {@link AssetAttribute}s of {@link Asset}s can be linked to a protocol configuration
+ * instance by creating an {@link AssetMeta#AGENT_LINK} {@link MetaItem} on an attribute.
+ * Besides the {@link AssetMeta#AGENT_LINK}, other protocol-specific meta items may also be
+ * required when an asset attribute is linked to a protocol configuration instance.
+ * Attributes linked to a protocol configuration instance will get passed to the protocol via
+ * a call to {@link #linkAttributes(Collection, AssetAttribute)}.
  * <p>
- * When a {@link ProtocolConfiguration} {@link AssetAttribute} is loaded/created for a protocol
- * then the {@link #linkProtocolConfiguration(AssetAttribute, Consumer)} method will be called.
+ * The protocol handles read and write of linked attributes:
  * <p>
- * When a protocolConfiguration is linked the protocol is responsible for calling the consumer
- * whenever the status of the protocolConfiguration changes (e.g. if the protocolConfiguration
- * is not valid then the protocol should call the consumer with a value of {@link DeploymentStatus#ERROR}
- * and it should provide sensible logging to allow fault finding.
+ * If the actual state of the device (or service) changes, the linked protocol writes the new
+ * state into the attribute value and notifies the context broker of the change. A protocol updates
+ * a linked attributes' value by sending  an {@link AttributeEvent} messages on the
+ * {@link #SENSOR_QUEUE}.
  * <p>
- * The protocol should check the {@link AssetAttribute#isEnabled()} status of the protocolConfiguration
- * to determine whether or not it should be running or stopped.
+ * If the user writes a new value into the linked attribute, the protocol translates this value
+ * change into a device (or service) action. Write operations on attributes linked to a protocol
+ * configuration can be consumed by the protocol on the {@link #ACTUATOR_TOPIC} where the message
+ * body will be an {@link AttributeEvent}. Each message also contains the target protocol name in
+ * header {@link #ACTUATOR_TOPIC_TARGET_PROTOCOL}.
  * <p>
- * {@link AssetAttribute}s of other {@link Asset}s can be linked to a protocolConfiguration by creating
- * an {@link AssetMeta#AGENT_LINK} {@link MetaItem} on the attribute, other MetaItems
- * may then be required that are specific to the linked protocolConfiguration so that it can determine
- * what data to read/write from/to the attribute. Attributes linked to a protocolConfiguration will get passed
- * to the protocol via a call to {@link #linkAttributes(Collection, AssetAttribute)}.
+ * Data type conversion is also delegated to the protocol implementation: If an attribute has a particular
+ * {@link AttributeType} and therefore a base {@link ValueType}, the protocol implementation must
+ * receive and send value change messages with values of that type.
  * <p>
- * NOTE: That {@link #linkProtocolConfiguration(AssetAttribute, Consumer)} will always be called before
- * {@link #linkAttributes(Collection, AssetAttribute)} and {@link #unlinkAttributes(Collection, AssetAttribute)}
- * will always be called before {@link #unlinkProtocolConfiguration(AssetAttribute)}
- * <p>
- * Write operations on attributes linked to a protocolConfiguration can be consumed by the protocol
- * on the {@link #ACTUATOR_TOPIC} where the message body will be an {@link AttributeEvent}.
- * If a protocol wants to update a linked attributes' value then it can produce {@link AttributeEvent} messages
- * on the {@link #SENSOR_QUEUE}.
- * <p>
- * The linked protocol handles south-bound read and write of the attribute value: If the user writes
- * a new value into a linked attribute, the protocol translates this value change into a
- * device (or service) action. If the actual state of the device (or service) changes, the linked
- * protocol writes the new state into the attribute value and the asset system user is notified of the change.
- * <p>
- * Data type conversion is also delegated to the Protocol implementation: If an attribute has a particular
- * AttributeType and therefore a certain JsonValue, the Protocol must receive and send value change messages
- * with values of that type.
+ * NOTE: That {@link #linkProtocolConfiguration} will always be called
+ * before {@link #linkAttributes} and {@link #unlinkAttributes} will always be called before
+ * {@link #unlinkProtocolConfiguration}.
  * <p>
  * The following summarises the method calls protocols should expect:
  * <p>
- * Protocol Configuration is created/loaded:
+ * Protocol configuration (logical instance) is created/loaded:
  * <ol>
- *     <li>{@link #linkProtocolConfiguration(AssetAttribute, Consumer)}</li>
- *     <li>{@link #linkAttributes(Collection, AssetAttribute)}</li>
+ * <li>{@link #linkProtocolConfiguration(AssetAttribute, Consumer)}</li>
+ * <li>{@link #linkAttributes(Collection, AssetAttribute)}</li>
  * </ol>
  * <p>
- * Protocol Configuration is modified:
+ * Protocol configuration (logical instance) is modified:
  * <ol>
- *     <li>{@link #unlinkAttributes(Collection, AssetAttribute)}</li>
- *     <li>{@link #unlinkProtocolConfiguration(AssetAttribute)}</li>
- *     <li>{@link #linkProtocolConfiguration(AssetAttribute, Consumer)}</li>
- *     <li>{@link #linkAttributes(Collection, AssetAttribute)}</li>
+ * <li>{@link #unlinkAttributes(Collection, AssetAttribute)}</li>
+ * <li>{@link #unlinkProtocolConfiguration(AssetAttribute)}</li>
+ * <li>{@link #linkProtocolConfiguration(AssetAttribute, Consumer)}</li>
+ * <li>{@link #linkAttributes(Collection, AssetAttribute)}</li>
  * </ol>
  * <p>
- * Protocol Configuration is removed:
+ * Protocol configuration (logical instance) is removed:
  * <ol>
- *     <li>{@link #unlinkAttributes(Collection, AssetAttribute)}</li>
- *     <li>{@link #unlinkProtocolConfiguration(AssetAttribute)}</li>
+ * <li>{@link #unlinkAttributes(Collection, AssetAttribute)}</li>
+ * <li>{@link #unlinkProtocolConfiguration(AssetAttribute)}</li>
  * </ol>
  * <p>
- * Linked Attribute is created/loaded:
+ * Attribute linked to protocol configuration is created/loaded:
  * <ol>
- *     <li>{@link #linkAttributes(Collection, AssetAttribute)}</li>
+ * <li>{@link #linkAttributes(Collection, AssetAttribute)}</li>
  * </ol>
  * <p>
- * Linked Attribute is modified:
+ * Attribute linked to protocol configuration is modified:
  * <ol>
- *     <li>{@link #unlinkAttributes(Collection, AssetAttribute)}</li>
- *     <li>{@link #linkAttributes(Collection, AssetAttribute)}</li>
+ * <li>{@link #unlinkAttributes(Collection, AssetAttribute)}</li>
+ * <li>{@link #linkAttributes(Collection, AssetAttribute)}</li>
  * </ol>
  * <p>
- * Linked Attribute is removed:
+ * Attribute link to protocol configuration is removed:
  * <ol>
- *     <li>{@link #unlinkAttributes(Collection, AssetAttribute)}</li>
+ * <li>{@link #unlinkAttributes(Collection, AssetAttribute)}</li>
  * </ol>
  */
 public interface Protocol extends ContainerService {
@@ -122,8 +127,8 @@ public interface Protocol extends ContainerService {
     enum DeploymentStatus {
 
         /**
-         * Protocol configuration has not yet been linked (i.e. {@link #linkProtocolConfiguration(AssetAttribute, Consumer)}
-         * hasn't yet been called for the configuration.
+         * Protocol configuration has not yet been linked (i.e. {@link #linkProtocolConfiguration}
+         * hasn't yet been called for the configuration).
          */
         UNLINKED,
 
@@ -145,7 +150,7 @@ public interface Protocol extends ContainerService {
         /**
          * Protocol configuration has been linked, it is valid but it is not enabled (i.e. it has a
          * {@link org.openremote.model.asset.AssetMeta#ENABLED} {@link MetaItem}
-         * with a value of false).
+         * with a value of <code>false</code>).
          */
         LINKED_DISABLED,
 
@@ -162,6 +167,8 @@ public interface Protocol extends ContainerService {
          */
         UPDATING
     }
+
+    String ACTUATOR_TOPIC_TARGET_PROTOCOL = "Protocol";
 
     // TODO: Some of these options should be configurable depending on expected load etc.
 

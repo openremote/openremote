@@ -81,7 +81,7 @@ public abstract class AbstractProtocol implements Protocol {
                     from(ACTUATOR_TOPIC)
                         .routeId("Actuator-" + getProtocolName())
                         .process(exchange -> {
-                            String protocolName = exchange.getIn().getHeader("Protocol", String.class);
+                            String protocolName = exchange.getIn().getHeader(Protocol.ACTUATOR_TOPIC_TARGET_PROTOCOL, String.class);
                             if (getProtocolName().equals(protocolName)) {
                                 // TODO Use read/write lock for link/unlink attributes synchronization and additional optional exclusive lock for single-threaded implementors
                                 synchronized (linkedAttributes) {

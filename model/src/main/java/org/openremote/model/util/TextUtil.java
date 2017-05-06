@@ -19,11 +19,18 @@
  */
 package org.openremote.model.util;
 
+import com.google.gwt.regexp.shared.RegExp;
+
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 public class TextUtil {
+
+    public static final String URN_PATTERN = "^urn:[a-zA-Z0-9][a-zA-Z0-9-]{0,31}:([a-zA-Z0-9()+,\\-.:=@;$_!*']|%[0-9a-f]{2})+$";
+    public static final RegExp URN_REGEXP = RegExp.compile(URN_PATTERN);
+    public static final Predicate<String> URN_VALIDATOR  = name -> !isNullOrEmpty(name) && URN_REGEXP.test(name);
 
     /**
      * Converts a String which represents a pollingInterval into an int which can be used as delay
@@ -97,7 +104,7 @@ public class TextUtil {
 
     /**
      * Transforms <code>EXFooBar123</code> into <code>ex-foo-bar-123</code> and
-     * <code>attributeX</code> into <code>attribute-x</code> without regex (GWT!)
+     * <code>attributeX</code> into <code>attribute-x</code> without regex.
      */
     public static String toLowerCaseDash(String camelCase) {
         if (camelCase == null)
@@ -187,5 +194,9 @@ public class TextUtil {
         }
 
         return str;
+    }
+
+    public static boolean isValidURN(String name) {
+        return URN_VALIDATOR.test(name);
     }
 }

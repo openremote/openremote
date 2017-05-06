@@ -32,7 +32,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def conditions = new PollingConditions(timeout: 10, delay: 1)
 
         and: "a mock protocol"
-        def mockProtocolName = Constants.PROTOCOL_NAMESPACE + ":mockProtocol"
+        def mockProtocolName = "urn:myCustom:mockProtocol"
         def protocolDeployed = false
         List<AttributeEvent> sendToActuatorEvents = []
         def mockProtocol = new AbstractProtocol() {

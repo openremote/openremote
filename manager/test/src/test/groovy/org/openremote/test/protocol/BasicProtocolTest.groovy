@@ -51,7 +51,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         def conditions = new PollingConditions(timeout: 10, delay: 1)
 
         and: "a mock protocol"
-        def mockProtocolName = Constants.PROTOCOL_NAMESPACE + ":mockProtocol"
+        def mockProtocolName = "urn:myCustom:mockProtocol"
         Map<String, Integer> protocolExpectedLinkedAttributeCount = [:]
         protocolExpectedLinkedAttributeCount['mockConfig1'] = 2
         protocolExpectedLinkedAttributeCount['mockConfig2'] = 2
@@ -140,16 +140,16 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         mockAgent.setType(AssetType.AGENT)
         mockAgent.setAttributes(
             ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("mockConfig1"), mockProtocolName)
-                .setMeta(
+                .addMeta(
                     new MetaItem("MOCK_REQUIRED_META", Values.create(true))
                 ),
             ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("mockConfig2"), mockProtocolName),
             ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("mockConfig3"), mockProtocolName)
-                .setMeta(
+                .addMeta(
                     new MetaItem("MOCK_THROW_EXCEPTION", Values.create(""))
                 ),
             ProtocolConfiguration.initProtocolConfiguration(new AssetAttribute("mockConfig4"), mockProtocolName)
-                .setMeta(
+                .addMeta(
                     new MetaItem("MOCK_REQUIRED_META", Values.create(true)),
                     new MetaItem(AssetMeta.ENABLED, Values.create(false))
                 )

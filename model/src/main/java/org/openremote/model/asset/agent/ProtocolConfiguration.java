@@ -19,32 +19,28 @@
  */
 package org.openremote.model.asset.agent;
 
-import org.openremote.model.Constants;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeType;
-import org.openremote.model.attribute.Meta;
+import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Values;
 
-import java.util.Locale;
 import java.util.Optional;
-import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
+import static org.openremote.model.asset.AssetMeta.PROTOCOL_CONFIGURATION;
+import static org.openremote.model.attribute.MetaItem.isMetaNameEqualTo;
+
 /**
- * Agent attributes can be named protocol configurations.
+ * Agent attributes can be named protocol configurations, defining a logical instance of a protocol.
  * <p>
- * A protocol configuration attribute value must be a URN string representation
- * starting with {@link Constants#PROTOCOL_NAMESPACE}.
+ * A protocol configuration attribute must be marked
+ * {@link org.openremote.model.asset.AssetMeta#PROTOCOL_CONFIGURATION} and its
+ * value must be valid RfC 2141 URN.
  * <p>
- * TODO: How can we integrate 3rd party protocol namespaces?
- * <p>
- * Configuration details are managed as {@link Meta} of the attribute.
+ * Protocol-specific settings and details are managed as {@link MetaItem} of the attribute.
  */
 final public class ProtocolConfiguration {
-    public static final Predicate<String> PROTOCOL_NAME_VALIDATOR = value ->
-        value != null && value
-            .toLowerCase(Locale.ROOT)
-            .startsWith(Constants.PROTOCOL_NAMESPACE);
 
     private ProtocolConfiguration() {
     }
@@ -53,11 +49,11 @@ final public class ProtocolConfiguration {
         if (attribute == null) {
             return null;
         }
-
         isValidProtocolNameOrThrow(protocolName);
         attribute.setEnabled(true);
         attribute.setTypeAndClearValue(AttributeType.STRING);
         attribute.setValue(Values.create(protocolName));
+        attribute.getMeta().add(new MetaItem(PROTOCOL_CONFIGURATION, Values.create(true)));
         return attribute;
     }
 
@@ -66,23 +62,17 @@ final public class ProtocolConfiguration {
     }
 
     public static boolean isValidProtocolName(String protocolName) {
-        return PROTOCOL_NAME_VALIDATOR.test(protocolName);
+        return TextUtil.isValidURN(protocolName);
     }
 
     public static void isValidProtocolNameOrThrow(String protocolName) throws IllegalArgumentException {
         if (!isValidProtocolName(protocolName)) {
-            throw new IllegalArgumentException("Protocol name must start with the protocol URN prefix: " + Constants.PROTOCOL_NAMESPACE);
+            throw new IllegalArgumentException("Protocol name must start with 'urn:' but is: " + protocolName);
         }
     }
 
     public static boolean isProtocolConfiguration(AssetAttribute attribute) {
-        return getProtocolName(attribute)
-            .isPresent();
-    }
-
-    // TODO: Should this be able to validate the protocol name
-    public static boolean isValidProtocolConfiguration(AssetAttribute attribute) {
-        return isProtocolConfiguration(attribute);
+        return getProtocolName(attribute).isPresent() && attribute.getMetaStream().anyMatch(isMetaNameEqualTo(PROTOCOL_CONFIGURATION));
     }
 
     public static Optional<String> getProtocolName(AssetAttribute attribute) {

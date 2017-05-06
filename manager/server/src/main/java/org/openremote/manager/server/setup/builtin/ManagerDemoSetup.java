@@ -140,7 +140,7 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         agent.setLocation(geometryFactory.createPoint(new Coordinate(5.460315214821094, 51.44541688237109)));
         agent.setAttributes(
             initProtocolConfiguration(new AssetAttribute(agentProtocolConfigName), SimulatorProtocol.PROTOCOL_NAME)
-                .setMeta(
+                .addMeta(
                     new MetaItem(
                         SimulatorProtocol.CONFIG_MODE,
                         Values.create(SimulatorProtocol.Mode.WRITE_THROUGH_DELAYED.toString())
@@ -564,25 +564,25 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
         apartment1Scenes.setLocation(geometryFactory.createPoint(new Coordinate(5.470945, 51.438000)));
         apartment1Scenes.setAttributes(
             initProtocolConfiguration(new AssetAttribute("homeScene"), MacroProtocol.PROTOCOL_NAME)
-                .setMeta(
+                .addMeta(
                     new MacroAction(new AttributeState(new AttributeRef(apartment1Id, "alarmEnabled"), Values.create(false))).toMetaItem(),
                     new MacroAction(new AttributeState(new AttributeRef(apartment1Id, "lastExecutedScene"), Values.create("HOME"))).toMetaItem(),
                     new MacroAction(new AttributeState(new AttributeRef(apartment1LivingroomThermostatId, "targetTemperature"), Values.create(21d))).toMetaItem()
                 ),
             initProtocolConfiguration(new AssetAttribute("awayScene"), MacroProtocol.PROTOCOL_NAME)
-                .setMeta(
+                .addMeta(
                     new MacroAction(new AttributeState(new AttributeRef(apartment1Id, "alarmEnabled"), Values.create(true))).toMetaItem(),
                     new MacroAction(new AttributeState(new AttributeRef(apartment1Id, "lastExecutedScene"), Values.create("AWAY"))).toMetaItem(),
                     new MacroAction(new AttributeState(new AttributeRef(apartment1LivingroomThermostatId, "targetTemperature"), Values.create(15d))).toMetaItem()
                 ),
             initProtocolConfiguration(new AssetAttribute("eveningScene"), MacroProtocol.PROTOCOL_NAME)
-                .setMeta(
+                .addMeta(
                     new MacroAction(new AttributeState(new AttributeRef(apartment1Id, "alarmEnabled"), Values.create(false))).toMetaItem(),
                     new MacroAction(new AttributeState(new AttributeRef(apartment1Id, "lastExecutedScene"), Values.create("EVENING"))).toMetaItem(),
                     new MacroAction(new AttributeState(new AttributeRef(apartment1LivingroomThermostatId, "targetTemperature"), Values.create(22d))).toMetaItem()
                 ),
             initProtocolConfiguration(new AssetAttribute("nightScene"), MacroProtocol.PROTOCOL_NAME)
-                .setMeta(
+                .addMeta(
                     new MacroAction(new AttributeState(new AttributeRef(apartment1Id, "alarmEnabled"), Values.create(true))).toMetaItem(),
                     new MacroAction(new AttributeState(new AttributeRef(apartment1Id, "lastExecutedScene"), Values.create("NIGHT"))).toMetaItem(),
                     new MacroAction(new AttributeState(new AttributeRef(apartment1LivingroomThermostatId, "targetTemperature"), Values.create(19d))).toMetaItem()

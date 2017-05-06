@@ -118,6 +118,13 @@ public class AssetAttribute extends Attribute {
         return this;
     }
 
+    public AssetAttribute addMeta(MetaItem... meta) {
+        if (meta != null) {
+            getMeta().addAll(Arrays.asList(meta));
+        }
+        return this;
+    }
+
     /**
      * @return The current value and its timestamp represented as an attribute event.
      */
@@ -336,9 +343,17 @@ public class AssetAttribute extends Attribute {
         return copy;
     }
 
-//    ---------------------------------------------------
-//    FUNCTIONAL METHODS BELOW
-//    ---------------------------------------------------
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "{" +
+            "assetId='" + assetId + '\'' +
+            ", name='" + name + '\'' +
+            "} " + objectValue.toJson();
+    }
+
+    //    ---------------------------------------------------
+    //    FUNCTIONAL METHODS BELOW
+    //    ---------------------------------------------------
 
     /**
      * Returns non-private attributes with non-private meta items.
