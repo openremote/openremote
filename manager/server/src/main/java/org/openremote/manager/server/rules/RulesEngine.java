@@ -513,11 +513,10 @@ public class RulesEngine<T extends Ruleset> {
             .findFirst()
             .orElse(null);
 
-        FactHandle factHandle = update != null ? assetStates.get(update) : null;
+        // Always remove from asset states
+        FactHandle factHandle = update != null ? assetStates.remove(update) : null;
 
         if (factHandle != null) {
-            assetStates.remove(update);
-
             if (isRunning()) {
                 try {
                     // ... retract it from working memory ...
