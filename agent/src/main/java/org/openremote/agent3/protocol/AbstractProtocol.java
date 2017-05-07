@@ -30,13 +30,11 @@ import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.agent.AgentLink;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeState;
-import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.attribute.*;
 import org.openremote.model.util.Triplet;
 import org.openremote.model.value.Values;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -104,7 +102,7 @@ public abstract class AbstractProtocol implements Protocol {
                                             if (enabled == protocolConfiguration.isEnabled()) {
                                                 LOG.finer("Protocol configuration enabled status is already: " + enabled);
                                             } else {
-                                                updateLinkedProtocolConfiguration(protocolConfiguration, new MetaItem(AssetMeta.ENABLED, Values.create(enabled)));
+                                                updateLinkedProtocolConfiguration(protocolConfiguration, AssetMeta.ENABLED, new MetaItem(AssetMeta.ENABLED, Values.create(enabled)));
                                             }
                                         } else {
                                             processLinkedAttributeWrite(event, protocolConfiguration);
@@ -235,7 +233,11 @@ public abstract class AbstractProtocol implements Protocol {
      */
     protected void sendAttributeEvent(AttributeEvent attributeEvent) {
         LOG.info("Sending attribute event from protocol '" + getProtocolName() + "': " + attributeEvent);
-        assetService.sendAttributeEvent(attributeEvent);
+        // TODO: Decide whether protocols should be allowed to send arbitrary attribute events to read only attributes
+        // Use same mechanism as clients - cannot write to readonly attributes
+        //assetProcessingService.sendAttributeEvent();
+        // Use special route for protocols to allow write on readonly attributes
+        producerTemplate.sendBodyAndHeader(SENSOR_QUEUE, attributeEvent, "isSensorUpdate", false);
     }
 
     /**
@@ -258,10 +260,14 @@ public abstract class AbstractProtocol implements Protocol {
      * Update a linked protocol configuration; allows protocols to reconfigure their
      * own protocol configurations to persist changing data e.g. authorization tokens.
      */
-    protected void updateLinkedProtocolConfiguration(AssetAttribute protocolConfiguration, MetaItem newMetaItem) {
+    protected void updateLinkedProtocolConfiguration(AssetAttribute protocolConfiguration, HasMetaName metaName, MetaItem... newMetaItem) {
+        updateLinkedProtocolConfiguration(protocolConfiguration, metaName.getUrn(), newMetaItem);
+    }
+
+    protected void updateLinkedProtocolConfiguration(AssetAttribute protocolConfiguration, String metaName, MetaItem... newMetaItem) {
         // Clone the protocol configuration rather than modify this one
         AssetAttribute modifiedProtocolConfiguration = protocolConfiguration.deepCopy();
-        MetaItem.replaceMetaByName(modifiedProtocolConfiguration.getMeta(), AssetMeta.ENABLED, newMetaItem);
+        MetaItem.replaceMetaByName(modifiedProtocolConfiguration.getMeta(), metaName, Arrays.asList(newMetaItem));
         assetService.updateProtocolConfiguration(modifiedProtocolConfiguration);
     }
 

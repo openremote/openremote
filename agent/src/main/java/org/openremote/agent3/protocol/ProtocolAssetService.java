@@ -21,20 +21,15 @@ package org.openremote.agent3.protocol;
 
 import org.openremote.container.ContainerService;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.attribute.AttributeEvent;
 
 /**
- * Interface for protocols to perform limited asset
- * related operations.
+ * Interface for protocols to perform limited asset related operations.
  * <p>
  * <ul>
- *     <li>Send attribute events into the processing chain</li>
- *     <li>Update their own protocol configurations</li>
+ * <li>Update their own protocol configurations</li>
  * </ul>
  */
 public interface ProtocolAssetService extends ContainerService {
-    void sendAttributeEvent(AttributeEvent attributeEvent);
-
     // TODO: Find a way of limiting protocols to only modifying their own protocol configurations
     void updateProtocolConfiguration(AssetAttribute protocolConfiguration);
 }

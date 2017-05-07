@@ -21,6 +21,7 @@ package org.openremote.manager.server.agent;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.openremote.agent3.protocol.Protocol;
+import org.openremote.agent3.protocol.ProtocolAssetService;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
@@ -60,7 +61,7 @@ import static org.openremote.model.util.TextUtil.isValidURN;
 /**
  * Finds all {@link AssetType#AGENT} and {@link AssetType#THING} assets and starts the protocols for them.
  */
-public class AgentService extends RouteBuilder implements ContainerService, Consumer<AssetState> {
+public class AgentService extends RouteBuilder implements ContainerService, Consumer<AssetState>, ProtocolAssetService {
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
     protected Container container;
@@ -137,6 +138,40 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                     processAssetChange(asset, persistenceEvent);
                 }
             });
+    }
+
+    /**
+     * This should only be called by protocol implementations to request an update to
+     * one of their own protocol configuration attributes. The {@link ProtocolAssetService}
+     * interface was implemented here because the sendAttributeEvent already exists here
+     * and there are already protocol related things here anyway.
+     */
+    // TODO: Need a way of restricting protocols to their own protocolConfigurations
+    @Override
+    public void updateProtocolConfiguration(AssetAttribute protocolConfiguration) {
+        if (protocolConfiguration == null || !protocolConfiguration.getReference().isPresent()) {
+            LOG.warning("Cannot update protocol configuration as it is not valid: " + protocolConfiguration);
+            return;
+        }
+
+        AttributeRef protocolRef = protocolConfiguration.getReference().get();
+        ServerAsset agent = assetStorageService.find(protocolRef.getEntityId(), true);
+        if (agent == null || agent.getWellKnownType() !=  AssetType.AGENT || !agent.hasAttribute(protocolRef.getAttributeName())) {
+            LOG.warning("Protocol configuration doesn't belong to a valid agent");
+            return;
+        }
+
+        // Check protocol configuration has changed
+        @SuppressWarnings("ConstantConditions")
+        AssetAttribute oldProtocolConfiguration = agent.getAttribute(protocolRef.getAttributeName()).get();
+        if (oldProtocolConfiguration.getObjectValue().equals(protocolConfiguration.getObjectValue())) {
+            LOG.fine("Protocol configuration hasn't changed so nothing to do here");
+            return;
+        }
+
+        agent.replaceAttribute(protocolConfiguration);
+        LOG.fine("Updating agent protocol configuration: " + protocolRef);
+        assetStorageService.merge(agent);
     }
 
     /**

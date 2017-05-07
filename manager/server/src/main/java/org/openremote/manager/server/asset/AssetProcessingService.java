@@ -20,7 +20,6 @@
 package org.openremote.manager.server.asset;
 
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.agent3.protocol.ProtocolAssetService;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
@@ -36,7 +35,6 @@ import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
-import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.value.Values;
 
 import java.util.ArrayList;
@@ -118,7 +116,7 @@ import static org.openremote.model.asset.agent.AgentLink.getAgentLink;
  * and if it does then the {@link AttributeEvent} is stored in a time series DB. Then allows the message to continue
  * if the commit was successful. TODO Should the datapoint service only store northbound updates?
  */
-public class AssetProcessingService extends RouteBuilder implements ContainerService, ProtocolAssetService {
+public class AssetProcessingService extends RouteBuilder implements ContainerService {
 
     private static final Logger LOG = Logger.getLogger(AssetProcessingService.class.getName());
 
@@ -211,7 +209,13 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             .process(exchange -> {
                 AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
                 LOG.fine("Received on sensor queue: " + event);
-                processSensorUpdate(event);
+                // Can either come from onUpdateSensor or sendAttributeUpdate
+                boolean isSensorUpdate = (boolean) exchange.getIn().getHeader("isSensorUpdate", true);
+                if (isSensorUpdate) {
+                    processSensorUpdate(event);
+                } else {
+                    updateAttributeValue(event, true);
+                }
             });
 
         // Process attribute events from clients
@@ -277,40 +281,6 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     }
 
     /**
-     * This should only be called by protocol implementations to request an update to
-     * one of their own protocol configuration attributes. The {@link ProtocolAssetService}
-     * interface was implemented here because the sendAttributeEvent already exists here
-     * and there are already protocol related things here anyway.
-     */
-    // TODO: Need a way of restricting protocols to their own protocolConfigurations
-    @Override
-    public void updateProtocolConfiguration(AssetAttribute protocolConfiguration) {
-        if (protocolConfiguration == null || !protocolConfiguration.getReference().isPresent()) {
-            LOG.warning("Cannot update protocol configuration as it is not valid: " + protocolConfiguration);
-            return;
-        }
-
-        AttributeRef protocolRef = protocolConfiguration.getReference().get();
-        ServerAsset agent = assetStorageService.find(protocolRef.getEntityId(), true);
-        if (agent == null || agent.getWellKnownType() !=  AssetType.AGENT || !agent.hasAttribute(protocolRef.getAttributeName())) {
-            LOG.warning("Protocol configuration doesn't belong to a valid agent");
-            return;
-        }
-
-        // Check protocol configuration has changed
-        @SuppressWarnings("ConstantConditions")
-        AssetAttribute oldProtocolConfiguration = agent.getAttribute(protocolRef.getAttributeName()).get();
-        if (oldProtocolConfiguration.getObjectValue().equals(protocolConfiguration.getObjectValue())) {
-            LOG.fine("Protocol configuration hasn't changed so nothing to do here");
-            return;
-        }
-
-        agent.replaceAttribute(protocolConfiguration);
-        LOG.fine("Updating agent protocol configuration: " + protocolRef);
-        assetStorageService.merge(agent);
-    }
-
-    /**
      * This is the entry point for any attribute value change event in the entire system.
      * <p>
      * Ingestion is asynchronous, through either
@@ -354,7 +324,8 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
 
         // Prevent editing of read only attributes
         // TODO This also means a rule RHS can't write a read-only attribute with Assets#dispatch!
-        if (attribute.get().isReadOnly()) {
+        // TODO should protocols be allowed to write to read-only attributes
+        if (!fromProtocol && attribute.get().isReadOnly()) {
             LOG.warning("Ignoring " + attributeEvent + ", attribute is read-only in: " + asset);
             return;
         }
