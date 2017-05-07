@@ -339,12 +339,16 @@ public class Asset implements IdentifiableEntity {
     }
 
 
-    public void addAttribute(AssetAttribute attribute) throws IllegalArgumentException {
-        if (getAttributesStream().anyMatch(attr -> isAttributeNameEqualTo(attr, attribute.getName().orElse(null)))) {
-            throw new IllegalArgumentException("Attribute by this name already exists");
-        }
+    public void addAttributes(AssetAttribute... attributes) throws IllegalArgumentException {
+        Arrays.asList(attributes).forEach(
+            attribute -> {
+                if (getAttributesStream().anyMatch(attr -> isAttributeNameEqualTo(attr, attribute.getName().orElse(null)))) {
+                    throw new IllegalArgumentException("Attribute by this name already exists");
+                }
 
-        replaceAttribute(attribute);
+                replaceAttribute(attribute);
+            }
+        );
     }
 
     public void replaceAttribute(AssetAttribute attribute) throws IllegalArgumentException {
