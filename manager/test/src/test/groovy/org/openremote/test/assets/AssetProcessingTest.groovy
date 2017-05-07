@@ -8,7 +8,6 @@ import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup
-import org.openremote.model.Constants
 import org.openremote.model.asset.AssetAttribute
 import org.openremote.model.asset.AssetMeta
 import org.openremote.model.asset.AssetState
@@ -118,7 +117,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
 
             // Below is here to check the macro executable attributes have been initialised
             def apartment1 = assetStorageService.find(managerDemoSetup.apartment1Id, true)
-            assert apartment1.getAttribute("nightScene").get().getValueAsString().orElse("") == "READY"
+            assert apartment1.getAttribute("night").get().getValueAsString().orElse("") == "READY"
         }
 
         when: "a mock agent that uses the mock protocol is created"

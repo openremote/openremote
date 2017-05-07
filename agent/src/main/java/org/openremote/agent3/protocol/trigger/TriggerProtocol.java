@@ -239,6 +239,7 @@ public class TriggerProtocol extends AbstractProtocol {
 
         updateLinkedProtocolConfiguration(
             getLinkedProtocolConfiguration(state.getAttributeRef()),
+            META_TRIGGER_VALUE,
             new MetaItem(META_TRIGGER_VALUE, state.getCurrentValue().orElse(null))
         );
     }

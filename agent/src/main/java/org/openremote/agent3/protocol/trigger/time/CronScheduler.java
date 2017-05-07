@@ -19,6 +19,7 @@
  */
 package org.openremote.agent3.protocol.trigger.time;
 
+import org.openremote.model.util.Pair;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 
@@ -30,25 +31,12 @@ import java.util.logging.Logger;
 
 class CronScheduler {
 
-    static class CronJob implements Job {
-        @Override
-        public void execute(JobExecutionContext context) throws JobExecutionException {
-            Runnable executeAction = (Runnable)context.getMergedJobDataMap().get("ACTION");
-
-            if (executeAction != null) {
-                LOG.info("Cron trigger fired: " + context.getTrigger().getKey().getName());
-                executeAction.run();
-            }
-        }
-    }
-
-
     private static final Logger LOG = Logger.getLogger(CronScheduler.class.getName());
     protected static final int ALARM_UPDATE_DELAY_MS = 10000;
     protected final List<String> jobIds = new ArrayList<>();
     protected final org.quartz.Scheduler scheduler;
 
-    CronScheduler() {
+    public CronScheduler() {
         org.quartz.Scheduler tempScheduler;
 
         // Set properties for cronScheduler factory
@@ -88,10 +76,10 @@ class CronScheduler {
             removeJob(id);
         }
 
-        CronTrigger cronTrigger = createCronTrigger(id, expression, executeHandler);
+        Pair<JobDetail, CronTrigger> cronTrigger = createCronTrigger(id, expression, executeHandler);
 
         try {
-            scheduler.scheduleJob(cronTrigger);
+            scheduler.scheduleJob(cronTrigger.key, cronTrigger.value);
 
             if (!scheduler.isStarted()) {
                 LOG.info("Starting the cron cronScheduler");
@@ -107,6 +95,7 @@ class CronScheduler {
     protected void removeJob(String id) {
         try {
             scheduler.unscheduleJob(TriggerKey.triggerKey(id));
+            scheduler.deleteJob(JobKey.jobKey("cronJob1", id));
         } catch (SchedulerException e) {
             LOG.log(Level.FINE, "Exception thrown whilst trying to unschedule cron job: " + id, e);
         } finally {
@@ -114,7 +103,7 @@ class CronScheduler {
         }
     }
 
-    protected static CronTrigger createCronTrigger(String id, CronExpression cronExpression, Runnable executeHandler) {
+    protected static Pair<JobDetail, CronTrigger> createCronTrigger(String id, CronExpression cronExpression, Runnable executeHandler) {
         if (cronExpression == null) {
             LOG.info("Cron expression is null so cannot create trigger: " + id);
             return null;
@@ -123,7 +112,7 @@ class CronScheduler {
         // Create the cron schedule
         CronScheduleBuilder cronSchedule = CronScheduleBuilder.cronSchedule(cronExpression);
 
-        // Create the job data (just the execute handler
+        // Create the job data with just the execute handler
         JobDataMap jobData = new JobDataMap();
         jobData.put("ACTION", executeHandler);
 
@@ -134,10 +123,12 @@ class CronScheduler {
             .build();
 
         // Create the cron trigger for this alarm
-        return TriggerBuilder.newTrigger()
+        CronTrigger trigger = TriggerBuilder.newTrigger()
             .withIdentity(TriggerKey.triggerKey(id))
             .withSchedule(cronSchedule)
             .forJob(cronJob)
             .build();
+
+        return new Pair<>(cronJob, trigger);
     }
 }

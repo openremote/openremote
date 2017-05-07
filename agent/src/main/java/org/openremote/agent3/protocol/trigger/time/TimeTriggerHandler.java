@@ -77,6 +77,8 @@ public class TimeTriggerHandler extends AbstractTriggerHandler {
             CronExpression cronExpression = createCronExpression(cronExpressionParser.buildCronExpression());
             if (cronExpression != null) {
                 getCronScheduler().addOrReplaceJob(getTriggerId(triggerRef), cronExpression, () -> {
+                    LOG.fine("Quartz job has triggered");
+
                     // This is executed when the job triggers
                     executeTrigger(triggerRef);
                 });

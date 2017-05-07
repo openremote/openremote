@@ -20,11 +20,10 @@
 package org.openremote.agent3.protocol.macro;
 
 import org.openremote.agent3.protocol.AbstractProtocol;
+import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.asset.AssetAttribute;
-import org.openremote.model.attribute.AttributeEvent;
-import org.openremote.model.attribute.AttributeExecuteStatus;
-import org.openremote.model.attribute.AttributeRef;
-import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.asset.AssetMeta;
+import org.openremote.model.attribute.*;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
@@ -33,8 +32,9 @@ import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.logging.Logger;
 
-import static org.openremote.agent3.protocol.macro.MacroConfiguration.getMacroActions;
+import static org.openremote.agent3.protocol.macro.MacroConfiguration.META_MACRO_ACTION;
 import static org.openremote.agent3.protocol.macro.MacroConfiguration.isValidMacroConfiguration;
+import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
 import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 
 /**
@@ -47,6 +47,20 @@ import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
 public class MacroProtocol extends AbstractProtocol {
 
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":macro";
+    /**
+     * Use as value of {@link org.openremote.model.asset.AssetMeta#PROTOCOL_PROPERTY} meta item to
+     * link an attribute to a macro action's value (allows reading/writing of macro action value).
+     * <p>
+     * Use in conjunction with {@link #META_MACRO_ACTION_INDEX} to determine which macro action to
+     * link to (defaults to 0 if not present).
+     */
+    public static final String PROPERTY_MACRO_ACTION = PROTOCOL_NAMESPACE + ":macro";
+
+    /**
+     * Use in combination with {@link #PROPERTY_MACRO_ACTION} on linked attributes to read/write
+     * a macro action's value. Value should be of type {@link org.openremote.model.value.ValueType#NUMBER}.
+     */
+    public static final String META_MACRO_ACTION_INDEX = ASSET_META_NAMESPACE + ":macroActionIndex";
 
     class MacroExecutionTask {
         AttributeRef attributeRef;
@@ -67,8 +81,10 @@ public class MacroProtocol extends AbstractProtocol {
                 executions.put(attributeRef, this);
             }
 
-            // Update the command Status of this attribute
-            updateLinkedAttribute(new AttributeState(attributeRef, AttributeExecuteStatus.RUNNING.asValue()));
+            // Update the command Status of this attribute - We use a timestamp slightly in the past otherwise
+            // it is possible for COMPLETED status update below to have the same timestamp and to then be rejected
+            // by the asset processing service
+            updateLinkedAttribute(new AttributeState(attributeRef, AttributeExecuteStatus.RUNNING.asValue()), System.currentTimeMillis()-10);
             run();
         }
 
@@ -150,7 +166,7 @@ public class MacroProtocol extends AbstractProtocol {
                 macroMap.put(macroRef, new Pair<>(isEnabled, Collections.emptyList()));
             } else {
                 // Store the macro actions for later execution requests
-                macroMap.put(macroRef, new Pair<>(isEnabled, getMacroActions(protocolConfiguration)));
+                macroMap.put(macroRef, new Pair<>(isEnabled, MacroConfiguration.getMacroActions(protocolConfiguration)));
                 updateDeploymentStatus(macroRef, isEnabled ? DeploymentStatus.LINKED_ENABLED : DeploymentStatus.LINKED_DISABLED);
             }
         }
@@ -165,67 +181,6 @@ public class MacroProtocol extends AbstractProtocol {
     }
 
     @Override
-    protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
-
-        // Asset processing service has already done sanity checks
-        Optional<Value> value = event.getValue();
-        AttributeExecuteStatus status = event.getValue()
-            .flatMap(Values::getString)
-            .flatMap(AttributeExecuteStatus::fromString)
-            .orElse(null);
-        AttributeRef attributeRef = event.getAttributeRef();
-
-        // Check if it's a cancellation request
-        if (status == AttributeExecuteStatus.REQUEST_CANCEL) {
-            LOG.fine("Request received to cancel macro execution: " + event);
-            synchronized (executions) {
-                executions.computeIfPresent(attributeRef,
-                    (attributeRef1, macroExecutionTask) -> {
-                        macroExecutionTask.cancel();
-                        return macroExecutionTask;
-                    }
-                );
-            }
-
-            return;
-        }
-
-        // If protocol configuration is disabled then nothing to do here
-        if (!protocolConfiguration.isEnabled()) {
-            LOG.fine("Protocol configuration is disabled so cannot be executed: " + protocolConfiguration.getReferenceOrThrow());
-            return;
-        }
-
-        AttributeRef macroRef;
-        Pair<Boolean, List<MacroAction>> actionsEnabledPair;
-
-        synchronized (macroAttributeMap) {
-            macroRef = macroAttributeMap.get(attributeRef);
-        }
-
-        if (macroRef == null) {
-            LOG.fine("Attribute is not linked to a macro: " + attributeRef);
-            return;
-        }
-
-        synchronized (macroMap) {
-            actionsEnabledPair = macroMap.get(macroRef);
-        }
-
-        if (actionsEnabledPair == null || actionsEnabledPair.value.size() == 0) {
-            LOG.fine("No macro actions found for attribute event: " + event);
-            return;
-        }
-
-        if (!actionsEnabledPair.key) {
-            LOG.fine("Macro configuration is disabled so cannot execute");
-            return;
-        }
-
-        executeMacro(attributeRef, actionsEnabledPair.value, status == AttributeExecuteStatus.REQUEST_REPEATING);
-    }
-
-    @Override
     protected void doLinkAttribute(AssetAttribute attribute, AssetAttribute protocolConfiguration) {
         AttributeRef macroRef = protocolConfiguration.getReferenceOrThrow();
 
@@ -234,15 +189,49 @@ public class MacroProtocol extends AbstractProtocol {
             macroAttributeMap.put(attribute.getReferenceOrThrow(), macroRef);
         }
 
-        // Update the command Status of this attribute
-        updateLinkedAttribute(
-            new AttributeState(
-                attribute.getReferenceOrThrow(),
-                protocolConfiguration.isEnabled()
-                    ? AttributeExecuteStatus.READY.asValue()
-                    : AttributeExecuteStatus.DISABLED.asValue()
-            )
-        );
+        // Check for executable meta item
+        if (attribute.isExecutable()) {
+            LOG.fine("Macro linked attribute is marked as executable so it will be linked to the firing of the macro");
+            // Update the command Status of this attribute
+            updateLinkedAttribute(
+                new AttributeState(
+                    attribute.getReferenceOrThrow(),
+                    protocolConfiguration.isEnabled()
+                        ? AttributeExecuteStatus.READY.asValue()
+                        : AttributeExecuteStatus.DISABLED.asValue()
+                )
+            );
+            return;
+        }
+
+        // Check for protocol property meta
+        String protocolProperty = attribute
+            .getMetaItem(AssetMeta.PROTOCOL_PROPERTY)
+            .flatMap(AbstractValueHolder::getValueAsString)
+            .orElse("");
+
+        if (protocolProperty.equals(PROPERTY_MACRO_ACTION)) {
+            // Get the macro action index
+            int actionIndex = attribute
+                .getMetaItem(META_MACRO_ACTION_INDEX)
+                .flatMap(AbstractValueHolder::getValueAsInteger)
+                .orElse(0);
+
+            List<MacroAction> actions = getMacroActions(macroRef);
+
+            Optional<Value> actionValue = Optional.empty();
+
+            if (actions.isEmpty()) {
+                LOG.fine("No actions are available for the linked macro, maybe it is disabled?: " + macroRef);
+            } else {
+                actionIndex = Math.min(actions.size(), Math.max(0, actionIndex));
+                actionValue = actions.get(actionIndex).getAttributeState().getCurrentValue();
+                LOG.fine("Attribute is linked to the value of macro action [" + actionIndex + "] current value: " + actionValue.map(Value::toJson).orElse(""));
+            }
+
+            // Push the value of this macro action into the attribute
+            updateLinkedAttribute(new AttributeState(attribute.getReferenceOrThrow(), actionValue.orElse(null)));
+        }
     }
 
     @Override
@@ -252,6 +241,105 @@ public class MacroProtocol extends AbstractProtocol {
 
         synchronized (macroAttributeMap) {
             macroAttributeMap.remove(reference);
+        }
+    }
+
+    @Override
+    protected void processLinkedAttributeWrite(AttributeEvent event, AssetAttribute protocolConfiguration) {
+
+        AssetAttribute attribute = getLinkedAttribute(event.getAttributeRef());
+
+        if (attribute.isExecutable()) {
+            // This is a macro execution related write operation
+            Optional<Value> value = event.getValue();
+            AttributeExecuteStatus status = event.getValue()
+                .flatMap(Values::getString)
+                .flatMap(AttributeExecuteStatus::fromString)
+                .orElse(null);
+            AttributeRef attributeRef = event.getAttributeRef();
+
+            // Check if it's a cancellation request
+            if (status == AttributeExecuteStatus.REQUEST_CANCEL) {
+                LOG.fine("Request received to cancel macro execution: " + event);
+                synchronized (executions) {
+                    executions.computeIfPresent(attributeRef,
+                        (attributeRef1, macroExecutionTask) -> {
+                            macroExecutionTask.cancel();
+                            return macroExecutionTask;
+                        }
+                    );
+                }
+
+                return;
+            }
+
+            // If protocol configuration is disabled then nothing to do here
+            if (!protocolConfiguration.isEnabled()) {
+                LOG.fine("Protocol configuration is disabled so cannot be executed: " + protocolConfiguration.getReferenceOrThrow());
+                return;
+            }
+
+            List<MacroAction> actions = getMacroActions(protocolConfiguration.getReferenceOrThrow());
+
+            if (actions.isEmpty()) {
+                LOG.fine("No actions to execute");
+                return;
+            }
+
+            executeMacro(attributeRef, actions, status == AttributeExecuteStatus.REQUEST_REPEATING);
+            return;
+        }
+
+        // Check if this is a write to a macro action value
+        // Check for protocol property meta
+        String protocolProperty = attribute
+            .getMetaItem(AssetMeta.PROTOCOL_PROPERTY)
+            .flatMap(AbstractValueHolder::getValueAsString)
+            .orElse("");
+
+        if (protocolProperty.equals(PROPERTY_MACRO_ACTION)) {
+            // Get the macro action index
+            int actionIndex = attribute
+                .getMetaItem(META_MACRO_ACTION_INDEX)
+                .flatMap(AbstractValueHolder::getValueAsInteger)
+                .orElse(0);
+
+            // Extract macro actions from protocol configuration rather than modify the in memory ones
+            List<MacroAction> actions = MacroConfiguration.getMacroActions(protocolConfiguration);
+
+            if (actions.isEmpty()) {
+                LOG.fine("No actions are available for the linked macro, maybe it is disabled?: " + protocolConfiguration.getReferenceOrThrow());
+            } else {
+                actionIndex = Math.min(actions.size(), Math.max(0, actionIndex));
+                LOG.fine("Updating macro action [" + actionIndex + "] value to: " + event.getValue().map(Value::toJson).orElse(""));
+                MacroAction action = actions.get(actionIndex);
+                action.setAttributeState(new AttributeState(action.getAttributeState().getAttributeRef(), event.getValue().orElse(null)));
+                MetaItem[] actionMeta = actions
+                    .stream()
+                    .map(MacroAction::toMetaItem)
+                    .toArray(MetaItem[]::new);
+
+                updateLinkedProtocolConfiguration(protocolConfiguration, META_MACRO_ACTION, actionMeta);
+            }
+        }
+    }
+
+    protected List<MacroAction> getMacroActions(AttributeRef protocolConfigurationRef) {
+        synchronized (macroMap) {
+            Pair<Boolean, List<MacroAction>> actionsEnabledInfo;
+            actionsEnabledInfo = macroMap.get(protocolConfigurationRef);
+
+            if (actionsEnabledInfo == null || actionsEnabledInfo.value.size() == 0) {
+                LOG.fine("No macro actions found for macro configuration: " + protocolConfigurationRef);
+                return Collections.emptyList();
+            }
+
+            if (!actionsEnabledInfo.key) {
+                LOG.fine("Macro configuration is disabled");
+                return Collections.emptyList();
+            }
+
+            return actionsEnabledInfo.value;
         }
     }
 

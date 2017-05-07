@@ -8,11 +8,14 @@ import org.openremote.model.attribute.AttributeEvent
 import org.openremote.model.attribute.AttributeExecuteStatus
 import org.openremote.model.value.Values
 import org.openremote.test.ManagerContainerTrait
+import spock.lang.Ignore
 import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
-class MacroProtocolTest extends Specification implements ManagerContainerTrait {
-    def "Check macro agent and device asset deployment"() {
+class TriggerProtocolTest extends Specification implements ManagerContainerTrait {
+    // TODO: Test the trigger protocol
+    @Ignore
+    def "Check time trigger protocol"() {
 
         given: "expected conditions"
         def conditions = new PollingConditions(timeout: 15, initialDelay: 0)
