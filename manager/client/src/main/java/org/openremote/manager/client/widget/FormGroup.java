@@ -21,7 +21,10 @@ package org.openremote.manager.client.widget;
 
 import com.google.gwt.dom.client.Style;
 import com.google.gwt.uibinder.client.UiChild;
-import com.google.gwt.user.client.ui.*;
+import com.google.gwt.user.client.ui.FlowPanel;
+import com.google.gwt.user.client.ui.HasWidgets;
+import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.Widget;
 
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -53,6 +56,9 @@ public class FormGroup extends FlowPanel implements HasWidgets {
 
     protected boolean expanded;
 
+    protected boolean errorInField;
+    protected boolean errorInExtension;
+
     public FormGroup() {
         setStyleName("layout vertical or-FormGroup");
 
@@ -62,6 +68,7 @@ public class FormGroup extends FlowPanel implements HasWidgets {
         labelPanel.setStyleName("layout vertical");
         mainPanel.add(labelPanel);
 
+        toggleExtensionButton.addStyleName("or-FormGroupExtensionButton");
         toggleExtensionButton.setVisible(false);
         toggleExtensionButton.setIcon("caret-down");
         toggleExtensionButton.addClickHandler(clickEvent -> {
@@ -162,11 +169,29 @@ public class FormGroup extends FlowPanel implements HasWidgets {
         return getElement().getStyle();
     }
 
-    public void setError(boolean error) {
-        removeStyleName("error");
-        if (error) {
-            addStyleName("error");
+    public void setError(boolean errorInField) {
+        this.errorInField = errorInField;
+        if (getFormLabel() != null) {
+            getFormLabel().setError(errorInField || errorInExtension);
         }
+        if (getFormField() != null) {
+            getFormField().setError(errorInField);
+        }
+    }
+
+    public void setErrorInExtension(boolean errorInExtension) {
+        this.errorInExtension = errorInExtension;
+        if (getFormLabel() != null) {
+            getFormLabel().setError(errorInField || errorInExtension);
+        }
+        toggleExtensionButton.removeStyleName("error");
+        if (errorInExtension) {
+            toggleExtensionButton.addStyleName("error");
+        }
+    }
+
+    public boolean isError() {
+        return errorInField || errorInExtension;
     }
 
     public void setAlignStart(boolean alignStart) {

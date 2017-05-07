@@ -28,7 +28,6 @@ import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.FileUpload;
 import com.google.gwt.user.client.ui.HTMLPanel;
-import com.google.gwt.user.client.ui.InlineLabel;
 import com.google.inject.Provider;
 import elemental.client.Browser;
 import elemental.html.AnchorElement;
@@ -62,7 +61,7 @@ public class RulesEditorImpl
     FormInputText nameInput;
 
     @UiField
-    PushButton rulesFileDownload;
+    FormButton rulesFileDownload;
     @UiField
     LabelElement rulesFileUploadLabel;
     @UiField

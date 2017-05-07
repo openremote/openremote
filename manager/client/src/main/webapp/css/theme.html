@@ -154,20 +154,32 @@
         color: var(--theme-mediumgrey);
     }
 
-    .or-FormGroup.error .or-FormControl {
+    .or-FormLabel.error,
+    .or-FormLabel.error + .or-FormInfoLabel {
+        color: var(--theme-red);
+    }
+
+    .or-FormField.error .or-FormControl {
         border-color: var(--theme-red);
+    }
+
+    .or-FormField.error .or-FormOutputText {
+        border-color: transparent;
+    }
+
+    .or-FormField.error .or-FormInfoLabel,
+    .or-FormField.error .or-FormInfoLabel .or-FormControl {
+        color: var(--theme-mediumgrey);
+        border-color: transparent;
     }
 
     .or-FormControl.error {
         background-color: var(--theme-red);
+        color: var(--theme-white);
     }
 
     .or-FormControl.primary {
         background-color: var(--theme-lightgreen);
-    }
-
-    .or-FormGroup.error .or-FormLabel {
-        color: var(--theme-red);
     }
 
     .or-FormLabel {

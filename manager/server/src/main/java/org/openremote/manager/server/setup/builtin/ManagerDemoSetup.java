@@ -164,8 +164,11 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             new AssetAttribute("light1Toggle", BOOLEAN, Values.create(true))
                 .setMeta(new Meta(
                     new MetaItem(
+                        LABEL,
+                        Values.create("Light 1 Toggle")),
+                    new MetaItem(
                         DESCRIPTION,
-                        Values.create("The switch for the light in the living room")),
+                        Values.create("Switch for living room light")),
                     new MetaItem(
                         AGENT_LINK,
                         new AttributeRef(agent.getId(), agentProtocolConfigName).toArrayValue()),
@@ -173,11 +176,14 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
                         SimulatorProtocol.SIMULATOR_ELEMENT, Values.create(SwitchSimulatorElement.ELEMENT_NAME)
                     ))
                 ),
-            new AssetAttribute("light1Dimmer", INTEGER) // No initial value!
+            new AssetAttribute("light1Dimmer", PERCENTAGE) // No initial value!
                 .setMeta(new Meta(
                     new MetaItem(
+                        LABEL,
+                        Values.create("Light 1 Dimmer")),
+                    new MetaItem(
                         DESCRIPTION,
-                        Values.create("The dimmer for the light in the living room")),
+                        Values.create("Dimmer for living room light")),
                     new MetaItem(
                         RANGE_MIN,
                         Values.create(0)),
@@ -196,8 +202,11 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             new AssetAttribute("light1Color", COLOR_RGB, new ColorRGB(88, 123, 88).asArrayValue())
                 .setMeta(new Meta(
                     new MetaItem(
+                        LABEL,
+                        Values.create("Light 1 Color")),
+                    new MetaItem(
                         DESCRIPTION,
-                        Values.create("The color of the living room light")),
+                        Values.create("Color of living room light")),
                     new MetaItem(
                         AGENT_LINK,
                         new AttributeRef(agent.getId(), agentProtocolConfigName).toArrayValue()),
@@ -208,8 +217,11 @@ public class ManagerDemoSetup extends AbstractManagerSetup {
             new AssetAttribute("light1PowerConsumption", ENERGY_KWH, Values.create(12.345))
                 .setMeta(new Meta(
                     new MetaItem(
+                        LABEL,
+                        Values.create("Light 1 Usage")),
+                    new MetaItem(
                         DESCRIPTION,
-                        Values.create("The total power consumption of the living room light")),
+                        Values.create("Total energy consumption of living room light")),
                     new MetaItem(
                         READ_ONLY,
                         Values.create(true)),

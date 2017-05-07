@@ -17,12 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.attribute;
+package org.openremote.model;
 
 /**
- * This is an interface for indicating that a type
- * provides a URN string.
+ * This is an interface for indicating that a type provides a URN string.
  */
-public interface HasMetaName {
+public interface HasUniqueResourceName {
+
     String getUrn();
+
 }

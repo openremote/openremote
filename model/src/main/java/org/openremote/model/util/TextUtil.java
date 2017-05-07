@@ -21,9 +21,11 @@ package org.openremote.model.util;
 
 import com.google.gwt.regexp.shared.RegExp;
 
+import java.text.MessageFormat;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.function.Predicate;
 
 public class TextUtil {

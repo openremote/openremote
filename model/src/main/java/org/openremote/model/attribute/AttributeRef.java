@@ -26,6 +26,8 @@ import org.openremote.model.value.Values;
 
 import java.util.Optional;
 
+import static org.openremote.model.util.TextUtil.requireNonNullAndNonEmpty;
+
 /**
  * A reference to an entity and an {@link Attribute}.
  * <p>
@@ -44,6 +46,8 @@ public class AttributeRef {
     }
 
     public AttributeRef(String entityId, String attributeName) {
+        requireNonNullAndNonEmpty(entityId);
+        requireNonNullAndNonEmpty(attributeName);
         this.entityId = entityId;
         this.attributeName = attributeName;
     }

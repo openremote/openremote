@@ -34,6 +34,7 @@ import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
+import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.util.Pair;
@@ -239,8 +240,16 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
 
             // Validate attributes
-            if (!asset.getAttributesStream().allMatch(AssetAttribute::isValid)) {
-                throw new IllegalStateException("One or more attributes are not valid");
+            int invalid = 0;
+            for (AssetAttribute attribute : asset.getAttributesList()) {
+                List<ValidationFailure> validationFailures = attribute.getValidationFailures();
+                if (validationFailures.size() > 0) {
+                    LOG.warning("Validation failure(s) " + validationFailures + ", can't store: " + attribute);
+                    invalid++;
+                }
+            }
+            if (invalid > 0) {
+                throw new IllegalStateException("Storing asset failed, invalid attributes: " + invalid);
             }
 
             return em.merge(asset);

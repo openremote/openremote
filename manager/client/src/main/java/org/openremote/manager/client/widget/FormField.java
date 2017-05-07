@@ -26,6 +26,7 @@ import com.google.gwt.user.client.ui.Widget;
 public class FormField extends FlowPanel implements HasWidgets {
 
     protected String formFieldId;
+    protected boolean error;
 
     public FormField() {
         getElement().addClassName("flex layout horizontal center or-FormField");
@@ -45,4 +46,17 @@ public class FormField extends FlowPanel implements HasWidgets {
         }
         super.add(w);
     }
+
+    public void setError(boolean error) {
+        this.error = error;
+        removeStyleName("error");
+        if (error) {
+            addStyleName("error");
+        }
+    }
+
+    public boolean isError() {
+        return error;
+    }
+
 }

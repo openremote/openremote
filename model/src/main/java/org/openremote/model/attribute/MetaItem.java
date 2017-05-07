@@ -20,22 +20,32 @@
 package org.openremote.model.attribute;
 
 import org.openremote.model.AbstractValueHolder;
+import org.openremote.model.HasUniqueResourceName;
+import org.openremote.model.ValidationFailure;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 
+import static org.openremote.model.attribute.MetaItem.MetaItemValidationFailure.*;
+
 /**
- * A named arbitrary {@link Value}.
+ * A named arbitrary {@link Value}. A meta item must have a value to be stored.
  * <p>
  * Name should be a URI, thus avoiding collisions and representing "ownership" of the meta item.
  */
 public class MetaItem extends AbstractValueHolder {
+
+    public enum MetaItemValidationFailure implements ValidationFailure {
+        NAME_IS_REQUIRED,
+        VALUE_IS_REQUIRED
+    }
 
     public MetaItem() {
         this(Values.createObject());
@@ -45,22 +55,14 @@ public class MetaItem extends AbstractValueHolder {
         super(objectValue);
     }
 
-    public MetaItem(String name) {
-        this(name, null);
-    }
-
     public MetaItem(String name, Value value) {
         super(Values.createObject());
         setName(name);
         setValue(value);
     }
 
-    public MetaItem(HasMetaName hasMetaName, Value value) {
-        this(hasMetaName.getUrn(), value);
-    }
-
-    public boolean hasName() {
-        return getName().isPresent();
+    public MetaItem(HasUniqueResourceName hasUniqueResourceName, Value value) {
+        this(hasUniqueResourceName.getUrn(), value);
     }
 
     public Optional<String> getName() {
@@ -72,8 +74,18 @@ public class MetaItem extends AbstractValueHolder {
     }
 
     @Override
-    public boolean isValid() {
-        return super.isValid() && hasName();
+    public List<ValidationFailure> getValidationFailures() {
+        List<ValidationFailure> failures = super.getValidationFailures();
+
+        if (!getName().isPresent())
+            failures.add(NAME_IS_REQUIRED);
+
+        // Meta items must have a value, unlike attributes
+        if (!getValue().isPresent()) {
+            failures.add(VALUE_IS_REQUIRED);
+        }
+
+        return failures;
     }
 
     public MetaItem copy() {
@@ -120,12 +132,12 @@ public class MetaItem extends AbstractValueHolder {
         return metaItem -> isMetaNameEqualTo(metaItem, name);
     }
 
-    public static boolean isMetaNameEqualTo(MetaItem item, HasMetaName hasMetaName) {
-        return hasMetaName != null && isMetaNameEqualTo(item, hasMetaName.getUrn());
+    public static boolean isMetaNameEqualTo(MetaItem item, HasUniqueResourceName hasUniqueResourceName) {
+        return hasUniqueResourceName != null && isMetaNameEqualTo(item, hasUniqueResourceName.getUrn());
     }
 
-    public static Predicate<MetaItem> isMetaNameEqualTo(HasMetaName hasMetaName) {
-        return metaItem -> isMetaNameEqualTo(metaItem, hasMetaName);
+    public static Predicate<MetaItem> isMetaNameEqualTo(HasUniqueResourceName hasUniqueResourceName) {
+        return metaItem -> isMetaNameEqualTo(metaItem, hasUniqueResourceName);
     }
 
     // STREAM AND COLLECTION METHODS BELOW
@@ -153,19 +165,19 @@ public class MetaItem extends AbstractValueHolder {
             .forEach(metaItems::add);
     }
 
-    public static <T extends Collection<MetaItem>> void replaceMetaByName(T metaItems, HasMetaName hasMetaName, MetaItem newMetaItem) {
-        replaceMetaByName(metaItems, hasMetaName.getUrn(), newMetaItem);
+    public static <T extends Collection<MetaItem>> void replaceMetaByName(T metaItems, HasUniqueResourceName hasUniqueResourceName, MetaItem newMetaItem) {
+        replaceMetaByName(metaItems, hasUniqueResourceName.getUrn(), newMetaItem);
     }
 
-    public static <T extends Collection<MetaItem>> void replaceMetaByName(T metaItems, HasMetaName hasMetaName, Value newValue) {
-        replaceMetaByName(metaItems, hasMetaName.getUrn(), newValue);
+    public static <T extends Collection<MetaItem>> void replaceMetaByName(T metaItems, HasUniqueResourceName hasUniqueResourceName, Value newValue) {
+        replaceMetaByName(metaItems, hasUniqueResourceName.getUrn(), newValue);
     }
 
-    public static <T extends Collection<MetaItem>> void replaceMetaByName(T metaItems, HasMetaName hasMetaName, T newMetaItems) {
-        replaceMetaByName(metaItems, hasMetaName.getUrn(), newMetaItems);
+    public static <T extends Collection<MetaItem>> void replaceMetaByName(T metaItems, HasUniqueResourceName hasUniqueResourceName, T newMetaItems) {
+        replaceMetaByName(metaItems, hasUniqueResourceName.getUrn(), newMetaItems);
     }
 
-    public static <T extends Collection<MetaItem>, V extends Collection<Value>> void replaceMetaByNameWithValues(T metaItems, HasMetaName hasMetaName, V newValues) {
-        replaceMetaByNameWithValues(metaItems, hasMetaName.getUrn(), newValues);
+    public static <T extends Collection<MetaItem>, V extends Collection<Value>> void replaceMetaByNameWithValues(T metaItems, HasUniqueResourceName hasUniqueResourceName, V newValues) {
+        replaceMetaByNameWithValues(metaItems, hasUniqueResourceName.getUrn(), newValues);
     }
 }

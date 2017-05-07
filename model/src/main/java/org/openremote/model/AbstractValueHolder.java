@@ -24,6 +24,8 @@ import org.openremote.model.value.ObjectValue;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -78,13 +80,7 @@ public abstract class AbstractValueHolder {
         return objectValue.getArray(VALUE_FIELD_NAME);
     }
 
-    /**
-     * @throws IllegalArgumentException if the given value is invalid and failed constraint checking.
-     */
-    public void setValue(Value value) throws IllegalArgumentException {
-        if (!isValidValue(value)) {
-            throw new IllegalArgumentException("Invalid value: " + (value != null ? value.toJson() : "null"));
-        }
+    public void setValue(Value value) {
         if (value != null) {
             objectValue.put(VALUE_FIELD_NAME, value);
         } else {
@@ -109,18 +105,10 @@ public abstract class AbstractValueHolder {
     }
 
     /**
-     * Override to implement constraints.
+     * Override to implement constraint checking.
      */
-    public boolean isValidValue(Value value) {
-        return true;
-    }
-
-    public boolean hasValue() {
-        return getValue().isPresent();
-    }
-
-    public boolean isValid() {
-        return true;
+    public List<ValidationFailure> getValidationFailures() {
+        return new ArrayList<>();
     }
 
     @Override

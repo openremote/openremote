@@ -89,7 +89,7 @@
                             </w:field>
                             <w:actions>
                                 <w:FormGroupActions>
-                                    <w:PushButton ui:field="rulesFileDownload"
+                                    <w:FormButton ui:field="rulesFileDownload"
                                                   icon="download"
                                                   text="{managerMessages.downloadRulesFile}"/>
                                     <g:HTMLPanel>

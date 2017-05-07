@@ -94,7 +94,7 @@ class AssetIntegrityTest extends Specification implements ManagerContainerTrait 
         then: "the attribute value should match"
         new PollingConditions(delay: 1, timeout: 5).eventually {
             def asset = assetResource.get(null, testAsset.getId())
-            assert asset.getAttribute("foo").get().hasValue() == false
+            assert !asset.getAttribute("foo").get().getValue().isPresent()
         }
 
         when: "an asset is updated with a different type"

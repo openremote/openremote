@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.widget;
+package org.openremote.model;
 
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.HasWidgets;
-
-public class FormGroupActions extends FlowPanel implements HasWidgets {
-
-    public FormGroupActions() {
-        getElement().addClassName("layout horizontal center wrap end-justified or-FormGroupActions");
-    }
+/**
+ * Unified naming of value holder validation failures. Names are supposed to be
+ * unique so user-readable strings can be created from names with I18N mapping.
+ */
+public interface ValidationFailure {
+    
+    String name();
 }
