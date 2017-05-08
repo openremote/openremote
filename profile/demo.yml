@@ -86,6 +86,9 @@ services:
       KEYCLOAK_HOST: keycloak
       KEYCLOAK_PORT: 8080
 
+      # Optional: Override built-in logging.properties with a file of your choice
+      # LOGGING_CONFIG_FILE: /my/manager/logging.properties
+
     # This service needs access to other services on the Docker network.
     links:
       - postgresql

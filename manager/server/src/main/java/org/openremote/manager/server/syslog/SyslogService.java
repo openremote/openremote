@@ -32,9 +32,9 @@ import java.util.logging.Logger;
 /**
  * Act as a JUL handler and publish (some) log messages on the client event bus.
  */
-public class SysLogService extends Handler implements ContainerService {
+public class SyslogService extends Handler implements ContainerService {
 
-    private static final Logger LOG = Logger.getLogger(SysLogService.class.getName());
+    private static final Logger LOG = Logger.getLogger(SyslogService.class.getName());
 
     protected EventService eventService;
 
