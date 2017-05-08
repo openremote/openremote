@@ -145,13 +145,13 @@ public abstract class DatapointBrowser extends FlowPanel {
         intervalListBox.setEnabled(true);
         controlFormField.add(intervalListBox);
 
-        FormGroupActions controlFormActions = new FormGroupActions();
-        controlFormGroup.addFormGroupActions(controlFormActions);
-
         timeOutput = new FormOutputText();
         timeOutput.addStyleName("flex");
         timeOutput.getElement().getStyle().setFontSize(0.8, EM);
-        controlFormActions.add(timeOutput);
+        controlFormField.add(timeOutput);
+
+        FormGroupActions controlFormActions = new FormGroupActions();
+        controlFormGroup.addFormGroupActions(controlFormActions);
 
         FormButton previousButton = new FormButton();
         previousButton.setIcon("arrow-circle-left");

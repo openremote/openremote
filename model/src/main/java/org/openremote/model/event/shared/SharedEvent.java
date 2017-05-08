@@ -26,12 +26,14 @@ import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.asset.ReadAssetAttributesEvent;
 import org.openremote.model.asset.AssetTreeModifiedEvent;
 import org.openremote.model.event.Event;
+import org.openremote.model.syslog.SyslogEvent;
 
 /**
  * An event that can be serialized and shared between client and server.
  */
 @JsonSubTypes({
     // Events used on client and server (serializable)
+    @JsonSubTypes.Type(value = SyslogEvent.class, name = "syslog"),
     @JsonSubTypes.Type(value = AttributeEvent.class, name = "attribute"),
     @JsonSubTypes.Type(value = ReadAssetAttributesEvent.class, name = "read-asset-attributes"),
     @JsonSubTypes.Type(value = AssetTreeModifiedEvent.class, name = "asset-tree-modified")

@@ -1,0 +1,87 @@
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+             xmlns:g="urn:import:com.google.gwt.user.client.ui"
+             xmlns:w="urn:import:org.openremote.manager.client.widget">
+
+    <ui:with field="managerMessages" type="org.openremote.manager.client.i18n.ManagerMessages"/>
+    <ui:with field="widgetStyle" type="org.openremote.manager.client.style.WidgetStyle"/>
+
+    <ui:style field="style" type="org.openremote.manager.client.admin.syslog.QuickSyslogImpl.Style">
+        .popup {
+            z-index: 10;
+        }
+
+        .panel {
+            width: 36em;
+            height: 25em;
+        }
+
+        .header {
+            font-weight: 700;
+            padding: 0.4em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .filterForm {
+            font-size: smaller;
+        }
+
+        .filterFormGroup {
+            margin: 0 !important;
+        }
+
+        .logPanel {
+            overflow: auto;
+        }
+
+        .logItem {
+            font-size: x-small;
+        }
+
+        .logItemLevelCategory {
+            font-weight: bold;
+        }
+    </ui:style>
+
+    <w:PopupPanel glassEnabled="false" styleName="{style.popup} {widgetStyle.PopupPanel}">
+        <g:HTMLPanel styleName="layout vertical {style.panel}">
+
+            <div class="layout horizontal center {style.header} {widgetStyle.PopupPanelHeader}">
+
+                <g:InlineLabel addStyleNames="flex"
+                               text="{managerMessages.syslog}"/>
+
+                <w:Form addStyleNames="{style.filterForm}">
+                    <w:FormGroup addStyleNames="{style.filterFormGroup}">
+                        <w:label>
+                            <w:FormLabel text="Filter level"/>
+                        </w:label>
+                        <w:field>
+                            <w:FormField>
+                                <w:FormValueListBox ui:field="levelListBox"/>
+                            </w:FormField>
+                        </w:field>
+                        <w:actions>
+                            <w:FormGroupActions>
+                                <w:PushButton ui:field="clearButton"
+                                              icon="eraser"
+                                              text="Clear"/>
+                            </w:FormGroupActions>
+                        </w:actions>
+                    </w:FormGroup>
+                </w:Form>
+
+            </div>
+
+            <div class="flex layout vertical {widgetStyle.PopupPanelContent}">
+
+                <g:FlowPanel ui:field="logPanel"
+                             addStyleNames="flex layout vertical {style.logPanel} {widgetStyle.FormList}"/>
+
+            </div>
+
+        </g:HTMLPanel>
+    </w:PopupPanel>
+
+</ui:UiBinder>

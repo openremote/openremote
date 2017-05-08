@@ -337,4 +337,5 @@ public interface ManagerMessages extends Messages {
 
     String validationFailure(@Select String name);
 
+    String syslog();
 }

@@ -22,32 +22,35 @@ package org.openremote.manager.client.app;
 import com.google.gwt.place.shared.Place;
 import com.google.gwt.place.shared.PlaceController;
 import com.google.inject.Inject;
-import org.openremote.manager.client.event.GoToPlaceEvent;
+import org.openremote.manager.client.admin.syslog.QuickSyslog;
 import org.openremote.model.event.bus.EventBus;
 
 public class FooterPresenter implements FooterView.Presenter {
 
     private FooterView view;
+    private final QuickSyslog.Presenter quickSyslogPresenter;
     private PlaceController placeController;
 
     @Inject
     public FooterPresenter(FooterView view,
+                           QuickSyslog.Presenter quickSyslogPresenter,
                            PlaceController placeController,
                            EventBus eventBus) {
         this.view = view;
+        this.quickSyslogPresenter = quickSyslogPresenter;
         this.placeController = placeController;
 
         view.setPresenter(this);
-
-        eventBus.register(
-            GoToPlaceEvent.class,
-            event -> view.onPlaceChange(event.getPlace())
-        );
     }
 
     @Override
     public FooterView getView() {
         return view;
+    }
+
+    @Override
+    public QuickSyslog getQuickSyslog() {
+        return quickSyslogPresenter.getView();
     }
 
     @Override

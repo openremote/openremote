@@ -21,11 +21,17 @@ package org.openremote.manager.client.widget;
 
 import com.google.gwt.user.client.ui.UIObject;
 
+import java.util.function.Consumer;
+
 public interface AppPanel {
 
     void setAutoHide(boolean autoHide);
 
+    void setAutoHideOnHistoryEvents(boolean autoHide);
+
     void setModal(boolean modal);
+
+    void setOpenCloseConsumer(Consumer<Boolean> openCloseConsumer);
 
     boolean isShowing();
 

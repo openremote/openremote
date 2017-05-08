@@ -25,11 +25,9 @@ import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.UIObject;
 
-import java.util.logging.Logger;
+import java.util.function.Consumer;
 
 public abstract class AbstractAppPanel implements AppPanel {
-
-    private static final Logger LOG = Logger.getLogger(AbstractAppPanel.class.getName());
 
     final protected PopupPanel popupPanel;
 
@@ -40,6 +38,7 @@ public abstract class AbstractAppPanel implements AppPanel {
     protected int marginLeft;
     protected UIObject bottomRightTarget;
     protected UIObject topLeftTarget;
+    protected Consumer<Boolean> openCloseConsumer;
 
     protected HandlerRegistration windowHandlerRegistration;
 
@@ -48,13 +47,14 @@ public abstract class AbstractAppPanel implements AppPanel {
 
         popupPanel.getElement().getStyle().setOverflow(Style.Overflow.AUTO);
 
-        popupPanel.setAutoHideOnHistoryEventsEnabled(true);
-
         popupPanel.setGlassStyleName("or-PopupPanelGlass");
 
         popupPanel.addAttachHandler(event -> {
             if (event.isAttached()) {
                 windowHandlerRegistration = Window.addResizeHandler(e -> resize());
+                if (openCloseConsumer != null) {
+                    openCloseConsumer.accept(true);
+                }
             } else if (windowHandlerRegistration != null) {
                 windowHandlerRegistration.removeHandler();
                 windowHandlerRegistration = null;
@@ -62,6 +62,9 @@ public abstract class AbstractAppPanel implements AppPanel {
         });
 
         popupPanel.addCloseHandler(event -> {
+            if (openCloseConsumer != null) {
+                openCloseConsumer.accept(false);
+            }
             if (target != null) {
                 popupPanel.removeAutoHidePartner(target.getElement());
                 target = null;
@@ -80,9 +83,20 @@ public abstract class AbstractAppPanel implements AppPanel {
     }
 
     @Override
+    public void setAutoHideOnHistoryEvents(boolean autoHide) {
+        popupPanel.setAutoHideOnHistoryEventsEnabled(autoHide);
+    }
+
+    @Override
     public void setModal(boolean modal) {
         getPopupPanel().setGlassEnabled(modal);
     }
+
+    @Override
+    public void setOpenCloseConsumer(Consumer<Boolean> openCloseConsumer) {
+        this.openCloseConsumer = openCloseConsumer;
+    }
+
 
     @Override
     public boolean isShowing() {

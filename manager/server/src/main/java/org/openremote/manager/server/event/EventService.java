@@ -194,20 +194,24 @@ public class EventService implements ContainerService {
     }
 
     public void publishEvent(SharedEvent event) {
-        LOG.fine("Publishing: " + event);
-        messageBrokerService.getProducerTemplate().sendBody(
-            OUTGOING_EVENT_QUEUE,
-            event
-        );
+        if (messageBrokerService != null && messageBrokerService.getProducerTemplate() != null) {
+            LOG.fine("Publishing: " + event);
+            messageBrokerService.getProducerTemplate().sendBody(
+                OUTGOING_EVENT_QUEUE,
+                event
+            );
+        }
     }
 
     public void sendToSession(String sessionKey, Object data) {
-        LOG.fine("Sending to session '" + sessionKey + "': " + data);
-        messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-            "websocket://" + WEBSOCKET_EVENTS,
-            data,
-            WebsocketConstants.SESSION_KEY, sessionKey
-        );
+        if (messageBrokerService != null && messageBrokerService.getProducerTemplate() != null) {
+            LOG.fine("Sending to session '" + sessionKey + "': " + data);
+            messageBrokerService.getProducerTemplate().sendBodyAndHeader(
+                "websocket://" + WEBSOCKET_EVENTS,
+                data,
+                WebsocketConstants.SESSION_KEY, sessionKey
+            );
+        }
     }
 
     public static String getSessionKey(Exchange exchange) {

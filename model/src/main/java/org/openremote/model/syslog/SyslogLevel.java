@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,30 +17,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.widget;
+package org.openremote.model.syslog;
 
-import com.google.gwt.user.client.ui.InlineLabel;
+public enum SyslogLevel {
 
-public class IconLabel extends InlineLabel {
+    DEBUG("circle-o"),
+    INFO("info-circle"),
+    WARN("exclamation-circle"),
+    ERROR("exclamation-triangle");
 
-    protected String icon;
+    final String icon;
 
-    public IconLabel() {
-        setStyleName("or-IconLabel");
+    SyslogLevel(String icon) {
+        this.icon = icon;
     }
 
     public String getIcon() {
         return icon;
     }
 
-    public void setIcon(String icon) {
-        if (this.icon != null) {
-            removeStyleName("fa");
-            removeStyleName("fa-" + this.icon);
+    static public SyslogLevel getLevel(int level) {
+        if (level == 1000) {
+            return ERROR;
+        } else if (level == 900) {
+            return WARN;
+        } else if (level == 800 || level == 700) {
+            return INFO;
+        } else if (level <= 500) {
+            return DEBUG;
         }
-        this.icon = icon;
-        addStyleName("fa");
-        addStyleName("fa-" + icon);
+        return null;
     }
 
 }

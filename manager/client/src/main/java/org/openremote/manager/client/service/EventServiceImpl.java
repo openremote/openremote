@@ -271,6 +271,7 @@ public class EventServiceImpl implements EventService {
         if (data == null || data.length() == 0)
             return;
         if (data.startsWith(UnauthorizedEventSubscription.MESSAGE_PREFIX)) {
+            data = data.substring(UnauthorizedEventSubscription.MESSAGE_PREFIX.length());
             UnauthorizedEventSubscription failure = unauthorizedEventSubscriptionMapper.read(data);
             eventBus.dispatch(new SubscriptionFailureEvent(failure.getEventType()));
         } else if (data.startsWith(SharedEvent.MESSAGE_PREFIX)) {

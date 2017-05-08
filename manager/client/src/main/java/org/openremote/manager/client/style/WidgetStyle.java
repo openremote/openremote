@@ -353,6 +353,18 @@ public class WidgetStyle {
         return "or-FormTreeWidget";
     }
 
+    public String FormList() {
+        return "or-FormList";
+    }
+
+    public String FormListItem() {
+        return "or-FormListItem";
+    }
+
+    public String FormListEmptyMessage() {
+        return "or-FormListEmptyMessage";
+    }
+
     public String StatusIndicator() {
         return "or-StatusIndicator";
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,30 +17,28 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.widget;
+package org.openremote.manager.client.admin.syslog;
 
-import com.google.gwt.user.client.ui.InlineLabel;
+import com.google.gwt.user.client.ui.UIObject;
+import org.openremote.model.syslog.SyslogEvent;
+import org.openremote.model.syslog.SyslogLevel;
 
-public class IconLabel extends InlineLabel {
+public interface QuickSyslog {
 
-    protected String icon;
+    interface Presenter {
+        QuickSyslog getView();
 
-    public IconLabel() {
-        setStyleName("or-IconLabel");
+        void onOpen();
+
+        void onClose();
+
+        void onLevelChanged(SyslogLevel level);
     }
 
-    public String getIcon() {
-        return icon;
-    }
+    void setPresenter(Presenter presenter);
 
-    public void setIcon(String icon) {
-        if (this.icon != null) {
-            removeStyleName("fa");
-            removeStyleName("fa-" + this.icon);
-        }
-        this.icon = icon;
-        addStyleName("fa");
-        addStyleName("fa-" + icon);
-    }
+    void toggleRelativeTo(UIObject target);
+
+    void addEvent(SyslogEvent event);
 
 }
