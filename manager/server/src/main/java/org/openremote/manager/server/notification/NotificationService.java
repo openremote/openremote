@@ -27,8 +27,10 @@ import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.persistence.PersistenceService;
 import org.openremote.container.web.WebService;
+import org.openremote.model.asset.AssetQuery;
 import org.openremote.model.notification.AlertNotification;
 import org.openremote.model.notification.DeliveryStatus;
+import org.openremote.model.user.UserQuery;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
@@ -144,7 +146,23 @@ public class NotificationService implements ContainerService {
 
     public List<String> findAllUsersWithToken() {
         return persistenceService.doReturningTransaction(entityManager -> {
-            Query query = entityManager.createQuery("SELECT dnt.id.userId FROM DeviceNotificationToken dnt");
+            Query query = entityManager.createQuery("SELECT DISTINCT dnt.id.userId FROM DeviceNotificationToken dnt");
+            return query.getResultList();
+        });
+    }
+
+    public List<String> findAllUsersWithToken(UserQuery userQuery) {
+        return persistenceService.doReturningTransaction(entityManager -> {
+            Query query = entityManager.createQuery("SELECT DISTINCT dnt.id.userId " + buildFromString(userQuery) + buildWhereString(userQuery));
+
+            // TODO: improve way this is set, should be part of buildWhereString + some other operation, see AssetStorageService
+            if (userQuery.tenantPredicate != null) {
+                query.setParameter("realmId", userQuery.tenantPredicate.realmId);
+            }
+            if (userQuery.assetPredicate != null) {
+                query.setParameter("assetId", userQuery.assetPredicate.id);
+            }
+
             return query.getResultList();
         });
     }
@@ -154,13 +172,34 @@ public class NotificationService implements ContainerService {
         return getClass().getSimpleName() + "{}";
     }
 
-    public List<String> findAllUsersWithTokenForAsset(String assetId) {
-        return persistenceService.doReturningTransaction(entityManager -> {
+    protected String buildFromString(UserQuery query) {
+        StringBuilder sb = new StringBuilder();
 
-            Query query = entityManager.createQuery("SELECT DISTINCT dnt.id.userId FROM DeviceNotificationToken dnt, UserAsset us WHERE us.userId = dnt.id.userId AND us.assetId = :assetId");
-            query.setParameter("assetId", assetId);
-            return query.getResultList();
-        });
+        sb.append("FROM  DeviceNotificationToken dnt ");
 
+        if (query.tenantPredicate != null) {
+            sb.append("join User u on u.id = dnt.id.userId");
+        }
+        if (query.assetPredicate != null) {
+            sb.append("join UserAsset us on us.userId = dnt.id.userId ");
+        }
+
+        return sb.toString();
     }
+
+    protected String buildWhereString(UserQuery query) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(" WHERE 1 = 1 ");
+
+        if (query.tenantPredicate != null) {
+            sb.append("AND u.realmId = :realmId");
+        }
+        if (query.assetPredicate != null) {
+            sb.append("AND us.assetId = :assetId ");
+        }
+
+        return sb.toString();
+    }
+
 }

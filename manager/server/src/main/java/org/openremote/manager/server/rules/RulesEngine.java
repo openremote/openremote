@@ -61,6 +61,7 @@ import org.openremote.model.asset.AssetState;
 import org.openremote.model.notification.AlertNotification;
 import org.openremote.model.rules.Assets;
 import org.openremote.model.rules.Users;
+import org.openremote.model.user.UserQuery;
 
 import java.util.*;
 import java.util.concurrent.Future;
@@ -647,14 +648,26 @@ public class RulesEngine<T extends Ruleset> {
             @Override
             public Users.RestrictedQuery query() {
                 RestrictedQuery query = new RestrictedQuery() {
+                    @Override
+                    public Users.RestrictedQuery tenant(UserQuery.TenantPredicate tenantPredicate) {
+                        if (GlobalRuleset.class.isAssignableFrom(rulesetType))
+                            return super.tenant(tenantPredicate);
+                        throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
+                    }
+
+                    @Override
+                    public Users.RestrictedQuery asset(UserQuery.AssetPredicate assetPredicate) {
+                        if (GlobalRuleset.class.isAssignableFrom(rulesetType))
+                            return super.asset(assetPredicate);
+                        if (TenantRuleset.class.isAssignableFrom(rulesetType)) {
+                            // TODO: should only be allowed if asset belongs to tenant
+                        }
+                        throw new IllegalArgumentException("Overriding query restriction is not allowed in this rules scope");
+                    }
 
                     @Override
                     public List<String> getResults() {
-                        if (assetId != null) {
-                            return notificationService.findAllUsersWithTokenForAsset(assetId);
-                        } else {
-                            return notificationService.findAllUsersWithToken();
-                        }
+                        return notificationService.findAllUsersWithToken(this);
                     }
 
                     @Override
@@ -664,16 +677,14 @@ public class RulesEngine<T extends Ruleset> {
                 };
 
                 if (TenantRuleset.class.isAssignableFrom(rulesetType)) {
-
-                    //TODO: restrict users of tenant
+                    query.tenantPredicate = new UserQuery.TenantPredicate(id);
                 }
                 if (AssetRuleset.class.isAssignableFrom(rulesetType)) {
                     ServerAsset restrictedAsset = assetStorageService.find(id, true);
                     if (restrictedAsset == null) {
                         throw new IllegalStateException("Asset is no longer available for this deployment: " + id);
                     }
-                    query.assetId = id;
-                    //TODO: restrict users of assets
+                    query.assetPredicate = new UserQuery.AssetPredicate(id);
                 }
                 return query;
 

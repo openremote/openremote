@@ -32,7 +32,6 @@ import java.util.function.Consumer;
 public abstract class Users {
 
     public abstract class RestrictedQuery extends UserQuery<RestrictedQuery> {
-        public String assetId;
 
         abstract public List<String> getResults();
 
