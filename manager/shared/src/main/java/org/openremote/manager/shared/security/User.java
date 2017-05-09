@@ -38,7 +38,7 @@ import javax.validation.constraints.Size;
 @Subselect("select * from USER_ENTITY") // Map this immutable to an SQL view, don't use/create table
 public class User {
 
-    @Formula("(select ra.VALUE from REALM_ATTRIBUTE ra where ra.REALM_ID = REALM_ID and ra.name = 'displayName')")
+    @Formula("(select r.NAME from REALM r where r.ID = REALM_ID")
     protected String realm;
 
     @Column(name = "REALM_ID")
