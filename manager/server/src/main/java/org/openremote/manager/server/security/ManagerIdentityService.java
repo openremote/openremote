@@ -232,10 +232,10 @@ public class ManagerIdentityService extends IdentityService {
         return persistenceService.doReturningTransaction(em -> em.merge(userConfiguration));
     }
 
-    public boolean isUserInTenant(String userId, String tenantId) {
+    public boolean isUserInTenant(String userId, String realmId) {
         return persistenceService.doReturningTransaction(em -> {
             User user = em.find(User.class, userId);
-            return (user != null&& tenantId.equals(user.getRealmId()));
+            return (user != null&& realmId.equals(user.getRealmId()));
         });
     }
 
