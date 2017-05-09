@@ -17,12 +17,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.model.attribute;
+package org.openremote.model.syslog;
 
-/**
- * This is an interface for indicating that a type
- * provides a URN string.
- */
-public interface HasMetaName {
-    String getUrn();
+public enum SyslogLevel {
+
+    DEBUG("circle-o"),
+    INFO("info-circle"),
+    WARN("exclamation-circle"),
+    ERROR("exclamation-triangle");
+
+    final String icon;
+
+    SyslogLevel(String icon) {
+        this.icon = icon;
+    }
+
+    public String getIcon() {
+        return icon;
+    }
+
+    static public SyslogLevel getLevel(int level) {
+        if (level == 1000) {
+            return ERROR;
+        } else if (level == 900) {
+            return WARN;
+        } else if (level == 800 || level == 700) {
+            return INFO;
+        } else if (level <= 500) {
+            return DEBUG;
+        }
+        return null;
+    }
+
 }

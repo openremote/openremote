@@ -20,6 +20,7 @@
 package org.openremote.model.asset;
 
 import org.openremote.model.AbstractValueHolder;
+import org.openremote.model.ValidationFailure;
 import org.openremote.model.attribute.*;
 import org.openremote.model.util.Pair;
 import org.openremote.model.value.ObjectValue;
@@ -28,6 +29,7 @@ import org.openremote.model.value.Values;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -107,6 +109,16 @@ public class AssetAttribute extends Attribute {
     }
 
     @Override
+    public List<ValidationFailure> getMetaItemValidationFailures(MetaItem item) {
+        List<ValidationFailure> failures = super.getMetaItemValidationFailures(item);
+
+        // We validation well-known meta items
+        AssetMeta.getValidationFailure(item).ifPresent(failures::add);
+
+        return failures;
+    }
+
+    @Override
     public AssetAttribute setMeta(Meta meta) {
         super.setMeta(meta);
         return this;
@@ -142,6 +154,10 @@ public class AssetAttribute extends Attribute {
             .findFirst()
             .flatMap(AbstractValueHolder::getValueAsString)
             .orElseGet(() -> getName().orElse(null)));
+    }
+
+    public Optional<String> getLabelOrName() {
+        return getLabel().map(Optional::of).orElseGet(this::getName);
     }
 
     public void setLabel(String label) {

@@ -19,6 +19,7 @@
  */
 package org.openremote.agent3.protocol.trigger.time;
 
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.Pair;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
@@ -29,9 +30,12 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
 class CronScheduler {
 
-    private static final Logger LOG = Logger.getLogger(CronScheduler.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, CronScheduler.class);
+
     protected static final int ALARM_UPDATE_DELAY_MS = 10000;
     protected final List<String> jobIds = new ArrayList<>();
     protected final org.quartz.Scheduler scheduler;

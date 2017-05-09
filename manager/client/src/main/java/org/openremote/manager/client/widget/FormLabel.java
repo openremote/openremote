@@ -29,6 +29,7 @@ public class FormLabel extends ComplexPanel {
     protected LabelElement labelElement;
     protected SpanElement requiredElement;
     protected boolean required;
+    protected boolean error;
 
     public FormLabel() {
         this(null);
@@ -70,6 +71,18 @@ public class FormLabel extends ComplexPanel {
     public void setRequired(boolean required) {
         this.required = required;
         requiredElement.getStyle().setVisibility(required ? Style.Visibility.VISIBLE : Style.Visibility.HIDDEN);
+    }
+
+    public void setError(boolean error) {
+        this.error = error;
+        removeStyleName("error");
+        if (error) {
+            addStyleName("error");
+        }
+    }
+
+    public boolean isError() {
+        return error;
     }
 
     public String getFormFieldId() {

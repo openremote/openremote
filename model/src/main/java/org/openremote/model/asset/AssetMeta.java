@@ -19,9 +19,11 @@
  */
 package org.openremote.model.asset;
 
+import org.openremote.model.ValidationFailure;
 import org.openremote.model.attribute.AttributeExecuteStatus;
-import org.openremote.model.attribute.HasMetaName;
+import org.openremote.model.HasUniqueResourceName;
 import org.openremote.model.attribute.MetaItem;
+import org.openremote.model.util.Pair;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
 
@@ -31,6 +33,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.openremote.model.Constants.ASSET_META_NAMESPACE;
+import static org.openremote.model.asset.AssetMeta.AssetMetaValidationFailure.VALUE_DOES_NOT_MATCH_ASSET_META_TYPE;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 /**
@@ -39,7 +42,7 @@ import static org.openremote.model.util.TextUtil.isNullOrEmpty;
  * <p>
  * TODO https://people.eecs.berkeley.edu/~arka/papers/buildsys2015_metadatasurvey.pdf
  */
-public enum AssetMeta implements HasMetaName {
+public enum AssetMeta implements HasUniqueResourceName {
 
     /**
      * Marks an attribute of an agent asset as a {@link org.openremote.model.asset.agent.ProtocolConfiguration}.
@@ -154,11 +157,16 @@ public enum AssetMeta implements HasMetaName {
     EXECUTABLE(ASSET_META_NAMESPACE + ":executable", new Access(true, false, true), ValueType.BOOLEAN),
 
     /**
-     * Marks an agent linked attribute as being linked to a property of the linked protocol (e.g. an attribute
-     * linked to the {@link #ENABLED} status of a protocol configuration) should use this meta with a value of
-     * "ENABLED"; other supported values are protocol dependent.
+     * Marks an agent linked attribute as being linked to a property of the linked protocol. For example, an
+     * attribute linked to the {@link #ENABLED} status of a protocol configuration should use this meta with
+     * a value of "ENABLED"; other supported values are protocol dependent.
+     * TODO I don't understand what this does from the description
      */
     PROTOCOL_PROPERTY(ASSET_META_NAMESPACE + ":protocolProperty", new Access(true, false, true), ValueType.STRING);
+
+    public enum AssetMetaValidationFailure implements ValidationFailure {
+        VALUE_DOES_NOT_MATCH_ASSET_META_TYPE
+    }
 
     final protected String urn;
     final protected Access access;
@@ -182,6 +190,20 @@ public enum AssetMeta implements HasMetaName {
         return valueType;
     }
 
+    /**
+     * If this is a well-known item, the value must match the defined type.
+     * Third-party items are always valid.
+     */
+    public Optional<ValidationFailure> isValidValue(Value value) {
+        if (value == null) {
+            return Optional.empty();
+        }
+        if (getValueType() != value.getType()) {
+            return Optional.of(VALUE_DOES_NOT_MATCH_ASSET_META_TYPE);
+        }
+        return Optional.empty();
+    }
+
     public static AssetMeta[] editable() {
         List<AssetMeta> list = new ArrayList<>();
         for (AssetMeta meta : values()) {
@@ -194,16 +216,12 @@ public enum AssetMeta implements HasMetaName {
         return list.toArray(new AssetMeta[list.size()]);
     }
 
-    public static Boolean isEditable(String urn) {
-        if (urn == null) {
-            return null;
-        }
-
+    public static boolean isEditable(String urn) {
         for (AssetMeta assetMeta : editable()) {
             if (assetMeta.getUrn().equals(urn))
                 return assetMeta.getAccess().editable;
         }
-        return null;
+        return true;
     }
 
     public static Optional<AssetMeta> getAssetMeta(String urn) {
@@ -217,12 +235,16 @@ public enum AssetMeta implements HasMetaName {
         return Optional.empty();
     }
 
-    public static boolean isAssetMeta(MetaItem metaItem) {
-        return metaItem != null && getAssetMeta(metaItem.getName().orElse(null)).isPresent();
+    public static Optional<ValidationFailure> getValidationFailure(MetaItem item) {
+        return item.getName()
+            .flatMap(AssetMeta::getAssetMeta)
+            .map(assetMeta -> new Pair<>(assetMeta, item.getValue()))
+            .filter(pair -> pair.value.isPresent())
+            .flatMap(pair -> pair.key.isValidValue(pair.value.get()));
     }
 
     /**
-     * Only well-known items can be protected readable.
+     * Some well-known items can be protected readable.
      *
      * @see Access#protectedRead
      */
@@ -233,7 +255,7 @@ public enum AssetMeta implements HasMetaName {
     }
 
     /**
-     * Only well-known items can be protected readable.
+     * Some well-known items can be protected writable.
      *
      * @see Access#protectedWrite
      */
@@ -248,9 +270,9 @@ public enum AssetMeta implements HasMetaName {
      * are the types we can edit/have editor UI for.
      */
     public enum EditableType {
-        STRING("String", ValueType.STRING),
-        NUMBER("Number", ValueType.NUMBER),
-        BOOLEAN("Boolean", ValueType.BOOLEAN);
+        STRING("Text", ValueType.STRING),
+        NUMBER("Decimal number", ValueType.NUMBER),
+        BOOLEAN("On/Off toggle", ValueType.BOOLEAN);
 
         EditableType(String label, ValueType valueType) {
             this.label = label;

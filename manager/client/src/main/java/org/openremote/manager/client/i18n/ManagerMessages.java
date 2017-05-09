@@ -57,8 +57,6 @@ public interface ManagerMessages extends Messages {
 
     String enabled();
 
-    String newTenant();
-
     String editTenant();
 
     String tenantDisplayName();
@@ -149,7 +147,9 @@ public interface ManagerMessages extends Messages {
 
     String unsupportedAttributeType(String name);
 
-    String unsupportedMetaItemType(String jsonType);
+    String unsupportedMetaItemType(String name);
+
+    String emptyMetaItem();
 
     String loadingAssets();
 
@@ -173,8 +173,6 @@ public interface ManagerMessages extends Messages {
 
     String assetDeleted(String name);
 
-    String showDashboard();
-
     String location();
 
     String selectLocation();
@@ -192,6 +190,8 @@ public interface ManagerMessages extends Messages {
     String selectAssetDescription();
 
     String invalidAssetParent();
+
+    String invalidAssetAttributes();
 
     String centerMap();
 
@@ -237,12 +237,6 @@ public interface ManagerMessages extends Messages {
 
     String selectType();
 
-    String enterNameAndValue();
-
-    String enterOnlyDecimals();
-
-    String enterOnlyNumbers();
-
     String attributeDeleted(String name);
 
     String attributeAdded(String name);
@@ -252,8 +246,6 @@ public interface ManagerMessages extends Messages {
     String attributes();
 
     String attributeName();
-
-    String enterNameAndSelectType();
 
     String fullscreen();
 
@@ -336,4 +328,29 @@ public interface ManagerMessages extends Messages {
     String getStatus();
 
     String commandRequestSent(String name);
+
+    String attributeType(@Select String name);
+
+    String validationFailed();
+
+    String validationFailedFor(String field);
+
+    String validationFailure(@Select String name);
+
+    String syslog();
+
+    String filterLevel();
+
+    String pauseLog();
+
+    String continueLog();
+
+    String clearLog();
+
+    String noLogMessagesReceived();
+
+    String editJsonObject();
+
+    String editJsonArray();
+
 }

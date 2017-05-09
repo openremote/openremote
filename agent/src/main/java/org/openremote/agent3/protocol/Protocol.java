@@ -32,6 +32,7 @@ import org.openremote.model.value.ValueType;
 
 import java.util.Collection;
 import java.util.function.Consumer;
+import java.util.logging.Logger;
 
 /**
  * A protocol is a thread-safe singleton {@link ContainerService} that connects devices and
@@ -65,7 +66,7 @@ import java.util.function.Consumer;
  * If the actual state of the device (or service) changes, the linked protocol writes the new
  * state into the attribute value and notifies the context broker of the change. A protocol updates
  * a linked attributes' value by sending  an {@link AttributeEvent} messages on the
- * {@link #SENSOR_QUEUE}.
+ * {@link #SENSOR_QUEUE}, including the source protocol name in header {@link #SENSOR_QUEUE_SOURCE_PROTOCOL}.
  * <p>
  * If the user writes a new value into the linked attribute, the protocol translates this value
  * change into a device (or service) action. Write operations on attributes linked to a protocol
@@ -169,6 +170,7 @@ public interface Protocol extends ContainerService {
     }
 
     String ACTUATOR_TOPIC_TARGET_PROTOCOL = "Protocol";
+    String SENSOR_QUEUE_SOURCE_PROTOCOL = "Protocol";
 
     // TODO: Some of these options should be configurable depending on expected load etc.
 

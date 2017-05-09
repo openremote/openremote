@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -17,14 +17,30 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.widget;
+package org.openremote.manager.client.admin.syslog;
 
-import com.google.gwt.user.client.ui.FlowPanel;
-import com.google.gwt.user.client.ui.HasWidgets;
+import com.google.gwt.user.client.ui.UIObject;
+import org.openremote.model.syslog.SyslogEvent;
+import org.openremote.model.syslog.SyslogLevel;
 
-public class FormGroupActions extends FlowPanel implements HasWidgets {
+public interface QuickSyslog {
 
-    public FormGroupActions() {
-        getElement().addClassName("layout horizontal center wrap end-justified or-FormGroupActions");
+    interface Presenter {
+        QuickSyslog getView();
+
+        void onOpen();
+
+        void onClose();
+
+        void onLogLevelChanged(SyslogLevel level);
     }
+
+    void setPresenter(Presenter presenter);
+
+    void toggleRelativeTo(UIObject target);
+
+    SyslogLevel getLogLevel();
+
+    void addEvent(SyslogEvent event);
+
 }

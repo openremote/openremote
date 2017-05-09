@@ -319,6 +319,7 @@
     }
 
     .or-FormField {
+        min-width: 10em;
     }
 
     .or-FormField.larger {
@@ -398,7 +399,8 @@
     .or-FormButton,
     .or-FormButtonDown,
     .or-FormButtonDanger,
-    .or-FormButtonPrimary {
+    .or-FormButtonPrimary,
+    .or-FormFileUploadLabel {
         padding: 0 0.4em;
         border: 2px dotted transparent;
     }
@@ -412,6 +414,10 @@
 
     .or-FormCheckBox {
         height: 1.8em;
+    }
+
+    .or-FormGroupActions .or-FormControl {
+        margin: 0.2em 0.4em;
     }
 
     .or-FormTableHeaderCell {
@@ -492,7 +498,8 @@
         overflow: visible;
     }
 
-    .or-FormTreeEmptyMessage {
+    .or-FormTreeEmptyMessage,
+    .or-FormListEmptyMessage {
         font-size: smaller;
         font-style: italic;
         text-align: center;
@@ -512,6 +519,20 @@
     .or-FormTreeIcon {
         margin-left: 0.4em;
         width: 1.6em;
+    }
+
+    .or-FormList {
+
+    }
+
+    .or-FormListItem {
+        border-radius: 0.4em;
+        margin: 0.4em 0.8em;
+        padding: 0.4em;
+    }
+
+    .or-FormListEmptyMessage {
+        margin: 0.4em;
     }
 
     .or-FormMessages,

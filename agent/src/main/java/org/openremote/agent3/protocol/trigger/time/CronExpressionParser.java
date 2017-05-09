@@ -19,6 +19,7 @@
  */
 package org.openremote.agent3.protocol.trigger.time;
 
+import org.openremote.model.syslog.SyslogCategory;
 import org.quartz.CronExpression;
 
 import java.util.EnumSet;
@@ -26,12 +27,16 @@ import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
+
 /**
  * Basic cron expression parser (unfortunately the quartz cron expression class
  * uses all protected methods and class is final).
  *
  */
 public class CronExpressionParser {
+
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, CronExpressionParser.class);
 
     enum DaysOfWeek {
         SUN,
@@ -111,8 +116,6 @@ public class CronExpressionParser {
             return set;
         }
     }
-
-    private static final Logger LOG = Logger.getLogger(CronExpressionParser.class.getName());
 
     protected final String originalCronExpression;
     protected static final int SECONDS = 0;

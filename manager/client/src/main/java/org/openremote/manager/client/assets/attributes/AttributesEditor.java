@@ -25,6 +25,7 @@ import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.IsWidget;
 import org.openremote.manager.client.Environment;
 import org.openremote.manager.client.widget.*;
+import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.attribute.Attribute;
@@ -67,7 +68,7 @@ public class AttributesEditor
     }
 
     protected FormLabel createAttributeLabel(AssetAttribute attribute) {
-        FormLabel formLabel =  new FormLabel(TextUtil.ellipsize(getAttributeLabel(attribute), 30));
+        FormLabel formLabel = new FormLabel(TextUtil.ellipsize(getAttributeLabel(attribute), 30));
         formLabel.setIcon("edit");
         formLabel.addStyleName("larger");
         return formLabel;
@@ -136,14 +137,22 @@ public class AttributesEditor
         addButton.setText(container.getMessages().addAttribute());
         addButton.setIcon("plus");
         addButton.addClickHandler(clickEvent -> {
-            if (attribute.isValid()) {
+
+            // Must initialize timestamp for proper attribute state (here it
+            // means: "When was the initial 'empty' attribute value state created?")
+            attribute.setValueTimestamp();
+
+            List<ValidationFailure> failures = attribute.getValidationFailures();
+            if (failures.isEmpty()) {
                 formGroup.setError(false);
                 getAttributes().add(attribute);
                 showInfo(environment.getMessages().attributeAdded(attribute.getName().get()));
                 build();
             } else {
                 formGroup.setError(true);
-                showValidationError(environment.getMessages().enterNameAndSelectType());
+                for (ValidationFailure failure : failures) {
+                    showValidationError(attribute.getLabelOrName().orElse(null), failure);
+                }
             }
         });
         formGroupActions.add(addButton);
@@ -168,6 +177,7 @@ public class AttributesEditor
         nameInput.addValueChangeHandler(event -> {
             if (!ATTRIBUTE_NAME_VALIDATOR.test(event.getValue())) {
                 formGroup.setError(true);
+                attribute.clearName();
                 showValidationError(environment.getMessages().invalidAttributeName());
             } else {
                 formGroup.setError(false);
@@ -179,14 +189,16 @@ public class AttributesEditor
         FormListBox typeListBox = new FormListBox();
         typeListBox.addItem(environment.getMessages().selectType());
         for (AttributeType attributeType : AttributeType.values()) {
-            typeListBox.addItem(attributeType.getDisplayName());
+            typeListBox.addItem(environment.getMessages().attributeType(attributeType.name()));
         }
         typeListBox.addChangeHandler(event -> {
-            AttributeType attributeType =
-                typeListBox.getSelectedIndex() > 0
-                    ? AttributeType.values()[typeListBox.getSelectedIndex() - 1]
-                    : null;
-            attribute.setTypeAndClearValue(attributeType);
+            if (typeListBox.getSelectedIndex() > 0) {
+                attribute.setTypeAndClearValue(
+                    AttributeType.values()[typeListBox.getSelectedIndex() - 1]
+                );
+            } else {
+                attribute.clearType();
+            }
         });
         formField.add(typeListBox);
 
@@ -236,11 +248,14 @@ public class AttributesEditor
                 FormField formField = new FormField();
 
                 // Determine editor based on value type
-                if (!item.getValue().isPresent())
-                    continue;
-                ValueType valueType = item.getValue().get().getType();
-                formField.add(createEditor(item, valueType, false, formGroup));
-                formGroup.addFormField(formField);
+                if (item.getValue().isPresent()) {
+                    ValueType valueType = item.getValue().get().getType();
+                    formField.add(createEditor(item, valueType, false, formGroup));
+                    formGroup.addFormField(formField);
+                } else {
+                    formField.add(noValueItemEditor(item));
+                    formGroup.addFormField(formField);
+                }
 
                 FormGroupActions formGroupActions = new FormGroupActions();
 
@@ -249,6 +264,7 @@ public class AttributesEditor
                 deleteButton.setIcon("remove");
                 int index = i;
                 deleteButton.addClickHandler(clickEvent -> {
+                    attributeGroups.get(attribute).setErrorInExtension(false);
                     attribute.getMeta().remove(index);
                     buildItemList();
                 });
@@ -277,7 +293,12 @@ public class AttributesEditor
             addButton.setText(container.getMessages().addItem());
             addButton.setIcon("plus");
             addButton.addClickHandler(clickEvent -> {
-                if (item.isValid()) {
+
+                // We ask the attribute for validation failures instead of the
+                // item, because the item must be valid in its context
+                List<ValidationFailure> failures = attribute.getMetaItemValidationFailures(item);
+
+                if (failures.isEmpty()) {
                     itemNameEditorGroup.setError(false);
                     itemValueEditorGroup.setError(false);
                     attribute.getMeta().add(item);
@@ -286,7 +307,9 @@ public class AttributesEditor
                 } else {
                     itemNameEditorGroup.setError(true);
                     itemValueEditorGroup.setError(true);
-                    showValidationError(environment.getMessages().enterNameAndValue());
+                    for (ValidationFailure failure : failures) {
+                        showValidationError(item.getName().orElse(null), failure);
+                    }
                 }
             });
             formGroupActions.add(addButton);
@@ -297,36 +320,32 @@ public class AttributesEditor
             IsWidget editor;
 
             AttributesEditor.Style style = container.getStyle();
-            Consumer<String> errorConsumer = msg -> {
-                formGroup.setError(true);
-                showValidationError(msg);
-            };
-            // For some meta items we know if we can edit them or not... custom items are always editable
-            Boolean isEditable = AssetMeta.isEditable(item.getName().orElse(null));
 
-            // TODO: We should support more JSON types, and have special editors for well-known meta items
-            // Default to STRING editor if value is empty/no type available
-            if (valueType == null || valueType.equals(ValueType.STRING)) {
+            // For some meta items we know if we can edit them or not... custom items are always editable
+            boolean isEditable = item.getName().map(AssetMeta::isEditable).orElse(forceEditable);
+
+            // Validation failure of meta item marks the attribute form extension as error state
+            Consumer<Boolean> resultConsumer = !forceEditable
+                ? success -> attributeGroups.get(attribute).setErrorInExtension(!success)
+                : null;
+
+            if (valueType.equals(ValueType.STRING)) {
                 String currentValue = item.getValue().map(Object::toString).orElse(null);
-                Consumer<String> updateConsumer = isEditable == null || isEditable || forceEditable ? value -> {
-                    formGroup.setError(false);
-                    item.setValue(Values.create(value));
-                } : null;
+                Consumer<String> updateConsumer = isEditable
+                    ? rawValue -> STRING_UPDATER.accept(new ValueUpdate<>(item.getName().orElse(null),formGroup, item, resultConsumer, rawValue))
+                    : null;
                 editor = createStringEditorWidget(style, currentValue, Optional.empty(), updateConsumer);
             } else if (valueType.equals(ValueType.NUMBER)) {
                 String currentValue = item.getValue().map(Object::toString).orElse(null);
-                Consumer<String> updateConsumer = isEditable == null || isEditable || forceEditable ? value -> {
-                    Double decimalValue = Double.valueOf(value);
-                    formGroup.setError(false);
-                    item.setValue(Values.create(decimalValue));
-                } : null;
-                editor = createDecimalEditorWidget(style, currentValue, Optional.empty(), updateConsumer, errorConsumer);
+                Consumer<String> updateConsumer = isEditable
+                    ? rawValue -> TO_DOUBLE_UPDATER.accept(new ValueUpdate<>(item.getName().orElse(null), formGroup, item, resultConsumer, rawValue))
+                    : null;
+                editor = createDecimalEditorWidget(style, currentValue, Optional.empty(), updateConsumer);
             } else if (valueType.equals(ValueType.BOOLEAN)) {
-                Boolean currentValue = item.getValueAsBoolean().orElse(false);
-                Consumer<Boolean> updateConsumer = isEditable == null || isEditable || forceEditable ? value -> {
-                    formGroup.setError(false);
-                    item.setValue(Values.create(value));
-                } : null;
+                Boolean currentValue = item.getValueAsBoolean().orElse(null);
+                Consumer<Boolean> updateConsumer = isEditable
+                    ? rawValue -> BOOLEAN_UPDATER.accept(new ValueUpdate<>(item.getName().orElse(null), formGroup, item, resultConsumer, rawValue))
+                    : null;
                 editor = createBooleanEditorWidget(style, currentValue, Optional.empty(), updateConsumer);
             } else {
                 FormField unsupportedField = new FormField();
@@ -336,6 +355,16 @@ public class AttributesEditor
                 editor = unsupportedField;
             }
             return editor;
+        }
+
+        /**
+         * This should actually never be called as we don't allow storing of empty meta items. But
+         * because we don't have proper database constraints, who knows...
+         */
+        protected IsWidget noValueItemEditor(MetaItem item) {
+            FormField field = new FormField();
+            field.add(new FormOutputText(environment.getMessages().emptyMetaItem()));
+            return () -> field;
         }
 
         protected FormGroup createItemNameEditor(MetaItem item, FormListBox typeListBox) {

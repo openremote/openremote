@@ -344,8 +344,7 @@ public class RulesEngine<T extends Ruleset> {
         kfs.generateAndWritePomXML(releaseId);
         kfs.writeKModuleXML(kieModuleModel.toXML());
 
-        LOG.fine("Initialised rules service for deployment '" + getId() + "'");
-        LOG.info(kieBaseModel.toString());
+        LOG.info("Initialised rules for deployment '" + getId() + "':" + kieBaseModel.toString());
     }
 
     protected synchronized void start() {
@@ -363,7 +362,7 @@ public class RulesEngine<T extends Ruleset> {
             return;
         }
 
-        LOG.fine("Starting RuleEngine: " + this);
+        LOG.info("Starting: " + this);
 
         // Note each rule engine has its' own KieModule which are stored in a singleton register by drools
         // we need to ensure we get the right module here otherwise we could be using the wrong rules
@@ -472,7 +471,7 @@ public class RulesEngine<T extends Ruleset> {
         if (!isRunning()) {
             return;
         }
-        LOG.fine("Stopping RuleEngine: " + this);
+        LOG.info("Stopping: " + this);
         if (knowledgeSession != null) {
             try {
                 knowledgeSession.halt();

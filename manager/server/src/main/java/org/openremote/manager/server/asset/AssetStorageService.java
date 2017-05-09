@@ -34,6 +34,7 @@ import org.openremote.manager.server.event.EventService;
 import org.openremote.manager.server.security.ManagerIdentityService;
 import org.openremote.manager.shared.security.ClientRole;
 import org.openremote.manager.shared.security.Tenant;
+import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.*;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.util.Pair;
@@ -239,10 +240,19 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
             }
 
             // Validate attributes
-            if (!asset.getAttributesStream().allMatch(AssetAttribute::isValid)) {
-                throw new IllegalStateException("One or more attributes are not valid");
+            int invalid = 0;
+            for (AssetAttribute attribute : asset.getAttributesList()) {
+                List<ValidationFailure> validationFailures = attribute.getValidationFailures();
+                if (validationFailures.size() > 0) {
+                    LOG.warning("Validation failure(s) " + validationFailures + ", can't store: " + attribute);
+                    invalid++;
+                }
+            }
+            if (invalid > 0) {
+                throw new IllegalStateException("Storing asset failed, invalid attributes: " + invalid);
             }
 
+            LOG.fine("Storing: " + asset);
             return em.merge(asset);
         });
     }
@@ -259,6 +269,7 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
                 );
                 if (children.size() > 0)
                     return false;
+                LOG.fine("Removing: " + asset);
                 em.remove(asset);
             }
             return true;
@@ -321,7 +332,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return em.unwrap(Session.class).doReturningWork(new AbstractReturningWork<List<ServerAsset>>() {
             @Override
             public List<ServerAsset> execute(Connection connection) throws SQLException {
-                LOG.fine("Preparing asset query: " + sb.toString());
                 PreparedStatement st = connection.prepareStatement(sb.toString());
                 for (ParameterBinder binder : whereClause.value) {
                     binder.accept(st);
@@ -347,7 +357,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
         return em.unwrap(Session.class).doReturningWork(new AbstractReturningWork<List<String>>() {
             @Override
             public List<String> execute(Connection connection) throws SQLException {
-                LOG.fine("Preparing asset query (identifiers only projection): " + sb.toString());
                 PreparedStatement st = connection.prepareStatement(sb.toString());
                 for (ParameterBinder binder : whereClause.value) {
                     binder.accept(st);
@@ -567,8 +576,6 @@ public class AssetStorageService extends RouteBuilder implements ContainerServic
     }
 
     protected ServerAsset mapResultTuple(AssetQuery query, ResultSet rs) throws SQLException {
-        LOG.fine("Mapping asset query result tuple: " + rs.getString("ID"));
-
         return new ServerAsset(
             query.select != null && query.select.filterProtected,
             rs.getString("ID"), rs.getLong("OBJ_VERSION"), rs.getTimestamp("CREATED_ON"), rs.getString("NAME"), rs.getString("ASSET_TYPE"),

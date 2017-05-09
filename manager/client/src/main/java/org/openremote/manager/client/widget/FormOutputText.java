@@ -19,9 +19,10 @@
  */
 package org.openremote.manager.client.widget;
 
+import com.google.gwt.user.client.ui.InlineLabel;
 import com.google.gwt.user.client.ui.Label;
 
-public class FormOutputText extends Label {
+public class FormOutputText extends InlineLabel {
 
     public FormOutputText() {
         this(null);

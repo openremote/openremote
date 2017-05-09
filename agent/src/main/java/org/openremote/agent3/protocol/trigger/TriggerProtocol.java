@@ -42,11 +42,11 @@ import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
  * <p>
  * A trigger is defined by creating a {@link TriggerConfiguration} attribute on an
  * agent. A trigger consists of:
- * <p>
- * Trigger Type {@link TriggerType}
- * Trigger Value ({@link TriggerType#TIME} = CRON EXPRESSION, {@link TriggerType#ATTRIBUTE} = {@link AttributeRef})
- * Trigger Action {@link AttributeState} that should be sent when triggered
- * <p>
+ * <ul>
+ * <li>{@link TriggerType}</li>
+ * <li>Trigger Value: {@link TriggerType#TIME} = CRON EXPRESSION or {@link TriggerType#ATTRIBUTE} = {@link AttributeRef}</li>
+ * <li>Trigger Action {@link AttributeState} that should be sent when triggered</li>
+ * </ul>
  * {@link AssetAttribute}s can link to time triggers to read/write the trigger time and/or enable/disable
  * the trigger.
  * <p>
@@ -58,11 +58,12 @@ import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
  */
 public class TriggerProtocol extends AbstractProtocol {
 
+    private static final Logger LOG = Logger.getLogger(TriggerProtocol.class.getName());
+
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":trigger";
     public static final String META_TRIGGER_VALUE = ASSET_META_NAMESPACE + ":triggerValue";
     public static final String META_TRIGGER_TYPE = ASSET_META_NAMESPACE + ":triggerType";
     public static final String META_TRIGGER_ACTION = ASSET_META_NAMESPACE + ":triggerAction";
-    private static final Logger LOG = Logger.getLogger(TriggerProtocol.class.getName());
     protected final Map<AttributeRef, AssetAttribute> protocolConfigMap = new HashMap<>();
     protected final Map<AttributeRef, AbstractTriggerHandler> attributeTriggerHandlerMap = new HashMap<>();
 

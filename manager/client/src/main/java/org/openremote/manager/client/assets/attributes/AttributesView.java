@@ -33,11 +33,14 @@ import org.openremote.manager.client.util.CollectionsUtil;
 import org.openremote.manager.client.widget.*;
 import org.openremote.model.AbstractValueHolder;
 import org.openremote.model.Constants;
+import org.openremote.model.ValidationFailure;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.TextUtil;
+import org.openremote.model.value.Value;
+import org.openremote.model.value.ValueType;
 import org.openremote.model.value.Values;
 
 import java.util.*;
@@ -70,15 +73,102 @@ public abstract class AttributesView<
     public interface AttributeEditor extends IsWidget {
     }
 
+    public class ValueUpdate<T> {
+
+        final String fieldLabel;
+        final FormGroup formGroup;
+        final AbstractValueHolder valueHolder;
+        final Consumer<Boolean> resultConsumer;
+        final T rawValue;
+
+        public ValueUpdate(String fieldLabel, FormGroup formGroup, AbstractValueHolder valueHolder, Consumer<Boolean> resultConsumer, T rawValue) {
+            this.fieldLabel = fieldLabel;
+            this.formGroup = formGroup;
+            this.valueHolder = valueHolder;
+            this.resultConsumer = resultConsumer;
+            this.rawValue = rawValue;
+        }
+    }
+
+    public abstract class ValueUpdater<T> implements Consumer<ValueUpdate<T>> {
+
+        @Override
+        public void accept(ValueUpdate<T> valueUpdate) {
+            valueUpdate.formGroup.setError(false);
+            List<ValidationFailure> failures = new ArrayList<>();
+            try {
+                valueUpdate.valueHolder.setValue(
+                    valueUpdate.rawValue != null ? createValue(valueUpdate.rawValue) : null
+                );
+                failures.addAll(valueUpdate.valueHolder.getValidationFailures());
+            } catch (IllegalArgumentException ex) {
+                failures.add(ex::getMessage);
+            }
+            if (!failures.isEmpty()) {
+                valueUpdate.formGroup.setError(true);
+                for (ValidationFailure failure : failures) {
+                    showValidationError(valueUpdate.fieldLabel, failure);
+                }
+                if (valueUpdate.resultConsumer != null) {
+                    valueUpdate.resultConsumer.accept(false);
+                }
+            }
+            if (valueUpdate.resultConsumer != null) {
+                valueUpdate.resultConsumer.accept(failures.isEmpty());
+            }
+        }
+
+        abstract Value createValue(T rawValue) throws IllegalArgumentException;
+    }
+
+    public enum ConversionValidationFailure implements ValidationFailure {
+        NOT_A_VALID_INTEGER,
+        NOT_A_VALID_DECIMAL
+    }
+
+    public final ValueUpdater<String> STRING_UPDATER = new ValueUpdater<String>() {
+        @Override
+        Value createValue(String rawValue) throws IllegalArgumentException {
+            return Values.create(rawValue);
+        }
+    };
+
+    public final ValueUpdater<String> TO_INTEGER_UPDATER = new ValueUpdater<String>() {
+        @Override
+        Value createValue(String rawValue) throws IllegalArgumentException {
+            try {
+                return Values.create(Integer.valueOf(rawValue));
+            } catch (NumberFormatException ex) {
+                throw new IllegalArgumentException(ConversionValidationFailure.NOT_A_VALID_INTEGER.name());
+            }
+        }
+    };
+
+    public final ValueUpdater<String> TO_DOUBLE_UPDATER = new ValueUpdater<String>() {
+        @Override
+        Value createValue(String rawValue) throws IllegalArgumentException {
+            try {
+                return Values.create(Double.valueOf(rawValue));
+            } catch (NumberFormatException ex) {
+                throw new IllegalArgumentException(ConversionValidationFailure.NOT_A_VALID_DECIMAL.name());
+            }
+        }
+    };
+
+    public final ValueUpdater<Boolean> BOOLEAN_UPDATER = new ValueUpdater<Boolean>() {
+        @Override
+        Value createValue(Boolean rawValue) throws IllegalArgumentException {
+            return Values.create(rawValue);
+        }
+    };
+
     public static class TimestampLabel extends FlowPanel {
 
         static protected DateTimeFormat dateFormat = DateTimeFormat.getFormat(Constants.DEFAULT_DATE_FORMAT);
         static protected DateTimeFormat timeFormat = DateTimeFormat.getFormat(Constants.DEFAULT_TIME_FORMAT);
 
         public TimestampLabel(Long timestamp) {
-            addStyleName("flex");
-            getElement().getStyle().setFontSize(9, com.google.gwt.dom.client.Style.Unit.PX);
-            getElement().getStyle().setTextAlign(com.google.gwt.dom.client.Style.TextAlign.RIGHT);
+            addStyleName("flex layout vertical end or-FormInfoLabel");
             if (timestamp != null) {
                 setTimestamp(timestamp);
             }
@@ -129,6 +219,38 @@ public abstract class AttributesView<
         }
     }
 
+    public boolean validateAttributes() {
+        boolean isValid = true;
+        for (AssetAttribute attribute : attributes) {
+            if (!validateAttribute(attribute, false))
+                isValid = false;
+        }
+        if (!isValid) {
+            showValidationError(environment.getMessages().invalidAssetAttributes());
+        }
+        return isValid;
+    }
+
+    public boolean validateAttribute(AssetAttribute attribute, boolean showValidationFailureMessage) {
+        // If there is already an error displayed, don't do other validation
+        FormGroup formGroup = attributeGroups.get(attribute);
+        if (formGroup.isError()) {
+            return false;
+        }
+
+        List<ValidationFailure> failures = attribute.getValidationFailures();
+        if (!failures.isEmpty()) {
+            attributeGroups.get(attribute).setError(true);
+            if (showValidationFailureMessage) {
+                for (ValidationFailure failure : failures) {
+                    showValidationError(attribute.getLabelOrName().orElse(null), failure);
+                }
+            }
+            return false;
+        }
+        return true;
+    }
+
     public void close() {
         // Subclasses can manage lifecycle
     }
@@ -164,14 +286,16 @@ public abstract class AttributesView<
     }
 
     protected FormGroup createAttributeGroup(AssetAttribute attribute) {
-
         FormGroup formGroup = new FormGroup();
 
-        FormLabel formLabel = createAttributeLabel(attribute);
-        formGroup.addFormLabel(formLabel);
+        formGroup.addFormLabel(createAttributeLabel(attribute));
 
-        Optional<String> description = getAttributeDescription(attribute);
-        description.ifPresent(s -> formGroup.addInfolabel(new Label(s)));
+        attribute.getType()
+            .map(attributeType -> environment.getMessages().attributeType(attributeType.name()))
+            .map(typeDisplayName -> typeDisplayName + (
+                getAttributeDescription(attribute)
+                    .map(description -> " - " + description).orElse("")
+            )).ifPresent(infoText -> formGroup.addInfolabel(new Label(infoText)));
 
         FormGroupActions formGroupActions = new FormGroupActions();
 
@@ -196,7 +320,7 @@ public abstract class AttributesView<
     }
 
     protected FormLabel createAttributeLabel(AssetAttribute attribute) {
-        FormLabel formLabel =  new FormLabel(TextUtil.ellipsize(getAttributeLabel(attribute), 100));
+        FormLabel formLabel = new FormLabel(TextUtil.ellipsize(getAttributeLabel(attribute), 100));
         formLabel.addStyleName("larger");
         return formLabel;
     }
@@ -215,15 +339,18 @@ public abstract class AttributesView<
         Optional<MetaItem> defaultValueItem = attribute.getMetaItem(AssetMeta.DEFAULT);
         S style = container.getStyle();
 
+        AttributeType attributeType = attribute.getType().orElse(null);
+        if (attributeType == null)
+            return null;
+
         AttributeEditor attributeEditor;
-        AttributeType attributeType = attribute.getType().orElse(AttributeType.STRING);
-        if (attributeType == AttributeType.STRING) {
+        if (attributeType == AttributeType.STRING || attributeType.getValueType() == ValueType.STRING) {
             attributeEditor = createStringEditor(attribute, defaultValueItem, style, formGroup);
         } else if (attributeType == AttributeType.INTEGER) {
             attributeEditor = createIntegerEditor(attribute, defaultValueItem, style, formGroup);
-        } else if (attributeType == AttributeType.DECIMAL) {
+        } else if (attributeType == AttributeType.DECIMAL || attributeType.getValueType() == ValueType.NUMBER) {
             attributeEditor = createDecimalEditor(attribute, defaultValueItem, style, formGroup);
-        } else if (attributeType == AttributeType.BOOLEAN) {
+        } else if (attributeType == AttributeType.BOOLEAN || attributeType.getValueType() == ValueType.BOOLEAN) {
             attributeEditor = createBooleanEditor(attribute, defaultValueItem, style, formGroup);
         } else {
             return null;
@@ -235,7 +362,7 @@ public abstract class AttributesView<
         FormField unsupportedField = new FormField();
         unsupportedField.add(new FormOutputText(
             environment.getMessages().unsupportedAttributeType(
-                attribute.getType().map(AttributeType::getDisplayName).orElse(null)
+                attribute.getType().map(AttributeType::name).orElse(null)
             )
         ));
         return () -> unsupportedField;
@@ -245,10 +372,9 @@ public abstract class AttributesView<
         String currentValue = attribute.getValue().map(Object::toString).orElse(null);
         Optional<String> defaultValue = defaultValueItem.flatMap(AbstractValueHolder::getValueAsString);
 
-        Consumer<String> updateConsumer = isEditorReadOnly(attribute) ? null : value -> {
-            formGroup.setError(false);
-            attribute.setValue(Values.create(value));
-        };
+        Consumer<String> updateConsumer = !isEditorReadOnly(attribute)
+            ? rawValue -> STRING_UPDATER.accept(new ValueUpdate<>(attribute.getLabelOrName().orElse(null), formGroup, attribute, null, rawValue))
+            : null;
 
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center");
@@ -275,9 +401,7 @@ public abstract class AttributesView<
         if (updateConsumer != null) {
             input.addValueChangeHandler(
                 event -> updateConsumer.accept(
-                    event.getValue() != null && event.getValue().length() > 0
-                        ? event.getValue()
-                        : null
+                    event.getValue() == null || event.getValue().length() == 0 ? null : event.getValue()
                 )
             );
         } else {
@@ -289,20 +413,14 @@ public abstract class AttributesView<
     protected AttributeEditor createIntegerEditor(AssetAttribute attribute, Optional<MetaItem> defaultValueItem, S style, FormGroup formGroup) {
         String currentValue = attribute.getValue().map(Object::toString).orElse(null);
         Optional<String> defaultValue = defaultValueItem.flatMap(AbstractValueHolder::getValueAsString);
-        Consumer<String> updateConsumer = isEditorReadOnly(attribute) ? null : value -> {
-            Integer intValue = Integer.valueOf(value);
-            formGroup.setError(false);
-            attribute.setValue(Values.create(intValue));
-        };
 
-        Consumer<String> errorConsumer = msg -> {
-            formGroup.setError(true);
-            showValidationError(msg);
-        };
+        Consumer<String> updateConsumer = !isEditorReadOnly(attribute)
+            ? rawValue -> TO_INTEGER_UPDATER.accept(new ValueUpdate<>(attribute.getLabelOrName().orElse(null), formGroup, attribute, null, rawValue))
+            : null;
 
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center");
-        FormInputNumber inputNumber = createIntegerEditorWidget(style, currentValue, defaultValue, updateConsumer, errorConsumer);
+        FormInputNumber inputNumber = createIntegerEditorWidget(style, currentValue, defaultValue, updateConsumer);
         panel.add(inputNumber);
         if (isShowTimestamp(attribute)) {
             TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
@@ -315,8 +433,7 @@ public abstract class AttributesView<
     protected FormInputNumber createIntegerEditorWidget(S style,
                                                         String currentValue,
                                                         Optional<String> defaultValue,
-                                                        Consumer<String> updateConsumer,
-                                                        Consumer<String> errorConsumer) {
+                                                        Consumer<String> updateConsumer) {
         FormInputNumber input = createFormInputNumber(style.integerEditor());
 
         if (currentValue != null) {
@@ -325,15 +442,9 @@ public abstract class AttributesView<
 
         if (updateConsumer != null) {
             input.addValueChangeHandler(event -> {
-                try {
-                    updateConsumer.accept(
-                        event.getValue() != null && event.getValue().length() > 0
-                            ? event.getValue()
-                            : null
-                    );
-                } catch (NumberFormatException ex) {
-                    errorConsumer.accept(environment.getMessages().enterOnlyNumbers());
-                }
+                updateConsumer.accept(
+                    event.getValue() == null || event.getValue().length() == 0 ? null : event.getValue()
+                );
             });
         } else {
             input.setReadOnly(true);
@@ -344,20 +455,14 @@ public abstract class AttributesView<
     protected AttributeEditor createDecimalEditor(AssetAttribute attribute, Optional<MetaItem> defaultValueItem, S style, FormGroup formGroup) {
         String currentValue = attribute.getValue().map(Object::toString).orElse(null);
         Optional<String> defaultValue = defaultValueItem.flatMap(AbstractValueHolder::getValueAsString);
-        Consumer<String> updateConsumer = isEditorReadOnly(attribute) ? null : value -> {
-            Double decimalValue = Double.valueOf(value);
-            formGroup.setError(false);
-            attribute.setValue(Values.create(decimalValue));
-        };
 
-        Consumer<String> errorConsumer = msg -> {
-            formGroup.setError(true);
-            showValidationError(msg);
-        };
+        Consumer<String> updateConsumer = !isEditorReadOnly(attribute)
+            ? rawValue -> TO_DOUBLE_UPDATER.accept(new ValueUpdate<>(attribute.getLabelOrName().orElse(null), formGroup, attribute, null, rawValue))
+            : null;
 
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center");
-        FormInputText inputText = createDecimalEditorWidget(style, currentValue, defaultValue, updateConsumer, errorConsumer);
+        FormInputText inputText = createDecimalEditorWidget(style, currentValue, defaultValue, updateConsumer);
         panel.add(inputText);
         if (isShowTimestamp(attribute)) {
             TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
@@ -370,8 +475,7 @@ public abstract class AttributesView<
     protected FormInputText createDecimalEditorWidget(S style,
                                                       String currentValue,
                                                       Optional<String> defaultValue,
-                                                      Consumer<String> updateConsumer,
-                                                      Consumer<String> errorConsumer) {
+                                                      Consumer<String> updateConsumer) {
         FormInputText input = createFormInputText(style.decimalEditor());
 
         if (currentValue != null) {
@@ -380,15 +484,9 @@ public abstract class AttributesView<
 
         if (updateConsumer != null) {
             input.addValueChangeHandler(event -> {
-                try {
-                    updateConsumer.accept(
-                        event.getValue() != null && event.getValue().length() > 0
-                            ? event.getValue()
-                            : null
-                    );
-                } catch (NumberFormatException ex) {
-                    errorConsumer.accept(environment.getMessages().enterOnlyDecimals());
-                }
+                updateConsumer.accept(
+                    event.getValue() == null || event.getValue().length() == 0 ? null : event.getValue()
+                );
             });
         } else {
             input.setReadOnly(true);
@@ -397,18 +495,20 @@ public abstract class AttributesView<
     }
 
     protected AttributeEditor createBooleanEditor(AssetAttribute attribute, Optional<MetaItem> defaultValueItem, S style, FormGroup formGroup) {
-        // TODO: Should a boolean attribute with no value default to false?
-        boolean currentValue = attribute.getValueAsBoolean().orElse(false);
+        boolean currentValue = attribute.getValueAsBoolean().orElse(false); // An empty boolean attribute value is false
         Optional<Boolean> defaultValue = defaultValueItem.flatMap(AbstractValueHolder::getValueAsBoolean);
-        Consumer<Boolean> updateConsumer = isEditorReadOnly(attribute) ? null : value -> {
-            formGroup.setError(false);
-            attribute.setValue(Values.create(value));
-        };
+
+        Consumer<Boolean> updateConsumer = !isEditorReadOnly(attribute)
+            ? rawValue -> BOOLEAN_UPDATER.accept(new ValueUpdate<>(attribute.getLabelOrName().orElse(null), formGroup, attribute, null, rawValue))
+            : null;
 
         FlowPanel panel = new FlowPanel();
         panel.setStyleName("flex layout horizontal center");
         FormCheckBox checkBox = createBooleanEditorWidget(style, currentValue, defaultValue, updateConsumer);
-        panel.add(checkBox);
+        FlowPanel checkBoxWrapper = new FlowPanel();
+        checkBoxWrapper.setStyleName("flex layout horizontal center");
+        checkBoxWrapper.add(checkBox);
+        panel.add(checkBoxWrapper);
         if (isShowTimestamp(attribute)) {
             TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
             panel.add(timestampLabel);
@@ -494,7 +594,17 @@ public abstract class AttributesView<
     }
 
     protected void showValidationError(String error) {
-        environment.getEventBus().dispatch(new ShowFailureEvent(error, 3000));
+        environment.getEventBus().dispatch(new ShowFailureEvent(error, 5000));
     }
 
+    protected void showValidationError(String fieldLabel, ValidationFailure validationFailure) {
+        StringBuilder error = new StringBuilder();
+        if (fieldLabel != null)
+            error.append(environment.getMessages().validationFailedFor(fieldLabel));
+        else
+            error.append(environment.getMessages().validationFailed());
+        if (validationFailure != null)
+            error.append(": ").append(environment.getMessages().validationFailure(validationFailure.name()));
+        showValidationError(error.toString());
+    }
 }

@@ -27,7 +27,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
 
     def "Check firing of timer rules with realtime clock"() {
         given: "expected conditions"
-        def conditions = new PollingConditions(timeout: 10)
+        def conditions = new PollingConditions(timeout: 30)
 
         and: "the container is started"
         def serverPort = findEphemeralPort()
@@ -58,9 +58,9 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
         }
 
         and: "after a few seconds the rule engines should have fired the timed execution rule in the background"
-        new PollingConditions(initialDelay: 5).eventually {
+        new PollingConditions(initialDelay: 22).eventually {
             def expectedFiredRules = ["Log something every 2 seconds"]
-            assert globalEngineFiredRules.size() > 1
+            assert globalEngineFiredRules.size() > 10
             assert globalEngineFiredRules.containsAll(expectedFiredRules)
         }
 
@@ -71,7 +71,7 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
     def "Check firing of timer rules with pseudo clock"() {
 
         given: "the container environment is started"
-        def conditions = new PollingConditions(timeout: 10, delay: 1)
+        def conditions = new PollingConditions(timeout: 30, delay: 1)
         def serverPort = findEphemeralPort()
         def container = startContainerNoDemoRules(defaultConfig(serverPort) << [(TIMER_CLOCK_TYPE): PSEUDO.name()], defaultServices())
         def rulesService = container.getService(RulesService.class)
@@ -105,8 +105,10 @@ class BasicRulesTimedExecutionTest extends Specification implements ManagerConta
         }
 
         when: "the clock is advanced by a few seconds"
-        advancePseudoClocks(10, SECONDS, container, globalEngine)
+        advancePseudoClocks(100, SECONDS, container, globalEngine)
         // TODO Weird behavior of timer rules, pseudo clock, and active mode: More than 5 seconds is needed to fire rule twice
+        // even more strange it stops at 2 even when advanced for more time. The same problems are with timer(cron: )
+        // realtime clock seems to be OK
 
         then: "the rule engines should have fired the timed execution rule in the background"
         new PollingConditions(initialDelay: 3).eventually {

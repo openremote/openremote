@@ -24,6 +24,7 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeRef;
 import org.openremote.model.attribute.AttributeState;
+import org.openremote.model.syslog.SyslogCategory;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.Values;
@@ -38,11 +39,13 @@ import java.util.logging.Logger;
 
 import static java.util.logging.Level.FINER;
 import static org.openremote.agent3.protocol.trigger.time.CronExpressionParser.parseNumberExpression;
+import static org.openremote.model.syslog.SyslogCategory.PROTOCOL;
 import static org.openremote.model.util.TextUtil.isNullOrEmpty;
 
 public class TimeTriggerHandler extends AbstractTriggerHandler {
 
-    private static final Logger LOG = Logger.getLogger(TimeTriggerHandler.class.getName());
+    private static final Logger LOG = SyslogCategory.getLogger(PROTOCOL, TimeTriggerHandler.class);
+
     public static final String TIME_TRIGGER_HANDLER_NAME = "Time Trigger Handler";
     protected final Map<AttributeRef, CronExpressionParser> cronExpressionMap = new HashMap<>();
     protected CronScheduler cronScheduler;

@@ -27,6 +27,7 @@ import org.openremote.container.message.MessageBrokerService;
 import org.openremote.container.message.MessageBrokerSetupService;
 import org.openremote.container.timer.TimerService;
 import org.openremote.model.AbstractValueHolder;
+import org.openremote.model.HasUniqueResourceName;
 import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.asset.agent.AgentLink;
@@ -244,9 +245,9 @@ public abstract class AbstractProtocol implements Protocol {
      * Update the value of a linked attribute.
      */
     protected void updateLinkedAttribute(AttributeState state, long timestamp) {
-        AttributeEvent event = new AttributeEvent(state, timestamp);
-        LOG.fine("Sending on sensor queue: " + event);
-        producerTemplate.sendBody(SENSOR_QUEUE, event);
+        AttributeEvent attributeEvent = new AttributeEvent(state, timestamp);
+        LOG.fine("Sending on sensor queue: " + attributeEvent);
+        producerTemplate.sendBodyAndHeader(SENSOR_QUEUE, attributeEvent, Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, getProtocolName());
     }
 
     /**
@@ -260,7 +261,7 @@ public abstract class AbstractProtocol implements Protocol {
      * Update a linked protocol configuration; allows protocols to reconfigure their
      * own protocol configurations to persist changing data e.g. authorization tokens.
      */
-    protected void updateLinkedProtocolConfiguration(AssetAttribute protocolConfiguration, HasMetaName metaName, MetaItem... newMetaItem) {
+    protected void updateLinkedProtocolConfiguration(AssetAttribute protocolConfiguration, HasUniqueResourceName metaName, MetaItem... newMetaItem) {
         updateLinkedProtocolConfiguration(protocolConfiguration, metaName.getUrn(), newMetaItem);
     }
 

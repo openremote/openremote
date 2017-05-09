@@ -28,8 +28,6 @@ import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.inject.Inject;
-import org.openremote.manager.client.i18n.ManagerMessages;
-import org.openremote.manager.client.map.MapViewImpl;
 import org.openremote.manager.client.widget.PushButton;
 
 public class FooterViewImpl extends Composite implements FooterView {
@@ -38,16 +36,15 @@ public class FooterViewImpl extends Composite implements FooterView {
     }
 
     @UiField
+    PushButton quickSyslogButton;
+
+    @UiField
     PushButton fullscreenButton;
 
     private Presenter presenter;
 
-    private ManagerMessages messages;
-
-
     @Inject
-    public FooterViewImpl(ManagerMessages messages) {
-        this.messages = messages;
+    public FooterViewImpl() {
 
         FooterViewImpl.UI ui = GWT.create(FooterViewImpl.UI.class);
         initWidget(ui.createAndBindUi(this));
@@ -58,9 +55,9 @@ public class FooterViewImpl extends Composite implements FooterView {
         this.presenter = presenter;
     }
 
-    @Override
-    public void onPlaceChange(Place place) {
-        // TODO
+    @UiHandler("quickSyslogButton")
+    public void quickSyslogClicked(final ClickEvent event) {
+        presenter.getQuickSyslog().toggleRelativeTo(quickSyslogButton);
     }
 
     @UiHandler("fullscreenButton")
@@ -91,6 +88,5 @@ public class FooterViewImpl extends Composite implements FooterView {
                 doc.webkitExitFullscreen();
             }
         }
-
     }-*/;
 }

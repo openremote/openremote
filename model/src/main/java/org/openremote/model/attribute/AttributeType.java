@@ -19,11 +19,15 @@
  */
 package org.openremote.model.attribute;
 
+import org.openremote.model.ValidationFailure;
 import org.openremote.model.value.Value;
 import org.openremote.model.value.ValueType;
+import org.openremote.model.value.Values;
 
 import java.util.Optional;
 import java.util.function.Function;
+
+import static org.openremote.model.attribute.AttributeType.AttributeTypeValidationFailure.*;
 
 /**
  * The type of an {@link Attribute}, how its {@link Value} should be
@@ -35,108 +39,107 @@ import java.util.function.Function;
  */
 public enum AttributeType {
 
-    // TODO Implement validator functions!
+    // TODO Implement more validator functions!
 
-    STRING("String", ValueType.STRING, value -> Optional.empty()),
+    STRING(ValueType.STRING, value -> Optional.empty()),
 
-    INTEGER("Integer", ValueType.NUMBER, value -> Optional.empty()),
+    INTEGER(ValueType.NUMBER, value -> Optional.empty()),
 
-    DECIMAL("Decimal", ValueType.NUMBER, value -> Optional.empty()),
+    DECIMAL(ValueType.NUMBER, value -> Optional.empty()),
 
-    BOOLEAN("Boolean", ValueType.BOOLEAN, value -> Optional.empty()),
+    BOOLEAN(ValueType.BOOLEAN, value -> Optional.empty()),
 
-    PERCENTAGE("Percentage", ValueType.NUMBER, value -> Optional.empty()),
+    PERCENTAGE(ValueType.NUMBER, value -> Values.getNumber(value)
+        .filter(number -> number < 0 || number > 100)
+        .map(number -> PERCENTAGE_NOT_WITHIN_BOUNDS)
+    ),
 
-    TIMESTAMP_MILLIS("Timestamp milliseconds", ValueType.NUMBER, value -> Optional.empty()),
+    TIMESTAMP_MILLIS(ValueType.NUMBER, value -> Optional.empty()),
 
-    DATETIME("Timestamp in ISO 8601", ValueType.STRING, value -> Optional.empty()),
+    DATETIME(ValueType.STRING, value -> Optional.empty()),
 
-    COLOR_RGB("Color RGB", ValueType.ARRAY, value -> Optional.empty()),
+    COLOR_RGB(ValueType.ARRAY, value -> Optional.empty()),
 
-    COLOR_ARGB("Color ARGB", ValueType.ARRAY, value -> Optional.empty()),
+    COLOR_ARGB(ValueType.ARRAY, value -> Optional.empty()),
 
-    COLOR_HEX("Color HEX", ValueType.STRING, value -> Optional.empty()),
+    COLOR_HEX(ValueType.STRING, value -> Optional.empty()),
 
-    TEMPERATURE_CELCIUS("Temperature in Celcius", ValueType.NUMBER, value -> Optional.empty()),
+    TEMPERATURE_CELCIUS(ValueType.NUMBER, value -> Optional.empty()),
 
-    TEMPERATURE_KELVIN("Temperature in Kelvin", ValueType.NUMBER, value -> Optional.empty()),
+    TEMPERATURE_KELVIN(ValueType.NUMBER, value -> Optional.empty()),
 
-    TEMPERATURE_FAHRENHEIT("Temperature in Fahrenheit", ValueType.NUMBER, value -> Optional.empty()),
+    TEMPERATURE_FAHRENHEIT(ValueType.NUMBER, value -> Optional.empty()),
 
-    DISTANCE_M("Distance in meters", ValueType.NUMBER, value -> Optional.empty()),
+    DISTANCE_M(ValueType.NUMBER, value -> Optional.empty()),
 
-    DISTANCE_CM("Distance in centimeters", ValueType.NUMBER, value -> Optional.empty()),
+    DISTANCE_CM(ValueType.NUMBER, value -> Optional.empty()),
 
-    DISTANCE_MM("Distance in millimeters", ValueType.NUMBER, value -> Optional.empty()),
+    DISTANCE_MM(ValueType.NUMBER, value -> Optional.empty()),
 
-    DISTANCE_IN("Distance in inch", ValueType.NUMBER, value -> Optional.empty()),
+    DISTANCE_IN(ValueType.NUMBER, value -> Optional.empty()),
 
-    DISTANCE_FT("Distance in feet", ValueType.NUMBER, value -> Optional.empty()),
+    DISTANCE_FT(ValueType.NUMBER, value -> Optional.empty()),
 
-    DISTANCE_YARD("Dinstance in yard", ValueType.NUMBER, value -> Optional.empty()),
+    DISTANCE_YARD(ValueType.NUMBER, value -> Optional.empty()),
 
-    CO2_PPM("CO2 Level in PPM", ValueType.NUMBER, value -> Optional.empty()),
+    CO2_PPM(ValueType.NUMBER, value -> Optional.empty()),
 
-    HUMIDITY_PERCENTAGE("Humidity percentage", ValueType.NUMBER, value -> Optional.empty()),
+    HUMIDITY_PERCENTAGE(ValueType.NUMBER, value -> Optional.empty()),
 
-    HUMIDITY_GPCM("Humidity in grams per cubic meter", ValueType.NUMBER, value -> Optional.empty()),
+    HUMIDITY_GPCM(ValueType.NUMBER, value -> Optional.empty()),
 
-    POWER_WATT("Power in watt", ValueType.NUMBER, value -> Optional.empty()),
+    POWER_WATT(ValueType.NUMBER, value -> Optional.empty()),
 
-    POWER_KILOWATT("Power in kilowatt", ValueType.NUMBER, value -> Optional.empty()),
+    POWER_KILOWATT(ValueType.NUMBER, value -> Optional.empty()),
 
-    POWER_MEGAWATT("Power in megawatt", ValueType.NUMBER, value -> Optional.empty()),
+    POWER_MEGAWATT(ValueType.NUMBER, value -> Optional.empty()),
 
-    CHARGE_PERCENTAGE("Charge percentage", ValueType.NUMBER, value -> Optional.empty()),
+    CHARGE_PERCENTAGE(ValueType.NUMBER, value -> Optional.empty()),
 
-    CHARGE_KWH("Charge in kilowatt-hours", ValueType.NUMBER, value -> Optional.empty()),
+    CHARGE_KWH(ValueType.NUMBER, value -> Optional.empty()),
 
-    ENERGY_KWH("Energy in kilowatt-hours", ValueType.NUMBER, value -> Optional.empty()),
+    ENERGY_KWH(ValueType.NUMBER, value -> Optional.empty()),
 
-    ENERGY_JOULE("Energy in joule", ValueType.NUMBER, value -> Optional.empty()),
+    ENERGY_JOULE(ValueType.NUMBER, value -> Optional.empty()),
 
-    ENERGY_MEGAJOULE("Energy in megajoule", ValueType.NUMBER, value -> Optional.empty()),
+    ENERGY_MEGAJOULE(ValueType.NUMBER, value -> Optional.empty()),
 
-    FLOW_LPM("Flow in litre per minute", ValueType.NUMBER, value -> Optional.empty()),
+    FLOW_LPM(ValueType.NUMBER, value -> Optional.empty()),
 
-    FLOW_CMPS("Flow in cubic metres per second", ValueType.NUMBER, value -> Optional.empty()),
+    FLOW_CMPS(ValueType.NUMBER, value -> Optional.empty()),
 
-    FLOW_SCCM("Flow in cubic centimetres per minute", ValueType.NUMBER, value -> Optional.empty()),
+    FLOW_SCCM(ValueType.NUMBER, value -> Optional.empty()),
 
-    FLOW_CFPS("Flow in cubic feet per second", ValueType.NUMBER, value -> Optional.empty()),
+    FLOW_CFPS(ValueType.NUMBER, value -> Optional.empty()),
 
-    FLOW_GPM("Flow in gallons per minute", ValueType.NUMBER, value -> Optional.empty());
+    FLOW_GPM(ValueType.NUMBER, value -> Optional.empty());
 
-    protected String displayName;
+    public enum AttributeTypeValidationFailure implements ValidationFailure {
+        VALUE_DOES_NOT_MATCH_ATTRIBUTE_TYPE,
+        PERCENTAGE_NOT_WITHIN_BOUNDS
+    }
+
     protected ValueType valueType;
-    protected Function<Value, Optional<String>> validator;
+    protected Function<Value, Optional<ValidationFailure>> validator;
 
-    AttributeType(String displayName, ValueType valueType, Function<Value, Optional<String>> validator) {
-        this.displayName = displayName;
+    AttributeType(ValueType valueType, Function<Value, Optional<ValidationFailure>> validator) {
         this.valueType = valueType;
 
         this.validator = value -> {
             // Always perform some basic validation
             if (value != null && getValueType() != value.getType())
-                return Optional.of("Value is " + value.getType() + ", but must be " + getValueType());
+                return Optional.of(VALUE_DOES_NOT_MATCH_ATTRIBUTE_TYPE);
 
             // Custom attribute type validation
             return validator.apply(value);
         };
     }
 
-    public String getDisplayName() {
-        return displayName;
-    }
-
     public ValueType getValueType() {
         return valueType;
     }
 
-    public boolean isValid(Value value) {
-        return !getValidationFailure(value).isPresent();
-    }
-    public Optional<String> getValidationFailure(Value value)  {
+    public Optional<ValidationFailure> isValidValue(Value value) {
         return validator.apply(value);
     }
 

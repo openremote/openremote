@@ -31,10 +31,11 @@ import org.openremote.model.asset.AssetAttribute;
 import org.openremote.model.asset.ReadAssetAttributesEvent;
 import org.openremote.model.attribute.AttributeEvent;
 import org.openremote.model.attribute.AttributeExecuteStatus;
-import org.openremote.model.attribute.AttributeType;
+import org.openremote.model.attribute.AttributeState;
 import org.openremote.model.datapoint.DatapointInterval;
 import org.openremote.model.datapoint.NumberDatapoint;
 import org.openremote.model.event.bus.EventRegistration;
+import org.openremote.model.value.ValueType;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -278,20 +279,21 @@ public abstract class AttributesBrowser
     }
 
     protected void writeAttributeValue(AssetAttribute attribute) {
+        if (!validateAttribute(attribute, true)) {
+            return;
+        }
+
         attribute
-            .getStateEvent()
-            .map(state -> {
-                environment.getEventService().dispatch(state);
+            .getReference()
+            .map(attributeRef -> new AttributeState(attributeRef, attribute.getValue().orElse(null)))
+            .map(attributeState -> new AttributeEvent(attributeState, System.currentTimeMillis())) // Event time is browser time
+            .ifPresent(attributeEvent -> {
+                environment.getEventService().dispatch(attributeEvent);
                 if (attribute.isExecutable()) {
-                    showSuccess(container.getMessages().commandRequestSent(state.getAttributeName()));
+                    showSuccess(container.getMessages().commandRequestSent(attributeEvent.getAttributeName()));
                 } else {
-                    showSuccess(container.getMessages().attributeWriteSent(state.getAttributeName()));
+                    showSuccess(container.getMessages().attributeWriteSent(attributeEvent.getAttributeName()));
                 }
-                return state;
-            })
-            .orElseGet(() -> {
-                showValidationError("Attribute is not valid");
-                return null;
             });
     }
 
@@ -332,7 +334,7 @@ public abstract class AttributesBrowser
     }
 
     protected DatapointBrowser createDatapointBrowser(AssetAttribute attribute) {
-        if (attribute.isStoreDatapoints() && (isAttributeTypeEqualTo(attribute, AttributeType.DECIMAL) || isAttributeTypeEqualTo(attribute, AttributeType.INTEGER))) {
+        if (attribute.isStoreDatapoints() && isAttributeTypeEqualTo(attribute, ValueType.NUMBER)) {
             return new DatapointBrowser(environment.getMessages(), 580, 220) {
                 @Override
                 protected void queryDatapoints(DatapointInterval interval,

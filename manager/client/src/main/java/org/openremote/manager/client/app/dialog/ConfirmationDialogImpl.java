@@ -40,7 +40,7 @@ public class ConfirmationDialogImpl implements ConfirmationDialog {
         this.dialog = dialog;
 
         dialog.setModal(true);
-        dialog.setAutoHide(false);
+        dialog.setAutoHideOnHistoryEvents(true);
         dialog.addStyleName(widgetStyle.ConfirmationDialog());
 
         PushButton confirmButton = new PushButton();

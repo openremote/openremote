@@ -33,6 +33,7 @@ import org.openremote.model.event.shared.CancelEventSubscription;
 import org.openremote.model.event.shared.EventSubscription;
 import org.openremote.model.event.shared.SharedEvent;
 import org.openremote.model.event.shared.UnauthorizedEventSubscription;
+import org.openremote.model.syslog.SyslogEvent;
 
 import java.util.Collection;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -194,20 +195,27 @@ public class EventService implements ContainerService {
     }
 
     public void publishEvent(SharedEvent event) {
-        LOG.fine("Publishing: " + event);
-        messageBrokerService.getProducerTemplate().sendBody(
-            OUTGOING_EVENT_QUEUE,
-            event
-        );
+        if (messageBrokerService != null && messageBrokerService.getProducerTemplate() != null) {
+            // Don't log that we are publishing a syslog event,
+            if (!(event instanceof SyslogEvent)) {
+                LOG.fine("Publishing: " + event);
+            }
+            messageBrokerService.getProducerTemplate().sendBody(
+                OUTGOING_EVENT_QUEUE,
+                event
+            );
+        }
     }
 
     public void sendToSession(String sessionKey, Object data) {
-        LOG.fine("Sending to session '" + sessionKey + "': " + data);
-        messageBrokerService.getProducerTemplate().sendBodyAndHeader(
-            "websocket://" + WEBSOCKET_EVENTS,
-            data,
-            WebsocketConstants.SESSION_KEY, sessionKey
-        );
+        if (messageBrokerService != null && messageBrokerService.getProducerTemplate() != null) {
+            LOG.fine("Sending to session '" + sessionKey + "': " + data);
+            messageBrokerService.getProducerTemplate().sendBodyAndHeader(
+                "websocket://" + WEBSOCKET_EVENTS,
+                data,
+                WebsocketConstants.SESSION_KEY, sessionKey
+            );
+        }
     }
 
     public static String getSessionKey(Exchange exchange) {

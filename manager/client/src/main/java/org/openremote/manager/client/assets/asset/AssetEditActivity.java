@@ -191,6 +191,10 @@ public class AssetEditActivity
     public void update() {
         view.setFormBusy(true);
         clearViewMessages();
+        if (attributesEditor != null && !attributesEditor.validateAttributes()) {
+            view.setFormBusy(false);
+            return;
+        }
         readFromView();
         environment.getRequestService().execute(
             assetMapper,
@@ -211,6 +215,10 @@ public class AssetEditActivity
     public void create() {
         view.setFormBusy(true);
         clearViewMessages();
+        if (attributesEditor != null && !attributesEditor.validateAttributes()) {
+            view.setFormBusy(false);
+            return;
+        }
         readFromView();
         environment.getRequestService().execute(
             assetMapper,

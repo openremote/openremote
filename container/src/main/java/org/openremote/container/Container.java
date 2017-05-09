@@ -30,6 +30,7 @@ import org.openremote.container.json.ModelValueModule;
 import org.openremote.container.util.LogUtil;
 
 import java.util.*;
+import java.util.logging.Handler;
 import java.util.logging.Logger;
 
 import static org.openremote.container.util.MapAccess.getBoolean;
@@ -93,6 +94,14 @@ public class Container {
 
         if (this.devMode) {
             JSON.enable(SerializationFeature.INDENT_OUTPUT);
+        }
+
+        // Any log handlers of the root logger that are container services must be registered
+        for (Handler handler : Logger.getLogger("").getHandlers()) {
+            if (handler instanceof ContainerService) {
+                ContainerService containerServiceLogHandler = (ContainerService) handler;
+                this.services.put(containerServiceLogHandler.getClass(), containerServiceLogHandler);
+            }
         }
 
         if (services != null) {

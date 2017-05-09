@@ -28,9 +28,11 @@ import org.openremote.manager.client.admin.navigation.AdminNavigationPresenter;
 import org.openremote.manager.client.admin.overview.AdminOverview;
 import org.openremote.manager.client.admin.overview.AdminOverviewActivity;
 import org.openremote.manager.client.admin.overview.AdminOverviewImpl;
+import org.openremote.manager.client.admin.syslog.QuickSyslog;
+import org.openremote.manager.client.admin.syslog.QuickSyslogImpl;
+import org.openremote.manager.client.admin.syslog.QuickSyslogPresenter;
 import org.openremote.manager.client.admin.tenant.*;
 import org.openremote.manager.client.admin.users.*;
-import org.openremote.manager.shared.security.TenantResource;
 import org.openremote.manager.shared.security.UserResource;
 
 public class AdminModule extends AbstractGinModule {
@@ -54,6 +56,9 @@ public class AdminModule extends AbstractGinModule {
         bind(AdminUsersActivity.class);
         bind(AdminUser.class).to(AdminUserImpl.class).in(Singleton.class);
         bind(AdminUserActivity.class);
+
+        bind(QuickSyslog.class).to(QuickSyslogImpl.class).in(Singleton.class);
+        bind(QuickSyslog.Presenter.class).to(QuickSyslogPresenter.class).in(Singleton.class);
     }
 
     @Provides
