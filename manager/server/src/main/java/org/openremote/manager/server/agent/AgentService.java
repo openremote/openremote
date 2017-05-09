@@ -523,7 +523,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                 getProtocolConfiguration(ref)
                     .orElseGet(() -> {
                         LOG.warning("Cannot process as agent link is invalid:" + assetState);
-                        assetState.setError(new RuntimeException("Attribute has an invalid agent link:" + assetState.getAttribute()));
+                        assetState.setError(new RuntimeException("Attribute has an invalid agent link: " + assetState.getAttribute()));
                         assetState.setProcessingStatus(AssetState.ProcessingStatus.ERROR);
                         return null;
                     })

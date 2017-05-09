@@ -24,11 +24,18 @@
         }
 
         .filterForm {
-            font-size: smaller;
         }
 
         .filterFormGroup {
             margin: 0 !important;
+        }
+
+        .filterFormLabel {
+            width: inherit !important;
+        }
+
+        .filterFormField {
+            min-width: inherit !important;
         }
 
         .logPanel {
@@ -42,6 +49,7 @@
         .logItemLevelCategory {
             font-weight: bold;
         }
+
     </ui:style>
 
     <w:PopupPanel glassEnabled="false" styleName="{style.popup} {widgetStyle.PopupPanel}">
@@ -49,24 +57,29 @@
 
             <div class="layout horizontal center {style.header} {widgetStyle.PopupPanelHeader}">
 
-                <g:InlineLabel addStyleNames="flex"
-                               text="{managerMessages.syslog}"/>
-
-                <w:Form addStyleNames="{style.filterForm}">
+                <w:Form addStyleNames="flex {style.filterForm}">
                     <w:FormGroup addStyleNames="{style.filterFormGroup}">
                         <w:label>
-                            <w:FormLabel text="Filter level"/>
+                            <w:FormLabel addStyleNames="{style.filterFormLabel}"
+                                         text="{managerMessages.filterLevel}"/>
                         </w:label>
                         <w:field>
-                            <w:FormField>
+                            <w:FormField addStyleNames="{style.filterFormField}">
                                 <w:FormValueListBox ui:field="levelListBox"/>
                             </w:FormField>
                         </w:field>
                         <w:actions>
                             <w:FormGroupActions>
-                                <w:PushButton ui:field="clearButton"
+                                <w:FormButton ui:field="pauseButton"
+                                              icon="pause"
+                                              text="{managerMessages.pauseLog}"/>
+                                <w:FormButton ui:field="continueButton"
+                                              icon="play"
+                                              visible="false"
+                                              text="{managerMessages.continueLog}"/>
+                                <w:FormButton ui:field="clearButton"
                                               icon="eraser"
-                                              text="Clear"/>
+                                              text="{managerMessages.clearLog}"/>
                             </w:FormGroupActions>
                         </w:actions>
                     </w:FormGroup>
@@ -75,10 +88,8 @@
             </div>
 
             <div class="flex layout vertical {widgetStyle.PopupPanelContent}">
-
                 <g:FlowPanel ui:field="logPanel"
                              addStyleNames="flex layout vertical {style.logPanel} {widgetStyle.FormList}"/>
-
             </div>
 
         </g:HTMLPanel>

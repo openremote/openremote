@@ -338,4 +338,19 @@ public interface ManagerMessages extends Messages {
     String validationFailure(@Select String name);
 
     String syslog();
+
+    String filterLevel();
+
+    String pauseLog();
+
+    String continueLog();
+
+    String clearLog();
+
+    String noLogMessagesReceived();
+
+    String editJsonObject();
+
+    String editJsonArray();
+
 }

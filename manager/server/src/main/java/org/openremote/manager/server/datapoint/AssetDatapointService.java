@@ -57,11 +57,9 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetSt
     @Override
     public void accept(AssetState assetState) {
         if (assetState.getAttribute().isStoreDatapoints() && assetState.getAttribute().getStateEvent().isPresent()) {
-            LOG.finest("Storing data point for: " + assetState);
+            LOG.finest("Storing datapoint for: " + assetState);
             AssetDatapoint assetDatapoint = new AssetDatapoint(assetState.getAttribute().getStateEvent().get());
             persistenceService.doTransaction(entityManager -> entityManager.persist(assetDatapoint));
-        } else {
-            LOG.finest("Ignoring as attribute is not a data point: " + assetState);
         }
     }
 
@@ -80,6 +78,7 @@ public class AssetDatapointService implements ContainerService, Consumer<AssetSt
     public NumberDatapoint[] aggregateDatapoints(AttributeRef attributeRef,
                                                  DatapointInterval datapointInterval,
                                                  long timestamp) {
+        LOG.fine("Aggregating datapoints for: " + attributeRef);
         return persistenceService.doReturningTransaction(entityManager ->
             entityManager.unwrap(Session.class).doReturningWork(new AbstractReturningWork<NumberDatapoint[]>() {
                 @Override

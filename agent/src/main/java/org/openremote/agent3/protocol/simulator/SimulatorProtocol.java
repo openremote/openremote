@@ -83,7 +83,7 @@ public class SimulatorProtocol extends AbstractProtocol {
 
     protected static final Map<AttributeRef, SimulatorElement> elements = new HashMap<>();
 
-    private static final Logger LOG = Logger.getLogger(org.openremote.agent3.protocol.simulator.SimulatorProtocol.class.getName());
+    private static final Logger LOG = Logger.getLogger(SimulatorProtocol.class.getName());
 
     public static final int DEFAULT_WRITE_DELAY = 1000;
 

@@ -107,25 +107,24 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
         def container = startContainerNoDemoRules(defaultConfig(serverPort), defaultServices(mockProtocol))
         def assetStorageService = container.getService(AssetStorageService.class)
         def assetProcessingService = container.getService(AssetProcessingService.class)
-        def rulesService = container.getService(RulesService.class)
         def managerDemoSetup = container.getService(SetupService.class).getTaskOfType(ManagerDemoSetup.class)
         def keycloakDemoSetup = container.getService(SetupService.class).getTaskOfType(KeycloakDemoSetup.class)
 
         then: "the container should be running and initialised"
         conditions.eventually {
             assert isContainerRunning()
-
-            // Below is here to check the macro executable attributes have been initialised
-            def apartment1 = assetStorageService.find(managerDemoSetup.apartment1Id, true)
-            assert apartment1.getAttribute("night").get().getValueAsString().orElse("") == "READY"
         }
 
-        when: "a mock agent that uses the mock protocol is created"
+        then: "register mock asset processors"
+        // TODO We have no choice but to sleep here as we wait for trigger protocol to finish initialization
+        sleep(3000)
         assetProcessingService.processors.add(mockDatapointServiceConsumer)
         assetProcessingService.processors.add(3, mockAssetStorageConsumer)
         assetProcessingService.processors.add(2, mockAgentServiceConsumer)
         assetProcessingService.processors.add(1, mockRulesServiceConsumer)
         assetProcessingService.processors.add(0, mockStartConsumer)
+
+        when: "a mock agent that uses the mock protocol is created"
         def mockAgent = new ServerAsset()
         mockAgent.setName("Mock Agent")
         mockAgent.setType(AssetType.AGENT)
@@ -231,7 +230,7 @@ class AssetProcessingTest extends Specification implements ManagerContainerTrait
             assert updatesPassedStartOfProcessingChain[0].attributeName == "light2Toggle"
             assert updatesPassedStartOfProcessingChain[0].error != null
             assert updatesPassedStartOfProcessingChain[0].error instanceof RuntimeException
-            assert updatesPassedStartOfProcessingChain[0].processingStatus == AssetState.ProcessingStatus.COMPLETED
+            assert updatesPassedStartOfProcessingChain[0].processingStatus == AssetState.ProcessingStatus.ERROR
         }
 
         when: "an attribute event occurs for the plain attribute"

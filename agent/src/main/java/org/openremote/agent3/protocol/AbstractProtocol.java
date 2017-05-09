@@ -245,9 +245,9 @@ public abstract class AbstractProtocol implements Protocol {
      * Update the value of a linked attribute.
      */
     protected void updateLinkedAttribute(AttributeState state, long timestamp) {
-        AttributeEvent event = new AttributeEvent(state, timestamp);
-        LOG.fine("Sending on sensor queue: " + event);
-        producerTemplate.sendBody(SENSOR_QUEUE, event);
+        AttributeEvent attributeEvent = new AttributeEvent(state, timestamp);
+        LOG.fine("Sending on sensor queue: " + attributeEvent);
+        producerTemplate.sendBodyAndHeader(SENSOR_QUEUE, attributeEvent, Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, getProtocolName());
     }
 
     /**

@@ -22,10 +22,7 @@ package org.openremote.model.syslog;
 import org.openremote.model.event.shared.EventFilter;
 import org.openremote.model.event.shared.SharedEvent;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class SyslogEvent extends SharedEvent {
 
@@ -82,14 +79,16 @@ public class SyslogEvent extends SharedEvent {
 
     protected SyslogLevel level;
     protected SyslogCategory category;
+    protected String subCategory;
     protected String message;
 
     protected SyslogEvent() {
     }
 
-    public SyslogEvent(SyslogLevel level, SyslogCategory category, String message) {
+    public SyslogEvent(SyslogLevel level, SyslogCategory category, String subCategory, String message) {
         this.level = level;
         this.category = category;
+        this.subCategory = subCategory;
         this.message = message;
     }
 
@@ -109,6 +108,15 @@ public class SyslogEvent extends SharedEvent {
         this.category = category;
     }
 
+    // GWT Jackson doesn't like it if it has the same name as a field but different return type...
+    public Optional<String> getSubCategoryOptional() {
+        return Optional.ofNullable(subCategory);
+    }
+
+    public void setSubCategory(String subCategory) {
+        this.subCategory = subCategory;
+    }
+
     public String getMessage() {
         return message;
     }
@@ -122,6 +130,7 @@ public class SyslogEvent extends SharedEvent {
         return getClass().getSimpleName() + "{" +
             "level=" + level +
             ", category=" + category +
+            ", subCategory=" + subCategory +
             ", message='" + message + '\'' +
             '}';
     }

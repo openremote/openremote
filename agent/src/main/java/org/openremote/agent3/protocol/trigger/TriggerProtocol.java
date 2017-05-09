@@ -58,11 +58,12 @@ import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
  */
 public class TriggerProtocol extends AbstractProtocol {
 
+    private static final Logger LOG = Logger.getLogger(TriggerProtocol.class.getName());
+
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":trigger";
     public static final String META_TRIGGER_VALUE = ASSET_META_NAMESPACE + ":triggerValue";
     public static final String META_TRIGGER_TYPE = ASSET_META_NAMESPACE + ":triggerType";
     public static final String META_TRIGGER_ACTION = ASSET_META_NAMESPACE + ":triggerAction";
-    private static final Logger LOG = Logger.getLogger(TriggerProtocol.class.getName());
     protected final Map<AttributeRef, AssetAttribute> protocolConfigMap = new HashMap<>();
     protected final Map<AttributeRef, AbstractTriggerHandler> attributeTriggerHandlerMap = new HashMap<>();
 

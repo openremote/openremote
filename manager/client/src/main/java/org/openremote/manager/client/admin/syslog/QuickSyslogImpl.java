@@ -20,7 +20,6 @@
 package org.openremote.manager.client.admin.syslog;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.dom.client.Style;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.resources.client.CssResource;
 import com.google.gwt.uibinder.client.UiBinder;
@@ -46,19 +45,23 @@ public class QuickSyslogImpl extends AbstractAppPanel implements QuickSyslog {
     interface Style extends CssResource {
         String popup();
 
+        String filterFormGroup();
+
+        String logItemLevelCategory();
+
         String header();
 
         String logPanel();
 
-        String panel();
-
-        String logItem();
-
-        String filterFormGroup();
-
         String filterForm();
 
-        String logItemLevelCategory();
+        String panel();
+
+        String filterFormLabel();
+
+        String filterFormField();
+
+        String logItem();
     }
 
     @UiField
@@ -77,11 +80,16 @@ public class QuickSyslogImpl extends AbstractAppPanel implements QuickSyslog {
     FormValueListBox<SyslogLevel> levelListBox;
 
     @UiField
+    PushButton pauseButton;
+    @UiField
+    PushButton continueButton;
+    @UiField
     PushButton clearButton;
 
     Presenter presenter;
 
     boolean empty;
+    boolean paused;
 
     @Inject
     public QuickSyslogImpl() {
@@ -101,9 +109,12 @@ public class QuickSyslogImpl extends AbstractAppPanel implements QuickSyslog {
         levelListBox.setAcceptableValues(Arrays.asList(SyslogLevel.values()));
         levelListBox.addValueChangeHandler(event -> {
             if (presenter != null) {
-                presenter.onLevelChanged(event.getValue());
+                presenter.onLogLevelChanged(event.getValue());
             }
         });
+
+        pauseButton.addClickHandler(event -> pause(true));
+        continueButton.addClickHandler(event -> pause(false));
 
         resetLogPanel();
     }
@@ -114,16 +125,27 @@ public class QuickSyslogImpl extends AbstractAppPanel implements QuickSyslog {
     }
 
     @Override
+    public SyslogLevel getLogLevel() {
+        return levelListBox.getValue();
+    }
+
+    @Override
     public void addEvent(SyslogEvent event) {
+        if (paused)
+            return;
+
         // Remove empty message label
         if (empty)
             logPanel.remove(0);
         empty = false;
 
+        // Limit to 200 messages
+        if (logPanel.getWidgetCount() >= 200)
+            logPanel.remove(0);
+
         logPanel.add(createItem(event));
 
-        // Scroll to bottom
-        logPanel.getElement().setScrollTop(logPanel.getElement().getScrollHeight());
+        scrollToBottom();
     }
 
     @UiHandler("clearButton")
@@ -134,7 +156,7 @@ public class QuickSyslogImpl extends AbstractAppPanel implements QuickSyslog {
     protected void resetLogPanel() {
         logPanel.clear();
         empty = true;
-        Label emptyMessage = new Label("No log messages received.");
+        Label emptyMessage = new Label(managerMessages.noLogMessagesReceived());
         emptyMessage.addStyleName(widgetStyle.FormListEmptyMessage());
         logPanel.add(emptyMessage);
     }
@@ -155,6 +177,12 @@ public class QuickSyslogImpl extends AbstractAppPanel implements QuickSyslog {
         categoryLabel.setText(event.getCategory().name());
         levelCategoryPanel.add(categoryLabel);
 
+        event.getSubCategoryOptional().ifPresent(s -> {
+            Label subCategoryLabel= new Label();
+            subCategoryLabel.setText(": " + s);
+            levelCategoryPanel.add(subCategoryLabel);
+        });
+
         itemPanel.add(levelCategoryPanel);
 
         Label messageLabel = new Label();
@@ -162,6 +190,17 @@ public class QuickSyslogImpl extends AbstractAppPanel implements QuickSyslog {
         itemPanel.add(messageLabel);
 
         return itemPanel;
+    }
 
+    protected void scrollToBottom() {
+        logPanel.getElement().setScrollTop(logPanel.getElement().getScrollHeight());
+    }
+
+    protected void pause(boolean pause) {
+        this.paused = pause;
+        pauseButton.setVisible(!pause);
+        continueButton.setVisible(pause);
+        if (!pause)
+            scrollToBottom();
     }
 }

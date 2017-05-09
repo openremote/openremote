@@ -20,6 +20,7 @@
 package org.openremote.manager.server.asset;
 
 import org.apache.camel.builder.RouteBuilder;
+import org.openremote.agent3.protocol.Protocol;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
@@ -208,11 +209,14 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
             .filter(body().isInstanceOf(AttributeEvent.class))
             .process(exchange -> {
                 AttributeEvent event = exchange.getIn().getBody(AttributeEvent.class);
-                LOG.fine("Received on sensor queue: " + event);
+                String protocolName = exchange.getIn().getHeader(
+                    Protocol.SENSOR_QUEUE_SOURCE_PROTOCOL, "Unknown Protocol", String.class
+                );
+                LOG.fine("Received from protocol '" + protocolName + "' on sensor queue: " + event);
                 // Can either come from onUpdateSensor or sendAttributeUpdate
                 boolean isSensorUpdate = (boolean) exchange.getIn().getHeader("isSensorUpdate", true);
                 if (isSensorUpdate) {
-                    processSensorUpdate(event);
+                    processSensorUpdate(protocolName, event);
                 } else {
                     updateAttributeValue(event, true);
                 }
@@ -353,11 +357,14 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
     /**
      * We get here if a protocol pushes a sensor update message.
      */
-    protected void processSensorUpdate(AttributeEvent attributeEvent) {
+    protected void processSensorUpdate(String protocolName, AttributeEvent attributeEvent) {
         ServerAsset asset = assetStorageService.find(attributeEvent.getEntityId(), true);
 
         if (asset == null) {
-            LOG.warning("Sensor update received for an asset that cannot be found: " + attributeEvent.getEntityId());
+            LOG.warning(
+                "Sensor update received from protocol '" + protocolName + "' for an asset that cannot be found: "
+                    + attributeEvent.getEntityId()
+            );
             return;
         }
 
@@ -370,7 +377,10 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
         AssetAttribute attribute = asset.getAttribute(attributeEvent.getAttributeName()).orElse(null);
 
         if (attribute == null) {
-            LOG.warning("Processing sensor update failed, no attribute or not linked to an agent: " + attributeEvent);
+            LOG.warning(
+                "Processing sensor update from protocol '" + protocolName
+                    + "' failed, no attribute or not linked to an agent: " + attributeEvent
+            );
             return;
         }
 
@@ -379,7 +389,10 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                 .flatMap(agentService::getProtocolConfiguration);
 
         if (!protocolConfiguration.isPresent()) {
-            LOG.warning("Processing sensor update failed, linked agent protocol configuration not found: " + attributeEvent);
+            LOG.warning(
+                "Processing sensor update from protocol '" + protocolName
+                    + "' failed, linked agent protocol configuration not found: " + attributeEvent
+            );
             return;
         }
 
@@ -457,17 +470,14 @@ public class AssetProcessingService extends RouteBuilder implements ContainerSer
                         LOG.fine("<== Processor " + processor + " finally handled: " + assetState);
                         break processorLoop;
                     case ERROR:
-                        // TODO Better error handling, not sure we need rewind?
-                        LOG.severe(
-                            "!!! Asset update status is '" + assetState.getProcessingStatus() + "', cannot continue processing: " + assetState
-                        );
-                        assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
-                        throw new RuntimeException("Processor " + processor + " error: " + assetState, assetState.getError());
+                        LOG.log(Level.SEVERE, "Processor " + processor + " error: " + assetState, assetState.getError());
+                        break processorLoop;
                 }
             }
-            assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
-
-            publishEvent(assetState);
+            if (assetState.getProcessingStatus() != AssetState.ProcessingStatus.ERROR) {
+                assetState.setProcessingStatus(AssetState.ProcessingStatus.COMPLETED);
+                publishEvent(assetState);
+            }
 
         } finally {
             LOG.fine("<<< Processing complete: " + assetState);

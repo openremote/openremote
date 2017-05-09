@@ -55,7 +55,10 @@ public class QuickSyslogPresenter implements QuickSyslog.Presenter {
 
     @Override
     public void onOpen() {
-        environment.getEventService().subscribe(SyslogEvent.class, new SyslogEvent.LevelCategoryFilter(SyslogLevel.INFO));
+        environment.getEventService().subscribe(
+            SyslogEvent.class,
+            new SyslogEvent.LevelCategoryFilter(view.getLogLevel())
+        );
     }
 
     @Override
@@ -64,8 +67,11 @@ public class QuickSyslogPresenter implements QuickSyslog.Presenter {
     }
 
     @Override
-    public void onLevelChanged(SyslogLevel level) {
+    public void onLogLevelChanged(SyslogLevel level) {
         environment.getEventService().unsubscribe(SyslogEvent.class);
-        environment.getEventService().subscribe(SyslogEvent.class, new SyslogEvent.LevelCategoryFilter(level));
+        environment.getEventService().subscribe(
+            SyslogEvent.class,
+            new SyslogEvent.LevelCategoryFilter(level)
+        );
     }
 }

@@ -20,32 +20,71 @@
 package org.openremote.model.syslog;
 
 import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 public enum SyslogCategory {
 
     ASSET_STORAGE(
-        "AssetStorageService"
+        "Asset Storage",
+        false,
+        "AssetStorageService",
+        "AssetDatapointService"
     ),
     ASSET_PROCESSING(
+        "Asset Processing",
+        false,
         "AssetProcessingService"
     ),
     RULES(
+        "Rules",
+        false,
         "RulesService",
         "RulesEngine"
+    ),
+    PROTOCOL(
+        "Protocol",
+        true,
+        "Protocol"
     );
 
+    protected final String categoryLabel;
+    protected final boolean includeSubCategory;
     protected final String[] mappedLoggerNames;
 
-    SyslogCategory(String... mappedLoggerNames) {
+    SyslogCategory(String categoryLabel, boolean includeSubCategory, String... mappedLoggerNames) {
+        this.categoryLabel = categoryLabel;
+        this.includeSubCategory = includeSubCategory;
         this.mappedLoggerNames = mappedLoggerNames;
     }
 
-    public boolean isMappedLoggerName(String name) {
-        for (String mappedLoggerName : mappedLoggerNames) {
-            if (name.endsWith(mappedLoggerName))
-                return true;
+    protected String getLoggerName(LogRecord logRecord) {
+        boolean haveMatch = false;
+        String loggerName = logRecord.getLoggerName();
+        if (loggerName.endsWith(name())) {
+            loggerName = loggerName.substring(0, loggerName.length() - name().length());
+            haveMatch = true;
         }
-        return false;
+        if (!haveMatch) {
+            for (String mappedLoggerName : mappedLoggerNames) {
+                if (loggerName.endsWith(mappedLoggerName)) {
+                    haveMatch = true;
+                    loggerName = loggerName.substring(0, loggerName.length() - mappedLoggerName.length());
+                    break;
+                }
+            }
+        }
+        return haveMatch ? loggerName : null;
+    }
+
+    protected String getSubCategory(String loggerName) {
+        if (!includeSubCategory)
+            return null;
+        // Sub category is the last word of the logger name (separated by dots)
+        String[] words = loggerName.split("\\.");
+        if (words.length > 0) {
+            return words[words.length-1];
+        }
+        return null;
     }
 
     public static SyslogEvent mapSyslogEvent(LogRecord record) {
@@ -53,10 +92,27 @@ public enum SyslogCategory {
         if (level == null)
             return null;
         for (SyslogCategory category : values()) {
-            if (category.isMappedLoggerName(record.getLoggerName())) {
-                return new SyslogEvent(level, category, record.getMessage());
+            String loggerName = category.getLoggerName(record);
+            if (loggerName != null) {
+
+                String subCategory = category.getSubCategory(loggerName);
+
+                // Append the exception message if this is a severe error
+                String message = level.ordinal() >= SyslogLevel.ERROR.ordinal() && record.getThrown() != null
+                    ? record.getMessage() + " -- " + record.getThrown().getMessage()
+                    : record.getMessage();
+
+                return new SyslogEvent(level, category, subCategory, message);
             }
         }
         return null;
+    }
+
+    public static Logger getLogger(SyslogCategory category, Class loggerName) {
+        return getLogger(category, loggerName.getName());
+    }
+
+    public static Logger getLogger(SyslogCategory category, String loggerName) {
+        return Logger.getLogger((loggerName + "." + category.name()));
     }
 }

@@ -32,12 +32,14 @@ public interface QuickSyslog {
 
         void onClose();
 
-        void onLevelChanged(SyslogLevel level);
+        void onLogLevelChanged(SyslogLevel level);
     }
 
     void setPresenter(Presenter presenter);
 
     void toggleRelativeTo(UIObject target);
+
+    SyslogLevel getLogLevel();
 
     void addEvent(SyslogEvent event);
 

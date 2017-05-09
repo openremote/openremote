@@ -46,6 +46,8 @@ import static org.openremote.model.Constants.PROTOCOL_NAMESPACE;
  */
 public class MacroProtocol extends AbstractProtocol {
 
+    private static final Logger LOG = Logger.getLogger(MacroProtocol.class.getName());
+
     public static final String PROTOCOL_NAME = PROTOCOL_NAMESPACE + ":macro";
     /**
      * Use as value of {@link org.openremote.model.asset.AssetMeta#PROTOCOL_PROPERTY} meta item to
@@ -141,7 +143,6 @@ public class MacroProtocol extends AbstractProtocol {
         }
     }
 
-    private static final Logger LOG = Logger.getLogger(MacroProtocol.class.getName());
     protected final Map<AttributeRef, Pair<Boolean, List<MacroAction>>> macroMap = new HashMap<>();
     protected final Map<AttributeRef, AttributeRef> macroAttributeMap = new HashMap<>();
     protected final Map<AttributeRef, MacroExecutionTask> executions = new HashMap<>();
