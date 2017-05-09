@@ -101,6 +101,7 @@ public class QuickSyslogImpl extends AbstractAppPanel implements QuickSyslog {
             if (isOpen) {
                 presenter.onOpen();
             } else {
+                resetLogPanel();
                 presenter.onClose();
             }
         });
