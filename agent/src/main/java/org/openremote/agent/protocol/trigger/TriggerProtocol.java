@@ -138,7 +138,14 @@ public class TriggerProtocol extends AbstractProtocol {
     @Override
     protected void doUnlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
         synchronized (protocolConfigMap) {
-            protocolConfigMap.remove(protocolConfiguration.getReferenceOrThrow());
+            AttributeRef protocolConfigRef = protocolConfiguration.getReferenceOrThrow();
+
+            if (protocolConfigMap.remove(protocolConfigRef) != null) {
+                // Unregister the trigger from its handler
+                TriggerType type = getTriggerType(protocolConfiguration).get();
+                AbstractTriggerHandler handler = getTriggerTypeHandler(protocolConfiguration).get();
+                handler.unregisterTrigger(protocolConfigRef);
+            }
         }
     }
 
