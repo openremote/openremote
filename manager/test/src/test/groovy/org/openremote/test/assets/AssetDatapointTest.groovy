@@ -1,7 +1,7 @@
 package org.openremote.test.assets
 
 import org.openremote.model.value.Values
-import org.openremote.agent3.protocol.simulator.SimulatorProtocol
+import org.openremote.agent.protocol.simulator.SimulatorProtocol
 import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.datapoint.AssetDatapointService
 import org.openremote.manager.server.setup.SetupService

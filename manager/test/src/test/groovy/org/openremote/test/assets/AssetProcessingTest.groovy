@@ -1,10 +1,9 @@
 package org.openremote.test.assets
 
-import org.openremote.agent3.protocol.AbstractProtocol
+import org.openremote.agent.protocol.AbstractProtocol
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService
 import org.openremote.manager.server.asset.ServerAsset
-import org.openremote.manager.server.rules.RulesService
 import org.openremote.manager.server.setup.SetupService
 import org.openremote.manager.server.setup.builtin.KeycloakDemoSetup
 import org.openremote.manager.server.setup.builtin.ManagerDemoSetup

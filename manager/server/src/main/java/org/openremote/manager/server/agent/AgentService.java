@@ -20,8 +20,8 @@
 package org.openremote.manager.server.agent;
 
 import org.apache.camel.builder.RouteBuilder;
-import org.openremote.agent3.protocol.Protocol;
-import org.openremote.agent3.protocol.ProtocolAssetService;
+import org.openremote.agent.protocol.Protocol;
+import org.openremote.agent.protocol.ProtocolAssetService;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;
@@ -47,8 +47,8 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.openremote.agent3.protocol.Protocol.ACTUATOR_TOPIC;
-import static org.openremote.agent3.protocol.Protocol.DeploymentStatus.*;
+import static org.openremote.agent.protocol.Protocol.ACTUATOR_TOPIC;
+import static org.openremote.agent.protocol.Protocol.DeploymentStatus.*;
 import static org.openremote.container.persistence.PersistenceEvent.PERSISTENCE_TOPIC;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForAssetType;
 import static org.openremote.manager.server.asset.AssetPredicates.isPersistenceEventForEntityType;

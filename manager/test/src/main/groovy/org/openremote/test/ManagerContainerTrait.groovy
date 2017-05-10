@@ -2,7 +2,7 @@ package org.openremote.test
 
 import com.google.common.collect.Lists
 import org.drools.core.time.impl.PseudoClockScheduler
-import org.openremote.agent3.protocol.Protocol
+import org.openremote.agent.protocol.Protocol
 import org.openremote.container.Container
 import org.openremote.container.ContainerService
 import org.openremote.container.message.MessageBrokerService

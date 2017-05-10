@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.server.concurrent;
 
-import org.openremote.agent3.protocol.ProtocolExecutorService;
+import org.openremote.agent.protocol.ProtocolExecutorService;
 import org.openremote.container.Container;
 import org.openremote.container.concurrent.ContainerExecutor;
 import org.openremote.container.concurrent.ContainerScheduledExecutor;

@@ -19,8 +19,8 @@
  */
 package org.openremote.test.protocol
 
-import org.openremote.agent3.protocol.AbstractProtocol
-import org.openremote.agent3.protocol.Protocol
+import org.openremote.agent.protocol.AbstractProtocol
+import org.openremote.agent.protocol.Protocol
 import org.openremote.manager.server.agent.AgentService
 import org.openremote.manager.server.asset.AssetProcessingService
 import org.openremote.manager.server.asset.AssetStorageService

@@ -19,7 +19,7 @@
  */
 package org.openremote.manager.server;
 
-import org.openremote.agent3.protocol.Protocol;
+import org.openremote.agent.protocol.Protocol;
 import org.openremote.container.Container;
 import org.openremote.container.ContainerService;
 import org.openremote.container.message.MessageBrokerService;

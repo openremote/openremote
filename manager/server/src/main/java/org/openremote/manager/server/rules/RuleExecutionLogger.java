@@ -1,14 +1,30 @@
+/*
+ * Copyright 2017, OpenRemote Inc.
+ *
+ * See the CONTRIBUTORS.txt file in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.openremote.manager.server.rules;
 
 import org.kie.api.definition.rule.Rule;
 import org.kie.api.event.rule.BeforeMatchFiredEvent;
 import org.kie.api.event.rule.DefaultAgendaEventListener;
 import org.kie.api.runtime.rule.Match;
-import org.openremote.agent.sensor.Sensor;
-import org.openremote.agent.sensor.SensorState;
 
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 
@@ -45,11 +61,14 @@ public class RuleExecutionLogger extends DefaultAgendaEventListener {
         for (String declarationID : declarationIDs) {
             Object declarationValue = matchEvent.getDeclarationValue(declarationID);
             String declarationValueString = this.declarationValueToString(declarationValue);
+            /* TODO Update for v3
             if (declarationValue instanceof Sensor || declarationValue instanceof SensorState) {
                 declarationLog = String.format("%s\t\tDeclaration: \"%s\"\n\t\tValue:\n\t\t\t%s\n", declarationLog, declarationID, declarationValueString);
             } else {
                 declarationLog = String.format("%s\t\tDeclaration: \"%s: %s\"\n", declarationLog, declarationID, declarationValueString);
             }
+            */
+            declarationLog = String.format("%s\t\tDeclaration: \"%s: %s\"\n", declarationLog, declarationID, declarationValueString);
         }
 
         String objectLog = "";
@@ -91,6 +110,7 @@ public class RuleExecutionLogger extends DefaultAgendaEventListener {
             theValue = antecedent.toString();
         }
 
+        /* TODO Update for v3
         if (antecedent instanceof Sensor) //may be unnecessary if we never have raw sensor objects in WM
         {
             Sensor theSensor = (Sensor) antecedent;
@@ -112,6 +132,7 @@ public class RuleExecutionLogger extends DefaultAgendaEventListener {
             String stateValue = theSensorState.getValue().toString(); //assumes all values can directly cast to String
             theValue = String.format("Sensor name: \t\"%s\"\n\t\t\tState value: \t\"%s\"", sensorName, stateValue);
         }
+        */
 
         return theValue;
     }
@@ -129,6 +150,7 @@ public class RuleExecutionLogger extends DefaultAgendaEventListener {
             convertedDeclarationValue = declarationValue.toString();
         }
 
+        /* TODO Update for v3
         if (declarationValue instanceof Sensor) //may be unnecessary if we never have raw sensor objects in WM
         {
             convertedDeclarationValue = ((Sensor) declarationValue).getSensorDefinition().getName();
@@ -138,6 +160,7 @@ public class RuleExecutionLogger extends DefaultAgendaEventListener {
             String sensorValue = ((SensorState) declarationValue).getValue().toString();
             convertedDeclarationValue = String.format("Sensor Name: \"%s\"\n\t\t\tSensor Value: \"%s\"", sensorName, sensorValue);
         }
+        */
 
         return convertedDeclarationValue;
     }
