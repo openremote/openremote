@@ -219,11 +219,11 @@ public class EventService implements ContainerService {
     }
 
     public static String getSessionKey(Exchange exchange) {
-        return exchange.getIn().getHeader(WebsocketConstants.SESSION_KEY, null, String.class);
+        return exchange.getIn().getHeader(WebsocketConstants.SESSION_KEY, String.class);
     }
 
     public static WebsocketAuth getWebsocketAuth(Exchange exchange) {
-        WebsocketAuth auth = exchange.getIn().getHeader(WebsocketConstants.AUTH, null, WebsocketAuth.class);
+        WebsocketAuth auth = exchange.getIn().getHeader(WebsocketConstants.AUTH, WebsocketAuth.class);
         if (auth == null)
             throw new IllegalStateException("No authorization details in websocket exchange");
         return auth;
