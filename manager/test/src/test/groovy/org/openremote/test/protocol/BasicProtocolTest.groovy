@@ -286,7 +286,8 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
                         new MetaItem(
                                 AssetMeta.DESCRIPTION,
                                 Values.create("A plain string attribute for storing information")
-                        )
+                        ),
+                        new MetaItem(AssetMeta.READ_ONLY, Values.create(true))
                 )
         )
         mockThing = assetStorageService.merge(mockThing)
@@ -384,7 +385,7 @@ class BasicProtocolTest extends Specification implements ManagerContainerTrait {
         assert mockThing.getAttribute("lightToggle4").get().getValueAsBoolean().orElse(false)
         assert mockThing.getAttribute("tempTarget4").get().getValueAsNumber().orElse(0d) == 25.5d
 
-        when: "the mock protocol tries to update the plain attribute"
+        when: "the mock protocol tries to update the plain readonly attribute"
         mockProtocol.updateAttribute(new AttributeState(mockThing.getId(),"plainAttribute", Values.create("UPDATE")))
 
         then: "the plain attributes value should be updated"
