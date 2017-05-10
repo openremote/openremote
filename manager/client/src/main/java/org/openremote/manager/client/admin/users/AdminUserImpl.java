@@ -27,7 +27,7 @@ import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.*;
 import com.google.inject.Provider;
-import org.openremote.manager.client.app.dialog.ConfirmationDialog;
+import org.openremote.manager.client.app.dialog.Confirmation;
 import org.openremote.manager.client.widget.FormCheckBox;
 import org.openremote.manager.client.widget.FormGroup;
 import org.openremote.manager.client.widget.FormViewImpl;
@@ -107,7 +107,7 @@ public class AdminUserImpl extends FormViewImpl implements AdminUser {
     protected Presenter presenter;
 
     @Inject
-    public AdminUserImpl(Provider<ConfirmationDialog> confirmationDialogProvider) {
+    public AdminUserImpl(Provider<Confirmation> confirmationDialogProvider) {
         super(confirmationDialogProvider);
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));

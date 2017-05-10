@@ -404,4 +404,8 @@ public class WidgetStyle {
     public String HighlightBackground() {
         return "or-HighlightBackground";
     }
+
+    public String JsonEditor() {
+        return "or-JsonEditor";
+    }
 }

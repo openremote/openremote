@@ -349,8 +349,13 @@ public interface ManagerMessages extends Messages {
 
     String noLogMessagesReceived();
 
-    String editJsonObject();
+    String jsonObject();
 
-    String editJsonArray();
+    String jsonArray();
 
+    String edit();
+
+    String emptyJsonData();
+
+    String reset();
 }

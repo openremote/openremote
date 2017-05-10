@@ -33,7 +33,7 @@ import elemental.client.Browser;
 import elemental.html.AnchorElement;
 import elemental.html.Blob;
 import elemental.html.FileReader;
-import org.openremote.manager.client.app.dialog.ConfirmationDialog;
+import org.openremote.manager.client.app.dialog.Confirmation;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.widget.*;
 
@@ -92,7 +92,7 @@ public class RulesEditorImpl
     protected Presenter presenter;
 
     @Inject
-    public RulesEditorImpl(Provider<ConfirmationDialog> confirmationDialogProvider, AssetBrowser assetBrowser) {
+    public RulesEditorImpl(Provider<Confirmation> confirmationDialogProvider, AssetBrowser assetBrowser) {
         super(confirmationDialogProvider);
         this.assetBrowser = assetBrowser;
 

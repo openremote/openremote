@@ -29,7 +29,8 @@ import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.*;
 import com.google.inject.Provider;
-import org.openremote.manager.client.app.dialog.ConfirmationDialog;
+import org.openremote.manager.client.app.dialog.Confirmation;
+import org.openremote.manager.client.app.dialog.JsonEditor;
 import org.openremote.manager.client.assets.attributes.AttributesEditor;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetSelector;
@@ -151,14 +152,17 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
     PushButton deleteButton;
 
     final AssetBrowser assetBrowser;
+    final Provider<JsonEditor> jsonEditorProvider;
     Presenter presenter;
     AttributesEditor attributesEditor;
 
     @Inject
     public AssetEditImpl(AssetBrowser assetBrowser,
-                         Provider<ConfirmationDialog> confirmationDialogProvider,
+                         Provider<Confirmation> confirmationDialogProvider,
+                         Provider<JsonEditor> jsonEditorProvider,
                          ManagerMessages managerMessages) {
         super(confirmationDialogProvider);
+        this.jsonEditorProvider = jsonEditorProvider;
         this.assetBrowser = assetBrowser;
 
         parentAssetSelector = new AssetSelector(
@@ -401,6 +405,11 @@ public class AssetEditImpl extends FormViewImpl implements AssetEdit {
             @Override
             public InsertPanel getPanel() {
                 return attributesEditorContainer;
+            }
+
+            @Override
+            public JsonEditor getJsonEditor() {
+                return jsonEditorProvider.get();
             }
 
             @Override

@@ -64,6 +64,7 @@ import static org.openremote.model.util.TextUtil.isValidURN;
 public class AgentService extends RouteBuilder implements ContainerService, Consumer<AssetState>, ProtocolAssetService {
 
     private static final Logger LOG = Logger.getLogger(AgentService.class.getName());
+
     protected Container container;
     protected AssetStorageService assetStorageService;
     protected AssetDatapointService assetDatapointService;
@@ -150,14 +151,14 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     @Override
     public void updateProtocolConfiguration(AssetAttribute protocolConfiguration) {
         if (protocolConfiguration == null || !protocolConfiguration.getReference().isPresent()) {
-            LOG.warning("Cannot update protocol configuration as it is not valid: " + protocolConfiguration);
+            LOG.warning("Cannot update invalid: " + protocolConfiguration);
             return;
         }
 
         AttributeRef protocolRef = protocolConfiguration.getReference().get();
         ServerAsset agent = assetStorageService.find(protocolRef.getEntityId(), true);
-        if (agent == null || agent.getWellKnownType() !=  AssetType.AGENT || !agent.hasAttribute(protocolRef.getAttributeName())) {
-            LOG.warning("Protocol configuration doesn't belong to a valid agent");
+        if (agent == null || agent.getWellKnownType() != AssetType.AGENT || !agent.hasAttribute(protocolRef.getAttributeName())) {
+            LOG.warning("Protocol configuration doesn't belong to a valid agent: " + protocolConfiguration);
             return;
         }
 
@@ -165,7 +166,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         @SuppressWarnings("ConstantConditions")
         AssetAttribute oldProtocolConfiguration = agent.getAttribute(protocolRef.getAttributeName()).get();
         if (oldProtocolConfiguration.getObjectValue().equals(protocolConfiguration.getObjectValue())) {
-            LOG.fine("Protocol configuration hasn't changed so nothing to do here");
+            // Protocol configuration hasn't changed so nothing to do here
             return;
         }
 
@@ -264,7 +265,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
 
                 // Link any AGENT_LINK attributes to the referenced protocol
                 Map<AssetAttribute, List<AssetAttribute>> groupedAgentLinksAttributes =
-                    getGroupedAgentLinkAttributes(asset.getAttributesStream(), attribute -> true);
+                    getGroupedAgentLinkAttributes(
+                        asset.getAttributesStream(),
+                        attribute -> true,
+                        attribute -> LOG.warning("Linked protocol configuration not found: " + attribute)
+                    );
                 groupedAgentLinksAttributes.forEach(this::linkAttributes);
 
                 break;
@@ -323,8 +328,11 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                         )
                     );
 
-                getGroupedAgentLinkAttributes(attributesToLink, attribute -> true)
-                    .forEach(this::linkAttributes);
+                getGroupedAgentLinkAttributes(
+                    attributesToLink,
+                    attribute -> true,
+                    attribute -> LOG.warning("Linked protocol configuration not found: " + attribute)
+                ).forEach(this::linkAttributes);
 
                 break;
             case DELETE: {
@@ -342,7 +350,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     }
 
     protected void linkProtocolConfiguration(AssetAttribute protocolConfiguration) {
-        LOG.finest("Linking all attributes that use protocol attribute: " + protocolConfiguration);
+        LOG.info("Linking all attributes that use protocol attribute: " + protocolConfiguration);
         AttributeRef protocolAttributeRef = protocolConfiguration.getReferenceOrThrow();
         Protocol protocol = getProtocol(protocolConfiguration);
 
@@ -396,12 +404,14 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
                     asset.getAttributesStream(),
                     assetAttribute -> getAgentLink(assetAttribute)
                         .map(attributeRef -> attributeRef.equals(protocolAttributeRef))
-                        .orElse(false)
+                        .orElse(false),
+                    attribute -> LOG.warning("Linked protocol configuration not found: " + attribute)
                 ).forEach(this::linkAttributes)
         );
     }
 
     protected void unlinkProtocolConfiguration(AssetAttribute protocolConfiguration) {
+        LOG.info("Unlinking all attributes that use protocol attribute: " + protocolConfiguration);
         AttributeRef protocolAttributeRef = protocolConfiguration.getReferenceOrThrow();
 
         // Get all assets that have attributes that use this protocol configuration
@@ -470,7 +480,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         Protocol protocol = getProtocol(protocolConfiguration);
 
         if (protocol == null) {
-            LOG.severe("Cannot link protocol attributes as protocol is null");
+            LOG.severe("Cannot link protocol attributes as protocol is null: " + protocolConfiguration);
             return;
         }
 
@@ -488,7 +498,7 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
         Protocol protocol = getProtocol(protocolConfiguration);
 
         if (protocol == null) {
-            LOG.severe("Cannot unlink protocol attributes as protocol is null");
+            LOG.severe("Cannot unlink protocol attributes as protocol is null: " + protocolConfiguration);
             return;
         }
 
@@ -563,6 +573,13 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
     @SuppressWarnings("ConstantConditions")
     protected Map<AssetAttribute, List<AssetAttribute>> getGroupedAgentLinkAttributes(Stream<AssetAttribute> attributes,
                                                                                       Predicate<AssetAttribute> filter) {
+
+        return getGroupedAgentLinkAttributes(attributes, filter, null);
+    }
+
+    protected Map<AssetAttribute, List<AssetAttribute>> getGroupedAgentLinkAttributes(Stream<AssetAttribute> attributes,
+                                                                                      Predicate<AssetAttribute> filter,
+                                                                                      Consumer<AssetAttribute> notFoundConsumer) {
         Map<AssetAttribute, List<AssetAttribute>> result = new HashMap<>();
         attributes
             .filter(AgentLink::hasAgentLink)
@@ -570,7 +587,14 @@ public class AgentService extends RouteBuilder implements ContainerService, Cons
             .map(attribute -> new Pair<>(attribute, getAgentLink(attribute)))
             .filter(pair -> pair.value.isPresent())
             .map(pair -> new Pair<>(pair.key, getProtocolConfiguration(pair.value.get())))
-            .filter(pair -> pair.value.isPresent())
+            .filter(pair -> {
+                if (pair.value.isPresent()) {
+                    return true;
+                } else if (notFoundConsumer != null) {
+                    notFoundConsumer.accept(pair.key);
+                }
+                return false;
+            })
             .forEach(pair -> result.computeIfAbsent(pair.value.get(), newProtocolConfiguration -> new ArrayList<>())
                 .add(pair.key)
             );

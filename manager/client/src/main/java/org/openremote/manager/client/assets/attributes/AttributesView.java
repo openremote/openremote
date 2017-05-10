@@ -25,6 +25,7 @@ import com.google.gwt.user.client.ui.InsertPanel;
 import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.Label;
 import org.openremote.manager.client.Environment;
+import org.openremote.manager.client.app.dialog.JsonEditor;
 import org.openremote.manager.client.event.ShowFailureEvent;
 import org.openremote.manager.client.event.ShowInfoEvent;
 import org.openremote.manager.client.event.ShowSuccessEvent;
@@ -39,22 +40,26 @@ import org.openremote.model.asset.AssetMeta;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.Value;
-import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
+import org.openremote.model.value.*;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.logging.Logger;
 
 public abstract class AttributesView<
     C extends AttributesView.Container<S>,
     S extends AttributesView.Style
     > {
 
+    private static final Logger LOG = Logger.getLogger(AttributesView.class.getName());
+
     public interface Container<S extends AttributesView.Style> {
         S getStyle();
 
         InsertPanel getPanel();
+
+        JsonEditor getJsonEditor();
 
         ManagerMessages getMessages();
     }
@@ -109,9 +114,6 @@ public abstract class AttributesView<
                 for (ValidationFailure failure : failures) {
                     showValidationError(valueUpdate.fieldLabel, failure);
                 }
-                if (valueUpdate.resultConsumer != null) {
-                    valueUpdate.resultConsumer.accept(false);
-                }
             }
             if (valueUpdate.resultConsumer != null) {
                 valueUpdate.resultConsumer.accept(failures.isEmpty());
@@ -133,7 +135,7 @@ public abstract class AttributesView<
         }
     };
 
-    public final ValueUpdater<String> TO_INTEGER_UPDATER = new ValueUpdater<String>() {
+    public final ValueUpdater<String> INTEGER_UPDATER = new ValueUpdater<String>() {
         @Override
         Value createValue(String rawValue) throws IllegalArgumentException {
             try {
@@ -144,7 +146,7 @@ public abstract class AttributesView<
         }
     };
 
-    public final ValueUpdater<String> TO_DOUBLE_UPDATER = new ValueUpdater<String>() {
+    public final ValueUpdater<String> DOUBLE_UPDATER = new ValueUpdater<String>() {
         @Override
         Value createValue(String rawValue) throws IllegalArgumentException {
             try {
@@ -159,6 +161,13 @@ public abstract class AttributesView<
         @Override
         Value createValue(Boolean rawValue) throws IllegalArgumentException {
             return Values.create(rawValue);
+        }
+    };
+
+    public final ValueUpdater<Value> VALUE_UPDATER = new ValueUpdater<Value>() {
+        @Override
+        Value createValue(Value rawValue) throws IllegalArgumentException {
+            return rawValue;
         }
     };
 
@@ -240,6 +249,7 @@ public abstract class AttributesView<
 
         List<ValidationFailure> failures = attribute.getValidationFailures();
         if (!failures.isEmpty()) {
+            LOG.fine("Invalid " + attribute + ": " + failures);
             attributeGroups.get(attribute).setError(true);
             if (showValidationFailureMessage) {
                 for (ValidationFailure failure : failures) {
@@ -352,6 +362,8 @@ public abstract class AttributesView<
             attributeEditor = createDecimalEditor(attribute, defaultValueItem, style, formGroup);
         } else if (attributeType == AttributeType.BOOLEAN || attributeType.getValueType() == ValueType.BOOLEAN) {
             attributeEditor = createBooleanEditor(attribute, defaultValueItem, style, formGroup);
+        } else if (attributeType.getValueType() == ValueType.ARRAY) {
+            attributeEditor = createArrayEditor(attribute, style, formGroup);
         } else {
             return null;
         }
@@ -415,7 +427,7 @@ public abstract class AttributesView<
         Optional<String> defaultValue = defaultValueItem.flatMap(AbstractValueHolder::getValueAsString);
 
         Consumer<String> updateConsumer = !isEditorReadOnly(attribute)
-            ? rawValue -> TO_INTEGER_UPDATER.accept(new ValueUpdate<>(attribute.getLabelOrName().orElse(null), formGroup, attribute, null, rawValue))
+            ? rawValue -> INTEGER_UPDATER.accept(new ValueUpdate<>(attribute.getLabelOrName().orElse(null), formGroup, attribute, null, rawValue))
             : null;
 
         FlowPanel panel = new FlowPanel();
@@ -457,7 +469,7 @@ public abstract class AttributesView<
         Optional<String> defaultValue = defaultValueItem.flatMap(AbstractValueHolder::getValueAsString);
 
         Consumer<String> updateConsumer = !isEditorReadOnly(attribute)
-            ? rawValue -> TO_DOUBLE_UPDATER.accept(new ValueUpdate<>(attribute.getLabelOrName().orElse(null), formGroup, attribute, null, rawValue))
+            ? rawValue -> DOUBLE_UPDATER.accept(new ValueUpdate<>(attribute.getLabelOrName().orElse(null), formGroup, attribute, null, rawValue))
             : null;
 
         FlowPanel panel = new FlowPanel();
@@ -538,6 +550,87 @@ public abstract class AttributesView<
             input.setEnabled(false);
         }
         return input;
+    }
+
+    protected AttributeEditor createArrayEditor(AssetAttribute attribute, S style, FormGroup formGroup) {
+        Optional<ArrayValue> currentValue = attribute.getValue().flatMap(Values::getArray);
+
+        Consumer<Value> updateConsumer = !isEditorReadOnly(attribute)
+            ? rawValue -> VALUE_UPDATER.accept(new ValueUpdate<>(attribute.getLabelOrName().orElse(null), formGroup, attribute, null, rawValue))
+            : null;
+
+        Supplier<Value> resetSupplier = () -> attribute.getValue().orElse(null);
+
+        String title = updateConsumer != null
+            ? environment.getMessages().edit() + " " + environment.getMessages().jsonArray()
+            : environment.getMessages().jsonArray();
+
+        FlowPanel panel = new FlowPanel();
+        panel.setStyleName("flex layout horizontal center");
+        FormButton editButton = createJsonEditorWidget(style, title, currentValue.orElse(null), updateConsumer, resetSupplier);
+        FlowPanel wrapper = new FlowPanel();
+        wrapper.setStyleName("flex layout horizontal center");
+        wrapper.add(editButton);
+        panel.add(wrapper);
+        if (isShowTimestamp(attribute)) {
+            TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
+            panel.add(timestampLabel);
+        }
+
+        return () -> panel;
+    }
+
+    protected AttributeEditor createObjectEditor(AssetAttribute attribute, S style, FormGroup formGroup) {
+        Optional<ObjectValue> currentValue = attribute.getValue().flatMap(Values::getObject);
+
+        Consumer<Value> updateConsumer = !isEditorReadOnly(attribute)
+            ? rawValue -> VALUE_UPDATER.accept(new ValueUpdate<>(attribute.getLabelOrName().orElse(null), formGroup, attribute, null, rawValue))
+            : null;
+
+        Supplier<Value> resetSupplier = () -> attribute.getValue().orElse(null);
+
+        String title = updateConsumer != null
+            ? environment.getMessages().edit() + " " + environment.getMessages().jsonObject()
+            : environment.getMessages().jsonObject();
+
+        FlowPanel panel = new FlowPanel();
+        panel.setStyleName("flex layout horizontal center");
+        FormButton editButton = createJsonEditorWidget(style, title, currentValue.orElse(null), updateConsumer, resetSupplier);
+        FlowPanel wrapper = new FlowPanel();
+        wrapper.setStyleName("flex layout horizontal center");
+        wrapper.add(editButton);
+        panel.add(wrapper);
+        if (isShowTimestamp(attribute)) {
+            TimestampLabel timestampLabel = new TimestampLabel(attribute.getValueTimestamp());
+            panel.add(timestampLabel);
+        }
+
+        return () -> panel;
+    }
+
+    protected FormButton createJsonEditorWidget(S style,
+                                                String title,
+                                                Value currentValue,
+                                                Consumer<Value> updateConsumer,
+                                                Supplier<Value> resetSupplier) {
+        JsonEditor jsonEditor = container.getJsonEditor();
+        jsonEditor.setTitle(title);
+
+        if (currentValue != null) {
+            jsonEditor.setValue(currentValue);
+        }
+
+        FormButton button = new FormButton();
+        button.setIcon("file-text-o");
+        button.setText(environment.getMessages().jsonArray());
+        button.addClickHandler(event -> jsonEditor.show());
+
+        jsonEditor.setOnReset(() -> jsonEditor.setValue(resetSupplier.get()));
+
+        if (updateConsumer != null) {
+            jsonEditor.setOnApply(updateConsumer);
+        }
+        return button;
     }
 
     protected FormInputText createFormInputText(String formFieldStyleName) {

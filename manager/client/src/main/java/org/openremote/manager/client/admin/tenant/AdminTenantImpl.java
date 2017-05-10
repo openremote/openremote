@@ -25,10 +25,9 @@ import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.client.ui.HTMLPanel;
-import com.google.gwt.user.client.ui.SimpleCheckBox;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.inject.Provider;
-import org.openremote.manager.client.app.dialog.ConfirmationDialog;
+import org.openremote.manager.client.app.dialog.Confirmation;
 import org.openremote.manager.client.widget.FormCheckBox;
 import org.openremote.manager.client.widget.FormGroup;
 import org.openremote.manager.client.widget.FormViewImpl;
@@ -71,7 +70,7 @@ public class AdminTenantImpl extends FormViewImpl implements AdminTenant {
     protected Presenter presenter;
 
     @Inject
-    public AdminTenantImpl(Provider<ConfirmationDialog> confirmationDialogProvider) {
+    public AdminTenantImpl(Provider<Confirmation> confirmationDialogProvider) {
         super(confirmationDialogProvider);
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));

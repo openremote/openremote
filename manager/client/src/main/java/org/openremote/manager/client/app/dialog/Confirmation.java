@@ -17,22 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.openremote.manager.client.app;
+package org.openremote.manager.client.app.dialog;
 
-import com.google.gwt.inject.client.AbstractGinModule;
-import com.google.inject.Singleton;
-import org.openremote.manager.client.app.dialog.*;
+public interface Confirmation {
 
-public class AppModule extends AbstractGinModule {
+    void setTitle(String title);
 
-    @Override
-    protected void configure() {
-        bind(AppController.class).to(AppControllerImpl.class).in(Singleton.class);
-        bind(AppView.class).to(AppViewImpl.class).in(Singleton.class);
-        bind(HeaderView.class).to(HeaderViewImpl.class).in(Singleton.class);
-        bind(FooterView.class).to(FooterViewImpl.class).in(Singleton.class);
-        bind(Dialog.class).to(DialogImpl.class);
-        bind(Confirmation.class).to(ConfirmationImpl.class);
-        bind(JsonEditor.class).to(JsonEditorImpl.class);
-    }
+    void setText(String text);
+
+    void setOnConfirm(Runnable onConfirm);
+
+    void setOnCancel(Runnable onCancel);
+
+    void show();
+
 }

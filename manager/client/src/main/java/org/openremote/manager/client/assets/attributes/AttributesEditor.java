@@ -32,12 +32,12 @@ import org.openremote.model.attribute.Attribute;
 import org.openremote.model.attribute.AttributeType;
 import org.openremote.model.attribute.MetaItem;
 import org.openremote.model.util.TextUtil;
-import org.openremote.model.value.ValueType;
-import org.openremote.model.value.Values;
+import org.openremote.model.value.*;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static org.openremote.model.attribute.Attribute.ATTRIBUTE_NAME_VALIDATOR;
 
@@ -325,20 +325,33 @@ public class AttributesEditor
             boolean isEditable = item.getName().map(AssetMeta::isEditable).orElse(forceEditable);
 
             // Validation failure of meta item marks the attribute form extension as error state
-            Consumer<Boolean> resultConsumer = !forceEditable
-                ? success -> attributeGroups.get(attribute).setErrorInExtension(!success)
+            Consumer<Boolean> resultConsumer = !forceEditable ?
+                success -> {
+                    // Validate again in context of attribute
+                    if (success) {
+                        List<ValidationFailure> failures = attribute.getMetaItemValidationFailures(item);
+                        if (!failures.isEmpty()) {
+                            success = false;
+                            formGroup.setError(true);
+                            for (ValidationFailure failure : failures) {
+                                showValidationError(item.getName().orElse(null), failure);
+                            }
+                        }
+                    }
+                    attributeGroups.get(attribute).setErrorInExtension(!success);
+                }
                 : null;
 
             if (valueType.equals(ValueType.STRING)) {
                 String currentValue = item.getValue().map(Object::toString).orElse(null);
                 Consumer<String> updateConsumer = isEditable
-                    ? rawValue -> STRING_UPDATER.accept(new ValueUpdate<>(item.getName().orElse(null),formGroup, item, resultConsumer, rawValue))
+                    ? rawValue -> STRING_UPDATER.accept(new ValueUpdate<>(item.getName().orElse(null), formGroup, item, resultConsumer, rawValue))
                     : null;
                 editor = createStringEditorWidget(style, currentValue, Optional.empty(), updateConsumer);
             } else if (valueType.equals(ValueType.NUMBER)) {
                 String currentValue = item.getValue().map(Object::toString).orElse(null);
                 Consumer<String> updateConsumer = isEditable
-                    ? rawValue -> TO_DOUBLE_UPDATER.accept(new ValueUpdate<>(item.getName().orElse(null), formGroup, item, resultConsumer, rawValue))
+                    ? rawValue -> DOUBLE_UPDATER.accept(new ValueUpdate<>(item.getName().orElse(null), formGroup, item, resultConsumer, rawValue))
                     : null;
                 editor = createDecimalEditorWidget(style, currentValue, Optional.empty(), updateConsumer);
             } else if (valueType.equals(ValueType.BOOLEAN)) {
@@ -347,6 +360,26 @@ public class AttributesEditor
                     ? rawValue -> BOOLEAN_UPDATER.accept(new ValueUpdate<>(item.getName().orElse(null), formGroup, item, resultConsumer, rawValue))
                     : null;
                 editor = createBooleanEditorWidget(style, currentValue, Optional.empty(), updateConsumer);
+            } else if (valueType.equals(ValueType.OBJECT)) {
+                ObjectValue currentValue = item.getValueAsObject().orElse(null);
+                Consumer<Value> updateConsumer = isEditable
+                    ? rawValue -> VALUE_UPDATER.accept(new ValueUpdate<>(item.getName().orElse(null), formGroup, item, resultConsumer, rawValue))
+                    : null;
+                Supplier<Value> resetSupplier = () -> item.getValue().orElse(null);
+                String title = updateConsumer != null
+                    ? environment.getMessages().edit() + " " + environment.getMessages().jsonObject()
+                    : environment.getMessages().jsonObject();
+                editor = createJsonEditorWidget(style, title, currentValue, updateConsumer, resetSupplier);
+            } else if (valueType.equals(ValueType.ARRAY)) {
+                ArrayValue currentValue = item.getValueAsArray().orElse(null);
+                Consumer<Value> updateConsumer = isEditable
+                    ? rawValue -> VALUE_UPDATER.accept(new ValueUpdate<>(item.getName().orElse(null), formGroup, item, resultConsumer, rawValue))
+                    : null;
+                Supplier<Value> resetSupplier = () -> item.getValue().orElse(null);
+                String title = updateConsumer != null
+                    ? environment.getMessages().edit() + " " + environment.getMessages().jsonArray()
+                    : environment.getMessages().jsonArray();
+                editor = createJsonEditorWidget(style, title, currentValue, updateConsumer, resetSupplier);
             } else {
                 FormField unsupportedField = new FormField();
                 unsupportedField.add(new FormOutputText(

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, OpenRemote Inc.
+ * Copyright 2017, OpenRemote Inc.
  *
  * See the CONTRIBUTORS.txt file in the distribution for a
  * full listing of individual contributors.
@@ -19,13 +19,19 @@
  */
 package org.openremote.manager.client.app.dialog;
 
-public interface ConfirmationDialog {
+import org.openremote.model.value.Value;
+
+import java.util.function.Consumer;
+
+public interface JsonEditor {
 
     void setTitle(String title);
 
-    void setText(String text);
+    void setValue(Value value);
 
-    void setOnConfirm(Runnable onConfirm);
+    void setOnApply(Consumer<Value> onApply);
+
+    void setOnReset(Runnable onReset);
 
     void setOnCancel(Runnable onCancel);
 

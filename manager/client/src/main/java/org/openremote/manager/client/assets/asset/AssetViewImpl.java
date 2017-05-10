@@ -31,7 +31,7 @@ import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.InsertPanel;
 import com.google.inject.Provider;
-import org.openremote.manager.client.app.dialog.ConfirmationDialog;
+import org.openremote.manager.client.app.dialog.JsonEditor;
 import org.openremote.manager.client.assets.attributes.AttributesBrowser;
 import org.openremote.manager.client.assets.browser.AssetBrowser;
 import org.openremote.manager.client.assets.browser.AssetSelector;
@@ -46,11 +46,8 @@ import org.openremote.model.value.ObjectValue;
 
 import javax.inject.Inject;
 import java.util.Date;
-import java.util.logging.Logger;
 
 public class AssetViewImpl extends Composite implements AssetView {
-
-    private static final Logger LOG = Logger.getLogger(AssetViewImpl.class.getName());
 
     interface UI extends UiBinder<FlexSplitPanel, AssetViewImpl> {
     }
@@ -137,15 +134,15 @@ public class AssetViewImpl extends Composite implements AssetView {
     /* ############################################################################ */
 
     final AssetBrowser assetBrowser;
-    final Provider<ConfirmationDialog> confirmationDialogProvider;
+    final Provider<JsonEditor> jsonEditorProvider;
     Presenter presenter;
     AttributesBrowser attributesBrowser;
 
     @Inject
     public AssetViewImpl(AssetBrowser assetBrowser,
-                         Provider<ConfirmationDialog> confirmationDialogProvider) {
+                         Provider<JsonEditor> jsonEditorProvider) {
         this.assetBrowser = assetBrowser;
-        this.confirmationDialogProvider = confirmationDialogProvider;
+        this.jsonEditorProvider = jsonEditorProvider;
 
         UI ui = GWT.create(UI.class);
         initWidget(ui.createAndBindUi(this));
@@ -294,6 +291,11 @@ public class AssetViewImpl extends Composite implements AssetView {
             @Override
             public InsertPanel getPanel() {
                 return attributesBrowserContainer;
+            }
+
+            @Override
+            public JsonEditor getJsonEditor() {
+                return jsonEditorProvider.get();
             }
 
             @Override

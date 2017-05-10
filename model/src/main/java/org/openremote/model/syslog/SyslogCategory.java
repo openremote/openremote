@@ -24,16 +24,17 @@ import java.util.logging.Logger;
 
 public enum SyslogCategory {
 
-    ASSET_STORAGE(
-        "Asset Storage",
+    ASSET(
+        "Asset Processing",
         false,
+        "AssetProcessingService",
         "AssetStorageService",
         "AssetDatapointService"
     ),
-    ASSET_PROCESSING(
-        "Asset Processing",
+    AGENT(
+        "Agents",
         false,
-        "AssetProcessingService"
+        "AgentService"
     ),
     RULES(
         "Rules",

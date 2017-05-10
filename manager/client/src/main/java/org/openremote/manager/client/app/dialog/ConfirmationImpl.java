@@ -26,7 +26,7 @@ import org.openremote.manager.client.widget.PushButton;
 
 import javax.inject.Inject;
 
-public class ConfirmationDialogImpl implements ConfirmationDialog {
+public class ConfirmationImpl implements Confirmation {
 
     final protected Dialog dialog;
 
@@ -34,9 +34,9 @@ public class ConfirmationDialogImpl implements ConfirmationDialog {
     protected Runnable onCancel;
 
     @Inject
-    public ConfirmationDialogImpl(Dialog dialog,
-                                  WidgetStyle widgetStyle,
-                                  ManagerMessages managerMessages) {
+    public ConfirmationImpl(Dialog dialog,
+                            WidgetStyle widgetStyle,
+                            ManagerMessages managerMessages) {
         this.dialog = dialog;
 
         dialog.setModal(true);

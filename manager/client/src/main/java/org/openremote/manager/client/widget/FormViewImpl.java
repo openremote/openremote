@@ -25,13 +25,13 @@ import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.InlineLabel;
 import com.google.inject.Provider;
-import org.openremote.manager.client.app.dialog.ConfirmationDialog;
+import org.openremote.manager.client.app.dialog.Confirmation;
 import org.openremote.manager.client.i18n.ManagerMessages;
 import org.openremote.manager.client.style.WidgetStyle;
 
 public class FormViewImpl extends Composite implements FormView {
 
-    protected final Provider<ConfirmationDialog> confirmationDialogProvider;
+    protected final Provider<Confirmation> confirmationDialogProvider;
 
     @UiField
     public WidgetStyle widgetStyle;
@@ -48,7 +48,7 @@ public class FormViewImpl extends Composite implements FormView {
     @UiField
     public FlowPanel formMessagesError;
 
-    public FormViewImpl(Provider<ConfirmationDialog> confirmationDialogProvider) {
+    public FormViewImpl(Provider<Confirmation> confirmationDialogProvider) {
         this.confirmationDialogProvider = confirmationDialogProvider;
     }
 
@@ -96,11 +96,11 @@ public class FormViewImpl extends Composite implements FormView {
 
     @Override
     public void showConfirmation(String title, String text, Runnable onConfirm, Runnable onCancel) {
-        ConfirmationDialog confirmationDialog = confirmationDialogProvider.get();
-        confirmationDialog.setTitle(title);
-        confirmationDialog.setText(text);
-        confirmationDialog.setOnConfirm(onConfirm);
-        confirmationDialog.setOnCancel(onCancel);
-        confirmationDialog.show();
+        Confirmation confirmation = confirmationDialogProvider.get();
+        confirmation.setTitle(title);
+        confirmation.setText(text);
+        confirmation.setOnConfirm(onConfirm);
+        confirmation.setOnCancel(onCancel);
+        confirmation.show();
     }
 }
